@@ -1,0 +1,169 @@
+common_sources = [
+  'cfgfiles.c',
+  'chanopt.c',
+  'ctcp.c',
+  'dcc.c',
+  'gtk3-theme-service.c',
+  'zoitechat.c',
+  'history.c',
+  'ignore.c',
+  'inbound.c',
+  'modes.c',
+  'network.c',
+  'notify.c',
+  'outbound.c',
+  'plugin.c',
+  'plugin-identd.c',
+  'plugin-timer.c',
+  'proto-irc.c',
+  'scram.c',
+  'server.c',
+  'servlist.c',
+  'sts.c',
+	'text.c',
+  'tree.c',
+  'url.c',
+  'userlist.c',
+  'util.c'
+]
+
+secretstore_sources = files('secretstore.c')
+
+common_sysinfo_deps = []
+libarchive_dep = dependency('libarchive', required: host_machine.system() != 'windows')
+
+common_deps = [
+  libgio_dep,
+  libcanberra_dep,
+] + global_deps
+
+if libarchive_dep.found()
+  common_deps += libarchive_dep
+endif
+if libsecret_dep.found()
+  common_deps += libsecret_dep
+endif
+
+common_includes = [
+  config_h_include,
+  include_directories('.')
+]
+
+common_cflags = [
+  '-DHAVE_CONFIG_H',
+]
+
+if host_machine.system() == 'windows'
+  common_deps += [
+    cc.find_library('ws2_32'), # winsock
+    cc.find_library('winmm'), # playsound
+  ]
+  common_sysinfo_deps += [
+    cc.find_library('wbemuuid'), # sysinfo
+  ]
+
+  common_sources += 'sysinfo/win32/backend.c'
+  common_includes += include_directories('sysinfo')
+endif
+
+glib_genmarshal = find_program(
+  'glib-genmarshal',
+  'glib-genmarshal-2.0',
+  required: true,
+)
+
+marshal = [
+  custom_target('marshal_h',
+    input: 'marshalers.list',
+    output: 'marshal.h',
+    command: [
+      glib_genmarshal,
+      '--prefix=_zoitechat_marshal',
+      '--header',
+      '@INPUT@',
+      '--output',
+      '@OUTPUT@',
+    ]
+  ),
+  custom_target('marshal_c',
+    input: 'marshalers.list',
+    output: 'marshal.c',
+    command: [
+      glib_genmarshal,
+      '--prefix=_zoitechat_marshal',
+      '--body',
+      '@INPUT@',
+      '--output',
+      '@OUTPUT@',
+    ]
+  )
+]
+
+make_te = find_program('make-te.py')
+
+
+python3 = find_program('python3', required: true)
+
+public_suffix_data = custom_target('public_suffix_data_h',
+  output: 'public_suffix_data.h',
+  command: [python3, files('gen-public-suffix.py'), '@OUTPUT@']
+)
+
+textevents = custom_target('textevents',
+  input: 'textevents.in',
+  output: ['textevents.h', 'textenums.h'],
+  command: [make_te, '@INPUT@', '@OUTPUT0@', '@OUTPUT1@']
+)
+
+if libssl_dep.found()
+  common_sources += 'ssl.c'
+  common_deps += libssl_dep
+endif
+
+if dbus_dep.found()
+  subdir('dbus')
+  common_deps += zoitechat_dbus_dep
+  common_includes += include_directories('dbus')
+endif
+
+if get_option('plugin')
+  common_deps += libgmodule_dep
+  install_headers('zoitechat-plugin.h')
+endif
+
+zoitechat_common = static_library('zoitechatcommon',
+  sources: [textevents, public_suffix_data] + marshal + common_sources + secretstore_sources,
+  include_directories: config_h_include,
+  dependencies: common_deps + common_sysinfo_deps,
+  c_args: common_cflags,
+  pic: true
+)
+
+zoitechat_common_dep = declare_dependency(
+  sources: [textevents, public_suffix_data] + marshal,
+  link_with: zoitechat_common,
+  include_directories: common_includes,
+  compile_args: common_cflags,
+  dependencies: libgio_dep,
+)
+
+zoitechat_plugin_dep = declare_dependency(
+  include_directories: common_includes,
+  compile_args: common_cflags,
+  dependencies: global_deps,
+)
+
+
+gtk3_theme_service_tests = executable('gtk3_theme_service_tests',
+  [
+    'tests/test-gtk3-theme-service.c',
+    'gtk3-theme-service.c',
+  ],
+  include_directories: [config_h_include, include_directories('.')],
+  dependencies: [libgio_dep] + (libarchive_dep.found() ? [libarchive_dep] : []),
+)
+
+test('GTK3 Theme Service Tests', gtk3_theme_service_tests,
+  protocol: 'tap',
+  timeout: 120,
+)

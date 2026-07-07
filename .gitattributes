@@ -1,0 +1,29 @@
+* text=auto eol=lf
+
+*.png -text
+*.jpg -text
+*.jpeg -text
+*.gif -text
+*.ico -text
+*.bmp -text
+*.pdf -text
+*.zip -text
+*.7z -text
+*.gz -text
+*.bz2 -text
+*.xz -text
+*.cab -text
+*.msi -text
+*.exe -text
+*.dll -text
+*.so -text
+*.dylib -text
+*.lib -text
+*.a -text
+*.o -text
+*.obj -text
+*.pdb -text
+*.ttf -text
+*.otf -text
+*.woff -text
+*.woff2 -text

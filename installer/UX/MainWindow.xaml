@@ -1,0 +1,369 @@
+<Window x:Class="Fabulor.Setup.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Fabulor Setup"
+        Icon="Assets/fabulor.ico"
+        Height="640"
+        Width="760"
+        MinHeight="640"
+        MinWidth="760"
+        ResizeMode="CanResize"
+        WindowStartupLocation="CenterScreen"
+        Background="#0B1220">
+    <Window.Resources>
+        <SolidColorBrush x:Key="WindowSurfaceBrush" Color="#111827" />
+        <SolidColorBrush x:Key="WindowSurfaceAltBrush" Color="#0F172A" />
+        <SolidColorBrush x:Key="WindowBorderBrush" Color="#334155" />
+        <SolidColorBrush x:Key="HeaderPanelBrush" Color="#020617" />
+        <SolidColorBrush x:Key="HeaderPanelAltBrush" Color="#1E293B" />
+        <SolidColorBrush x:Key="AccentBrush" Color="#FBBF24" />
+        <SolidColorBrush x:Key="AccentBorderBrush" Color="#D19A16" />
+        <SolidColorBrush x:Key="TextPrimaryBrush" Color="#E5E7EB" />
+        <SolidColorBrush x:Key="TextSecondaryBrush" Color="#CBD5E1" />
+        <SolidColorBrush x:Key="DangerBrush" Color="#B45309" />
+        <SolidColorBrush x:Key="DangerBorderBrush" Color="#92400E" />
+
+        <Style TargetType="GroupBox">
+            <Setter Property="Background" Value="{StaticResource WindowSurfaceBrush}" />
+            <Setter Property="BorderBrush" Value="{StaticResource WindowBorderBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}" />
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="GroupBox">
+                        <Border Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="10"
+                                Padding="0">
+                            <Grid>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="*" />
+                                </Grid.RowDefinitions>
+                                <Border Background="#0F172A"
+                                        BorderBrush="{TemplateBinding BorderBrush}"
+                                        BorderThickness="0,0,0,1"
+                                        CornerRadius="10,10,0,0"
+                                        Padding="14,10">
+                                    <ContentPresenter ContentSource="Header"
+                                                      RecognizesAccessKey="True"
+                                                      TextElement.FontWeight="SemiBold" />
+                                </Border>
+                                <ContentPresenter Grid.Row="1"
+                                                  Margin="0" />
+                            </Grid>
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style TargetType="TextBox">
+            <Setter Property="Background" Value="#0F172A" />
+            <Setter Property="BorderBrush" Value="{StaticResource WindowBorderBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}" />
+            <Setter Property="CaretBrush" Value="{StaticResource TextPrimaryBrush}" />
+            <Setter Property="Padding" Value="10,6" />
+        </Style>
+
+        <Style TargetType="CheckBox">
+            <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}" />
+        </Style>
+
+        <Style TargetType="TextBlock">
+            <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}" />
+        </Style>
+
+        <Style TargetType="ProgressBar">
+            <Setter Property="Foreground" Value="{StaticResource AccentBrush}" />
+            <Setter Property="Background" Value="#0F172A" />
+            <Setter Property="BorderBrush" Value="{StaticResource WindowBorderBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
+        </Style>
+
+        <Style x:Key="FooterButtonStyle" TargetType="Button">
+            <Setter Property="Height" Value="36" />
+            <Setter Property="MinWidth" Value="104" />
+            <Setter Property="FontSize" Value="14" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="Foreground" Value="#FFFFFF" />
+            <Setter Property="Background" Value="{StaticResource HeaderPanelAltBrush}" />
+            <Setter Property="BorderBrush" Value="#334155" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="Padding" Value="14,6" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="ButtonBorder"
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="8">
+                            <TextBlock HorizontalAlignment="Center"
+                                       VerticalAlignment="Center"
+                                       FontSize="{TemplateBinding FontSize}"
+                                       FontWeight="{TemplateBinding FontWeight}"
+                                       Foreground="{TemplateBinding Foreground}"
+                                       Text="{TemplateBinding Content}" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="ButtonBorder" Property="Opacity" Value="0.96" />
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="ButtonBorder" Property="Opacity" Value="0.86" />
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter TargetName="ButtonBorder" Property="Background" Value="#1F2937" />
+                                <Setter TargetName="ButtonBorder" Property="BorderBrush" Value="#334155" />
+                                <Setter Property="Foreground" Value="#64748B" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </Window.Resources>
+    <Grid Margin="20">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <Border Background="{StaticResource WindowSurfaceBrush}"
+                BorderBrush="{StaticResource WindowBorderBrush}"
+                BorderThickness="1"
+                CornerRadius="10"
+                Padding="16">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="220" />
+                    <ColumnDefinition Width="24" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+
+                <Border Grid.Column="0"
+                        Background="{StaticResource WindowSurfaceAltBrush}"
+                        BorderBrush="{StaticResource WindowBorderBrush}"
+                        BorderThickness="1"
+                        CornerRadius="8"
+                        Padding="4"
+                        Height="212"
+                        Width="212"
+                        HorizontalAlignment="Center"
+                        VerticalAlignment="Center">
+                    <Viewbox Stretch="Uniform"
+                             HorizontalAlignment="Center"
+                             VerticalAlignment="Center">
+                        <Canvas Width="256"
+                                Height="256">
+                            <Rectangle Width="256"
+                                       Height="256"
+                                       RadiusX="32"
+                                       RadiusY="32"
+                                       Fill="{StaticResource HeaderPanelBrush}" />
+                            <Path Data="M64 72h128c11 0 20 9 20 20v60c0 11-9 20-20 20h-70l-26 24c-4 4-10 1-10-4v-20H64c-11 0-20-9-20-20v-60c0-11 9-20 20-20z"
+                                  Fill="{StaticResource HeaderPanelAltBrush}"
+                                  Stroke="#F9FAFB"
+                                  StrokeThickness="4" />
+                            <Path Data="M96 112l24 16-24 16"
+                                  Stroke="{StaticResource AccentBrush}"
+                                  StrokeThickness="6"
+                                  StrokeStartLineCap="Round"
+                                  StrokeEndLineCap="Round"
+                                  StrokeLineJoin="Round" />
+                            <Line X1="132"
+                                  Y1="144"
+                                  X2="156"
+                                  Y2="144"
+                                  Stroke="{StaticResource AccentBrush}"
+                                  StrokeThickness="6"
+                                  StrokeStartLineCap="Round"
+                                  StrokeEndLineCap="Round" />
+                            <TextBlock Width="256"
+                                       Canvas.Top="188"
+                                       FontSize="28"
+                                       Foreground="#F9FAFB"
+                                       FontWeight="SemiBold"
+                                       FontFamily="Segoe UI"
+                                       TextAlignment="Center"
+                                       Text="F A B U L O R" />
+                        </Canvas>
+                    </Viewbox>
+                </Border>
+
+                <StackPanel Grid.Column="2"
+                            VerticalAlignment="Center">
+                    <TextBlock FontSize="28"
+                               FontWeight="SemiBold"
+                               Foreground="{StaticResource TextPrimaryBrush}"
+                               Text="Fabulor Setup" />
+                    <TextBlock Margin="0,10,0,0"
+                               Foreground="{StaticResource TextSecondaryBrush}"
+                               TextWrapping="Wrap"
+                               Text="This bootstrapper is intended for testing the WiX v4 installer flow. Use it to switch between Installed and Portable mode and to pass a chosen install folder into the MSI." />
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <ScrollViewer Grid.Row="1"
+                      Margin="0,20,0,0"
+                      VerticalScrollBarVisibility="Auto"
+                      HorizontalScrollBarVisibility="Disabled">
+            <StackPanel>
+                <GroupBox Header="Install options">
+                    <Grid Margin="14">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                        </Grid.RowDefinitions>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+
+                            <TextBlock Margin="0,0,12,0"
+                                       VerticalAlignment="Center"
+                                       Text="Install folder:" />
+                            <TextBox x:Name="InstallFolderTextBox"
+                                     Grid.Column="1"
+                                     MinWidth="420"
+                                     TextChanged="InstallFolderTextBox_OnTextChanged" />
+                            <Button x:Name="BrowseInstallFolderButton"
+                                    Grid.Column="2"
+                                    Margin="10,0,0,0"
+                                    Padding="14,6"
+                                    Click="BrowseInstallFolderButton_OnClick"
+                                    Content="Browse..." />
+
+                            <CheckBox x:Name="PortableModeCheckBox"
+                                      Grid.Row="1"
+                                      Grid.ColumnSpan="3"
+                                      Margin="0,14,0,0"
+                                      Checked="PortableModeCheckBox_OnChanged"
+                                      Unchecked="PortableModeCheckBox_OnChanged"
+                                      Content="Portable mode (creates portable-mode and skips installed-mode registry integration)" />
+
+                            <TextBlock x:Name="ModeSummaryTextBlock"
+                                       Grid.Row="2"
+                                       Grid.ColumnSpan="3"
+                                       Margin="0,12,0,0"
+                                       Foreground="{StaticResource TextSecondaryBrush}"
+                                       TextWrapping="Wrap" />
+                    </Grid>
+                </GroupBox>
+
+                <GroupBox Margin="0,16,0,0"
+                          Header="Installed-mode integration">
+                    <StackPanel Margin="14">
+                        <CheckBox x:Name="StartMenuShortcutsCheckBox"
+                                  Content="Start menu shortcuts" />
+                        <CheckBox x:Name="ShellIntegrationCheckBox"
+                                  Margin="0,10,0,0"
+                                  Content="IRC protocol and theme file associations" />
+                        <TextBlock Margin="0,12,0,0"
+                                   Foreground="{StaticResource TextSecondaryBrush}"
+                                   TextWrapping="Wrap"
+                                   Text="These options only apply in Installed mode. Portable mode keeps the application self-contained and skips shell integration." />
+                    </StackPanel>
+                </GroupBox>
+
+                <GroupBox Margin="0,16,0,0"
+                          Header="Optional content">
+                    <StackPanel Margin="14">
+                        <CheckBox x:Name="TranslationsCheckBox"
+                                  Content="Translations" />
+                        <CheckBox x:Name="ChecksumPluginCheckBox"
+                                  Margin="0,10,0,0"
+                                  Content="Checksum plugin" />
+                        <CheckBox x:Name="ExecPluginCheckBox"
+                                  Margin="0,10,0,0"
+                                  Content="Exec plugin" />
+                        <CheckBox x:Name="FishlimPluginCheckBox"
+                                  Margin="0,10,0,0"
+                                  Content="FiSHLiM plugin" />
+                        <CheckBox x:Name="SysinfoPluginCheckBox"
+                                  Margin="0,10,0,0"
+                                  Content="SysInfo plugin" />
+                        <CheckBox x:Name="UpdatePluginCheckBox"
+                                  Margin="0,10,0,0"
+                                  Content="Update Checker plugin" />
+                    </StackPanel>
+                </GroupBox>
+
+                <GroupBox Margin="0,16,0,0"
+                          Header="Progress">
+                    <StackPanel Margin="14">
+                        <TextBlock x:Name="StatusTextBlock"
+                                   Text="Initialising bootstrapper…" />
+                        <ProgressBar x:Name="ProgressBar"
+                                     Margin="0,12,0,0"
+                                     Height="18"
+                                     Minimum="0"
+                                     Maximum="100" />
+                    </StackPanel>
+                </GroupBox>
+
+                <GroupBox Margin="0,16,0,0"
+                          Header="Session log">
+                    <TextBox x:Name="LogTextBox"
+                             Margin="14"
+                             MinHeight="120"
+                             MaxHeight="180"
+                             Background="#020617"
+                             BorderBrush="{StaticResource WindowBorderBrush}"
+                             Foreground="{StaticResource TextPrimaryBrush}"
+                             FontFamily="Consolas"
+                             IsReadOnly="True"
+                             TextWrapping="Wrap"
+                             VerticalScrollBarVisibility="Auto"
+                             HorizontalScrollBarVisibility="Auto"
+                             AcceptsReturn="True" />
+                </GroupBox>
+            </StackPanel>
+        </ScrollViewer>
+
+        <Border Grid.Row="2"
+                Margin="0,18,0,0"
+                Background="{StaticResource WindowSurfaceBrush}"
+                BorderBrush="{StaticResource WindowBorderBrush}"
+                BorderThickness="1"
+                CornerRadius="10"
+                Padding="14">
+            <StackPanel HorizontalAlignment="Right"
+                        Orientation="Horizontal">
+                <Button x:Name="InstallButton"
+                        Style="{StaticResource FooterButtonStyle}"
+                        Margin="0,0,8,0"
+                        Background="{StaticResource AccentBrush}"
+                        BorderBrush="{StaticResource AccentBorderBrush}"
+                        Foreground="#1F2937"
+                        Click="InstallButton_OnClick"
+                        Content="Install" />
+                <Button x:Name="RepairButton"
+                        Style="{StaticResource FooterButtonStyle}"
+                        Margin="0,0,8,0"
+                        Click="RepairButton_OnClick"
+                        Content="Repair" />
+                <Button x:Name="UninstallButton"
+                        Style="{StaticResource FooterButtonStyle}"
+                        Margin="0,0,8,0"
+                        Background="{StaticResource DangerBrush}"
+                        BorderBrush="{StaticResource DangerBorderBrush}"
+                        Click="UninstallButton_OnClick"
+                        Content="Uninstall" />
+                <Button x:Name="CloseButton"
+                        Style="{StaticResource FooterButtonStyle}"
+                        Click="CloseButton_OnClick"
+                        Content="Close" />
+            </StackPanel>
+        </Border>
+    </Grid>
+</Window>

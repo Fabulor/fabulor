@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">
+
+  <Package Name="Fabulor"
+           Manufacturer="Barry"
+           Version="$(var.FabulorSemVer)"
+           UpgradeCode="8F6C0C7E-9A4D-4E4C-9F8C-2B6F5A4E9C11"
+           InstallerVersion="500"
+           Compressed="yes"
+           Scope="perMachine">
+    <MajorUpgrade
+      DowngradeErrorMessage="A newer version of Fabulor is already installed." />
+    <MediaTemplate EmbedCab="yes" />
+    <Icon Id="FabulorProductIcon" SourceFile="..\data\icons\fabulor.ico" />
+    <Property Id="ARPNOMODIFY" Value="1" />
+    <Property Id="ARPNOREPAIR" Value="1" />
+    <Property Id="ARPPRODUCTICON" Value="FabulorProductIcon" />
+    <Property Id="ARPCONTACT" Value="Barry" />
+    <Property Id="ARPURLINFOABOUT" Value="https://github.com/Fabulor" />
+    <Property Id="ARPHELPLINK" Value="https://github.com/Fabulor" />
+    <Property Id="ARPURLUPDATEINFO" Value="https://github.com/Fabulor" />
+    <Property Id="ARPCOMMENTS" Value="Fabulor is a modernised IRC client forked from HexChat." />
+    <Property Id="FABULOR_PORTABLE" Secure="yes" />
+
+    <StandardDirectory Id="ProgramFiles64Folder">
+      <Directory Id="INSTALLFOLDER" Name="Fabulor">
+        <Directory Id="ETCDIR" Name="etc" />
+        <Directory Id="LIBDIR" Name="lib" />
+        <Directory Id="SHAREDIR" Name="share">
+          <Directory Id="SHAREDOCDIR" Name="doc" />
+          <Directory Id="SHAREGLIBDIR" Name="glib-2.0" />
+          <Directory Id="SHARELOCALEDIR" Name="locale" />
+          <Directory Id="SHAREXMLDIR" Name="xml" />
+        </Directory>
+        <Directory Id="CONFIGDIR" Name="Config">
+          <Directory Id="CONFIGADDONSDIR" Name="addons" />
+          <Directory Id="CONFIGDOWNLOADSDIR" Name="downloads" />
+          <Directory Id="CONFIGSOUNDDIR" Name="sounds" />
+        </Directory>
+        <Directory Id="PLUGINDIR" Name="Plugins" />
+        <Directory Id="RUNTIMEDIR" Name="Runtime">
+          <Directory Id="DOTNETDIR" Name="DotNet" />
+          <Directory Id="GTK4DIR" Name="GTK4" />
+          <Directory Id="PYDIR" Name="Python312" />
+          <Directory Id="TCLDIR" Name="Tcl" />
+        </Directory>
+      </Directory>
+    </StandardDirectory>
+    <StandardDirectory Id="ProgramMenuFolder">
+      <Directory Id="ApplicationProgramsFolder" Name="Fabulor" />
+    </StandardDirectory>
+    <SetProperty Id="ARPINSTALLLOCATION" Value="[INSTALLFOLDER]" After="CostFinalize" />
+
+    <Feature Id="MainFeature" Title="Fabulor" Level="1">
+      <ComponentGroupRef Id="CoreComponents" />
+      <ComponentGroupRef Id="ConfigFolderComponents" />
+      <ComponentGroupRef Id="DotNetComponents" />
+      <ComponentGroupRef Id="GTK4Components" />
+      <ComponentGroupRef Id="InstalledModeCoreComponents" />
+      <ComponentGroupRef Id="LegacyGtkEtcRuntimeComponents" />
+      <ComponentGroupRef Id="LegacyGtkLibRuntimeComponents" />
+      <ComponentGroupRef Id="LegacyGtkShareDocRuntimeComponents" />
+      <ComponentGroupRef Id="LegacyGtkShareGlibRuntimeComponents" />
+      <ComponentGroupRef Id="LegacyGtkShareXmlRuntimeComponents" />
+      <ComponentGroupRef Id="PluginFolderComponents" />
+      <ComponentGroupRef Id="PluginBaseComponents" />
+      <ComponentGroupRef Id="CommonShareAssetComponents" />
+      <ComponentGroupRef Id="Python312Components" />
+      <ComponentGroupRef Id="TclComponents" />
+      <Feature Id="StartMenuFeature" Title="Start menu shortcuts" Level="1">
+        <ComponentGroupRef Id="StartMenuComponents" />
+      </Feature>
+      <Feature Id="ShellIntegrationFeature" Title="Protocol and theme integration" Level="1">
+        <ComponentGroupRef Id="ShellIntegrationComponents" />
+      </Feature>
+      <Feature Id="TranslationsFeature" Title="Translations" Level="1">
+        <ComponentGroupRef Id="TranslationsComponents" />
+      </Feature>
+      <Feature Id="ChecksumPluginFeature" Title="Checksum plugin" Level="1">
+        <ComponentGroupRef Id="ChecksumPluginComponents" />
+      </Feature>
+      <Feature Id="ExecPluginFeature" Title="Exec plugin" Level="1">
+        <ComponentGroupRef Id="ExecPluginComponents" />
+      </Feature>
+      <Feature Id="FishlimPluginFeature" Title="FiSHLiM plugin" Level="1">
+        <ComponentGroupRef Id="FishlimPluginComponents" />
+      </Feature>
+      <Feature Id="SysinfoPluginFeature" Title="SysInfo plugin" Level="1">
+        <ComponentGroupRef Id="SysinfoPluginComponents" />
+        <ComponentGroupRef Id="SysinfoPluginShareAssetComponents" />
+      </Feature>
+      <Feature Id="UpdatePluginFeature" Title="Update Checker plugin" Level="1">
+        <ComponentGroupRef Id="UpdatePluginComponents" />
+        <ComponentGroupRef Id="UpdatePluginShareAssetComponents" />
+      </Feature>
+      <ComponentGroupRef Id="PortableModeComponents" />
+    </Feature>
+  </Package>
+
+</Wix>

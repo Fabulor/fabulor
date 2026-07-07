@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">
+  <Fragment>
+    <ComponentGroup Id="DotNetComponents">
+      <Component Id="RuntimeFolder" Guid="5A780A46-9512-4E26-B8A8-4A355CEB4C1D" Directory="RUNTIMEDIR">
+        <CreateFolder />
+        <RemoveFolder Id="RemoveRuntimeFolder" On="uninstall" />
+      </Component>
+
+      <Component Id="DotNetFolder" Guid="7B6A532F-11B4-4B72-A2A8-3B4E4A9D7C2F" Directory="DOTNETDIR">
+        <CreateFolder />
+        <RemoveFolder Id="RemoveDotNetFolder" On="uninstall" />
+      </Component>
+    </ComponentGroup>
+  </Fragment>
+</Wix>
+

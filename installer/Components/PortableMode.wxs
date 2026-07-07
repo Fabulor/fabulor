@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">
+  <Fragment>
+    <ComponentGroup Id="PortableModeComponents">
+      <Component Id="PortableModeMarker" Guid="9B2095D3-7D24-4A71-AE47-C872B4497560" Directory="INSTALLFOLDER" Condition="FABULOR_PORTABLE OR REMOVE=&quot;ALL&quot;">
+        <File Id="PortableModeMarkerFile"
+              Source="Assets\portable-mode"
+              Name="portable-mode"
+              KeyPath="yes" />
+        <RemoveFolder Id="RemovePortableConfigFolder" Directory="CONFIGDIR" On="uninstall" />
+        <RemoveFolder Id="RemovePortableDotNetFolder" Directory="DOTNETDIR" On="uninstall" />
+        <RemoveFolder Id="RemovePortableRuntimeFolder" Directory="RUNTIMEDIR" On="uninstall" />
+        <RemoveFolder Id="RemovePortableInstallFolder" On="uninstall" />
+      </Component>
+    </ComponentGroup>
+  </Fragment>
+</Wix>

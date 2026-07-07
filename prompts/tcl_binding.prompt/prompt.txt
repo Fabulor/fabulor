@@ -1,0 +1,58 @@
+Fabulor is currently located at C:\zoitechat-master and should move to C:\fabulor-master when the workspace folder is renamed.
+
+# Prompt Metadata
+id: tcl_binding
+language: English
+context: ZoiteChat plugin and installer development
+output_format: Markdown
+goal: Generate implementation plan or code scaffold for the Tcl 8.6 interpreter integration and command registration
+version: 1.0
+
+Design a C++ unified plugin loader for ZoiteChat.
+
+Requirements:
+- PluginManifest struct matching:
+  - id, name, version, language, entrypoint,
+  - requires_api_version, dependencies (vector<string>),
+  - capabilities (vector<string>), description, author, homepage.
+- Discover plugin.json files under C:\zoitechat-master\plugins\*\plugin.json until the workspace folder is renamed to C:\fabulor-master.
+- Parse JSON into PluginManifest.
+- Validate:
+  - required fields
+  - supported language (csharp, python, tcl)
+  - entrypoint exists
+  - requires_api_version <= api_version
+  - dependencies exist
+- Build a dependency graph and perform topological sort using Kahn’s algorithm.
+- For each plugin in sorted order:
+  - create a language-specific loader (factory pattern).
+  - call load(manifest, ZoiteChatAPI* api).
+
+Output:
+- C++ code skeleton for:
+  - PluginManifest
+  - manifest discovery and parsing
+  - Kahn-based resolve_load_order
+  - IPluginLoader interface and factory.
+Keep it focused and compilable.
+
+# Expected Output
+The response must be a single, self-contained Markdown document.
+
+It must:
+- Provide a clear, structured implementation plan or code scaffold for this subsystem.
+- Use real paths and context from the Fabulor project:
+  - Fabulor is currently located at C:\zoitechat-master and should move to C:\fabulor-master when the workspace folder is renamed.
+- Avoid fictional APIs, invented functions, or imaginary libraries.
+- Stay strictly within the Fabulor architecture defined in the project plan.
+- Use LF line endings only in any generated code, XML, JSON, Markdown, and other text output; do not emit CRLF line endings.
+- Use headings, lists, and code blocks where appropriate.
+- Be concise, technical, and directly actionable for development.
+
+The output must NOT:
+- Include commentary about the prompt itself.
+- Include meta-analysis, disclaimers, or conversational text.
+- Refer to Foundry, models, or generation processes.
+- Produce placeholder text like “TODO” or “fill this in later”.
+
+The document must be ready for immediate use in the Fabulor codebase or documentation.

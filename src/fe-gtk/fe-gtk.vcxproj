@@ -1,0 +1,155 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup Label="Configuration">
+    <PlatformToolset>v142</PlatformToolset>
+    <ConfigurationType>Application</ConfigurationType>
+  </PropertyGroup>
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{E4BDB4C8-2335-415A-ACEE-BA88B19BFE82}</ProjectGuid>
+    <Keyword>Win32Proj</Keyword>
+    <RootNamespace>fegtk</RootNamespace>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  <Import Project="..\..\win32\zoitechat.props" />
+  <PropertyGroup>
+    <TargetName>fabulor</TargetName>
+    <OutDir>$(ZoiteChatRel)</OutDir>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <ClCompile>
+      <PreprocessorDefinitions>WIN32;_WIN64;_AMD64_;NDEBUG;_WINDOWS;$(OwnFlags);%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>..\common;$(ZoiteChatLib);$(DepsRoot)\include;$(OpenSslInclude);$(Glib);$(Gtk);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <DisableSpecificWarnings>4244;4267;%(DisableSpecificWarnings)</DisableSpecificWarnings>
+    </ClCompile>
+    <Link>
+      <AdditionalLibraryDirectories>$(ArchiveLibDir);$(DepsRoot)\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>$(DepLibs);$(ZoiteChatLib)common.lib;wbemuuid.lib;dwmapi.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <EntryPointSymbol>mainCRTStartup</EntryPointSymbol>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup>
+    <PreBuildEvent>
+      <Command><![CDATA[
+SET SOLUTIONDIR=$(SolutionDir)..\
+powershell -File "$(SolutionDir)..\win32\version-template.ps1" "$(SolutionDir)..\src\fe-gtk\fabulor.rc.tt" "$(ZoiteChatLib)fabulor.rc.utf8"
+REM fabulor.rc needs to be in UCS-2 or Resource Compiler will complain
+powershell "Get-Content -Encoding UTF8 '$(ZoiteChatLib)fabulor.rc.utf8' | Out-File '$(ZoiteChatLib)fabulor.rc'; Remove-Item '$(ZoiteChatLib)fabulor.rc.utf8'"
+"$(DepsRoot)\bin\glib-compile-resources.exe" --generate-header --manual-register --sourcedir "$(DataDir)" --target "$(ZoiteChatLib)resources.h" "$(DataDir)fabulor.gresource.xml"
+"$(DepsRoot)\bin\glib-compile-resources.exe" --generate-source --manual-register --sourcedir "$(DataDir)" --target "$(ZoiteChatLib)resources.c" "$(DataDir)fabulor.gresource.xml"
+      ]]></Command>
+      <Message>Build fabulor.rc and gresource file</Message>
+    </PreBuildEvent>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClInclude Include="ascii.h" />
+    <ClInclude Include="banlist.h" />
+    <ClInclude Include="chanlist.h" />
+    <ClInclude Include="chanview.h" />
+    <ClInclude Include="custom-list.h" />
+    <ClInclude Include="editlist.h" />
+    <ClInclude Include="fe-gtk.h" />
+    <ClInclude Include="fkeys.h" />
+    <ClInclude Include="gtkutil.h" />
+    <ClInclude Include="icon-resolver.h" />
+    <ClInclude Include="joind.h" />
+    <ClInclude Include="maingui.h" />
+    <ClInclude Include="preferences-persistence.h" />
+    <ClInclude Include="menu.h" />
+    <ClInclude Include="notifications\notification-backend.h" />
+    <ClInclude Include="notifygui.h" />
+    <ClInclude Include="palette.h" />
+    <ClInclude Include="pixmaps.h" />
+    <ClInclude Include="plugin-tray.h" />
+    <ClInclude Include="plugingui.h" />
+    <ClInclude Include="rawlog.h" />
+    <ClInclude Include="servlistgui.h" />
+    <ClInclude Include="setup.h" />
+    <ClInclude Include="sexy-iso-codes.h" />
+    <ClInclude Include="sexy-spell-entry.h" />
+    <ClInclude Include="textgui.h" />
+    <ClInclude Include="urlgrab.h" />
+    <ClInclude Include="userlistgui.h" />
+    <ClInclude Include="xtext.h" />
+    <ClInclude Include="theme\theme-manager.h" />
+    <ClInclude Include="theme\theme-palette.h" />
+    <ClInclude Include="theme\theme-application.h" />
+    <ClInclude Include="theme\theme-policy.h" />
+    <ClInclude Include="theme\theme-css.h" />
+    <ClInclude Include="theme\theme-runtime.h" />
+    <ClInclude Include="theme\theme-access.h" />
+    <ClInclude Include="theme\theme-gtk.h" />
+    <ClInclude Include="theme\theme-gtk3.h" />
+    <ClInclude Include="theme\theme-preferences.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="ascii.c" />
+    <ClCompile Include="banlist.c" />
+    <ClCompile Include="chanlist.c" />
+    <ClCompile Include="chanview.c" />
+    <ClCompile Include="custom-list.c" />
+    <ClCompile Include="dccgui.c" />
+    <ClCompile Include="editlist.c" />
+    <ClCompile Include="fe-gtk.c" />
+    <ClCompile Include="fkeys.c" />
+    <ClCompile Include="gtkutil.c" />
+    <ClCompile Include="icon-resolver.c" />
+    <ClCompile Include="ignoregui.c" />
+    <ClCompile Include="joind.c" />
+    <ClCompile Include="maingui.c" />
+    <ClCompile Include="menu.c" />
+    <ClCompile Include="notifications\notification-windows.c" />
+    <ClCompile Include="notifygui.c" />
+    <ClCompile Include="pixmaps.c" />
+    <ClCompile Include="preferences-persistence.c" />
+    <ClCompile Include="plugin-notification.c" />
+    <ClCompile Include="plugin-tray.c" />
+    <ClCompile Include="plugingui.c" />
+    <ClCompile Include="rawlog.c" />
+    <ClCompile Include="$(ZoiteChatLib)resources.c" />
+    <ClCompile Include="servlistgui.c" />
+    <ClCompile Include="setup.c" />
+    <ClCompile Include="sexy-iso-codes.c" />
+    <ClCompile Include="sexy-spell-entry.c" />
+    <ClCompile Include="textgui.c" />
+    <ClCompile Include="urlgrab.c" />
+    <ClCompile Include="userlistgui.c" />
+    <ClCompile Include="xtext.c" />
+    <ClCompile Include="theme\theme-manager.c" />
+    <ClCompile Include="theme\theme-palette.c" />
+    <ClCompile Include="theme\theme-application.c" />
+    <ClCompile Include="theme\theme-policy.c" />
+    <ClCompile Include="theme\theme-css.c" />
+    <ClCompile Include="theme\theme-runtime.c" />
+    <ClCompile Include="theme\theme-access.c" />
+    <ClCompile Include="theme\theme-gtk3.c" />
+    <ClCompile Include="theme\theme-preferences.c" />
+  </ItemGroup>
+  <ItemGroup>
+    <Manifest Include="..\..\win32\fabulor.exe.manifest" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="fabulor.rc.tt" />
+    <ResourceCompile Include="$(ZoiteChatLib)fabulor.rc" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\..\data\icons\fabulor.ico" />
+    <None Include="theme\tests\test-theme-manager-policy.c" />
+    <None Include="theme\tests\test-theme-runtime-persistence.c" />
+    <None Include="theme\tests\test-theme-access-routing.c" />
+    <None Include="theme\tests\src/fe-gtk/theme/tests/test-theme-manager-auto-refresh.c" />
+    <None Include="theme\tests\src/fe-gtk/theme/tests/test-theme-manager-dispatch-routing.c" />
+    <None Include="theme\tests\src/fe-gtk/theme/tests/test-theme-application-input-style.c" />
+  </ItemGroup>
+  <ItemGroup>
+    <Xml Include="..\..\data\fabulor.gresource.xml" />
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+</Project>

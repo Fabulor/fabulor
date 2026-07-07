@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">
+  <Fragment>
+    <ComponentGroup Id="LegacyGtkEtcRuntimeComponents" Directory="ETCDIR">
+      <Files Include="$(var.FabulorPayloadRoot)\etc\**" />
+    </ComponentGroup>
+
+    <ComponentGroup Id="LegacyGtkLibRuntimeComponents" Directory="LIBDIR">
+      <Files Include="$(var.FabulorPayloadRoot)\lib\**" />
+    </ComponentGroup>
+
+    <ComponentGroup Id="LegacyGtkShareDocRuntimeComponents" Directory="SHAREDOCDIR">
+      <Files Include="$(var.FabulorPayloadRoot)\share\doc\**" />
+    </ComponentGroup>
+
+    <ComponentGroup Id="LegacyGtkShareGlibRuntimeComponents" Directory="SHAREGLIBDIR">
+      <Files Include="$(var.FabulorPayloadRoot)\share\glib-2.0\**" />
+    </ComponentGroup>
+
+    <ComponentGroup Id="LegacyGtkShareXmlRuntimeComponents" Directory="SHAREXMLDIR">
+      <Files Include="$(var.FabulorPayloadRoot)\share\xml\**" />
+    </ComponentGroup>
+
+    <ComponentGroup Id="TranslationsComponents" Directory="SHARELOCALEDIR">
+      <Files Include="$(var.FabulorPayloadRoot)\share\locale\**" />
+    </ComponentGroup>
+  </Fragment>
+</Wix>

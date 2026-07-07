@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">
+  <Fragment>
+    <ComponentGroup Id="ConfigFolderComponents">
+      <Component Id="ConfigFolder" Guid="B1C2D3E4-F5A6-48B9-8C0D-2E3F4A5B6C7D" Directory="CONFIGDIR" Condition="FABULOR_PORTABLE OR REMOVE=&quot;ALL&quot;">
+        <CreateFolder />
+        <RemoveFolder Id="RemoveConfigFolder" On="uninstall" />
+      </Component>
+      <Component Id="ConfigAddonsFolder" Guid="E4A9A1D2-1798-4DA7-9B1D-6D96D6871C4E" Directory="CONFIGADDONSDIR" Condition="FABULOR_PORTABLE OR REMOVE=&quot;ALL&quot;">
+        <CreateFolder />
+        <RemoveFolder Id="RemoveConfigAddonsFolder" On="uninstall" />
+      </Component>
+      <Component Id="ConfigDownloadsFolder" Guid="0CF08AFB-44A6-476D-AE18-B5261BA931A1" Directory="CONFIGDOWNLOADSDIR" Condition="FABULOR_PORTABLE OR REMOVE=&quot;ALL&quot;">
+        <CreateFolder />
+        <RemoveFolder Id="RemoveConfigDownloadsFolder" On="uninstall" />
+      </Component>
+      <Component Id="ConfigSoundsFolder" Guid="F96731C0-4F5D-4E54-A19D-FF8680A4328F" Directory="CONFIGSOUNDDIR" Condition="FABULOR_PORTABLE OR REMOVE=&quot;ALL&quot;">
+        <CreateFolder />
+        <RemoveFolder Id="RemoveConfigSoundsFolder" On="uninstall" />
+      </Component>
+    </ComponentGroup>
+  </Fragment>
+</Wix>

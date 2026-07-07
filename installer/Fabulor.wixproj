@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project Sdk="WixToolset.Sdk/7.0.0">
+
+  <PropertyGroup>
+    <Platform>x64</Platform>
+    <AcceptEula>wix7</AcceptEula>
+
+    <WixToolsetMajorVersion>7</WixToolsetMajorVersion>
+    <WixToolsetVersion>7.0.0</WixToolsetVersion>
+    <FabulorPayloadRoot Condition="'$(FabulorPayloadRoot)'==''">$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\..\zoitechat-build\$(Platform)\rel\'))</FabulorPayloadRoot>
+    <GtkRuntimeRoot>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\Runtime\GTK4\'))</GtkRuntimeRoot>
+    <Python312RuntimeRoot>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\Runtime\Python312\'))</Python312RuntimeRoot>
+    <TclRuntimeRoot>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\Runtime\Tcl\'))</TclRuntimeRoot>
+    <DefineConstants>$(DefineConstants);FabulorSemVer=$(FabulorSemVer);FabulorPayloadRoot=$(FabulorPayloadRoot);GtkRuntimeRoot=$(GtkRuntimeRoot);Python312RuntimeRoot=$(Python312RuntimeRoot);TclRuntimeRoot=$(TclRuntimeRoot)</DefineConstants>
+
+    <WixProjectType>Package</WixProjectType>
+    <OutputName>Fabulor</OutputName>
+    <EnableDefaultItems>false</EnableDefaultItems>
+    <SuppressIces>ICE60</SuppressIces>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="Product.wxs" />
+    <Compile Include="Components\**\*.wxs" />
+  </ItemGroup>
+
+  <Target Name="ValidateInstallerPayload" BeforeTargets="Build">
+    <Error Condition="!Exists('$(FabulorPayloadRoot)\fabulor.exe')" Text="Missing built Fabulor payload at $(FabulorPayloadRoot). Build win32\zoitechat.sln first so fabulor.exe and the staged rel payload exist." />
+    <Error Condition="!Exists('$(FabulorPayloadRoot)\plugins')" Text="Missing plugin payload at $(FabulorPayloadRoot)\plugins. Build win32\zoitechat.sln first so the staged rel payload exists." />
+    <Error Condition="!Exists('$(GtkRuntimeRoot)\bin\gtk-4-1.dll')" Text="Missing GTK4 runtime payload at $(GtkRuntimeRoot)." />
+    <Error Condition="!Exists('$(Python312RuntimeRoot)\python312.dll')" Text="Missing Python 3.12 runtime payload at $(Python312RuntimeRoot)." />
+    <Error Condition="!Exists('$(TclRuntimeRoot)\bin\tcl86t.dll')" Text="Missing Tcl runtime payload at $(TclRuntimeRoot)." />
+  </Target>
+
+  <Target Name="BuildBootstrapper" AfterTargets="Build">
+    <MSBuild Projects="Bootstrapper\FabulorSetup.wixproj"
+             Targets="Restore;Build"
+             Properties="Configuration=$(Configuration);Platform=$(Platform);FabulorSemVer=$(FabulorSemVer)" />
+  </Target>
+
+</Project>

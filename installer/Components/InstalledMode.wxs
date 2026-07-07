@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">
+  <Fragment>
+    <ComponentGroup Id="InstalledModeCoreComponents">
+      <Component Id="InstalledModeCleanup" Guid="0A54F269-9BDB-4D60-9FD7-E5F9D4B6A1E8" Directory="INSTALLFOLDER" Condition="NOT FABULOR_PORTABLE">
+        <RemoveFile Id="RemoveInstalledStartMenuShortcut"
+                    Directory="ApplicationProgramsFolder"
+                    Name="Fabulor.lnk"
+                    On="uninstall" />
+        <RemoveFile Id="RemoveInstalledSafeModeStartMenuShortcut"
+                    Directory="ApplicationProgramsFolder"
+                    Name="Fabulor Safe Mode.lnk"
+                    On="uninstall" />
+        <RemoveFolder Id="RemoveInstalledConfigFolder" Directory="CONFIGDIR" On="uninstall" />
+        <RemoveFolder Id="RemoveInstalledDotNetFolder" Directory="DOTNETDIR" On="uninstall" />
+        <RemoveFolder Id="RemoveInstalledRuntimeFolder" Directory="RUNTIMEDIR" On="uninstall" />
+        <RemoveFolder Id="RemoveInstalledProgramMenuFolder" Directory="ApplicationProgramsFolder" On="uninstall" />
+        <RemoveFolder Id="RemoveInstalledInstallFolder" Directory="INSTALLFOLDER" On="uninstall" />
+        <RegistryValue Root="HKLM"
+                       Key="Software\Fabulor\Installer"
+                       Name="InstalledModeCleanup"
+                       Type="integer"
+                       Value="1"
+                       KeyPath="yes" />
+      </Component>
+    </ComponentGroup>
+
+    <ComponentGroup Id="StartMenuComponents">
+      <Component Id="StartMenuShortcuts" Guid="F43D5E14-9D5A-4F9D-8E44-4B45F2F8D211" Directory="ApplicationProgramsFolder" Condition="NOT FABULOR_PORTABLE">
+        <Shortcut Id="FabulorStartMenuShortcut"
+                  Name="Fabulor"
+                  Target="[INSTALLFOLDER]fabulor.exe"
+                  WorkingDirectory="INSTALLFOLDER" />
+        <Shortcut Id="FabulorSafeModeStartMenuShortcut"
+                  Name="Fabulor Safe Mode"
+                  Target="[INSTALLFOLDER]fabulor.exe"
+                  Arguments="--no-auto --no-plugins"
+                  WorkingDirectory="INSTALLFOLDER" />
+        <RemoveFolder Id="RemoveFabulorProgramMenuFolder" On="uninstall" />
+        <RegistryValue Root="HKCU"
+                       Key="Software\Fabulor\Installer"
+                       Name="StartMenuShortcuts"
+                       Type="integer"
+                       Value="1"
+                       KeyPath="yes" />
+      </Component>
+    </ComponentGroup>
+
+    <ComponentGroup Id="ShellIntegrationComponents">
+      <Component Id="IrcProtocolRegistration" Guid="DA174889-90E2-491D-B87D-8E4D654A8B58" Directory="INSTALLFOLDER" Condition="NOT FABULOR_PORTABLE">
+        <RegistryKey Root="HKLM" Key="Software\Classes\irc">
+          <RegistryValue Type="string" Value="URL:IRC Protocol" />
+          <RegistryValue Name="URL Protocol" Type="string" Value="" />
+        </RegistryKey>
+        <RegistryKey Root="HKLM" Key="Software\Classes\irc\DefaultIcon">
+          <RegistryValue Type="string" Value="[INSTALLFOLDER]fabulor.exe,0" />
+        </RegistryKey>
+        <RegistryKey Root="HKLM" Key="Software\Classes\irc\shell">
+          <RegistryValue Type="string" Value="open" />
+        </RegistryKey>
+        <RegistryKey Root="HKLM" Key="Software\Classes\irc\shell\open\command">
+          <RegistryValue Type="string" Value="&quot;[INSTALLFOLDER]fabulor.exe&quot; --url=&quot;%1&quot;" />
+        </RegistryKey>
+        <RegistryValue Root="HKLM"
+                       Key="Software\Fabulor\Installer"
+                       Name="IrcProtocol"
+                       Type="integer"
+                       Value="1"
+                       KeyPath="yes" />
+      </Component>
+      <Component Id="ThemeAssociationRegistration" Guid="C4B1CE84-9B3D-4A8F-A44A-FB0CEB45D3A6" Directory="INSTALLFOLDER" Condition="NOT FABULOR_PORTABLE">
+        <RegistryKey Root="HKLM" Key="Software\Classes\.zct">
+          <RegistryValue Type="string" Value="Fabulor.Theme" />
+        </RegistryKey>
+        <RegistryKey Root="HKLM" Key="Software\Classes\.hct">
+          <RegistryValue Type="string" Value="Fabulor.Theme" />
+        </RegistryKey>
+        <RegistryKey Root="HKLM" Key="Software\Classes\Fabulor.Theme">
+          <RegistryValue Type="string" Value="Fabulor Theme" />
+        </RegistryKey>
+        <RegistryKey Root="HKLM" Key="Software\Classes\Fabulor.Theme\DefaultIcon">
+          <RegistryValue Type="string" Value="[INSTALLFOLDER]fabulor.exe,0" />
+        </RegistryKey>
+        <RegistryKey Root="HKLM" Key="Software\Classes\Fabulor.Theme\shell\open\command">
+          <RegistryValue Type="string" Value="&quot;[INSTALLFOLDER]fabulor.exe&quot; &quot;%1&quot;" />
+        </RegistryKey>
+        <RegistryValue Root="HKLM"
+                       Key="Software\Fabulor\Installer"
+                       Name="ThemeAssociation"
+                       Type="integer"
+                       Value="1"
+                       KeyPath="yes" />
+      </Component>
+    </ComponentGroup>
+  </Fragment>
+</Wix>

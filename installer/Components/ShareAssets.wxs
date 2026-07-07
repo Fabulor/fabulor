@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">
+  <Fragment>
+    <ComponentGroup Id="CommonShareAssetComponents">
+      <Component Id="AdwaitaIconsAttributionAsset" Guid="E4038AE8-C71C-440D-9876-61A6B7FA6D28" Directory="SHAREDIR">
+        <File Id="AdwaitaIconsAttributionAssetFile"
+              Source="$(var.FabulorPayloadRoot)\share\adwaita-icons-attribution.txt"
+              Name="adwaita-icons-attribution.txt"
+              KeyPath="yes" />
+      </Component>
+      <Component Id="GtkPreferencesAsset" Guid="38C556BA-83A0-4522-996A-7506510B2DE7" Directory="SHAREDIR">
+        <File Id="GtkPreferencesAssetFile"
+              Source="$(var.FabulorPayloadRoot)\share\gtkpref.png"
+              Name="gtkpref.png"
+              KeyPath="yes" />
+      </Component>
+      <Component Id="MusicAsset" Guid="35584C2B-7E79-4AB7-8B87-76D44099D4A3" Directory="SHAREDIR">
+        <File Id="MusicAssetFile"
+              Source="$(var.FabulorPayloadRoot)\share\music.png"
+              Name="music.png"
+              KeyPath="yes" />
+      </Component>
+    </ComponentGroup>
+
+    <ComponentGroup Id="SysinfoPluginShareAssetComponents">
+      <Component Id="SysinfoShareAsset" Guid="4B7E7A99-3F13-4D81-90C3-3495A93A1D75" Directory="SHAREDIR">
+        <File Id="SysinfoShareAssetFile"
+              Source="$(var.FabulorPayloadRoot)\share\system.png"
+              Name="system.png"
+              KeyPath="yes" />
+      </Component>
+    </ComponentGroup>
+
+    <ComponentGroup Id="UpdatePluginShareAssetComponents">
+      <Component Id="UpdatePluginShareAsset" Guid="2154F42D-C4A7-40D0-A414-446D41A10E8F" Directory="SHAREDIR">
+        <File Id="UpdatePluginShareAssetFile"
+              Source="$(var.FabulorPayloadRoot)\share\download.png"
+              Name="download.png"
+              KeyPath="yes" />
+      </Component>
+    </ComponentGroup>
+  </Fragment>
+</Wix>

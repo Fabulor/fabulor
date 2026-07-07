@@ -1,0 +1,16 @@
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">
+  <Fragment>
+    <DirectoryRef Id="INSTALLFOLDER">
+      <Directory Id="PYDIR" Name="Python312" />
+    </DirectoryRef>
+
+    <ComponentGroup Id="Python312Components">
+      <Component Id="PythonFiles" Directory="PYDIR">
+        <File Source="C:\zoitechat-master\Runtime\Python312\python312.dll" />
+        <!-- Add embedded Python files -->
+      </Component>
+    </ComponentGroup>
+  </Fragment>
+</Wix>
+
+

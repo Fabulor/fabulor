@@ -1,0 +1,1105 @@
+using System.Windows;
+using System.Windows.Interop;
+using System.Windows.Threading;
+using System.Diagnostics;
+using System.Collections.Generic;
+using System.Linq;
+using System.Reflection;
+using System.Text.RegularExpressions;
+using System.Threading;
+using System.Threading.Tasks;
+using Microsoft.Win32;
+using WixToolset.BootstrapperApplicationApi;
+
+namespace Fabulor.Setup;
+
+public sealed class FabulorBootstrapperApplication : BootstrapperApplication
+{
+    private const string FabulorMsiPackageId = "FabulorMsi";
+    private const string FabulorMsiUpgradeCode = "{8F6C0C7E-9A4D-4E4C-9F8C-2B6F5A4E9C11}";
+    private const string MainFeatureId = "MainFeature";
+    private const string StartMenuFeatureId = "StartMenuFeature";
+    private const string ShellIntegrationFeatureId = "ShellIntegrationFeature";
+    private const string TranslationsFeatureId = "TranslationsFeature";
+    private const string ChecksumPluginFeatureId = "ChecksumPluginFeature";
+    private const string ExecPluginFeatureId = "ExecPluginFeature";
+    private const string FishlimPluginFeatureId = "FishlimPluginFeature";
+    private const string SysinfoPluginFeatureId = "SysinfoPluginFeature";
+    private const string UpdatePluginFeatureId = "UpdatePluginFeature";
+
+    private int lastResult;
+    private bool isFabulorMsiInstalled;
+    private bool isDetectedPortableInstall;
+    private string? detectedInstalledMsiLocation;
+    private LaunchAction pendingAction;
+    private bool pendingCommandActionRequested;
+    private string? detectedInstalledBundleCachePath;
+    private readonly Dictionary<string, FeatureState> detectedFeatureStates = new(StringComparer.Ordinal);
+    private InstallerFeatureSelection currentPlanFeatureSelection = new();
+    private bool currentPlanPortable;
+    private MainWindow? window;
+    private IntPtr windowHandle;
+    private IBootstrapperCommand? command;
+    private readonly AutoResetEvent windowReady = new(false);
+
+    public FabulorBootstrapperApplication()
+    {
+        this.Create += this.OnCreate;
+        this.Startup += this.OnStartup;
+        this.DetectBegin += this.OnDetectBegin;
+        this.DetectForwardCompatibleBundle += this.OnDetectForwardCompatibleBundle;
+        this.DetectRelatedMsiPackage += this.OnDetectRelatedMsiPackage;
+        this.DetectPackageComplete += this.OnDetectPackageComplete;
+        this.DetectMsiFeature += this.OnDetectMsiFeature;
+        this.DetectComplete += this.OnDetectComplete;
+        this.PlanMsiFeature += this.OnPlanMsiFeature;
+        this.PlanMsiPackage += this.OnPlanMsiPackage;
+        this.PlanPackageBegin += this.OnPlanPackageBegin;
+        this.PlanComplete += this.OnPlanComplete;
+        this.ElevateBegin += this.OnElevateBegin;
+        this.ElevateComplete += this.OnElevateComplete;
+        this.ApplyBegin += this.OnApplyBegin;
+        this.ApplyComplete += this.OnApplyComplete;
+        this.ExecuteBegin += this.OnExecuteBegin;
+        this.ExecuteComplete += this.OnExecuteComplete;
+        this.ExecutePackageBegin += this.OnExecutePackageBegin;
+        this.ExecutePackageComplete += this.OnExecutePackageComplete;
+        this.Progress += this.OnProgress;
+        this.ExecuteProgress += this.OnExecuteProgress;
+        this.Error += this.OnError;
+        this.Shutdown += this.OnShutdown;
+    }
+
+    protected override void Run()
+    {
+        var initialInstallFolder = this.GetInitialInstallFolder();
+        var initialPortableMode = this.GetRequestedPortableMode();
+
+        var uiThread = new Thread(() =>
+        {
+            var application = new System.Windows.Application
+            {
+                ShutdownMode = ShutdownMode.OnExplicitShutdown
+            };
+
+            this.window = new MainWindow(this);
+            this.window.SourceInitialized += (_, _) =>
+            {
+                this.windowHandle = new WindowInteropHelper(this.window).Handle;
+                this.window.AppendLog($"Window handle initialised: 0x{this.windowHandle.ToInt64():X}.");
+            };
+            this.window.Closed += (_, _) => application.Shutdown();
+            this.window.InstallFolder = initialInstallFolder;
+            this.window.SetPortableMode(initialPortableMode);
+            this.window.SetBusy(true);
+            this.window.SetDetectedState(false);
+            this.window.SetStatus("Detecting installed state…");
+            this.window.AppendLog("Starting Fabulor custom bootstrapper application.");
+
+            this.windowReady.Set();
+            application.Run(this.window);
+        });
+
+        uiThread.SetApartmentState(ApartmentState.STA);
+        uiThread.Start();
+
+        this.windowReady.WaitOne();
+        this.engine.Detect();
+        uiThread.Join();
+        this.engine.Quit(this.lastResult);
+    }
+
+    public void RequestClose()
+    {
+        this.lastResult = 0;
+        this.window?.Close();
+    }
+
+    public void RequestInstall()
+    {
+        var action = this.isFabulorMsiInstalled ? LaunchAction.Modify : LaunchAction.Install;
+        var statusText = this.isFabulorMsiInstalled ? "Planning modify" : "Planning install";
+        this.BeginPlan(action, statusText);
+    }
+
+    public void RequestRepair()
+    {
+        this.BeginPlan(LaunchAction.Repair, "Planning repair");
+    }
+
+    public void RequestUninstall()
+    {
+        this.BeginPlan(LaunchAction.Uninstall, "Planning uninstall");
+    }
+
+    private void BeginPlan(LaunchAction action, string statusText)
+    {
+        if (this.window == null)
+        {
+            return;
+        }
+
+        var installFolder = this.window.InstallFolder;
+        if (this.pendingCommandActionRequested)
+        {
+            var requestedInstallFolder = this.GetRequestedInstallFolder();
+            if (!string.IsNullOrWhiteSpace(requestedInstallFolder))
+            {
+                installFolder = requestedInstallFolder;
+                this.window.InstallFolder = requestedInstallFolder;
+            }
+        }
+
+        if (string.IsNullOrWhiteSpace(installFolder))
+        {
+            this.window.SetStatus("Choose an install folder before starting a bundle action.");
+            return;
+        }
+
+        this.pendingAction = action;
+        this.currentPlanFeatureSelection = this.window.FeatureSelection;
+        this.currentPlanPortable = this.window.IsPortable;
+        this.window.SetBusy(true);
+        this.window.SetProgress(0);
+        this.window.SetStatus(statusText + "…");
+        this.window.AppendLog(this.DescribePlannedAction(action, statusText));
+        this.window.AppendLog($"Feature snapshot: startMenu={this.currentPlanFeatureSelection.IncludeStartMenuShortcuts}, shellIntegration={this.currentPlanFeatureSelection.IncludeShellIntegration}, translations={this.currentPlanFeatureSelection.IncludeTranslations}, checksum={this.currentPlanFeatureSelection.IncludeChecksumPlugin}, exec={this.currentPlanFeatureSelection.IncludeExecPlugin}, fishlim={this.currentPlanFeatureSelection.IncludeFishlimPlugin}, sysinfo={this.currentPlanFeatureSelection.IncludeSysinfoPlugin}, update={this.currentPlanFeatureSelection.IncludeUpdatePlugin}, portable={this.currentPlanPortable}.");
+
+        this.engine.SetVariableString("InstallFolder", installFolder, true);
+        this.engine.SetVariableString("FABULOR_PORTABLE", this.currentPlanPortable ? "1" : string.Empty, true);
+        this.engine.Plan(action, BundleScope.PerMachine);
+    }
+
+    private string DescribePlannedAction(LaunchAction action, string statusText)
+    {
+        if (action == LaunchAction.Install && this.isFabulorMsiInstalled)
+        {
+            return $"{statusText}: Modify";
+        }
+
+        return $"{statusText}: {action}";
+    }
+
+    private string GetInitialInstallFolder()
+    {
+        var defaultInstallFolder = System.IO.Path.Combine(this.GetDefaultProgramFilesFolder(), "Fabulor");
+        var requestedInstallFolder = this.GetRequestedInstallFolder();
+        if (!string.IsNullOrWhiteSpace(requestedInstallFolder))
+        {
+            return requestedInstallFolder;
+        }
+
+        return defaultInstallFolder;
+    }
+
+    private string GetRequestedInstallFolder()
+    {
+        var commandLineInstallFolder = this.TryGetInstallFolderFromCommandLine();
+        if (!string.IsNullOrWhiteSpace(commandLineInstallFolder))
+        {
+            return commandLineInstallFolder;
+        }
+
+        var installFolder = this.engine.GetVariableString("InstallFolder");
+        if (string.IsNullOrWhiteSpace(installFolder))
+        {
+            return string.Empty;
+        }
+
+        var resolvedInstallFolder = this.ResolveInstallFolder(installFolder);
+        return !string.IsNullOrWhiteSpace(resolvedInstallFolder) && System.IO.Path.IsPathRooted(resolvedInstallFolder)
+            ? resolvedInstallFolder
+            : string.Empty;
+    }
+
+    private bool GetRequestedPortableMode()
+    {
+        var commandLinePortableMode = this.TryGetPortableModeFromCommandLine();
+        if (commandLinePortableMode.HasValue)
+        {
+            return commandLinePortableMode.Value;
+        }
+
+        var portableValue = this.engine.GetVariableString("FABULOR_PORTABLE");
+        return IsTruthyVariable(portableValue);
+    }
+
+    private string TryGetInstallFolderFromCommandLine()
+    {
+        if (string.IsNullOrWhiteSpace(this.command?.CommandLine))
+        {
+            return string.Empty;
+        }
+
+        var match = Regex.Match(
+            this.command.CommandLine,
+            @"(?:^|\s)InstallFolder=(?:""(?<value>[^""]+)""|(?<value>\S+))",
+            RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
+        if (!match.Success)
+        {
+            return string.Empty;
+        }
+
+        var installFolder = match.Groups["value"].Value.Trim();
+        if (string.IsNullOrWhiteSpace(installFolder))
+        {
+            return string.Empty;
+        }
+
+        var resolvedInstallFolder = this.ResolveInstallFolder(installFolder);
+        return !string.IsNullOrWhiteSpace(resolvedInstallFolder) && System.IO.Path.IsPathRooted(resolvedInstallFolder)
+            ? resolvedInstallFolder
+            : installFolder;
+    }
+
+    private bool? TryGetPortableModeFromCommandLine()
+    {
+        if (string.IsNullOrWhiteSpace(this.command?.CommandLine))
+        {
+            return null;
+        }
+
+        var match = Regex.Match(
+            this.command.CommandLine,
+            @"(?:^|\s)FABULOR_PORTABLE=(?:""(?<value>[^""]+)""|(?<value>\S+))",
+            RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
+        if (!match.Success)
+        {
+            return null;
+        }
+
+        return IsTruthyVariable(match.Groups["value"].Value);
+    }
+
+    private static bool IsTruthyVariable(string? value)
+    {
+        return string.Equals(value, "1", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(value, "true", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(value, "yes", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private string ResolveInstallFolder(string installFolder)
+    {
+        if (string.IsNullOrWhiteSpace(installFolder))
+        {
+            return string.Empty;
+        }
+
+        if (System.IO.Path.IsPathRooted(installFolder))
+        {
+            return installFolder;
+        }
+
+        var formattedInstallFolder = this.engine.FormatString(installFolder);
+        if (!string.IsNullOrWhiteSpace(formattedInstallFolder)
+            && !this.ContainsBinderToken(formattedInstallFolder)
+            && System.IO.Path.IsPathRooted(formattedInstallFolder))
+        {
+            return formattedInstallFolder;
+        }
+
+        const string programFiles64Token = "[ProgramFiles64Folder]";
+        if (installFolder.StartsWith(programFiles64Token, StringComparison.OrdinalIgnoreCase))
+        {
+            var relativePath = installFolder.Substring(programFiles64Token.Length).TrimStart('\\');
+            return string.IsNullOrWhiteSpace(relativePath)
+                ? this.GetDefaultProgramFilesFolder()
+                : System.IO.Path.Combine(this.GetDefaultProgramFilesFolder(), relativePath);
+        }
+
+        const string programFilesToken = "[ProgramFilesFolder]";
+        if (installFolder.StartsWith(programFilesToken, StringComparison.OrdinalIgnoreCase))
+        {
+            var relativePath = installFolder.Substring(programFilesToken.Length).TrimStart('\\');
+            return string.IsNullOrWhiteSpace(relativePath)
+                ? this.GetDefaultProgramFilesFolder()
+                : System.IO.Path.Combine(this.GetDefaultProgramFilesFolder(), relativePath);
+        }
+
+        return string.Empty;
+    }
+
+    private bool ContainsBinderToken(string value)
+    {
+        return value.Contains('[') && value.Contains(']');
+    }
+
+    private bool IsPortableInstall(string installFolder)
+    {
+        if (string.IsNullOrWhiteSpace(installFolder))
+        {
+            return false;
+        }
+
+        var portableMarkerPath = System.IO.Path.Combine(installFolder, "portable-mode");
+        return System.IO.File.Exists(portableMarkerPath);
+    }
+
+    private InstallerFeatureSelection DetectInstalledFeatureSelection(string installFolder, bool isPortable)
+    {
+        return new InstallerFeatureSelection
+        {
+            IncludeStartMenuShortcuts = !isPortable && this.RegistryValueExists(Registry.CurrentUser, @"Software\Fabulor\Installer", "StartMenuShortcuts"),
+            IncludeShellIntegration = !isPortable
+                && this.RegistryValueExists(Registry.LocalMachine, @"Software\Fabulor\Installer", "IrcProtocol")
+                && this.RegistryValueExists(Registry.LocalMachine, @"Software\Fabulor\Installer", "ThemeAssociation"),
+            IncludeTranslations = System.IO.Directory.Exists(System.IO.Path.Combine(installFolder, "share", "locale")),
+            IncludeChecksumPlugin = System.IO.File.Exists(System.IO.Path.Combine(installFolder, "plugins", "hcchecksum.dll")),
+            IncludeExecPlugin = System.IO.File.Exists(System.IO.Path.Combine(installFolder, "plugins", "hcexec.dll")),
+            IncludeFishlimPlugin = System.IO.File.Exists(System.IO.Path.Combine(installFolder, "plugins", "hcfishlim.dll")),
+            IncludeSysinfoPlugin = System.IO.File.Exists(System.IO.Path.Combine(installFolder, "plugins", "hcsysinfo.dll")),
+            IncludeUpdatePlugin = System.IO.File.Exists(System.IO.Path.Combine(installFolder, "plugins", "hcupd.dll"))
+                && System.IO.File.Exists(System.IO.Path.Combine(installFolder, "WinSparkle.dll"))
+        };
+    }
+
+    private InstallerFeatureSelection BuildDetectedFeatureSelection(string installFolder, bool isPortable)
+    {
+        var selection = this.DetectInstalledFeatureSelection(installFolder, isPortable);
+        this.ApplyDetectedFeatureState(selection, StartMenuFeatureId, value => selection.IncludeStartMenuShortcuts = value);
+        this.ApplyDetectedFeatureState(selection, ShellIntegrationFeatureId, value => selection.IncludeShellIntegration = value);
+        this.ApplyDetectedFeatureState(selection, TranslationsFeatureId, value => selection.IncludeTranslations = value);
+        this.ApplyDetectedFeatureState(selection, ChecksumPluginFeatureId, value => selection.IncludeChecksumPlugin = value);
+        this.ApplyDetectedFeatureState(selection, ExecPluginFeatureId, value => selection.IncludeExecPlugin = value);
+        this.ApplyDetectedFeatureState(selection, FishlimPluginFeatureId, value => selection.IncludeFishlimPlugin = value);
+        this.ApplyDetectedFeatureState(selection, SysinfoPluginFeatureId, value => selection.IncludeSysinfoPlugin = value);
+        this.ApplyDetectedFeatureState(selection, UpdatePluginFeatureId, value => selection.IncludeUpdatePlugin = value);
+        return selection;
+    }
+
+    private void ApplyDetectedFeatureState(InstallerFeatureSelection selection, string featureId, Action<bool> assignSelection)
+    {
+        if (!this.detectedFeatureStates.TryGetValue(featureId, out var state) || state == FeatureState.Unknown)
+        {
+            return;
+        }
+
+        assignSelection(state == FeatureState.Local || state == FeatureState.Source || state == FeatureState.Advertised);
+    }
+
+    private bool RegistryValueExists(RegistryKey root, string subkeyPath, string valueName)
+    {
+        using var subkey = root.OpenSubKey(subkeyPath);
+        return subkey?.GetValue(valueName) != null;
+    }
+
+    private void OnPlanMsiFeature(object? sender, PlanMsiFeatureEventArgs e)
+    {
+        if (!string.Equals(e.PackageId, FabulorMsiPackageId, StringComparison.Ordinal) || this.window == null)
+        {
+            return;
+        }
+
+        if (this.pendingAction != LaunchAction.Install && this.pendingAction != LaunchAction.Modify)
+        {
+            return;
+        }
+
+        var selection = this.currentPlanFeatureSelection;
+        var isPortable = this.currentPlanPortable;
+        var requestedState = e.FeatureId switch
+        {
+            MainFeatureId => FeatureState.Local,
+            StartMenuFeatureId => !isPortable && selection.IncludeStartMenuShortcuts ? FeatureState.Local : FeatureState.Absent,
+            ShellIntegrationFeatureId => !isPortable && selection.IncludeShellIntegration ? FeatureState.Local : FeatureState.Absent,
+            TranslationsFeatureId => selection.IncludeTranslations ? FeatureState.Local : FeatureState.Absent,
+            ChecksumPluginFeatureId => selection.IncludeChecksumPlugin ? FeatureState.Local : FeatureState.Absent,
+            ExecPluginFeatureId => selection.IncludeExecPlugin ? FeatureState.Local : FeatureState.Absent,
+            FishlimPluginFeatureId => selection.IncludeFishlimPlugin ? FeatureState.Local : FeatureState.Absent,
+            SysinfoPluginFeatureId => selection.IncludeSysinfoPlugin ? FeatureState.Local : FeatureState.Absent,
+            UpdatePluginFeatureId => selection.IncludeUpdatePlugin ? FeatureState.Local : FeatureState.Absent,
+            _ => e.RecommendedState
+        };
+
+        this.engine.Log(LogLevel.Verbose, $"PlanMsiFeature: feature={e.FeatureId}, recommended={e.RecommendedState}, requested={requestedState}, portable={isPortable}.");
+        this.DispatchToWindow(() => this.window?.AppendLog($"PlanMsiFeature: feature={e.FeatureId}, recommended={e.RecommendedState}, requested={requestedState}."));
+        e.State = requestedState;
+    }
+
+    private void OnPlanPackageBegin(object? sender, PlanPackageBeginEventArgs e)
+    {
+        if (!string.Equals(e.PackageId, FabulorMsiPackageId, StringComparison.Ordinal))
+        {
+            return;
+        }
+
+        if (this.pendingAction == LaunchAction.Modify)
+        {
+            e.State = RequestState.ForcePresent;
+        }
+
+        this.engine.Log(LogLevel.Verbose, $"PlanPackageBegin: package={e.PackageId}, current={e.CurrentState}, recommended={e.RecommendedState}, requested={e.State}.");
+        this.DispatchToWindow(() => this.window?.AppendLog($"PlanPackageBegin: package={e.PackageId}, current={e.CurrentState}, recommended={e.RecommendedState}, requested={e.State}."));
+    }
+
+    private void OnPlanMsiPackage(object? sender, PlanMsiPackageEventArgs e)
+    {
+        if (!string.Equals(e.PackageId, FabulorMsiPackageId, StringComparison.Ordinal))
+        {
+            return;
+        }
+
+        if (this.pendingAction == LaunchAction.Modify)
+        {
+            typeof(PlanMsiPackageEventArgs)
+                .GetProperty(nameof(PlanMsiPackageEventArgs.Action), BindingFlags.Instance | BindingFlags.Public)
+                ?.SetValue(e, ActionState.Modify);
+            e.ActionMsiProperty = BURN_MSI_PROPERTY.Modify;
+        }
+
+        this.engine.Log(LogLevel.Verbose, $"PlanMsiPackage: package={e.PackageId}, action={e.Action}, actionProperty={e.ActionMsiProperty}, uiLevel={e.UiLevel}, shouldExecute={e.ShouldExecute}.");
+        this.DispatchToWindow(() => this.window?.AppendLog($"PlanMsiPackage: package={e.PackageId}, action={e.Action}, actionProperty={e.ActionMsiProperty}, shouldExecute={e.ShouldExecute}."));
+    }
+
+    private string GetDefaultProgramFilesFolder()
+    {
+        var programFilesPath = Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles);
+        if (!string.IsNullOrWhiteSpace(programFilesPath))
+        {
+            return programFilesPath;
+        }
+
+        return Environment.GetEnvironmentVariable("ProgramW6432") ?? @"C:\Program Files";
+    }
+
+    private void OnApplyComplete(object? sender, ApplyCompleteEventArgs e)
+    {
+        this.lastResult = e.Status;
+
+        this.DispatchToWindow(() =>
+        {
+            if (this.window == null)
+            {
+                return;
+            }
+
+            this.window.SetBusy(false);
+            this.window.SetProgress(100);
+            this.window.SetDetectedState(this.pendingAction != LaunchAction.Uninstall);
+            this.window.SetStatus(e.Status == 0
+                ? "Bundle apply completed successfully."
+                : $"Bundle apply failed with status 0x{e.Status:X8}.");
+            this.window.AppendLog($"ApplyComplete: status=0x{e.Status:X8}, restart={e.Restart}.");
+        });
+
+        if (this.pendingCommandActionRequested && this.IsNonInteractiveCommandDisplay())
+        {
+            this.DispatchToWindow(() => this.window?.Close());
+            return;
+        }
+
+        if (e.Status == 0)
+        {
+            _ = Task.Run(async () =>
+            {
+                await Task.Delay(2000).ConfigureAwait(false);
+                this.engine.Detect();
+            });
+        }
+    }
+
+    private void OnApplyBegin(object? sender, ApplyBeginEventArgs e)
+    {
+        this.DispatchToWindow(() =>
+        {
+            this.window?.SetStatus($"Applying {this.pendingAction.ToString().ToLowerInvariant()}…");
+            this.window?.AppendLog($"ApplyBegin: phaseCount={e.PhaseCount}.");
+        });
+    }
+
+    private void OnCreate(object? sender, CreateEventArgs e)
+    {
+        this.command = e.Command;
+    }
+
+    private void OnDetectBegin(object? sender, DetectBeginEventArgs e)
+    {
+        this.isFabulorMsiInstalled = false;
+        this.isDetectedPortableInstall = false;
+        this.detectedInstalledMsiLocation = null;
+        this.detectedInstalledBundleCachePath = null;
+        this.detectedFeatureStates.Clear();
+    }
+
+    private void OnDetectComplete(object? sender, DetectCompleteEventArgs e)
+    {
+        try
+        {
+            this.lastResult = e.Status;
+
+            this.DispatchToWindow(() =>
+            {
+                if (this.window == null)
+                {
+                    return;
+                }
+
+                if (this.isFabulorMsiInstalled && !string.IsNullOrWhiteSpace(this.detectedInstalledMsiLocation))
+                {
+                    this.window.InstallFolder = this.detectedInstalledMsiLocation;
+                    this.isDetectedPortableInstall = this.IsPortableInstall(this.detectedInstalledMsiLocation);
+                    this.window.SetFeatureSelection(this.BuildDetectedFeatureSelection(this.detectedInstalledMsiLocation, this.isDetectedPortableInstall));
+                }
+                else
+                {
+                    var requestedInstallFolder = this.GetRequestedInstallFolder();
+                    if (!string.IsNullOrWhiteSpace(requestedInstallFolder))
+                    {
+                        this.window.InstallFolder = requestedInstallFolder;
+                    }
+
+                    this.isDetectedPortableInstall = this.GetRequestedPortableMode();
+
+                    this.window.SetFeatureSelection(new InstallerFeatureSelection());
+                }
+
+                this.window.SetPortableMode(this.isDetectedPortableInstall);
+
+                this.window.SetBusy(false);
+                this.window.SetDetectedState(this.isFabulorMsiInstalled);
+                this.window.SetStatus(this.isFabulorMsiInstalled
+                    ? this.isDetectedPortableInstall
+                        ? "Fabulor is currently installed in portable mode. You can modify, repair, or uninstall it."
+                        : "Fabulor is currently installed. You can modify, repair, or uninstall it."
+                    : "Fabulor is not currently installed. Choose a mode and start an install.");
+                this.window.AppendLog($"DetectComplete: status=0x{e.Status:X8}, installed={(this.isFabulorMsiInstalled ? "yes" : "no")}.");
+            });
+
+            if (e.Status == 0)
+            {
+                try
+                {
+                    this.TryStartCommandAction();
+                }
+                catch (Exception ex)
+                {
+                    this.engine.Log(LogLevel.Error, $"Command-line action startup failed in OnDetectComplete: {ex}");
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            this.engine.Log(LogLevel.Error, $"OnDetectComplete failed: {ex}");
+            this.DispatchToWindow(() =>
+            {
+                this.window?.SetBusy(false);
+                this.window?.SetDetectedState(this.isFabulorMsiInstalled);
+                this.window?.SetStatus("Detection failed. Review the session log.");
+                this.window?.AppendLog($"DetectComplete failure: {ex.GetType().FullName}: {ex.Message}");
+            });
+        }
+    }
+
+    private void OnDetectForwardCompatibleBundle(object? sender, DetectForwardCompatibleBundleEventArgs e)
+    {
+        if (e.MissingFromCache)
+        {
+            return;
+        }
+
+        var bundleCachePath = this.TryGetBundleCachePath(e.BundleCode);
+        if (string.IsNullOrWhiteSpace(bundleCachePath))
+        {
+            return;
+        }
+
+        this.detectedInstalledBundleCachePath = bundleCachePath;
+        this.engine.Log(LogLevel.Verbose, $"Detected cached related bundle path: {bundleCachePath}");
+    }
+
+    private void OnDetectPackageComplete(object? sender, DetectPackageCompleteEventArgs e)
+    {
+        if (!string.Equals(e.PackageId, FabulorMsiPackageId, StringComparison.Ordinal))
+        {
+            return;
+        }
+
+        this.isFabulorMsiInstalled = e.State == PackageState.Present || e.Cached;
+    }
+
+    private void OnDetectMsiFeature(object? sender, DetectMsiFeatureEventArgs e)
+    {
+        if (!string.Equals(e.PackageId, FabulorMsiPackageId, StringComparison.Ordinal))
+        {
+            return;
+        }
+
+        this.detectedFeatureStates[e.FeatureId] = e.State;
+    }
+
+    private void OnDetectRelatedMsiPackage(object? sender, DetectRelatedMsiPackageEventArgs e)
+    {
+        if (!string.Equals(e.UpgradeCode, FabulorMsiUpgradeCode, StringComparison.OrdinalIgnoreCase))
+        {
+            return;
+        }
+
+        this.isFabulorMsiInstalled = true;
+        this.detectedInstalledMsiLocation = this.TryGetInstalledProductInstallLocationFromRegistry(e.ProductCode);
+        this.engine.Log(LogLevel.Verbose, $"Detected related MSI product {e.ProductCode} operation={e.Operation} installLocation='{this.detectedInstalledMsiLocation}'.");
+    }
+
+    private void OnError(object? sender, ErrorEventArgs e)
+    {
+        this.DispatchToWindow(() =>
+        {
+            this.window?.AppendLog($"Error: type={e.ErrorType}, code=0x{e.ErrorCode:X8}, message={e.ErrorMessage}");
+            this.window?.SetStatus("The bootstrapper reported an error. Review the session log.");
+        });
+    }
+
+    private void OnExecuteProgress(object? sender, ExecuteProgressEventArgs e)
+    {
+        this.DispatchToWindow(() =>
+        {
+            this.window?.SetProgress(e.OverallPercentage);
+        });
+    }
+
+    private void OnElevateBegin(object? sender, ElevateBeginEventArgs e)
+    {
+        this.DispatchToWindow(() =>
+        {
+            this.window?.SetStatus("Waiting for elevation approval…");
+            this.window?.AppendLog("ElevateBegin: waiting for consent to continue the per-machine apply.");
+        });
+    }
+
+    private void OnElevateComplete(object? sender, ElevateCompleteEventArgs e)
+    {
+        this.lastResult = e.Status;
+
+        this.DispatchToWindow(() =>
+        {
+            if (e.Status == 0)
+            {
+                this.window?.SetStatus("Elevation approved. Continuing apply…");
+                this.window?.AppendLog("ElevateComplete: success.");
+                return;
+            }
+
+            this.window?.SetBusy(false);
+            this.window?.SetStatus($"Elevation failed or was cancelled: 0x{e.Status:X8}.");
+            this.window?.AppendLog($"ElevateComplete: status=0x{e.Status:X8}.");
+        });
+    }
+
+    private void OnExecuteBegin(object? sender, ExecuteBeginEventArgs e)
+    {
+        this.DispatchToWindow(() =>
+        {
+            this.window?.SetStatus($"Executing {this.pendingAction.ToString().ToLowerInvariant()}…");
+            this.window?.AppendLog($"ExecuteBegin: packageCount={e.PackageCount}.");
+        });
+    }
+
+    private void OnExecuteComplete(object? sender, ExecuteCompleteEventArgs e)
+    {
+        this.lastResult = e.Status;
+
+        this.DispatchToWindow(() =>
+        {
+            this.window?.AppendLog($"ExecuteComplete: status=0x{e.Status:X8}.");
+        });
+    }
+
+    private void OnExecutePackageBegin(object? sender, ExecutePackageBeginEventArgs e)
+    {
+        this.DispatchToWindow(() =>
+        {
+            this.window?.SetStatus($"Executing package {e.PackageId}…");
+            this.window?.AppendLog($"ExecutePackageBegin: package={e.PackageId}, action={e.Action}, uiLevel={e.UiLevel}.");
+        });
+    }
+
+    private void OnExecutePackageComplete(object? sender, ExecutePackageCompleteEventArgs e)
+    {
+        this.lastResult = e.Status;
+
+        this.DispatchToWindow(() =>
+        {
+            this.window?.AppendLog($"ExecutePackageComplete: package={e.PackageId}, status=0x{e.Status:X8}, restart={e.Restart}, recommendation={e.Recommendation}.");
+        });
+    }
+
+    private void OnPlanComplete(object? sender, PlanCompleteEventArgs e)
+    {
+        this.lastResult = e.Status;
+
+        if (e.Status != 0)
+        {
+            this.DispatchToWindow(() =>
+            {
+                this.window?.SetBusy(false);
+                this.window?.SetStatus($"Planning failed with status 0x{e.Status:X8}.");
+                this.window?.AppendLog($"PlanComplete: failure status=0x{e.Status:X8}.");
+            });
+            return;
+        }
+
+        this.DispatchToWindow(() =>
+        {
+            this.window?.SetStatus($"Applying {this.pendingAction.ToString().ToLowerInvariant()}…");
+            this.window?.AppendLog($"PlanComplete: success, applying {this.pendingAction} with parent HWND 0x{this.GetApplyParentWindowHandle().ToInt64():X}.");
+        });
+
+        try
+        {
+            this.engine.Apply(this.GetApplyParentWindowHandle());
+        }
+        catch (Exception ex)
+        {
+            this.lastResult = ex.HResult;
+            this.DispatchToWindow(() =>
+            {
+                this.window?.SetBusy(false);
+                this.window?.SetStatus($"Apply could not be started: 0x{ex.HResult:X8}.");
+                this.window?.AppendLog($"Apply start failed: {ex}");
+            });
+
+            throw;
+        }
+    }
+
+    private void OnProgress(object? sender, ProgressEventArgs e)
+    {
+        this.DispatchToWindow(() =>
+        {
+            this.window?.SetProgress(e.OverallPercentage);
+        });
+    }
+
+    private void OnShutdown(object? sender, ShutdownEventArgs e)
+    {
+        this.DispatchToWindow(() =>
+        {
+            this.window?.AppendLog($"Shutdown: action={e.Action}, hr=0x{e.HResult:X8}.");
+        });
+    }
+
+    private void OnStartup(object? sender, WixToolset.BootstrapperApplicationApi.StartupEventArgs e)
+    {
+        if (this.command != null)
+        {
+            this.engine.Log(LogLevel.Standard, $"Startup command: action={this.command.Action}, display={this.command.Display}, relation={this.command.Relation}.");
+        }
+
+        this.DispatchToWindow(() =>
+        {
+            if (this.command == null)
+            {
+                return;
+            }
+
+            this.window?.AppendLog($"Startup: action={this.command.Action}, display={this.command.Display}, relation={this.command.Relation}.");
+        });
+    }
+
+    private void TryStartCommandAction()
+    {
+        if (this.pendingCommandActionRequested)
+        {
+            this.engine.Log(LogLevel.Verbose, "Skipping automatic command-line action because one has already been requested.");
+            return;
+        }
+
+        if (!this.ShouldAutoRunCommandAction())
+        {
+            this.engine.Log(LogLevel.Verbose, "Skipping automatic command-line action because the command line did not request non-interactive or explicit-action execution.");
+            return;
+        }
+
+        var commandLineAction = this.GetCommandLineAction();
+        this.engine.Log(LogLevel.Standard, $"Detected command-line action: {commandLineAction}.");
+        if (commandLineAction == LaunchAction.Unknown || commandLineAction == LaunchAction.Help || commandLineAction == LaunchAction.Layout || commandLineAction == LaunchAction.Cache)
+        {
+            this.engine.Log(LogLevel.Verbose, $"No automatic command-line action will be started for {commandLineAction}.");
+            return;
+        }
+
+        string statusText;
+        LaunchAction action;
+        switch (commandLineAction)
+        {
+            case LaunchAction.Install:
+            case LaunchAction.UpdateReplace:
+            case LaunchAction.UpdateReplaceEmbedded:
+                action = LaunchAction.Install;
+                statusText = "Planning install";
+                break;
+
+            case LaunchAction.Modify:
+                action = LaunchAction.Modify;
+                statusText = "Planning modify";
+                break;
+
+            case LaunchAction.Repair:
+                action = LaunchAction.Repair;
+                statusText = "Planning repair";
+                break;
+
+            case LaunchAction.Uninstall:
+            case LaunchAction.UnsafeUninstall:
+                action = LaunchAction.Uninstall;
+                statusText = "Planning uninstall";
+                break;
+
+            default:
+                return;
+        }
+
+        this.pendingCommandActionRequested = true;
+        if (this.TryHandOffMaintenanceToInstalledBundle(commandLineAction))
+        {
+            return;
+        }
+
+        this.engine.Log(LogLevel.Standard, $"Scheduling automatic command-line action: {action}.");
+        this.DispatchToWindow(() =>
+        {
+            this.window?.AppendLog($"Starting command-line action automatically: {action} (requested: {commandLineAction}).");
+            this.engine.Log(LogLevel.Standard, $"Starting automatic command-line action on the UI thread: {action}.");
+            this.BeginPlan(action, statusText);
+        });
+    }
+
+    private LaunchAction GetCommandLineAction()
+    {
+        return (LaunchAction)this.engine.GetVariableNumeric("WixBundleCommandLineAction");
+    }
+
+    private bool ShouldAutoRunCommandAction()
+    {
+        if (this.command == null)
+        {
+            return false;
+        }
+
+        var commandLineAction = this.GetCommandLineAction();
+        var nonInteractiveDisplay = this.command.Display == Display.Passive || this.command.Display == Display.None;
+        var explicitMaintenanceAction = commandLineAction == LaunchAction.Uninstall
+            || commandLineAction == LaunchAction.UnsafeUninstall
+            || commandLineAction == LaunchAction.Repair
+            || commandLineAction == LaunchAction.Modify;
+
+        this.engine.Log(LogLevel.Verbose, $"Command-action gate: action={commandLineAction}, display={this.command.Display}, nonInteractive={nonInteractiveDisplay}, explicitMaintenance={explicitMaintenanceAction}.");
+        return nonInteractiveDisplay || explicitMaintenanceAction;
+    }
+
+    private bool TryHandOffMaintenanceToInstalledBundle(LaunchAction action)
+    {
+        if (this.command == null || !this.IsMaintenanceAction(action))
+        {
+            return false;
+        }
+
+        if (string.IsNullOrWhiteSpace(this.detectedInstalledBundleCachePath))
+        {
+            this.detectedInstalledBundleCachePath = this.TryGetRegisteredBundleCachePath();
+        }
+
+        if (string.IsNullOrWhiteSpace(this.detectedInstalledBundleCachePath) || !System.IO.File.Exists(this.detectedInstalledBundleCachePath))
+        {
+            return false;
+        }
+
+        var sourceBundlePath = this.engine.GetVariableString("WixBundleSourceProcessPath");
+        if (string.IsNullOrWhiteSpace(sourceBundlePath) || this.PathsEqual(sourceBundlePath, this.detectedInstalledBundleCachePath))
+        {
+            return false;
+        }
+
+        var relaunchArguments = this.BuildRelaunchArguments(action);
+        this.engine.Log(LogLevel.Standard, $"Handing off {action} to installed cached bundle at {this.detectedInstalledBundleCachePath}.");
+        this.DispatchToWindow(() =>
+        {
+            this.window?.SetBusy(true);
+            this.window?.SetStatus("Handing off maintenance to the installed bundle…");
+            this.window?.AppendLog($"Handing off to cached bundle: {this.detectedInstalledBundleCachePath} {relaunchArguments}");
+        });
+
+        _ = Task.Run(() =>
+        {
+            var result = this.RunInstalledBundle(this.detectedInstalledBundleCachePath, relaunchArguments);
+            this.lastResult = result;
+            this.DispatchToWindow(() => this.window?.Close());
+        });
+
+        return true;
+    }
+
+    private bool IsMaintenanceAction(LaunchAction action)
+    {
+        return action == LaunchAction.Uninstall
+            || action == LaunchAction.UnsafeUninstall
+            || action == LaunchAction.Repair
+            || action == LaunchAction.Modify;
+    }
+
+    private bool IsNonInteractiveCommandDisplay()
+    {
+        return this.command?.Display == Display.Passive || this.command?.Display == Display.None;
+    }
+
+    private string BuildRelaunchArguments(LaunchAction action)
+    {
+        var arguments = action switch
+        {
+            LaunchAction.Uninstall => "/uninstall",
+            LaunchAction.UnsafeUninstall => "/unsafeuninstall",
+            LaunchAction.Repair => "/repair",
+            LaunchAction.Modify => "/modify",
+            _ => string.Empty
+        };
+
+        if (this.command?.Display == Display.Passive)
+        {
+            arguments += " /passive";
+        }
+        else if (this.command?.Display == Display.None)
+        {
+            arguments += " /quiet";
+        }
+
+        return arguments;
+    }
+
+    private int RunInstalledBundle(string bundlePath, string arguments)
+    {
+        try
+        {
+            using var process = Process.Start(new ProcessStartInfo(bundlePath, arguments)
+            {
+                UseShellExecute = true
+            });
+
+            if (process == null)
+            {
+                this.engine.Log(LogLevel.Error, $"Failed to start installed cached bundle at {bundlePath}.");
+                return unchecked((int)0x80004005);
+            }
+
+            process.WaitForExit();
+            this.engine.Log(LogLevel.Standard, $"Installed cached bundle exited with code 0x{process.ExitCode:X8}.");
+            return process.ExitCode;
+        }
+        catch (Exception ex)
+        {
+            this.engine.Log(LogLevel.Error, $"Failed to hand off maintenance to installed cached bundle: {ex}");
+            return ex.HResult;
+        }
+    }
+
+    private string? TryGetBundleCachePath(string bundleCode)
+    {
+        const string uninstallRegistryRoot = @"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\";
+
+        using var key = Registry.LocalMachine.OpenSubKey(uninstallRegistryRoot + bundleCode);
+        return key?.GetValue("BundleCachePath") as string;
+    }
+
+    private string? TryGetRegisteredBundleCachePath()
+    {
+        const string uninstallRegistryRoot = @"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall";
+
+        var bundleName = this.engine.GetVariableString("WixBundleName");
+        if (string.IsNullOrWhiteSpace(bundleName))
+        {
+            return null;
+        }
+
+        using var uninstallRoot = Registry.LocalMachine.OpenSubKey(uninstallRegistryRoot);
+        if (uninstallRoot == null)
+        {
+            return null;
+        }
+
+        foreach (var subkeyName in uninstallRoot.GetSubKeyNames())
+        {
+            using var subkey = uninstallRoot.OpenSubKey(subkeyName);
+            if (subkey == null)
+            {
+                continue;
+            }
+
+            if (!string.Equals(subkey.GetValue("DisplayName") as string, bundleName, StringComparison.Ordinal))
+            {
+                continue;
+            }
+
+            var bundleCachePath = subkey.GetValue("BundleCachePath") as string;
+            if (!string.IsNullOrWhiteSpace(bundleCachePath))
+            {
+                this.engine.Log(LogLevel.Verbose, $"Resolved registered bundle cache path from uninstall registry: {bundleCachePath}");
+                return bundleCachePath;
+            }
+        }
+
+        return null;
+    }
+
+    private string TryGetInstalledProductInstallLocationFromRegistry(string productCode)
+    {
+        const string uninstallRegistryRoot = @"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall";
+
+        using var uninstallRoot = Registry.LocalMachine.OpenSubKey(uninstallRegistryRoot);
+        using var subkey = uninstallRoot?.OpenSubKey(productCode);
+        if (subkey == null)
+        {
+            return string.Empty;
+        }
+
+        return subkey.GetValue("InstallLocation") as string ?? string.Empty;
+    }
+
+    private bool PathsEqual(string left, string right)
+    {
+        try
+        {
+            return string.Equals(
+                System.IO.Path.GetFullPath(left),
+                System.IO.Path.GetFullPath(right),
+                StringComparison.OrdinalIgnoreCase);
+        }
+        catch
+        {
+            return string.Equals(left, right, StringComparison.OrdinalIgnoreCase);
+        }
+    }
+
+    private void DispatchToWindow(Action action)
+    {
+        if (this.window == null)
+        {
+            return;
+        }
+
+        if (this.window.Dispatcher.CheckAccess())
+        {
+            action();
+            return;
+        }
+
+        this.window.Dispatcher.BeginInvoke(action, DispatcherPriority.Normal);
+    }
+
+    private IntPtr GetApplyParentWindowHandle()
+    {
+        if (this.window == null)
+        {
+            return IntPtr.Zero;
+        }
+
+        if (this.windowHandle != IntPtr.Zero)
+        {
+            return this.windowHandle;
+        }
+
+        if (this.window.Dispatcher.CheckAccess())
+        {
+            return new WindowInteropHelper(this.window).Handle;
+        }
+
+        return this.window.Dispatcher.Invoke(() => new WindowInteropHelper(this.window).Handle);
+    }
+}

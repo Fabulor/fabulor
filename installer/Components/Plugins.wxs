@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">
+  <Fragment>
+    <ComponentGroup Id="PluginFolderComponents" Directory="PLUGINDIR">
+      <Component Id="PluginFolder" Guid="20A45D6C-77FD-4A2D-9EE1-74DE10B396AF" Directory="PLUGINDIR">
+        <CreateFolder />
+        <RemoveFolder Id="RemovePluginFolder" On="uninstall" />
+      </Component>
+    </ComponentGroup>
+
+    <ComponentGroup Id="PluginBaseComponents" Directory="PLUGINDIR">
+      <Files Include="$(var.FabulorPayloadRoot)\plugins\hcnotifications-winrt.dll" />
+    </ComponentGroup>
+
+    <ComponentGroup Id="ChecksumPluginComponents" Directory="PLUGINDIR">
+      <Files Include="$(var.FabulorPayloadRoot)\plugins\hcchecksum.dll" />
+    </ComponentGroup>
+
+    <ComponentGroup Id="ExecPluginComponents" Directory="PLUGINDIR">
+      <Files Include="$(var.FabulorPayloadRoot)\plugins\hcexec.dll" />
+    </ComponentGroup>
+
+    <ComponentGroup Id="FishlimPluginComponents" Directory="PLUGINDIR">
+      <Files Include="$(var.FabulorPayloadRoot)\plugins\hcfishlim.dll" />
+    </ComponentGroup>
+
+    <ComponentGroup Id="SysinfoPluginComponents" Directory="PLUGINDIR">
+      <Files Include="$(var.FabulorPayloadRoot)\plugins\hcsysinfo.dll" />
+    </ComponentGroup>
+
+    <ComponentGroup Id="UpdatePluginComponents">
+      <Component Id="UpdatePluginBinary" Guid="8E86FC18-9D9B-472E-B0B0-54B6362D0504" Directory="PLUGINDIR">
+        <File Id="UpdatePluginBinaryFile"
+              Source="$(var.FabulorPayloadRoot)\plugins\hcupd.dll"
+              Name="hcupd.dll"
+              KeyPath="yes" />
+      </Component>
+      <Component Id="WinSparkleRuntimeBinary" Guid="1814E6D0-85E6-43FF-80AA-562EC7D670E4" Directory="INSTALLFOLDER">
+        <File Id="WinSparkleRuntimeBinaryFile"
+              Source="$(var.FabulorPayloadRoot)\WinSparkle.dll"
+              Name="WinSparkle.dll"
+              KeyPath="yes" />
+      </Component>
+    </ComponentGroup>
+  </Fragment>
+</Wix>
