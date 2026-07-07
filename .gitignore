@@ -41,19 +41,8 @@ resource.h
 *.VC.db
 *.VC.opendb
 
-# GitHub Actions
-.github/agents
-.github/skills
-.github/workflows
-.github/copilot-instructions.md
-
 # Generated files
 data/zoitechat.gresource.xml
-prompts/
 
 # Ignore VS Code workspace files (not per-repo settings)
 *.code-workspace
-
-# Ignore Foundry VTT configuration files
-foundry.json
-
