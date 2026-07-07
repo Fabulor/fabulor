@@ -51,3 +51,9 @@ resource.h
 data/zoitechat.gresource.xml
 prompts/
 
+# Ignore VS Code workspace files (not per-repo settings)
+*.code-workspace
+
+# Ignore Foundry VTT configuration files
+foundry.json
+
