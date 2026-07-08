@@ -206,7 +206,7 @@
                     <TextBlock Margin="0,10,0,0"
                                Foreground="{StaticResource TextSecondaryBrush}"
                                TextWrapping="Wrap"
-                               Text="Use this bootstrapper to switch between Installed and Portable mode, choose an install folder, and control the plugin runtime and built-in plugin features passed through to the MSI." />
+                               Text="Use this bootstrapper to switch between Installed and Portable mode, choose an install folder, and control the plugin runtime, documentation, and built-in plugin features passed through to the MSI." />
                 </StackPanel>
             </Grid>
         </Border>
@@ -283,27 +283,18 @@
                 </GroupBox>
 
                 <GroupBox Margin="0,16,0,0"
-                         Header="Shared runtime payload">
-                    <StackPanel Margin="14">
+                        Header="Shared runtime payload">
+                   <StackPanel Margin="14">
                        <TextBlock Foreground="{StaticResource TextSecondaryBrush}"
                                   TextWrapping="Wrap"
-                                  Text="These options control the broader GTK and shared support payload installed beside the main client." />
-                       <CheckBox x:Name="ThemeAssetsCheckBox"
-                                 Margin="0,10,0,0"
-                                 Content="Theme support assets" />
-                       <CheckBox x:Name="Gtk4RuntimeCheckBox"
-                                 Margin="0,10,0,0"
-                                 Content="GTK4 runtime payload" />
-                       <CheckBox x:Name="LegacyGtkCompatibilityCheckBox"
-                                 Margin="0,10,0,0"
-                                 Content="Legacy GTK compatibility data" />
+                                  Text="Theme support, GTK4 runtime assets, and legacy GTK compatibility data are always included. Documentation remains optional." />
                        <CheckBox x:Name="RuntimeDocumentationCheckBox"
-                                 Margin="0,10,0,0"
+                                 Margin="0,12,0,0"
                                  Content="Runtime documentation" />
                        <TextBlock Margin="0,12,0,0"
                                   Foreground="{StaticResource TextSecondaryBrush}"
                                   TextWrapping="Wrap"
-                                  Text="Theme support assets include GTK preferences artwork and attribution content, while the GTK and compatibility groups control the wider shared runtime payload." />
+                                  Text="Documentation covers the bundled runtime payload shipped beside the main client." />
                    </StackPanel>
                 </GroupBox>
 

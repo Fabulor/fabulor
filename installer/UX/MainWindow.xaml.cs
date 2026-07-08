@@ -30,9 +30,9 @@ public partial class MainWindow : Window
         IncludeDotNetPluginHost = this.DotNetPluginHostCheckBox.IsChecked == true,
         IncludePythonRuntime = this.PythonRuntimeCheckBox.IsChecked == true,
         IncludeTclRuntime = this.TclRuntimeCheckBox.IsChecked == true,
-        IncludeThemeAssets = this.ThemeAssetsCheckBox.IsChecked == true,
-        IncludeGtk4Runtime = this.Gtk4RuntimeCheckBox.IsChecked == true,
-        IncludeLegacyGtkCompatibilityData = this.LegacyGtkCompatibilityCheckBox.IsChecked == true,
+        IncludeThemeAssets = true,
+        IncludeGtk4Runtime = true,
+        IncludeLegacyGtkCompatibilityData = true,
         IncludeRuntimeDocumentation = this.RuntimeDocumentationCheckBox.IsChecked == true,
         IncludeStartMenuShortcuts = this.StartMenuShortcutsCheckBox.IsChecked == true,
         IncludeShellIntegration = this.ShellIntegrationCheckBox.IsChecked == true,
@@ -58,9 +58,6 @@ public partial class MainWindow : Window
         this.DotNetPluginHostCheckBox.IsChecked = selection.IncludeDotNetPluginHost;
         this.PythonRuntimeCheckBox.IsChecked = selection.IncludePythonRuntime;
         this.TclRuntimeCheckBox.IsChecked = selection.IncludeTclRuntime;
-        this.ThemeAssetsCheckBox.IsChecked = selection.IncludeThemeAssets;
-        this.Gtk4RuntimeCheckBox.IsChecked = selection.IncludeGtk4Runtime;
-        this.LegacyGtkCompatibilityCheckBox.IsChecked = selection.IncludeLegacyGtkCompatibilityData;
         this.RuntimeDocumentationCheckBox.IsChecked = selection.IncludeRuntimeDocumentation;
         this.StartMenuShortcutsCheckBox.IsChecked = selection.IncludeStartMenuShortcuts;
         this.ShellIntegrationCheckBox.IsChecked = selection.IncludeShellIntegration;
@@ -102,9 +99,6 @@ public partial class MainWindow : Window
         this.DotNetPluginHostCheckBox.IsEnabled = !isBusy;
         this.PythonRuntimeCheckBox.IsEnabled = !isBusy;
         this.TclRuntimeCheckBox.IsEnabled = !isBusy;
-        this.ThemeAssetsCheckBox.IsEnabled = !isBusy;
-        this.Gtk4RuntimeCheckBox.IsEnabled = !isBusy;
-        this.LegacyGtkCompatibilityCheckBox.IsEnabled = !isBusy;
         this.RuntimeDocumentationCheckBox.IsEnabled = !isBusy;
         this.TranslationsCheckBox.IsEnabled = !isBusy;
         this.ChecksumPluginCheckBox.IsEnabled = !isBusy;

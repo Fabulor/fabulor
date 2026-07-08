@@ -181,7 +181,7 @@ public sealed class FabulorBootstrapperApplication : BootstrapperApplication
         this.window.SetProgress(0);
         this.window.SetStatus(statusText + "…");
         this.window.AppendLog(this.DescribePlannedAction(action, statusText));
-        this.window.AppendLog($"Feature snapshot: dotnet={this.currentPlanFeatureSelection.IncludeDotNetPluginHost}, python={this.currentPlanFeatureSelection.IncludePythonRuntime}, tcl={this.currentPlanFeatureSelection.IncludeTclRuntime}, themeAssets={this.currentPlanFeatureSelection.IncludeThemeAssets}, gtk4={this.currentPlanFeatureSelection.IncludeGtk4Runtime}, legacyGtk={this.currentPlanFeatureSelection.IncludeLegacyGtkCompatibilityData}, runtimeDocs={this.currentPlanFeatureSelection.IncludeRuntimeDocumentation}, startMenu={this.currentPlanFeatureSelection.IncludeStartMenuShortcuts}, shellIntegration={this.currentPlanFeatureSelection.IncludeShellIntegration}, translations={this.currentPlanFeatureSelection.IncludeTranslations}, checksum={this.currentPlanFeatureSelection.IncludeChecksumPlugin}, exec={this.currentPlanFeatureSelection.IncludeExecPlugin}, fishlim={this.currentPlanFeatureSelection.IncludeFishlimPlugin}, sysinfo={this.currentPlanFeatureSelection.IncludeSysinfoPlugin}, update={this.currentPlanFeatureSelection.IncludeUpdatePlugin}, portable={this.currentPlanPortable}.");
+        this.window.AppendLog($"Feature snapshot: dotnet={this.currentPlanFeatureSelection.IncludeDotNetPluginHost}, python={this.currentPlanFeatureSelection.IncludePythonRuntime}, tcl={this.currentPlanFeatureSelection.IncludeTclRuntime}, themeAssets=fixed, gtk4=fixed, legacyGtk=fixed, runtimeDocs={this.currentPlanFeatureSelection.IncludeRuntimeDocumentation}, startMenu={this.currentPlanFeatureSelection.IncludeStartMenuShortcuts}, shellIntegration={this.currentPlanFeatureSelection.IncludeShellIntegration}, translations={this.currentPlanFeatureSelection.IncludeTranslations}, checksum={this.currentPlanFeatureSelection.IncludeChecksumPlugin}, exec={this.currentPlanFeatureSelection.IncludeExecPlugin}, fishlim={this.currentPlanFeatureSelection.IncludeFishlimPlugin}, sysinfo={this.currentPlanFeatureSelection.IncludeSysinfoPlugin}, update={this.currentPlanFeatureSelection.IncludeUpdatePlugin}, portable={this.currentPlanPortable}.");
         if (this.isFabulorMsiInstalled && (action == LaunchAction.Repair || action == LaunchAction.Uninstall))
         {
             this.window.AppendLog("Maintenance action is using the detected installed mode and feature state, not any pending UI edits.");
@@ -444,9 +444,9 @@ public sealed class FabulorBootstrapperApplication : BootstrapperApplication
             DotNetRuntimeFeatureId => selection.IncludeDotNetPluginHost ? FeatureState.Local : FeatureState.Absent,
             PythonRuntimeFeatureId => selection.IncludePythonRuntime ? FeatureState.Local : FeatureState.Absent,
             TclRuntimeFeatureId => selection.IncludeTclRuntime ? FeatureState.Local : FeatureState.Absent,
-            ThemeAssetFeatureId => selection.IncludeThemeAssets ? FeatureState.Local : FeatureState.Absent,
-            Gtk4RuntimeFeatureId => selection.IncludeGtk4Runtime ? FeatureState.Local : FeatureState.Absent,
-            LegacyGtkCompatibilityFeatureId => selection.IncludeLegacyGtkCompatibilityData ? FeatureState.Local : FeatureState.Absent,
+            ThemeAssetFeatureId => FeatureState.Local,
+            Gtk4RuntimeFeatureId => FeatureState.Local,
+            LegacyGtkCompatibilityFeatureId => FeatureState.Local,
             RuntimeDocumentationFeatureId => selection.IncludeRuntimeDocumentation ? FeatureState.Local : FeatureState.Absent,
             StartMenuFeatureId => !isPortable && selection.IncludeStartMenuShortcuts ? FeatureState.Local : FeatureState.Absent,
             ShellIntegrationFeatureId => !isPortable && selection.IncludeShellIntegration ? FeatureState.Local : FeatureState.Absent,
