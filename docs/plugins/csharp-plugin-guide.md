@@ -16,10 +16,10 @@ Read shared rules first:
   "name": "CSharp Greeter",
   "version": "1.0.0",
   "language": "csharp",
-  "entrypoint": "GreeterPlugin.dll",
+  "entrypoint": "bin\\Release\\net8.0\\GreeterPlugin.dll",
   "requires_api_version": "1",
-  "dependencies": [],
-  "capabilities": ["messages.write", "events.message"],
+  "dependencies": ["example.tcl.greeter"],
+  "capabilities": ["messages.write", "events.message", "session.read"],
   "description": "Minimal C# greeting plugin.",
   "author": "Fabulor",
   "homepage": "https://github.com/Fabulor/fabulor"
@@ -35,8 +35,10 @@ public sealed class GreeterPlugin : IZoiteChatPlugin
 {
     public void Init(ZoiteChatContext ctx)
     {
+        var user = ctx.GetUserInfo();
+        var target = string.IsNullOrWhiteSpace(user.Channel) ? "#fabulor" : user.Channel;
         ctx.Log("C# plugin initialised");
-        ctx.SendMessage("#zoitechat", "Hello from C# plugin");
+        ctx.SendMessage(target, $"Hello from C# plugin as {user.Nickname ?? "unknown"}");
         ctx.RegisterCallback("message", OnMessage);
     }
 
@@ -58,3 +60,4 @@ public sealed class GreeterPlugin : IZoiteChatPlugin
 7. `ZoiteChatContext.RegisterCallback(...)` can subscribe to generic events such as `message`, `server`, `print`, and `command`, as well as specific forms like `server:NOTICE`, `print:Channel Message`, or `command:SAY`.
 8. `ZoiteChatEvent` now exposes richer payload accessors including `Channel`, `Network`, `Nick`, `Server`, `Time`, `Word1`-`Word4`, and `WordEol1`-`WordEol2`.
 9. `ZoiteChatContext.GetUserInfo()` returns the active session identity as a `ZoiteChatUserInfo` with `Nickname`, `Channel`, `ServerName`, and `NetworkName`.
+10. A maintained sample manifest C# plugin lives under `samples\plugins\example.csharp.greeter\`.

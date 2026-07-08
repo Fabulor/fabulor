@@ -18,8 +18,8 @@ Read shared rules first:
   "language": "tcl",
   "entrypoint": "plugin.tcl",
   "requires_api_version": "1",
-  "dependencies": [],
-  "capabilities": ["messages.write", "events.message"],
+  "dependencies": ["example.python.greeter"],
+  "capabilities": ["messages.write", "events.message", "session.read"],
   "description": "Minimal Tcl greeting plugin.",
   "author": "Fabulor",
   "homepage": "https://github.com/Fabulor/fabulor"
@@ -35,8 +35,13 @@ proc onMessage {eventData} {
 }
 
 proc init {} {
+    array set user [zoitechat::get_user_info]
+    set target "#fabulor"
+    if {[info exists user(channel)] && $user(channel) ne ""} {
+        set target $user(channel)
+    }
     zoitechat::log "Tcl plugin initialised"
-    zoitechat::send_message "#zoitechat" "Hello from Tcl plugin"
+    zoitechat::send_message $target "Hello from Tcl plugin"
     zoitechat::register_callback message onMessage
 }
 ```
@@ -51,3 +56,4 @@ proc init {} {
 6. Callback payload JSON now includes richer context such as `source`, `time`, `channel`, `network`, `nick`, `server`, `word1`-`word4`, and `word_eol1`-`word_eol2` where the underlying event provides them.
 7. Use safe mode when diagnosing Tcl startup faults so third-party plugins stay disabled while core startup is verified.
 8. `zoitechat::get_user_info` returns a Tcl key/value list covering `nick`, `channel`, `server`, and `network`.
+9. A maintained sample manifest Tcl plugin lives under `samples\plugins\example.tcl.greeter\`.

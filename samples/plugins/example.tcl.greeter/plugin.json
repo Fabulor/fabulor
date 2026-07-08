@@ -1,0 +1,13 @@
+{
+  "id": "example.tcl.greeter",
+  "name": "Tcl Greeter",
+  "version": "1.0.0",
+  "language": "tcl",
+  "entrypoint": "plugin.tcl",
+  "requires_api_version": "1",
+  "dependencies": ["example.python.greeter"],
+  "capabilities": ["messages.write", "events.message", "session.read"],
+  "description": "Sample Tcl manifest plugin used to validate runtime behaviour.",
+  "author": "Fabulor",
+  "homepage": "https://github.com/Fabulor/fabulor"
+}

@@ -43,6 +43,8 @@ The current runtime discovers manifest plugins from these roots when they exist:
 1. Bundled `Plugins\` under the installed plugin library directory.
 2. User `plugins\` under the profile/config directory.
 
+For repository examples and validation assets, see `samples\plugins\`. Those samples are intentionally outside the runtime discovery roots used by the live application.
+
 ## plugin.json Schema
 
 Required and supported fields:
@@ -53,7 +55,7 @@ Required and supported fields:
 | `name` | string | Human-readable plugin name. |
 | `version` | string | Plugin version. Semantic versioning is recommended. |
 | `language` | string | One of `csharp`, `python`, or `tcl`. |
-| `entrypoint` | string | Entry file name inside the plugin folder. |
+| `entrypoint` | string | Relative entry file path inside the plugin folder. |
 | `requires_api_version` | string or number | Minimum Fabulor plugin API version needed by this plugin. |
 | `dependencies` | array of strings | Plugin ids that must load first. |
 | `capabilities` | array of strings | Declared capabilities for policy checks and diagnostics. |
@@ -92,6 +94,21 @@ Use these rules to keep plugins loadable across upgrades:
 7. Keep `capabilities` accurate and up to date.
 
 The current host scaffold exposes the public contract in `src/common/fabulor-plugin-host.h`. It keeps `ZoiteChatAPI` as a compatibility alias for `FabulorAPI` while the plugin-facing host names are modernised.
+
+## Current Enforcement Notes
+
+The current runtime already enforces these checks:
+
+1. Required manifest fields must be present and non-empty.
+2. `language` must resolve to a supported loader.
+3. `entrypoint` must exist relative to the plugin folder.
+4. `requires_api_version` must not exceed the host API version.
+5. Every declared dependency must be discoverable.
+6. Duplicate plugin ids are rejected.
+7. Dependency cycles are detected during load-order resolution.
+8. Safe mode and blacklist decisions are logged as diagnostics.
+
+The current runtime records but does not yet actively enforce `capabilities`. For now they are best treated as accurate declarative metadata for documentation, diagnostics, and future policy work.
 
 ## Safe Mode
 
@@ -132,6 +149,7 @@ The manifest host is staged in progressively:
 4. The managed C# contract assembly is scaffolded under `src\managed\Fabulor.PluginAbstractions` so plugin and host types are concrete.
 5. C# manifests load through the `src\managed\Fabulor.PluginHost` bridge, which is staged into `Runtime\DotNet` by the installer build.
 6. The installer now bundles a private `.NET` runtime root under `Runtime\DotNet`, including `host\fxr\` and `shared\Microsoft.NETCore.App\`.
+7. Sample cross-language manifest plugins live under `samples\plugins\` and exercise the documented schema, dependency ordering, callback registration, and current user/session-info access.
 
 ## Related Guides
 

@@ -19,7 +19,7 @@ Read shared rules first:
   "entrypoint": "plugin.py",
   "requires_api_version": "1",
   "dependencies": [],
-  "capabilities": ["messages.write", "events.message"],
+  "capabilities": ["messages.write", "events.message", "session.read"],
   "description": "Minimal Python greeting plugin.",
   "author": "Fabulor",
   "homepage": "https://github.com/Fabulor/fabulor"
@@ -38,8 +38,10 @@ def on_message(event):
 
 
 def init():
+    user = zoitechat.get_user_info()
+    target = user.get("channel") or "#fabulor"
     zoitechat.log("Python plugin initialised")
-    zoitechat.send_message("#zoitechat", "Hello from Python plugin")
+    zoitechat.send_message(target, "Hello from Python plugin")
     zoitechat.register_callback("message", on_message)
 ```
 
@@ -52,3 +54,4 @@ def init():
 5. Callback payloads now include richer context such as `source`, `time`, `channel`, `network`, `nick`, `server`, `word1`-`word4`, and `word_eol1`-`word_eol2` where the underlying event provides them.
 6. The host validates `plugin.json`, resolves declared dependencies, and dispatches callbacks on the main thread before language-specific execution.
 7. `zoitechat.get_user_info()` returns a dictionary with `nickname`, `channel`, `server_name`, and `network_name`.
+8. A maintained sample manifest Python plugin lives under `samples\plugins\example.python.greeter\`.

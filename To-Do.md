@@ -8,7 +8,7 @@
 - [x] Confirm the release end state is exactly two installer artefacts from WiX v4:
   - [x] an MSI
   - [x] a bootstrapper `.exe`.
-- [ ] Finish the WiX v4 installer before starting the deeper plugin ABI and loader rework.
+- [x] Treat the WiX v4 installer as complete enough to shift the main effort to plugin/API modernisation.
 
 ## 1. WiX v4 Installer Completion
 
@@ -38,73 +38,80 @@
 
 ## 2. Core ABI & Binding Layers
 
-- [ ] Define `ZoiteChatAPI` C struct and `UserInfo` in a header.
-- [ ] Implement C# binding:
-  - [ ] Map `ZoiteChatAPI` to delegates.
-  - [ ] Implement `ZoiteChatContext`.
-  - [ ] Define `IZoiteChatPlugin` with `Init(ZoiteChatContext ctx)`.
-- [ ] Implement Python 3.14 binding:
-  - [ ] Embedded Python initialisation.
-  - [ ] `zoitechat` module exposing core functions.
-  - [ ] `init_python_binding(ZoiteChatAPI* api)`.
-- [ ] Implement Tcl 8.6 binding:
-  - [ ] Embedded Tcl initialisation.
-  - [ ] `zoitechat::*` commands in a namespace.
-  - [ ] `init_tcl_binding(ZoiteChatAPI* api, Tcl_Interp* interp)`.
+- [x] Define `ZoiteChatAPI`/`FabulorAPI` C struct and `UserInfo` in a header.
+- [x] Implement C# binding:
+  - [x] Map `ZoiteChatAPI` to delegates.
+  - [x] Implement `ZoiteChatContext`.
+  - [x] Define `IZoiteChatPlugin` with `Init(ZoiteChatContext ctx)`.
+- [x] Implement Python 3.14 binding:
+  - [x] Embedded Python initialisation.
+  - [x] `zoitechat` module exposing core functions.
+  - [x] Maintain an embedded binding path fed from the shared host/runtime surface.
+- [x] Implement Tcl 8.6 binding:
+  - [x] Embedded Tcl initialisation.
+  - [x] `zoitechat::*` commands in a namespace.
+  - [x] Feed the Tcl command surface from the shared host/runtime API.
 
 ## 3. Manifest & Plugin Layout
 
-- [ ] Treat the documented `plugin.json` schema as the contract unless a deliberate revision is approved:
-  - [ ] Fields: id, name, version, language, entrypoint,
+- [x] Treat the documented `plugin.json` schema as the contract unless a deliberate revision is approved:
+  - [x] Fields: id, name, version, language, entrypoint,
         requires_api_version, dependencies, capabilities,
         description, author, homepage.
-- [ ] Enforce per-plugin folder layout:
-  - [ ] `plugins/<plugin-id>/plugin.json`
-  - [ ] `plugins/<plugin-id>/<entrypoint>`.
+- [x] Enforce per-plugin folder layout under discovered plugin roots:
+  - [x] `plugins/<plugin-id>/plugin.json`
+  - [x] `plugins/<plugin-id>/<entrypoint>`.
 - [ ] Decide and document how legacy built-in C plugins coexist with or migrate to the new manifest-driven model.
 
 ## 4. Unified Loader & Dependency Resolver
 
-- [ ] Implement manifest discovery under `plugins\*\plugin.json`.
-- [ ] Implement JSON parsing into `PluginManifest`.
-- [ ] Implement validation:
-  - [ ] required fields
-  - [ ] supported language
-  - [ ] entrypoint exists
-  - [ ] API version compatibility
-  - [ ] dependency existence.
-- [ ] Implement Kahn-based dependency resolver:
-  - [ ] build graph
-  - [ ] compute in-degrees
-  - [ ] produce sorted load order
-  - [ ] detect and log cycles.
-- [ ] Implement `IPluginLoader` interface and factory:
-  - [ ] CSharpLoader
-  - [ ] PythonLoader
-  - [ ] TclLoader.
+- [x] Implement manifest discovery under `plugins\*\plugin.json`.
+- [x] Implement JSON parsing into `PluginManifest`.
+- [x] Implement validation:
+  - [x] required fields
+  - [x] supported language
+  - [x] entrypoint exists
+  - [x] API version compatibility
+  - [x] dependency existence.
+- [x] Implement Kahn-based dependency resolver:
+  - [x] build graph
+  - [x] compute in-degrees
+  - [x] produce sorted load order
+  - [x] detect and log cycles.
+- [x] Implement `IPluginLoader` interface and factory:
+  - [x] CSharpLoader
+  - [x] PythonLoader
+  - [x] TclLoader.
 
 ## 5. Callback/Event System
 
-- [ ] Define `CallbackEntry` and global registry.
-- [ ] Implement registration APIs:
-  - [ ] C# `RegisterCallback`
-  - [ ] Python `zoitechat.register_callback`
-  - [ ] Tcl `zoitechat::register_callback`.
-- [ ] Implement `fire_event(event, data)` and per-language dispatch:
-  - [ ] `dispatch_csharp`
-  - [ ] `dispatch_python`
-  - [ ] `dispatch_tcl`.
-- [ ] Ensure all callbacks run on the main thread.
-- [ ] Add robust error logging and isolation.
+- [x] Define `CallbackEntry` and global registry.
+- [x] Implement registration APIs:
+  - [x] C# `RegisterCallback`
+  - [x] Python `zoitechat.register_callback`
+  - [x] Tcl `zoitechat::register_callback`.
+- [x] Implement `fire_event(event, data)` and per-language dispatch:
+  - [x] `dispatch_csharp`
+  - [x] `dispatch_python`
+  - [x] `dispatch_tcl`.
+- [x] Ensure all callbacks run on the main thread.
+- [x] Add robust error logging and isolation.
 
 ## 6. Security Model
 
-- [ ] Implement manifest validation and skip invalid plugins.
-- [ ] Enforce per-plugin interpreter isolation.
+- [x] Implement manifest validation and skip invalid plugins.
+- [ ] Enforce per-plugin interpreter isolation across every language runtime path.
 - [ ] Restrict core access to `ZoiteChatAPI` only.
-- [ ] Add safe mode flag to disable third-party plugins.
-- [ ] Implement optional plugin blacklist.
-- [ ] Add logging for all plugin lifecycle events.
+- [x] Add safe mode flag to disable third-party plugins.
+- [x] Implement optional plugin blacklist.
+- [x] Add logging for all plugin lifecycle events.
+
+## Current Runtime Gaps To Close Next
+
+- [ ] Decide and document the coexistence/migration plan for legacy built-in C plugins versus manifest-driven plugins.
+- [ ] Decide whether declared `capabilities` remain advisory/diagnostic metadata or become an enforced policy surface.
+- [ ] Tighten the Python runtime path so the modern manifest contract and the legacy scripting surface are clearly separated where required.
+- [ ] Add broader shared API helpers beyond the current message/log/user-count/user-info surface.
 
 ## 7. Documentation & Developer Guides
 
