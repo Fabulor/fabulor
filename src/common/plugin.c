@@ -318,25 +318,62 @@ append_json_string (GString *json, const char *value)
 }
 
 static void
-fabulor_plugin_host_dispatch_event (const char *event_name, const char *source_name, char *word[])
+fabulor_plugin_host_dispatch_event (session *sess,
+									const char *event_name,
+									const char *source_name,
+									char *word[],
+									char *word_eol[],
+									time_t server_time)
 {
 	GError *error = NULL;
 	GString *json;
+	const char *network = NULL;
+	const char *nick = NULL;
+	const char *server_name = NULL;
+	const char *channel = NULL;
 
 	if (!fabulor_callback_registry)
 	{
 		return;
 	}
 
+	if (sess)
+	{
+		channel = sess->channel;
+		if (sess->server)
+		{
+			network = server_get_network (sess->server, FALSE);
+			nick = sess->server->nick;
+			server_name = sess->server->servername;
+		}
+	}
+
 	json = g_string_new ("{");
-	g_string_append (json, "\"source\":");
+	g_string_append (json, "\"event\":");
+	append_json_string (json, event_name);
+	g_string_append (json, ",\"source\":");
 	append_json_string (json, source_name);
+	g_string_append (json, ",\"channel\":");
+	append_json_string (json, channel);
+	g_string_append (json, ",\"network\":");
+	append_json_string (json, network);
+	g_string_append (json, ",\"nick\":");
+	append_json_string (json, nick);
+	g_string_append (json, ",\"server\":");
+	append_json_string (json, server_name);
+	g_string_append_printf (json, ",\"time\":%lld", (long long) server_time);
 	g_string_append (json, ",\"word1\":");
 	append_json_string (json, word && word[1] ? word[1] : "");
 	g_string_append (json, ",\"word2\":");
 	append_json_string (json, word && word[2] ? word[2] : "");
 	g_string_append (json, ",\"word3\":");
 	append_json_string (json, word && word[3] ? word[3] : "");
+	g_string_append (json, ",\"word4\":");
+	append_json_string (json, word && word[4] ? word[4] : "");
+	g_string_append (json, ",\"word_eol1\":");
+	append_json_string (json, word_eol && word_eol[1] ? word_eol[1] : "");
+	g_string_append (json, ",\"word_eol2\":");
+	append_json_string (json, word_eol && word_eol[2] ? word_eol[2] : "");
 	g_string_append_c (json, '}');
 
 	fabulor_callback_registry_fire_event (fabulor_callback_registry,
@@ -357,19 +394,24 @@ fabulor_plugin_host_dispatch_event (const char *event_name, const char *source_n
 }
 
 static void
-fabulor_plugin_host_fire_event (const char *event_name, const char *source_name, char *word[])
+fabulor_plugin_host_fire_event (session *sess,
+								const char *event_name,
+								const char *source_name,
+								char *word[],
+								char *word_eol[],
+								time_t server_time)
 {
 	if (!event_name)
 	{
 		return;
 	}
 
-	fabulor_plugin_host_dispatch_event (event_name, source_name, word);
+	fabulor_plugin_host_dispatch_event (sess, event_name, source_name, word, word_eol, server_time);
 
 	if (source_name && *source_name)
 	{
 		char *specific_event = g_strdup_printf ("%s:%s", event_name, source_name);
-		fabulor_plugin_host_dispatch_event (specific_event, source_name, word);
+		fabulor_plugin_host_dispatch_event (sess, specific_event, source_name, word, word_eol, server_time);
 		g_free (specific_event);
 	}
 }
@@ -959,7 +1001,7 @@ plugin_emit_command (session *sess, char *name, char *word[], char *word_eol[])
 {
 	if (name && word)
 	{
-		fabulor_plugin_host_fire_event ("command", name, word);
+		fabulor_plugin_host_fire_event (sess, "command", name, word, word_eol, 0);
 	}
 
 	return plugin_hook_run (sess, name, word, word_eol, NULL, HOOK_COMMAND);
@@ -989,7 +1031,12 @@ plugin_emit_server (session *sess, char *name, char *word[], char *word_eol[],
 
 	if (name && word)
 	{
-		fabulor_plugin_host_fire_event (g_ascii_strcasecmp (name, "PRIVMSG") == 0 ? "message" : "server", name, word);
+		fabulor_plugin_host_fire_event (sess,
+										g_ascii_strcasecmp (name, "PRIVMSG") == 0 ? "message" : "server",
+										name,
+										word,
+										word_eol,
+										server_time);
 	}
 
 	return plugin_hook_run (sess, name, word, word_eol, &attrs, 
@@ -1007,7 +1054,7 @@ plugin_emit_print (session *sess, char *word[], time_t server_time)
 
 	if (word && word[0])
 	{
-		fabulor_plugin_host_fire_event ("print", word[0], word);
+		fabulor_plugin_host_fire_event (sess, "print", word[0], word, NULL, server_time);
 	}
 
 	return plugin_hook_run (sess, word[0], word, NULL, &attrs,

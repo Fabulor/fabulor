@@ -49,4 +49,5 @@ def init():
 2. Keep manifest capabilities aligned with actual plugin behaviour.
 3. `zoitechat.log(...)`, `zoitechat.send_message(...)`, `zoitechat.get_user_count()`, and `zoitechat.register_callback(...)` are available in the embedded host.
 4. `zoitechat.register_callback(...)` currently supports `message`, `server`, `server:<name>`, `print:<event>`, and `command:<name>`.
-5. The host validates `plugin.json`, resolves declared dependencies, and dispatches callbacks on the main thread before language-specific execution.
+5. Callback payloads now include richer context such as `source`, `time`, `channel`, `network`, `nick`, `server`, `word1`-`word4`, and `word_eol1`-`word_eol2` where the underlying event provides them.
+6. The host validates `plugin.json`, resolves declared dependencies, and dispatches callbacks on the main thread before language-specific execution.

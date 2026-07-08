@@ -56,3 +56,4 @@ public sealed class GreeterPlugin : IZoiteChatPlugin
 5. C# manifests now load through the `src\managed\Fabulor.PluginHost` bridge, which calls `IZoiteChatPlugin.Init(...)` and routes callbacks back through the shared native registry.
 6. The installer now stages the managed bridge assemblies together with a bundled private `.NET` runtime root under `Runtime\DotNet`, including `hostfxr.dll` and the shared runtime payload.
 7. `ZoiteChatContext.RegisterCallback(...)` can subscribe to generic events such as `message`, `server`, `print`, and `command`, as well as specific forms like `server:NOTICE`, `print:Channel Message`, or `command:SAY`.
+8. `ZoiteChatEvent` now exposes richer payload accessors including `Channel`, `Network`, `Nick`, `Server`, `Time`, `Word1`-`Word4`, and `WordEol1`-`WordEol2`.
