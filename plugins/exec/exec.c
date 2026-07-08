@@ -27,7 +27,7 @@
 
 static zoitechat_plugin *ph;
 static char name[] = "Exec";
-static char desc[] = "Execute commands inside ZoiteChat";
+static char desc[] = "Execute commands inside Fabulor";
 static char version[] = "1.2";
 
 static int
@@ -142,7 +142,7 @@ zoitechat_plugin_init (zoitechat_plugin *plugin_handle, char **plugin_name, char
 	*plugin_desc = desc;
 	*plugin_version = version;
 
-	zoitechat_hook_command (ph, "EXEC", ZOITECHAT_PRI_NORM, run_command, "Usage: /EXEC [-O] - execute commands inside ZoiteChat", 0);
+	zoitechat_hook_command (ph, "EXEC", ZOITECHAT_PRI_NORM, run_command, "Usage: /EXEC [-O] - execute commands inside Fabulor", 0);
 	zoitechat_printf (ph, "%s plugin loaded\n", name);
 
 	return 1;

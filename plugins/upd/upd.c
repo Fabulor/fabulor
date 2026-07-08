@@ -28,9 +28,9 @@
 
 static zoitechat_plugin *ph;
 static char name[] = "Update Checker";
-static char desc[] = "Check for ZoiteChat updates automatically";
+static char desc[] = "Check for Fabulor updates automatically";
 static char version[] = "5.0";
-static const char upd_help[] = "Update Checker Usage:\n  /UPDCHK, check for ZoiteChat updates\n";
+static const char upd_help[] = "Update Checker Usage:\n  /UPDCHK, check for Fabulor updates\n";
 
 static int
 check_cmd (char *word[], char *word_eol[], void *userdata)

@@ -2041,7 +2041,7 @@ mg_open_quit_dialog (gboolean minimize_button)
         dialog = gtk_dialog_new ();
 	theme_manager_attach_window (dialog);
         gtk_container_set_border_width (GTK_CONTAINER (dialog), 6);
-        gtk_window_set_title (GTK_WINDOW (dialog), _("Quit ZoiteChat?"));
+        gtk_window_set_title (GTK_WINDOW (dialog), _("Quit " DISPLAY_NAME "?"));
         gtk_window_set_transient_for (GTK_WINDOW (dialog), GTK_WINDOW (parent_window));
         gtk_window_set_resizable (GTK_WINDOW (dialog), FALSE);
 
@@ -4894,10 +4894,10 @@ mg_create_topwindow (session *sess)
 #endif
 
         if (sess->type == SESS_DIALOG)
-                win = gtkutil_window_new ("ZoiteChat", NULL,
+                win = gtkutil_window_new (DISPLAY_NAME, NULL,
                                                                                   prefs.hex_gui_dialog_width, prefs.hex_gui_dialog_height, 0);
         else
-                win = gtkutil_window_new ("ZoiteChat", NULL,
+                win = gtkutil_window_new (DISPLAY_NAME, NULL,
                                                                                   prefs.hex_gui_win_width,
                                                                                   prefs.hex_gui_win_height, 0);
         sess->gui->window = win;
@@ -5089,7 +5089,7 @@ mg_create_tabwindow (session *sess)
         GdkWindow *parent_win;
 #endif
 
-        win = gtkutil_window_new ("ZoiteChat", NULL, prefs.hex_gui_win_width,
+        win = gtkutil_window_new (DISPLAY_NAME, NULL, prefs.hex_gui_win_width,
                                                                           prefs.hex_gui_win_height, 0);
         sess->gui->window = win;
         gtk_window_move (GTK_WINDOW (win), prefs.hex_gui_win_left,

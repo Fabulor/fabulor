@@ -22,7 +22,7 @@
 
 #include "config.h"
 
-#define DISPLAY_NAME "ZoiteChat"
+#define DISPLAY_NAME "Fabulor"
 
 #ifndef WIN32
 #include <sys/types.h>

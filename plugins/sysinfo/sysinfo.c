@@ -57,7 +57,7 @@ get_client (void)
 		const char *ver = zoitechat_get_info(ph, "version");
 	char *out;
 
-		out = g_strdup_printf ("ZoiteChat %s", ver);
+		out = g_strdup_printf ("Fabulor %s", ver);
 
 	return out;
 }

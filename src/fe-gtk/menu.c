@@ -1621,7 +1621,7 @@ menu_noplugin_info (void)
 									"%m  =  machine info\n"\
                            "%n  =  your nick\n"\
 									"%t  =  time/date\n"\
-                           "%v  =  ZoiteChat version\n"\
+                           "%v  =  " DISPLAY_NAME " version\n"\
                            "%2  =  word 2\n"\
                            "%3  =  word 3\n"\
                            "&2  =  word 2 to the end of line\n"\
@@ -1668,7 +1668,7 @@ menu_noplugin_info (void)
                            "%s  =  the URL string\n\n"\
                            "Putting a ! in front of the command\n"\
                            "indicates it should be sent to a\n"\
-                           "shell instead of ZoiteChat")
+                           "shell instead of " DISPLAY_NAME)
 
 static void
 menu_usercommands (void)
@@ -1926,7 +1926,7 @@ menu_about (GtkWidget *wid, gpointer sess)
 }
 
 static struct mymenu mymenu[] = {
-	{N_("_ZoiteChat"), 0, 0, M_NEWMENU, MENU_ID_ZOITECHAT, 0, 1},
+	{N_("_Fabulor"), 0, 0, M_NEWMENU, MENU_ID_ZOITECHAT, 0, 1},
 	{N_("Network Li_st"), menu_open_server_list, 0, M_MENUITEM, 0, 0, 1},
 	{0, 0, 0, M_SEP, 0, 0, 0},
 
