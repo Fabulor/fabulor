@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">
   <Fragment>
-    <ComponentGroup Id="CommonShareAssetComponents">
+    <ComponentGroup Id="ThemeAssetComponents">
       <Component Id="AdwaitaIconsAttributionAsset" Guid="E4038AE8-C71C-440D-9876-61A6B7FA6D28" Directory="SHAREDIR">
         <File Id="AdwaitaIconsAttributionAssetFile"
               Source="$(var.FabulorPayloadRoot)\share\adwaita-icons-attribution.txt"
@@ -14,6 +14,9 @@
               Name="gtkpref.png"
               KeyPath="yes" />
       </Component>
+    </ComponentGroup>
+
+    <ComponentGroup Id="CommonShareAssetComponents">
       <Component Id="MusicAsset" Guid="35584C2B-7E79-4AB7-8B87-76D44099D4A3" Directory="SHAREDIR">
         <File Id="MusicAssetFile"
               Source="$(var.FabulorPayloadRoot)\share\music.png"

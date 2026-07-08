@@ -54,7 +54,6 @@
     <Feature Id="MainFeature" Title="Fabulor" Level="1">
       <ComponentGroupRef Id="CoreComponents" />
       <ComponentGroupRef Id="ConfigFolderComponents" />
-      <ComponentGroupRef Id="DotNetComponents" />
       <ComponentGroupRef Id="GTK4Components" />
       <ComponentGroupRef Id="InstalledModeCoreComponents" />
       <ComponentGroupRef Id="LegacyGtkEtcRuntimeComponents" />
@@ -65,8 +64,6 @@
       <ComponentGroupRef Id="PluginFolderComponents" />
       <ComponentGroupRef Id="PluginBaseComponents" />
       <ComponentGroupRef Id="CommonShareAssetComponents" />
-      <ComponentGroupRef Id="PythonRuntimeComponents" />
-      <ComponentGroupRef Id="TclComponents" />
       <Feature Id="StartMenuFeature" Title="Start menu shortcuts" Level="1">
         <ComponentGroupRef Id="StartMenuComponents" />
       </Feature>
@@ -75,6 +72,18 @@
       </Feature>
       <Feature Id="TranslationsFeature" Title="Translations" Level="1">
         <ComponentGroupRef Id="TranslationsComponents" />
+      </Feature>
+      <Feature Id="ThemeAssetFeature" Title="Theme support assets" Level="1">
+        <ComponentGroupRef Id="ThemeAssetComponents" />
+      </Feature>
+      <Feature Id="DotNetRuntimeFeature" Title="C# plugin host and bundled .NET runtime" Level="1">
+        <ComponentGroupRef Id="DotNetComponents" />
+      </Feature>
+      <Feature Id="PythonRuntimeFeature" Title="Python plugin runtime (3.14)" Level="1">
+        <ComponentGroupRef Id="PythonRuntimeComponents" />
+      </Feature>
+      <Feature Id="TclRuntimeFeature" Title="Tcl plugin runtime (8.6)" Level="1">
+        <ComponentGroupRef Id="TclComponents" />
       </Feature>
       <Feature Id="ChecksumPluginFeature" Title="Checksum plugin" Level="1">
         <ComponentGroupRef Id="ChecksumPluginComponents" />

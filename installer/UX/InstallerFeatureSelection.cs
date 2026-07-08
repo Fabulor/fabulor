@@ -2,6 +2,14 @@ namespace Fabulor.Setup;
 
 public sealed class InstallerFeatureSelection
 {
+    public bool IncludeDotNetPluginHost { get; set; } = true;
+
+    public bool IncludePythonRuntime { get; set; } = true;
+
+    public bool IncludeTclRuntime { get; set; } = true;
+
+    public bool IncludeThemeAssets { get; set; } = true;
+
     public bool IncludeStartMenuShortcuts { get; set; } = true;
 
     public bool IncludeShellIntegration { get; set; } = true;
@@ -17,4 +25,23 @@ public sealed class InstallerFeatureSelection
     public bool IncludeSysinfoPlugin { get; set; } = true;
 
     public bool IncludeUpdatePlugin { get; set; } = true;
+
+    public InstallerFeatureSelection Clone()
+    {
+        return new InstallerFeatureSelection
+        {
+            IncludeDotNetPluginHost = this.IncludeDotNetPluginHost,
+            IncludePythonRuntime = this.IncludePythonRuntime,
+            IncludeTclRuntime = this.IncludeTclRuntime,
+            IncludeThemeAssets = this.IncludeThemeAssets,
+            IncludeStartMenuShortcuts = this.IncludeStartMenuShortcuts,
+            IncludeShellIntegration = this.IncludeShellIntegration,
+            IncludeTranslations = this.IncludeTranslations,
+            IncludeChecksumPlugin = this.IncludeChecksumPlugin,
+            IncludeExecPlugin = this.IncludeExecPlugin,
+            IncludeFishlimPlugin = this.IncludeFishlimPlugin,
+            IncludeSysinfoPlugin = this.IncludeSysinfoPlugin,
+            IncludeUpdatePlugin = this.IncludeUpdatePlugin
+        };
+    }
 }

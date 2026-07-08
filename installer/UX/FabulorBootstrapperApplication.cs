@@ -18,6 +18,10 @@ public sealed class FabulorBootstrapperApplication : BootstrapperApplication
     private const string FabulorMsiPackageId = "FabulorMsi";
     private const string FabulorMsiUpgradeCode = "{8F6C0C7E-9A4D-4E4C-9F8C-2B6F5A4E9C11}";
     private const string MainFeatureId = "MainFeature";
+    private const string DotNetRuntimeFeatureId = "DotNetRuntimeFeature";
+    private const string PythonRuntimeFeatureId = "PythonRuntimeFeature";
+    private const string TclRuntimeFeatureId = "TclRuntimeFeature";
+    private const string ThemeAssetFeatureId = "ThemeAssetFeature";
     private const string StartMenuFeatureId = "StartMenuFeature";
     private const string ShellIntegrationFeatureId = "ShellIntegrationFeature";
     private const string TranslationsFeatureId = "TranslationsFeature";
@@ -35,6 +39,7 @@ public sealed class FabulorBootstrapperApplication : BootstrapperApplication
     private bool pendingCommandActionRequested;
     private string? detectedInstalledBundleCachePath;
     private readonly Dictionary<string, FeatureState> detectedFeatureStates = new(StringComparer.Ordinal);
+    private InstallerFeatureSelection detectedFeatureSelection = new();
     private InstallerFeatureSelection currentPlanFeatureSelection = new();
     private bool currentPlanPortable;
     private MainWindow? window;
@@ -157,13 +162,27 @@ public sealed class FabulorBootstrapperApplication : BootstrapperApplication
         }
 
         this.pendingAction = action;
-        this.currentPlanFeatureSelection = this.window.FeatureSelection;
-        this.currentPlanPortable = this.window.IsPortable;
+
+        if (this.isFabulorMsiInstalled && (action == LaunchAction.Repair || action == LaunchAction.Uninstall))
+        {
+            this.currentPlanFeatureSelection = this.detectedFeatureSelection.Clone();
+            this.currentPlanPortable = this.isDetectedPortableInstall;
+        }
+        else
+        {
+            this.currentPlanFeatureSelection = this.window.FeatureSelection;
+            this.currentPlanPortable = this.window.IsPortable;
+        }
+
         this.window.SetBusy(true);
         this.window.SetProgress(0);
         this.window.SetStatus(statusText + "…");
         this.window.AppendLog(this.DescribePlannedAction(action, statusText));
-        this.window.AppendLog($"Feature snapshot: startMenu={this.currentPlanFeatureSelection.IncludeStartMenuShortcuts}, shellIntegration={this.currentPlanFeatureSelection.IncludeShellIntegration}, translations={this.currentPlanFeatureSelection.IncludeTranslations}, checksum={this.currentPlanFeatureSelection.IncludeChecksumPlugin}, exec={this.currentPlanFeatureSelection.IncludeExecPlugin}, fishlim={this.currentPlanFeatureSelection.IncludeFishlimPlugin}, sysinfo={this.currentPlanFeatureSelection.IncludeSysinfoPlugin}, update={this.currentPlanFeatureSelection.IncludeUpdatePlugin}, portable={this.currentPlanPortable}.");
+        this.window.AppendLog($"Feature snapshot: dotnet={this.currentPlanFeatureSelection.IncludeDotNetPluginHost}, python={this.currentPlanFeatureSelection.IncludePythonRuntime}, tcl={this.currentPlanFeatureSelection.IncludeTclRuntime}, themeAssets={this.currentPlanFeatureSelection.IncludeThemeAssets}, startMenu={this.currentPlanFeatureSelection.IncludeStartMenuShortcuts}, shellIntegration={this.currentPlanFeatureSelection.IncludeShellIntegration}, translations={this.currentPlanFeatureSelection.IncludeTranslations}, checksum={this.currentPlanFeatureSelection.IncludeChecksumPlugin}, exec={this.currentPlanFeatureSelection.IncludeExecPlugin}, fishlim={this.currentPlanFeatureSelection.IncludeFishlimPlugin}, sysinfo={this.currentPlanFeatureSelection.IncludeSysinfoPlugin}, update={this.currentPlanFeatureSelection.IncludeUpdatePlugin}, portable={this.currentPlanPortable}.");
+        if (this.isFabulorMsiInstalled && (action == LaunchAction.Repair || action == LaunchAction.Uninstall))
+        {
+            this.window.AppendLog("Maintenance action is using the detected installed mode and feature state, not any pending UI edits.");
+        }
 
         this.engine.SetVariableString("InstallFolder", installFolder, true);
         this.engine.SetVariableString("FABULOR_PORTABLE", this.currentPlanPortable ? "1" : string.Empty, true);
@@ -339,6 +358,12 @@ public sealed class FabulorBootstrapperApplication : BootstrapperApplication
     {
         return new InstallerFeatureSelection
         {
+            IncludeDotNetPluginHost = System.IO.File.Exists(System.IO.Path.Combine(installFolder, "Runtime", "DotNet", "Fabulor.PluginHost.dll"))
+                && System.IO.Directory.Exists(System.IO.Path.Combine(installFolder, "Runtime", "DotNet", "host")),
+            IncludePythonRuntime = System.IO.File.Exists(System.IO.Path.Combine(installFolder, "Runtime", "Python314", "python314.dll")),
+            IncludeTclRuntime = System.IO.File.Exists(System.IO.Path.Combine(installFolder, "Runtime", "Tcl", "bin", "tcl86t.dll")),
+            IncludeThemeAssets = System.IO.File.Exists(System.IO.Path.Combine(installFolder, "share", "gtkpref.png"))
+                && System.IO.File.Exists(System.IO.Path.Combine(installFolder, "share", "adwaita-icons-attribution.txt")),
             IncludeStartMenuShortcuts = !isPortable && this.RegistryValueExists(Registry.CurrentUser, @"Software\Fabulor\Installer", "StartMenuShortcuts"),
             IncludeShellIntegration = !isPortable
                 && this.RegistryValueExists(Registry.LocalMachine, @"Software\Fabulor\Installer", "IrcProtocol")
@@ -356,6 +381,10 @@ public sealed class FabulorBootstrapperApplication : BootstrapperApplication
     private InstallerFeatureSelection BuildDetectedFeatureSelection(string installFolder, bool isPortable)
     {
         var selection = this.DetectInstalledFeatureSelection(installFolder, isPortable);
+        this.ApplyDetectedFeatureState(selection, DotNetRuntimeFeatureId, value => selection.IncludeDotNetPluginHost = value);
+        this.ApplyDetectedFeatureState(selection, PythonRuntimeFeatureId, value => selection.IncludePythonRuntime = value);
+        this.ApplyDetectedFeatureState(selection, TclRuntimeFeatureId, value => selection.IncludeTclRuntime = value);
+        this.ApplyDetectedFeatureState(selection, ThemeAssetFeatureId, value => selection.IncludeThemeAssets = value);
         this.ApplyDetectedFeatureState(selection, StartMenuFeatureId, value => selection.IncludeStartMenuShortcuts = value);
         this.ApplyDetectedFeatureState(selection, ShellIntegrationFeatureId, value => selection.IncludeShellIntegration = value);
         this.ApplyDetectedFeatureState(selection, TranslationsFeatureId, value => selection.IncludeTranslations = value);
@@ -400,6 +429,10 @@ public sealed class FabulorBootstrapperApplication : BootstrapperApplication
         var requestedState = e.FeatureId switch
         {
             MainFeatureId => FeatureState.Local,
+            DotNetRuntimeFeatureId => selection.IncludeDotNetPluginHost ? FeatureState.Local : FeatureState.Absent,
+            PythonRuntimeFeatureId => selection.IncludePythonRuntime ? FeatureState.Local : FeatureState.Absent,
+            TclRuntimeFeatureId => selection.IncludeTclRuntime ? FeatureState.Local : FeatureState.Absent,
+            ThemeAssetFeatureId => selection.IncludeThemeAssets ? FeatureState.Local : FeatureState.Absent,
             StartMenuFeatureId => !isPortable && selection.IncludeStartMenuShortcuts ? FeatureState.Local : FeatureState.Absent,
             ShellIntegrationFeatureId => !isPortable && selection.IncludeShellIntegration ? FeatureState.Local : FeatureState.Absent,
             TranslationsFeatureId => selection.IncludeTranslations ? FeatureState.Local : FeatureState.Absent,
@@ -518,6 +551,7 @@ public sealed class FabulorBootstrapperApplication : BootstrapperApplication
         this.isDetectedPortableInstall = false;
         this.detectedInstalledMsiLocation = null;
         this.detectedInstalledBundleCachePath = null;
+        this.detectedFeatureSelection = new InstallerFeatureSelection();
         this.detectedFeatureStates.Clear();
     }
 
@@ -538,7 +572,8 @@ public sealed class FabulorBootstrapperApplication : BootstrapperApplication
                 {
                     this.window.InstallFolder = this.detectedInstalledMsiLocation;
                     this.isDetectedPortableInstall = this.IsPortableInstall(this.detectedInstalledMsiLocation);
-                    this.window.SetFeatureSelection(this.BuildDetectedFeatureSelection(this.detectedInstalledMsiLocation, this.isDetectedPortableInstall));
+                    this.detectedFeatureSelection = this.BuildDetectedFeatureSelection(this.detectedInstalledMsiLocation, this.isDetectedPortableInstall);
+                    this.window.SetFeatureSelection(this.detectedFeatureSelection.Clone());
                 }
                 else
                 {
@@ -550,7 +585,8 @@ public sealed class FabulorBootstrapperApplication : BootstrapperApplication
 
                     this.isDetectedPortableInstall = this.GetRequestedPortableMode();
 
-                    this.window.SetFeatureSelection(new InstallerFeatureSelection());
+                    this.detectedFeatureSelection = new InstallerFeatureSelection();
+                    this.window.SetFeatureSelection(this.detectedFeatureSelection.Clone());
                 }
 
                 this.window.SetPortableMode(this.isDetectedPortableInstall);
