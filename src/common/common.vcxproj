@@ -15,6 +15,7 @@
     <ClInclude Include="chanopt.h" />
     <ClInclude Include="ctcp.h" />
     <ClInclude Include="dcc.h" />
+    <ClInclude Include="fabulor-plugin-host.h" />
     <ClInclude Include="fe.h" />
     <ClInclude Include="history.h" />
     <ClInclude Include="ignore.h" />
@@ -55,6 +56,7 @@
     <ClCompile Include="chanopt.c" />
     <ClCompile Include="ctcp.c" />
     <ClCompile Include="dcc.c" />
+    <ClCompile Include="fabulor-plugin-host.c" />
     <ClCompile Include="history.c" />
     <ClCompile Include="plugin-identd.c" />
     <ClCompile Include="ignore.c" />

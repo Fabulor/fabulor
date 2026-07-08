@@ -12,10 +12,6 @@ This document covers shared plugin documentation for Fabulor:
 
 Current project path used in examples:
 
-`C:\zoitechat-master`
-
-Planned workspace rename:
-
 `C:\fabulor-master`
 
 ## Plugin Folder Layout
@@ -53,7 +49,7 @@ Required and supported fields:
 | `version` | string | Plugin version. Semantic versioning is recommended. |
 | `language` | string | One of `csharp`, `python`, or `tcl`. |
 | `entrypoint` | string | Entry file name inside the plugin folder. |
-| `requires_api_version` | string or number | Minimum ZoiteChat plugin API version needed by this plugin. |
+| `requires_api_version` | string or number | Minimum Fabulor plugin API version needed by this plugin. |
 | `dependencies` | array of strings | Plugin ids that must load first. |
 | `capabilities` | array of strings | Declared capabilities for policy checks and diagnostics. |
 | `description` | string | Short summary of plugin behaviour. |
@@ -73,8 +69,8 @@ Minimal example:
   "dependencies": [],
   "capabilities": ["messages.write", "events.message"],
   "description": "Sends a greeting when initialised.",
-  "author": "ZoiteChat Team",
-  "homepage": "https://zoitechat.org"
+  "author": "Fabulor",
+  "homepage": "https://github.com/Fabulor/fabulor"
 }
 ```
 
@@ -90,9 +86,11 @@ Use these rules to keep plugins loadable across upgrades:
 6. Ensure `entrypoint` exists and is shipped with the plugin.
 7. Keep `capabilities` accurate and up to date.
 
+The current host scaffold exposes the public contract in `src/common/fabulor-plugin-host.h`. It keeps `ZoiteChatAPI` as a compatibility alias for `FabulorAPI` while the plugin-facing host names are modernised.
+
 ## Safe Mode
 
-Safe mode is intended to disable third-party plugins so ZoiteChat can start with core behaviour only.
+Safe mode is intended to disable third-party plugins so Fabulor can start with core behaviour only.
 
 Operational expectations:
 
@@ -100,6 +98,7 @@ Operational expectations:
 2. Core startup continues even when plugins are disabled.
 3. Logs clearly state that safe mode is active.
 4. Users can restart in normal mode to re-enable plugins.
+5. Blacklisted plugin ids stay disabled even when safe mode is off.
 
 ## Plugin Troubleshooting
 
@@ -110,8 +109,8 @@ Use this sequence when a plugin does not load or behaves incorrectly:
 3. Confirm the entrypoint file exists and is readable.
 4. Check `requires_api_version` against host API version.
 5. Verify every declared dependency exists.
-6. Review logs for validation failures, dependency cycles, and callback errors.
-7. Start ZoiteChat in safe mode to isolate plugin-related faults.
+6. Review logs for validation failures, dependency cycles, callback dispatch failures, and blacklist decisions.
+7. Start Fabulor in safe mode to isolate plugin-related faults.
 8. Re-enable plugins one at a time to identify the failing plugin.
 
 ## Related Guides

@@ -2,7 +2,7 @@
 
 ## Scope
 
-This guide covers the minimal structure for a ZoiteChat Tcl plugin and links to shared schema and troubleshooting rules.
+This guide covers the minimal structure for a Fabulor Tcl plugin and links to shared schema and troubleshooting rules.
 
 Read shared rules first:
 
@@ -21,8 +21,8 @@ Read shared rules first:
   "dependencies": [],
   "capabilities": ["messages.write", "events.message"],
   "description": "Minimal Tcl greeting plugin.",
-  "author": "ZoiteChat Team",
-  "homepage": "https://zoitechat.org"
+  "author": "Fabulor",
+  "homepage": "https://github.com/Fabulor/fabulor"
 }
 ```
 
@@ -45,3 +45,4 @@ proc init {} {
 
 1. Keep callback handlers lightweight to avoid blocking the main thread.
 2. Keep manifest capabilities aligned with actual plugin behaviour.
+3. Use safe mode when diagnosing Tcl startup faults so third-party plugins stay disabled while core startup is verified.

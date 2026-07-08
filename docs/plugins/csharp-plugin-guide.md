@@ -2,7 +2,7 @@
 
 ## Scope
 
-This guide covers the minimal structure for a ZoiteChat C# plugin and links to shared schema and troubleshooting rules.
+This guide covers the minimal structure for a Fabulor C# plugin and links to shared schema and troubleshooting rules.
 
 Read shared rules first:
 
@@ -21,8 +21,8 @@ Read shared rules first:
   "dependencies": [],
   "capabilities": ["messages.write", "events.message"],
   "description": "Minimal C# greeting plugin.",
-  "author": "ZoiteChat Team",
-  "homepage": "https://zoitechat.org"
+  "author": "Fabulor",
+  "homepage": "https://github.com/Fabulor/fabulor"
 }
 ```
 
@@ -51,3 +51,4 @@ public sealed class GreeterPlugin : IZoiteChatPlugin
 
 1. Keep callback handlers lightweight to avoid blocking the main thread.
 2. Keep manifest capabilities aligned with actual plugin behaviour.
+3. The current host scaffold keeps `ZoiteChatAPI` as a compatibility alias for `FabulorAPI` while the repo finishes the broader rebrand.

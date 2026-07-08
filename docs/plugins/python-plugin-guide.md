@@ -2,7 +2,7 @@
 
 ## Scope
 
-This guide covers the minimal structure for a ZoiteChat Python plugin and links to shared schema and troubleshooting rules.
+This guide covers the minimal structure for a Fabulor Python plugin and links to shared schema and troubleshooting rules.
 
 Read shared rules first:
 
@@ -21,8 +21,8 @@ Read shared rules first:
   "dependencies": [],
   "capabilities": ["messages.write", "events.message"],
   "description": "Minimal Python greeting plugin.",
-  "author": "ZoiteChat Team",
-  "homepage": "https://zoitechat.org"
+  "author": "Fabulor",
+  "homepage": "https://github.com/Fabulor/fabulor"
 }
 ```
 
@@ -47,3 +47,4 @@ def init():
 
 1. Keep callback handlers lightweight to avoid blocking the main thread.
 2. Keep manifest capabilities aligned with actual plugin behaviour.
+3. The host validates `plugin.json`, resolves declared dependencies, and dispatches callbacks on the main thread before language-specific execution.

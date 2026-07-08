@@ -206,7 +206,7 @@
                     <TextBlock Margin="0,10,0,0"
                                Foreground="{StaticResource TextSecondaryBrush}"
                                TextWrapping="Wrap"
-                               Text="This bootstrapper is intended for testing the WiX v4 installer flow. Use it to switch between Installed and Portable mode and to pass a chosen install folder into the MSI." />
+                               Text="Use this bootstrapper to switch between Installed and Portable mode, choose an install folder, and control the built-in plugin features passed through to the MSI." />
                 </StackPanel>
             </Grid>
         </Border>
