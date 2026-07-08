@@ -130,7 +130,8 @@ The manifest host is staged in progressively:
 2. Tcl manifest plugins can be auto-loaded through the bundled Tcl runtime with a minimal `zoitechat::*` command surface.
 3. The shared host validates manifests, resolves dependencies, applies blacklist decisions, and queues callback dispatch on the main thread.
 4. The managed C# contract assembly is scaffolded under `src\managed\Fabulor.PluginAbstractions` so plugin and host types are concrete.
-5. C# manifests are recognised and logged, but the runtime CLR loader and native host bridge are not wired into startup yet.
+5. C# manifests load through the `src\managed\Fabulor.PluginHost` bridge, which is staged into `Runtime\DotNet` by the installer build.
+6. The current C# bridge still depends on a compatible .NET runtime root with `hostfxr.dll` available to the native host.
 
 ## Related Guides
 

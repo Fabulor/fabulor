@@ -9,11 +9,12 @@
     <WixToolsetVersion>7.0.0</WixToolsetVersion>
     <FabulorPayloadRoot Condition="'$(FabulorPayloadRoot)'==''">$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\..\zoitechat-build\$(Platform)\rel\'))</FabulorPayloadRoot>
     <GtkRuntimeRoot>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\Runtime\GTK4\'))</GtkRuntimeRoot>
+    <ManagedPluginHostRoot>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\src\managed\Fabulor.PluginHost\bin\$(Configuration)\net8.0\'))</ManagedPluginHostRoot>
     <PythonRuntimeRoot>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\Runtime\Python314\'))</PythonRuntimeRoot>
     <PythonRuntimeDll>python314.dll</PythonRuntimeDll>
     <PythonRuntimeFolderName>Python314</PythonRuntimeFolderName>
     <TclRuntimeRoot>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\Runtime\Tcl\'))</TclRuntimeRoot>
-    <DefineConstants>$(DefineConstants);FabulorSemVer=$(FabulorSemVer);FabulorPayloadRoot=$(FabulorPayloadRoot);GtkRuntimeRoot=$(GtkRuntimeRoot);PythonRuntimeRoot=$(PythonRuntimeRoot);PythonRuntimeFolderName=$(PythonRuntimeFolderName);TclRuntimeRoot=$(TclRuntimeRoot)</DefineConstants>
+    <DefineConstants>$(DefineConstants);FabulorSemVer=$(FabulorSemVer);FabulorPayloadRoot=$(FabulorPayloadRoot);GtkRuntimeRoot=$(GtkRuntimeRoot);ManagedPluginHostRoot=$(ManagedPluginHostRoot);PythonRuntimeRoot=$(PythonRuntimeRoot);PythonRuntimeFolderName=$(PythonRuntimeFolderName);TclRuntimeRoot=$(TclRuntimeRoot)</DefineConstants>
 
     <WixProjectType>Package</WixProjectType>
     <OutputName>Fabulor</OutputName>
@@ -26,10 +27,17 @@
     <Compile Include="Components\**\*.wxs" />
   </ItemGroup>
 
-  <Target Name="ValidateInstallerPayload" BeforeTargets="Build">
+  <Target Name="BuildManagedPluginHost" BeforeTargets="Build">
+    <MSBuild Projects="..\src\managed\Fabulor.PluginHost\Fabulor.PluginHost.csproj"
+             Targets="Restore;Build"
+             Properties="Configuration=$(Configuration)" />
+  </Target>
+
+  <Target Name="ValidateInstallerPayload" BeforeTargets="Build" DependsOnTargets="BuildManagedPluginHost">
     <Error Condition="!Exists('$(FabulorPayloadRoot)\fabulor.exe')" Text="Missing built Fabulor payload at $(FabulorPayloadRoot). Build win32\zoitechat.sln first so fabulor.exe and the staged rel payload exist." />
     <Error Condition="!Exists('$(FabulorPayloadRoot)\plugins')" Text="Missing plugin payload at $(FabulorPayloadRoot)\plugins. Build win32\zoitechat.sln first so the staged rel payload exists." />
     <Error Condition="!Exists('$(GtkRuntimeRoot)\bin\gtk-4-1.dll')" Text="Missing GTK4 runtime payload at $(GtkRuntimeRoot)." />
+    <Error Condition="!Exists('$(ManagedPluginHostRoot)\Fabulor.PluginHost.runtimeconfig.json')" Text="Missing managed plugin host payload at $(ManagedPluginHostRoot)." />
     <Error Condition="!Exists('$(PythonRuntimeRoot)\$(PythonRuntimeDll)')" Text="Missing Python 3.14 runtime payload at $(PythonRuntimeRoot)." />
     <Error Condition="!Exists('$(TclRuntimeRoot)\bin\tcl86t.dll')" Text="Missing Tcl runtime payload at $(TclRuntimeRoot)." />
   </Target>

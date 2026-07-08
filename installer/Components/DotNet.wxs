@@ -11,7 +11,11 @@
         <CreateFolder />
         <RemoveFolder Id="RemoveDotNetFolder" On="uninstall" />
       </Component>
+
+      <Files Include="$(var.ManagedPluginHostRoot)\Fabulor.PluginHost.deps.json" />
+      <Files Include="$(var.ManagedPluginHostRoot)\Fabulor.PluginHost.dll" />
+      <Files Include="$(var.ManagedPluginHostRoot)\Fabulor.PluginHost.runtimeconfig.json" />
+      <Files Include="$(var.ManagedPluginHostRoot)\Fabulor.PluginAbstractions.dll" />
     </ComponentGroup>
   </Fragment>
 </Wix>
-

@@ -18,6 +18,8 @@
  */
 
 #include <glib.h>
+#include <stdlib.h>
+#include <stdint.h>
 #include <stdarg.h>
 #include <string.h>
 
@@ -89,8 +91,85 @@ typedef struct
 	void (*set_result) (Tcl_Interp *interp, char *result, Tcl_FreeProc *free_proc);
 } FabulorTclRuntime;
 
+#define FABULOR_HOSTFXR_CALLTYPE __cdecl
+#define FABULOR_CORECLR_DELEGATE_CALLTYPE __stdcall
+
+typedef void *fabulor_hostfxr_handle;
+
+typedef enum
+{
+	FABULOR_HDT_COM_ACTIVATION = 0,
+	FABULOR_HDT_LOAD_IN_MEMORY_ASSEMBLY = 1,
+	FABULOR_HDT_WINRT_ACTIVATION = 2,
+	FABULOR_HDT_COM_REGISTER = 3,
+	FABULOR_HDT_COM_UNREGISTER = 4,
+	FABULOR_HDT_LOAD_ASSEMBLY_AND_GET_FUNCTION_POINTER = 5
+} FabulorHostfxrDelegateType;
+
+typedef int32_t (FABULOR_HOSTFXR_CALLTYPE *FabulorHostfxrInitializeForRuntimeConfigFn) (const wchar_t *runtime_config_path,
+																						  const void *parameters,
+																						  fabulor_hostfxr_handle *host_context_handle);
+typedef int32_t (FABULOR_HOSTFXR_CALLTYPE *FabulorHostfxrGetRuntimeDelegateFn) (const fabulor_hostfxr_handle host_context_handle,
+																			 FabulorHostfxrDelegateType type,
+																			 void **delegate_handle);
+typedef int32_t (FABULOR_HOSTFXR_CALLTYPE *FabulorHostfxrCloseFn) (const fabulor_hostfxr_handle host_context_handle);
+typedef int (FABULOR_CORECLR_DELEGATE_CALLTYPE *FabulorLoadAssemblyAndGetFunctionPointerFn) (const wchar_t *assembly_path,
+																							   const wchar_t *type_name,
+																							   const wchar_t *method_name,
+																							   const wchar_t *delegate_type_name,
+																							   void *reserved,
+																							   void **delegate_handle);
+typedef int (FABULOR_CORECLR_DELEGATE_CALLTYPE *FabulorComponentEntryPointFn) (void *arg, int32_t arg_size_in_bytes);
+
+typedef void (FABULOR_CORECLR_DELEGATE_CALLTYPE *FabulorManagedLogFn) (const char *text);
+typedef int (FABULOR_CORECLR_DELEGATE_CALLTYPE *FabulorManagedSendMessageFn) (const char *target, const char *text);
+typedef unsigned int (FABULOR_CORECLR_DELEGATE_CALLTYPE *FabulorManagedGetUserCountFn) (void);
+typedef int (FABULOR_CORECLR_DELEGATE_CALLTYPE *FabulorManagedRegisterCallbackFn) (const char *plugin_id, const char *event_name, const char *handler_name);
+
+typedef struct
+{
+	FabulorManagedLogFn log;
+	FabulorManagedSendMessageFn send_message;
+	FabulorManagedGetUserCountFn get_user_count;
+	FabulorManagedRegisterCallbackFn register_callback;
+} FabulorManagedHostApi;
+
+typedef struct
+{
+	const char *plugin_id;
+	const char *assembly_path;
+} FabulorManagedLoadPluginArgs;
+
+typedef struct
+{
+	const char *plugin_id;
+	const char *handler_name;
+	const char *event_name;
+	const char *payload_json;
+} FabulorManagedDispatchArgs;
+
+typedef struct
+{
+	HMODULE hostfxr_module;
+	char *dotnet_root;
+	char *bridge_root;
+	char *bridge_assembly_path;
+	char *bridge_runtime_config_path;
+	gboolean initialised;
+	FabulorHostfxrInitializeForRuntimeConfigFn initialize_for_runtime_config;
+	FabulorHostfxrGetRuntimeDelegateFn get_runtime_delegate;
+	FabulorHostfxrCloseFn close_host_context;
+	FabulorLoadAssemblyAndGetFunctionPointerFn load_assembly_and_get_function_pointer;
+	FabulorComponentEntryPointFn initialize_bridge;
+	FabulorComponentEntryPointFn load_plugin;
+	FabulorComponentEntryPointFn dispatch_callback;
+	FabulorComponentEntryPointFn shutdown_bridge;
+} FabulorCSharpRuntime;
+
 static FabulorTclRuntime fabulor_tcl_runtime;
 static FabulorCallbackRegistry *fabulor_active_callback_registry;
+static const FabulorAPI *fabulor_active_api;
+static FabulorCSharpRuntime fabulor_csharp_runtime;
 #endif
 
 static void
@@ -956,6 +1035,494 @@ fabulor_tcl_runtime_reset (void)
 	g_free (fabulor_tcl_runtime.runtime_root);
 	memset (&fabulor_tcl_runtime, 0, sizeof (fabulor_tcl_runtime));
 }
+
+static void
+fabulor_csharp_runtime_reset (void)
+{
+	if (fabulor_csharp_runtime.initialised && fabulor_csharp_runtime.shutdown_bridge)
+	{
+		fabulor_csharp_runtime.shutdown_bridge (NULL, 0);
+	}
+
+	if (fabulor_csharp_runtime.hostfxr_module)
+	{
+		FreeLibrary (fabulor_csharp_runtime.hostfxr_module);
+	}
+
+	g_free (fabulor_csharp_runtime.dotnet_root);
+	g_free (fabulor_csharp_runtime.bridge_root);
+	g_free (fabulor_csharp_runtime.bridge_assembly_path);
+	g_free (fabulor_csharp_runtime.bridge_runtime_config_path);
+	memset (&fabulor_csharp_runtime, 0, sizeof (fabulor_csharp_runtime));
+}
+
+static gboolean
+fabulor_csharp_root_has_hostfxr (const char *dotnet_root)
+{
+	char *fxr_root;
+	gboolean exists;
+
+	if (!dotnet_root || *dotnet_root == '\0')
+	{
+		return FALSE;
+	}
+
+	fxr_root = g_build_filename (dotnet_root, "host", "fxr", NULL);
+	exists = g_file_test (fxr_root, G_FILE_TEST_IS_DIR);
+	g_free (fxr_root);
+	return exists;
+}
+
+static gboolean
+fabulor_csharp_bridge_root_has_payload (const char *bridge_root)
+{
+	char *assembly_path;
+	char *runtime_config_path;
+	gboolean exists;
+
+	if (!bridge_root || *bridge_root == '\0')
+	{
+		return FALSE;
+	}
+
+	assembly_path = g_build_filename (bridge_root, "Fabulor.PluginHost.dll", NULL);
+	runtime_config_path = g_build_filename (bridge_root, "Fabulor.PluginHost.runtimeconfig.json", NULL);
+	exists = g_file_test (assembly_path, G_FILE_TEST_EXISTS)
+		&& g_file_test (runtime_config_path, G_FILE_TEST_EXISTS);
+	g_free (assembly_path);
+	g_free (runtime_config_path);
+	return exists;
+}
+
+static int
+fabulor_version_part (const char *value)
+{
+	char *end = NULL;
+	long result;
+
+	if (!value || *value == '\0')
+	{
+		return 0;
+	}
+
+	result = strtol (value, &end, 10);
+	return end == value ? 0 : (int) result;
+}
+
+static gint
+fabulor_csharp_compare_versions (const char *left, const char *right)
+{
+	gchar **left_parts;
+	gchar **right_parts;
+	gint result = 0;
+	guint index;
+
+	left_parts = g_strsplit (left, ".", 4);
+	right_parts = g_strsplit (right, ".", 4);
+
+	for (index = 0; index < 4; index++)
+	{
+		int left_value = fabulor_version_part (left_parts[index]);
+		int right_value = fabulor_version_part (right_parts[index]);
+
+		if (left_value != right_value)
+		{
+			result = left_value < right_value ? -1 : 1;
+			break;
+		}
+	}
+
+	g_strfreev (left_parts);
+	g_strfreev (right_parts);
+	return result;
+}
+
+static char *
+fabulor_csharp_find_latest_hostfxr_path (const char *dotnet_root)
+{
+	GDir *directory;
+	const char *entry_name;
+	char *fxr_root;
+	char *best_name = NULL;
+
+	fxr_root = g_build_filename (dotnet_root, "host", "fxr", NULL);
+	directory = g_dir_open (fxr_root, 0, NULL);
+	if (!directory)
+	{
+		g_free (fxr_root);
+		return NULL;
+	}
+
+	while ((entry_name = g_dir_read_name (directory)) != NULL)
+	{
+		char *candidate_dir;
+		char *candidate_dll;
+
+		if (entry_name[0] == '.')
+		{
+			continue;
+		}
+
+		candidate_dir = g_build_filename (fxr_root, entry_name, NULL);
+		candidate_dll = g_build_filename (candidate_dir, "hostfxr.dll", NULL);
+		if (g_file_test (candidate_dll, G_FILE_TEST_EXISTS)
+			&& (!best_name || fabulor_csharp_compare_versions (entry_name, best_name) > 0))
+		{
+			g_free (best_name);
+			best_name = g_strdup (entry_name);
+		}
+
+		g_free (candidate_dll);
+		g_free (candidate_dir);
+	}
+
+	g_dir_close (directory);
+
+	if (!best_name)
+	{
+		g_free (fxr_root);
+		return NULL;
+	}
+
+	{
+		char *best_path = g_build_filename (fxr_root, best_name, "hostfxr.dll", NULL);
+		g_free (best_name);
+		g_free (fxr_root);
+		return best_path;
+	}
+}
+
+static wchar_t *
+fabulor_utf16_from_utf8 (const char *text)
+{
+	return (wchar_t *) g_utf8_to_utf16 (text, -1, NULL, NULL, NULL);
+}
+
+static gboolean
+fabulor_csharp_resolve_symbol (FARPROC *target, HMODULE module, const char *name, GError **error)
+{
+	*target = GetProcAddress (module, name);
+	if (!*target)
+	{
+		g_set_error (error, G_FILE_ERROR, G_FILE_ERROR_FAILED, "Missing .NET hosting symbol '%s'.", name);
+		return FALSE;
+	}
+
+	return TRUE;
+}
+
+static char *
+fabulor_csharp_resolve_dotnet_root (void)
+{
+	const char *env_root;
+	char *cwd;
+	char *candidate;
+	char *exe_dir;
+
+	env_root = g_getenv ("FABULOR_DOTNET_ROOT");
+	if (fabulor_csharp_root_has_hostfxr (env_root))
+	{
+		return g_strdup (env_root);
+	}
+
+	env_root = g_getenv ("DOTNET_ROOT");
+	if (fabulor_csharp_root_has_hostfxr (env_root))
+	{
+		return g_strdup (env_root);
+	}
+
+	cwd = g_get_current_dir ();
+	candidate = g_build_filename (cwd, "Runtime", "DotNet", NULL);
+	g_free (cwd);
+	if (fabulor_csharp_root_has_hostfxr (candidate))
+	{
+		return candidate;
+	}
+	g_free (candidate);
+
+	exe_dir = fabulor_tcl_executable_directory ();
+	if (exe_dir)
+	{
+		candidate = g_build_filename (exe_dir, "Runtime", "DotNet", NULL);
+		g_free (exe_dir);
+		if (fabulor_csharp_root_has_hostfxr (candidate))
+		{
+			return candidate;
+		}
+		g_free (candidate);
+	}
+
+	candidate = g_strdup ("C:\\Program Files\\dotnet");
+	if (fabulor_csharp_root_has_hostfxr (candidate))
+	{
+		return candidate;
+	}
+	g_free (candidate);
+	return NULL;
+}
+
+static char *
+fabulor_csharp_resolve_bridge_root (void)
+{
+	const char *env_root;
+	char *cwd;
+	char *candidate;
+	char *exe_dir;
+
+	env_root = g_getenv ("FABULOR_CSHARP_BRIDGE_ROOT");
+	if (fabulor_csharp_bridge_root_has_payload (env_root))
+	{
+		return g_strdup (env_root);
+	}
+
+	cwd = g_get_current_dir ();
+
+	candidate = g_build_filename (cwd, "Runtime", "DotNet", NULL);
+	if (fabulor_csharp_bridge_root_has_payload (candidate))
+	{
+		g_free (cwd);
+		return candidate;
+	}
+	g_free (candidate);
+
+	candidate = g_build_filename (cwd, "src", "managed", "Fabulor.PluginHost", "bin", "Release", "net8.0", NULL);
+	if (fabulor_csharp_bridge_root_has_payload (candidate))
+	{
+		g_free (cwd);
+		return candidate;
+	}
+	g_free (candidate);
+
+	candidate = g_build_filename (cwd, "src", "managed", "Fabulor.PluginHost", "bin", "Debug", "net8.0", NULL);
+	g_free (cwd);
+	if (fabulor_csharp_bridge_root_has_payload (candidate))
+	{
+		return candidate;
+	}
+	g_free (candidate);
+
+	exe_dir = fabulor_tcl_executable_directory ();
+	if (exe_dir)
+	{
+		candidate = g_build_filename (exe_dir, "Runtime", "DotNet", NULL);
+		g_free (exe_dir);
+		if (fabulor_csharp_bridge_root_has_payload (candidate))
+		{
+			return candidate;
+		}
+		g_free (candidate);
+	}
+
+	return NULL;
+}
+
+static void FABULOR_CORECLR_DELEGATE_CALLTYPE
+fabulor_csharp_native_log (const char *text)
+{
+	if (fabulor_active_api)
+	{
+		fabulor_api_log (fabulor_active_api, "[C#] %s", text ? text : "");
+	}
+}
+
+static int FABULOR_CORECLR_DELEGATE_CALLTYPE
+fabulor_csharp_native_send_message (const char *target, const char *text)
+{
+	GError *error = NULL;
+	gboolean success;
+
+	if (!fabulor_active_api || !fabulor_active_api->send_message)
+	{
+		return 0;
+	}
+
+	success = fabulor_active_api->send_message (fabulor_active_api->user_data, target, text, &error);
+	if (!success)
+	{
+		fabulor_api_log (fabulor_active_api, "[C#] send_message failed: %s", error ? error->message : "unknown error");
+		g_clear_error (&error);
+	}
+
+	return success ? 1 : 0;
+}
+
+static unsigned int FABULOR_CORECLR_DELEGATE_CALLTYPE
+fabulor_csharp_native_get_user_count (void)
+{
+	return fabulor_active_api && fabulor_active_api->get_user_count
+		? fabulor_active_api->get_user_count (fabulor_active_api->user_data)
+		: 0U;
+}
+
+static int FABULOR_CORECLR_DELEGATE_CALLTYPE
+fabulor_csharp_native_register_callback (const char *plugin_id, const char *event_name, const char *handler_name)
+{
+	GError *error = NULL;
+	gboolean success;
+
+	if (!fabulor_active_callback_registry)
+	{
+		return 0;
+	}
+
+	success = fabulor_callback_registry_register (fabulor_active_callback_registry,
+												 event_name,
+												 plugin_id,
+												 FABULOR_PLUGIN_LANGUAGE_CSHARP,
+												 handler_name,
+												 &error);
+	if (!success)
+	{
+		fabulor_api_log (fabulor_active_api, "[C#] register_callback failed: %s", error ? error->message : "unknown error");
+		g_clear_error (&error);
+	}
+
+	return success ? 1 : 0;
+}
+
+static gboolean
+fabulor_csharp_load_entry_point (const wchar_t *assembly_path,
+								 const wchar_t *type_name,
+								 const wchar_t *method_name,
+								 const char *method_name_log,
+								 FabulorComponentEntryPointFn *entry_point,
+								 GError **error)
+{
+	void *delegate_handle = NULL;
+	int rc;
+
+	rc = fabulor_csharp_runtime.load_assembly_and_get_function_pointer (assembly_path,
+																 type_name,
+																 method_name,
+																 NULL,
+																 NULL,
+																 &delegate_handle);
+	if (rc != 0 || !delegate_handle)
+	{
+		g_set_error (error,
+					 G_FILE_ERROR,
+					 G_FILE_ERROR_FAILED,
+					 "Failed to resolve managed entry point '%s' (0x%x).",
+					 method_name_log,
+					 rc);
+		return FALSE;
+	}
+
+	*entry_point = (FabulorComponentEntryPointFn) delegate_handle;
+	return TRUE;
+}
+
+static gboolean
+fabulor_csharp_runtime_ensure_loaded (const FabulorAPI *api, GError **error)
+{
+	char *hostfxr_path;
+	wchar_t *runtime_config_path_wide;
+	wchar_t *bridge_assembly_path_wide;
+	fabulor_hostfxr_handle host_context = NULL;
+	int rc;
+	FabulorManagedHostApi managed_api;
+	static const wchar_t native_exports_type[] = L"Fabulor.PluginHost.NativeExports, Fabulor.PluginHost";
+	static const wchar_t initialize_method[] = L"Initialize";
+	static const wchar_t load_plugin_method[] = L"LoadPlugin";
+	static const wchar_t dispatch_callback_method[] = L"DispatchCallback";
+	static const wchar_t shutdown_method[] = L"Shutdown";
+
+	fabulor_active_api = api;
+
+	if (fabulor_csharp_runtime.initialised)
+	{
+		return TRUE;
+	}
+
+	fabulor_csharp_runtime.dotnet_root = fabulor_csharp_resolve_dotnet_root ();
+	fabulor_csharp_runtime.bridge_root = fabulor_csharp_resolve_bridge_root ();
+	if (!fabulor_csharp_runtime.dotnet_root || !fabulor_csharp_runtime.bridge_root)
+	{
+		g_set_error_literal (error, G_FILE_ERROR, G_FILE_ERROR_NOENT, "Unable to locate the .NET runtime or Fabulor.PluginHost bridge output.");
+		return FALSE;
+	}
+
+	fabulor_csharp_runtime.bridge_assembly_path = g_build_filename (fabulor_csharp_runtime.bridge_root, "Fabulor.PluginHost.dll", NULL);
+	fabulor_csharp_runtime.bridge_runtime_config_path = g_build_filename (fabulor_csharp_runtime.bridge_root, "Fabulor.PluginHost.runtimeconfig.json", NULL);
+	if (!g_file_test (fabulor_csharp_runtime.bridge_assembly_path, G_FILE_TEST_EXISTS)
+		|| !g_file_test (fabulor_csharp_runtime.bridge_runtime_config_path, G_FILE_TEST_EXISTS))
+	{
+		g_set_error_literal (error, G_FILE_ERROR, G_FILE_ERROR_NOENT, "The Fabulor.PluginHost bridge output is incomplete.");
+		return FALSE;
+	}
+
+	hostfxr_path = fabulor_csharp_find_latest_hostfxr_path (fabulor_csharp_runtime.dotnet_root);
+	if (!hostfxr_path)
+	{
+		g_set_error_literal (error, G_FILE_ERROR, G_FILE_ERROR_NOENT, "Unable to locate hostfxr.dll under the selected .NET root.");
+		return FALSE;
+	}
+
+	fabulor_csharp_runtime.hostfxr_module = LoadLibraryA (hostfxr_path);
+	g_free (hostfxr_path);
+	if (!fabulor_csharp_runtime.hostfxr_module)
+	{
+		g_set_error_literal (error, G_FILE_ERROR, G_FILE_ERROR_FAILED, "Failed to load hostfxr.dll.");
+		return FALSE;
+	}
+
+	if (!fabulor_csharp_resolve_symbol ((FARPROC *) &fabulor_csharp_runtime.initialize_for_runtime_config, fabulor_csharp_runtime.hostfxr_module, "hostfxr_initialize_for_runtime_config", error)
+		|| !fabulor_csharp_resolve_symbol ((FARPROC *) &fabulor_csharp_runtime.get_runtime_delegate, fabulor_csharp_runtime.hostfxr_module, "hostfxr_get_runtime_delegate", error)
+		|| !fabulor_csharp_resolve_symbol ((FARPROC *) &fabulor_csharp_runtime.close_host_context, fabulor_csharp_runtime.hostfxr_module, "hostfxr_close", error))
+	{
+		fabulor_csharp_runtime_reset ();
+		return FALSE;
+	}
+
+	runtime_config_path_wide = fabulor_utf16_from_utf8 (fabulor_csharp_runtime.bridge_runtime_config_path);
+	rc = fabulor_csharp_runtime.initialize_for_runtime_config (runtime_config_path_wide, NULL, &host_context);
+	g_free (runtime_config_path_wide);
+	if (rc != 0 || !host_context)
+	{
+		g_set_error (error, G_FILE_ERROR, G_FILE_ERROR_FAILED, "hostfxr initialisation failed (0x%x).", rc);
+		fabulor_csharp_runtime_reset ();
+		return FALSE;
+	}
+
+	rc = fabulor_csharp_runtime.get_runtime_delegate (host_context,
+												 FABULOR_HDT_LOAD_ASSEMBLY_AND_GET_FUNCTION_POINTER,
+												 (void **) &fabulor_csharp_runtime.load_assembly_and_get_function_pointer);
+	fabulor_csharp_runtime.close_host_context (host_context);
+	if (rc != 0 || !fabulor_csharp_runtime.load_assembly_and_get_function_pointer)
+	{
+		g_set_error (error, G_FILE_ERROR, G_FILE_ERROR_FAILED, "Failed to resolve the load_assembly_and_get_function_pointer delegate (0x%x).", rc);
+		fabulor_csharp_runtime_reset ();
+		return FALSE;
+	}
+
+	bridge_assembly_path_wide = fabulor_utf16_from_utf8 (fabulor_csharp_runtime.bridge_assembly_path);
+	if (!fabulor_csharp_load_entry_point (bridge_assembly_path_wide, native_exports_type, initialize_method, "Initialize", &fabulor_csharp_runtime.initialize_bridge, error)
+		|| !fabulor_csharp_load_entry_point (bridge_assembly_path_wide, native_exports_type, load_plugin_method, "LoadPlugin", &fabulor_csharp_runtime.load_plugin, error)
+		|| !fabulor_csharp_load_entry_point (bridge_assembly_path_wide, native_exports_type, dispatch_callback_method, "DispatchCallback", &fabulor_csharp_runtime.dispatch_callback, error)
+		|| !fabulor_csharp_load_entry_point (bridge_assembly_path_wide, native_exports_type, shutdown_method, "Shutdown", &fabulor_csharp_runtime.shutdown_bridge, error))
+	{
+		g_free (bridge_assembly_path_wide);
+		fabulor_csharp_runtime_reset ();
+		return FALSE;
+	}
+	g_free (bridge_assembly_path_wide);
+
+	managed_api.log = fabulor_csharp_native_log;
+	managed_api.send_message = fabulor_csharp_native_send_message;
+	managed_api.get_user_count = fabulor_csharp_native_get_user_count;
+	managed_api.register_callback = fabulor_csharp_native_register_callback;
+
+	rc = fabulor_csharp_runtime.initialize_bridge (&managed_api, sizeof (managed_api));
+	if (rc != 0)
+	{
+		g_set_error (error, G_FILE_ERROR, G_FILE_ERROR_FAILED, "Managed bridge initialisation failed (0x%x).", rc);
+		fabulor_csharp_runtime_reset ();
+		return FALSE;
+	}
+
+	fabulor_csharp_runtime.initialised = TRUE;
+	return TRUE;
+}
 #endif
 
 static gboolean
@@ -1120,19 +1687,92 @@ dispatch_tcl_callback (const FabulorPluginManifest *manifest,
 }
 
 static gboolean
+dispatch_csharp_callback (const FabulorPluginManifest *manifest,
+						  const char *handler_name,
+						  const char *event_name,
+						  const char *event_payload_json,
+						  void *user_data,
+						  GError **error)
+{
+#ifdef WIN32
+	FabulorManagedDispatchArgs args;
+	int rc;
+
+	(void) user_data;
+
+	if (!fabulor_csharp_runtime.initialised || !fabulor_csharp_runtime.dispatch_callback)
+	{
+		g_set_error_literal (error, G_FILE_ERROR, G_FILE_ERROR_NOENT, "The managed C# bridge is not active.");
+		return FALSE;
+	}
+
+	args.plugin_id = manifest->id;
+	args.handler_name = handler_name;
+	args.event_name = event_name;
+	args.payload_json = event_payload_json ? event_payload_json : "{}";
+	rc = fabulor_csharp_runtime.dispatch_callback (&args, sizeof (args));
+	if (rc != 0)
+	{
+		g_set_error (error, G_FILE_ERROR, G_FILE_ERROR_FAILED, "Managed callback dispatch failed for %s/%s (0x%x).",
+					 manifest->id,
+					 handler_name,
+					 rc);
+		return FALSE;
+	}
+
+	return TRUE;
+#else
+	(void) manifest;
+	(void) handler_name;
+	(void) event_name;
+	(void) event_payload_json;
+	(void) user_data;
+	g_set_error_literal (error, G_FILE_ERROR, G_FILE_ERROR_NOSYS, "C# callback dispatch is only available on Windows builds.");
+	return FALSE;
+#endif
+}
+
+static gboolean
 load_csharp_manifest (const FabulorPluginManifest *manifest,
 					  const FabulorAPI *api,
 					  void *user_data,
 					  GError **error)
 {
-	(void)user_data;
-	(void)api;
-	g_set_error (error,
-				 G_FILE_ERROR,
-				 G_FILE_ERROR_NOSYS,
-				 "C# manifest loading is not wired into the runtime yet for %s.",
-				 manifest->id);
+#ifdef WIN32
+	FabulorManagedLoadPluginArgs args;
+	int rc;
+
+	(void) user_data;
+
+	if (!fabulor_csharp_runtime_ensure_loaded (api, error))
+	{
+		return FALSE;
+	}
+
+	args.plugin_id = manifest->id;
+	args.assembly_path = manifest->entrypoint_path;
+	rc = fabulor_csharp_runtime.load_plugin (&args, sizeof (args));
+	if (rc != 0)
+	{
+		g_set_error (error,
+					 G_FILE_ERROR,
+					 G_FILE_ERROR_FAILED,
+					 "Managed plugin load failed for %s from %s (0x%x).",
+					 manifest->id,
+					 manifest->entrypoint_path,
+					 rc);
+		return FALSE;
+	}
+
+	fabulor_api_log (api, "Loaded C# manifest plugin %s from %s.", manifest->id, manifest->entrypoint_path);
+	return TRUE;
+#else
+	(void) manifest;
+	(void) api;
+	(void) user_data;
+	g_set_error_literal (error, G_FILE_ERROR, G_FILE_ERROR_NOSYS, "C# manifest loading is only available on Windows builds.");
 	return FALSE;
+#endif
 }
 
 static const FabulorPluginLoader csharp_loader =
@@ -1140,7 +1780,7 @@ static const FabulorPluginLoader csharp_loader =
 	FABULOR_PLUGIN_LANGUAGE_CSHARP,
 	"csharp",
 	load_csharp_manifest,
-	loader_stub_dispatch
+	dispatch_csharp_callback
 };
 
 static const FabulorPluginLoader python_loader =
@@ -1762,6 +2402,8 @@ void
 fabulor_plugin_host_shutdown (void)
 {
 #ifdef WIN32
+	fabulor_csharp_runtime_reset ();
 	fabulor_tcl_runtime_reset ();
+	fabulor_active_api = NULL;
 #endif
 }
