@@ -111,7 +111,7 @@ zoitechat_remote (void)
 		return;
 	}
 
-	/* Checks if ZoiteChat is already running */
+	/* Checks if Fabulor is already running */
 	dbus = g_dbus_proxy_new_sync (connection,
 								  G_DBUS_PROXY_FLAGS_NONE,
 								  NULL,
@@ -157,7 +157,7 @@ zoitechat_remote (void)
 
 	if (!remote_object)
 	{
-		write_error("Failed to connect to ZoiteChat", &error);
+		write_error("Failed to connect to Fabulor", &error);
 		g_object_unref (connection);
 		exit (0);
 	}

@@ -2343,8 +2343,8 @@ sound_play (const char *file, gboolean quiet)
 			ca_context_create (&ca_con);
 			ca_context_change_props (ca_con,
 											CA_PROP_APPLICATION_ID, "zoitechat",
-											CA_PROP_APPLICATION_NAME, "ZoiteChat",
-											CA_PROP_APPLICATION_ICON_NAME, "zoitechat", NULL);
+											CA_PROP_APPLICATION_NAME, "Fabulor",
+											CA_PROP_APPLICATION_ICON_NAME, "net.fabulor.Fabulor", NULL);
 		}
 
 		if (ca_context_play (ca_con, 0, CA_PROP_MEDIA_FILENAME, wavfile, NULL) != 0)

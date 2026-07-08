@@ -96,7 +96,7 @@ int secretstore_set_network_password (const char *network_name, const char *pass
 			}
 		};
 		gboolean ok = secret_password_store_sync (&schema, SECRET_COLLECTION_DEFAULT,
-			"ZoiteChat network password", password, NULL, NULL, "network", target, NULL);
+			"Fabulor network password", password, NULL, NULL, "network", target, NULL);
 		g_free (target);
 		return ok;
 	}

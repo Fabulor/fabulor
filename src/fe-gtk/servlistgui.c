@@ -1283,7 +1283,7 @@ servlist_edit_update (ircnet *net)
 			{
 				if (!secretstore_set_network_password (net->name, password))
 				{
-					fe_message (_("No system keyring is available. ZoiteChat can save this password using local encrypted fallback storage, but it is less protected than your desktop keyring."), FE_MSG_WARN);
+					fe_message (_("No system keyring is available. Fabulor can save this password using local encrypted fallback storage, but it is less protected than your desktop keyring."), FE_MSG_WARN);
 					memset (password, 0, strlen (password));
 					g_free (password);
 					return;

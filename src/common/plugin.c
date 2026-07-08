@@ -787,7 +787,7 @@ plugin_load (session *sess, char *filename, char *arg)
 	if (!g_module_symbol (handle, "zoitechat_plugin_init", (gpointer *)&init_func))
 	{
 		g_module_close (handle);
-		return _("No zoitechat_plugin_init symbol; is this really a ZoiteChat plugin?");
+		return _("No zoitechat_plugin_init symbol; is this really a Fabulor plugin?");
 	}
 
 	/* find the plugin's deinit routine, if any */
