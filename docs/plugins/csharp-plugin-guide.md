@@ -52,3 +52,4 @@ public sealed class GreeterPlugin : IZoiteChatPlugin
 1. Keep callback handlers lightweight to avoid blocking the main thread.
 2. Keep manifest capabilities aligned with actual plugin behaviour.
 3. The current host scaffold keeps `ZoiteChatAPI` as a compatibility alias for `FabulorAPI` while the repo finishes the broader rebrand.
+4. C# manifests are validated and included in dependency analysis, but the runtime CLR loader is not wired into startup yet.

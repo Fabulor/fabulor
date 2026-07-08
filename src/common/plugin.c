@@ -19,6 +19,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdarg.h>
+#include <stdarg.h>
 #include <stdio.h>
 #include <fcntl.h>
 #include <sys/stat.h>
@@ -44,6 +45,7 @@
 typedef struct session zoitechat_context;
 #include "zoitechat-plugin.h"
 #include "plugin.h"
+#include "fabulor-plugin-host.h"
 #include "typedef.h"
 
 
@@ -145,8 +147,296 @@ enum
 
 GSList *plugin_list = NULL;	/* export for plugingui.c */
 static GSList *hook_list = NULL;
+static FabulorPluginCatalog *fabulor_plugin_catalog = NULL;
+static FabulorCallbackRegistry *fabulor_callback_registry = NULL;
 
 extern const struct prefs vars[];	/* cfgfiles.c */
+static const char *plugin_get_libdir (void);
+
+static gboolean
+fabulor_api_send_message (void *user_data, const char *target, const char *text, GError **error)
+{
+	session *sess = user_data;
+	char *command;
+
+	if (!sess || !target || !*target || !text)
+	{
+		g_set_error_literal (error, G_FILE_ERROR, G_FILE_ERROR_INVAL, "FabulorAPI send_message requires a valid session, target, and text.");
+		return FALSE;
+	}
+
+	command = g_strdup_printf ("MSG %s %s", target, text);
+	handle_command (sess, command, FALSE);
+	g_free (command);
+	return TRUE;
+}
+
+static void
+fabulor_api_log (void *user_data, const char *text)
+{
+	session *sess = user_data;
+
+	if (sess && text)
+	{
+		PrintTextf (sess, "Fabulor plugin host\t%s\n", text);
+	}
+}
+
+static void
+fabulor_api_logf (session *sess, const char *format, ...)
+{
+	va_list args;
+	char *message;
+
+	if (!sess || !format)
+	{
+		return;
+	}
+
+	va_start (args, format);
+	message = g_strdup_vprintf (format, args);
+	va_end (args);
+
+	fabulor_api_log (sess, message);
+	g_free (message);
+}
+
+static guint
+fabulor_api_get_user_count (void *user_data)
+{
+	session *sess = user_data;
+
+	if (!sess || sess->total < 0)
+	{
+		return 0;
+	}
+
+	return (guint) sess->total;
+}
+
+static void
+fabulor_plugin_host_free (void)
+{
+	if (fabulor_callback_registry)
+	{
+		fabulor_callback_registry_free (fabulor_callback_registry);
+		fabulor_callback_registry = NULL;
+	}
+
+	if (fabulor_plugin_catalog)
+	{
+		fabulor_plugin_catalog_free (fabulor_plugin_catalog);
+		fabulor_plugin_catalog = NULL;
+	}
+}
+
+static void
+fabulor_plugin_host_blacklist_load (void)
+{
+	char *blacklist_path;
+	char *contents;
+	gchar **lines;
+	guint i;
+
+	if (!fabulor_plugin_catalog)
+	{
+		return;
+	}
+
+	blacklist_path = g_build_filename (get_xdir (), "plugin-blacklist.txt", NULL);
+	if (!g_file_get_contents (blacklist_path, &contents, NULL, NULL))
+	{
+		g_free (blacklist_path);
+		return;
+	}
+
+	lines = g_strsplit (contents, "\n", -1);
+	for (i = 0; lines[i] != NULL; i++)
+	{
+		char *line = g_strstrip (lines[i]);
+		if (*line == '\0' || *line == '#')
+		{
+			continue;
+		}
+
+		fabulor_plugin_catalog_blacklist_plugin (fabulor_plugin_catalog, line);
+	}
+
+	g_strfreev (lines);
+	g_free (contents);
+	g_free (blacklist_path);
+}
+
+static void
+append_json_string (GString *json, const char *value)
+{
+	const unsigned char *p;
+
+	g_string_append_c (json, '"');
+	if (value)
+	{
+		for (p = (const unsigned char *) value; *p; p++)
+		{
+			switch (*p)
+			{
+			case '\\':
+				g_string_append (json, "\\\\");
+				break;
+			case '"':
+				g_string_append (json, "\\\"");
+				break;
+			case '\b':
+				g_string_append (json, "\\b");
+				break;
+			case '\f':
+				g_string_append (json, "\\f");
+				break;
+			case '\n':
+				g_string_append (json, "\\n");
+				break;
+			case '\r':
+				g_string_append (json, "\\r");
+				break;
+			case '\t':
+				g_string_append (json, "\\t");
+				break;
+			default:
+				if (*p < 0x20)
+				{
+					g_string_append_printf (json, "\\u%04x", (unsigned int)*p);
+				}
+				else
+				{
+					g_string_append_c (json, (char)*p);
+				}
+			}
+		}
+	}
+	g_string_append_c (json, '"');
+}
+
+static void
+fabulor_plugin_host_fire_event (const char *event_name, const char *source_name, char *word[])
+{
+	GError *error = NULL;
+	GString *json;
+
+	if (!fabulor_callback_registry)
+	{
+		return;
+	}
+
+	json = g_string_new ("{");
+	g_string_append (json, "\"source\":");
+	append_json_string (json, source_name);
+	g_string_append (json, ",\"word1\":");
+	append_json_string (json, word && word[1] ? word[1] : "");
+	g_string_append (json, ",\"word2\":");
+	append_json_string (json, word && word[2] ? word[2] : "");
+	g_string_append (json, ",\"word3\":");
+	append_json_string (json, word && word[3] ? word[3] : "");
+	g_string_append_c (json, '}');
+
+	fabulor_callback_registry_fire_event (fabulor_callback_registry,
+										  event_name,
+										  json->str,
+										  NULL,
+										  &error);
+	if (error)
+	{
+		if (current_sess)
+		{
+			PrintTextf (current_sess, "Fabulor plugin host\tCallback dispatch error: %s\n", error->message);
+		}
+		g_clear_error (&error);
+	}
+
+	g_string_free (json, TRUE);
+}
+
+static void
+fabulor_plugin_host_autoload (session *sess)
+{
+	FabulorAPI api;
+	GError *error = NULL;
+	GPtrArray *ordered_manifests;
+	char *bundled_plugins_dir;
+	char *user_plugins_dir;
+	guint i;
+
+	fabulor_plugin_host_free ();
+
+	api.api_version = FABULOR_PLUGIN_API_VERSION;
+	api.user_data = sess;
+	api.send_message = fabulor_api_send_message;
+	api.log = fabulor_api_log;
+	api.get_user_count = fabulor_api_get_user_count;
+
+	fabulor_plugin_catalog = fabulor_plugin_catalog_new (&api);
+	fabulor_plugin_catalog_set_safe_mode (fabulor_plugin_catalog, arg_skip_plugins);
+	fabulor_plugin_host_blacklist_load ();
+
+	bundled_plugins_dir = g_build_filename (plugin_get_libdir (), "Plugins", NULL);
+	user_plugins_dir = g_build_filename (get_xdir (), "plugins", NULL);
+
+	if (g_file_test (bundled_plugins_dir, G_FILE_TEST_IS_DIR)
+		&& !fabulor_plugin_catalog_discover_root (fabulor_plugin_catalog, bundled_plugins_dir, &error))
+	{
+		fabulor_api_log (sess, error->message);
+		g_clear_error (&error);
+	}
+
+	if (g_file_test (user_plugins_dir, G_FILE_TEST_IS_DIR)
+		&& !fabulor_plugin_catalog_discover_root (fabulor_plugin_catalog, user_plugins_dir, &error))
+	{
+		fabulor_api_log (sess, error->message);
+		g_clear_error (&error);
+	}
+
+	fabulor_callback_registry = fabulor_callback_registry_new (&api, fabulor_plugin_catalog, NULL);
+
+	ordered_manifests = fabulor_plugin_catalog_resolve_load_order (fabulor_plugin_catalog,
+															 FABULOR_PLUGIN_API_VERSION,
+															 &error);
+	if (!ordered_manifests)
+	{
+		if (error)
+		{
+			fabulor_api_log (sess, error->message);
+			g_clear_error (&error);
+		}
+		g_free (bundled_plugins_dir);
+		g_free (user_plugins_dir);
+		return;
+	}
+
+	for (i = 0; i < ordered_manifests->len; i++)
+	{
+		const FabulorPluginManifest *manifest = g_ptr_array_index (ordered_manifests, i);
+		const FabulorPluginLoader *loader = fabulor_plugin_loader_for_language (manifest->language);
+
+		if (!loader)
+		{
+			fabulor_api_logf (sess, "Skipping %s because no loader is registered for %s.",
+							  manifest->id,
+							  fabulor_plugin_language_to_string (manifest->language));
+			continue;
+		}
+
+		if (!loader->load (manifest, &api, sess, &error))
+		{
+			fabulor_api_logf (sess, "Skipping %s: %s", manifest->id, error ? error->message : "unknown loader failure");
+			g_clear_error (&error);
+			continue;
+		}
+
+		fabulor_api_logf (sess, "Loaded manifest plugin %s (%s).", manifest->id, loader->language_name);
+	}
+
+	g_ptr_array_free (ordered_manifests, TRUE);
+	g_free (bundled_plugins_dir);
+	g_free (user_plugins_dir);
+}
 
 
 /* unload a plugin and remove it from our linked list */
@@ -381,6 +671,8 @@ plugin_kill_all (void)
 			plugin_free (list->data, TRUE, FALSE);
 		list = next;
 	}
+
+	fabulor_plugin_host_free ();
 }
 
 #if defined(USE_PLUGIN) || defined(WIN32)
@@ -499,6 +791,8 @@ plugin_auto_load (session *sess)
 #endif
 
 	for_files (sub_dir, "*."PLUGIN_SUFFIX, plugin_auto_load_cb);
+
+	fabulor_plugin_host_autoload (sess);
 
 	g_free (sub_dir);
 }
@@ -643,6 +937,11 @@ xit:
 int
 plugin_emit_command (session *sess, char *name, char *word[], char *word_eol[])
 {
+	if (name && word)
+	{
+		fabulor_plugin_host_fire_event ("command", name, word);
+	}
+
 	return plugin_hook_run (sess, name, word, word_eol, NULL, HOOK_COMMAND);
 }
 
@@ -668,6 +967,11 @@ plugin_emit_server (session *sess, char *name, char *word[], char *word_eol[],
 
 	attrs.server_time_utc = server_time;
 
+	if (name && word)
+	{
+		fabulor_plugin_host_fire_event (g_ascii_strcasecmp (name, "PRIVMSG") == 0 ? "message" : "server", name, word);
+	}
+
 	return plugin_hook_run (sess, name, word, word_eol, &attrs, 
 							HOOK_SERVER | HOOK_SERVER_ATTRS);
 }
@@ -680,6 +984,11 @@ plugin_emit_print (session *sess, char *word[], time_t server_time)
 	zoitechat_event_attrs attrs;
 
 	attrs.server_time_utc = server_time;
+
+	if (word && word[0])
+	{
+		fabulor_plugin_host_fire_event ("print", word[0], word);
+	}
 
 	return plugin_hook_run (sess, word[0], word, NULL, &attrs,
 							HOOK_PRINT | HOOK_PRINT_ATTRS);

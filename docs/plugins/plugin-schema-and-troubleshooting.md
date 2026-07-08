@@ -38,6 +38,11 @@ plugins/example.tcl.greeter/plugin.json
 plugins/example.tcl.greeter/plugin.tcl
 ```
 
+The current runtime discovers manifest plugins from these roots when they exist:
+
+1. Bundled `Plugins\` under the installed plugin library directory.
+2. User `plugins\` under the profile/config directory.
+
 ## plugin.json Schema
 
 Required and supported fields:
@@ -92,6 +97,8 @@ The current host scaffold exposes the public contract in `src/common/fabulor-plu
 
 Safe mode is intended to disable third-party plugins so Fabulor can start with core behaviour only.
 
+At present, this is controlled by the existing `--no-plugins` startup switch.
+
 Operational expectations:
 
 1. Third-party plugin discovery is skipped while safe mode is enabled.
@@ -99,6 +106,8 @@ Operational expectations:
 3. Logs clearly state that safe mode is active.
 4. Users can restart in normal mode to re-enable plugins.
 5. Blacklisted plugin ids stay disabled even when safe mode is off.
+
+Blacklisted plugin ids can be listed one per line in `plugin-blacklist.txt` under the user config directory. Empty lines and lines starting with `#` are ignored.
 
 ## Plugin Troubleshooting
 
@@ -112,6 +121,14 @@ Use this sequence when a plugin does not load or behaves incorrectly:
 6. Review logs for validation failures, dependency cycles, callback dispatch failures, and blacklist decisions.
 7. Start Fabulor in safe mode to isolate plugin-related faults.
 8. Re-enable plugins one at a time to identify the failing plugin.
+
+## Current Runtime Notes
+
+The manifest host is staged in progressively:
+
+1. Python manifest plugins can be auto-loaded through the existing embedded Python runtime.
+2. The shared host validates manifests, resolves dependencies, applies blacklist decisions, and queues callback dispatch on the main thread.
+3. C# and Tcl manifests are recognised and logged, but their runtime loaders are not wired into startup yet.
 
 ## Related Guides
 

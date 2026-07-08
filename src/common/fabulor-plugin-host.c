@@ -21,6 +21,9 @@
 #include <stdarg.h>
 #include <string.h>
 
+#include "zoitechat.h"
+#include "plugin.h"
+#include "outbound.h"
 #include "fabulor-plugin-host.h"
 
 typedef struct
@@ -289,6 +292,70 @@ manifest_field_missing (const char *value)
 }
 
 static gboolean
+discover_manifests_in_root (FabulorPluginCatalog *catalog, const char *plugins_root, GError **error)
+{
+	GDir *directory;
+	const char *entry_name;
+
+	directory = g_dir_open (plugins_root, 0, error);
+	if (!directory)
+	{
+		return FALSE;
+	}
+
+	while ((entry_name = g_dir_read_name (directory)) != NULL)
+	{
+		char *plugin_dir;
+		char *manifest_path;
+
+		if (entry_name[0] == '.')
+		{
+			continue;
+		}
+
+		plugin_dir = g_build_filename (plugins_root, entry_name, NULL);
+		manifest_path = g_build_filename (plugin_dir, "plugin.json", NULL);
+
+		if (g_file_test (plugin_dir, G_FILE_TEST_IS_DIR) && g_file_test (manifest_path, G_FILE_TEST_EXISTS))
+		{
+			FabulorPluginManifest *manifest;
+			GError *manifest_error = NULL;
+
+			manifest = fabulor_plugin_manifest_load_from_path (manifest_path, &manifest_error);
+			if (!manifest)
+			{
+				fabulor_plugin_catalog_add_diagnostic (catalog, "Skipping invalid plugin manifest %s: %s",
+													 manifest_path,
+													 manifest_error ? manifest_error->message : "unknown error");
+				g_clear_error (&manifest_error);
+			}
+			else
+			{
+				if (manifest->id && g_hash_table_contains (catalog->manifest_index, manifest->id))
+				{
+					fabulor_plugin_catalog_add_diagnostic (catalog, "Skipping duplicate plugin id '%s' from %s.", manifest->id, manifest_path);
+					fabulor_plugin_manifest_free (manifest);
+				}
+				else
+				{
+					g_ptr_array_add (catalog->manifests, manifest);
+					if (manifest->id)
+					{
+						g_hash_table_insert (catalog->manifest_index, manifest->id, manifest);
+					}
+				}
+			}
+		}
+
+		g_free (manifest_path);
+		g_free (plugin_dir);
+	}
+
+	g_dir_close (directory);
+	return TRUE;
+}
+
+static gboolean
 fabulor_plugin_manifest_is_enabled (const FabulorPluginCatalog *catalog, const FabulorPluginManifest *manifest)
 {
 	if (catalog->safe_mode_enabled)
@@ -447,11 +514,105 @@ loader_stub_dispatch (const FabulorPluginManifest *manifest,
 	return TRUE;
 }
 
+static const char *
+manifest_plugin_get_libdir (void)
+{
+	const char *libdir;
+
+	libdir = g_getenv ("ZOITECHAT_LIBDIR");
+	if (libdir && *libdir)
+	{
+		return libdir;
+	}
+
+	return ZOITECHATLIBDIR;
+}
+
+static gboolean
+ensure_python_runtime_loaded (session *sess, GError **error)
+{
+	char *runtime_path;
+	char *load_error;
+	gboolean success;
+
+	runtime_path = g_build_filename (manifest_plugin_get_libdir (), "hcpython3.dll", NULL);
+	load_error = plugin_load (sess, runtime_path, NULL);
+	success = load_error == NULL;
+
+	if (!success)
+	{
+		g_set_error (error, G_FILE_ERROR, G_FILE_ERROR_FAILED, "Python runtime load failed: %s", load_error);
+	}
+
+	g_free (runtime_path);
+	return success;
+}
+
+static gboolean
+load_python_manifest (const FabulorPluginManifest *manifest,
+					  const FabulorAPI *api,
+					  void *user_data,
+					  GError **error)
+{
+	session *sess = (session *) user_data;
+	char *command;
+
+	if (!sess)
+	{
+		g_set_error_literal (error, G_FILE_ERROR, G_FILE_ERROR_INVAL, "Python plugin loading requires a valid session context.");
+		return FALSE;
+	}
+
+	if (!ensure_python_runtime_loaded (sess, error))
+	{
+		return FALSE;
+	}
+
+	command = g_strdup_printf ("LOAD \"%s\"", manifest->entrypoint_path);
+	handle_command (sess, command, FALSE);
+	g_free (command);
+
+	fabulor_api_log (api, "Requested Python manifest load for %s from %s.", manifest->id, manifest->entrypoint_path);
+	return TRUE;
+}
+
+static gboolean
+load_tcl_manifest (const FabulorPluginManifest *manifest,
+				   const FabulorAPI *api,
+				   void *user_data,
+				   GError **error)
+{
+	(void)user_data;
+	(void)api;
+	g_set_error (error,
+				 G_FILE_ERROR,
+				 G_FILE_ERROR_NOSYS,
+				 "Tcl manifest loading is not wired into the runtime yet for %s.",
+				 manifest->id);
+	return FALSE;
+}
+
+static gboolean
+load_csharp_manifest (const FabulorPluginManifest *manifest,
+					  const FabulorAPI *api,
+					  void *user_data,
+					  GError **error)
+{
+	(void)user_data;
+	(void)api;
+	g_set_error (error,
+				 G_FILE_ERROR,
+				 G_FILE_ERROR_NOSYS,
+				 "C# manifest loading is not wired into the runtime yet for %s.",
+				 manifest->id);
+	return FALSE;
+}
+
 static const FabulorPluginLoader csharp_loader =
 {
 	FABULOR_PLUGIN_LANGUAGE_CSHARP,
 	"csharp",
-	loader_stub_load,
+	load_csharp_manifest,
 	loader_stub_dispatch
 };
 
@@ -459,7 +620,7 @@ static const FabulorPluginLoader python_loader =
 {
 	FABULOR_PLUGIN_LANGUAGE_PYTHON,
 	"python",
-	loader_stub_load,
+	load_python_manifest,
 	loader_stub_dispatch
 };
 
@@ -467,7 +628,7 @@ static const FabulorPluginLoader tcl_loader =
 {
 	FABULOR_PLUGIN_LANGUAGE_TCL,
 	"tcl",
-	loader_stub_load,
+	load_tcl_manifest,
 	loader_stub_dispatch
 };
 
@@ -604,9 +765,6 @@ fabulor_plugin_catalog_blacklist_plugin (FabulorPluginCatalog *catalog, const ch
 gboolean
 fabulor_plugin_catalog_discover (FabulorPluginCatalog *catalog, const char *plugins_root, GError **error)
 {
-	GDir *directory;
-	const char *entry_name;
-
 	if (!catalog || !plugins_root)
 	{
 		g_set_error_literal (error, G_FILE_ERROR, G_FILE_ERROR_INVAL, "Plugin discovery requires a valid catalog and root path.");
@@ -614,69 +772,19 @@ fabulor_plugin_catalog_discover (FabulorPluginCatalog *catalog, const char *plug
 	}
 
 	fabulor_plugin_catalog_clear (catalog);
+	return discover_manifests_in_root (catalog, plugins_root, error);
+}
 
-	directory = g_dir_open (plugins_root, 0, error);
-	if (!directory)
+gboolean
+fabulor_plugin_catalog_discover_root (FabulorPluginCatalog *catalog, const char *plugins_root, GError **error)
+{
+	if (!catalog || !plugins_root)
 	{
+		g_set_error_literal (error, G_FILE_ERROR, G_FILE_ERROR_INVAL, "Plugin discovery requires a valid catalog and root path.");
 		return FALSE;
 	}
 
-	while ((entry_name = g_dir_read_name (directory)) != NULL)
-	{
-		char *plugin_dir;
-		char *manifest_path;
-
-		if (entry_name[0] == '.')
-		{
-			continue;
-		}
-
-		plugin_dir = g_build_filename (plugins_root, entry_name, NULL);
-		manifest_path = g_build_filename (plugin_dir, "plugin.json", NULL);
-
-		if (g_file_test (plugin_dir, G_FILE_TEST_IS_DIR) && g_file_test (manifest_path, G_FILE_TEST_EXISTS))
-		{
-			FabulorPluginManifest *manifest;
-			GError *manifest_error = NULL;
-
-			manifest = fabulor_plugin_manifest_load_from_path (manifest_path, &manifest_error);
-			if (!manifest)
-			{
-				fabulor_plugin_catalog_add_diagnostic (catalog, "Skipping invalid plugin manifest %s: %s",
-													 manifest_path,
-													 manifest_error ? manifest_error->message : "unknown error");
-				g_clear_error (&manifest_error);
-			}
-			else
-			{
-				if (manifest->id && g_hash_table_contains (catalog->manifest_index, manifest->id))
-				{
-					fabulor_plugin_catalog_add_diagnostic (catalog, "Skipping duplicate plugin id '%s' from %s.", manifest->id, manifest_path);
-					fabulor_plugin_manifest_free (manifest);
-				}
-				else
-				{
-					g_ptr_array_add (catalog->manifests, manifest);
-					if (manifest->id)
-					{
-						g_hash_table_insert (catalog->manifest_index, manifest->id, manifest);
-					}
-				}
-			}
-		}
-
-		g_free (manifest_path);
-		g_free (plugin_dir);
-	}
-
-	g_dir_close (directory);
-
-	if (catalog->safe_mode_enabled)
-	{
-		fabulor_plugin_catalog_add_diagnostic (catalog, "Safe mode is enabled; manifest discovery completed but third-party loading remains disabled.");
-	}
-
-	return TRUE;
+	return discover_manifests_in_root (catalog, plugins_root, error);
 }
 
 GPtrArray *

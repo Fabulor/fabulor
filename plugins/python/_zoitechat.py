@@ -8,11 +8,11 @@ __all__ = [
     'EAT_ALL', 'EAT_ZOITECHAT', 'EAT_NONE', 'EAT_PLUGIN', 'EAT_XCHAT', 'EAT_HEXCHAT',
     'PRI_HIGH', 'PRI_HIGHEST', 'PRI_LOW', 'PRI_LOWEST', 'PRI_NORM',
     '__doc__', '__version__', 'command', 'del_pluginpref', 'emit_print',
-    'find_context', 'get_context', 'get_info',
+    'find_context', 'get_context', 'get_info', 'get_user_count', 'log',
     'get_list', 'get_lists', 'get_pluginpref', 'get_prefs', 'hook_command',
     'hook_print', 'hook_print_attrs', 'hook_server', 'hook_server_attrs',
     'hook_timer', 'hook_unload', 'list_pluginpref', 'nickcmp', 'prnt',
-    'set_pluginpref', 'strip', 'unhook',
+    'register_callback', 'send_message', 'set_pluginpref', 'strip', 'unhook',
 ]
 
 __doc__ = 'ZoiteChat Scripting Interface'
@@ -83,6 +83,14 @@ def command(command):
     lib.zoitechat_command(lib.ph, command.encode())
 
 
+def log(text):
+    prnt(text)
+
+
+def send_message(target, text):
+    command('MSG {} {}'.format(target, text))
+
+
 def nickcmp(string1, string2):
     return lib.zoitechat_nickcmp(lib.ph, string1.encode(), string2.encode())
 
@@ -148,6 +156,14 @@ def __cached_decoded_str(string):
 
 def get_lists():
     return [__cached_decoded_str(field) for field in __get_fields(b'lists')]
+
+
+def get_user_count():
+    users = get_list('users')
+    if users is None:
+        return 0
+
+    return len(users)
 
 
 class ListItem:
@@ -274,6 +290,26 @@ def hook_unload(callback, userdata=None):
     plugin = __get_current_plugin()
     hook = plugin.add_hook(callback, userdata, is_unload=True)
     return id(hook)
+
+
+def register_callback(event_name, callback, userdata=None):
+    event_name = event_name.lower()
+
+    if event_name != 'message':
+        raise ValueError('Only the "message" callback is currently supported in the embedded Python host')
+
+    def on_message(words, word_eol, local_userdata, attrs):
+        event = {
+            'event': event_name,
+            'command': 'PRIVMSG',
+            'words': words,
+            'word_eol': word_eol,
+            'time': getattr(attrs, 'time', 0),
+            'userdata': local_userdata,
+        }
+        return callback(event)
+
+    return hook_server_attrs('PRIVMSG', on_message, userdata)
 
 
 def unhook(handle):

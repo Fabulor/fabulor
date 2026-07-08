@@ -113,6 +113,7 @@ void fabulor_plugin_catalog_clear (FabulorPluginCatalog *catalog);
 void fabulor_plugin_catalog_set_safe_mode (FabulorPluginCatalog *catalog, gboolean enabled);
 void fabulor_plugin_catalog_blacklist_plugin (FabulorPluginCatalog *catalog, const char *plugin_id);
 gboolean fabulor_plugin_catalog_discover (FabulorPluginCatalog *catalog, const char *plugins_root, GError **error);
+gboolean fabulor_plugin_catalog_discover_root (FabulorPluginCatalog *catalog, const char *plugins_root, GError **error);
 GPtrArray *fabulor_plugin_catalog_resolve_load_order (FabulorPluginCatalog *catalog, guint api_version, GError **error);
 gboolean fabulor_plugin_catalog_load (FabulorPluginCatalog *catalog,
 									  GPtrArray *ordered_manifests,

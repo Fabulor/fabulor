@@ -47,4 +47,5 @@ def init():
 
 1. Keep callback handlers lightweight to avoid blocking the main thread.
 2. Keep manifest capabilities aligned with actual plugin behaviour.
-3. The host validates `plugin.json`, resolves declared dependencies, and dispatches callbacks on the main thread before language-specific execution.
+3. `zoitechat.log(...)`, `zoitechat.send_message(...)`, `zoitechat.get_user_count()`, and `zoitechat.register_callback("message", ...)` are available in the embedded host.
+4. The host validates `plugin.json`, resolves declared dependencies, and dispatches callbacks on the main thread before language-specific execution.
