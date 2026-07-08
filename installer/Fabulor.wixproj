@@ -10,11 +10,15 @@
     <FabulorPayloadRoot Condition="'$(FabulorPayloadRoot)'==''">$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\..\zoitechat-build\$(Platform)\rel\'))</FabulorPayloadRoot>
     <GtkRuntimeRoot>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\Runtime\GTK4\'))</GtkRuntimeRoot>
     <ManagedPluginHostRoot>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\src\managed\Fabulor.PluginHost\bin\$(Configuration)\net8.0\'))</ManagedPluginHostRoot>
+    <BundledDotNetRoot Condition="'$(BundledDotNetRoot)'=='' and '$(DOTNET_ROOT)'!=''">$(DOTNET_ROOT)</BundledDotNetRoot>
+    <BundledDotNetRoot Condition="'$(BundledDotNetRoot)'==''">C:\Program Files\dotnet</BundledDotNetRoot>
+    <BundledDotNetHostFxrRoot>$([System.IO.Path]::GetFullPath('$(BundledDotNetRoot)\host\fxr\'))</BundledDotNetHostFxrRoot>
+    <BundledDotNetSharedRuntimeRoot>$([System.IO.Path]::GetFullPath('$(BundledDotNetRoot)\shared\Microsoft.NETCore.App\'))</BundledDotNetSharedRuntimeRoot>
     <PythonRuntimeRoot>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\Runtime\Python314\'))</PythonRuntimeRoot>
     <PythonRuntimeDll>python314.dll</PythonRuntimeDll>
     <PythonRuntimeFolderName>Python314</PythonRuntimeFolderName>
     <TclRuntimeRoot>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\Runtime\Tcl\'))</TclRuntimeRoot>
-    <DefineConstants>$(DefineConstants);FabulorSemVer=$(FabulorSemVer);FabulorPayloadRoot=$(FabulorPayloadRoot);GtkRuntimeRoot=$(GtkRuntimeRoot);ManagedPluginHostRoot=$(ManagedPluginHostRoot);PythonRuntimeRoot=$(PythonRuntimeRoot);PythonRuntimeFolderName=$(PythonRuntimeFolderName);TclRuntimeRoot=$(TclRuntimeRoot)</DefineConstants>
+    <DefineConstants>$(DefineConstants);FabulorSemVer=$(FabulorSemVer);FabulorPayloadRoot=$(FabulorPayloadRoot);GtkRuntimeRoot=$(GtkRuntimeRoot);ManagedPluginHostRoot=$(ManagedPluginHostRoot);BundledDotNetRoot=$(BundledDotNetRoot);BundledDotNetHostFxrRoot=$(BundledDotNetHostFxrRoot);BundledDotNetSharedRuntimeRoot=$(BundledDotNetSharedRuntimeRoot);PythonRuntimeRoot=$(PythonRuntimeRoot);PythonRuntimeFolderName=$(PythonRuntimeFolderName);TclRuntimeRoot=$(TclRuntimeRoot)</DefineConstants>
 
     <WixProjectType>Package</WixProjectType>
     <OutputName>Fabulor</OutputName>
@@ -27,7 +31,7 @@
     <Compile Include="Components\**\*.wxs" />
   </ItemGroup>
 
-  <Target Name="BuildManagedPluginHost" BeforeTargets="Build">
+  <Target Name="BuildManagedPluginHost" BeforeTargets="Compile">
     <MSBuild Projects="..\src\managed\Fabulor.PluginHost\Fabulor.PluginHost.csproj"
              Targets="Restore;Build"
              Properties="Configuration=$(Configuration)" />
@@ -38,6 +42,8 @@
     <Error Condition="!Exists('$(FabulorPayloadRoot)\plugins')" Text="Missing plugin payload at $(FabulorPayloadRoot)\plugins. Build win32\zoitechat.sln first so the staged rel payload exists." />
     <Error Condition="!Exists('$(GtkRuntimeRoot)\bin\gtk-4-1.dll')" Text="Missing GTK4 runtime payload at $(GtkRuntimeRoot)." />
     <Error Condition="!Exists('$(ManagedPluginHostRoot)\Fabulor.PluginHost.runtimeconfig.json')" Text="Missing managed plugin host payload at $(ManagedPluginHostRoot)." />
+    <Error Condition="!Exists('$(BundledDotNetRoot)\host\fxr')" Text="Missing .NET hostfxr root at $(BundledDotNetRoot)." />
+    <Error Condition="!Exists('$(BundledDotNetRoot)\shared\Microsoft.NETCore.App')" Text="Missing .NET shared runtime payload under $(BundledDotNetRoot)\shared\Microsoft.NETCore.App." />
     <Error Condition="!Exists('$(PythonRuntimeRoot)\$(PythonRuntimeDll)')" Text="Missing Python 3.14 runtime payload at $(PythonRuntimeRoot)." />
     <Error Condition="!Exists('$(TclRuntimeRoot)\bin\tcl86t.dll')" Text="Missing Tcl runtime payload at $(TclRuntimeRoot)." />
   </Target>

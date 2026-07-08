@@ -54,4 +54,4 @@ public sealed class GreeterPlugin : IZoiteChatPlugin
 3. The managed contract assembly lives in `src\managed\Fabulor.PluginAbstractions` and currently defines `IZoiteChatPlugin`, `ZoiteChatContext`, and `ZoiteChatEvent`.
 4. The current host scaffold keeps `ZoiteChatAPI` as a compatibility alias for `FabulorAPI` while the repo finishes the broader rebrand.
 5. C# manifests now load through the `src\managed\Fabulor.PluginHost` bridge, which calls `IZoiteChatPlugin.Init(...)` and routes callbacks back through the shared native registry.
-6. The installer now stages the managed bridge assemblies under `Runtime\DotNet`, but the host still needs a compatible .NET runtime root with `hostfxr.dll` available.
+6. The installer now stages the managed bridge assemblies together with a bundled private `.NET` runtime root under `Runtime\DotNet`, including `hostfxr.dll` and the shared runtime payload.
