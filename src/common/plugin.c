@@ -217,6 +217,8 @@ fabulor_api_get_user_count (void *user_data)
 static void
 fabulor_plugin_host_free (void)
 {
+	fabulor_plugin_host_shutdown ();
+
 	if (fabulor_callback_registry)
 	{
 		fabulor_callback_registry_free (fabulor_callback_registry);

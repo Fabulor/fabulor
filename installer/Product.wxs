@@ -41,7 +41,7 @@
         <Directory Id="RUNTIMEDIR" Name="Runtime">
           <Directory Id="DOTNETDIR" Name="DotNet" />
           <Directory Id="GTK4DIR" Name="GTK4" />
-          <Directory Id="PYDIR" Name="Python312" />
+          <Directory Id="PYDIR" Name="$(var.PythonRuntimeFolderName)" />
           <Directory Id="TCLDIR" Name="Tcl" />
         </Directory>
       </Directory>
@@ -65,7 +65,7 @@
       <ComponentGroupRef Id="PluginFolderComponents" />
       <ComponentGroupRef Id="PluginBaseComponents" />
       <ComponentGroupRef Id="CommonShareAssetComponents" />
-      <ComponentGroupRef Id="Python312Components" />
+      <ComponentGroupRef Id="PythonRuntimeComponents" />
       <ComponentGroupRef Id="TclComponents" />
       <Feature Id="StartMenuFeature" Title="Start menu shortcuts" Level="1">
         <ComponentGroupRef Id="StartMenuComponents" />

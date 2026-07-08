@@ -1,10 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">
   <Fragment>
-    <ComponentGroup Id="Python312Components" Directory="PYDIR">
-      <Files Include="$(var.Python312RuntimeRoot)\**" />
+    <ComponentGroup Id="PythonRuntimeComponents" Directory="PYDIR">
+      <Files Include="$(var.PythonRuntimeRoot)\**" />
     </ComponentGroup>
   </Fragment>
 </Wix>
-
 

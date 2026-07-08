@@ -21,6 +21,11 @@
 #include <stdarg.h>
 #include <string.h>
 
+#ifdef WIN32
+#include <windows.h>
+#include <tcl.h>
+#endif
+
 #include "zoitechat.h"
 #include "plugin.h"
 #include "outbound.h"
@@ -52,6 +57,41 @@ struct _fabulor_callback_registry
 	GMainContext *main_context;
 	GThread *main_thread;
 };
+
+#ifdef WIN32
+typedef struct
+{
+	char *plugin_id;
+	Tcl_Interp *interp;
+	const FabulorAPI *api;
+} FabulorTclPluginState;
+
+typedef struct
+{
+	gboolean attempted_initialisation;
+	HMODULE module;
+	char *runtime_root;
+	GHashTable *plugins;
+	Tcl_Interp *(*create_interp) (void);
+	void (*delete_interp) (Tcl_Interp *interp);
+	void (*find_executable) (const char *argv0);
+	int (*init_interp) (Tcl_Interp *interp);
+	int (*eval_file) (Tcl_Interp *interp, const char *file_name);
+	int (*eval_ex) (Tcl_Interp *interp, const char *script, int length, int flags);
+	char *(*get_string_result) (Tcl_Interp *interp);
+	Tcl_Command (*create_command) (Tcl_Interp *interp,
+								   const char *cmd_name,
+								   Tcl_CmdProc *proc,
+								   ClientData client_data,
+								   Tcl_CmdDeleteProc *delete_proc);
+	char *(*merge_args) (int argc, const char *const *argv);
+	void (*free_value) (char *ptr);
+	void (*set_result) (Tcl_Interp *interp, char *result, Tcl_FreeProc *free_proc);
+} FabulorTclRuntime;
+
+static FabulorTclRuntime fabulor_tcl_runtime;
+static FabulorCallbackRegistry *fabulor_active_callback_registry;
+#endif
 
 static void
 fabulor_api_log (const FabulorAPI *api, const char *format, ...)
@@ -528,6 +568,396 @@ manifest_plugin_get_libdir (void)
 	return ZOITECHATLIBDIR;
 }
 
+#ifdef WIN32
+static void
+fabulor_tcl_plugin_state_free (FabulorTclPluginState *state)
+{
+	if (!state)
+	{
+		return;
+	}
+
+	if (state->interp && fabulor_tcl_runtime.delete_interp)
+	{
+		fabulor_tcl_runtime.delete_interp (state->interp);
+	}
+
+	g_free (state->plugin_id);
+	g_free (state);
+}
+
+static gboolean
+fabulor_tcl_root_has_runtime (const char *runtime_root)
+{
+	char *dll_path;
+	gboolean exists;
+
+	if (!runtime_root || *runtime_root == '\0')
+	{
+		return FALSE;
+	}
+
+	dll_path = g_build_filename (runtime_root, "bin", "tcl86t.dll", NULL);
+	exists = g_file_test (dll_path, G_FILE_TEST_EXISTS);
+	g_free (dll_path);
+	return exists;
+}
+
+static char *
+fabulor_tcl_executable_directory (void)
+{
+	char buffer[MAX_PATH];
+	DWORD length;
+	char *last_slash;
+
+	length = GetModuleFileNameA (NULL, buffer, MAX_PATH);
+	if (length == 0 || length >= MAX_PATH)
+	{
+		return NULL;
+	}
+
+	buffer[length] = '\0';
+	last_slash = strrchr (buffer, '\\');
+	if (!last_slash)
+	{
+		return NULL;
+	}
+
+	*last_slash = '\0';
+	return g_strdup (buffer);
+}
+
+static char *
+fabulor_tcl_resolve_runtime_root (void)
+{
+	const char *env_root;
+	char *cwd;
+	char *libdir_candidate;
+	char *libdir_root;
+	char *exe_dir;
+	char *exe_runtime_root;
+
+	env_root = g_getenv ("FABULOR_TCL_RUNTIME_ROOT");
+	if (fabulor_tcl_root_has_runtime (env_root))
+	{
+		return g_strdup (env_root);
+	}
+
+	cwd = g_get_current_dir ();
+	libdir_candidate = g_build_filename (cwd, "Runtime", "Tcl", NULL);
+	g_free (cwd);
+	if (fabulor_tcl_root_has_runtime (libdir_candidate))
+	{
+		return libdir_candidate;
+	}
+	g_free (libdir_candidate);
+
+	libdir_root = g_build_filename (manifest_plugin_get_libdir (), "..", "Runtime", "Tcl", NULL);
+	if (fabulor_tcl_root_has_runtime (libdir_root))
+	{
+		return libdir_root;
+	}
+	g_free (libdir_root);
+
+	exe_dir = fabulor_tcl_executable_directory ();
+	if (exe_dir)
+	{
+		exe_runtime_root = g_build_filename (exe_dir, "Runtime", "Tcl", NULL);
+		g_free (exe_dir);
+		if (fabulor_tcl_root_has_runtime (exe_runtime_root))
+		{
+			return exe_runtime_root;
+		}
+		g_free (exe_runtime_root);
+	}
+
+	return NULL;
+}
+
+static void
+fabulor_tcl_prepend_path (const char *path)
+{
+	const char *existing;
+	char *updated;
+
+	if (!path || *path == '\0')
+	{
+		return;
+	}
+
+	existing = g_getenv ("PATH");
+	if (existing && g_strrstr (existing, path))
+	{
+		return;
+	}
+
+	updated = existing && *existing
+		? g_strdup_printf ("%s;%s", path, existing)
+		: g_strdup (path);
+	g_setenv ("PATH", updated, TRUE);
+	g_free (updated);
+}
+
+static gboolean
+fabulor_tcl_resolve_symbol (FARPROC *target, const char *name, GError **error)
+{
+	*target = GetProcAddress (fabulor_tcl_runtime.module, name);
+	if (!*target)
+	{
+		g_set_error (error,
+					 G_FILE_ERROR,
+					 G_FILE_ERROR_FAILED,
+					 "Missing Tcl runtime symbol '%s'.",
+					 name);
+		return FALSE;
+	}
+
+	return TRUE;
+}
+
+static gboolean
+fabulor_tcl_runtime_ensure_loaded (GError **error)
+{
+	char *dll_path;
+	char *library_path;
+	char *bin_path;
+
+	if (fabulor_tcl_runtime.module)
+	{
+		return TRUE;
+	}
+
+	if (!fabulor_tcl_runtime.runtime_root)
+	{
+		fabulor_tcl_runtime.runtime_root = fabulor_tcl_resolve_runtime_root ();
+	}
+
+	if (!fabulor_tcl_runtime.runtime_root)
+	{
+		g_set_error_literal (error, G_FILE_ERROR, G_FILE_ERROR_NOENT, "Unable to locate the bundled Tcl runtime.");
+		return FALSE;
+	}
+
+	dll_path = g_build_filename (fabulor_tcl_runtime.runtime_root, "bin", "tcl86t.dll", NULL);
+	library_path = g_build_filename (fabulor_tcl_runtime.runtime_root, "lib", "tcl8.6", NULL);
+	bin_path = g_build_filename (fabulor_tcl_runtime.runtime_root, "bin", NULL);
+	fabulor_tcl_prepend_path (bin_path);
+	g_free (bin_path);
+	g_setenv ("TCL_LIBRARY", library_path, TRUE);
+	g_free (library_path);
+
+	fabulor_tcl_runtime.module = LoadLibraryA (dll_path);
+	g_free (dll_path);
+	if (!fabulor_tcl_runtime.module)
+	{
+		g_set_error_literal (error, G_FILE_ERROR, G_FILE_ERROR_FAILED, "Failed to load tcl86t.dll from the bundled runtime.");
+		return FALSE;
+	}
+
+	if (!fabulor_tcl_resolve_symbol ((FARPROC *) &fabulor_tcl_runtime.create_interp, "Tcl_CreateInterp", error)
+		|| !fabulor_tcl_resolve_symbol ((FARPROC *) &fabulor_tcl_runtime.delete_interp, "Tcl_DeleteInterp", error)
+		|| !fabulor_tcl_resolve_symbol ((FARPROC *) &fabulor_tcl_runtime.find_executable, "Tcl_FindExecutable", error)
+		|| !fabulor_tcl_resolve_symbol ((FARPROC *) &fabulor_tcl_runtime.init_interp, "Tcl_Init", error)
+		|| !fabulor_tcl_resolve_symbol ((FARPROC *) &fabulor_tcl_runtime.eval_file, "Tcl_EvalFile", error)
+		|| !fabulor_tcl_resolve_symbol ((FARPROC *) &fabulor_tcl_runtime.eval_ex, "Tcl_EvalEx", error)
+		|| !fabulor_tcl_resolve_symbol ((FARPROC *) &fabulor_tcl_runtime.get_string_result, "Tcl_GetStringResult", error)
+		|| !fabulor_tcl_resolve_symbol ((FARPROC *) &fabulor_tcl_runtime.create_command, "Tcl_CreateCommand", error)
+		|| !fabulor_tcl_resolve_symbol ((FARPROC *) &fabulor_tcl_runtime.merge_args, "Tcl_Merge", error)
+		|| !fabulor_tcl_resolve_symbol ((FARPROC *) &fabulor_tcl_runtime.free_value, "Tcl_Free", error)
+		|| !fabulor_tcl_resolve_symbol ((FARPROC *) &fabulor_tcl_runtime.set_result, "Tcl_SetResult", error))
+	{
+		FreeLibrary (fabulor_tcl_runtime.module);
+		fabulor_tcl_runtime.module = NULL;
+		return FALSE;
+	}
+
+	if (!fabulor_tcl_runtime.plugins)
+	{
+		fabulor_tcl_runtime.plugins = g_hash_table_new_full (g_str_hash,
+															 g_str_equal,
+															 g_free,
+															 (GDestroyNotify) fabulor_tcl_plugin_state_free);
+	}
+
+	if (!fabulor_tcl_runtime.attempted_initialisation)
+	{
+		fabulor_tcl_runtime.find_executable (NULL);
+		fabulor_tcl_runtime.attempted_initialisation = TRUE;
+	}
+
+	return TRUE;
+}
+
+static void
+fabulor_tcl_set_result (Tcl_Interp *interp, const char *message)
+{
+	if (!interp || !message || !fabulor_tcl_runtime.set_result)
+	{
+		return;
+	}
+
+	fabulor_tcl_runtime.set_result (interp, (char *) message, TCL_VOLATILE);
+}
+
+static int
+fabulor_tcl_log_cmd (ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[])
+{
+	FabulorTclPluginState *state = client_data;
+
+	if (argc != 2)
+	{
+		fabulor_tcl_set_result (interp, "wrong # args: should be \"zoitechat::log text\"");
+		return TCL_ERROR;
+	}
+
+	fabulor_api_log (state->api, "[Tcl:%s] %s", state->plugin_id, argv[1]);
+	return TCL_OK;
+}
+
+static int
+fabulor_tcl_send_message_cmd (ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[])
+{
+	FabulorTclPluginState *state = client_data;
+	GError *error = NULL;
+
+	if (argc != 3)
+	{
+		fabulor_tcl_set_result (interp, "wrong # args: should be \"zoitechat::send_message target text\"");
+		return TCL_ERROR;
+	}
+
+	if (!state->api || !state->api->send_message
+		|| !state->api->send_message (state->api->user_data, argv[1], argv[2], &error))
+	{
+		fabulor_tcl_set_result (interp, error ? error->message : "Failed to send message.");
+		g_clear_error (&error);
+		return TCL_ERROR;
+	}
+
+	return TCL_OK;
+}
+
+static int
+fabulor_tcl_get_user_count_cmd (ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[])
+{
+	FabulorTclPluginState *state = client_data;
+	char *value;
+
+	(void) argv;
+
+	if (argc != 1)
+	{
+		fabulor_tcl_set_result (interp, "wrong # args: should be \"zoitechat::get_user_count\"");
+		return TCL_ERROR;
+	}
+
+	value = g_strdup_printf ("%u", state->api && state->api->get_user_count
+		? state->api->get_user_count (state->api->user_data)
+		: 0U);
+	fabulor_tcl_set_result (interp, value);
+	g_free (value);
+	return TCL_OK;
+}
+
+static int
+fabulor_tcl_register_callback_cmd (ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[])
+{
+	FabulorTclPluginState *state = client_data;
+	GError *error = NULL;
+
+	if (argc != 3)
+	{
+		fabulor_tcl_set_result (interp, "wrong # args: should be \"zoitechat::register_callback event handler\"");
+		return TCL_ERROR;
+	}
+
+	if (!fabulor_active_callback_registry)
+	{
+		fabulor_tcl_set_result (interp, "Callback registry is not available.");
+		return TCL_ERROR;
+	}
+
+	if (!fabulor_callback_registry_register (fabulor_active_callback_registry,
+											 argv[1],
+											 state->plugin_id,
+											 FABULOR_PLUGIN_LANGUAGE_TCL,
+											 argv[2],
+											 &error))
+	{
+		fabulor_tcl_set_result (interp, error ? error->message : "Callback registration failed.");
+		g_clear_error (&error);
+		return TCL_ERROR;
+	}
+
+	return TCL_OK;
+}
+
+static gboolean
+fabulor_tcl_eval_command (Tcl_Interp *interp, gint argc, const char *const *argv, GError **error)
+{
+	char *script;
+	int result;
+
+	script = fabulor_tcl_runtime.merge_args (argc, argv);
+	result = fabulor_tcl_runtime.eval_ex (interp, script, -1, 0);
+	fabulor_tcl_runtime.free_value (script);
+
+	if (result != TCL_OK)
+	{
+		g_set_error (error,
+					 G_FILE_ERROR,
+					 G_FILE_ERROR_FAILED,
+					 "%s",
+					 fabulor_tcl_runtime.get_string_result (interp));
+		return FALSE;
+	}
+
+	return TRUE;
+}
+
+static gboolean
+fabulor_tcl_register_commands (FabulorTclPluginState *state, GError **error)
+{
+	const char *namespace_script = "namespace eval zoitechat {}";
+
+	if (fabulor_tcl_runtime.eval_ex (state->interp, namespace_script, -1, 0) != TCL_OK)
+	{
+		g_set_error (error,
+					 G_FILE_ERROR,
+					 G_FILE_ERROR_FAILED,
+					 "%s",
+					 fabulor_tcl_runtime.get_string_result (state->interp));
+		return FALSE;
+	}
+
+	fabulor_tcl_runtime.create_command (state->interp, "zoitechat::log", fabulor_tcl_log_cmd, state, NULL);
+	fabulor_tcl_runtime.create_command (state->interp, "zoitechat::send_message", fabulor_tcl_send_message_cmd, state, NULL);
+	fabulor_tcl_runtime.create_command (state->interp, "zoitechat::get_user_count", fabulor_tcl_get_user_count_cmd, state, NULL);
+	fabulor_tcl_runtime.create_command (state->interp, "zoitechat::register_callback", fabulor_tcl_register_callback_cmd, state, NULL);
+	return TRUE;
+}
+
+static void
+fabulor_tcl_runtime_reset (void)
+{
+	if (fabulor_tcl_runtime.plugins)
+	{
+		g_hash_table_remove_all (fabulor_tcl_runtime.plugins);
+		g_hash_table_unref (fabulor_tcl_runtime.plugins);
+		fabulor_tcl_runtime.plugins = NULL;
+	}
+
+	if (fabulor_tcl_runtime.module)
+	{
+		FreeLibrary (fabulor_tcl_runtime.module);
+		fabulor_tcl_runtime.module = NULL;
+	}
+
+	g_free (fabulor_tcl_runtime.runtime_root);
+	memset (&fabulor_tcl_runtime, 0, sizeof (fabulor_tcl_runtime));
+}
+#endif
+
 static gboolean
 ensure_python_runtime_loaded (session *sess, GError **error)
 {
@@ -582,14 +1012,111 @@ load_tcl_manifest (const FabulorPluginManifest *manifest,
 				   void *user_data,
 				   GError **error)
 {
-	(void)user_data;
-	(void)api;
-	g_set_error (error,
-				 G_FILE_ERROR,
-				 G_FILE_ERROR_NOSYS,
-				 "Tcl manifest loading is not wired into the runtime yet for %s.",
-				 manifest->id);
+#ifdef WIN32
+	FabulorTclPluginState *state;
+	const char *init_script = "if {[llength [info commands init]]} { init }";
+
+	(void) user_data;
+
+	if (!fabulor_tcl_runtime_ensure_loaded (error))
+	{
+		return FALSE;
+	}
+
+	state = g_new0 (FabulorTclPluginState, 1);
+	state->plugin_id = g_strdup (manifest->id);
+	state->api = api;
+	state->interp = fabulor_tcl_runtime.create_interp ();
+	if (!state->interp)
+	{
+		fabulor_tcl_plugin_state_free (state);
+		g_set_error (error, G_FILE_ERROR, G_FILE_ERROR_FAILED, "Failed to create a Tcl interpreter for %s.", manifest->id);
+		return FALSE;
+	}
+
+	if (fabulor_tcl_runtime.init_interp (state->interp) != TCL_OK)
+	{
+		g_set_error (error,
+					 G_FILE_ERROR,
+					 G_FILE_ERROR_FAILED,
+					 "Tcl runtime initialisation failed for %s: %s",
+					 manifest->id,
+					 fabulor_tcl_runtime.get_string_result (state->interp));
+		fabulor_tcl_plugin_state_free (state);
+		return FALSE;
+	}
+
+	g_hash_table_replace (fabulor_tcl_runtime.plugins, g_strdup (manifest->id), state);
+
+	if (!fabulor_tcl_register_commands (state, error)
+		|| fabulor_tcl_runtime.eval_file (state->interp, manifest->entrypoint_path) != TCL_OK
+		|| fabulor_tcl_runtime.eval_ex (state->interp, init_script, -1, 0) != TCL_OK)
+	{
+		if (!error || !*error)
+		{
+			g_set_error (error,
+						 G_FILE_ERROR,
+						 G_FILE_ERROR_FAILED,
+						 "Tcl manifest load failed for %s: %s",
+						 manifest->id,
+						 fabulor_tcl_runtime.get_string_result (state->interp));
+		}
+
+		g_hash_table_remove (fabulor_tcl_runtime.plugins, manifest->id);
+		return FALSE;
+	}
+
+	fabulor_api_log (api, "Loaded Tcl manifest plugin %s from %s.", manifest->id, manifest->entrypoint_path);
+	return TRUE;
+#else
+	(void) manifest;
+	(void) api;
+	(void) user_data;
+	g_set_error_literal (error, G_FILE_ERROR, G_FILE_ERROR_NOSYS, "Tcl manifest loading is only available on Windows builds.");
 	return FALSE;
+#endif
+}
+
+static gboolean
+dispatch_tcl_callback (const FabulorPluginManifest *manifest,
+					   const char *handler_name,
+					   const char *event_name,
+					   const char *event_payload_json,
+					   void *user_data,
+					   GError **error)
+{
+#ifdef WIN32
+	FabulorTclPluginState *state;
+	const char *argv[2];
+
+	(void) event_name;
+	(void) user_data;
+
+	if (!fabulor_tcl_runtime.plugins)
+	{
+		g_set_error_literal (error, G_FILE_ERROR, G_FILE_ERROR_NOENT, "Tcl runtime is not active.");
+		return FALSE;
+	}
+
+	state = g_hash_table_lookup (fabulor_tcl_runtime.plugins, manifest->id);
+	if (!state || !state->interp)
+	{
+		g_set_error (error, G_FILE_ERROR, G_FILE_ERROR_NOENT, "Tcl plugin '%s' is not loaded.", manifest->id);
+		return FALSE;
+	}
+
+	argv[0] = handler_name;
+	argv[1] = event_payload_json ? event_payload_json : "{}";
+	return fabulor_tcl_eval_command (state->interp, 2, argv, error);
+#else
+	(void) manifest;
+	(void) handler_name;
+	(void) event_name;
+	(void) event_payload_json;
+	(void) user_data;
+	g_set_error_literal (error, G_FILE_ERROR, G_FILE_ERROR_NOSYS, "Tcl callback dispatch is only available on Windows builds.");
+	return FALSE;
+#endif
 }
 
 static gboolean
@@ -629,7 +1156,7 @@ static const FabulorPluginLoader tcl_loader =
 	FABULOR_PLUGIN_LANGUAGE_TCL,
 	"tcl",
 	load_tcl_manifest,
-	loader_stub_dispatch
+	dispatch_tcl_callback
 };
 
 static void
@@ -1060,6 +1587,9 @@ fabulor_callback_registry_new (const FabulorAPI *api, const FabulorPluginCatalog
 	registry->entries = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, (GDestroyNotify) fabulor_callback_entry_array_free);
 	registry->main_context = main_context ? g_main_context_ref (main_context) : g_main_context_ref (g_main_context_default ());
 	registry->main_thread = g_thread_self ();
+#ifdef WIN32
+	fabulor_active_callback_registry = registry;
+#endif
 	return registry;
 }
 
@@ -1073,6 +1603,12 @@ fabulor_callback_registry_free (FabulorCallbackRegistry *registry)
 
 	g_hash_table_unref (registry->entries);
 	g_main_context_unref (registry->main_context);
+#ifdef WIN32
+	if (fabulor_active_callback_registry == registry)
+	{
+		fabulor_active_callback_registry = NULL;
+	}
+#endif
 	g_free (registry);
 }
 
@@ -1220,4 +1756,12 @@ fabulor_callback_registry_fire_event (FabulorCallbackRegistry *registry,
 	}
 
 	return TRUE;
+}
+
+void
+fabulor_plugin_host_shutdown (void)
+{
+#ifdef WIN32
+	fabulor_tcl_runtime_reset ();
+#endif
 }

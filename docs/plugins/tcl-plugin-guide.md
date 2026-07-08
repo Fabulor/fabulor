@@ -45,5 +45,6 @@ proc init {} {
 
 1. Keep callback handlers lightweight to avoid blocking the main thread.
 2. Keep manifest capabilities aligned with actual plugin behaviour.
-3. Use safe mode when diagnosing Tcl startup faults so third-party plugins stay disabled while core startup is verified.
-4. Tcl manifests are validated and included in dependency analysis, but the Tcl runtime loader is not wired into startup yet.
+3. The embedded Tcl host currently exposes `zoitechat::log`, `zoitechat::send_message`, `zoitechat::get_user_count`, and `zoitechat::register_callback`.
+4. `zoitechat::register_callback` currently routes manifest callbacks through the shared host registry, with `message` as the first practical event path.
+5. Use safe mode when diagnosing Tcl startup faults so third-party plugins stay disabled while core startup is verified.

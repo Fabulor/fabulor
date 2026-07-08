@@ -142,6 +142,7 @@ gboolean fabulor_callback_registry_fire_event (FabulorCallbackRegistry *registry
 											   const char *event_payload_json,
 											   void *loader_user_data,
 											   GError **error);
+void fabulor_plugin_host_shutdown (void);
 
 #ifdef __cplusplus
 }

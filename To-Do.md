@@ -16,7 +16,7 @@
   - [ ] `fabulor.exe`
   - [ ] `Plugins\`
   - [ ] `Runtime\GTK4\`
-  - [ ] `Runtime\Python312\`
+  - [ ] `Runtime\Python314\`
   - [ ] `Runtime\Tcl\`
   - [ ] `Runtime\DotNet\`
   - [ ] `Config\`.
@@ -43,7 +43,7 @@
   - [ ] Map `ZoiteChatAPI` to delegates.
   - [ ] Implement `ZoiteChatContext`.
   - [ ] Define `IZoiteChatPlugin` with `Init(ZoiteChatContext ctx)`.
-- [ ] Implement Python 3.12 binding:
+- [ ] Implement Python 3.14 binding:
   - [ ] Embedded Python initialisation.
   - [ ] `zoitechat` module exposing core functions.
   - [ ] `init_python_binding(ZoiteChatAPI* api)`.

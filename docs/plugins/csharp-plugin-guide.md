@@ -29,7 +29,7 @@ Read shared rules first:
 ## Minimal C# Plugin
 
 ```csharp
-using System;
+using Fabulor.Plugins;
 
 public sealed class GreeterPlugin : IZoiteChatPlugin
 {
@@ -40,7 +40,7 @@ public sealed class GreeterPlugin : IZoiteChatPlugin
         ctx.RegisterCallback("message", OnMessage);
     }
 
-    private void OnMessage(dynamic evt)
+    private void OnMessage(ZoiteChatEvent evt)
     {
         // Keep callback handlers resilient and non-blocking.
     }
@@ -51,5 +51,6 @@ public sealed class GreeterPlugin : IZoiteChatPlugin
 
 1. Keep callback handlers lightweight to avoid blocking the main thread.
 2. Keep manifest capabilities aligned with actual plugin behaviour.
-3. The current host scaffold keeps `ZoiteChatAPI` as a compatibility alias for `FabulorAPI` while the repo finishes the broader rebrand.
-4. C# manifests are validated and included in dependency analysis, but the runtime CLR loader is not wired into startup yet.
+3. The managed contract assembly lives in `src\managed\Fabulor.PluginAbstractions` and currently defines `IZoiteChatPlugin`, `ZoiteChatContext`, and `ZoiteChatEvent`.
+4. The current host scaffold keeps `ZoiteChatAPI` as a compatibility alias for `FabulorAPI` while the repo finishes the broader rebrand.
+5. C# manifests are validated and included in dependency analysis, but the runtime CLR loader and native host bridge are not wired into startup yet.

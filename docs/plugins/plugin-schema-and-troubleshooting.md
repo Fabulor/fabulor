@@ -127,8 +127,10 @@ Use this sequence when a plugin does not load or behaves incorrectly:
 The manifest host is staged in progressively:
 
 1. Python manifest plugins can be auto-loaded through the existing embedded Python runtime.
-2. The shared host validates manifests, resolves dependencies, applies blacklist decisions, and queues callback dispatch on the main thread.
-3. C# and Tcl manifests are recognised and logged, but their runtime loaders are not wired into startup yet.
+2. Tcl manifest plugins can be auto-loaded through the bundled Tcl runtime with a minimal `zoitechat::*` command surface.
+3. The shared host validates manifests, resolves dependencies, applies blacklist decisions, and queues callback dispatch on the main thread.
+4. The managed C# contract assembly is scaffolded under `src\managed\Fabulor.PluginAbstractions` so plugin and host types are concrete.
+5. C# manifests are recognised and logged, but the runtime CLR loader and native host bridge are not wired into startup yet.
 
 ## Related Guides
 
