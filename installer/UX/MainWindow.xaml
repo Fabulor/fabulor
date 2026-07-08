@@ -263,7 +263,11 @@
                 <GroupBox Margin="0,16,0,0"
                           Header="Plugin runtimes">
                     <StackPanel Margin="14">
+                       <TextBlock Foreground="{StaticResource TextSecondaryBrush}"
+                                  TextWrapping="Wrap"
+                                  Text="These runtimes back manifest-driven plugins written in C#, Python, or Tcl." />
                        <CheckBox x:Name="DotNetPluginHostCheckBox"
+                                 Margin="0,12,0,0"
                                  Content="C# plugin host and bundled .NET runtime" />
                        <CheckBox x:Name="PythonRuntimeCheckBox"
                                  Margin="0,10,0,0"
@@ -271,13 +275,35 @@
                        <CheckBox x:Name="TclRuntimeCheckBox"
                                  Margin="0,10,0,0"
                                  Content="Tcl plugin runtime (8.6)" />
-                       <CheckBox x:Name="ThemeAssetsCheckBox"
-                                 Margin="0,10,0,0"
-                                 Content="Theme support assets" />
                        <TextBlock Margin="0,12,0,0"
                                   Foreground="{StaticResource TextSecondaryBrush}"
                                   TextWrapping="Wrap"
-                                  Text="Disable runtimes you do not want to ship. Third-party manifest plugins for C#, Python, or Tcl need their matching runtime to stay installed. Theme support assets include GTK preferences artwork and theme attribution content." />
+                                  Text="Disable a language runtime only if you do not plan to ship plugins that depend on it." />
+                    </StackPanel>
+                </GroupBox>
+
+                <GroupBox Margin="0,16,0,0"
+                         Header="Shared runtime payload">
+                    <StackPanel Margin="14">
+                       <TextBlock Foreground="{StaticResource TextSecondaryBrush}"
+                                  TextWrapping="Wrap"
+                                  Text="These options control the broader GTK and shared support payload installed beside the main client." />
+                       <CheckBox x:Name="ThemeAssetsCheckBox"
+                                 Margin="0,10,0,0"
+                                 Content="Theme support assets" />
+                       <CheckBox x:Name="Gtk4RuntimeCheckBox"
+                                 Margin="0,10,0,0"
+                                 Content="GTK4 runtime payload" />
+                       <CheckBox x:Name="LegacyGtkCompatibilityCheckBox"
+                                 Margin="0,10,0,0"
+                                 Content="Legacy GTK compatibility data" />
+                       <CheckBox x:Name="RuntimeDocumentationCheckBox"
+                                 Margin="0,10,0,0"
+                                 Content="Runtime documentation" />
+                       <TextBlock Margin="0,12,0,0"
+                                  Foreground="{StaticResource TextSecondaryBrush}"
+                                  TextWrapping="Wrap"
+                                  Text="Theme support assets include GTK preferences artwork and attribution content, while the GTK and compatibility groups control the wider shared runtime payload." />
                    </StackPanel>
                 </GroupBox>
 
@@ -299,7 +325,11 @@
                 <GroupBox Margin="0,16,0,0"
                           Header="Optional content and built-in plugins">
                     <StackPanel Margin="14">
+                        <TextBlock Foreground="{StaticResource TextSecondaryBrush}"
+                                   TextWrapping="Wrap"
+                                   Text="Translations affect the application language files. The remaining options control built-in plugin payloads." />
                         <CheckBox x:Name="TranslationsCheckBox"
+                                  Margin="0,12,0,0"
                                   Content="Translations" />
                         <CheckBox x:Name="ChecksumPluginCheckBox"
                                   Margin="0,10,0,0"

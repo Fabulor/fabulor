@@ -10,6 +10,12 @@ public sealed class InstallerFeatureSelection
 
     public bool IncludeThemeAssets { get; set; } = true;
 
+    public bool IncludeGtk4Runtime { get; set; } = true;
+
+    public bool IncludeLegacyGtkCompatibilityData { get; set; } = true;
+
+    public bool IncludeRuntimeDocumentation { get; set; } = true;
+
     public bool IncludeStartMenuShortcuts { get; set; } = true;
 
     public bool IncludeShellIntegration { get; set; } = true;
@@ -34,6 +40,9 @@ public sealed class InstallerFeatureSelection
             IncludePythonRuntime = this.IncludePythonRuntime,
             IncludeTclRuntime = this.IncludeTclRuntime,
             IncludeThemeAssets = this.IncludeThemeAssets,
+            IncludeGtk4Runtime = this.IncludeGtk4Runtime,
+            IncludeLegacyGtkCompatibilityData = this.IncludeLegacyGtkCompatibilityData,
+            IncludeRuntimeDocumentation = this.IncludeRuntimeDocumentation,
             IncludeStartMenuShortcuts = this.IncludeStartMenuShortcuts,
             IncludeShellIntegration = this.IncludeShellIntegration,
             IncludeTranslations = this.IncludeTranslations,

@@ -54,13 +54,7 @@
     <Feature Id="MainFeature" Title="Fabulor" Level="1">
       <ComponentGroupRef Id="CoreComponents" />
       <ComponentGroupRef Id="ConfigFolderComponents" />
-      <ComponentGroupRef Id="GTK4Components" />
       <ComponentGroupRef Id="InstalledModeCoreComponents" />
-      <ComponentGroupRef Id="LegacyGtkEtcRuntimeComponents" />
-      <ComponentGroupRef Id="LegacyGtkLibRuntimeComponents" />
-      <ComponentGroupRef Id="LegacyGtkShareDocRuntimeComponents" />
-      <ComponentGroupRef Id="LegacyGtkShareGlibRuntimeComponents" />
-      <ComponentGroupRef Id="LegacyGtkShareXmlRuntimeComponents" />
       <ComponentGroupRef Id="PluginFolderComponents" />
       <ComponentGroupRef Id="PluginBaseComponents" />
       <ComponentGroupRef Id="CommonShareAssetComponents" />
@@ -75,6 +69,18 @@
       </Feature>
       <Feature Id="ThemeAssetFeature" Title="Theme support assets" Level="1">
         <ComponentGroupRef Id="ThemeAssetComponents" />
+      </Feature>
+      <Feature Id="Gtk4RuntimeFeature" Title="GTK4 runtime payload" Level="1">
+        <ComponentGroupRef Id="GTK4Components" />
+      </Feature>
+      <Feature Id="LegacyGtkCompatibilityFeature" Title="Legacy GTK compatibility data" Level="1">
+        <ComponentGroupRef Id="LegacyGtkEtcRuntimeComponents" />
+        <ComponentGroupRef Id="LegacyGtkLibRuntimeComponents" />
+        <ComponentGroupRef Id="LegacyGtkShareGlibRuntimeComponents" />
+        <ComponentGroupRef Id="LegacyGtkShareXmlRuntimeComponents" />
+      </Feature>
+      <Feature Id="RuntimeDocumentationFeature" Title="Runtime documentation" Level="1">
+        <ComponentGroupRef Id="LegacyGtkShareDocRuntimeComponents" />
       </Feature>
       <Feature Id="DotNetRuntimeFeature" Title="C# plugin host and bundled .NET runtime" Level="1">
         <ComponentGroupRef Id="DotNetComponents" />

@@ -31,6 +31,9 @@ public partial class MainWindow : Window
         IncludePythonRuntime = this.PythonRuntimeCheckBox.IsChecked == true,
         IncludeTclRuntime = this.TclRuntimeCheckBox.IsChecked == true,
         IncludeThemeAssets = this.ThemeAssetsCheckBox.IsChecked == true,
+        IncludeGtk4Runtime = this.Gtk4RuntimeCheckBox.IsChecked == true,
+        IncludeLegacyGtkCompatibilityData = this.LegacyGtkCompatibilityCheckBox.IsChecked == true,
+        IncludeRuntimeDocumentation = this.RuntimeDocumentationCheckBox.IsChecked == true,
         IncludeStartMenuShortcuts = this.StartMenuShortcutsCheckBox.IsChecked == true,
         IncludeShellIntegration = this.ShellIntegrationCheckBox.IsChecked == true,
         IncludeTranslations = this.TranslationsCheckBox.IsChecked == true,
@@ -56,6 +59,9 @@ public partial class MainWindow : Window
         this.PythonRuntimeCheckBox.IsChecked = selection.IncludePythonRuntime;
         this.TclRuntimeCheckBox.IsChecked = selection.IncludeTclRuntime;
         this.ThemeAssetsCheckBox.IsChecked = selection.IncludeThemeAssets;
+        this.Gtk4RuntimeCheckBox.IsChecked = selection.IncludeGtk4Runtime;
+        this.LegacyGtkCompatibilityCheckBox.IsChecked = selection.IncludeLegacyGtkCompatibilityData;
+        this.RuntimeDocumentationCheckBox.IsChecked = selection.IncludeRuntimeDocumentation;
         this.StartMenuShortcutsCheckBox.IsChecked = selection.IncludeStartMenuShortcuts;
         this.ShellIntegrationCheckBox.IsChecked = selection.IncludeShellIntegration;
         this.TranslationsCheckBox.IsChecked = selection.IncludeTranslations;
@@ -97,6 +103,9 @@ public partial class MainWindow : Window
         this.PythonRuntimeCheckBox.IsEnabled = !isBusy;
         this.TclRuntimeCheckBox.IsEnabled = !isBusy;
         this.ThemeAssetsCheckBox.IsEnabled = !isBusy;
+        this.Gtk4RuntimeCheckBox.IsEnabled = !isBusy;
+        this.LegacyGtkCompatibilityCheckBox.IsEnabled = !isBusy;
+        this.RuntimeDocumentationCheckBox.IsEnabled = !isBusy;
         this.TranslationsCheckBox.IsEnabled = !isBusy;
         this.ChecksumPluginCheckBox.IsEnabled = !isBusy;
         this.ExecPluginCheckBox.IsEnabled = !isBusy;
