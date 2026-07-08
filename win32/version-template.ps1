@@ -18,10 +18,14 @@ if (-not $versionParts)
 	}
 
 	[xml] $installerProps = Get-Content $installerPropsPath -Encoding UTF8
-	$semanticVersion = $installerProps.Project.PropertyGroup.ZoiteChatSemVer
+	$semanticVersion = $installerProps.Project.PropertyGroup.FabulorSemVer
 	if ([string]::IsNullOrWhiteSpace($semanticVersion))
 	{
-		throw "Unable to resolve ZoiteChatSemVer from '$installerPropsPath'."
+		$semanticVersion = $installerProps.Project.PropertyGroup.ZoiteChatSemVer
+	}
+	if ([string]::IsNullOrWhiteSpace($semanticVersion))
+	{
+		throw "Unable to resolve FabulorSemVer or ZoiteChatSemVer from '$installerPropsPath'."
 	}
 
 	$versionParts = $semanticVersion.Split('.')

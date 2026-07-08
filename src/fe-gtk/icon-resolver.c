@@ -51,7 +51,7 @@ static const IconRegistryEntry icon_registry[] = {
 	{ ICON_RESOLVER_ROLE_MENU_ACTION, ICON_RESOLVER_MENU_ACTION_EMOJI, "zc-menu-emoji", "face-smile", "emoji" },
 	{ ICON_RESOLVER_ROLE_MENU_ACTION, ICON_RESOLVER_MENU_ACTION_UPDATE, "zc-menu-update", "software-update-available", "update" },
 	{ ICON_RESOLVER_ROLE_MENU_ACTION, ICON_RESOLVER_MENU_ACTION_CHANLIST, "zc-menu-chanlist", "network-workgroup", "chanlist" },
-	{ ICON_RESOLVER_ROLE_TRAY_STATE, ICON_RESOLVER_TRAY_STATE_NORMAL, NULL, "zoitechat", "tray_normal" },
+	{ ICON_RESOLVER_ROLE_TRAY_STATE, ICON_RESOLVER_TRAY_STATE_NORMAL, NULL, "net.fabulor.Fabulor", "tray_normal" },
 	{ ICON_RESOLVER_ROLE_TRAY_STATE, ICON_RESOLVER_TRAY_STATE_FILEOFFER, NULL, "mail-attachment", "tray_fileoffer" },
 	{ ICON_RESOLVER_ROLE_TRAY_STATE, ICON_RESOLVER_TRAY_STATE_HIGHLIGHT, NULL, "dialog-warning", "tray_highlight" },
 	{ ICON_RESOLVER_ROLE_TRAY_STATE, ICON_RESOLVER_TRAY_STATE_MESSAGE, NULL, "mail-unread", "tray_message" },

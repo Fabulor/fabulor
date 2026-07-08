@@ -42,12 +42,15 @@ SET SOLUTIONDIR=$(SolutionDir)..\
 powershell -File "$(SolutionDir)..\win32\version-template.ps1" "$(SolutionDir)..\src\fe-gtk\fabulor.rc.tt" "$(ZoiteChatLib)fabulor.rc.utf8"
 REM fabulor.rc needs to be in UCS-2 or Resource Compiler will complain
 powershell "Get-Content -Encoding UTF8 '$(ZoiteChatLib)fabulor.rc.utf8' | Out-File '$(ZoiteChatLib)fabulor.rc'; Remove-Item '$(ZoiteChatLib)fabulor.rc.utf8'"
-"$(DepsRoot)\bin\glib-compile-resources.exe" --generate-header --manual-register --sourcedir "$(DataDir)" --target "$(ZoiteChatLib)resources.h" "$(DataDir)fabulor.gresource.xml"
-"$(DepsRoot)\bin\glib-compile-resources.exe" --generate-source --manual-register --sourcedir "$(DataDir)" --target "$(ZoiteChatLib)resources.c" "$(DataDir)fabulor.gresource.xml"
+"$(DepsRoot)\bin\glib-compile-resources.exe" --generate-header --manual-register --sourcedir "$(DataDirForResourceCompilation)" --target "$(ZoiteChatLib)resources.h" "$(DataDirForResourceCompilation)\fabulor.gresource.xml"
+"$(DepsRoot)\bin\glib-compile-resources.exe" --generate-source --manual-register --sourcedir "$(DataDirForResourceCompilation)" --target "$(ZoiteChatLib)resources.c" "$(DataDirForResourceCompilation)\fabulor.gresource.xml"
       ]]></Command>
       <Message>Build fabulor.rc and gresource file</Message>
     </PreBuildEvent>
   </ItemDefinitionGroup>
+  <PropertyGroup>
+    <DataDirForResourceCompilation>$([System.String]::Copy('$(DataDir)').TrimEnd('\'))</DataDirForResourceCompilation>
+  </PropertyGroup>
   <ItemGroup>
     <ClInclude Include="ascii.h" />
     <ClInclude Include="banlist.h" />

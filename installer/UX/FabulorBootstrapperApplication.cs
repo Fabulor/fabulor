@@ -166,6 +166,11 @@ public sealed class FabulorBootstrapperApplication : BootstrapperApplication
 
         this.pendingAction = action;
 
+        if (this.TryHandOffMaintenanceToInstalledBundle(action))
+        {
+            return;
+        }
+
         if (this.isFabulorMsiInstalled && (action == LaunchAction.Repair || action == LaunchAction.Uninstall))
         {
             this.currentPlanFeatureSelection = this.detectedFeatureSelection.Clone();
@@ -972,6 +977,25 @@ public sealed class FabulorBootstrapperApplication : BootstrapperApplication
             this.window?.AppendLog($"Handing off to cached bundle: {this.detectedInstalledBundleCachePath} {relaunchArguments}");
         });
 
+        if (!this.IsNonInteractiveCommandDisplay())
+        {
+            var process = this.TryStartInstalledBundle(this.detectedInstalledBundleCachePath, relaunchArguments, out var launchResult);
+            if (process == null)
+            {
+                this.lastResult = launchResult;
+                this.DispatchToWindow(() =>
+                {
+                    this.window?.SetBusy(false);
+                    this.window?.SetStatus($"Failed to hand off maintenance to the installed bundle: 0x{launchResult:X8}.");
+                });
+                return false;
+            }
+
+            this.lastResult = 0;
+            this.DispatchToWindow(() => this.window?.Close());
+            return true;
+        }
+
         _ = Task.Run(() =>
         {
             var result = this.RunInstalledBundle(this.detectedInstalledBundleCachePath, relaunchArguments);
@@ -1018,11 +1042,11 @@ public sealed class FabulorBootstrapperApplication : BootstrapperApplication
         return arguments;
     }
 
-    private int RunInstalledBundle(string bundlePath, string arguments)
+    private Process? TryStartInstalledBundle(string bundlePath, string arguments, out int launchResult)
     {
         try
         {
-            using var process = Process.Start(new ProcessStartInfo(bundlePath, arguments)
+            var process = Process.Start(new ProcessStartInfo(bundlePath, arguments)
             {
                 UseShellExecute = true
             });
@@ -1030,16 +1054,39 @@ public sealed class FabulorBootstrapperApplication : BootstrapperApplication
             if (process == null)
             {
                 this.engine.Log(LogLevel.Error, $"Failed to start installed cached bundle at {bundlePath}.");
-                return unchecked((int)0x80004005);
+                launchResult = unchecked((int)0x80004005);
+                return null;
             }
 
+            this.engine.Log(LogLevel.Standard, $"Started installed cached bundle at {bundlePath}.");
+            launchResult = 0;
+            return process;
+        }
+        catch (Exception ex)
+        {
+            this.engine.Log(LogLevel.Error, $"Failed to launch installed cached bundle: {ex}");
+            launchResult = ex.HResult;
+            return null;
+        }
+    }
+
+    private int RunInstalledBundle(string bundlePath, string arguments)
+    {
+        using var process = this.TryStartInstalledBundle(bundlePath, arguments, out var launchResult);
+        if (process == null)
+        {
+            return launchResult;
+        }
+
+        try
+        {
             process.WaitForExit();
             this.engine.Log(LogLevel.Standard, $"Installed cached bundle exited with code 0x{process.ExitCode:X8}.");
             return process.ExitCode;
         }
         catch (Exception ex)
         {
-            this.engine.Log(LogLevel.Error, $"Failed to hand off maintenance to installed cached bundle: {ex}");
+            this.engine.Log(LogLevel.Error, $"Failed while waiting for installed cached bundle: {ex}");
             return ex.HResult;
         }
     }

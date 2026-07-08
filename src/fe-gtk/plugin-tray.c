@@ -83,7 +83,7 @@ typedef GIcon *TrayIcon;
 typedef GIcon *TrayCustomIcon;
 #define tray_icon_free(i) g_object_unref(i)
 
-#define ICON_NORMAL_NAME "net.zoite.Zoitechat"
+#define ICON_NORMAL_NAME "net.fabulor.Fabulor"
 #define ICON_MSG_NAME "mail-unread"
 #define ICON_HILIGHT_NAME "dialog-warning"
 #define ICON_FILE_NAME "folder-download"
@@ -201,7 +201,7 @@ tray_gtk3_cache_pixbuf_icon (const char *basename, GdkPixbuf *pixbuf)
 	if (!pixbuf || !basename)
 		return NULL;
 
-	cache_dir = g_build_filename (g_get_user_cache_dir (), "zoitechat", "tray-icons", NULL);
+	cache_dir = g_build_filename (g_get_user_cache_dir (), "fabulor", "tray-icons", NULL);
 	if (g_mkdir_with_parents (cache_dir, 0700) != 0)
 	{
 		g_free (cache_dir);
@@ -424,7 +424,7 @@ tray_app_indicator_init (void)
 	GObjectClass *klass;
 
 	G_GNUC_BEGIN_IGNORE_DEPRECATIONS
-	tray_indicator = app_indicator_new ("zoitechat", ICON_NORMAL_NAME,
+	tray_indicator = app_indicator_new ("fabulor", ICON_NORMAL_NAME,
 		APP_INDICATOR_CATEGORY_COMMUNICATIONS);
 	G_GNUC_END_IGNORE_DEPRECATIONS
 	if (!tray_indicator)
