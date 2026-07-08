@@ -38,6 +38,7 @@ struct session *lastact_sess;
 struct zoitechatprefs prefs;
 
 static char *test_home_dir;
+static gboolean stub_system_prefers_dark;
 
 static char *
 test_home_path (const char *file)
@@ -151,18 +152,23 @@ fe_dark_mode_is_enabled_for (unsigned int mode)
 gboolean
 theme_policy_system_prefers_dark (void)
 {
-	return FALSE;
+	return stub_system_prefers_dark;
 }
 
 gboolean
 theme_policy_is_dark_mode_active (unsigned int mode)
 {
+	if (mode == ZOITECHAT_DARK_MODE_AUTO)
+		return stub_system_prefers_dark;
+
 	return mode == ZOITECHAT_DARK_MODE_DARK;
 }
 
 static void
 setup_temp_home (void)
 {
+	stub_system_prefers_dark = FALSE;
+
 	if (test_home_dir)
 		return;
 	test_home_dir = g_dir_make_tmp ("zoitechat-theme-tests-XXXXXX", NULL);
@@ -299,6 +305,41 @@ test_ui_edits_persist_without_legacy_array_mutation (void)
 	g_assert_true (theme_runtime_get_color (THEME_TOKEN_SELECTION_FOREGROUND, &dark_loaded));
 	g_assert_true (gdk_rgba_parse (&dark_expected, "#88aacc"));
 	g_assert_true (colors_equal (&dark_loaded, &dark_expected));
+}
+
+static void
+test_apply_mode_resolves_auto_from_system_preference (void)
+{
+	gboolean palette_changed = FALSE;
+	gboolean dark;
+
+	setup_temp_home ();
+	theme_runtime_load ();
+
+	stub_system_prefers_dark = TRUE;
+	dark = theme_runtime_apply_mode (ZOITECHAT_DARK_MODE_AUTO, &palette_changed);
+	g_assert_true (dark);
+	g_assert_true (theme_runtime_is_dark_active ());
+
+	stub_system_prefers_dark = FALSE;
+	dark = theme_runtime_apply_mode (ZOITECHAT_DARK_MODE_AUTO, &palette_changed);
+	g_assert_false (dark);
+	g_assert_false (theme_runtime_is_dark_active ());
+}
+
+static void
+test_apply_mode_respects_explicit_dark_and_light_modes (void)
+{
+	gboolean palette_changed = FALSE;
+
+	setup_temp_home ();
+	theme_runtime_load ();
+
+	g_assert_true (theme_runtime_apply_mode (ZOITECHAT_DARK_MODE_DARK, &palette_changed));
+	g_assert_true (theme_runtime_is_dark_active ());
+
+	g_assert_false (theme_runtime_apply_mode (ZOITECHAT_DARK_MODE_LIGHT, &palette_changed));
+	g_assert_false (theme_runtime_is_dark_active ());
 }
 
 static void
@@ -440,6 +481,10 @@ main (int argc, char **argv)
 			 test_loads_legacy_color_keys_via_migration_loader);
 	g_test_add_func ("/theme/runtime/ui_edits_persist_without_legacy_array_mutation",
 			 test_ui_edits_persist_without_legacy_array_mutation);
+	g_test_add_func ("/theme/runtime/apply_mode_resolves_auto_from_system_preference",
+			 test_apply_mode_resolves_auto_from_system_preference);
+	g_test_add_func ("/theme/runtime/apply_mode_respects_explicit_dark_and_light_modes",
+			 test_apply_mode_respects_explicit_dark_and_light_modes);
 	g_test_add_func ("/theme/runtime/gtk_map_colors_blend_with_palette_without_transparency",
 			 test_gtk_map_colors_blend_with_palette_without_transparency);
 	g_test_add_func ("/theme/runtime/gtk_map_uses_theme_defaults_until_custom_token_is_set",

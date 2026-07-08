@@ -223,7 +223,7 @@ theme_manager_init (void)
 	if (!theme_manager_setup_listener_id)
 		theme_manager_setup_listener_id = theme_listener_register ("setup.apply", theme_manager_setup_apply_listener, NULL);
 
-	fe_set_auto_dark_mode_state (FALSE);
+	fe_set_auto_dark_mode_state (theme_policy_is_dark_mode_active (ZOITECHAT_DARK_MODE_AUTO));
 	theme_application_apply_mode (prefs.hex_gui_dark_mode, NULL);
 	theme_gtk3_init ();
 	zoitechat_set_theme_post_apply_callback (theme_manager_handle_theme_applied);
@@ -266,10 +266,11 @@ void
 theme_manager_reset_mode_colors (unsigned int mode, gboolean *palette_changed)
 {
 	gboolean changed;
+	gboolean dark_mode;
 
-	(void) mode;
-	theme_runtime_reset_mode_colors (FALSE);
-	theme_runtime_apply_mode (ZOITECHAT_DARK_MODE_LIGHT, &changed);
+	dark_mode = theme_policy_is_dark_mode_active (mode);
+	theme_runtime_reset_mode_colors (dark_mode);
+	theme_runtime_apply_mode (mode, &changed);
 	changed = TRUE;
 	if (palette_changed)
 		*palette_changed = changed;

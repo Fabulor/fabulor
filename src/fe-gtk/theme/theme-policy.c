@@ -23,10 +23,41 @@
 #include "../fe-gtk.h"
 #include "../../common/zoitechat.h"
 #include "../../common/zoitechatc.h"
+#include <gtk/gtk.h>
 
 gboolean
 theme_policy_system_prefers_dark (void)
 {
+	gboolean prefer_dark = FALSE;
+
+#ifdef G_OS_WIN32
+	if (fe_win32_high_contrast_is_enabled ())
+		return FALSE;
+
+	if (fe_win32_try_get_system_dark (&prefer_dark))
+		return prefer_dark;
+#endif
+
+	{
+		GtkSettings *settings = gtk_settings_get_default ();
+		GValue current = G_VALUE_INIT;
+		GParamSpec *property;
+
+		if (!settings)
+			return FALSE;
+
+		property = g_object_class_find_property (G_OBJECT_GET_CLASS (settings), "gtk-application-prefer-dark-theme");
+		if (!property)
+			return FALSE;
+
+		g_value_init (&current, G_PARAM_SPEC_VALUE_TYPE (property));
+		g_object_get_property (G_OBJECT (settings), "gtk-application-prefer-dark-theme", &current);
+		prefer_dark = g_value_get_boolean (&current);
+		g_value_unset (&current);
+
+		return prefer_dark;
+	}
+
 	return FALSE;
 }
 

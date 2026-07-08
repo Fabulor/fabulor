@@ -198,7 +198,7 @@ theme_runtime_apply_gtk_map (ThemePalette *palette, const ThemeGtkPaletteMap *gt
 static const gboolean *
 theme_runtime_active_custom_tokens (void)
 {
-	return light_custom_tokens;
+	return dark_mode_active ? dark_custom_tokens : light_custom_tokens;
 }
 
 static void
@@ -400,14 +400,24 @@ theme_runtime_dark_set_color (ThemeSemanticToken token, const GdkRGBA *col)
 void
 theme_runtime_reset_mode_colors (gboolean dark_mode)
 {
-	(void) dark_mode;
-	theme_palette_from_legacy_colors (&light_palette, legacy_light_defaults, G_N_ELEMENTS (legacy_light_defaults));
-	active_palette = light_palette;
-	memset (light_custom_tokens, 0, sizeof light_custom_tokens);
-	memset (dark_custom_tokens, 0, sizeof dark_custom_tokens);
-	user_colors_valid = TRUE;
-	dark_user_colors_valid = FALSE;
-	dark_mode_active = FALSE;
+	if (dark_mode)
+	{
+		theme_palette_from_legacy_colors (&dark_palette, legacy_dark_defaults, G_N_ELEMENTS (legacy_dark_defaults));
+		memset (dark_custom_tokens, 0, sizeof dark_custom_tokens);
+		dark_user_colors_valid = TRUE;
+
+		if (dark_mode_active)
+			active_palette = dark_palette;
+	}
+	else
+	{
+		theme_palette_from_legacy_colors (&light_palette, legacy_light_defaults, G_N_ELEMENTS (legacy_light_defaults));
+		memset (light_custom_tokens, 0, sizeof light_custom_tokens);
+		user_colors_valid = TRUE;
+
+		if (!dark_mode_active)
+			active_palette = light_palette;
+	}
 }
 
 void
@@ -696,14 +706,15 @@ gboolean
 theme_runtime_apply_mode (unsigned int mode, gboolean *palette_changed)
 {
 	gboolean changed;
+	gboolean dark;
 
-	(void) mode;
-	changed = theme_runtime_apply_dark_mode (FALSE);
+	dark = theme_policy_is_dark_mode_active (mode);
+	changed = theme_runtime_apply_dark_mode (dark);
 
 	if (palette_changed)
 		*palette_changed = changed;
 
-	return FALSE;
+	return dark;
 }
 
 gboolean
