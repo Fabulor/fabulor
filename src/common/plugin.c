@@ -149,6 +149,7 @@ GSList *plugin_list = NULL;	/* export for plugingui.c */
 static GSList *hook_list = NULL;
 static FabulorPluginCatalog *fabulor_plugin_catalog = NULL;
 static FabulorCallbackRegistry *fabulor_callback_registry = NULL;
+static FabulorAPI fabulor_plugin_api;
 
 extern const struct prefs vars[];	/* cfgfiles.c */
 static const char *plugin_get_libdir (void);
@@ -212,6 +213,37 @@ fabulor_api_get_user_count (void *user_data)
 	}
 
 	return (guint) sess->total;
+}
+
+static gboolean
+fabulor_api_get_user_info (void *user_data, FabulorUserInfo *user_info)
+{
+	session *sess = user_data;
+
+	if (!user_info)
+	{
+		return FALSE;
+	}
+
+	memset (user_info, 0, sizeof (*user_info));
+
+	if (!sess)
+	{
+		return FALSE;
+	}
+
+	if (sess->server)
+	{
+		user_info->nickname = sess->server->nick;
+		user_info->server_name = sess->server->connected ? sess->server->servername : NULL;
+		user_info->network_name = server_get_network (sess->server, TRUE);
+	}
+
+	user_info->channel = sess->channel;
+	return user_info->nickname != NULL
+		|| user_info->channel != NULL
+		|| user_info->server_name != NULL
+		|| user_info->network_name != NULL;
 }
 
 static void
@@ -419,7 +451,6 @@ fabulor_plugin_host_fire_event (session *sess,
 static void
 fabulor_plugin_host_autoload (session *sess)
 {
-	FabulorAPI api;
 	GError *error = NULL;
 	GPtrArray *ordered_manifests;
 	char *bundled_plugins_dir;
@@ -428,13 +459,14 @@ fabulor_plugin_host_autoload (session *sess)
 
 	fabulor_plugin_host_free ();
 
-	api.api_version = FABULOR_PLUGIN_API_VERSION;
-	api.user_data = sess;
-	api.send_message = fabulor_api_send_message;
-	api.log = fabulor_api_log;
-	api.get_user_count = fabulor_api_get_user_count;
+	fabulor_plugin_api.api_version = FABULOR_PLUGIN_API_VERSION;
+	fabulor_plugin_api.user_data = sess;
+	fabulor_plugin_api.send_message = fabulor_api_send_message;
+	fabulor_plugin_api.log = fabulor_api_log;
+	fabulor_plugin_api.get_user_count = fabulor_api_get_user_count;
+	fabulor_plugin_api.get_user_info = fabulor_api_get_user_info;
 
-	fabulor_plugin_catalog = fabulor_plugin_catalog_new (&api);
+	fabulor_plugin_catalog = fabulor_plugin_catalog_new (&fabulor_plugin_api);
 	fabulor_plugin_catalog_set_safe_mode (fabulor_plugin_catalog, arg_skip_plugins);
 	fabulor_plugin_host_blacklist_load ();
 
@@ -455,7 +487,7 @@ fabulor_plugin_host_autoload (session *sess)
 		g_clear_error (&error);
 	}
 
-	fabulor_callback_registry = fabulor_callback_registry_new (&api, fabulor_plugin_catalog, NULL);
+	fabulor_callback_registry = fabulor_callback_registry_new (&fabulor_plugin_api, fabulor_plugin_catalog, NULL);
 
 	ordered_manifests = fabulor_plugin_catalog_resolve_load_order (fabulor_plugin_catalog,
 															 FABULOR_PLUGIN_API_VERSION,
@@ -485,7 +517,7 @@ fabulor_plugin_host_autoload (session *sess)
 			continue;
 		}
 
-		if (!loader->load (manifest, &api, sess, &error))
+		if (!loader->load (manifest, &fabulor_plugin_api, sess, &error))
 		{
 			fabulor_api_logf (sess, "Skipping %s: %s", manifest->id, error ? error->message : "unknown loader failure");
 			g_clear_error (&error);

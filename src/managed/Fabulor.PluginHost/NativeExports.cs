@@ -53,7 +53,17 @@ public static class NativeExports
         public IntPtr Log;
         public IntPtr SendMessage;
         public IntPtr GetUserCount;
+        public IntPtr GetUserInfo;
         public IntPtr RegisterCallback;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct NativeUserInfo
+    {
+        public IntPtr Nickname;
+        public IntPtr Channel;
+        public IntPtr ServerName;
+        public IntPtr NetworkName;
     }
 
     [StructLayout(LayoutKind.Sequential)]
@@ -82,12 +92,16 @@ public static class NativeExports
     private delegate uint NativeGetUserCountDelegate();
 
     [UnmanagedFunctionPointer(CallingConvention.StdCall)]
+    private delegate int NativeGetUserInfoDelegate(out NativeUserInfo userInfo);
+
+    [UnmanagedFunctionPointer(CallingConvention.StdCall)]
     private delegate int NativeRegisterCallbackDelegate(IntPtr pluginIdUtf8, IntPtr eventNameUtf8, IntPtr handlerNameUtf8);
 
     private static readonly Dictionary<string, ManagedPluginState> Plugins = new(StringComparer.Ordinal);
     private static NativeLogDelegate? _log;
     private static NativeSendMessageDelegate? _sendMessage;
     private static NativeGetUserCountDelegate? _getUserCount;
+    private static NativeGetUserInfoDelegate? _getUserInfo;
     private static NativeRegisterCallbackDelegate? _registerCallback;
     private static int _nextHandlerId;
 
@@ -104,6 +118,7 @@ public static class NativeExports
             _log = Marshal.GetDelegateForFunctionPointer<NativeLogDelegate>(api.Log);
             _sendMessage = Marshal.GetDelegateForFunctionPointer<NativeSendMessageDelegate>(api.SendMessage);
             _getUserCount = Marshal.GetDelegateForFunctionPointer<NativeGetUserCountDelegate>(api.GetUserCount);
+            _getUserInfo = Marshal.GetDelegateForFunctionPointer<NativeGetUserInfoDelegate>(api.GetUserInfo);
             _registerCallback = Marshal.GetDelegateForFunctionPointer<NativeRegisterCallbackDelegate>(api.RegisterCallback);
             return 0;
         }
@@ -166,6 +181,7 @@ public static class NativeExports
                 text => Log($"[C#:{pluginId}] {text}"),
                 (target, text) => SendMessage(target, text),
                 () => checked((int)(_getUserCount?.Invoke() ?? 0U)),
+                () => GetUserInfo(),
                 (eventName, handler) => RegisterCallback(state, eventName, handler));
 
             plugin.Init(context);
@@ -265,6 +281,24 @@ public static class NativeExports
         using var targetHandle = new Utf8StringHandle(target);
         using var textHandle = new Utf8StringHandle(text);
         return _sendMessage(targetHandle.Pointer, textHandle.Pointer) != 0;
+    }
+    private static ZoiteChatUserInfo GetUserInfo()
+    {
+        if (_getUserInfo is null)
+        {
+            throw new InvalidOperationException("The native user-info callback is not available.");
+        }
+
+        if (_getUserInfo(out var userInfo) == 0)
+        {
+            return new ZoiteChatUserInfo(null, null, null, null);
+        }
+
+        return new ZoiteChatUserInfo(
+            Marshal.PtrToStringUTF8(userInfo.Nickname),
+            Marshal.PtrToStringUTF8(userInfo.Channel),
+            Marshal.PtrToStringUTF8(userInfo.ServerName),
+            Marshal.PtrToStringUTF8(userInfo.NetworkName));
     }
 
     private static void Log(string message)

@@ -8,7 +8,7 @@ __all__ = [
     'EAT_ALL', 'EAT_ZOITECHAT', 'EAT_NONE', 'EAT_PLUGIN', 'EAT_XCHAT', 'EAT_HEXCHAT',
     'PRI_HIGH', 'PRI_HIGHEST', 'PRI_LOW', 'PRI_LOWEST', 'PRI_NORM',
     '__doc__', '__version__', 'command', 'del_pluginpref', 'emit_print',
-    'find_context', 'get_context', 'get_info', 'get_user_count', 'log',
+    'find_context', 'get_context', 'get_info', 'get_user_count', 'get_user_info', 'log',
     'get_list', 'get_lists', 'get_pluginpref', 'get_prefs', 'hook_command',
     'hook_print', 'hook_print_attrs', 'hook_server', 'hook_server_attrs',
     'hook_timer', 'hook_unload', 'list_pluginpref', 'nickcmp', 'prnt',
@@ -164,6 +164,15 @@ def get_user_count():
         return 0
 
     return len(users)
+
+
+def get_user_info():
+    return {
+        'nickname': get_info('nick'),
+        'channel': get_info('channel'),
+        'server_name': get_info('server'),
+        'network_name': get_info('network'),
+    }
 
 
 class ListItem:

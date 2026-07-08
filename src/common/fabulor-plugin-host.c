@@ -127,6 +127,7 @@ typedef int (FABULOR_CORECLR_DELEGATE_CALLTYPE *FabulorComponentEntryPointFn) (v
 typedef void (FABULOR_CORECLR_DELEGATE_CALLTYPE *FabulorManagedLogFn) (const char *text);
 typedef int (FABULOR_CORECLR_DELEGATE_CALLTYPE *FabulorManagedSendMessageFn) (const char *target, const char *text);
 typedef unsigned int (FABULOR_CORECLR_DELEGATE_CALLTYPE *FabulorManagedGetUserCountFn) (void);
+typedef int (FABULOR_CORECLR_DELEGATE_CALLTYPE *FabulorManagedGetUserInfoFn) (FabulorUserInfo *user_info);
 typedef int (FABULOR_CORECLR_DELEGATE_CALLTYPE *FabulorManagedRegisterCallbackFn) (const char *plugin_id, const char *event_name, const char *handler_name);
 
 typedef struct
@@ -134,6 +135,7 @@ typedef struct
 	FabulorManagedLogFn log;
 	FabulorManagedSendMessageFn send_message;
 	FabulorManagedGetUserCountFn get_user_count;
+	FabulorManagedGetUserInfoFn get_user_info;
 	FabulorManagedRegisterCallbackFn register_callback;
 } FabulorManagedHostApi;
 
@@ -1100,6 +1102,46 @@ fabulor_tcl_get_user_count_cmd (ClientData client_data, Tcl_Interp *interp, int 
 }
 
 static int
+fabulor_tcl_get_user_info_cmd (ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[])
+{
+	FabulorTclPluginState *state = client_data;
+	FabulorUserInfo user_info;
+	const char *pairs[8];
+	char *result;
+
+	(void) argv;
+
+	if (argc != 1)
+	{
+		fabulor_tcl_set_result (interp, "wrong # args: should be \"zoitechat::get_user_info\"");
+		return TCL_ERROR;
+	}
+
+	memset (&user_info, 0, sizeof (user_info));
+	if (state->api && state->api->get_user_info)
+	{
+		state->api->get_user_info (state->api->user_data, &user_info);
+	}
+
+	pairs[0] = "nick";
+	pairs[1] = user_info.nickname ? user_info.nickname : "";
+	pairs[2] = "channel";
+	pairs[3] = user_info.channel ? user_info.channel : "";
+	pairs[4] = "server";
+	pairs[5] = user_info.server_name ? user_info.server_name : "";
+	pairs[6] = "network";
+	pairs[7] = user_info.network_name ? user_info.network_name : "";
+
+	result = fabulor_tcl_runtime.merge_args (8, pairs);
+	fabulor_tcl_set_result (interp, result ? result : "");
+	if (result && fabulor_tcl_runtime.free_value)
+	{
+		fabulor_tcl_runtime.free_value (result);
+	}
+	return TCL_OK;
+}
+
+static int
 fabulor_tcl_register_callback_cmd (ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[])
 {
 	FabulorTclPluginState *state = client_data;
@@ -1177,6 +1219,7 @@ fabulor_tcl_register_commands (FabulorTclPluginState *state, GError **error)
 	fabulor_tcl_runtime.create_command (state->interp, "zoitechat::nickcmp", fabulor_tcl_nickcmp_cmd, state, NULL);
 	fabulor_tcl_runtime.create_command (state->interp, "zoitechat::send_message", fabulor_tcl_send_message_cmd, state, NULL);
 	fabulor_tcl_runtime.create_command (state->interp, "zoitechat::get_user_count", fabulor_tcl_get_user_count_cmd, state, NULL);
+	fabulor_tcl_runtime.create_command (state->interp, "zoitechat::get_user_info", fabulor_tcl_get_user_info_cmd, state, NULL);
 	fabulor_tcl_runtime.create_command (state->interp, "zoitechat::register_callback", fabulor_tcl_register_callback_cmd, state, NULL);
 	return TRUE;
 }
@@ -1520,6 +1563,19 @@ fabulor_csharp_native_get_user_count (void)
 }
 
 static int FABULOR_CORECLR_DELEGATE_CALLTYPE
+fabulor_csharp_native_get_user_info (FabulorUserInfo *user_info)
+{
+	if (!user_info)
+	{
+		return 0;
+	}
+
+	memset (user_info, 0, sizeof (*user_info));
+	return fabulor_active_api && fabulor_active_api->get_user_info
+		&& fabulor_active_api->get_user_info (fabulor_active_api->user_data, user_info);
+}
+
+static int FABULOR_CORECLR_DELEGATE_CALLTYPE
 fabulor_csharp_native_register_callback (const char *plugin_id, const char *event_name, const char *handler_name)
 {
 	GError *error = NULL;
@@ -1675,6 +1731,7 @@ fabulor_csharp_runtime_ensure_loaded (const FabulorAPI *api, GError **error)
 	managed_api.log = fabulor_csharp_native_log;
 	managed_api.send_message = fabulor_csharp_native_send_message;
 	managed_api.get_user_count = fabulor_csharp_native_get_user_count;
+	managed_api.get_user_info = fabulor_csharp_native_get_user_info;
 	managed_api.register_callback = fabulor_csharp_native_register_callback;
 
 	rc = fabulor_csharp_runtime.initialize_bridge (&managed_api, sizeof (managed_api));

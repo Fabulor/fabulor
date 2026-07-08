@@ -41,6 +41,7 @@ typedef struct _fabulor_user_info
 	const char *nickname;
 	const char *channel;
 	const char *server_name;
+	const char *network_name;
 } FabulorUserInfo;
 
 typedef struct _fabulor_api
@@ -50,6 +51,7 @@ typedef struct _fabulor_api
 	gboolean (*send_message) (void *user_data, const char *target, const char *text, GError **error);
 	void (*log) (void *user_data, const char *text);
 	guint (*get_user_count) (void *user_data);
+	gboolean (*get_user_info) (void *user_data, FabulorUserInfo *user_info);
 } FabulorAPI;
 
 typedef FabulorAPI ZoiteChatAPI;
