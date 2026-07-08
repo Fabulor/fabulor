@@ -17,6 +17,8 @@ installer/UX/bin/
 installer/UX/obj/
 src/managed/**/bin/
 src/managed/**/obj/
+samples/**/bin/
+samples/**/obj/
 installer/bootstrapper.log
 *.wixpdb
 
