@@ -665,7 +665,9 @@ public sealed class FabulorBootstrapperApplication : BootstrapperApplication
             return;
         }
 
-        this.isFabulorMsiInstalled = e.State == PackageState.Present || e.Cached;
+        var packageDetectedInstalled = e.State == PackageState.Present || e.Cached;
+        this.isFabulorMsiInstalled = this.isFabulorMsiInstalled || packageDetectedInstalled;
+        this.engine.Log(LogLevel.Verbose, $"DetectPackageComplete: package={e.PackageId}, state={e.State}, cached={e.Cached}, installed={(this.isFabulorMsiInstalled ? "yes" : "no")}.");
     }
 
     private void OnDetectMsiFeature(object? sender, DetectMsiFeatureEventArgs e)
@@ -680,7 +682,7 @@ public sealed class FabulorBootstrapperApplication : BootstrapperApplication
 
     private void OnDetectRelatedMsiPackage(object? sender, DetectRelatedMsiPackageEventArgs e)
     {
-        if (!string.Equals(e.UpgradeCode, FabulorMsiUpgradeCode, StringComparison.OrdinalIgnoreCase))
+        if (!this.GuidEquals(e.UpgradeCode, FabulorMsiUpgradeCode))
         {
             return;
         }
@@ -688,6 +690,7 @@ public sealed class FabulorBootstrapperApplication : BootstrapperApplication
         this.isFabulorMsiInstalled = true;
         this.detectedInstalledMsiLocation = this.TryGetInstalledProductInstallLocationFromRegistry(e.ProductCode);
         this.engine.Log(LogLevel.Verbose, $"Detected related MSI product {e.ProductCode} operation={e.Operation} installLocation='{this.detectedInstalledMsiLocation}'.");
+        this.DispatchToWindow(() => this.window?.AppendLog($"DetectRelatedMsiPackage: product={e.ProductCode}, operation={e.Operation}, installLocation='{this.detectedInstalledMsiLocation}'."));
     }
 
     private void OnError(object? sender, ErrorEventArgs e)
@@ -1101,6 +1104,16 @@ public sealed class FabulorBootstrapperApplication : BootstrapperApplication
         }
 
         return subkey.GetValue("InstallLocation") as string ?? string.Empty;
+    }
+
+    private bool GuidEquals(string? left, string? right)
+    {
+        if (Guid.TryParse(left, out var leftGuid) && Guid.TryParse(right, out var rightGuid))
+        {
+            return leftGuid == rightGuid;
+        }
+
+        return string.Equals(left, right, StringComparison.OrdinalIgnoreCase);
     }
 
     private bool PathsEqual(string left, string right)

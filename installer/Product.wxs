@@ -4,6 +4,7 @@
   <Package Name="Fabulor"
            Manufacturer="Barry"
            Version="$(var.FabulorSemVer)"
+           ProductCode="CA36678F-E49D-4E2C-B731-CFE56AF977D2"
            UpgradeCode="8F6C0C7E-9A4D-4E4C-9F8C-2B6F5A4E9C11"
            InstallerVersion="500"
            Compressed="yes"
