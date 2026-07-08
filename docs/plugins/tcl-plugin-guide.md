@@ -45,6 +45,7 @@ proc init {} {
 
 1. Keep callback handlers lightweight to avoid blocking the main thread.
 2. Keep manifest capabilities aligned with actual plugin behaviour.
-3. The embedded Tcl host currently exposes `zoitechat::log`, `zoitechat::send_message`, `zoitechat::get_user_count`, and `zoitechat::register_callback`.
-4. `zoitechat::register_callback` currently routes manifest callbacks through the shared host registry, with `message` as the first practical event path.
-5. Use safe mode when diagnosing Tcl startup faults so third-party plugins stay disabled while core startup is verified.
+3. The embedded Tcl host currently exposes `zoitechat::command`, `zoitechat::print`, `zoitechat::log`, `zoitechat::getinfo`, `zoitechat::nickcmp`, `zoitechat::send_message`, `zoitechat::get_user_count`, and `zoitechat::register_callback`.
+4. `zoitechat::getinfo` currently covers the safe session-backed values `away`, `channel`, `configdir`, `host`, `libdirfs`, `modes`, `network`, `nick`, `server`, `topic`, `version`, `xchatdir`, and `xchatdirfs`.
+5. `zoitechat::register_callback` routes manifest callbacks through the shared host registry and can subscribe to generic events such as `message`, `server`, `print`, and `command`, as well as specific forms like `server:NOTICE`, `print:Channel Message`, or `command:SAY`.
+6. Use safe mode when diagnosing Tcl startup faults so third-party plugins stay disabled while core startup is verified.

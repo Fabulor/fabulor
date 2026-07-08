@@ -318,7 +318,7 @@ append_json_string (GString *json, const char *value)
 }
 
 static void
-fabulor_plugin_host_fire_event (const char *event_name, const char *source_name, char *word[])
+fabulor_plugin_host_dispatch_event (const char *event_name, const char *source_name, char *word[])
 {
 	GError *error = NULL;
 	GString *json;
@@ -354,6 +354,24 @@ fabulor_plugin_host_fire_event (const char *event_name, const char *source_name,
 	}
 
 	g_string_free (json, TRUE);
+}
+
+static void
+fabulor_plugin_host_fire_event (const char *event_name, const char *source_name, char *word[])
+{
+	if (!event_name)
+	{
+		return;
+	}
+
+	fabulor_plugin_host_dispatch_event (event_name, source_name, word);
+
+	if (source_name && *source_name)
+	{
+		char *specific_event = g_strdup_printf ("%s:%s", event_name, source_name);
+		fabulor_plugin_host_dispatch_event (specific_event, source_name, word);
+		g_free (specific_event);
+	}
 }
 
 static void

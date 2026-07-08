@@ -295,13 +295,10 @@ def hook_unload(callback, userdata=None):
 def register_callback(event_name, callback, userdata=None):
     event_name = event_name.lower()
 
-    if event_name != 'message':
-        raise ValueError('Only the "message" callback is currently supported in the embedded Python host')
-
-    def on_message(words, word_eol, local_userdata, attrs):
+    def build_event(words, word_eol, local_userdata, attrs, source_name):
         event = {
             'event': event_name,
-            'command': 'PRIVMSG',
+            'source': source_name,
             'words': words,
             'word_eol': word_eol,
             'time': getattr(attrs, 'time', 0),
@@ -309,7 +306,53 @@ def register_callback(event_name, callback, userdata=None):
         }
         return callback(event)
 
-    return hook_server_attrs('PRIVMSG', on_message, userdata)
+    if event_name == 'message':
+        def on_message(words, word_eol, local_userdata, attrs):
+            return build_event(words, word_eol, local_userdata, attrs, 'PRIVMSG')
+
+        return hook_server_attrs('PRIVMSG', on_message, userdata)
+
+    if event_name == 'server':
+        def on_server(words, word_eol, local_userdata, attrs):
+            source_name = words[0] if words else 'RAW LINE'
+            return build_event(words, word_eol, local_userdata, attrs, source_name)
+
+        return hook_server_attrs('RAW LINE', on_server, userdata)
+
+    if event_name.startswith('server:'):
+        server_name = event_name.split(':', 1)[1].upper()
+
+        def on_named_server(words, word_eol, local_userdata, attrs):
+            return build_event(words, word_eol, local_userdata, attrs, server_name)
+
+        return hook_server_attrs(server_name, on_named_server, userdata)
+
+    if event_name.startswith('print:'):
+        print_name = event_name.split(':', 1)[1]
+
+        def on_print(words, word_eol, local_userdata, attrs):
+            source_name = words[0] if words else print_name
+            return build_event(words, word_eol, local_userdata, attrs, source_name)
+
+        return hook_print_attrs(print_name, on_print, userdata)
+
+    if event_name.startswith('command:'):
+        command_name = event_name.split(':', 1)[1].upper()
+
+        def on_command(words, word_eol, local_userdata):
+            event = {
+                'event': event_name,
+                'source': command_name,
+                'words': words,
+                'word_eol': word_eol,
+                'time': 0,
+                'userdata': local_userdata,
+            }
+            return callback(event)
+
+        return hook_command(command_name, on_command, userdata)
+
+    raise ValueError('Supported callback events are "message", "server", "server:<name>", "print:<event>", and "command:<name>"')
 
 
 def unhook(handle):

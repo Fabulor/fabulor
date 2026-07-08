@@ -29,8 +29,11 @@
 #endif
 
 #include "zoitechat.h"
+#include "cfgfiles.h"
 #include "plugin.h"
 #include "outbound.h"
+#include "server.h"
+#include "util.h"
 #include "fabulor-plugin-host.h"
 
 typedef struct
@@ -894,6 +897,164 @@ fabulor_tcl_log_cmd (ClientData client_data, Tcl_Interp *interp, int argc, const
 }
 
 static int
+fabulor_tcl_print_cmd (ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[])
+{
+	FabulorTclPluginState *state = client_data;
+
+	if (argc != 2)
+	{
+		fabulor_tcl_set_result (interp, "wrong # args: should be \"zoitechat::print text\"");
+		return TCL_ERROR;
+	}
+
+	fabulor_api_log (state->api, "%s", argv[1]);
+	return TCL_OK;
+}
+
+static int
+fabulor_tcl_command_cmd (ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[])
+{
+	FabulorTclPluginState *state = client_data;
+	session *sess = state->api ? state->api->user_data : NULL;
+	char *command;
+
+	if (argc < 2)
+	{
+		fabulor_tcl_set_result (interp, "wrong # args: should be \"zoitechat::command command ?arg ...?\"");
+		return TCL_ERROR;
+	}
+
+	if (!sess)
+	{
+		fabulor_tcl_set_result (interp, "No active session is available.");
+		return TCL_ERROR;
+	}
+
+	command = fabulor_tcl_runtime.merge_args (argc - 1, argv + 1);
+	handle_command (sess, command, FALSE);
+	fabulor_tcl_runtime.free_value (command);
+	return TCL_OK;
+}
+
+static const char *
+fabulor_tcl_get_info_value (session *sess, const char *name)
+{
+	if (!name)
+	{
+		return NULL;
+	}
+
+	if (g_ascii_strcasecmp (name, "version") == 0)
+	{
+		return PACKAGE_VERSION;
+	}
+
+	if (g_ascii_strcasecmp (name, "xchatdir") == 0
+		|| g_ascii_strcasecmp (name, "xchatdirfs") == 0
+		|| g_ascii_strcasecmp (name, "configdir") == 0)
+	{
+		return get_xdir ();
+	}
+
+	if (g_ascii_strcasecmp (name, "libdirfs") == 0)
+	{
+		return manifest_plugin_get_libdir ();
+	}
+
+	if (!sess || !sess->server)
+	{
+		return NULL;
+	}
+
+	if (g_ascii_strcasecmp (name, "away") == 0)
+	{
+		return sess->server->is_away ? sess->server->last_away_reason : NULL;
+	}
+
+	if (g_ascii_strcasecmp (name, "channel") == 0)
+	{
+		return sess->channel;
+	}
+
+	if (g_ascii_strcasecmp (name, "host") == 0)
+	{
+		return sess->server->hostname;
+	}
+
+	if (g_ascii_strcasecmp (name, "modes") == 0)
+	{
+		return sess->current_modes;
+	}
+
+	if (g_ascii_strcasecmp (name, "network") == 0)
+	{
+		return server_get_network (sess->server, FALSE);
+	}
+
+	if (g_ascii_strcasecmp (name, "nick") == 0)
+	{
+		return sess->server->nick;
+	}
+
+	if (g_ascii_strcasecmp (name, "server") == 0)
+	{
+		return sess->server->connected ? sess->server->servername : NULL;
+	}
+
+	if (g_ascii_strcasecmp (name, "topic") == 0)
+	{
+		return sess->topic;
+	}
+
+	return NULL;
+}
+
+static int
+fabulor_tcl_getinfo_cmd (ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[])
+{
+	FabulorTclPluginState *state = client_data;
+	session *sess = state->api ? state->api->user_data : NULL;
+	const char *value;
+
+	if (argc != 2)
+	{
+		fabulor_tcl_set_result (interp, "wrong # args: should be \"zoitechat::getinfo name\"");
+		return TCL_ERROR;
+	}
+
+	value = fabulor_tcl_get_info_value (sess, argv[1]);
+	fabulor_tcl_set_result (interp, value ? value : "");
+	return TCL_OK;
+}
+
+static int
+fabulor_tcl_nickcmp_cmd (ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[])
+{
+	FabulorTclPluginState *state = client_data;
+	session *sess = state->api ? state->api->user_data : NULL;
+	char *value;
+	int result;
+
+	if (argc != 3)
+	{
+		fabulor_tcl_set_result (interp, "wrong # args: should be \"zoitechat::nickcmp left right\"");
+		return TCL_ERROR;
+	}
+
+	if (!sess || !sess->server || !sess->server->p_cmp)
+	{
+		fabulor_tcl_set_result (interp, "No active session compare function is available.");
+		return TCL_ERROR;
+	}
+
+	result = sess->server->p_cmp (argv[1], argv[2]);
+	value = g_strdup_printf ("%d", result);
+	fabulor_tcl_set_result (interp, value);
+	g_free (value);
+	return TCL_OK;
+}
+
+static int
 fabulor_tcl_send_message_cmd (ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[])
 {
 	FabulorTclPluginState *state = client_data;
@@ -1010,6 +1171,10 @@ fabulor_tcl_register_commands (FabulorTclPluginState *state, GError **error)
 	}
 
 	fabulor_tcl_runtime.create_command (state->interp, "zoitechat::log", fabulor_tcl_log_cmd, state, NULL);
+	fabulor_tcl_runtime.create_command (state->interp, "zoitechat::print", fabulor_tcl_print_cmd, state, NULL);
+	fabulor_tcl_runtime.create_command (state->interp, "zoitechat::command", fabulor_tcl_command_cmd, state, NULL);
+	fabulor_tcl_runtime.create_command (state->interp, "zoitechat::getinfo", fabulor_tcl_getinfo_cmd, state, NULL);
+	fabulor_tcl_runtime.create_command (state->interp, "zoitechat::nickcmp", fabulor_tcl_nickcmp_cmd, state, NULL);
 	fabulor_tcl_runtime.create_command (state->interp, "zoitechat::send_message", fabulor_tcl_send_message_cmd, state, NULL);
 	fabulor_tcl_runtime.create_command (state->interp, "zoitechat::get_user_count", fabulor_tcl_get_user_count_cmd, state, NULL);
 	fabulor_tcl_runtime.create_command (state->interp, "zoitechat::register_callback", fabulor_tcl_register_callback_cmd, state, NULL);
