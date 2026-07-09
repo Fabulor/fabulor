@@ -120,10 +120,13 @@ jobs:
             throw "Magicsplat Tcl/Tk MSI extraction failed with exit code $LASTEXITCODE."
           }
 
-          $tclRoot = Join-Path $tclExtractRoot 'Tcl8.6'
-          if (-not (Test-Path $tclRoot)) {
-            throw "Unable to locate the extracted Tcl8.6 payload under $tclExtractRoot."
+          $tclRuntime = Get-ChildItem -Path $tclExtractRoot -Filter tcl86t.dll -Recurse -ErrorAction SilentlyContinue |
+            Select-Object -First 1
+          if (-not $tclRuntime) {
+            throw "Unable to locate tcl86t.dll under the extracted Tcl payload at $tclExtractRoot."
           }
+
+          $tclRoot = Split-Path (Split-Path $tclRuntime.FullName -Parent) -Parent
           $repoTclRoot = Join-Path $env:GITHUB_WORKSPACE 'Runtime\Tcl'
           if (Test-Path $repoTclRoot) {
             Remove-Item $repoTclRoot -Recurse -Force
