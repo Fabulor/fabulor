@@ -259,17 +259,17 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <Manifest Include="..\..\win32\zoitechat.exe.manifest">
+    <Manifest Include="..\..\win32\fabulor.exe.manifest">
       <Filter>Resource Files</Filter>
     </Manifest>
   </ItemGroup>
   <ItemGroup>
-    <ResourceCompile Include="$(ZoiteChatLib)zoitechat.rc">
+    <ResourceCompile Include="$(ZoiteChatLib)fabulor.rc">
       <Filter>Resource Files</Filter>
     </ResourceCompile>
   </ItemGroup>
   <ItemGroup>
-    <None Include="..\..\data\icons\zoitechat.ico">
+    <None Include="..\..\data\icons\fabulor.ico">
       <Filter>Resource Files</Filter>
     </None>
     <None Include="theme\tests\test-theme-manager-policy.c">
@@ -290,9 +290,9 @@
     <None Include="\theme\tests\test-theme-application-input-style.c">
       <Filter>Source Files</Filter>
     </None>
-    <None Include="zoitechat.rc.tt" />
+    <None Include="fabulor.rc.tt" />
   </ItemGroup>
   <ItemGroup>
-    <Xml Include="..\..\data\zoitechat.gresource.xml" />
+    <Xml Include="..\..\data\fabulor.gresource.xml" />
   </ItemGroup>
 </Project>

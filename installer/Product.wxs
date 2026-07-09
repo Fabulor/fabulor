@@ -4,12 +4,13 @@
   <Package Name="Fabulor"
            Manufacturer="Barry"
            Version="$(var.FabulorSemVer)"
-           ProductCode="CA36678F-E49D-4E2C-B731-CFE56AF977D2"
+           ProductCode="*"
            UpgradeCode="8F6C0C7E-9A4D-4E4C-9F8C-2B6F5A4E9C11"
            InstallerVersion="500"
            Compressed="yes"
            Scope="perMachine">
     <MajorUpgrade
+      AllowSameVersionUpgrades="yes"
       DowngradeErrorMessage="A newer version of Fabulor is already installed." />
     <MediaTemplate EmbedCab="yes" />
     <Icon Id="FabulorProductIcon" SourceFile="..\data\icons\fabulor.ico" />
@@ -26,6 +27,16 @@
     <StandardDirectory Id="ProgramFiles64Folder">
       <Directory Id="INSTALLFOLDER" Name="Fabulor">
         <Directory Id="ETCDIR" Name="etc" />
+        <Directory Id="ICONSDIR" Name="icons">
+          <Directory Id="HICOLORDIR" Name="hicolor">
+            <Directory Id="HICOLOR48DIR" Name="48x48">
+              <Directory Id="HICOLOR48APPDIR" Name="apps" />
+            </Directory>
+            <Directory Id="HICOLORSCALABLEDIR" Name="scalable">
+              <Directory Id="HICOLORSCALABLEAPPDIR" Name="apps" />
+            </Directory>
+          </Directory>
+        </Directory>
         <Directory Id="LIBDIR" Name="lib" />
         <Directory Id="SHAREDIR" Name="share">
           <Directory Id="SHAREDOCDIR" Name="doc" />
@@ -49,6 +60,13 @@
     </StandardDirectory>
     <StandardDirectory Id="ProgramMenuFolder">
       <Directory Id="ApplicationProgramsFolder" Name="Fabulor" />
+    </StandardDirectory>
+    <StandardDirectory Id="AppDataFolder">
+      <Directory Id="USERCONFIGROOTDIR" Name="Fabulor">
+        <Directory Id="USERICONSDIR" Name="icons">
+          <Directory Id="USERHICOLORDIR" Name="hicolor" />
+        </Directory>
+      </Directory>
     </StandardDirectory>
     <SetProperty Id="ARPINSTALLLOCATION" Value="[INSTALLFOLDER]" After="CostFinalize" />
 

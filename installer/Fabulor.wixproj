@@ -14,11 +14,12 @@
     <BundledDotNetRoot Condition="'$(BundledDotNetRoot)'==''">C:\Program Files\dotnet</BundledDotNetRoot>
     <BundledDotNetHostFxrRoot>$([System.IO.Path]::GetFullPath('$(BundledDotNetRoot)\host\fxr\'))</BundledDotNetHostFxrRoot>
     <BundledDotNetSharedRuntimeRoot>$([System.IO.Path]::GetFullPath('$(BundledDotNetRoot)\shared\Microsoft.NETCore.App\'))</BundledDotNetSharedRuntimeRoot>
+    <BundledDotNetRuntimeVersion Condition="'$(BundledDotNetRuntimeVersion)'==''">8.0.28</BundledDotNetRuntimeVersion>
     <PythonRuntimeRoot>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\Runtime\Python314\'))</PythonRuntimeRoot>
     <PythonRuntimeDll>python314.dll</PythonRuntimeDll>
     <PythonRuntimeFolderName>Python314</PythonRuntimeFolderName>
     <TclRuntimeRoot>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\Runtime\Tcl\'))</TclRuntimeRoot>
-    <DefineConstants>$(DefineConstants);FabulorSemVer=$(FabulorSemVer);FabulorPayloadRoot=$(FabulorPayloadRoot);GtkRuntimeRoot=$(GtkRuntimeRoot);ManagedPluginHostRoot=$(ManagedPluginHostRoot);BundledDotNetRoot=$(BundledDotNetRoot);BundledDotNetHostFxrRoot=$(BundledDotNetHostFxrRoot);BundledDotNetSharedRuntimeRoot=$(BundledDotNetSharedRuntimeRoot);PythonRuntimeRoot=$(PythonRuntimeRoot);PythonRuntimeFolderName=$(PythonRuntimeFolderName);TclRuntimeRoot=$(TclRuntimeRoot)</DefineConstants>
+    <DefineConstants>$(DefineConstants);FabulorSemVer=$(FabulorSemVer);FabulorPayloadRoot=$(FabulorPayloadRoot);GtkRuntimeRoot=$(GtkRuntimeRoot);ManagedPluginHostRoot=$(ManagedPluginHostRoot);BundledDotNetRoot=$(BundledDotNetRoot);BundledDotNetHostFxrRoot=$(BundledDotNetHostFxrRoot);BundledDotNetSharedRuntimeRoot=$(BundledDotNetSharedRuntimeRoot);BundledDotNetRuntimeVersion=$(BundledDotNetRuntimeVersion);PythonRuntimeRoot=$(PythonRuntimeRoot);PythonRuntimeFolderName=$(PythonRuntimeFolderName);TclRuntimeRoot=$(TclRuntimeRoot)</DefineConstants>
 
     <WixProjectType>Package</WixProjectType>
     <OutputName>Fabulor</OutputName>
@@ -34,7 +35,7 @@
   <Target Name="BuildManagedPluginHost" BeforeTargets="Compile">
     <MSBuild Projects="..\src\managed\Fabulor.PluginHost\Fabulor.PluginHost.csproj"
              Targets="Restore;Build"
-             Properties="Configuration=$(Configuration)" />
+             Properties="Configuration=$(Configuration);Platform=$(Platform)" />
   </Target>
 
   <Target Name="ValidateInstallerPayload" BeforeTargets="Build" DependsOnTargets="BuildManagedPluginHost">

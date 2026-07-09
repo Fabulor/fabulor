@@ -1229,6 +1229,8 @@ main (int argc, char *argv[])
 		make_dcc_dirs ();
 	}
 
+	ensure_user_icon_theme ();
+
 	/* we MUST do this after load_config () AND before fe_init (thus gtk_init) otherwise it will fail */
 	set_locale ();
 

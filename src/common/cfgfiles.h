@@ -40,6 +40,7 @@ char *get_xdir (void);
 int check_config_dir (void);
 void load_default_config (void);
 int make_config_dirs (void);
+void ensure_user_icon_theme (void);
 int make_dcc_dirs (void);
 int load_config (void);
 int save_config (void);

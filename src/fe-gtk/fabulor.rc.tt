@@ -2,6 +2,7 @@
 #include "config.h"
 
 #define COMMA_VERSION <#= [string]::Join(',', ($versionParts | %{ ($_ -split '[^0-9]')[0] })) #>,0
+#define VERSION_STRING "<#= [string]::Join('.', ($versionParts | %{ ($_ -split '[^0-9]')[0] })) #>"
 
 XC_ICON ICON "<#= $env:SOLUTIONDIR -replace '\\', '/' #>data/icons/fabulor.ico"
 
@@ -19,8 +20,8 @@ VS_VERSION_INFO VERSIONINFO
 				VALUE "InternalName", "fabulor"
 				VALUE "OriginalFilename", "fabulor.exe"
 				VALUE "ProductName", "Fabulor"
-				VALUE "ProductVersion", PACKAGE_VERSION
-				VALUE "FileVersion", PACKAGE_VERSION
+				VALUE "ProductVersion", VERSION_STRING
+				VALUE "FileVersion", VERSION_STRING
 			END
 		END
 		BLOCK "VarFileInfo"

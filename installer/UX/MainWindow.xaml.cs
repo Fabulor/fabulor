@@ -117,10 +117,12 @@ public partial class MainWindow : Window
         this.RefreshOptionState();
     }
 
-    public void SetDetectedState(bool isInstalled)
+    public void SetDetectedState(bool isInstalled, bool isCurrentPackageInstalled)
     {
-        this.InstallButton.Content = isInstalled ? "Modify" : "Install";
-        this.RepairButton.IsEnabled = isInstalled;
+        this.InstallButton.Content = isInstalled
+            ? isCurrentPackageInstalled ? "Modify" : "Upgrade"
+            : "Install";
+        this.RepairButton.IsEnabled = isCurrentPackageInstalled;
         this.UninstallButton.IsEnabled = isInstalled;
     }
 
