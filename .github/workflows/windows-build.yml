@@ -32,7 +32,7 @@ jobs:
           python-version: '3.14.3'
           architecture: ${{ matrix.arch }}
 
-      - uses: actions/setup-dotnet@v4
+      - uses: actions/setup-dotnet@v5
         with:
           dotnet-version: '10.0.x'
 
@@ -104,6 +104,24 @@ jobs:
           Download-WithRetry -Url https://github.com/ZoiteChat/gvsbuild/releases/download/zoitechat-2.18.0-pre4/perl-5.42.0.1-${{ matrix.arch }}.7z -OutFile deps\perl-${{ matrix.arch }}.7z
           & 7z.exe x deps\perl-${{ matrix.arch }}.7z -oC:\gtk-build\perl-5.42.0.1\${{ matrix.platform }}
 
+          winget install --id Magicsplat.TclTk --exact --silent --accept-package-agreements --accept-source-agreements --disable-interactivity
+
+          $tclRuntime = Get-ChildItem -Path 'C:\Tcl', 'C:\Program Files', 'C:\Program Files (x86)' -Filter tcl86t.dll -Recurse -ErrorAction SilentlyContinue |
+            Select-Object -First 1
+          if (-not $tclRuntime) {
+            throw "Unable to locate tcl86t.dll after installing Magicsplat Tcl/Tk."
+          }
+
+          $tclRoot = Split-Path (Split-Path $tclRuntime.FullName -Parent) -Parent
+          $repoTclRoot = Join-Path $env:GITHUB_WORKSPACE 'Runtime\Tcl'
+          if (Test-Path $repoTclRoot) {
+            Remove-Item $repoTclRoot -Recurse -Force
+          }
+          New-Item -Path $repoTclRoot -ItemType Directory -Force | Out-Null
+          Copy-Item -Path (Join-Path $tclRoot 'bin') -Destination (Join-Path $repoTclRoot 'bin') -Recurse -Force
+          Copy-Item -Path (Join-Path $tclRoot 'include') -Destination (Join-Path $repoTclRoot 'include') -Recurse -Force
+          Copy-Item -Path (Join-Path $tclRoot 'lib') -Destination (Join-Path $repoTclRoot 'lib') -Recurse -Force
+
           $pyRoot = $env:pythonLocation
           if (-not $pyRoot) { $pyRoot = & python -c "import sys; print(sys.prefix)" }
 
@@ -132,6 +150,7 @@ jobs:
 
           rem Build the legacy x64 payload only so WiX can harvest the staged application files.
           msbuild win32\zoitechat.sln /m /verbosity:minimal /p:Configuration=Release /p:Platform=${{ matrix.platform }}
+          if errorlevel 1 exit /b 1
 
           rem Publish artefacts from the WiX v4 installer surface only.
           dotnet build installer\Fabulor.wixproj -c Release /p:Platform=${{ matrix.platform }} /verbosity:minimal
