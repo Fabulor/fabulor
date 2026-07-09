@@ -13,7 +13,6 @@
 [![Windows Build](https://github.com/Fabulor/fabulor/actions/workflows/windows-build.yml/badge.svg)](https://github.com/Fabulor/fabulor/actions/workflows/windows-build.yml)
 [![Tests][tests-badge]][tests-link]
 [![Lint][lint-badge]][lint-link]
-[![CodeQL][codeql-badge]][codeql-link]
 [![Latest Release][latest-release-badge]][latest-release-link]
 [![Licence: GPLv3][licence-badge]][licence-link]
 
@@ -51,10 +50,6 @@ This project has been updated from GPL v2 to GPL Version 3 (29 June 2007), with 
 
 [lint-badge]: https://github.com/Fabulor/fabulor/actions/workflows/lint.yml/badge.svg
 [lint-link]: https://github.com/Fabulor/fabulor/actions/workflows/lint.yml
-
-[codeql-badge]: https://github.com/Fabulor/fabulor/actions/workflows/codeql.yml/badge.svg
-[codeql-link]: https://github.com/Fabulor/fabulor/security/code-scanning
-
 
 [licence-badge]: https://img.shields.io/badge/License-GPLv3-blue.svg
 [licence-link]: https://www.gnu.org/licenses/agpl-3.0.en.html
