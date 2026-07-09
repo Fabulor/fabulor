@@ -213,14 +213,12 @@ win32_set_gsettings_schema_dir (void)
 	char *base_path;
 	char *share_path;
 	char *runtime_share_path;
-	char *runtime_flat_data_path;
 	char *schema_path;
 	char *runtime_schema_path;
 	char *xdg_data_dirs;
 	char **xdg_parts;
 	gboolean have_share_path = FALSE;
 	gboolean have_runtime_share_path = FALSE;
-	gboolean have_runtime_flat_data_path = FALSE;
 	gint i;
 
 	base_path = g_win32_get_package_installation_directory_of_module (NULL);
@@ -229,7 +227,6 @@ win32_set_gsettings_schema_dir (void)
 
 	share_path = g_build_filename (base_path, "share", NULL);
 	runtime_share_path = g_build_filename (base_path, "Runtime", "GTK4", "share", NULL);
-	runtime_flat_data_path = g_build_filename (base_path, "Runtime", "GTK4", NULL);
 
 	/* Ensure GTK can discover bundled icon themes and other shared data. */
 	xdg_data_dirs = g_strdup (g_getenv ("XDG_DATA_DIRS"));
@@ -246,21 +243,12 @@ win32_set_gsettings_schema_dir (void)
 			{
 				have_runtime_share_path = TRUE;
 			}
-			else if (g_ascii_strcasecmp (xdg_parts[i], runtime_flat_data_path) == 0)
-			{
-				have_runtime_flat_data_path = TRUE;
-			}
 		}
 		g_strfreev (xdg_parts);
 
-		if (!have_runtime_flat_data_path || !have_runtime_share_path || !have_share_path)
+		if (!have_runtime_share_path || !have_share_path)
 		{
 			GString *updated = g_string_new ("");
-			if (!have_runtime_flat_data_path && g_file_test (runtime_flat_data_path, G_FILE_TEST_IS_DIR))
-			{
-				g_string_append (updated, runtime_flat_data_path);
-				g_string_append_c (updated, G_SEARCHPATH_SEPARATOR);
-			}
 			if (!have_runtime_share_path && g_file_test (runtime_share_path, G_FILE_TEST_IS_DIR))
 			{
 				g_string_append (updated, runtime_share_path);
@@ -278,24 +266,7 @@ win32_set_gsettings_schema_dir (void)
 	}
 	else
 	{
-		if (g_file_test (runtime_flat_data_path, G_FILE_TEST_IS_DIR))
-		{
-			char *updated = NULL;
-
-			if (g_file_test (runtime_share_path, G_FILE_TEST_IS_DIR))
-				updated = g_strdup_printf ("%s%c%s%c%s", runtime_flat_data_path,
-								   G_SEARCHPATH_SEPARATOR,
-								   runtime_share_path,
-								   G_SEARCHPATH_SEPARATOR,
-								   share_path);
-			else
-				updated = g_strdup_printf ("%s%c%s", runtime_flat_data_path,
-								   G_SEARCHPATH_SEPARATOR,
-								   share_path);
-			g_setenv ("XDG_DATA_DIRS", updated, TRUE);
-			g_free (updated);
-		}
-		else if (g_file_test (runtime_share_path, G_FILE_TEST_IS_DIR))
+		if (g_file_test (runtime_share_path, G_FILE_TEST_IS_DIR))
 		{
 			char *updated = g_strdup_printf ("%s%c%s", runtime_share_path,
 								 G_SEARCHPATH_SEPARATOR,
@@ -323,7 +294,6 @@ win32_set_gsettings_schema_dir (void)
 	}
 
 	g_free (xdg_data_dirs);
-	g_free (runtime_flat_data_path);
 	g_free (runtime_share_path);
 	g_free (runtime_schema_path);
 	g_free (share_path);
@@ -541,10 +511,6 @@ win32_configure_icon_theme (void)
 	base_path = g_win32_get_package_installation_directory_of_module (NULL);
 	if (base_path)
 	{
-		icons_path = g_build_filename (base_path, "Runtime", "GTK4", NULL);
-		WIN32_SET_ICON_PATH ("module base/Runtime/GTK4", icons_path);
-		g_free (icons_path);
-
 		icons_path = g_build_filename (base_path, "Runtime", "GTK4", "share", "icons", NULL);
 		WIN32_SET_ICON_PATH ("module base/Runtime/GTK4/share/icons", icons_path);
 		g_free (icons_path);
