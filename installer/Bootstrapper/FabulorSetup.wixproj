@@ -18,6 +18,7 @@
 
 
   <ItemGroup>
+    <PackageReference Include="WixToolset.Bal.wixext" Version="$(WixToolsetVersion)" />
     <PackageReference Include="WixToolset.BootstrapperApplications.wixext" Version="$(WixToolsetVersion)" />
     <Compile Include="Bundle.wxs" />
   </ItemGroup>
