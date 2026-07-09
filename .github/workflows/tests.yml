@@ -1,0 +1,151 @@
+name: Tests
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  build_validation:
+    name: Build validation
+    runs-on: windows-2022
+
+    permissions:
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.14.3'
+          architecture: x64
+
+      - uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Install native build prerequisites
+        run: |
+          New-Item -Name "deps" -ItemType "Directory" -Force | Out-Null
+
+          python -m pip install --upgrade pip
+          python -m pip install cffi
+          python -m pip install zstandard
+
+          $ProgressPreference = 'SilentlyContinue'
+          function Download-WithRetry {
+            param(
+              [string]$Url,
+              [string]$OutFile,
+              [int]$MaxAttempts = 5,
+              [int]$InitialDelaySeconds = 2
+            )
+            for ($attempt = 1; $attempt -le $MaxAttempts; $attempt++) {
+              try {
+                Invoke-WebRequest -Uri $Url -OutFile $OutFile -ErrorAction Stop
+                return
+              }
+              catch {
+                if ($attempt -eq $MaxAttempts) {
+                  throw
+                }
+                Start-Sleep -Seconds ($InitialDelaySeconds * [math]::Pow(2, $attempt - 1))
+              }
+            }
+          }
+
+          Download-WithRetry -Url https://github.com/ZoiteChat/gvsbuild/releases/download/zoitechat-2.18.1/GTK3_Gvsbuild_zoitechat-2.18.1_x64.zip -OutFile deps\gtk-x64.zip
+          Expand-Archive -LiteralPath deps\gtk-x64.zip -DestinationPath C:\gtk-build\gtk\x64\release -Force
+
+          Download-WithRetry -Url https://repo.msys2.org/mingw/x86_64/mingw-w64-x86_64-hicolor-icon-theme-0.18-1-any.pkg.tar.zst -OutFile deps\hicolor-icon-theme.pkg.tar.zst
+          python -c "import tarfile,zstandard,pathlib;archive=pathlib.Path(r'deps\\hicolor-icon-theme.pkg.tar.zst');target=pathlib.Path(r'C:\\gtk-build\\gtk\\x64\\release');dctx=zstandard.ZstdDecompressor();f=archive.open('rb');reader=dctx.stream_reader(f);tf=tarfile.open(fileobj=reader,mode='r|');[tf.extract(m,path=target) for m in tf if m.name.startswith('mingw64/share/icons/hicolor/')];tf.close();reader.close();f.close()"
+
+          Download-WithRetry -Url https://repo.msys2.org/mingw/x86_64/mingw-w64-x86_64-libarchive-3.8.6-1-any.pkg.tar.zst -OutFile deps\libarchive.pkg.tar.zst
+          python -c "import tarfile,zstandard,pathlib;archive=pathlib.Path(r'deps\\libarchive.pkg.tar.zst');target=pathlib.Path(r'C:\\gtk-build\\gtk\\x64\\release');dctx=zstandard.ZstdDecompressor();f=archive.open('rb');reader=dctx.stream_reader(f);tf=tarfile.open(fileobj=reader,mode='r|');[tf.extract(m,path=target) for m in tf if m.name.startswith(('mingw64/include/archive','mingw64/lib/libarchive','mingw64/bin/libarchive'))];tf.close();reader.close();f.close()"
+
+          if (Test-Path C:\gtk-build\gtk\x64\release\mingw64\share\icons\hicolor) {
+            New-Item -Path C:\gtk-build\gtk\x64\release\share\icons -ItemType Directory -Force | Out-Null
+            Copy-Item -Path C:\gtk-build\gtk\x64\release\mingw64\share\icons\hicolor -Destination C:\gtk-build\gtk\x64\release\share\icons\hicolor -Recurse -Force
+          }
+          if (Test-Path C:\gtk-build\gtk\x64\release\mingw64\include) {
+            New-Item -Path C:\gtk-build\gtk\x64\release\include -ItemType Directory -Force | Out-Null
+            Copy-Item -Path C:\gtk-build\gtk\x64\release\mingw64\include\archive* -Destination C:\gtk-build\gtk\x64\release\include -Recurse -Force
+          }
+          if (Test-Path C:\gtk-build\gtk\x64\release\mingw64\lib) {
+            New-Item -Path C:\gtk-build\gtk\x64\release\lib -ItemType Directory -Force | Out-Null
+            Copy-Item -Path C:\gtk-build\gtk\x64\release\mingw64\lib\libarchive* -Destination C:\gtk-build\gtk\x64\release\lib -Force
+          }
+          if (Test-Path C:\gtk-build\gtk\x64\release\mingw64\bin) {
+            New-Item -Path C:\gtk-build\gtk\x64\release\bin -ItemType Directory -Force | Out-Null
+            Copy-Item -Path C:\gtk-build\gtk\x64\release\mingw64\bin\libarchive*.dll -Destination C:\gtk-build\gtk\x64\release\bin -Force
+          }
+          if (Test-Path C:\gtk-build\gtk\x64\release\mingw64) {
+            Remove-Item -Path C:\gtk-build\gtk\x64\release\mingw64 -Recurse -Force
+          }
+
+          Download-WithRetry -Url https://github.com/ZoiteChat/gvsbuild/releases/download/zoitechat-2.18.0-pre4/gendef20260315.7z -OutFile deps\gendef.7z
+          & 7z.exe x deps\gendef.7z -oC:\gtk-build
+
+          Download-WithRetry -Url https://github.com/ZoiteChat/gvsbuild/releases/download/zoitechat-2.18.0-pre4/WinSparkle-20260315.7z -OutFile deps\WinSparkle.7z
+          & 7z.exe x deps\WinSparkle.7z -oC:\gtk-build\WinSparkle
+
+          Download-WithRetry -Url https://github.com/ZoiteChat/gvsbuild/releases/download/zoitechat-2.18.0-pre4/perl-5.42.0.1-x64.7z -OutFile deps\perl-x64.7z
+          & 7z.exe x deps\perl-x64.7z -oC:\gtk-build\perl-5.42.0.1\x64
+
+          winget install --id Magicsplat.TclTk --exact --silent --accept-package-agreements --accept-source-agreements --disable-interactivity
+
+          $tclRuntime = Get-ChildItem -Path 'C:\Tcl', 'C:\Program Files', 'C:\Program Files (x86)' -Filter tcl86t.dll -Recurse -ErrorAction SilentlyContinue |
+            Select-Object -First 1
+          if (-not $tclRuntime) {
+            throw "Unable to locate tcl86t.dll after installing Magicsplat Tcl/Tk."
+          }
+
+          $tclRoot = Split-Path (Split-Path $tclRuntime.FullName -Parent) -Parent
+          $repoTclRoot = Join-Path $env:GITHUB_WORKSPACE 'Runtime\Tcl'
+          if (Test-Path $repoTclRoot) {
+            Remove-Item $repoTclRoot -Recurse -Force
+          }
+          New-Item -Path $repoTclRoot -ItemType Directory -Force | Out-Null
+          Copy-Item -Path (Join-Path $tclRoot 'bin') -Destination (Join-Path $repoTclRoot 'bin') -Recurse -Force
+          Copy-Item -Path (Join-Path $tclRoot 'include') -Destination (Join-Path $repoTclRoot 'include') -Recurse -Force
+          Copy-Item -Path (Join-Path $tclRoot 'lib') -Destination (Join-Path $repoTclRoot 'lib') -Recurse -Force
+
+          $pyRoot = $env:pythonLocation
+          if (-not $pyRoot) { $pyRoot = & python -c "import sys; print(sys.prefix)" }
+
+          foreach ($pyDir in @("C:\gtk-build\python-3.14.3", "C:\gtk-build\python-3.14")) {
+            New-Item -Path $pyDir -ItemType Directory -Force | Out-Null
+            $target = Join-Path $pyDir "x64"
+            if (Test-Path $target) { Remove-Item $target -Recurse -Force }
+            New-Item -Path $pyDir -Name "x64" -ItemType Junction -Value $pyRoot | Out-Null
+          }
+
+      - name: Build native and managed validation targets
+        run: |
+          call "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\Common7\Tools\VsDevCmd.bat"
+
+          set "PYTHON_DIR=C:\gtk-build\python-3.14.3\x64"
+          if not exist "%PYTHON_DIR%\libs\python314.lib" (
+            echo Missing %PYTHON_DIR%\libs\python314.lib
+            dir "%PYTHON_DIR%\libs"
+            exit /b 1
+          )
+
+          set "LIB=%PYTHON_DIR%\libs;%LIB%"
+          set "INCLUDE=%PYTHON_DIR%\include;%INCLUDE%"
+
+          powershell -NoProfile -ExecutionPolicy Bypass -Command "$archiveLib='C:\gtk-build\gtk\x64\release\lib\libarchive.lib'; if (-not (Test-Path $archiveLib)) { $archiveDll = Get-ChildItem 'C:\gtk-build\gtk\x64\release\bin\libarchive*.dll' | Select-Object -First 1; if ($archiveDll) { Push-Location 'C:\gtk-build\gtk\x64\release\lib'; & 'C:\gtk-build\gendef\gendef.exe' $archiveDll.FullName | Out-Null; $archiveDef = Get-ChildItem 'libarchive*.def' | Select-Object -First 1; if ($archiveDef) { & lib /def:$archiveDef.Name /machine:x64 /out:libarchive.lib | Out-Null }; Pop-Location } }"
+
+          msbuild src\common\common.vcxproj /m /verbosity:minimal /p:Configuration=Release /p:Platform=x64
+          if errorlevel 1 exit /b 1
+
+          dotnet build src\managed\Fabulor.PluginHost\Fabulor.PluginHost.csproj -c Release
+          if errorlevel 1 exit /b 1
+
+          dotnet build samples\plugins\example.csharp.greeter\GreeterPlugin.csproj -c Release
+        shell: cmd

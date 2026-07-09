@@ -1,0 +1,111 @@
+name: Lint
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  repository_lint:
+    runs-on: windows-2022
+
+    permissions:
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.14.3'
+          architecture: x64
+
+      - name: Install validation helpers
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install pyyaml
+
+      - name: Validate workflow, manifest, and Python files
+        run: |
+          @'
+          import json
+          import pathlib
+          import py_compile
+          import sys
+          import yaml
+
+          repo = pathlib.Path.cwd()
+
+          workflow_root = repo / ".github" / "workflows"
+          workflow_files = sorted(workflow_root.glob("*.yml"))
+          if not workflow_files:
+              raise SystemExit("No workflow files were found under .github/workflows.")
+
+          for workflow in workflow_files:
+              with workflow.open("r", encoding="utf-8") as handle:
+                  data = yaml.safe_load(handle)
+              if not isinstance(data, dict):
+                  raise SystemExit(f"{workflow} did not parse into a mapping.")
+              for required_key in ("name", "jobs"):
+                  if required_key not in data:
+                      raise SystemExit(f"{workflow} is missing the required top-level key '{required_key}'.")
+              if "on" not in data and True not in data:
+                  raise SystemExit(f"{workflow} is missing the required top-level key 'on'.")
+
+          required_manifest_fields = {
+              "id",
+              "name",
+              "version",
+              "language",
+              "entrypoint",
+              "requires_api_version",
+              "dependencies",
+              "capabilities",
+              "description",
+              "author",
+              "homepage",
+          }
+
+          manifest_root = repo / "samples" / "plugins"
+          manifests = sorted(manifest_root.glob("*/plugin.json"))
+          if not manifests:
+              raise SystemExit("No sample plugin manifests were found under samples/plugins.")
+
+          discovered_ids = {}
+          for manifest_path in manifests:
+              manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+              missing = sorted(required_manifest_fields.difference(manifest))
+              if missing:
+                  raise SystemExit(f"{manifest_path} is missing required fields: {', '.join(missing)}")
+              plugin_id = manifest["id"]
+              if plugin_id in discovered_ids:
+                  raise SystemExit(f"Duplicate plugin id '{plugin_id}' found in {manifest_path} and {discovered_ids[plugin_id]}.")
+              discovered_ids[plugin_id] = manifest_path
+
+              entrypoint = manifest_path.parent / manifest["entrypoint"]
+              if not entrypoint.exists():
+                  raise SystemExit(f"{manifest_path} points at a missing entrypoint: {entrypoint}")
+
+          for manifest_path in manifests:
+              manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+              for dependency in manifest["dependencies"]:
+                  if dependency not in discovered_ids:
+                      raise SystemExit(f"{manifest_path} declares an unknown dependency '{dependency}'.")
+
+          python_roots = [
+              repo / "plugins" / "python",
+              repo / "samples" / "plugins",
+          ]
+          for root in python_roots:
+              if not root.exists():
+                  continue
+              for py_file in root.rglob("*.py"):
+                  py_compile.compile(str(py_file), doraise=True)
+
+          print(f"Validated {len(workflow_files)} workflow files, {len(manifests)} sample manifests, and Python syntax checks.")
+          '@ | python -
+        shell: powershell
