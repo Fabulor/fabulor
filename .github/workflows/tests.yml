@@ -155,7 +155,8 @@ jobs:
 
           powershell -NoProfile -ExecutionPolicy Bypass -Command "$archiveLib='C:\gtk-build\gtk\x64\release\lib\libarchive.lib'; if (-not (Test-Path $archiveLib)) { $archiveDll = Get-ChildItem 'C:\gtk-build\gtk\x64\release\bin\libarchive*.dll' | Select-Object -First 1; if ($archiveDll) { Push-Location 'C:\gtk-build\gtk\x64\release\lib'; & 'C:\gtk-build\gendef\gendef.exe' $archiveDll.FullName | Out-Null; $archiveDef = Get-ChildItem 'libarchive*.def' | Select-Object -First 1; if ($archiveDef) { & lib /def:$archiveDef.Name /machine:x64 /out:libarchive.lib | Out-Null }; Pop-Location } }"
 
-          msbuild src\common\common.vcxproj /m /verbosity:minimal /p:Configuration=Release /p:Platform=x64
+          rem Build the legacy solution entry point so generated files such as config.h are created in the expected solution context.
+          msbuild win32\zoitechat.sln /m /verbosity:minimal /p:Configuration=Release /p:Platform=x64
           if errorlevel 1 exit /b 1
 
           dotnet build src\managed\Fabulor.PluginHost\Fabulor.PluginHost.csproj -c Release
