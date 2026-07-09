@@ -122,7 +122,6 @@ public sealed class FabulorBootstrapperApplication : BootstrapperApplication
 
     public void RequestClose()
     {
-        this.lastResult = 0;
         this.window?.Close();
     }
 
@@ -579,6 +578,16 @@ public sealed class FabulorBootstrapperApplication : BootstrapperApplication
                 : $"Bundle apply failed with status 0x{e.Status:X8}.");
             this.window.AppendLog($"ApplyComplete: status=0x{e.Status:X8}, restart={e.Restart}.");
         });
+
+        if (e.Status == 0 && this.pendingAction == LaunchAction.Uninstall)
+        {
+            _ = Task.Run(async () =>
+            {
+                await Task.Delay(1000).ConfigureAwait(false);
+                this.DispatchToWindow(() => this.window?.Close());
+            });
+            return;
+        }
 
         if (this.pendingCommandActionRequested && this.IsNonInteractiveCommandDisplay())
         {
