@@ -1,6 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs"
-     xmlns:bal="http://wixtoolset.org/schemas/v4/wxs/bal">
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">
   <Bundle
     Id="Fabulor.Setup.Bundle"
     Name="Fabulor Setup"
@@ -22,12 +21,10 @@
 
     <Variable Name="InstallFolder"
               Type="string"
-              Value="[ProgramFiles64Folder]Fabulor"
-              bal:Overridable="yes" />
+              Value="[ProgramFiles64Folder]Fabulor" />
     <Variable Name="FABULOR_PORTABLE"
               Type="string"
-              Value=""
-              bal:Overridable="yes" />
+              Value="" />
 
     <Chain>
       <MsiPackage
