@@ -187,23 +187,9 @@ jobs:
           name: Fabulor MSI ${{ matrix.arch }}
           path: installer\bin\${{ matrix.platform }}\Release\Fabulor.msi
 
-      - name: Attest MSI (Artifact Attestation)
-        if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
-        uses: actions/attest-build-provenance@v3
-        with:
-          subject-name: Fabulor MSI ${{ matrix.arch }}
-          subject-digest: sha256:${{ steps.upload_msi.outputs.artifact-digest }}
-
       - name: Upload Bootstrapper
         id: upload_bootstrapper
         uses: actions/upload-artifact@v6
         with:
           name: Fabulor Bootstrapper ${{ matrix.arch }}
           path: installer\bin\${{ matrix.platform }}\Release\FabulorSetup.exe
-
-      - name: Attest Bootstrapper (Artifact Attestation)
-        if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
-        uses: actions/attest-build-provenance@v3
-        with:
-          subject-name: Fabulor Bootstrapper ${{ matrix.arch }}
-          subject-digest: sha256:${{ steps.upload_bootstrapper.outputs.artifact-digest }}
