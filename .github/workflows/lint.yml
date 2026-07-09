@@ -85,10 +85,17 @@ jobs:
               if plugin_id in discovered_ids:
                   raise SystemExit(f"Duplicate plugin id '{plugin_id}' found in {manifest_path} and {discovered_ids[plugin_id]}.")
               discovered_ids[plugin_id] = manifest_path
-
+ 
               entrypoint = manifest_path.parent / manifest["entrypoint"]
               if not entrypoint.exists():
-                  raise SystemExit(f"{manifest_path} points at a missing entrypoint: {entrypoint}")
+                  if manifest["language"] == "csharp":
+                      csproj_files = sorted(manifest_path.parent.glob("*.csproj"))
+                      if not csproj_files:
+                          raise SystemExit(
+                              f"{manifest_path} points at a missing C# entrypoint build output and no source project was found: {entrypoint}"
+                          )
+                  else:
+                      raise SystemExit(f"{manifest_path} points at a missing entrypoint: {entrypoint}")
 
           for manifest_path in manifests:
               manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
