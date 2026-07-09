@@ -110,25 +110,19 @@ jobs:
             throw "Unable to resolve the direct Magicsplat Tcl/Tk MSI download URL from SourceForge."
           }
           Download-WithRetry -Url $tclMsiMatch.Value.Replace('&amp;', '&') -OutFile deps\tcltk-x64.msi
-          $tclInstall = Start-Process -FilePath msiexec.exe -ArgumentList @('/i', (Resolve-Path deps\tcltk-x64.msi), '/qn', '/norestart') -Wait -PassThru
-          if ($tclInstall.ExitCode -ne 0) {
-            throw "Magicsplat Tcl/Tk MSI installation failed with exit code $($tclInstall.ExitCode)."
+          $tclExtractRoot = Join-Path $env:RUNNER_TEMP 'tcl-runtime'
+          if (Test-Path $tclExtractRoot) {
+            Remove-Item $tclExtractRoot -Recurse -Force
+          }
+          New-Item -Path $tclExtractRoot -ItemType Directory -Force | Out-Null
+          & $env:ComSpec /c ('msiexec /a "{0}" /qn TARGETDIR="{1}"' -f (Resolve-Path deps\tcltk-x64.msi), $tclExtractRoot)
+          if ($LASTEXITCODE -ne 0) {
+            throw "Magicsplat Tcl/Tk MSI extraction failed with exit code $LASTEXITCODE."
           }
 
-          $tclRuntime = @(
-            'C:\Tcl\bin\tcl86t.dll',
-            'C:\Program Files\Tcl\bin\tcl86t.dll',
-            'C:\Program Files (x86)\Tcl\bin\tcl86t.dll'
-          ) | Where-Object { Test-Path $_ } | Select-Object -First 1
-          if (-not $tclRuntime) {
-            throw "Unable to locate tcl86t.dll after installing Magicsplat Tcl/Tk."
-          }
-
-          $tclRoot = Split-Path (Split-Path $tclRuntime -Parent) -Parent
-          foreach ($requiredDir in @('bin', 'include', 'lib')) {
-            if (-not (Test-Path (Join-Path $tclRoot $requiredDir))) {
-              throw "Magicsplat Tcl/Tk installation is missing '$requiredDir' under $tclRoot."
-            }
+          $tclRoot = Join-Path $tclExtractRoot 'Tcl8.6'
+          if (-not (Test-Path $tclRoot)) {
+            throw "Unable to locate the extracted Tcl8.6 payload under $tclExtractRoot."
           }
           $repoTclRoot = Join-Path $env:GITHUB_WORKSPACE 'Runtime\Tcl'
           if (Test-Path $repoTclRoot) {
