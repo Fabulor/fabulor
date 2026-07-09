@@ -18,8 +18,20 @@ permissions:
 
 jobs:
   analyse:
-    name: Analyse
+    name: Analyse (${{ matrix.label }})
     runs-on: windows-2022
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - label: c-cpp-csharp
+            languages: c-cpp, csharp
+            build_mode: manual
+            needs_build: 'true'
+          - label: python
+            languages: python
+            build_mode: none
+            needs_build: 'false'
 
     steps:
       - uses: actions/checkout@v5
@@ -36,10 +48,11 @@ jobs:
       - name: Initialise CodeQL
         uses: github/codeql-action/init@v3
         with:
-          languages: c-cpp, csharp, python
-          build-mode: manual
+          languages: ${{ matrix.languages }}
+          build-mode: ${{ matrix.build_mode }}
 
       - name: Install build prerequisites
+        if: ${{ matrix.needs_build == 'true' }}
         run: |
           New-Item -Name "deps" -ItemType "Directory" -Force | Out-Null
 
@@ -140,6 +153,7 @@ jobs:
           }
 
       - name: Build native and managed code
+        if: ${{ matrix.needs_build == 'true' }}
         run: |
           call "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\Common7\Tools\VsDevCmd.bat"
 
