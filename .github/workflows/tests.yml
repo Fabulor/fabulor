@@ -97,7 +97,11 @@ jobs:
           Download-WithRetry -Url https://github.com/ZoiteChat/gvsbuild/releases/download/zoitechat-2.18.0-pre4/perl-5.42.0.1-x64.7z -OutFile deps\perl-x64.7z
           & 7z.exe x deps\perl-x64.7z -oC:\gtk-build\perl-5.42.0.1\x64
 
-          winget install --id Magicsplat.TclTk --exact --silent --accept-package-agreements --accept-source-agreements --disable-interactivity
+          Download-WithRetry -Url https://sourceforge.net/projects/magicsplat/files/magicsplat-tcl/tcl-8.6.16-installer-1.16.0-x64.msi/download -OutFile deps\tcltk-x64.msi
+          & msiexec.exe /i (Resolve-Path deps\tcltk-x64.msi) /qn /norestart
+          if ($LASTEXITCODE -ne 0) {
+            throw "Magicsplat Tcl/Tk MSI installation failed with exit code $LASTEXITCODE."
+          }
 
           $tclRuntime = Get-ChildItem -Path 'C:\Tcl', 'C:\Program Files', 'C:\Program Files (x86)' -Filter tcl86t.dll -Recurse -ErrorAction SilentlyContinue |
             Select-Object -First 1
