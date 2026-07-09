@@ -9,7 +9,7 @@
     <WixToolsetVersion>7.0.0</WixToolsetVersion>
     <FabulorPayloadRoot Condition="'$(FabulorPayloadRoot)'==''">$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\..\zoitechat-build\$(Platform)\rel\'))</FabulorPayloadRoot>
     <GtkRuntimeRoot>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\Runtime\GTK4\'))</GtkRuntimeRoot>
-    <ManagedPluginHostRoot>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\src\managed\Fabulor.PluginHost\bin\$(Configuration)\net8.0\'))</ManagedPluginHostRoot>
+    <ManagedPluginHostRoot>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\src\managed\Fabulor.PluginHost\bin\$(Platform)\$(Configuration)\net8.0\'))</ManagedPluginHostRoot>
     <BundledDotNetRoot Condition="'$(BundledDotNetRoot)'=='' and '$(DOTNET_ROOT)'!=''">$(DOTNET_ROOT)</BundledDotNetRoot>
     <BundledDotNetRoot Condition="'$(BundledDotNetRoot)'==''">C:\Program Files\dotnet</BundledDotNetRoot>
     <BundledDotNetHostFxrRoot>$([System.IO.Path]::GetFullPath('$(BundledDotNetRoot)\host\fxr\'))</BundledDotNetHostFxrRoot>
