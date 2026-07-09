@@ -104,7 +104,12 @@ jobs:
           Download-WithRetry -Url https://github.com/ZoiteChat/gvsbuild/releases/download/zoitechat-2.18.0-pre4/perl-5.42.0.1-${{ matrix.arch }}.7z -OutFile deps\perl-${{ matrix.arch }}.7z
           & 7z.exe x deps\perl-${{ matrix.arch }}.7z -oC:\gtk-build\perl-5.42.0.1\${{ matrix.platform }}
 
-          Download-WithRetry -Url https://downloads.sourceforge.net/project/magicsplat/magicsplat-tcl/tcl-8.6.16-installer-1.16.0-x64.msi -OutFile deps\tcltk-x64.msi
+          Download-WithRetry -Url https://sourceforge.net/projects/magicsplat/files/magicsplat-tcl/tcl-8.6.16-installer-1.16.0-x64.msi/download -OutFile deps\tcltk-sourceforge.html
+          $tclMsiMatch = [regex]::Match((Get-Content -Raw deps\tcltk-sourceforge.html), 'https://downloads\.sourceforge\.net/project/magicsplat/magicsplat-tcl/tcl-8\.6\.16-installer-1\.16\.0-x64\.msi\?[^"\s<>]*use_mirror=[^"\s<>]*')
+          if (-not $tclMsiMatch.Success) {
+            throw "Unable to resolve the direct Magicsplat Tcl/Tk MSI download URL from SourceForge."
+          }
+          Download-WithRetry -Url $tclMsiMatch.Value.Replace('&amp;', '&') -OutFile deps\tcltk-x64.msi
           $tclInstall = Start-Process -FilePath msiexec.exe -ArgumentList @('/i', (Resolve-Path deps\tcltk-x64.msi), '/qn', '/norestart') -Wait -PassThru
           if ($tclInstall.ExitCode -ne 0) {
             throw "Magicsplat Tcl/Tk MSI installation failed with exit code $($tclInstall.ExitCode)."
