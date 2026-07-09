@@ -102,7 +102,13 @@ win32_seed_user_icon_theme (void)
 	if (!install_root)
 		goto cleanup;
 
-	source_index_theme = g_build_filename (install_root, "icons", "hicolor", "index.theme", NULL);
+	source_index_theme = g_build_filename (install_root, "share", "icons", "hicolor", "index.theme", NULL);
+	if (!g_file_test (source_index_theme, G_FILE_TEST_IS_REGULAR))
+	{
+		g_free (source_index_theme);
+		source_index_theme = g_build_filename (install_root, "icons", "hicolor", "index.theme", NULL);
+	}
+
 	if (!g_file_test (source_index_theme, G_FILE_TEST_IS_REGULAR))
 	{
 		g_free (source_index_theme);
@@ -471,6 +477,26 @@ win32_configure_pixbuf_loaders (void)
 	g_free (base_path);
 }
 
+static gboolean
+win32_icon_path_has_payload (const char *path)
+{
+	char *fixed_apps;
+	char *scalable_apps;
+	gboolean has_payload;
+
+	if (!path || !g_file_test (path, G_FILE_TEST_IS_DIR))
+		return FALSE;
+
+	fixed_apps = g_build_filename (path, "hicolor", "48x48", "apps", NULL);
+	scalable_apps = g_build_filename (path, "hicolor", "scalable", "apps", NULL);
+	has_payload = g_file_test (fixed_apps, G_FILE_TEST_IS_DIR) ||
+	              g_file_test (scalable_apps, G_FILE_TEST_IS_DIR);
+	g_free (fixed_apps);
+	g_free (scalable_apps);
+
+	return has_payload;
+}
+
 static void
 win32_configure_icon_theme (void)
 {
@@ -508,7 +534,8 @@ win32_configure_icon_theme (void)
 		WIN32_SET_ICON_PATH ("ZOITECHAT_ICON_PATH", env_icons_path);
 
 	icons_path = g_build_filename (get_xdir (), "icons", NULL);
-	WIN32_SET_ICON_PATH ("user config/icons", icons_path);
+	if (win32_icon_path_has_payload (icons_path))
+		WIN32_SET_ICON_PATH ("user config/icons", icons_path);
 	g_free (icons_path);
 
 	base_path = g_win32_get_package_installation_directory_of_module (NULL);

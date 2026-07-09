@@ -25,6 +25,9 @@
     <Variable Name="FABULOR_PORTABLE"
               Type="string"
               Value="" />
+    <Variable Name="FABULOR_NO_HANDOFF"
+              Type="string"
+              Value="" />
 
     <Chain>
       <MsiPackage
@@ -35,6 +38,7 @@
         Compressed="yes">
         <MsiProperty Name="INSTALLFOLDER" Value="[InstallFolder]" />
         <MsiProperty Name="FABULOR_PORTABLE" Value="[FABULOR_PORTABLE]" />
+        <MsiProperty Name="ARPSYSTEMCOMPONENT" Value="1" />
       </MsiPackage>
     </Chain>
   </Bundle>

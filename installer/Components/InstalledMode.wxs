@@ -23,20 +23,6 @@
                        Value="1"
                        KeyPath="yes" />
       </Component>
-      <Component Id="InstalledModeUserHicolorIndexTheme" Guid="A504A990-E622-4B80-8F0F-46A836F92011" Directory="USERHICOLORDIR" Condition="NOT FABULOR_PORTABLE">
-        <File Id="InstalledModeUserHicolorIndexThemeFile"
-              Source="$(sys.SOURCEFILEDIR)..\..\data\icons\hicolor\index.theme"
-              Name="index.theme" />
-        <RegistryValue Root="HKCU"
-                       Key="Software\Fabulor\Installer"
-                       Name="UserHicolorIndexTheme"
-                       Type="integer"
-                       Value="1"
-                       KeyPath="yes" />
-        <RemoveFolder Id="RemoveInstalledUserHicolorDir" Directory="USERHICOLORDIR" On="uninstall" />
-        <RemoveFolder Id="RemoveInstalledUserIconsDir" Directory="USERICONSDIR" On="uninstall" />
-        <RemoveFolder Id="RemoveInstalledUserConfigRootDir" Directory="USERCONFIGROOTDIR" On="uninstall" />
-      </Component>
     </ComponentGroup>
 
     <ComponentGroup Id="StartMenuComponents">

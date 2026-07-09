@@ -1159,16 +1159,10 @@ static void
 set_locale (void)
 {
 #ifdef WIN32
-	char zoitechat_lang[13];	/* LC_ALL= plus 5 chars of hex_gui_lang and trailing \0 */
-
-	strcpy (zoitechat_lang, "LC_ALL=");
-
 	if (0 <= prefs.hex_gui_lang && prefs.hex_gui_lang < LANGUAGES_LENGTH)
-		strcat (zoitechat_lang, languages[prefs.hex_gui_lang]);
+		g_setenv ("LC_ALL", languages[prefs.hex_gui_lang], TRUE);
 	else
-		strcat (zoitechat_lang, "en");
-
-	putenv (zoitechat_lang);
+		g_setenv ("LC_ALL", "en", TRUE);
 #endif
 }
 

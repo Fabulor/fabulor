@@ -27,20 +27,20 @@
     <StandardDirectory Id="ProgramFiles64Folder">
       <Directory Id="INSTALLFOLDER" Name="Fabulor">
         <Directory Id="ETCDIR" Name="etc" />
-        <Directory Id="ICONSDIR" Name="icons">
-          <Directory Id="HICOLORDIR" Name="hicolor">
-            <Directory Id="HICOLOR48DIR" Name="48x48">
-              <Directory Id="HICOLOR48APPDIR" Name="apps" />
-            </Directory>
-            <Directory Id="HICOLORSCALABLEDIR" Name="scalable">
-              <Directory Id="HICOLORSCALABLEAPPDIR" Name="apps" />
-            </Directory>
-          </Directory>
-        </Directory>
         <Directory Id="LIBDIR" Name="lib" />
         <Directory Id="SHAREDIR" Name="share">
           <Directory Id="SHAREDOCDIR" Name="doc" />
           <Directory Id="SHAREGLIBDIR" Name="glib-2.0" />
+          <Directory Id="SHAREICONSDIR" Name="icons">
+            <Directory Id="HICOLORDIR" Name="hicolor">
+              <Directory Id="HICOLOR48DIR" Name="48x48">
+                <Directory Id="HICOLOR48APPDIR" Name="apps" />
+              </Directory>
+              <Directory Id="HICOLORSCALABLEDIR" Name="scalable">
+                <Directory Id="HICOLORSCALABLEAPPDIR" Name="apps" />
+              </Directory>
+            </Directory>
+          </Directory>
           <Directory Id="SHARELOCALEDIR" Name="locale" />
           <Directory Id="SHAREXMLDIR" Name="xml" />
         </Directory>
@@ -60,13 +60,6 @@
     </StandardDirectory>
     <StandardDirectory Id="ProgramMenuFolder">
       <Directory Id="ApplicationProgramsFolder" Name="Fabulor" />
-    </StandardDirectory>
-    <StandardDirectory Id="AppDataFolder">
-      <Directory Id="USERCONFIGROOTDIR" Name="Fabulor">
-        <Directory Id="USERICONSDIR" Name="icons">
-          <Directory Id="USERHICOLORDIR" Name="hicolor" />
-        </Directory>
-      </Directory>
     </StandardDirectory>
     <SetProperty Id="ARPINSTALLLOCATION" Value="[INSTALLFOLDER]" After="CostFinalize" />
 

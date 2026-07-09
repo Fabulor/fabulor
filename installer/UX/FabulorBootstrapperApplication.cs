@@ -168,9 +168,10 @@ public sealed class FabulorBootstrapperApplication : BootstrapperApplication
         }
 
         this.pendingAction = action;
+        var noHandoffRequested = this.HasNoHandoffMarker();
 
         if (action == LaunchAction.Uninstall
-            && !this.isCurrentMsiPackageInstalled
+            && !noHandoffRequested
             && this.TryLaunchRegisteredBundleUninstall())
         {
             return;
@@ -183,7 +184,7 @@ public sealed class FabulorBootstrapperApplication : BootstrapperApplication
             return;
         }
 
-        if (this.TryHandOffMaintenanceToInstalledBundle(action))
+        if (!noHandoffRequested && this.TryHandOffMaintenanceToInstalledBundle(action))
         {
             return;
         }
@@ -317,6 +318,11 @@ public sealed class FabulorBootstrapperApplication : BootstrapperApplication
 
     private bool HasNoHandoffMarker()
     {
+        if (IsTruthyVariable(this.engine.GetVariableString("FABULOR_NO_HANDOFF")))
+        {
+            return true;
+        }
+
         if (string.IsNullOrWhiteSpace(this.command?.CommandLine))
         {
             return false;
@@ -552,6 +558,10 @@ public sealed class FabulorBootstrapperApplication : BootstrapperApplication
         if (e.Status == 0 && this.pendingAction == LaunchAction.Uninstall)
         {
             this.CleanupRegistryArtifactsAfterSuccessfulUninstall();
+        }
+        else if (e.Status == 0)
+        {
+            this.CleanupOtherBundleRegistrationsAfterSuccessfulApply();
         }
 
         this.DispatchToWindow(() =>
@@ -981,7 +991,7 @@ public sealed class FabulorBootstrapperApplication : BootstrapperApplication
 
     private LaunchAction GetCommandLineAction()
     {
-        return (LaunchAction)this.engine.GetVariableNumeric("WixBundleCommandLineAction");
+        return this.command?.Action ?? LaunchAction.Unknown;
     }
 
     private bool ShouldAutoRunCommandAction()
@@ -1005,6 +1015,11 @@ public sealed class FabulorBootstrapperApplication : BootstrapperApplication
     private bool TryHandOffMaintenanceToInstalledBundle(LaunchAction action)
     {
         if (this.command == null || !this.IsMaintenanceAction(action))
+        {
+            return false;
+        }
+
+        if (action == LaunchAction.Uninstall || action == LaunchAction.UnsafeUninstall || this.HasNoHandoffMarker())
         {
             return false;
         }
@@ -1287,11 +1302,32 @@ public sealed class FabulorBootstrapperApplication : BootstrapperApplication
             this.DispatchToWindow(() =>
             {
                 this.window?.SetBusy(true);
-                this.window?.SetStatus("Launching uninstall for the detected installed Fabulor MSI…");
+                this.window?.SetStatus("Uninstalling the detected installed Fabulor MSI…");
                 this.window?.AppendLog($"Launching msiexec {arguments}");
-                this.window?.Close();
             });
-            this.lastResult = 0;
+
+            _ = Task.Run(() =>
+            {
+                var result = this.WaitForRelatedMsiUninstall(process);
+                this.lastResult = result;
+                this.DispatchToWindow(() =>
+                {
+                    if (result == 0)
+                    {
+                        this.CleanupRegistryArtifactsAfterSuccessfulUninstall();
+                        this.window?.AppendLog("Related MSI uninstall completed successfully.");
+                        this.window?.SetStatus("Fabulor was uninstalled successfully.");
+                        this.window?.Close();
+                    }
+                    else
+                    {
+                        this.window?.SetBusy(false);
+                        this.window?.SetStatus($"Detected MSI uninstall failed with status 0x{result:X8}.");
+                        this.window?.AppendLog($"Related MSI uninstall failed with status 0x{result:X8}.");
+                    }
+                });
+            });
+
             return true;
         }
         catch (Exception ex)
@@ -1303,6 +1339,24 @@ public sealed class FabulorBootstrapperApplication : BootstrapperApplication
                 this.window?.AppendLog($"Related MSI uninstall failed: {ex.Message}");
             });
             return false;
+        }
+    }
+
+    private int WaitForRelatedMsiUninstall(Process process)
+    {
+        using (process)
+        {
+            try
+            {
+                process.WaitForExit();
+                this.engine.Log(LogLevel.Standard, $"Related MSI uninstall exited with code 0x{process.ExitCode:X8}.");
+                return process.ExitCode;
+            }
+            catch (Exception ex)
+            {
+                this.engine.Log(LogLevel.Error, $"Failed while waiting for related MSI uninstall: {ex}");
+                return ex.HResult;
+            }
         }
     }
 
@@ -1374,13 +1428,21 @@ public sealed class FabulorBootstrapperApplication : BootstrapperApplication
         var currentBundlePath = this.engine.GetVariableString("WixBundleSourceProcessPath");
         var bundleName = this.engine.GetVariableString("WixBundleName");
 
-        this.RemoveOtherBundleUninstallRegistrations(bundleName, currentBundlePath);
+        this.RemoveOtherBundleUninstallRegistrations(bundleName, currentBundlePath, preserveNewestRegisteredBundle: false);
         this.RemoveDependencyRegistrations();
         this.RemoveInstallerRegistryRoots();
         this.RemoveThemeAssociationRegistryRoots();
     }
 
-    private void RemoveOtherBundleUninstallRegistrations(string? bundleName, string? currentBundlePath)
+    private void CleanupOtherBundleRegistrationsAfterSuccessfulApply()
+    {
+        var currentBundlePath = this.engine.GetVariableString("WixBundleSourceProcessPath");
+        var bundleName = this.engine.GetVariableString("WixBundleName");
+
+        this.RemoveOtherBundleUninstallRegistrations(bundleName, currentBundlePath, preserveNewestRegisteredBundle: true);
+    }
+
+    private void RemoveOtherBundleUninstallRegistrations(string? bundleName, string? currentBundlePath, bool preserveNewestRegisteredBundle)
     {
         if (string.IsNullOrWhiteSpace(bundleName))
         {
@@ -1392,6 +1454,11 @@ public sealed class FabulorBootstrapperApplication : BootstrapperApplication
         if (uninstallRoot == null)
         {
             return;
+        }
+
+        if (preserveNewestRegisteredBundle)
+        {
+            currentBundlePath = this.ResolveCurrentRegisteredBundleCachePath(uninstallRoot, bundleName, currentBundlePath);
         }
 
         foreach (var subkeyName in uninstallRoot.GetSubKeyNames())
@@ -1425,6 +1492,51 @@ public sealed class FabulorBootstrapperApplication : BootstrapperApplication
                 this.engine.Log(LogLevel.Error, $"Failed to remove leftover bundle uninstall registration '{subkeyName}': {ex}");
             }
         }
+    }
+
+    private string? ResolveCurrentRegisteredBundleCachePath(RegistryKey uninstallRoot, string bundleName, string? currentBundlePath)
+    {
+        string? newestBundleCachePath = null;
+        DateTime newestBundleWriteTime = DateTime.MinValue;
+
+        foreach (var subkeyName in uninstallRoot.GetSubKeyNames())
+        {
+            using var subkey = uninstallRoot.OpenSubKey(subkeyName);
+            if (subkey == null)
+            {
+                continue;
+            }
+
+            if (!string.Equals(subkey.GetValue("DisplayName") as string, bundleName, StringComparison.Ordinal))
+            {
+                continue;
+            }
+
+            var bundleCachePath = subkey.GetValue("BundleCachePath") as string;
+            if (string.IsNullOrWhiteSpace(bundleCachePath) || !System.IO.File.Exists(bundleCachePath))
+            {
+                continue;
+            }
+
+            if (!string.IsNullOrWhiteSpace(currentBundlePath) && this.PathsEqual(currentBundlePath, bundleCachePath))
+            {
+                return bundleCachePath;
+            }
+
+            var writeTime = System.IO.File.GetLastWriteTimeUtc(bundleCachePath);
+            if (writeTime > newestBundleWriteTime)
+            {
+                newestBundleWriteTime = writeTime;
+                newestBundleCachePath = bundleCachePath;
+            }
+        }
+
+        if (!string.IsNullOrWhiteSpace(newestBundleCachePath))
+        {
+            this.engine.Log(LogLevel.Verbose, $"Preserving newest registered bundle cache path: {newestBundleCachePath}");
+        }
+
+        return newestBundleCachePath;
     }
 
     private void RemoveDependencyRegistrations()
