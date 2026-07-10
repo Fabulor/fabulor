@@ -245,14 +245,18 @@ void
 theme_manager_set_token_color (unsigned int mode, ThemeSemanticToken token, const GdkRGBA *color, gboolean *palette_changed)
 {
 	gboolean changed = FALSE;
+	gboolean dark_mode;
 
 	if (!color)
 		return;
 
-	(void) mode;
-	theme_runtime_user_set_color (token, color);
+	dark_mode = theme_policy_is_dark_mode_active (mode);
+	if (dark_mode)
+		theme_runtime_dark_set_color (token, color);
+	else
+		theme_runtime_user_set_color (token, color);
 
-	theme_runtime_apply_mode (ZOITECHAT_DARK_MODE_LIGHT, &changed);
+	theme_runtime_apply_mode (mode, &changed);
 	if (palette_changed)
 		*palette_changed = changed;
 

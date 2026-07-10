@@ -38,10 +38,28 @@
   <ItemDefinitionGroup>
     <PreBuildEvent>
       <Command><![CDATA[
-SET SOLUTIONDIR=$(SolutionDir)..\
-powershell -File "$(SolutionDir)..\win32\version-template.ps1" "$(SolutionDir)..\src\fe-gtk\fabulor.rc.tt" "$(ZoiteChatLib)fabulor.rc.utf8"
+SET "SOLUTIONDIR=$(MSBuildThisFileDirectory)..\..\"
+IF NOT EXIST "$(MSBuildThisFileDirectory)..\..\win32\version-template.ps1" (
+  ECHO Missing version template script: $(MSBuildThisFileDirectory)..\..\win32\version-template.ps1
+  EXIT /B 1
+)
+powershell -NoProfile -ExecutionPolicy Bypass -File "$(MSBuildThisFileDirectory)..\..\win32\version-template.ps1" "$(MSBuildThisFileDirectory)fabulor.rc.tt" "$(ZoiteChatLib)fabulor.rc.utf8"
+IF ERRORLEVEL 1 EXIT /B %ERRORLEVEL%
+IF NOT EXIST "$(ZoiteChatLib)fabulor.rc.utf8" (
+  ECHO Failed to generate $(ZoiteChatLib)fabulor.rc.utf8
+  EXIT /B 1
+)
+FOR %%I IN ("$(ZoiteChatLib)fabulor.rc.utf8") DO IF %%~zI EQU 0 (
+  ECHO Generated resource template is empty: $(ZoiteChatLib)fabulor.rc.utf8
+  EXIT /B 1
+)
 REM fabulor.rc needs to be in UCS-2 or Resource Compiler will complain
-powershell "Get-Content -Encoding UTF8 '$(ZoiteChatLib)fabulor.rc.utf8' | Out-File '$(ZoiteChatLib)fabulor.rc'; Remove-Item '$(ZoiteChatLib)fabulor.rc.utf8'"
+powershell -NoProfile -ExecutionPolicy Bypass -Command "Get-Content -Encoding UTF8 '$(ZoiteChatLib)fabulor.rc.utf8' | Set-Content -Encoding Unicode '$(ZoiteChatLib)fabulor.rc'; Remove-Item '$(ZoiteChatLib)fabulor.rc.utf8'"
+IF ERRORLEVEL 1 EXIT /B %ERRORLEVEL%
+FOR %%I IN ("$(ZoiteChatLib)fabulor.rc") DO IF %%~zI EQU 0 (
+  ECHO Converted resource file is empty: $(ZoiteChatLib)fabulor.rc
+  EXIT /B 1
+)
 "$(DepsRoot)\bin\glib-compile-resources.exe" --generate-header --manual-register --sourcedir "$(DataDirForResourceCompilation)" --target "$(ZoiteChatLib)resources.h" "$(DataDirForResourceCompilation)\fabulor.gresource.xml"
 "$(DepsRoot)\bin\glib-compile-resources.exe" --generate-source --manual-register --sourcedir "$(DataDirForResourceCompilation)" --target "$(ZoiteChatLib)resources.c" "$(DataDirForResourceCompilation)\fabulor.gresource.xml"
       ]]></Command>

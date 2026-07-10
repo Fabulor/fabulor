@@ -267,6 +267,28 @@ test_access_xtext_palette_forwarding (void)
 	g_assert_cmpuint (palette[3].blue, ==, 6);
 }
 
+static void
+test_access_default_mirc_colors_follow_light_and_dark_modes (void)
+{
+	GdkRGBA color;
+
+	reset_stubs ();
+	g_assert_true (theme_runtime_apply_mode (ZOITECHAT_DARK_MODE_LIGHT, NULL));
+	g_assert_true (theme_get_mirc_color (1, &color));
+	g_assert_cmpfloat (color.red, ==, 0.0);
+	g_assert_cmpfloat (color.green, ==, 0.0);
+	g_assert_cmpfloat (color.blue, ==, 0.0);
+
+	g_assert_true (theme_runtime_apply_mode (ZOITECHAT_DARK_MODE_DARK, NULL));
+	g_assert_true (theme_get_mirc_color (1, &color));
+	g_assert_true (rgba_equal (&color, &stub_dark_colors[THEME_TOKEN_MIRC_1]));
+
+	g_assert_true (theme_get_mirc_color (32, &color));
+	g_assert_true (fabs (color.red - 0.0) < 0.0001);
+	g_assert_true (fabs (color.green - (0x74 / 255.0)) < 0.0001);
+	g_assert_true (fabs (color.blue - 0.0) < 0.0001);
+}
+
 
 static void
 test_access_widget_style_forwarding (void)
@@ -361,6 +383,8 @@ main (int argc, char **argv)
 	g_test_add_func ("/theme/access/semantic_token_routes_directly", test_access_semantic_token_routes_directly);
 	g_test_add_func ("/theme/access/token_routes_without_legacy_accessor", test_access_token_routes_without_legacy_accessor);
 	g_test_add_func ("/theme/access/xtext_palette_forwarding", test_access_xtext_palette_forwarding);
+	g_test_add_func ("/theme/access/default_mirc_colors_follow_light_and_dark_modes",
+			 test_access_default_mirc_colors_follow_light_and_dark_modes);
 	g_test_add_func ("/theme/access/xtext_palette_widget_mapping_when_gtk3_active",
 			 test_access_xtext_palette_widget_mapping_when_gtk3_active);
 	g_test_add_func ("/theme/access/widget_style_forwarding", test_access_widget_style_forwarding);

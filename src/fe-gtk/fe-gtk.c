@@ -29,6 +29,7 @@
 #ifdef WIN32
 #include <windows.h>
 #include <dwmapi.h>
+#include <glib/gstdio.h>
 #include <glib/gwin32.h>
 #else
 #include <unistd.h>
@@ -78,6 +79,73 @@ static char *arg_cfgdir = NULL;
 static gint arg_show_autoload = 0;
 static gint arg_show_config = 0;
 static gint arg_show_version = 0;
+
+#ifdef WIN32
+static void
+win32_seed_user_icon_theme (void)
+{
+	char *user_icons_dir;
+	char *user_index_theme;
+	char *install_root;
+	char *source_index_theme = NULL;
+	char *data = NULL;
+	gsize len = 0;
+	GError *error = NULL;
+
+	user_icons_dir = g_build_filename (get_xdir (), "icons", "hicolor", NULL);
+	user_index_theme = g_build_filename (user_icons_dir, "index.theme", NULL);
+
+	if (g_file_test (user_index_theme, G_FILE_TEST_IS_REGULAR))
+		goto cleanup;
+
+	install_root = g_win32_get_package_installation_directory_of_module (NULL);
+	if (!install_root)
+		goto cleanup;
+
+	source_index_theme = g_build_filename (install_root, "share", "icons", "hicolor", "index.theme", NULL);
+	if (!g_file_test (source_index_theme, G_FILE_TEST_IS_REGULAR))
+	{
+		g_free (source_index_theme);
+		source_index_theme = g_build_filename (install_root, "icons", "hicolor", "index.theme", NULL);
+	}
+
+	if (!g_file_test (source_index_theme, G_FILE_TEST_IS_REGULAR))
+	{
+		g_free (source_index_theme);
+		source_index_theme = g_build_filename (install_root, "Runtime", "GTK4", "share", "icons", "hicolor", "index.theme", NULL);
+	}
+
+	if (!g_file_test (source_index_theme, G_FILE_TEST_IS_REGULAR))
+		goto cleanup;
+
+	if (g_mkdir_with_parents (user_icons_dir, 0700) != 0)
+		goto cleanup;
+
+	if (!g_file_get_contents (source_index_theme, &data, &len, &error))
+	{
+		g_warning ("win32_seed_user_icon_theme: failed to read %s: %s",
+			   source_index_theme, error ? error->message : "unknown error");
+		g_clear_error (&error);
+		goto cleanup;
+	}
+
+	if (!g_file_set_contents (user_index_theme, data, len, &error))
+	{
+		g_warning ("win32_seed_user_icon_theme: failed to write %s: %s",
+			   user_index_theme, error ? error->message : "unknown error");
+		g_clear_error (&error);
+		goto cleanup;
+	}
+
+cleanup:
+	g_clear_error (&error);
+	g_free (data);
+	g_free (source_index_theme);
+	g_free (install_root);
+	g_free (user_index_theme);
+	g_free (user_icons_dir);
+}
+#endif
 static gint arg_minimize = 0;
 
 static const GOptionEntry gopt_entries[] = 
@@ -144,10 +212,13 @@ win32_set_gsettings_schema_dir (void)
 {
 	char *base_path;
 	char *share_path;
+	char *runtime_share_path;
 	char *schema_path;
+	char *runtime_schema_path;
 	char *xdg_data_dirs;
 	char **xdg_parts;
 	gboolean have_share_path = FALSE;
+	gboolean have_runtime_share_path = FALSE;
 	gint i;
 
 	base_path = g_win32_get_package_installation_directory_of_module (NULL);
@@ -155,6 +226,7 @@ win32_set_gsettings_schema_dir (void)
 		return;
 
 	share_path = g_build_filename (base_path, "share", NULL);
+	runtime_share_path = g_build_filename (base_path, "Runtime", "GTK4", "share", NULL);
 
 	/* Ensure GTK can discover bundled icon themes and other shared data. */
 	xdg_data_dirs = g_strdup (g_getenv ("XDG_DATA_DIRS"));
@@ -166,36 +238,133 @@ win32_set_gsettings_schema_dir (void)
 			if (g_ascii_strcasecmp (xdg_parts[i], share_path) == 0)
 			{
 				have_share_path = TRUE;
-				break;
+			}
+			else if (g_ascii_strcasecmp (xdg_parts[i], runtime_share_path) == 0)
+			{
+				have_runtime_share_path = TRUE;
 			}
 		}
 		g_strfreev (xdg_parts);
 
-		if (!have_share_path)
+		if (!have_runtime_share_path || !have_share_path)
 		{
-			char *updated = g_strdup_printf ("%s%c%s", share_path,
-								 G_SEARCHPATH_SEPARATOR,
-								 xdg_data_dirs);
-			g_setenv ("XDG_DATA_DIRS", updated, TRUE);
-			g_free (updated);
+			GString *updated = g_string_new ("");
+			if (!have_runtime_share_path && g_file_test (runtime_share_path, G_FILE_TEST_IS_DIR))
+			{
+				g_string_append (updated, runtime_share_path);
+				g_string_append_c (updated, G_SEARCHPATH_SEPARATOR);
+			}
+			if (!have_share_path)
+			{
+				g_string_append (updated, share_path);
+				g_string_append_c (updated, G_SEARCHPATH_SEPARATOR);
+			}
+			g_string_append (updated, xdg_data_dirs);
+			g_setenv ("XDG_DATA_DIRS", updated->str, TRUE);
+			g_string_free (updated, TRUE);
 		}
 	}
 	else
 	{
-		g_setenv ("XDG_DATA_DIRS", share_path, TRUE);
+		if (g_file_test (runtime_share_path, G_FILE_TEST_IS_DIR))
+		{
+			char *updated = g_strdup_printf ("%s%c%s", runtime_share_path,
+								 G_SEARCHPATH_SEPARATOR,
+								 share_path);
+			g_setenv ("XDG_DATA_DIRS", updated, TRUE);
+			g_free (updated);
+		}
+		else
+		{
+			g_setenv ("XDG_DATA_DIRS", share_path, TRUE);
+		}
 	}
 
 	schema_path = g_build_filename (base_path, "share", "glib-2.0", "schemas", NULL);
+	runtime_schema_path = g_build_filename (base_path, "Runtime", "GTK4", "schemas", NULL);
 	if (g_getenv ("GSETTINGS_SCHEMA_DIR") == NULL
 		&& g_file_test (schema_path, G_FILE_TEST_IS_DIR))
+	{
 		g_setenv ("GSETTINGS_SCHEMA_DIR", schema_path, FALSE);
+	}
+	else if (g_getenv ("GSETTINGS_SCHEMA_DIR") == NULL
+		 && g_file_test (runtime_schema_path, G_FILE_TEST_IS_DIR))
+	{
+		g_setenv ("GSETTINGS_SCHEMA_DIR", runtime_schema_path, FALSE);
+	}
 
 	g_free (xdg_data_dirs);
+	g_free (runtime_share_path);
+	g_free (runtime_schema_path);
 	g_free (share_path);
 	g_free (schema_path);
 	g_free (base_path);
 }
 
+
+static void
+win32_prepare_pixbuf_cache (const char *module_dir, const char *module_file)
+{
+	static const char old_prefix[] = "\"lib\\\\gdk-pixbuf-2.0\\\\2.10.0\\\\loaders\\\\";
+	char *cache_target;
+	char *contents = NULL;
+	gsize len = 0;
+	GError *error = NULL;
+
+	if (module_dir == NULL || module_file == NULL)
+		return;
+
+	cache_target = g_build_filename (get_xdir (), "gdk-pixbuf-loaders.cache", NULL);
+
+	if (g_file_get_contents (module_file, &contents, &len, &error))
+	{
+		char *pos = g_strstr_len (contents, len, old_prefix);
+		if (pos != NULL)
+		{
+			GString *fixed = g_string_sized_new (len + strlen (module_dir) + 16);
+			char *replacement = g_strdup_printf ("\"%s\\", module_dir);
+
+			g_string_append_len (fixed, contents, pos - contents);
+			g_string_append (fixed, replacement);
+			g_string_append (fixed, pos + strlen (old_prefix));
+			g_file_set_contents (cache_target, fixed->str, fixed->len, NULL);
+
+			g_free (replacement);
+			g_string_free (fixed, TRUE);
+			g_setenv ("GDK_PIXBUF_MODULE_FILE", cache_target, TRUE);
+		}
+		else
+		{
+			g_setenv ("GDK_PIXBUF_MODULE_FILE", module_file, TRUE);
+		}
+	}
+	else
+	{
+		char *svg_loader = g_build_filename (module_dir, "pixbufloader_svg.dll", NULL);
+
+		if (g_file_test (svg_loader, G_FILE_TEST_EXISTS))
+		{
+			char *generated = g_strdup_printf (
+				"# GdkPixbuf Image Loader Modules file\n"
+				"\"%s\"\n"
+				"\"svg\" 6 \"gdk-pixbuf\" \"Scalable Vector Graphics\" \"LGPL\"\n"
+				"\"image/svg+xml\" \"image/svg\" \"image/svg-xml\" \"image/vnd.adobe.svg+xml\" \"text/xml-svg\" \"image/svg+xml-compressed\" \"\"\n"
+				"\"svg\" \"svgz\" \"svg.gz\" \"\"\n"
+				"\" <svg\" \"*    \" 100\n"
+				"\" <!DOCTYPE svg\" \"*             \" 100\n",
+				svg_loader);
+			g_file_set_contents (cache_target, generated, -1, NULL);
+			g_free (generated);
+			g_setenv ("GDK_PIXBUF_MODULE_FILE", cache_target, TRUE);
+		}
+
+		g_free (svg_loader);
+		g_clear_error (&error);
+	}
+
+	g_free (contents);
+	g_free (cache_target);
+}
 
 static void
 win32_configure_pixbuf_loaders (void)
@@ -204,36 +373,44 @@ win32_configure_pixbuf_loaders (void)
 	char *pixbuf_root;
 	GDir *versions;
 	const gchar *entry;
+	gboolean configured = FALSE;
 
 	base_path = g_win32_get_package_installation_directory_of_module (NULL);
 	if (!base_path)
 		return;
 
 	pixbuf_root = g_build_filename (base_path, "lib", "gdk-pixbuf-2.0", NULL);
-	if (!g_file_test (pixbuf_root, G_FILE_TEST_IS_DIR))
-	{
-		g_free (pixbuf_root);
-		g_free (base_path);
-		return;
-	}
 
-	versions = g_dir_open (pixbuf_root, 0, NULL);
-	if (versions)
+	versions = g_file_test (pixbuf_root, G_FILE_TEST_IS_DIR) ? g_dir_open (pixbuf_root, 0, NULL) : NULL;
+
+	if (versions != NULL)
 	{
 		while ((entry = g_dir_read_name (versions)) != NULL)
 		{
-			char *module_dir = g_build_filename (pixbuf_root, entry, "loaders", NULL);
-			char *module_file = g_build_filename (pixbuf_root, entry, "loaders.cache", NULL);
+			char *module_dir = NULL;
+			char *module_file = NULL;
+
+			if (g_file_test (pixbuf_root, G_FILE_TEST_IS_DIR))
+			{
+				module_dir = g_build_filename (pixbuf_root, entry, "loaders", NULL);
+				module_file = g_build_filename (pixbuf_root, entry, "loaders.cache", NULL);
+			}
 
 			if (g_file_test (module_dir, G_FILE_TEST_IS_DIR))
+			{
 				g_setenv ("GDK_PIXBUF_MODULEDIR", module_dir, TRUE);
-			if (g_file_test (module_file, G_FILE_TEST_EXISTS))
+				win32_prepare_pixbuf_cache (module_dir, module_file);
+				configured = TRUE;
+			}
+			else if (g_file_test (module_file, G_FILE_TEST_EXISTS))
+			{
 				g_setenv ("GDK_PIXBUF_MODULE_FILE", module_file, TRUE);
+			}
 
 			g_free (module_file);
 			g_free (module_dir);
 
-			if (g_getenv ("GDK_PIXBUF_MODULEDIR") != NULL)
+			if (configured)
 				break;
 		}
 		g_dir_close (versions);
@@ -243,6 +420,43 @@ win32_configure_pixbuf_loaders (void)
 	g_free (base_path);
 }
 
+static gboolean
+win32_icon_path_has_payload (const char *path)
+{
+	char *fixed_apps;
+	char *scalable_apps;
+	gboolean has_payload;
+
+	if (!path || !g_file_test (path, G_FILE_TEST_IS_DIR))
+		return FALSE;
+
+	fixed_apps = g_build_filename (path, "hicolor", "48x48", "apps", NULL);
+	scalable_apps = g_build_filename (path, "hicolor", "scalable", "apps", NULL);
+	has_payload = g_file_test (fixed_apps, G_FILE_TEST_IS_DIR) ||
+	              g_file_test (scalable_apps, G_FILE_TEST_IS_DIR);
+	g_free (fixed_apps);
+	g_free (scalable_apps);
+
+	return has_payload;
+}
+
+static gboolean
+win32_icon_path_is_gtk3_safe (const char *path)
+{
+	char *index_theme;
+	gboolean has_index_theme;
+
+	if (!path || !g_file_test (path, G_FILE_TEST_IS_DIR))
+		return FALSE;
+
+	index_theme = g_build_filename (path, "hicolor", "index.theme", NULL);
+	has_index_theme = g_file_test (index_theme, G_FILE_TEST_EXISTS);
+	g_free (index_theme);
+
+	/* The Windows GTK3 runtime can fail-fast while scanning a hicolor index.theme. */
+	return !has_index_theme;
+}
+
 static void
 win32_configure_icon_theme (void)
 {
@@ -250,6 +464,7 @@ win32_configure_icon_theme (void)
 	const char *env_icons_path;
 	char *base_path;
 	char *icons_path;
+	char *adwaita_index_theme;
 	char *cwd_dir;
 	char *cwd_path;
 	char *argv0_icons_path;
@@ -258,7 +473,7 @@ win32_configure_icon_theme (void)
 
 	#define WIN32_SET_ICON_PATH(source_name, path_value) \
 		G_STMT_START { \
-			if ((path_value) != NULL && g_file_test ((path_value), G_FILE_TEST_IS_DIR)) \
+			if (win32_icon_path_is_gtk3_safe (path_value)) \
 			{ \
 				gtk_icon_theme_append_search_path (theme, (path_value)); \
 				if (selected_path == NULL) \
@@ -273,35 +488,66 @@ win32_configure_icon_theme (void)
 	if (!theme)
 		return;
 
+	win32_seed_user_icon_theme ();
+
 	env_icons_path = g_getenv ("ZOITECHAT_ICON_PATH");
 	if (env_icons_path && *env_icons_path)
 		WIN32_SET_ICON_PATH ("ZOITECHAT_ICON_PATH", env_icons_path);
 
+	icons_path = g_build_filename (get_xdir (), "icons", NULL);
+	if (win32_icon_path_has_payload (icons_path))
+		WIN32_SET_ICON_PATH ("user config/icons", icons_path);
+	g_free (icons_path);
+
 	base_path = g_win32_get_package_installation_directory_of_module (NULL);
 	if (base_path)
 	{
-		icons_path = g_build_filename (base_path, "share", "icons", NULL);
-		WIN32_SET_ICON_PATH ("module base", icons_path);
+		icons_path = g_build_filename (base_path, "Runtime", "GTK4", "share", "icons", NULL);
+		WIN32_SET_ICON_PATH ("module base/Runtime/GTK4/share/icons", icons_path);
 		g_free (icons_path);
+
+		icons_path = g_build_filename (base_path, "icons", NULL);
+		WIN32_SET_ICON_PATH ("module base/icons", icons_path);
+		g_free (icons_path);
+
+		icons_path = g_build_filename (base_path, "share", "icons", NULL);
+		WIN32_SET_ICON_PATH ("module base/share/icons", icons_path);
+		g_free (icons_path);
+
+		adwaita_index_theme = g_build_filename (base_path, "share", "icons", "Adwaita", "index.theme", NULL);
+		if (g_file_test (adwaita_index_theme, G_FILE_TEST_IS_REGULAR))
+		{
+			gtk_icon_theme_set_custom_theme (theme, "Adwaita");
+			gtk_icon_theme_rescan_if_needed (theme);
+		}
+		g_free (adwaita_index_theme);
 	}
 
 	cwd_dir = g_get_current_dir ();
+	cwd_path = g_build_filename (cwd_dir, "icons", NULL);
+	WIN32_SET_ICON_PATH ("current working directory/icons", cwd_path);
+	g_free (cwd_path);
+
 	cwd_path = g_build_filename (cwd_dir, "share", "icons", NULL);
-	WIN32_SET_ICON_PATH ("current working directory", cwd_path);
+	WIN32_SET_ICON_PATH ("current working directory/share/icons", cwd_path);
 	g_free (cwd_path);
 	g_free (cwd_dir);
 
 	if (win32_argv0_dir)
 	{
+		argv0_icons_path = g_build_filename (win32_argv0_dir, "icons", NULL);
+		WIN32_SET_ICON_PATH ("argv[0] directory/icons", argv0_icons_path);
+		g_free (argv0_icons_path);
+
 		argv0_icons_path = g_build_filename (win32_argv0_dir, "share", "icons", NULL);
-		WIN32_SET_ICON_PATH ("argv[0] directory", argv0_icons_path);
+		WIN32_SET_ICON_PATH ("argv[0] directory/share/icons", argv0_icons_path);
 		g_free (argv0_icons_path);
 	}
 
 	if (selected_path)
 		g_message ("win32_configure_icon_theme: selected icon path (%s): %s", selected_source, selected_path);
 	else
-		g_message ("win32_configure_icon_theme: no usable icon path found (checked ZOITECHAT_ICON_PATH, module base/share/icons, cwd/share/icons, argv[0]/share/icons)");
+		g_message ("win32_configure_icon_theme: no usable icon path found (checked ZOITECHAT_ICON_PATH, user config/icons, module base/icons, module base/share/icons, cwd/icons, cwd/share/icons, argv[0]/icons, argv[0]/share/icons)");
 
 	g_free (selected_path);
 	g_free (base_path);

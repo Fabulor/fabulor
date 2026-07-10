@@ -1,0 +1,11 @@
+[Icon Theme]
+Name=Adwaita
+Comment=Fabulor emoji category icons
+Directories=symbolic/categories
+
+[symbolic/categories]
+Size=16
+MinSize=8
+MaxSize=512
+Context=Categories
+Type=Scalable

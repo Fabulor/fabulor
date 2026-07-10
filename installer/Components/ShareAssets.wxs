@@ -14,6 +14,28 @@
               Name="gtkpref.png"
               KeyPath="yes" />
       </Component>
+      <Component Id="Hicolor48AppIconAsset" Guid="8A7D631A-D735-4A93-9A7A-85A1D9DB0FD4" Directory="HICOLOR48APPDIR">
+        <File Id="Hicolor48AppIconAssetFile"
+              Source="$(sys.SOURCEFILEDIR)..\..\data\icons\fabulor.png"
+              Name="net.fabulor.Fabulor.png"
+              KeyPath="yes" />
+      </Component>
+      <Component Id="HicolorScalableAppIconAsset" Guid="0635F58A-B084-4B5B-B43F-553A67A896A0" Directory="HICOLORSCALABLEAPPDIR">
+        <File Id="HicolorScalableAppIconAssetFile"
+              Source="$(sys.SOURCEFILEDIR)..\..\data\icons\Fabulor.svg"
+              Name="net.fabulor.Fabulor.svg"
+              KeyPath="yes" />
+      </Component>
+    </ComponentGroup>
+
+    <ComponentGroup Id="AdwaitaIconThemeComponents" Directory="ADWAITACATEGORYDIR">
+      <Component Id="AdwaitaEmojiIndexThemeAsset" Guid="AF29006A-6D5E-4AE5-A8D8-BD06CB6F7C8F" Directory="ADWAITADIR">
+        <File Id="AdwaitaEmojiIndexThemeAssetFile"
+              Source="$(sys.SOURCEFILEDIR)..\..\data\icons\adwaita\index.theme"
+              Name="index.theme"
+              KeyPath="yes" />
+      </Component>
+      <Files Include="$(sys.SOURCEFILEDIR)..\..\data\icons\adwaita\symbolic\categories\**" />
     </ComponentGroup>
 
     <ComponentGroup Id="CommonShareAssetComponents">

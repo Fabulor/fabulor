@@ -98,6 +98,7 @@ typedef struct
 {
         gboolean active;
         gboolean changed;
+        unsigned int mode;
         gboolean snapshot_valid[THEME_TOKEN_COUNT];
         gboolean staged_valid[THEME_TOKEN_COUNT];
         GdkRGBA snapshot[THEME_TOKEN_COUNT];
@@ -105,6 +106,21 @@ typedef struct
 } theme_preferences_stage_state;
 
 static theme_preferences_stage_state theme_preferences_stage;
+
+static unsigned int
+theme_preferences_current_color_mode (void)
+{
+        return theme_runtime_is_dark_active () ? ZOITECHAT_DARK_MODE_DARK : ZOITECHAT_DARK_MODE_LIGHT;
+}
+
+static unsigned int
+theme_preferences_stage_color_mode (void)
+{
+        if (theme_preferences_stage.active)
+                return theme_preferences_stage.mode;
+
+        return theme_preferences_current_color_mode ();
+}
 
 static gboolean
 theme_preferences_staged_get_color (ThemeSemanticToken token, GdkRGBA *rgba)
@@ -147,7 +163,7 @@ theme_preferences_stage_sync_runtime_to_snapshot (void)
         for (token = THEME_TOKEN_MIRC_0; token < THEME_TOKEN_COUNT; token++)
         {
                 if (theme_preferences_stage.snapshot_valid[token])
-                        theme_manager_set_token_color (ZOITECHAT_DARK_MODE_LIGHT, token,
+                        theme_manager_set_token_color (theme_preferences_stage.mode, token,
                                                        &theme_preferences_stage.snapshot[token], NULL);
         }
 }
@@ -160,7 +176,7 @@ theme_preferences_stage_sync_runtime_to_staged (void)
         for (token = THEME_TOKEN_MIRC_0; token < THEME_TOKEN_COUNT; token++)
         {
                 if (theme_preferences_stage.staged_valid[token])
-                        theme_manager_set_token_color (ZOITECHAT_DARK_MODE_LIGHT, token,
+                        theme_manager_set_token_color (theme_preferences_stage.mode, token,
                                                        &theme_preferences_stage.staged[token], NULL);
         }
 }
@@ -186,7 +202,7 @@ theme_preferences_staged_set_color (ThemeSemanticToken token, const GdkRGBA *rgb
         }
 
         if (live_preview)
-                theme_manager_set_token_color (ZOITECHAT_DARK_MODE_LIGHT, token, preview_color, NULL);
+                theme_manager_set_token_color (theme_preferences_stage_color_mode (), token, preview_color, NULL);
 }
 
 void
@@ -196,6 +212,7 @@ theme_preferences_stage_begin (void)
 
         memset (&theme_preferences_stage, 0, sizeof (theme_preferences_stage));
         theme_preferences_stage.active = TRUE;
+        theme_preferences_stage.mode = theme_preferences_current_color_mode ();
 
         for (token = THEME_TOKEN_MIRC_0; token < THEME_TOKEN_COUNT; token++)
         {
@@ -722,7 +739,7 @@ theme_preferences_manager_dialog_response_cb (GtkDialog *dialog, gint response_i
         {
                 gboolean changed = FALSE;
 
-                theme_manager_reset_mode_colors (ZOITECHAT_DARK_MODE_LIGHT, &changed);
+                theme_manager_reset_mode_colors (theme_preferences_stage_color_mode (), &changed);
                 if (theme_preferences_stage.active)
                 {
                         ThemeSemanticToken token;
@@ -1018,6 +1035,7 @@ theme_preferences_parse_cfg_color (const char *cfg,
 static gboolean
 theme_preferences_read_import_color (const char *cfg,
                                      ThemeSemanticToken token,
+                                     unsigned int mode,
                                      GdkRGBA *rgba)
 {
         static const char *token_names[] = {
@@ -1029,6 +1047,8 @@ theme_preferences_read_import_color (const char *cfg,
                 "tab_new_data", "tab_highlight", "tab_new_message", "tab_away", "spell"
         };
         char key[256];
+        const char *mode_name;
+        const char *legacy_prefix;
         guint16 red;
         guint16 green;
         guint16 blue;
@@ -1037,11 +1057,22 @@ theme_preferences_read_import_color (const char *cfg,
         if (token < 0 || token >= THEME_TOKEN_COUNT)
                 return FALSE;
 
-        g_snprintf (key, sizeof key, "theme.mode.light.token.%s", token_names[token]);
+        if (mode == ZOITECHAT_DARK_MODE_DARK)
+        {
+                mode_name = "dark";
+                legacy_prefix = "dark_color";
+        }
+        else
+        {
+                mode_name = "light";
+                legacy_prefix = "color";
+        }
+
+        g_snprintf (key, sizeof key, "theme.mode.%s.token.%s", mode_name, token_names[token]);
         if (!theme_preferences_parse_cfg_color (cfg, key, &red, &green, &blue))
         {
                 legacy_key = token < 32 ? token : (token - 32) + 256;
-                g_snprintf (key, sizeof key, "color_%d", legacy_key);
+                g_snprintf (key, sizeof key, "%s_%d", legacy_prefix, legacy_key);
                 if (!theme_preferences_parse_cfg_color (cfg, key, &red, &green, &blue))
                         return FALSE;
         }
@@ -1066,6 +1097,7 @@ theme_preferences_import_colors_conf_cb (GtkWidget *button, gpointer user_data)
         gboolean any_imported = FALSE;
         gboolean imported_from_hct = FALSE;
         gboolean imported_pevents = FALSE;
+        unsigned int import_mode;
         ThemeSemanticToken token;
         GtkFileFilter *filter;
 
@@ -1129,11 +1161,12 @@ theme_preferences_import_colors_conf_cb (GtkWidget *button, gpointer user_data)
         }
         g_free (lower_path);
 
+        import_mode = theme_preferences_stage_color_mode ();
         for (token = THEME_TOKEN_MIRC_0; token < THEME_TOKEN_COUNT; token++)
         {
                 GdkRGBA rgba;
 
-                if (!theme_preferences_read_import_color (cfg, token, &rgba))
+                if (!theme_preferences_read_import_color (cfg, token, import_mode, &rgba))
                         continue;
 
                 theme_preferences_staged_set_color (token, &rgba, color_change_flag, TRUE);

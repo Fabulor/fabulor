@@ -3,32 +3,33 @@ param ([string] $templateFilename, [string] $outputFilename)
 $repoRoot = $env:SOLUTIONDIR
 $versionParts = $null
 
-$mesonVersionFile = Join-Path $repoRoot 'meson.build'
-if (Test-Path $mesonVersionFile)
+$installerPropsPath = Join-Path $repoRoot 'installer\Directory.Build.props'
+if (Test-Path $installerPropsPath)
 {
-	$versionParts = Select-String -Path $mesonVersionFile -Pattern "  version: '([^']+)',$" | Select-Object -First 1 | %{ $_.Matches[0].Groups[1].Value.Split('.') }
-}
-
-if (-not $versionParts)
-{
-	$installerPropsPath = Join-Path $repoRoot 'installer\Directory.Build.props'
-	if (-not (Test-Path $installerPropsPath))
-	{
-		throw "Unable to resolve version source. Neither '$mesonVersionFile' nor '$installerPropsPath' exists."
-	}
-
 	[xml] $installerProps = Get-Content $installerPropsPath -Encoding UTF8
 	$semanticVersion = $installerProps.Project.PropertyGroup.FabulorSemVer
 	if ([string]::IsNullOrWhiteSpace($semanticVersion))
 	{
 		$semanticVersion = $installerProps.Project.PropertyGroup.ZoiteChatSemVer
 	}
-	if ([string]::IsNullOrWhiteSpace($semanticVersion))
+	if (-not [string]::IsNullOrWhiteSpace($semanticVersion))
 	{
-		throw "Unable to resolve FabulorSemVer or ZoiteChatSemVer from '$installerPropsPath'."
+		$versionParts = $semanticVersion.Split('.')
 	}
+}
 
-	$versionParts = $semanticVersion.Split('.')
+if (-not $versionParts)
+{
+	$mesonVersionFile = Join-Path $repoRoot 'meson.build'
+	if (Test-Path $mesonVersionFile)
+	{
+		$versionParts = Select-String -Path $mesonVersionFile -Pattern "  version: '([^']+)',$" | Select-Object -First 1 | %{ $_.Matches[0].Groups[1].Value.Split('.') }
+	}
+}
+
+if (-not $versionParts)
+{
+	throw "Unable to resolve version source. Neither installer semver nor meson.build version could be read."
 }
 
 [string[]] $contents = Get-Content $templateFilename -Encoding UTF8 | %{

@@ -1159,16 +1159,10 @@ static void
 set_locale (void)
 {
 #ifdef WIN32
-	char zoitechat_lang[13];	/* LC_ALL= plus 5 chars of hex_gui_lang and trailing \0 */
-
-	strcpy (zoitechat_lang, "LC_ALL=");
-
 	if (0 <= prefs.hex_gui_lang && prefs.hex_gui_lang < LANGUAGES_LENGTH)
-		strcat (zoitechat_lang, languages[prefs.hex_gui_lang]);
+		g_setenv ("LC_ALL", languages[prefs.hex_gui_lang], TRUE);
 	else
-		strcat (zoitechat_lang, "en");
-
-	putenv (zoitechat_lang);
+		g_setenv ("LC_ALL", "en", TRUE);
 #endif
 }
 
@@ -1228,6 +1222,8 @@ main (int argc, char *argv[])
 		make_config_dirs ();
 		make_dcc_dirs ();
 	}
+
+	ensure_user_icon_theme ();
 
 	/* we MUST do this after load_config () AND before fe_init (thus gtk_init) otherwise it will fail */
 	set_locale ();

@@ -16,8 +16,8 @@
       <Files Include="$(var.ManagedPluginHostRoot)\Fabulor.PluginHost.dll" />
       <Files Include="$(var.ManagedPluginHostRoot)\Fabulor.PluginHost.runtimeconfig.json" />
       <Files Include="$(var.ManagedPluginHostRoot)\Fabulor.PluginAbstractions.dll" />
-      <Files Include="$(var.BundledDotNetHostFxrRoot)\**" />
-      <Files Include="$(var.BundledDotNetSharedRuntimeRoot)\**" />
+      <Files Include="$(var.BundledDotNetHostFxrRoot)\$(var.BundledDotNetRuntimeVersion)\**" />
+      <Files Include="$(var.BundledDotNetSharedRuntimeRoot)\$(var.BundledDotNetRuntimeVersion)\**" />
     </ComponentGroup>
   </Fragment>
 </Wix>

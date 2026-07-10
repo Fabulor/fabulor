@@ -820,6 +820,7 @@ load_default_config(void)
 	prefs.hex_text_search_follow = 1;
 	prefs.hex_text_show_marker = 1;
 	prefs.hex_text_show_sep = 1;
+	prefs.hex_text_color_nicks = 1;
 	prefs.hex_text_stripcolor_replay = 1;
 	prefs.hex_text_stripcolor_topic = 1;
 	prefs.hex_text_thin_sep = 1;
@@ -974,6 +975,45 @@ make_config_dirs (void)
 	g_free (buf);
 
 	return 0;
+}
+
+void
+ensure_user_icon_theme (void)
+{
+#ifdef WIN32
+	static const char hicolor_index_theme[] =
+		"[Icon Theme]\n"
+		"Name=Hicolor\n"
+		"Comment=Fallback icon theme\n"
+		"Hidden=true\n"
+		"Directories=48x48/apps,scalable/apps\n"
+		"\n"
+		"[48x48/apps]\n"
+		"Size=48\n"
+		"Context=Applications\n"
+		"Type=Fixed\n"
+		"\n"
+		"[scalable/apps]\n"
+		"Size=48\n"
+		"MinSize=8\n"
+		"MaxSize=512\n"
+		"Context=Applications\n"
+		"Type=Scalable\n";
+	char *icons_dir;
+	char *index_theme;
+
+	icons_dir = g_build_filename (get_xdir (), "icons", "hicolor", NULL);
+	index_theme = g_build_filename (icons_dir, "index.theme", NULL);
+
+	if (!g_file_test (index_theme, G_FILE_TEST_IS_REGULAR))
+	{
+		if (g_mkdir_with_parents (icons_dir, 0700) == 0)
+			g_file_set_contents (index_theme, hicolor_index_theme, -1, NULL);
+	}
+
+	g_free (index_theme);
+	g_free (icons_dir);
+#endif
 }
 
 int

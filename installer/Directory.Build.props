@@ -1,7 +1,7 @@
 <Project>
   <PropertyGroup>
     <!-- Single source of truth for installer/bundle/BA versioning -->
-    <FabulorSemVer>1.0.2</FabulorSemVer>
+    <FabulorSemVer>1.0.3</FabulorSemVer>
     <Version>$(FabulorSemVer)</Version>
   </PropertyGroup>
 </Project>

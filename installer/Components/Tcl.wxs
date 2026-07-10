@@ -2,9 +2,8 @@
 <Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">
   <Fragment>
     <ComponentGroup Id="TclComponents" Directory="TCLDIR">
-      <Files Include="$(var.TclRuntimeRoot)\**" />
+      <Files Include="$(var.TclRuntimeRoot)\bin\**" />
+      <Files Include="$(var.TclRuntimeRoot)\lib\**" />
     </ComponentGroup>
   </Fragment>
 </Wix>
-
-

@@ -4688,6 +4688,7 @@ mg_create_entry (session *sess, GtkWidget *box)
         GtkWidget *hbox, *but, *entry;
         session_gui *gui = sess->gui;
         const char *emoji_fallback_icon_names[] = {
+                "emoji-people-symbolic",
                 "face-smile-symbolic",
                 "face-smile",
                 "insert-emoticon-symbolic",
@@ -4752,12 +4753,9 @@ mg_create_entry (session *sess, GtkWidget *box)
 
         g_object_set (G_OBJECT (entry), "show-emoji-icon", TRUE, NULL);
 
-        if (gtk_entry_get_icon_storage_type (GTK_ENTRY (entry), GTK_ENTRY_ICON_SECONDARY) == GTK_IMAGE_EMPTY)
-        {
-                emoji_fallback_icon_name = mg_find_available_icon_name (emoji_fallback_icon_names);
-                if (emoji_fallback_icon_name)
-                        gtk_entry_set_icon_from_icon_name (GTK_ENTRY (entry), GTK_ENTRY_ICON_SECONDARY, emoji_fallback_icon_name);
-        }
+        emoji_fallback_icon_name = mg_find_available_icon_name (emoji_fallback_icon_names);
+        if (emoji_fallback_icon_name)
+                gtk_entry_set_icon_from_icon_name (GTK_ENTRY (entry), GTK_ENTRY_ICON_SECONDARY, emoji_fallback_icon_name);
 }
 
 static void
