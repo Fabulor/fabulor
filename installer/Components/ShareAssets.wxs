@@ -14,12 +14,6 @@
               Name="gtkpref.png"
               KeyPath="yes" />
       </Component>
-      <Component Id="HicolorIndexThemeAsset" Guid="D8D45129-61A3-4A98-8A4F-37D92EB139FD" Directory="HICOLORDIR">
-        <File Id="HicolorIndexThemeAssetFile"
-              Source="$(sys.SOURCEFILEDIR)..\..\data\icons\hicolor\index.theme"
-              Name="index.theme"
-              KeyPath="yes" />
-      </Component>
       <Component Id="Hicolor48AppIconAsset" Guid="8A7D631A-D735-4A93-9A7A-85A1D9DB0FD4" Directory="HICOLOR48APPDIR">
         <File Id="Hicolor48AppIconAssetFile"
               Source="$(sys.SOURCEFILEDIR)..\..\data\icons\fabulor.png"

@@ -45,6 +45,7 @@ public sealed class FabulorBootstrapperApplication : BootstrapperApplication
     private bool pendingCommandActionRequested;
     private string? detectedInstalledBundleCachePath;
     private readonly Dictionary<string, FeatureState> detectedFeatureStates = new(StringComparer.Ordinal);
+    private readonly HashSet<string> sameVersionRelatedBundleCodes = new(StringComparer.OrdinalIgnoreCase);
     private InstallerFeatureSelection detectedFeatureSelection = new();
     private InstallerFeatureSelection currentPlanFeatureSelection = new();
     private bool currentPlanPortable;
@@ -58,6 +59,7 @@ public sealed class FabulorBootstrapperApplication : BootstrapperApplication
         this.Create += this.OnCreate;
         this.Startup += this.OnStartup;
         this.DetectBegin += this.OnDetectBegin;
+        this.DetectRelatedBundle += this.OnDetectRelatedBundle;
         this.DetectForwardCompatibleBundle += this.OnDetectForwardCompatibleBundle;
         this.DetectRelatedMsiPackage += this.OnDetectRelatedMsiPackage;
         this.DetectPackageComplete += this.OnDetectPackageComplete;
@@ -66,6 +68,9 @@ public sealed class FabulorBootstrapperApplication : BootstrapperApplication
         this.PlanMsiFeature += this.OnPlanMsiFeature;
         this.PlanMsiPackage += this.OnPlanMsiPackage;
         this.PlanPackageBegin += this.OnPlanPackageBegin;
+        this.PlanRelatedBundle += this.OnPlanRelatedBundle;
+        this.PlanRelatedBundleType += this.OnPlanRelatedBundleType;
+        this.PlanRestoreRelatedBundle += this.OnPlanRestoreRelatedBundle;
         this.PlanComplete += this.OnPlanComplete;
         this.ElevateBegin += this.OnElevateBegin;
         this.ElevateComplete += this.OnElevateComplete;
@@ -122,7 +127,7 @@ public sealed class FabulorBootstrapperApplication : BootstrapperApplication
 
     public void RequestClose()
     {
-        this.window?.Close();
+        this.CloseWindow();
     }
 
     public void RequestInstall()
@@ -554,44 +559,54 @@ public sealed class FabulorBootstrapperApplication : BootstrapperApplication
     {
         this.lastResult = e.Status;
 
-        if (e.Status == 0 && this.pendingAction == LaunchAction.Uninstall)
+        try
         {
-            this.CleanupRegistryArtifactsAfterSuccessfulUninstall();
-        }
-        else if (e.Status == 0)
-        {
-            this.CleanupOtherBundleRegistrationsAfterSuccessfulApply();
-        }
-
-        this.DispatchToWindow(() =>
-        {
-            if (this.window == null)
+            if (e.Status == 0 && this.pendingAction == LaunchAction.Uninstall)
             {
-                return;
+                this.CleanupRegistryArtifactsAfterSuccessfulUninstall();
             }
+            else if (e.Status == 0)
+            {
+                this.CleanupOtherBundleRegistrationsAfterSuccessfulApply();
+            }
+        }
+        catch (Exception ex)
+        {
+            this.engine.Log(LogLevel.Error, $"Post-apply cleanup failed: {ex}");
+        }
 
-            this.window.SetBusy(false);
-            this.window.SetProgress(100);
-            this.window.SetDetectedState(this.pendingAction != LaunchAction.Uninstall, this.isCurrentMsiPackageInstalled);
-            this.window.SetStatus(e.Status == 0
-                ? "Bundle apply completed successfully."
-                : $"Bundle apply failed with status 0x{e.Status:X8}.");
-            this.window.AppendLog($"ApplyComplete: status=0x{e.Status:X8}, restart={e.Restart}.");
-        });
+        try
+        {
+            this.DispatchToWindow(() =>
+            {
+                if (this.window == null)
+                {
+                    return;
+                }
+
+                this.window.SetBusy(false);
+                this.window.SetProgress(100);
+                this.window.SetDetectedState(this.pendingAction != LaunchAction.Uninstall, this.isCurrentMsiPackageInstalled);
+                this.window.SetStatus(e.Status == 0
+                    ? "Bundle apply completed successfully."
+                    : $"Bundle apply failed with status 0x{e.Status:X8}.");
+                this.window.AppendLog($"ApplyComplete: status=0x{e.Status:X8}, restart={e.Restart}.");
+            });
+        }
+        catch (Exception ex)
+        {
+            this.engine.Log(LogLevel.Error, $"ApplyComplete UI update failed: {ex}");
+        }
 
         if (e.Status == 0 && this.pendingAction == LaunchAction.Uninstall)
         {
-            _ = Task.Run(async () =>
-            {
-                await Task.Delay(1000).ConfigureAwait(false);
-                this.DispatchToWindow(() => this.window?.Close());
-            });
+            this.CloseWindow();
             return;
         }
 
         if (this.pendingCommandActionRequested && this.IsNonInteractiveCommandDisplay())
         {
-            this.DispatchToWindow(() => this.window?.Close());
+            this.CloseWindow();
             return;
         }
 
@@ -629,6 +644,7 @@ public sealed class FabulorBootstrapperApplication : BootstrapperApplication
         this.detectedInstalledBundleCachePath = null;
         this.detectedFeatureSelection = new InstallerFeatureSelection();
         this.detectedFeatureStates.Clear();
+        this.sameVersionRelatedBundleCodes.Clear();
     }
 
     private void OnDetectComplete(object? sender, DetectCompleteEventArgs e)
@@ -717,6 +733,8 @@ public sealed class FabulorBootstrapperApplication : BootstrapperApplication
 
     private void OnDetectForwardCompatibleBundle(object? sender, DetectForwardCompatibleBundleEventArgs e)
     {
+        this.TrackRelatedBundle(e.BundleCode, e.Version, e.MissingFromCache);
+
         if (e.MissingFromCache)
         {
             return;
@@ -730,6 +748,28 @@ public sealed class FabulorBootstrapperApplication : BootstrapperApplication
 
         this.detectedInstalledBundleCachePath = bundleCachePath;
         this.engine.Log(LogLevel.Verbose, $"Detected cached related bundle path: {bundleCachePath}");
+    }
+
+    private void OnDetectRelatedBundle(object? sender, DetectRelatedBundleEventArgs e)
+    {
+        this.TrackRelatedBundle(e.ProductCode, e.Version, e.MissingFromCache);
+    }
+
+    private void TrackRelatedBundle(string bundleCode, string? version, bool missingFromCache)
+    {
+        if (missingFromCache || string.IsNullOrWhiteSpace(bundleCode))
+        {
+            return;
+        }
+
+        var currentVersion = this.GetCurrentBundleVersion();
+        if (!this.VersionsEqual(version, currentVersion))
+        {
+            return;
+        }
+
+        this.sameVersionRelatedBundleCodes.Add(bundleCode);
+        this.engine.Log(LogLevel.Standard, $"Detected same-version related bundle {bundleCode} version={version}; it will not be planned as an upgrade participant.");
     }
 
     private void OnDetectPackageComplete(object? sender, DetectPackageCompleteEventArgs e)
@@ -850,6 +890,39 @@ public sealed class FabulorBootstrapperApplication : BootstrapperApplication
         {
             this.window?.AppendLog($"ExecutePackageComplete: package={e.PackageId}, status=0x{e.Status:X8}, restart={e.Restart}, recommendation={e.Recommendation}.");
         });
+    }
+
+    private void OnPlanRelatedBundle(object? sender, PlanRelatedBundleEventArgs e)
+    {
+        if (!this.sameVersionRelatedBundleCodes.Contains(e.BundleCode))
+        {
+            return;
+        }
+
+        this.engine.Log(LogLevel.Standard, $"Skipping same-version related bundle package plan for {e.BundleCode}; recommended={e.RecommendedState}.");
+        e.State = RequestState.None;
+    }
+
+    private void OnPlanRelatedBundleType(object? sender, PlanRelatedBundleTypeEventArgs e)
+    {
+        if (!this.sameVersionRelatedBundleCodes.Contains(e.BundleCode))
+        {
+            return;
+        }
+
+        this.engine.Log(LogLevel.Standard, $"Skipping same-version related bundle type plan for {e.BundleCode}; recommended={e.RecommendedType}.");
+        e.Type = RelatedBundlePlanType.None;
+    }
+
+    private void OnPlanRestoreRelatedBundle(object? sender, PlanRestoreRelatedBundleEventArgs e)
+    {
+        if (!this.sameVersionRelatedBundleCodes.Contains(e.BundleCode))
+        {
+            return;
+        }
+
+        this.engine.Log(LogLevel.Standard, $"Skipping same-version related bundle rollback restore for {e.BundleCode}; recommended={e.RecommendedState}.");
+        e.State = RequestState.None;
     }
 
     private void OnPlanComplete(object? sender, PlanCompleteEventArgs e)
@@ -1660,6 +1733,73 @@ public sealed class FabulorBootstrapperApplication : BootstrapperApplication
         catch
         {
             return string.Equals(left, right, StringComparison.OrdinalIgnoreCase);
+        }
+    }
+
+    private string GetCurrentBundleVersion()
+    {
+        try
+        {
+            return this.engine.GetVariableString("WixBundleVersion") ?? string.Empty;
+        }
+        catch (Exception ex)
+        {
+            this.engine.Log(LogLevel.Error, $"Failed to read WixBundleVersion: {ex}");
+            return string.Empty;
+        }
+    }
+
+    private bool VersionsEqual(string? left, string? right)
+    {
+        if (string.IsNullOrWhiteSpace(left) || string.IsNullOrWhiteSpace(right))
+        {
+            return false;
+        }
+
+        if (Version.TryParse(left, out var leftVersion) && Version.TryParse(right, out var rightVersion))
+        {
+            return this.NormalizeVersion(leftVersion).Equals(this.NormalizeVersion(rightVersion));
+        }
+
+        return string.Equals(left, right, StringComparison.OrdinalIgnoreCase);
+    }
+
+    private Version NormalizeVersion(Version version)
+    {
+        return new Version(
+            version.Major,
+            version.Minor,
+            Math.Max(version.Build, 0),
+            Math.Max(version.Revision, 0));
+    }
+
+    private void CloseWindow()
+    {
+        try
+        {
+            var activeWindow = this.window;
+            if (activeWindow == null || activeWindow.Dispatcher.HasShutdownStarted || activeWindow.Dispatcher.HasShutdownFinished)
+            {
+                return;
+            }
+
+            if (activeWindow.Dispatcher.CheckAccess())
+            {
+                activeWindow.Close();
+                return;
+            }
+
+            activeWindow.Dispatcher.Invoke(() =>
+            {
+                if (!activeWindow.Dispatcher.HasShutdownStarted && !activeWindow.Dispatcher.HasShutdownFinished)
+                {
+                    activeWindow.Close();
+                }
+            }, DispatcherPriority.Send);
+        }
+        catch (Exception ex)
+        {
+            this.engine.Log(LogLevel.Error, $"Failed to close bootstrapper window: {ex}");
         }
     }
 

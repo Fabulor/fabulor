@@ -371,8 +371,6 @@ win32_configure_pixbuf_loaders (void)
 {
 	char *base_path;
 	char *pixbuf_root;
-	char *runtime_pixbuf_root;
-	char *runtime_flat_pixbuf_root;
 	GDir *versions;
 	const gchar *entry;
 	gboolean configured = FALSE;
@@ -382,14 +380,8 @@ win32_configure_pixbuf_loaders (void)
 		return;
 
 	pixbuf_root = g_build_filename (base_path, "lib", "gdk-pixbuf-2.0", NULL);
-	runtime_pixbuf_root = g_build_filename (base_path, "Runtime", "GTK4", "lib", "gdk-pixbuf-2.0", NULL);
-	runtime_flat_pixbuf_root = g_build_filename (base_path, "Runtime", "GTK4", NULL);
 
 	versions = g_file_test (pixbuf_root, G_FILE_TEST_IS_DIR) ? g_dir_open (pixbuf_root, 0, NULL) : NULL;
-	if (!versions && g_file_test (runtime_pixbuf_root, G_FILE_TEST_IS_DIR))
-		versions = g_dir_open (runtime_pixbuf_root, 0, NULL);
-	if (!versions && g_file_test (runtime_flat_pixbuf_root, G_FILE_TEST_IS_DIR))
-		versions = g_dir_open (runtime_flat_pixbuf_root, 0, NULL);
 
 	if (versions != NULL)
 	{
@@ -402,23 +394,6 @@ win32_configure_pixbuf_loaders (void)
 			{
 				module_dir = g_build_filename (pixbuf_root, entry, "loaders", NULL);
 				module_file = g_build_filename (pixbuf_root, entry, "loaders.cache", NULL);
-			}
-
-			if ((module_dir == NULL || !g_file_test (module_dir, G_FILE_TEST_IS_DIR))
-				&& g_file_test (runtime_pixbuf_root, G_FILE_TEST_IS_DIR))
-			{
-				g_clear_pointer (&module_dir, g_free);
-				g_clear_pointer (&module_file, g_free);
-				module_dir = g_build_filename (runtime_pixbuf_root, entry, "loaders", NULL);
-				module_file = g_build_filename (runtime_pixbuf_root, entry, "loaders.cache", NULL);
-			}
-			if ((module_dir == NULL || !g_file_test (module_dir, G_FILE_TEST_IS_DIR))
-				&& g_file_test (runtime_flat_pixbuf_root, G_FILE_TEST_IS_DIR))
-			{
-				g_clear_pointer (&module_dir, g_free);
-				g_clear_pointer (&module_file, g_free);
-				module_dir = g_build_filename (runtime_flat_pixbuf_root, entry, "loaders", NULL);
-				module_file = g_build_filename (runtime_flat_pixbuf_root, entry, "loaders.cache", NULL);
 			}
 
 			if (g_file_test (module_dir, G_FILE_TEST_IS_DIR))
@@ -441,8 +416,6 @@ win32_configure_pixbuf_loaders (void)
 		g_dir_close (versions);
 	}
 
-	g_free (runtime_flat_pixbuf_root);
-	g_free (runtime_pixbuf_root);
 	g_free (pixbuf_root);
 	g_free (base_path);
 }
@@ -467,6 +440,23 @@ win32_icon_path_has_payload (const char *path)
 	return has_payload;
 }
 
+static gboolean
+win32_icon_path_is_gtk3_safe (const char *path)
+{
+	char *index_theme;
+	gboolean has_index_theme;
+
+	if (!path || !g_file_test (path, G_FILE_TEST_IS_DIR))
+		return FALSE;
+
+	index_theme = g_build_filename (path, "hicolor", "index.theme", NULL);
+	has_index_theme = g_file_test (index_theme, G_FILE_TEST_EXISTS);
+	g_free (index_theme);
+
+	/* The Windows GTK3 runtime can fail-fast while scanning a hicolor index.theme. */
+	return !has_index_theme;
+}
+
 static void
 win32_configure_icon_theme (void)
 {
@@ -482,7 +472,7 @@ win32_configure_icon_theme (void)
 
 	#define WIN32_SET_ICON_PATH(source_name, path_value) \
 		G_STMT_START { \
-			if ((path_value) != NULL && g_file_test ((path_value), G_FILE_TEST_IS_DIR)) \
+			if (win32_icon_path_is_gtk3_safe (path_value)) \
 			{ \
 				gtk_icon_theme_append_search_path (theme, (path_value)); \
 				if (selected_path == NULL) \
