@@ -101,7 +101,7 @@ if (Test-Path -LiteralPath $packageCacheRoot) {
             $cacheDirectory = $_.Directory.FullName
             $cacheDirectoryPath = [System.IO.Path]::GetFullPath($cacheDirectory)
             if (-not $cacheDirectoryPath.StartsWith($packageCacheRootPath, [System.StringComparison]::OrdinalIgnoreCase)) {
-                throw "Refusing to remove package cache outside $packageCacheRoot: $cacheDirectory"
+                throw "Refusing to remove package cache outside ${packageCacheRoot}: $cacheDirectory"
             }
 
             Remove-Item -LiteralPath $cacheDirectory -Recurse -Force
