@@ -18,9 +18,9 @@
     <Property Id="ARPNOREPAIR" Value="1" />
     <Property Id="ARPPRODUCTICON" Value="FabulorProductIcon" />
     <Property Id="ARPCONTACT" Value="Barry" />
-    <Property Id="ARPURLINFOABOUT" Value="https://github.com/Fabulor" />
-    <Property Id="ARPHELPLINK" Value="https://github.com/Fabulor" />
-    <Property Id="ARPURLUPDATEINFO" Value="https://github.com/Fabulor" />
+    <Property Id="ARPURLINFOABOUT" Value="https://github.com/Fabulor/fabulor/blob/main/README.md" />
+    <Property Id="ARPHELPLINK" Value="https://github.com/Fabulor/fabulor/tree/main/docs" />
+    <Property Id="ARPURLUPDATEINFO" Value="https://github.com/Fabulor/fabulor/blob/main/README.md" />
     <Property Id="ARPCOMMENTS" Value="Fabulor is a modernised IRC client forked from HexChat." />
     <Property Id="FABULOR_PORTABLE" Secure="yes" />
 
