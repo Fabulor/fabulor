@@ -224,6 +224,10 @@ static const setting inputbox_settings[] =
         {ST_LABEL,      N_("Use language codes. Separate multiple entries with commas.")},
 #endif
 
+        {ST_HEADER, N_("Editbox History"),0,0,0},
+        {ST_NUMBER,     N_("Max history:"), P_OFFINTNL(hex_input_history_max), 0, (const char **)N_("lines."), 10000},
+        {ST_TOGGLE, N_("Save and restore history"), P_OFFINTNL(hex_input_history_save),0,0,0},
+
         {ST_HEADER, N_("Nick Completion"),0,0,0},
         {ST_ENTRY,      N_("Nick completion suffix:"), P_OFFSETNL(hex_completion_suffix),0,0,sizeof prefs.hex_completion_suffix},
         {ST_MENU,       N_("Nick completion sorted:"), P_OFFINTNL(hex_completion_sort), 0, tabcompmenu, 0},

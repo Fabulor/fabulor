@@ -12,6 +12,7 @@ $packageCacheRoot = 'C:\ProgramData\Package Cache'
 
 $removed = 0
 $preservedBundleCachePath = $null
+$preservedBundleCode = $null
 $preservedMsiProductCode = $null
 
 function Test-SamePath {
@@ -52,6 +53,14 @@ if (-not $RemoveAll -and (Test-Path -LiteralPath $uninstallRoot)) {
         Sort-Object LastWriteTime -Descending |
         Select-Object -First 1 -ExpandProperty BundleCachePath
 
+    if ($preservedBundleCachePath) {
+        $parent = [System.IO.Path]::GetDirectoryName($preservedBundleCachePath)
+        $candidateCode = [System.IO.Path]::GetFileName($parent)
+        if ($candidateCode -match '^\{[0-9A-Fa-f-]{36}\}$') {
+            $preservedBundleCode = $candidateCode
+        }
+    }
+
     $preservedMsiProductCode = Get-ChildItem -LiteralPath $uninstallRoot | ForEach-Object {
         $props = Get-ItemProperty -LiteralPath $_.PSPath
         if ($props.DisplayName -eq 'Fabulor' -and $props.SystemComponent -eq 1) {
@@ -76,6 +85,19 @@ if (Test-Path -LiteralPath $uninstallRoot) {
 }
 
 if (Test-Path -LiteralPath $dependencyRoot) {
+    $bundleDependents = Join-Path $dependencyRoot 'Fabulor.Setup.Bundle\Dependents'
+    if (Test-Path -LiteralPath $bundleDependents) {
+        Get-ChildItem -LiteralPath $bundleDependents | ForEach-Object {
+            if (-not $RemoveAll -and $preservedBundleCode -and $_.PSChildName -eq $preservedBundleCode) {
+                Write-Host "Preserved current bundle dependent: $($_.PSChildName)"
+            } else {
+                Remove-Item -LiteralPath $_.PSPath -Recurse -Force
+                Write-Host "Removed stale bundle dependent: $($_.PSChildName)"
+                $script:removed++
+            }
+        }
+    }
+
     Get-ChildItem -LiteralPath $dependencyRoot | ForEach-Object {
         $props = Get-ItemProperty -LiteralPath $_.PSPath
         $displayName = $props.DisplayName

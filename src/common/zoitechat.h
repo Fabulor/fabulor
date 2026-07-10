@@ -124,6 +124,7 @@ struct zoitechatprefs
 	unsigned int hex_gui_input_nick;
 	unsigned int hex_gui_input_spell;
 	unsigned int hex_gui_input_style;
+	unsigned int hex_input_history_save;
 	unsigned int hex_gui_join_dialog;
 	unsigned int hex_gui_mode_buttons;
 	unsigned int hex_gui_mode_buttons_inline;
@@ -228,6 +229,7 @@ struct zoitechatprefs
 	int hex_away_timeout;
 	int hex_completion_amount;
 	int hex_completion_sort;
+	int hex_input_history_max;
 	int hex_dcc_auto_recv;
 	int hex_dcc_blocksize;
 	int hex_dcc_global_max_get_cps;
