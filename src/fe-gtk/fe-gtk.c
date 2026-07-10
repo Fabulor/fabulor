@@ -464,6 +464,7 @@ win32_configure_icon_theme (void)
 	const char *env_icons_path;
 	char *base_path;
 	char *icons_path;
+	char *adwaita_index_theme;
 	char *cwd_dir;
 	char *cwd_path;
 	char *argv0_icons_path;
@@ -512,6 +513,14 @@ win32_configure_icon_theme (void)
 		icons_path = g_build_filename (base_path, "share", "icons", NULL);
 		WIN32_SET_ICON_PATH ("module base/share/icons", icons_path);
 		g_free (icons_path);
+
+		adwaita_index_theme = g_build_filename (base_path, "share", "icons", "Adwaita", "index.theme", NULL);
+		if (g_file_test (adwaita_index_theme, G_FILE_TEST_IS_REGULAR))
+		{
+			gtk_icon_theme_set_custom_theme (theme, "Adwaita");
+			gtk_icon_theme_rescan_if_needed (theme);
+		}
+		g_free (adwaita_index_theme);
 	}
 
 	cwd_dir = g_get_current_dir ();

@@ -28,6 +28,16 @@
       </Component>
     </ComponentGroup>
 
+    <ComponentGroup Id="AdwaitaIconThemeComponents" Directory="ADWAITACATEGORYDIR">
+      <Component Id="AdwaitaEmojiIndexThemeAsset" Guid="AF29006A-6D5E-4AE5-A8D8-BD06CB6F7C8F" Directory="ADWAITADIR">
+        <File Id="AdwaitaEmojiIndexThemeAssetFile"
+              Source="$(sys.SOURCEFILEDIR)..\..\data\icons\adwaita\index.theme"
+              Name="index.theme"
+              KeyPath="yes" />
+      </Component>
+      <Files Include="$(sys.SOURCEFILEDIR)..\..\data\icons\adwaita\symbolic\categories\**" />
+    </ComponentGroup>
+
     <ComponentGroup Id="CommonShareAssetComponents">
       <Component Id="MusicAsset" Guid="35584C2B-7E79-4AB7-8B87-76D44099D4A3" Directory="SHAREDIR">
         <File Id="MusicAssetFile"

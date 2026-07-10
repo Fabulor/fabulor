@@ -32,6 +32,11 @@
           <Directory Id="SHAREDOCDIR" Name="doc" />
           <Directory Id="SHAREGLIBDIR" Name="glib-2.0" />
           <Directory Id="SHAREICONSDIR" Name="icons">
+            <Directory Id="ADWAITADIR" Name="Adwaita">
+              <Directory Id="ADWAITASYMBOLICDIR" Name="symbolic">
+                <Directory Id="ADWAITACATEGORYDIR" Name="categories" />
+              </Directory>
+            </Directory>
             <Directory Id="HICOLORDIR" Name="hicolor">
               <Directory Id="HICOLOR48DIR" Name="48x48">
                 <Directory Id="HICOLOR48APPDIR" Name="apps" />
@@ -81,6 +86,7 @@
       </Feature>
       <Feature Id="ThemeAssetFeature" Title="Theme support assets" Level="1">
         <ComponentGroupRef Id="ThemeAssetComponents" />
+        <ComponentGroupRef Id="AdwaitaIconThemeComponents" />
       </Feature>
       <Feature Id="Gtk4RuntimeFeature" Title="GTK4 runtime payload" Level="1">
         <ComponentGroupRef Id="GTK4Components" />

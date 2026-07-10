@@ -193,7 +193,12 @@ public sealed class FabulorBootstrapperApplication : BootstrapperApplication
             return;
         }
 
-        if (this.isFabulorMsiInstalled && (action == LaunchAction.Repair || action == LaunchAction.Uninstall))
+        if (this.pendingCommandActionRequested && action == LaunchAction.Install)
+        {
+            this.currentPlanFeatureSelection = new InstallerFeatureSelection();
+            this.currentPlanPortable = this.GetRequestedPortableMode();
+        }
+        else if (this.isFabulorMsiInstalled && (action == LaunchAction.Repair || action == LaunchAction.Uninstall))
         {
             this.currentPlanFeatureSelection = this.detectedFeatureSelection.Clone();
             this.currentPlanPortable = this.isDetectedPortableInstall;
@@ -418,7 +423,10 @@ public sealed class FabulorBootstrapperApplication : BootstrapperApplication
                 && System.IO.Directory.Exists(System.IO.Path.Combine(installFolder, "share", "glib-2.0"))
                 && System.IO.Directory.Exists(System.IO.Path.Combine(installFolder, "share", "xml")),
             IncludeRuntimeDocumentation = System.IO.Directory.Exists(System.IO.Path.Combine(installFolder, "share", "doc")),
-            IncludeStartMenuShortcuts = !isPortable && this.RegistryValueExists(Registry.CurrentUser, @"Software\Fabulor\Installer", "StartMenuShortcuts"),
+            IncludeStartMenuShortcuts = !isPortable
+                && (this.RegistryValueExists(Registry.LocalMachine, @"Software\Fabulor\Installer", "StartMenuShortcuts")
+                    || this.RegistryValueExists(Registry.CurrentUser, @"Software\Fabulor\Installer", "StartMenuShortcuts")
+                    || this.StartMenuShortcutExists()),
             IncludeShellIntegration = !isPortable
                 && this.RegistryValueExists(Registry.LocalMachine, @"Software\Fabulor\Installer", "IrcProtocol")
                 && this.RegistryValueExists(Registry.LocalMachine, @"Software\Fabulor\Installer", "ThemeAssociation"),
@@ -467,6 +475,19 @@ public sealed class FabulorBootstrapperApplication : BootstrapperApplication
     {
         using var subkey = root.OpenSubKey(subkeyPath);
         return subkey?.GetValue(valueName) != null;
+    }
+
+    private bool StartMenuShortcutExists()
+    {
+        return this.StartMenuShortcutExists(Environment.SpecialFolder.CommonPrograms)
+            || this.StartMenuShortcutExists(Environment.SpecialFolder.Programs);
+    }
+
+    private bool StartMenuShortcutExists(Environment.SpecialFolder folder)
+    {
+        var programsFolder = Environment.GetFolderPath(folder);
+        return !string.IsNullOrWhiteSpace(programsFolder)
+            && System.IO.File.Exists(System.IO.Path.Combine(programsFolder, "Fabulor", "Fabulor.lnk"));
     }
 
     private void OnPlanMsiFeature(object? sender, PlanMsiFeatureEventArgs e)
@@ -1279,6 +1300,9 @@ public sealed class FabulorBootstrapperApplication : BootstrapperApplication
             return null;
         }
 
+        string? newestBundleCachePath = null;
+        DateTime newestBundleWriteTime = DateTime.MinValue;
+
         foreach (var subkeyName in uninstallRoot.GetSubKeyNames())
         {
             using var subkey = uninstallRoot.OpenSubKey(subkeyName);
@@ -1293,14 +1317,25 @@ public sealed class FabulorBootstrapperApplication : BootstrapperApplication
             }
 
             var bundleCachePath = subkey.GetValue("BundleCachePath") as string;
-            if (!string.IsNullOrWhiteSpace(bundleCachePath))
+            if (string.IsNullOrWhiteSpace(bundleCachePath) || !System.IO.File.Exists(bundleCachePath))
             {
-                this.engine.Log(LogLevel.Verbose, $"Resolved registered bundle cache path from uninstall registry: {bundleCachePath}");
-                return bundleCachePath;
+                continue;
+            }
+
+            var writeTime = System.IO.File.GetLastWriteTimeUtc(bundleCachePath);
+            if (writeTime > newestBundleWriteTime)
+            {
+                newestBundleWriteTime = writeTime;
+                newestBundleCachePath = bundleCachePath;
             }
         }
 
-        return null;
+        if (!string.IsNullOrWhiteSpace(newestBundleCachePath))
+        {
+            this.engine.Log(LogLevel.Verbose, $"Resolved newest registered bundle cache path from uninstall registry: {newestBundleCachePath}");
+        }
+
+        return newestBundleCachePath;
     }
 
     private (string ProductCode, string InstallLocation)? TryGetInstalledProductInfoFromRegistry()
