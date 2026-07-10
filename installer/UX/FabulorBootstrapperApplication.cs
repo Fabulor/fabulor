@@ -193,6 +193,8 @@ public sealed class FabulorBootstrapperApplication : BootstrapperApplication
             return;
         }
 
+        this.CleanupStaleRegistrationsBeforeMaintenancePlan(action);
+
         if (this.pendingCommandActionRequested && action == LaunchAction.Install)
         {
             this.currentPlanFeatureSelection = new InstallerFeatureSelection();
@@ -1559,6 +1561,35 @@ public sealed class FabulorBootstrapperApplication : BootstrapperApplication
         this.RemoveOtherBundleUninstallRegistrations(bundleName, currentBundlePath, preserveNewestRegisteredBundle: true);
     }
 
+    private void CleanupStaleRegistrationsBeforeMaintenancePlan(LaunchAction action)
+    {
+        if (action != LaunchAction.Modify &&
+            action != LaunchAction.Repair &&
+            action != LaunchAction.Uninstall)
+        {
+            return;
+        }
+
+        try
+        {
+            var currentBundlePath = this.engine.GetVariableString("WixBundleSourceProcessPath");
+            var bundleName = this.engine.GetVariableString("WixBundleName");
+            var registeredBundlePath = this.TryGetRegisteredBundleCachePath();
+            var preservedBundlePath = !string.IsNullOrWhiteSpace(registeredBundlePath) ? registeredBundlePath : currentBundlePath;
+            var preservedBundleCode = this.TryGetBundleCodeFromCachePath(preservedBundlePath);
+
+            this.engine.Log(LogLevel.Verbose, $"Pre-plan stale registration cleanup: action={action}, preservedBundlePath='{preservedBundlePath}', preservedBundleCode='{preservedBundleCode}'.");
+            this.RemoveOtherBundleUninstallRegistrations(bundleName, preservedBundlePath, preserveNewestRegisteredBundle: true);
+            this.RemoveStaleBundleDependencyDependents(preservedBundleCode);
+            this.RemoveStaleMsiDependencyRegistrations();
+        }
+        catch (Exception ex)
+        {
+            this.engine.Log(LogLevel.Error, $"Pre-plan stale registration cleanup failed: {ex}");
+            this.DispatchToWindow(() => this.window?.AppendLog($"Pre-plan cleanup failed: {ex.Message}"));
+        }
+    }
+
     private void RemoveOtherBundleUninstallRegistrations(string? bundleName, string? currentBundlePath, bool preserveNewestRegisteredBundle)
     {
         if (string.IsNullOrWhiteSpace(bundleName))
@@ -1611,6 +1642,75 @@ public sealed class FabulorBootstrapperApplication : BootstrapperApplication
         }
     }
 
+    private void RemoveStaleBundleDependencyDependents(string? preservedBundleCode)
+    {
+        const string dependentsPath = @"SOFTWARE\Classes\Installer\Dependencies\Fabulor.Setup.Bundle\Dependents";
+        using var dependentsKey = Registry.LocalMachine.OpenSubKey(dependentsPath, writable: true);
+        if (dependentsKey == null)
+        {
+            return;
+        }
+
+        foreach (var dependentCode in dependentsKey.GetSubKeyNames())
+        {
+            if (!string.IsNullOrWhiteSpace(preservedBundleCode) &&
+                string.Equals(dependentCode, preservedBundleCode, StringComparison.OrdinalIgnoreCase))
+            {
+                continue;
+            }
+
+            try
+            {
+                dependentsKey.DeleteSubKeyTree(dependentCode, throwOnMissingSubKey: false);
+                this.engine.Log(LogLevel.Standard, $"Removed stale Fabulor Setup dependency dependent '{dependentCode}'.");
+            }
+            catch (Exception ex)
+            {
+                this.engine.Log(LogLevel.Error, $"Failed to remove stale Fabulor Setup dependency dependent '{dependentCode}': {ex}");
+            }
+        }
+    }
+
+    private void RemoveStaleMsiDependencyRegistrations()
+    {
+        const string dependencyRegistryRoot = @"SOFTWARE\Classes\Installer\Dependencies";
+        using var dependencyRoot = Registry.LocalMachine.OpenSubKey(dependencyRegistryRoot, writable: true);
+        if (dependencyRoot == null)
+        {
+            return;
+        }
+
+        foreach (var subkeyName in dependencyRoot.GetSubKeyNames())
+        {
+            using var subkey = dependencyRoot.OpenSubKey(subkeyName);
+            if (subkey == null)
+            {
+                continue;
+            }
+
+            if (!string.Equals(subkey.GetValue("DisplayName") as string, "Fabulor", StringComparison.Ordinal))
+            {
+                continue;
+            }
+
+            if (!string.IsNullOrWhiteSpace(this.detectedInstalledMsiProductCode) &&
+                subkeyName.StartsWith(this.detectedInstalledMsiProductCode, StringComparison.OrdinalIgnoreCase))
+            {
+                continue;
+            }
+
+            try
+            {
+                dependencyRoot.DeleteSubKeyTree(subkeyName, throwOnMissingSubKey: false);
+                this.engine.Log(LogLevel.Standard, $"Removed stale Fabulor MSI dependency registration '{subkeyName}'.");
+            }
+            catch (Exception ex)
+            {
+                this.engine.Log(LogLevel.Error, $"Failed to remove stale Fabulor MSI dependency registration '{subkeyName}': {ex}");
+            }
+        }
+    }
+
     private string? ResolveCurrentRegisteredBundleCachePath(RegistryKey uninstallRoot, string bundleName, string? currentBundlePath)
     {
         string? newestBundleCachePath = null;
@@ -1654,6 +1754,26 @@ public sealed class FabulorBootstrapperApplication : BootstrapperApplication
         }
 
         return newestBundleCachePath;
+    }
+
+    private string? TryGetBundleCodeFromCachePath(string? bundleCachePath)
+    {
+        if (string.IsNullOrWhiteSpace(bundleCachePath))
+        {
+            return null;
+        }
+
+        try
+        {
+            var directoryName = System.IO.Path.GetFileName(System.IO.Path.GetDirectoryName(bundleCachePath));
+            return Regex.IsMatch(directoryName ?? string.Empty, @"^\{[0-9A-Fa-f-]{36}\}$")
+                ? directoryName
+                : null;
+        }
+        catch
+        {
+            return null;
+        }
     }
 
     private void RemoveDependencyRegistrations()

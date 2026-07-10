@@ -425,6 +425,8 @@ const struct prefs vars[] =
 	{"gui_input_spell", P_OFFINT (hex_gui_input_spell), TYPE_BOOL},
 	{"gui_input_style", P_OFFINT (hex_gui_input_style), TYPE_BOOL},
 	{"gui_join_dialog", P_OFFINT (hex_gui_join_dialog), TYPE_BOOL},
+	{"input_history_save", P_OFFINT (hex_input_history_save), TYPE_BOOL},
+	{"input_history_max", P_OFFINT (hex_input_history_max), TYPE_INT},
 	{"gui_lagometer", P_OFFINT (hex_gui_lagometer), TYPE_INT},
 	{"gui_lang", P_OFFINT (hex_gui_lang), TYPE_INT},
 	{"gui_mode_buttons", P_OFFINT (hex_gui_mode_buttons), TYPE_BOOL},
@@ -778,6 +780,7 @@ load_default_config(void)
 	prefs.hex_gui_input_nick = 1;
 	prefs.hex_gui_input_spell = 1;
 	prefs.hex_gui_input_style = 1;
+	prefs.hex_input_history_save = 1;
 	prefs.hex_gui_join_dialog = 1;
 	prefs.hex_gui_quit_dialog = 1;
 	prefs.hex_gui_tab_chans = 1;
@@ -832,6 +835,7 @@ load_default_config(void)
 	prefs.hex_away_timeout = 60;
 	prefs.hex_completion_amount = 5;
 	prefs.hex_completion_sort = 1;
+	prefs.hex_input_history_max = 300;
 	prefs.hex_dcc_auto_recv = 1;			/* browse mode */
 	prefs.hex_dcc_blocksize = 1024;
 	prefs.hex_dcc_permissions = 0600;

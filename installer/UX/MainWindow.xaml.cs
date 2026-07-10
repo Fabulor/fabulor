@@ -169,6 +169,67 @@ public partial class MainWindow : Window
         this.bootstrapper.RequestClose();
     }
 
+    private void LicenceButton_OnClick(object sender, RoutedEventArgs e)
+    {
+        var viewer = new System.Windows.Controls.RichTextBox
+        {
+            IsReadOnly = true,
+            VerticalScrollBarVisibility = System.Windows.Controls.ScrollBarVisibility.Auto,
+            HorizontalScrollBarVisibility = System.Windows.Controls.ScrollBarVisibility.Auto,
+            Background = System.Windows.Media.Brushes.White,
+            Foreground = System.Windows.Media.Brushes.Black,
+            BorderThickness = new Thickness(0),
+            Padding = new Thickness(12)
+        };
+
+        var licenceUri = new Uri("pack://application:,,,/Assets/Licence.rtf", UriKind.Absolute);
+        var resource = System.Windows.Application.GetResourceStream(licenceUri);
+        if (resource is null)
+        {
+            System.Windows.MessageBox.Show(this, "The bundled licence text could not be loaded.", "Fabulor Setup", MessageBoxButton.OK, MessageBoxImage.Error);
+            return;
+        }
+
+        using (resource.Stream)
+        {
+            viewer.Selection.Load(resource.Stream, System.Windows.DataFormats.Rtf);
+        }
+
+        var closeButton = new System.Windows.Controls.Button
+        {
+            Content = "Close",
+            MinWidth = 96,
+            Height = 32,
+            Margin = new Thickness(0, 12, 0, 0),
+            HorizontalAlignment = System.Windows.HorizontalAlignment.Right
+        };
+
+        var panel = new System.Windows.Controls.DockPanel
+        {
+            LastChildFill = true,
+            Margin = new Thickness(14)
+        };
+
+        System.Windows.Controls.DockPanel.SetDock(closeButton, System.Windows.Controls.Dock.Bottom);
+        panel.Children.Add(closeButton);
+        panel.Children.Add(viewer);
+
+        var dialog = new Window
+        {
+            Title = "Fabulor Licence",
+            Owner = this,
+            Width = 720,
+            Height = 560,
+            MinWidth = 520,
+            MinHeight = 420,
+            WindowStartupLocation = WindowStartupLocation.CenterOwner,
+            Content = panel
+        };
+
+        closeButton.Click += (_, _) => dialog.Close();
+        dialog.ShowDialog();
+    }
+
     private void InstallButton_OnClick(object sender, RoutedEventArgs e)
     {
         this.bootstrapper.RequestInstall();

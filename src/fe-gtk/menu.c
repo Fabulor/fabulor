@@ -65,6 +65,9 @@
 #include "menu.h"
 #include "servlistgui.h"
 
+#define FABULOR_DOCS_URL "https://github.com/Fabulor/fabulor/tree/main/docs"
+#define FABULOR_README_URL "https://github.com/Fabulor/fabulor/blob/main/README.md"
+
 static GSList *submenu_list;
 
 static GtkWidget *
@@ -1743,14 +1746,8 @@ menu_ctcpguiopen (void)
 static void
 menu_docs (GtkWidget *wid, gpointer none)
 {
-	fe_open_url ("https://docs.zoitechat.org/en/latest/");
+	fe_open_url (FABULOR_DOCS_URL);
 }
-
-/*static void
-menu_webpage (GtkWidget *wid, gpointer none)
-{
-	fe_open_url ("http://xchat.org");
-}*/
 
 static void
 menu_dcc_win (GtkWidget *wid, gpointer none)
@@ -1850,7 +1847,7 @@ about_dialog_response (GtkDialog *dialog, int response, gpointer data)
 {
 	if (response == GTK_RESPONSE_HELP)
 	{
-		fe_open_url ("http://zoitechat.org");
+		fe_open_url (FABULOR_README_URL);
 		return;
 	}
 	if (response == GTK_RESPONSE_APPLY)

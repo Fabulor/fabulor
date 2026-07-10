@@ -43,7 +43,7 @@ This project has been updated from GPL v2 to GPL Version 3 (29 June 2007), with 
 
 <!-- Badge reference definitions -->
 [latest-release-badge]: https://img.shields.io/github/v/release/Fabulor/fabulor?sort=semver
-[latest-release-link]: https://github.com/fabulor/releases/latest
+[latest-release-link]: https://github.com/Fabulor/fabulor/releases/latest
 
 [tests-badge]: https://github.com/Fabulor/fabulor/actions/workflows/tests.yml/badge.svg
 [tests-link]: https://github.com/Fabulor/fabulor/actions/workflows/tests.yml

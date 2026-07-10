@@ -630,6 +630,8 @@ session_new (server *serv, char *from, int type, int focus)
 		safe_strcpy(sess->session_name, from, CHANLEN);
 	}
 
+	history_restore (&sess->history);
+
 	sess_list = g_slist_prepend (sess_list, sess);
 
 	fe_new_window (sess, focus);
@@ -1138,6 +1140,7 @@ zoitechat_exit (void)
 		pevent_save (NULL);
 	}
 
+	history_save ();
 	sound_save ();
 	notify_save ();
 	ignore_save ();

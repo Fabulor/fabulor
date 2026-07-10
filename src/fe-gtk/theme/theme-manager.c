@@ -126,6 +126,10 @@ theme_manager_synthesize_preference_reasons (const struct zoitechatprefs *old_pr
 	    old_prefs->hex_away_size_max != new_prefs->hex_away_size_max ||
 	    old_prefs->hex_away_track != new_prefs->hex_away_track)
 		reasons |= THEME_CHANGED_REASON_USERLIST;
+	if (strcmp (old_prefs->hex_text_font, new_prefs->hex_text_font) != 0 ||
+	    strcmp (old_prefs->hex_text_font_main, new_prefs->hex_text_font_main) != 0 ||
+	    strcmp (old_prefs->hex_text_font_alternative, new_prefs->hex_text_font_alternative) != 0)
+		reasons |= THEME_CHANGED_REASON_WIDGET_STYLE;
 
 	if (reasons != THEME_CHANGED_REASON_NONE)
 		reasons |= THEME_CHANGED_REASON_WIDGET_STYLE;

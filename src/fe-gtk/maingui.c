@@ -3457,6 +3457,44 @@ mg_topicbar_size_allocate_cb (GtkWidget *widget, GtkAllocation *allocation, gpoi
 	mg_topicbar_queue_relayout (widget);
 }
 
+static void
+mg_apply_main_font_widget (GtkWidget *widget, const PangoFontDescription *font)
+{
+	if (!widget)
+		return;
+
+	theme_manager_apply_palette_widget (widget, NULL, NULL, font);
+	gtk_widget_queue_resize (widget);
+}
+
+static void
+mg_apply_main_font_menu_tree (GtkWidget *menu, const PangoFontDescription *font)
+{
+	GList *children;
+	GList *node;
+
+	if (!menu || !GTK_IS_WIDGET (menu))
+		return;
+
+	mg_apply_main_font_widget (menu, font);
+	if (!GTK_IS_MENU_SHELL (menu))
+		return;
+
+	children = gtk_container_get_children (GTK_CONTAINER (menu));
+	for (node = children; node; node = node->next)
+	{
+		GtkWidget *item = GTK_WIDGET (node->data);
+		GtkWidget *submenu = NULL;
+
+		mg_apply_main_font_widget (item, font);
+		if (GTK_IS_MENU_ITEM (item))
+			submenu = gtk_menu_item_get_submenu (GTK_MENU_ITEM (item));
+		if (submenu)
+			mg_apply_main_font_menu_tree (submenu, font);
+	}
+	g_list_free (children);
+}
+
 void
 mg_apply_session_font_prefs (session_gui *gui)
 {
@@ -3476,6 +3514,12 @@ mg_apply_session_font_prefs (session_gui *gui)
 
 	if (gui->input_box && prefs.hex_gui_input_style)
 		theme_manager_apply_entry_palette (gui->input_box, font);
+
+	if (gui->nick_label)
+		mg_apply_main_font_widget (gui->nick_label, font);
+
+	if (gui->menu)
+		mg_apply_main_font_menu_tree (gui->menu, font);
 
 	if (gui->chanview)
 		chanview_apply_theme (gui->chanview);
@@ -4725,6 +4769,8 @@ mg_create_entry (session *sess, GtkWidget *box)
         g_signal_connect (G_OBJECT (but), "clicked",
                                                         G_CALLBACK (mg_nickclick_cb), NULL);
 
+        mg_apply_main_font_widget (but, input_style ? input_style->font_desc : NULL);
+
         gui->input_box = entry = sexy_spell_entry_new ();
         sexy_spell_entry_set_checked ((SexySpellEntry *)entry, prefs.hex_gui_input_spell);
         sexy_spell_entry_set_parse_attributes ((SexySpellEntry *)entry, prefs.hex_gui_input_attr);
@@ -4865,6 +4911,7 @@ mg_create_menu (session_gui *gui, GtkWidget *table, int away_state)
         gtk_widget_set_halign (gui->menu, GTK_ALIGN_START);
         gtk_widget_set_valign (gui->menu, GTK_ALIGN_FILL);
         gtk_grid_attach (GTK_GRID (table), gui->menu, 0, 0, 3, 1);
+        mg_apply_main_font_menu_tree (gui->menu, input_style ? input_style->font_desc : NULL);
 }
 
 static void

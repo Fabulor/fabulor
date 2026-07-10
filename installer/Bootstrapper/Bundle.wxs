@@ -6,8 +6,8 @@
     Version="$(var.FabulorSemVer)"
     Manufacturer="Fabulor Project"
     ProviderKey="Fabulor.Setup.Bundle"
-    AboutUrl="https://github.com/Fabulor"
-    HelpUrl="https://github.com/Fabulor"
+    AboutUrl="https://github.com/Fabulor/fabulor/blob/main/README.md"
+    HelpUrl="https://github.com/Fabulor/fabulor/tree/main/docs"
     IconSourceFile="..\..\data\icons\fabulor.ico"
     UpgradeCode="D9F4A5C2-7F3B-4F9E-9A21-3C8F6B7E4A10">
 
