@@ -10,6 +10,24 @@
   - [x] a bootstrapper `.exe`.
 - [x] Treat the WiX v4 installer as complete enough to shift the main effort to plugin/API modernisation.
 
+## Recently Completed QoL/UI Work
+
+- [x] Add configurable editbox history with max-history and save/restore options.
+- [x] Add optional channel scroll-to-bottom overlay and fix its icon rendering.
+- [x] Fix installed logging path handling so server logs open under the expected network log folders.
+- [x] Upgrade spell checking to Enchant 2 + WinSpell for live Windows spelling suggestions.
+- [x] Replace the GTK built-in emoji chooser path with a Fabulor-owned emoji picker.
+- [x] Bundle Noto Color Emoji and generated flag PNG assets for Windows installs.
+- [x] Render selected country flags as real images in channel/server text output.
+- [x] Convert bundled flag images to transparent-background PNGs.
+- [x] Add visible two-letter labels to flag picker buttons to disambiguate lookalike flags such as `FR`/`CP` and `IE`/`CI`.
+- [x] Enlarge non-flag emoji picker glyphs while leaving the flag tab compact.
+
+## Follow-Up QoL/UI Items
+
+- [ ] Decide whether the editbox should keep showing Windows regional-indicator labels (`FR`, `IE`) or receive a deeper custom inline-image rendering pass.
+- [ ] Consider country names or search/filter support in the flag picker if two-letter labels are not sufficient.
+
 ## 1. WiX v4 Installer Completion
 
 - [ ] Finalise installed layout under `ProgramFiles\Fabulor\`:

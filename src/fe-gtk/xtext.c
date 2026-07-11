@@ -57,6 +57,7 @@
 #include <gdk/gdk.h>
 #include <gdk/gdkcairo.h>
 #include <gdk/gdkwin32.h>
+#include <glib/gwin32.h>
 #else
 #include <unistd.h>
 #include <gdk/gdkcairo.h>
@@ -64,6 +65,7 @@
 #include <gdk/gdkx.h>
 #endif
 #endif
+#include <gdk-pixbuf/gdk-pixbuf.h>
 #include <pango/pangocairo.h>
 
 /* is delimiter */
@@ -511,6 +513,140 @@ xtext_draw_bg (GtkXText *xtext, int x, int y, int width, int height)
 #define EMPH_HIDDEN 4
 static PangoAttrList *attr_lists[4];
 static int fontwidths[4][128];
+static GHashTable *xtext_flag_pixbuf_cache;
+
+static gboolean
+xtext_emoji_flag_code_at (const char *str, int len, char code[3], int *bytes)
+{
+	gunichar first;
+	gunichar second;
+	const char *next;
+	int first_len;
+	int second_len;
+
+	if (len < 8 || str == NULL)
+		return FALSE;
+
+	first = g_utf8_get_char_validated (str, len);
+	if (first < 0x1F1E6 || first > 0x1F1FF)
+		return FALSE;
+
+	next = g_utf8_next_char (str);
+	first_len = next - str;
+	if (first_len >= len)
+		return FALSE;
+
+	second = g_utf8_get_char_validated (next, len - first_len);
+	if (second < 0x1F1E6 || second > 0x1F1FF)
+		return FALSE;
+
+	second_len = g_utf8_next_char (next) - next;
+	code[0] = (char) ('a' + (first - 0x1F1E6));
+	code[1] = (char) ('a' + (second - 0x1F1E6));
+	code[2] = '\0';
+	*bytes = first_len + second_len;
+
+	return TRUE;
+}
+
+static int
+xtext_emoji_flag_height (GtkXText *xtext)
+{
+	int height = xtext->fontsize - 2;
+
+	if (height < 14)
+		height = 14;
+	if (height > 64)
+		height = 64;
+
+	return height;
+}
+
+static GdkPixbuf *
+xtext_emoji_flag_load_pixbuf (GtkXText *xtext, const char *code)
+{
+	GdkPixbuf *pixbuf = NULL;
+	GError *error = NULL;
+	char *name;
+	char *path;
+	int height;
+	int width;
+
+	height = xtext_emoji_flag_height (xtext);
+	width = (height * 4) / 3;
+	name = g_strdup_printf ("%s.png", code);
+
+#ifdef G_OS_WIN32
+	{
+		char *base_path = g_win32_get_package_installation_directory_of_module (NULL);
+		if (base_path)
+		{
+			path = g_build_filename (base_path, "share", "emoji-flags", name, NULL);
+			pixbuf = gdk_pixbuf_new_from_file_at_scale (path, width, height, TRUE, &error);
+			g_clear_error (&error);
+			g_free (path);
+			g_free (base_path);
+		}
+	}
+#endif
+
+	if (!pixbuf)
+	{
+		path = g_build_filename ("share", "emoji-flags", name, NULL);
+		pixbuf = gdk_pixbuf_new_from_file_at_scale (path, width, height, TRUE, &error);
+		g_clear_error (&error);
+		g_free (path);
+	}
+
+	g_free (name);
+	return pixbuf;
+}
+
+static GdkPixbuf *
+xtext_emoji_flag_get_pixbuf (GtkXText *xtext, const char *code)
+{
+	GdkPixbuf *pixbuf;
+	char *key;
+
+	if (xtext_flag_pixbuf_cache == NULL)
+		xtext_flag_pixbuf_cache = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, g_object_unref);
+
+	key = g_strdup_printf ("%s:%d", code, xtext_emoji_flag_height (xtext));
+	pixbuf = g_hash_table_lookup (xtext_flag_pixbuf_cache, key);
+	if (pixbuf)
+	{
+		g_free (key);
+		return pixbuf;
+	}
+
+	pixbuf = xtext_emoji_flag_load_pixbuf (xtext, code);
+	if (!pixbuf)
+	{
+		g_free (key);
+		return NULL;
+	}
+
+	g_hash_table_insert (xtext_flag_pixbuf_cache, key, pixbuf);
+	return pixbuf;
+}
+
+static gboolean
+xtext_emoji_flag_at (GtkXText *xtext, const char *str, int len, int *bytes, GdkPixbuf **pixbuf)
+{
+	char code[3];
+
+	if (!xtext_emoji_flag_code_at (str, len, code, bytes))
+		return FALSE;
+
+	*pixbuf = xtext_emoji_flag_get_pixbuf (xtext, code);
+	return *pixbuf != NULL;
+}
+
+static int
+xtext_emoji_flag_width (GdkPixbuf *pixbuf)
+{
+	return gdk_pixbuf_get_width (pixbuf) + 2;
+}
 
 static PangoAttribute *
 xtext_pango_attr (PangoAttribute *attr)
@@ -673,6 +809,17 @@ backend_get_text_width_emph (GtkXText *xtext, guchar *str, int len, int emphasis
 	pango_layout_set_attributes (xtext->layout, attr_lists[emphasis]);
 	while (len > 0)
 	{
+		GdkPixbuf *pixbuf;
+		int flag_len;
+
+		if (xtext_emoji_flag_at (xtext, (const char *) str, len, &flag_len, &pixbuf))
+		{
+			width += xtext_emoji_flag_width (pixbuf);
+			str += flag_len;
+			len -= flag_len;
+			continue;
+		}
+
 		mbl = charlen(str);
 		if (*str < 128)
 			deltaw = fontwidths[emphasis][*str];
@@ -712,12 +859,15 @@ backend_draw_text_emph (GtkXText *xtext, gboolean dofill, int x, int y,
 						 char *str, int len, int str_width, int emphasis)
 {
 	cairo_t *cr;
-	PangoLayoutLine *line;
+	char *segment;
+	char *p;
+	int segment_len;
+	int remaining;
+	int draw_x;
 
 	cr = xtext_create_context (xtext);
 
 	pango_layout_set_attributes (xtext->layout, attr_lists[emphasis]);
-	pango_layout_set_text (xtext->layout, str, len);
 
 	if (dofill)
 	{
@@ -726,11 +876,65 @@ backend_draw_text_emph (GtkXText *xtext, gboolean dofill, int x, int y,
 	}
 
 	xtext_set_source_color (cr, &xtext->fgc, 1.0);
-	line = pango_layout_get_line_readonly (xtext->layout, 0);
 
 	cairo_save (cr);
-	cairo_move_to (cr, x, y);
-	pango_cairo_show_layout_line (cr, line);
+	segment = str;
+	segment_len = 0;
+	p = str;
+	remaining = len;
+	draw_x = x;
+
+	while (remaining > 0)
+	{
+		GdkPixbuf *pixbuf;
+		int flag_len;
+		int mbl;
+
+		if (xtext_emoji_flag_at (xtext, p, remaining, &flag_len, &pixbuf))
+		{
+			if (segment_len > 0)
+			{
+				PangoLayoutLine *line;
+				int segment_width;
+
+				pango_layout_set_text (xtext->layout, segment, segment_len);
+				line = pango_layout_get_line_readonly (xtext->layout, 0);
+				cairo_move_to (cr, draw_x, y);
+				pango_cairo_show_layout_line (cr, line);
+				segment_width = backend_get_text_width_emph (xtext, (guchar *) segment, segment_len, emphasis);
+				draw_x += segment_width;
+			}
+
+			gdk_cairo_set_source_pixbuf (cr, pixbuf, draw_x,
+				y - xtext->font->ascent + ((xtext->fontsize - gdk_pixbuf_get_height (pixbuf)) / 2));
+			cairo_paint (cr);
+			draw_x += xtext_emoji_flag_width (pixbuf);
+			xtext_set_source_color (cr, &xtext->fgc, 1.0);
+
+			p += flag_len;
+			remaining -= flag_len;
+			segment = p;
+			segment_len = 0;
+			continue;
+		}
+
+		mbl = charlen (p);
+		if (mbl > remaining)
+			break;
+		p += mbl;
+		remaining -= mbl;
+		segment_len += mbl;
+	}
+
+	if (segment_len > 0)
+	{
+		PangoLayoutLine *line;
+
+		pango_layout_set_text (xtext->layout, segment, segment_len);
+		line = pango_layout_get_line_readonly (xtext->layout, 0);
+		cairo_move_to (cr, draw_x, y);
+		pango_cairo_show_layout_line (cr, line);
+	}
 	cairo_restore (cr);
 
 	cairo_destroy (cr);
@@ -1389,8 +1593,14 @@ find_x (GtkXText *xtext, textentry *ent, int x, int subline, int indent)
 	len = meta->len - (off - meta->off);
 	while (wid > 0)
 	{
-		mbl = charlen (ent->str + off);
-		mbw = backend_get_text_width_emph (xtext, ent->str + off, mbl, meta->emph);
+		GdkPixbuf *pixbuf;
+		if (xtext_emoji_flag_at (xtext, (const char *) ent->str + off, len, &mbl, &pixbuf))
+			mbw = xtext_emoji_flag_width (pixbuf);
+		else
+		{
+			mbl = charlen (ent->str + off);
+			mbw = backend_get_text_width_emph (xtext, ent->str + off, mbl, meta->emph);
+		}
 		wid -= mbw;
 		xx += mbw;
 		if (xx >= x)
@@ -3966,8 +4176,18 @@ find_next_wrap (GtkXText * xtext, textentry * ent, unsigned char *str,
 				break;
 			default:
 			def:
-				mbl = charlen (str);
-				char_width = backend_get_text_width_emph (xtext, str, mbl, emphasis);
+				{
+					GdkPixbuf *pixbuf;
+					if (xtext_emoji_flag_at (xtext, (const char *) str,
+					                         ent->str + ent->str_len - str,
+					                         &mbl, &pixbuf))
+						char_width = xtext_emoji_flag_width (pixbuf);
+					else
+					{
+						mbl = charlen (str);
+						char_width = backend_get_text_width_emph (xtext, str, mbl, emphasis);
+					}
+				}
 				if (!hidden) str_width += char_width;
 				if (str_width > win_width)
 				{

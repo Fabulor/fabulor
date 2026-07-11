@@ -40,7 +40,7 @@
 
 #define DEF_FONT "Monospace 9"
 #ifdef WIN32
-#define DEF_FONT_ALTER "Segoe UI Emoji,Arial Unicode MS,Lucida Sans Unicode,Meiryo,Symbola,Unifont"
+#define DEF_FONT_ALTER "Noto Color Emoji,Segoe UI Emoji,Arial Unicode MS,Lucida Sans Unicode,Meiryo,Symbola,Unifont"
 #else
 #define DEF_FONT_ALTER "Arial Unicode MS,Segoe UI Emoji,Lucida Sans Unicode,Meiryo,Symbola,Unifont"
 #endif

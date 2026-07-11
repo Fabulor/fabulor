@@ -30,7 +30,12 @@
         <Directory Id="LIBDIR" Name="lib" />
         <Directory Id="SHAREDIR" Name="share">
           <Directory Id="SHAREDOCDIR" Name="doc" />
+          <Directory Id="SHAREEMOJIFLAGSDIR" Name="emoji-flags" />
           <Directory Id="SHAREENCHANT2DIR" Name="enchant-2" />
+          <Directory Id="SHAREFONTSDIR" Name="fonts" />
+          <Directory Id="SHAREGTK3DIR" Name="gtk-3.0">
+            <Directory Id="SHAREGTK3EMOJIDIR" Name="emoji" />
+          </Directory>
           <Directory Id="SHAREGLIBDIR" Name="glib-2.0" />
           <Directory Id="SHAREICONSDIR" Name="icons">
             <Directory Id="ADWAITADIR" Name="Adwaita">
@@ -95,7 +100,10 @@
       <Feature Id="LegacyGtkCompatibilityFeature" Title="Legacy GTK compatibility data" Level="1">
         <ComponentGroupRef Id="LegacyGtkEtcRuntimeComponents" />
         <ComponentGroupRef Id="LegacyGtkLibRuntimeComponents" />
+        <ComponentGroupRef Id="LegacyGtkEmojiFlagRuntimeComponents" />
         <ComponentGroupRef Id="LegacyGtkShareEnchantRuntimeComponents" />
+        <ComponentGroupRef Id="LegacyGtkShareFontsRuntimeComponents" />
+        <ComponentGroupRef Id="LegacyGtkShareGtk3EmojiRuntimeComponents" />
         <ComponentGroupRef Id="LegacyGtkShareGlibRuntimeComponents" />
         <ComponentGroupRef Id="LegacyGtkShareXmlRuntimeComponents" />
       </Feature>
