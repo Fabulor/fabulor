@@ -21,6 +21,11 @@
   - [ ] `Runtime\DotNet\`
   - [ ] `Config\`.
 - [ ] Update WiX directory/component authoring to match that runtime layout exactly.
+- [ ] After the repo security review, remaining UI tweaks, and GTK4 migration are complete, audit and trim the installed `Runtime\` payload:
+  - [ ] Keep the GTK4 runtime broad enough for the GTK4-compliant Fabulor target.
+  - [ ] Remove build-time/development-only GTK data from the installed payload where it is not needed at runtime.
+  - [ ] Split the Tcl payload into core scripting support and optional extra packages.
+  - [ ] Keep Python314 as the bundled scripting runtime unless the plugin contract changes.
 - [ ] Implement WiX v4 components for:
   - [ ] core executable
   - [ ] plugin folders
