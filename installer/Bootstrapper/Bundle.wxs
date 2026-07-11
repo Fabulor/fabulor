@@ -5,7 +5,6 @@
     Name="Fabulor Setup"
     Version="$(var.FabulorSemVer)"
     Manufacturer="Fabulor Project"
-    ProviderKey="Fabulor.Setup.Bundle"
     AboutUrl="https://github.com/Fabulor/fabulor/blob/main/README.md"
     HelpUrl="https://github.com/Fabulor/fabulor/tree/main/docs"
     IconSourceFile="..\..\data\icons\fabulor.ico"

@@ -3727,10 +3727,113 @@ mg_update_xtext (GtkWidget *wid)
         gtk_xtext_refresh (xtext);
 }
 
+static gboolean
+mg_scroll_to_bottom_is_at_bottom (GtkAdjustment *adj)
+{
+        gdouble value;
+        gdouble upper;
+        gdouble page_size;
+
+        if (!adj)
+                return TRUE;
+
+        value = gtk_adjustment_get_value (adj);
+        upper = gtk_adjustment_get_upper (adj);
+        page_size = gtk_adjustment_get_page_size (adj);
+
+        return upper <= page_size || value >= upper - page_size - 0.5;
+}
+
+void
+mg_update_scroll_to_bottom_button (session_gui *gui)
+{
+        GtkAdjustment *adj;
+
+        if (!gui || !GTK_IS_WIDGET (gui->scroll_bottom_button) || !GTK_IS_RANGE (gui->vscrollbar))
+                return;
+
+        adj = gtk_range_get_adjustment (GTK_RANGE (gui->vscrollbar));
+        if (!prefs.hex_gui_scroll_bottom_button || mg_scroll_to_bottom_is_at_bottom (adj))
+                gtk_widget_hide (gui->scroll_bottom_button);
+        else
+                gtk_widget_show (gui->scroll_bottom_button);
+}
+
+static void
+mg_scroll_to_bottom_adjustment_changed (GtkAdjustment *adj, gpointer userdata)
+{
+        GtkWidget *button = userdata;
+        session_gui *gui;
+
+        if (!GTK_IS_WIDGET (button))
+                return;
+
+        gui = g_object_get_data (G_OBJECT (button), "mg-session-gui");
+
+        mg_update_scroll_to_bottom_button (gui);
+}
+
+static void
+mg_scroll_to_bottom_clicked (GtkButton *button, gpointer userdata)
+{
+        session_gui *gui = userdata;
+        GtkAdjustment *adj;
+        gdouble lower;
+        gdouble target;
+
+        if (!gui || !GTK_IS_RANGE (gui->vscrollbar))
+                return;
+
+        adj = gtk_range_get_adjustment (GTK_RANGE (gui->vscrollbar));
+        lower = gtk_adjustment_get_lower (adj);
+        target = gtk_adjustment_get_upper (adj) - gtk_adjustment_get_page_size (adj);
+        if (target < lower)
+                target = lower;
+
+        gtk_adjustment_set_value (adj, target);
+        mg_update_scroll_to_bottom_button (gui);
+}
+
+static void
+mg_create_scroll_to_bottom_button (session_gui *gui, GtkOverlay *overlay)
+{
+        GtkAdjustment *adj;
+        GtkWidget *label;
+
+        if (!gui || !overlay || !GTK_IS_RANGE (gui->vscrollbar))
+                return;
+
+        gui->scroll_bottom_button = gtk_button_new ();
+        g_object_set_data (G_OBJECT (gui->scroll_bottom_button), "mg-session-gui", gui);
+        label = gtk_label_new (NULL);
+        gtk_label_set_markup (GTK_LABEL (label), "<span size=\"large\" weight=\"bold\">↓</span>");
+        gtk_container_add (GTK_CONTAINER (gui->scroll_bottom_button), label);
+        gtk_widget_set_tooltip_text (gui->scroll_bottom_button, _("Scroll to bottom"));
+        gtk_widget_set_halign (gui->scroll_bottom_button, GTK_ALIGN_END);
+        gtk_widget_set_valign (gui->scroll_bottom_button, GTK_ALIGN_END);
+        gtk_widget_set_margin_end (gui->scroll_bottom_button, 22);
+        gtk_widget_set_margin_bottom (gui->scroll_bottom_button, 12);
+        gtk_widget_set_no_show_all (gui->scroll_bottom_button, TRUE);
+        gtk_style_context_add_class (gtk_widget_get_style_context (gui->scroll_bottom_button), "zoitechat-scroll-bottom-button");
+        gtk_overlay_add_overlay (overlay, gui->scroll_bottom_button);
+
+        g_signal_connect (G_OBJECT (gui->scroll_bottom_button), "clicked",
+                          G_CALLBACK (mg_scroll_to_bottom_clicked), gui);
+
+        adj = gtk_range_get_adjustment (GTK_RANGE (gui->vscrollbar));
+        g_signal_connect_object (G_OBJECT (adj), "value-changed",
+                                 G_CALLBACK (mg_scroll_to_bottom_adjustment_changed), gui->scroll_bottom_button, 0);
+        g_signal_connect_object (G_OBJECT (adj), "changed",
+                                 G_CALLBACK (mg_scroll_to_bottom_adjustment_changed), gui->scroll_bottom_button, 0);
+
+        gtk_widget_show_all (gui->scroll_bottom_button);
+        mg_update_scroll_to_bottom_button (gui);
+}
+
 static void
 mg_create_textarea (session *sess, GtkWidget *box)
 {
-        GtkWidget *inbox, *vbox, *frame;
+        GtkWidget *inbox, *vbox, *frame, *overlay;
         GtkXText *xtext;
         XTextColor xtext_palette[XTEXT_COLS];
         session_gui *gui = sess->gui;
@@ -3749,6 +3852,11 @@ mg_create_textarea (session *sess, GtkWidget *box)
         inbox = mg_box_new (GTK_ORIENTATION_HORIZONTAL, FALSE, 2);
         gtk_box_pack_start (GTK_BOX (vbox), inbox, TRUE, TRUE, 0);
 
+        overlay = gtk_overlay_new ();
+        gtk_widget_set_hexpand (overlay, TRUE);
+        gtk_widget_set_vexpand (overlay, TRUE);
+        gtk_box_pack_start (GTK_BOX (inbox), overlay, TRUE, TRUE, 0);
+
         frame = gtk_scrolled_window_new (NULL, NULL);
         gtk_widget_set_hexpand (frame, TRUE);
         gtk_widget_set_vexpand (frame, TRUE);
@@ -3756,7 +3864,7 @@ mg_create_textarea (session *sess, GtkWidget *box)
                                              GTK_SHADOW_IN);
         gtk_scrolled_window_set_policy (GTK_SCROLLED_WINDOW (frame),
                                         GTK_POLICY_NEVER, GTK_POLICY_AUTOMATIC);
-        gtk_box_pack_start (GTK_BOX (inbox), frame, TRUE, TRUE, 0);
+        gtk_container_add (GTK_CONTAINER (overlay), frame);
 
         theme_get_xtext_colors_for_widget (frame, xtext_palette, XTEXT_COLS);
         gui->xtext = gtk_xtext_new (xtext_palette, TRUE);
@@ -3773,6 +3881,7 @@ mg_create_textarea (session *sess, GtkWidget *box)
                                                         G_CALLBACK (mg_word_clicked), NULL);
 
         gui->vscrollbar = gtk_scrolled_window_get_vscrollbar (GTK_SCROLLED_WINDOW (frame));
+        mg_create_scroll_to_bottom_button (gui, GTK_OVERLAY (overlay));
 
         gtk_drag_dest_set (gui->vscrollbar, 5, dnd_dest_targets, 2,
                                                          GDK_ACTION_MOVE | GDK_ACTION_COPY | GDK_ACTION_LINK);

@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using System.Security.Principal;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
@@ -45,7 +46,6 @@ public sealed class FabulorBootstrapperApplication : BootstrapperApplication
     private bool pendingCommandActionRequested;
     private string? detectedInstalledBundleCachePath;
     private readonly Dictionary<string, FeatureState> detectedFeatureStates = new(StringComparer.Ordinal);
-    private readonly HashSet<string> sameVersionRelatedBundleCodes = new(StringComparer.OrdinalIgnoreCase);
     private InstallerFeatureSelection detectedFeatureSelection = new();
     private InstallerFeatureSelection currentPlanFeatureSelection = new();
     private bool currentPlanPortable;
@@ -584,13 +584,17 @@ public sealed class FabulorBootstrapperApplication : BootstrapperApplication
 
         try
         {
-            if (e.Status == 0 && this.pendingAction == LaunchAction.Uninstall)
+            if (e.Status == 0 && this.IsProcessElevated() && this.pendingAction == LaunchAction.Uninstall)
             {
                 this.CleanupRegistryArtifactsAfterSuccessfulUninstall();
             }
-            else if (e.Status == 0)
+            else if (e.Status == 0 && this.IsProcessElevated())
             {
                 this.CleanupOtherBundleRegistrationsAfterSuccessfulApply();
+            }
+            else if (e.Status == 0)
+            {
+                this.engine.Log(LogLevel.Verbose, "Skipping post-apply registry cleanup because the bootstrapper application is not elevated.");
             }
         }
         catch (Exception ex)
@@ -667,7 +671,6 @@ public sealed class FabulorBootstrapperApplication : BootstrapperApplication
         this.detectedInstalledBundleCachePath = null;
         this.detectedFeatureSelection = new InstallerFeatureSelection();
         this.detectedFeatureStates.Clear();
-        this.sameVersionRelatedBundleCodes.Clear();
     }
 
     private void OnDetectComplete(object? sender, DetectCompleteEventArgs e)
@@ -784,15 +787,6 @@ public sealed class FabulorBootstrapperApplication : BootstrapperApplication
         {
             return;
         }
-
-        var currentVersion = this.GetCurrentBundleVersion();
-        if (!this.VersionsEqual(version, currentVersion))
-        {
-            return;
-        }
-
-        this.sameVersionRelatedBundleCodes.Add(bundleCode);
-        this.engine.Log(LogLevel.Standard, $"Detected same-version related bundle {bundleCode} version={version}; it will not be planned as an upgrade participant.");
     }
 
     private void OnDetectPackageComplete(object? sender, DetectPackageCompleteEventArgs e)
@@ -917,35 +911,14 @@ public sealed class FabulorBootstrapperApplication : BootstrapperApplication
 
     private void OnPlanRelatedBundle(object? sender, PlanRelatedBundleEventArgs e)
     {
-        if (!this.sameVersionRelatedBundleCodes.Contains(e.BundleCode))
-        {
-            return;
-        }
-
-        this.engine.Log(LogLevel.Standard, $"Skipping same-version related bundle package plan for {e.BundleCode}; recommended={e.RecommendedState}.");
-        e.State = RequestState.None;
     }
 
     private void OnPlanRelatedBundleType(object? sender, PlanRelatedBundleTypeEventArgs e)
     {
-        if (!this.sameVersionRelatedBundleCodes.Contains(e.BundleCode))
-        {
-            return;
-        }
-
-        this.engine.Log(LogLevel.Standard, $"Skipping same-version related bundle type plan for {e.BundleCode}; recommended={e.RecommendedType}.");
-        e.Type = RelatedBundlePlanType.None;
     }
 
     private void OnPlanRestoreRelatedBundle(object? sender, PlanRestoreRelatedBundleEventArgs e)
     {
-        if (!this.sameVersionRelatedBundleCodes.Contains(e.BundleCode))
-        {
-            return;
-        }
-
-        this.engine.Log(LogLevel.Standard, $"Skipping same-version related bundle rollback restore for {e.BundleCode}; recommended={e.RecommendedState}.");
-        e.State = RequestState.None;
     }
 
     private void OnPlanComplete(object? sender, PlanCompleteEventArgs e)
@@ -1390,6 +1363,12 @@ public sealed class FabulorBootstrapperApplication : BootstrapperApplication
 
     private bool TryLaunchRelatedMsiUninstall()
     {
+        if (this.command?.Display == Display.Embedded)
+        {
+            this.engine.Log(LogLevel.Verbose, "Skipping related MSI uninstall because this bundle is running embedded as a related bundle.");
+            return false;
+        }
+
         if (string.IsNullOrWhiteSpace(this.detectedInstalledMsiProductCode))
         {
             return false;
@@ -1481,6 +1460,12 @@ public sealed class FabulorBootstrapperApplication : BootstrapperApplication
 
     private bool TryLaunchRegisteredBundleUninstall()
     {
+        if (this.command?.Display == Display.Embedded)
+        {
+            this.engine.Log(LogLevel.Verbose, "Skipping registered bundle uninstall relaunch because this bundle is running embedded as a related bundle.");
+            return false;
+        }
+
         if (string.IsNullOrWhiteSpace(this.detectedInstalledBundleCachePath))
         {
             this.detectedInstalledBundleCachePath = this.TryGetRegisteredBundleCachePath();
@@ -1917,6 +1902,21 @@ public sealed class FabulorBootstrapperApplication : BootstrapperApplication
         }
 
         return string.Equals(left, right, StringComparison.OrdinalIgnoreCase);
+    }
+
+    private bool IsProcessElevated()
+    {
+        try
+        {
+            using var identity = WindowsIdentity.GetCurrent();
+            var principal = new WindowsPrincipal(identity);
+            return principal.IsInRole(WindowsBuiltInRole.Administrator);
+        }
+        catch (Exception ex)
+        {
+            this.engine.Log(LogLevel.Error, $"Failed to determine process elevation: {ex}");
+            return false;
+        }
     }
 
     private Version NormalizeVersion(Version version)
