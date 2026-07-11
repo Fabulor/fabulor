@@ -3791,24 +3791,54 @@ mg_scroll_to_bottom_clicked (GtkButton *button, gpointer userdata)
                 target = lower;
 
         gtk_adjustment_set_value (adj, target);
-        mg_update_scroll_to_bottom_button (gui);
+	mg_update_scroll_to_bottom_button (gui);
+}
+
+static gboolean
+mg_scroll_to_bottom_arrow_draw (GtkWidget *widget, cairo_t *cr, gpointer userdata)
+{
+	gdouble width = gtk_widget_get_allocated_width (widget);
+	gdouble height = gtk_widget_get_allocated_height (widget);
+	gdouble center_x = width / 2.0;
+	gdouble center_y = height / 2.0;
+
+	cairo_set_line_cap (cr, CAIRO_LINE_CAP_ROUND);
+	cairo_set_line_join (cr, CAIRO_LINE_JOIN_ROUND);
+
+	cairo_move_to (cr, center_x, center_y - 6.0);
+	cairo_line_to (cr, center_x, center_y + 5.0);
+	cairo_move_to (cr, center_x - 6.0, center_y);
+	cairo_line_to (cr, center_x, center_y + 6.0);
+	cairo_line_to (cr, center_x + 6.0, center_y);
+
+	cairo_set_source_rgba (cr, 0.0, 0.0, 0.0, 0.65);
+	cairo_set_line_width (cr, 5.0);
+	cairo_stroke_preserve (cr);
+
+	cairo_set_source_rgba (cr, 1.0, 1.0, 1.0, 0.96);
+	cairo_set_line_width (cr, 2.8);
+	cairo_stroke (cr);
+
+	return FALSE;
 }
 
 static void
 mg_create_scroll_to_bottom_button (session_gui *gui, GtkOverlay *overlay)
 {
-        GtkAdjustment *adj;
-        GtkWidget *label;
+	GtkAdjustment *adj;
+	GtkWidget *arrow;
 
-        if (!gui || !overlay || !GTK_IS_RANGE (gui->vscrollbar))
-                return;
+	if (!gui || !overlay || !GTK_IS_RANGE (gui->vscrollbar))
+		return;
 
-        gui->scroll_bottom_button = gtk_button_new ();
-        g_object_set_data (G_OBJECT (gui->scroll_bottom_button), "mg-session-gui", gui);
-        label = gtk_label_new (NULL);
-        gtk_label_set_markup (GTK_LABEL (label), "<span size=\"large\" weight=\"bold\">↓</span>");
-        gtk_container_add (GTK_CONTAINER (gui->scroll_bottom_button), label);
-        gtk_widget_set_tooltip_text (gui->scroll_bottom_button, _("Scroll to bottom"));
+	gui->scroll_bottom_button = gtk_button_new ();
+	g_object_set_data (G_OBJECT (gui->scroll_bottom_button), "mg-session-gui", gui);
+	arrow = gtk_drawing_area_new ();
+	gtk_widget_set_size_request (arrow, 24, 24);
+	gtk_container_add (GTK_CONTAINER (gui->scroll_bottom_button), arrow);
+	g_signal_connect (G_OBJECT (arrow), "draw",
+	                  G_CALLBACK (mg_scroll_to_bottom_arrow_draw), NULL);
+	gtk_widget_set_tooltip_text (gui->scroll_bottom_button, _("Scroll to bottom"));
         gtk_widget_set_halign (gui->scroll_bottom_button, GTK_ALIGN_END);
         gtk_widget_set_valign (gui->scroll_bottom_button, GTK_ALIGN_END);
         gtk_widget_set_margin_end (gui->scroll_bottom_button, 22);
