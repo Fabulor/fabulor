@@ -164,20 +164,25 @@ pixmap_load_from_file_real (char *file)
 cairo_surface_t *
 pixmap_load_from_file (char *filename)
 {
-	char buf[256];
 	cairo_surface_t *pix;
+	char *path;
 
-	if (filename[0] == '\0')
+	if (!filename)
 		return NULL;
 
-	pix = pixmap_load_from_file_real (filename);
-	if (pix == NULL)
+	path = g_strdup (filename);
+	g_strstrip (path);
+	if (path[0] == '\0')
 	{
-		strcpy (buf, "Cannot open:\n\n");
-		strncpy (buf + 14, filename, sizeof (buf) - 14);
-		buf[sizeof (buf) - 1] = 0;
-		fe_message (buf, FE_MSG_ERROR);
+		g_free (path);
+		return NULL;
 	}
+
+	pix = pixmap_load_from_file_real (path);
+	if (pix == NULL)
+		g_warning ("Cannot open pixmap: %s", path);
+
+	g_free (path);
 
 	return pix;
 }

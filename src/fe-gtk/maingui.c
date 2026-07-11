@@ -3774,9 +3774,8 @@ mg_scroll_to_bottom_adjustment_changed (GtkAdjustment *adj, gpointer userdata)
 }
 
 static void
-mg_scroll_to_bottom_clicked (GtkButton *button, gpointer userdata)
+mg_scroll_to_bottom_activate (session_gui *gui)
 {
-        session_gui *gui = userdata;
         GtkAdjustment *adj;
         gdouble lower;
         gdouble target;
@@ -3792,6 +3791,16 @@ mg_scroll_to_bottom_clicked (GtkButton *button, gpointer userdata)
 
         gtk_adjustment_set_value (adj, target);
 	mg_update_scroll_to_bottom_button (gui);
+}
+
+static gboolean
+mg_scroll_to_bottom_button_press (GtkWidget *widget, GdkEventButton *event, gpointer userdata)
+{
+	if (event->button != 1)
+		return FALSE;
+
+	mg_scroll_to_bottom_activate (userdata);
+	return TRUE;
 }
 
 static gboolean
@@ -3819,24 +3828,23 @@ mg_scroll_to_bottom_arrow_draw (GtkWidget *widget, cairo_t *cr, gpointer userdat
 	cairo_set_line_width (cr, 2.8);
 	cairo_stroke (cr);
 
-	return FALSE;
+	return TRUE;
 }
 
 static void
 mg_create_scroll_to_bottom_button (session_gui *gui, GtkOverlay *overlay)
 {
 	GtkAdjustment *adj;
-	GtkWidget *arrow;
 
 	if (!gui || !overlay || !GTK_IS_RANGE (gui->vscrollbar))
 		return;
 
-	gui->scroll_bottom_button = gtk_button_new ();
+	gui->scroll_bottom_button = gtk_drawing_area_new ();
 	g_object_set_data (G_OBJECT (gui->scroll_bottom_button), "mg-session-gui", gui);
-	arrow = gtk_drawing_area_new ();
-	gtk_widget_set_size_request (arrow, 24, 24);
-	gtk_container_add (GTK_CONTAINER (gui->scroll_bottom_button), arrow);
-	g_signal_connect (G_OBJECT (arrow), "draw",
+	gtk_widget_set_size_request (gui->scroll_bottom_button, 28, 28);
+	gtk_widget_set_app_paintable (gui->scroll_bottom_button, TRUE);
+	gtk_widget_add_events (gui->scroll_bottom_button, GDK_BUTTON_PRESS_MASK);
+	g_signal_connect (G_OBJECT (gui->scroll_bottom_button), "draw",
 	                  G_CALLBACK (mg_scroll_to_bottom_arrow_draw), NULL);
 	gtk_widget_set_tooltip_text (gui->scroll_bottom_button, _("Scroll to bottom"));
         gtk_widget_set_halign (gui->scroll_bottom_button, GTK_ALIGN_END);
@@ -3847,8 +3855,8 @@ mg_create_scroll_to_bottom_button (session_gui *gui, GtkOverlay *overlay)
         gtk_style_context_add_class (gtk_widget_get_style_context (gui->scroll_bottom_button), "zoitechat-scroll-bottom-button");
         gtk_overlay_add_overlay (overlay, gui->scroll_bottom_button);
 
-        g_signal_connect (G_OBJECT (gui->scroll_bottom_button), "clicked",
-                          G_CALLBACK (mg_scroll_to_bottom_clicked), gui);
+	g_signal_connect (G_OBJECT (gui->scroll_bottom_button), "button-press-event",
+	                  G_CALLBACK (mg_scroll_to_bottom_button_press), gui);
 
         adj = gtk_range_get_adjustment (GTK_RANGE (gui->vscrollbar));
         g_signal_connect_object (G_OBJECT (adj), "value-changed",
