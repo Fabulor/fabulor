@@ -650,3 +650,62 @@ Suggested ordering:
 3. Constrain bare-name DLL loading for Enchant and Perl.
 4. Canonicalize add-on GUI containment and avoid `/LOAD` command-string interpolation.
 5. Document trusted-config behavior for absolute log masks and invalid TLS certificate acceptance.
+
+## Local Scanner Follow-Up
+
+Date: 2026-07-12
+
+This follow-up revisits scanner availability after the Visual Studio developer environment, CodeQL CLI, and Semgrep installation were checked locally.
+
+Updated availability:
+
+- MSVC `cl.exe` is installed and available from the Visual Studio Build Tools environment.
+- MSBuild is installed at `C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\MSBuild\Current\Bin\amd64\MSBuild.exe`.
+- CodeQL CLI is installed at `C:\codeql\codeql.exe`, version 2.26.0.
+- Semgrep is installed as Python package `semgrep` 1.169.0, with entry points under `C:\Users\Barry\AppData\Local\Python\pythoncore-3.14-64\Scripts`.
+
+MSVC `/analyze` result:
+
+- A full-solution `/analyze` run against `win32\zoitechat.sln` did not complete.
+- The default build root `C:\zoitechat-build` could not be written by the scanner shell because existing `.tlog` files returned access denied.
+- Redirecting `ZoiteChatBuild` into a workspace-local `.scan-msvc` directory allowed project-level analysis to start.
+- `plugins\exec\exec.vcxproj` completed with `/analyze` enabled and reported 0 warnings and 0 errors.
+- `src\common\common.vcxproj` reached `/analyze` compilation after setting process-scope `PSExecutionPolicyPreference=Bypass` and `SolutionDir`, but did not complete. It produced 21 compiler warnings before failing on generated data/PDB issues:
+  - `src/common/url.c:30` - missing generated `public_suffix_data.h` after `gen-public-suffix.py` reported `unable to load public suffix list`.
+  - `src/common/util.c:1421` and `src/common/gtk3-theme-service.c:1413` - obsolete `common.pdb` format errors in the redirected scan output.
+  - Warnings were mostly `C4244` size/socket/integer conversion warnings, plus `C4018` and `C4090`.
+
+CodeQL result:
+
+- CodeQL CLI 2.26.0 runs locally.
+- A C/C++ `--build-mode=none` database create indexed repository files but failed finalization with `no source code seen during build`.
+- A traced CodeQL database create around the successfully building `plugins\exec\exec.vcxproj` also failed finalization with `no source code seen during build`.
+- No CodeQL SARIF/CSV findings were produced locally in this follow-up.
+
+Semgrep result:
+
+- Native `semgrep.exe` fails before scan startup with `Failed to create system store X509 authenticator: ca_certs_iter_on_anchors: CertOpenSystemStore returned NULL`.
+- Python wrapper `pysemgrep.exe` reports version 1.169.0 when workspace-local config/log paths are supplied, but local scan attempts failed before producing findings. The observed failures were `semgrep-core rule validation failed`, `Failed to obtain target files from semgrep-core`, and Windows access-denied cleanup errors for Semgrep temporary directories.
+- No Semgrep findings were produced locally in this follow-up.
+
+Gitleaks result:
+
+- Gitleaks 8.30.1 was installed and run with `gitleaks detect --source C:\fabulor-master --no-banner`.
+- It scanned 63 commits and approximately 12.13 MB.
+- It reported 1 finding:
+  - Rule: `generic-api-key`
+  - File: `src/fe-gtk/chanlist.c`
+  - Line: 461
+  - Commit: `746467e7d2516d6dfa25c9407c65b9d1ddf79e56`
+- Manual review classified this as a false positive. The matched symbol is `collation_key`, a GLib collation/sort key for channel names, not an API key or secret.
+
+Conclusion:
+
+The original audit limitation should be refined rather than removed. MSVC and CodeQL are installed, Gitleaks produced a usable history-aware secret scan, and Semgrep was installed but not usable in this environment. Only a partial MSVC `/analyze` pass produced usable compiler-analysis results. The successful Exec-plugin `/analyze` run does not weaken the earlier manual finding: the command construction in `plugins/exec/exec.c` remains a security issue even though MSVC did not warn on that project.
+
+Updated scanner follow-up:
+
+- Run MSVC `/analyze` from a clean normal-user developer shell after resolving `C:\zoitechat-build` write access or standardizing a workspace-local build root.
+- Fix or make deterministic generation of `public_suffix_data.h` for redirected/native scanner builds.
+- Investigate why CodeQL's Windows C/C++ tracer is not seeing the local MSBuild/CL invocations, or rely on the existing GitHub Actions CodeQL jobs for CodeQL coverage.
+- Investigate Semgrep's Windows cert-store startup failure and Python wrapper temp-directory cleanup failure before treating Semgrep as locally usable.
