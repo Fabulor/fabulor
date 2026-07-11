@@ -28,6 +28,34 @@
 - [ ] Decide whether the editbox should keep showing Windows regional-indicator labels (`FR`, `IE`) or receive a deeper custom inline-image rendering pass.
 - [ ] Consider country names or search/filter support in the flag picker if two-letter labels are not sufficient.
 
+## Security Scanning Plan
+
+- [ ] Plugin loader boundary review, pass 1: disabled-state audit.
+  - [ ] Confirm manifest plugins are inert unless the explicit enable gate is set.
+  - [ ] Confirm no config, environment, command-line, or installer default can accidentally enable the manifest plugin host.
+  - [ ] Confirm disabled startup does not parse, load, execute, or trust files from user-controlled plugin/addon folders.
+  - [ ] Confirm disabled plugin code does not alter DLL/runtime search paths in a way that affects normal client startup.
+  - [ ] Record exact files/functions that implement the enable gate.
+- [ ] Plugin loader boundary review, pass 2: pre-enable design audit.
+  - [ ] Review plugin root discovery and ensure paths stay inside approved roots.
+  - [ ] Review manifest parsing and validation for required fields, type checks, size limits, malformed JSON handling, and error isolation.
+  - [ ] Review entrypoint resolution for path traversal, absolute paths, symlinks/reparse points, and extension/language mismatches.
+  - [ ] Review C#, Python, and Tcl runtime loading paths, DLL search order, and interpreter initialization boundaries.
+  - [ ] Review callback/event registration lifetime, main-thread dispatch, cleanup, and failure isolation.
+  - [ ] Decide which declared manifest `capabilities` are advisory versus enforced before enabling third-party plugins.
+  - [ ] Define the minimum fixes required before `FABULOR_ENABLE_MANIFEST_PLUGINS=1` can become user-facing.
+- [ ] Repository security tool pass.
+  - [ ] Inventory available local tools: MSVC `/analyze`, CodeQL CLI, Semgrep, gitleaks/trufflehog, dependency scanners, and GitHub Actions checks.
+  - [ ] Run secret scanning across tracked files and review any hits.
+  - [ ] Run static analysis suited to the C/C++ codebase and triage findings by exploitability.
+  - [ ] Run dependency/vulnerability checks for .NET, Python, Node, and bundled binary/runtime payloads where applicable.
+  - [ ] Review installer and runtime payload provenance, hashes, and packaging boundaries.
+- [ ] Targeted high-risk code review.
+  - [ ] File/path handling: logs, downloads, config, addon/plugin roots, installer paths, and portable-mode paths.
+  - [ ] Network/TLS handling: certificate loading, proxy settings, reconnect paths, and unsafe fallbacks.
+  - [ ] Process/library loading: plugin hosts, scripting runtimes, external commands, DLL search paths, and updater behavior.
+  - [ ] User-controlled text rendering: URL detection, markup escaping, emoji/flag rendering, and theme/config parsing.
+
 ## 1. WiX v4 Installer Completion
 
 - [ ] Finalise installed layout under `ProgramFiles\Fabulor\`:
