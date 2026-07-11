@@ -2,13 +2,40 @@
 
 ## Scope
 
-This guide covers the minimal structure for a Fabulor Python plugin and links to shared schema and troubleshooting rules.
+This guide covers Python scripting for Fabulor and links to shared schema and troubleshooting rules.
 
 Read shared rules first:
 
-1. [Plugin Schema, Compatibility, and Troubleshooting](plugin-schema-and-troubleshooting.md)
+1. [Simple Add-ons](simple-addons.md)
+2. [Plugin Schema, Compatibility, and Troubleshooting](plugin-schema-and-troubleshooting.md)
 
-## Python plugin.json
+## Simple Python Add-on
+
+Preferred layout:
+
+```text
+%APPDATA%\Fabulor\addons\greeter\greeter.py
+```
+
+Optional metadata:
+
+```python
+# Fabulor-Name: Greeter
+# Fabulor-Version: 1.0
+# Fabulor-Description: Small Python helper
+```
+
+Minimal script:
+
+```python
+import zoitechat
+
+
+def init():
+    zoitechat.log("Python add-on initialised")
+```
+
+## Advanced Python plugin.json
 
 ```json
 {
@@ -48,10 +75,11 @@ def init():
 ## Notes
 
 1. Keep callback handlers lightweight to avoid blocking the main thread.
-2. Keep manifest capabilities aligned with actual plugin behaviour.
-3. `zoitechat.log(...)`, `zoitechat.send_message(...)`, `zoitechat.get_user_count()`, `zoitechat.get_user_info()`, and `zoitechat.register_callback(...)` are available in the embedded host.
-4. `zoitechat.register_callback(...)` currently supports `message`, `server`, `server:<name>`, `print:<event>`, and `command:<name>`.
-5. Callback payloads now include richer context such as `source`, `time`, `channel`, `network`, `nick`, `server`, `word1`-`word4`, and `word_eol1`-`word_eol2` where the underlying event provides them.
-6. The host validates `plugin.json`, resolves declared dependencies, and dispatches callbacks on the main thread before language-specific execution.
-7. `zoitechat.get_user_info()` returns a dictionary with `nickname`, `channel`, `server_name`, and `network_name`.
-8. A maintained sample manifest Python plugin lives under `samples\plugins\example.python.greeter\`.
+2. Use the simple `addons\<name>\<name>.py` layout for personal scripts and helpers.
+3. Keep manifest capabilities aligned with actual plugin behaviour when using the advanced manifest path.
+4. `zoitechat.log(...)`, `zoitechat.send_message(...)`, `zoitechat.get_user_count()`, `zoitechat.get_user_info()`, and `zoitechat.register_callback(...)` are available in the embedded host.
+5. `zoitechat.register_callback(...)` currently supports `message`, `server`, `server:<name>`, `print:<event>`, and `command:<name>`.
+6. Callback payloads now include richer context such as `source`, `time`, `channel`, `network`, `nick`, `server`, `word1`-`word4`, and `word_eol1`-`word_eol2` where the underlying event provides them.
+7. The host validates `plugin.json`, resolves declared dependencies, and dispatches callbacks on the main thread before language-specific execution.
+8. `zoitechat.get_user_info()` returns a dictionary with `nickname`, `channel`, `server_name`, and `network_name`.
+9. A maintained sample manifest Python plugin lives under `samples\plugins\example.python.greeter\`.

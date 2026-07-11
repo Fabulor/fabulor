@@ -2,13 +2,30 @@
 
 ## Scope
 
-This guide covers the minimal structure for a Fabulor C# plugin and links to shared schema and troubleshooting rules.
+This guide covers C# add-ons for Fabulor and links to shared schema and troubleshooting rules.
 
 Read shared rules first:
 
-1. [Plugin Schema, Compatibility, and Troubleshooting](plugin-schema-and-troubleshooting.md)
+1. [Simple Add-ons](simple-addons.md)
+2. [Plugin Schema, Compatibility, and Troubleshooting](plugin-schema-and-troubleshooting.md)
 
-## C# plugin.json
+## Simple C# Add-on
+
+Preferred layout:
+
+```text
+%APPDATA%\Fabulor\addons\helper\helper.cs
+```
+
+Optional metadata:
+
+```csharp
+// Fabulor-Name: Helper
+// Fabulor-Version: 1.0
+// Fabulor-Description: Small C# helper add-on
+```
+
+## Advanced C# plugin.json
 
 ```json
 {
@@ -52,12 +69,13 @@ public sealed class GreeterPlugin : IZoiteChatPlugin
 ## Notes
 
 1. Keep callback handlers lightweight to avoid blocking the main thread.
-2. Keep manifest capabilities aligned with actual plugin behaviour.
-3. The managed contract assembly lives in `src\managed\Fabulor.PluginAbstractions` and currently defines `IZoiteChatPlugin`, `ZoiteChatContext`, `ZoiteChatEvent`, and `ZoiteChatUserInfo`.
-4. The current host scaffold keeps `ZoiteChatAPI` as a compatibility alias for `FabulorAPI` while the repo finishes the broader rebrand.
-5. C# manifests now load through the `src\managed\Fabulor.PluginHost` bridge, which calls `IZoiteChatPlugin.Init(...)` and routes callbacks back through the shared native registry.
-6. The installer now stages the managed bridge assemblies together with a bundled private `.NET` runtime root under `Runtime\DotNet`, including `hostfxr.dll` and the shared runtime payload.
-7. `ZoiteChatContext.RegisterCallback(...)` can subscribe to generic events such as `message`, `server`, `print`, and `command`, as well as specific forms like `server:NOTICE`, `print:Channel Message`, or `command:SAY`.
-8. `ZoiteChatEvent` now exposes richer payload accessors including `Channel`, `Network`, `Nick`, `Server`, `Time`, `Word1`-`Word4`, and `WordEol1`-`WordEol2`.
-9. `ZoiteChatContext.GetUserInfo()` returns the active session identity as a `ZoiteChatUserInfo` with `Nickname`, `Channel`, `ServerName`, and `NetworkName`.
-10. A maintained sample manifest C# plugin lives under `samples\plugins\example.csharp.greeter\`.
+2. Use the simple `addons\<name>\<name>.cs` layout for personal C# add-ons.
+3. Keep manifest capabilities aligned with actual plugin behaviour when using the advanced manifest path.
+4. The managed contract assembly lives in `src\managed\Fabulor.PluginAbstractions` and currently defines `IZoiteChatPlugin`, `ZoiteChatContext`, `ZoiteChatEvent`, and `ZoiteChatUserInfo`.
+5. The current host scaffold keeps `ZoiteChatAPI` as a compatibility alias for `FabulorAPI` while the repo finishes the broader rebrand.
+6. C# manifests now load through the `src\managed\Fabulor.PluginHost` bridge, which calls `IZoiteChatPlugin.Init(...)` and routes callbacks back through the shared native registry.
+7. The installer now stages the managed bridge assemblies together with a bundled private `.NET` runtime root under `Runtime\DotNet`, including `hostfxr.dll` and the shared runtime payload.
+8. `ZoiteChatContext.RegisterCallback(...)` can subscribe to generic events such as `message`, `server`, `print`, and `command`, as well as specific forms like `server:NOTICE`, `print:Channel Message`, or `command:SAY`.
+9. `ZoiteChatEvent` now exposes richer payload accessors including `Channel`, `Network`, `Nick`, `Server`, `Time`, `Word1`-`Word4`, and `WordEol1`-`WordEol2`.
+10. `ZoiteChatContext.GetUserInfo()` returns the active session identity as a `ZoiteChatUserInfo` with `Nickname`, `Channel`, `ServerName`, and `NetworkName`.
+11. A maintained sample manifest C# plugin lives under `samples\plugins\example.csharp.greeter\`.

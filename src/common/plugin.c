@@ -155,6 +155,14 @@ extern const struct prefs vars[];	/* cfgfiles.c */
 static const char *plugin_get_libdir (void);
 
 static gboolean
+fabulor_manifest_plugins_enabled (void)
+{
+	const char *enabled = g_getenv ("FABULOR_ENABLE_MANIFEST_PLUGINS");
+
+	return enabled && g_ascii_strcasecmp (enabled, "1") == 0;
+}
+
+static gboolean
 fabulor_api_send_message (void *user_data, const char *target, const char *text, GError **error)
 {
 	session *sess = user_data;
@@ -364,7 +372,9 @@ fabulor_plugin_host_dispatch_event (session *sess,
 	const char *server_name = NULL;
 	const char *channel = NULL;
 
-	if (!fabulor_callback_registry)
+	if (!fabulor_manifest_plugins_enabled ()
+		|| !fabulor_callback_registry
+		|| !fabulor_callback_registry_has_event (fabulor_callback_registry, event_name))
 	{
 		return;
 	}
@@ -886,7 +896,10 @@ plugin_auto_load (session *sess)
 
 	for_files (sub_dir, "*."PLUGIN_SUFFIX, plugin_auto_load_cb);
 
-	fabulor_plugin_host_autoload (sess);
+	if (fabulor_manifest_plugins_enabled ())
+	{
+		fabulor_plugin_host_autoload (sess);
+	}
 
 	g_free (sub_dir);
 }

@@ -198,6 +198,8 @@ initialize_enchant (void)
     gsize i;
     const char * const libnames[] = {
 #ifdef G_OS_WIN32
+        "libenchant-2-2.dll",
+        "libenchant-2.dll",
         "libenchant.dll",
 #endif
     };
@@ -219,7 +221,7 @@ initialize_enchant (void)
 #define MODULE_SYMBOL(name, func, alt_name) G_STMT_START { \
     const char *funcname = name; \
     gboolean ret = g_module_symbol(enchant, funcname, &funcptr); \
-    if (alt_name) { \
+    if (ret == FALSE && alt_name) { \
         funcname = alt_name; \
         ret = g_module_symbol(enchant, funcname, &funcptr); \
     } \

@@ -4,19 +4,42 @@
 
 This document covers shared plugin documentation for Fabulor:
 
-1. Plugin folder layout
-2. `plugin.json` schema
-3. Compatibility rules
-4. Safe mode behaviour
-5. Troubleshooting workflow
+1. Simple add-on folder layout
+2. Advanced manifest plugin folder layout
+3. `plugin.json` schema
+4. Compatibility rules
+5. Safe mode behaviour
+6. Troubleshooting workflow
 
 Current project path used in examples:
 
 `C:\fabulor-master`
 
-## Plugin Folder Layout
+## Simple Add-on Folder Layout
 
-Each plugin should live in its own folder:
+For personal scripts, aliases, and small helper tools, prefer the simple add-on layout:
+
+```text
+addons/
+  <addon-name>/
+    <addon-name>.tcl
+```
+
+Supported simple add-on extensions:
+
+```text
+.tcl
+.py
+.cs
+```
+
+The extension selects the runtime. Metadata can be supplied as optional `Fabulor-*` comments at the top of the script.
+
+See [Simple Add-ons](simple-addons.md) for the full convention.
+
+## Manifest Plugin Folder Layout
+
+Advanced manifest plugins should live in their own folder:
 
 ```text
 plugins/
@@ -44,6 +67,8 @@ The current runtime discovers manifest plugins from these roots when they exist:
 2. User `plugins\` under the profile/config directory.
 
 For repository examples and validation assets, see `samples\plugins\`. Those samples are intentionally outside the runtime discovery roots used by the live application.
+
+The manifest host is currently disabled by default while the native API path is being hardened. Enable it only for development with `FABULOR_ENABLE_MANIFEST_PLUGINS=1`.
 
 ## plugin.json Schema
 
@@ -130,26 +155,29 @@ Blacklisted plugin ids can be listed one per line in `plugin-blacklist.txt` unde
 
 Use this sequence when a plugin does not load or behaves incorrectly:
 
-1. Confirm folder layout under `plugins/<plugin-id>/`.
-2. Validate `plugin.json` and check `language` and `entrypoint`.
-3. Confirm the entrypoint file exists and is readable.
-4. Check `requires_api_version` against host API version.
-5. Verify every declared dependency exists.
-6. Review logs for validation failures, dependency cycles, callback dispatch failures, and blacklist decisions.
-7. Start Fabulor in safe mode to isolate plugin-related faults.
-8. Re-enable plugins one at a time to identify the failing plugin.
+1. For simple add-ons, confirm the folder and file names match: `addons\<name>\<name>.<ext>`.
+2. Confirm the extension is supported: `.tcl`, `.py`, or `.cs`.
+3. For manifest plugins, confirm folder layout under `plugins/<plugin-id>/`.
+4. Validate `plugin.json` and check `language` and `entrypoint`.
+5. Confirm the entrypoint file exists and is readable.
+6. Check `requires_api_version` against host API version.
+7. Verify every declared dependency exists.
+8. Review logs for validation failures, dependency cycles, callback dispatch failures, and blacklist decisions.
+9. Start Fabulor in safe mode to isolate plugin-related faults.
+10. Re-enable plugins one at a time to identify the failing plugin.
 
 ## Current Runtime Notes
 
 The manifest host is staged in progressively:
 
-1. Python manifest plugins can be auto-loaded through the existing embedded Python runtime.
-2. Tcl manifest plugins can be auto-loaded through the bundled Tcl runtime with a minimal `zoitechat::*` command surface.
-3. The shared host validates manifests, resolves dependencies, applies blacklist decisions, and queues callback dispatch on the main thread.
-4. The managed C# contract assembly is scaffolded under `src\managed\Fabulor.PluginAbstractions` so plugin and host types are concrete.
-5. C# manifests load through the `src\managed\Fabulor.PluginHost` bridge, which is staged into `Runtime\DotNet` by the installer build.
-6. The installer now bundles a private `.NET` runtime root under `Runtime\DotNet`, including `host\fxr\` and `shared\Microsoft.NETCore.App\`.
-7. Sample cross-language manifest plugins live under `samples\plugins\` and exercise the documented schema, dependency ordering, callback registration, and current user/session-info access.
+1. Simple add-ons are the intended user-facing scripting path: `addons\<name>\<name>.tcl`, `addons\<name>\<name>.py`, or `addons\<name>\<name>.cs`.
+2. Python manifest plugins can be auto-loaded through the existing embedded Python runtime when `FABULOR_ENABLE_MANIFEST_PLUGINS=1` is set.
+3. Tcl manifest plugins can be auto-loaded through the bundled Tcl runtime with a minimal `zoitechat::*` command surface when `FABULOR_ENABLE_MANIFEST_PLUGINS=1` is set.
+4. The shared host validates manifests, resolves dependencies, applies blacklist decisions, and queues callback dispatch on the main thread.
+5. The managed C# contract assembly is scaffolded under `src\managed\Fabulor.PluginAbstractions` so plugin and host types are concrete.
+6. C# manifests load through the `src\managed\Fabulor.PluginHost` bridge, which is staged into `Runtime\DotNet` by the installer build.
+7. The installer now bundles a private `.NET` runtime root under `Runtime\DotNet`, including `host\fxr\` and `shared\Microsoft.NETCore.App\`.
+8. Sample cross-language manifest plugins live under `samples\plugins\` and exercise the documented schema, dependency ordering, callback registration, and current user/session-info access.
 
 ## Related Guides
 

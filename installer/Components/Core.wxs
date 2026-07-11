@@ -36,7 +36,7 @@
       <Files Include="$(var.FabulorPayloadRoot)\intl.dll" />
       <Files Include="$(var.FabulorPayloadRoot)\jpeg62.dll" />
       <Files Include="$(var.FabulorPayloadRoot)\libcrypto-3-x64.dll" />
-      <Files Include="$(var.FabulorPayloadRoot)\libenchant.dll" />
+      <Files Include="$(var.FabulorPayloadRoot)\libenchant*.dll" />
       <Files Include="$(var.FabulorPayloadRoot)\libexpat.dll" />
       <Files Include="$(var.FabulorPayloadRoot)\libpng16.dll" />
       <Files Include="$(var.FabulorPayloadRoot)\libssl-3-x64.dll" />

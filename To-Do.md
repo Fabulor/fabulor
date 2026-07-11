@@ -117,6 +117,17 @@
 - [ ] Decide whether declared `capabilities` remain advisory/diagnostic metadata or become an enforced policy surface.
 - [ ] Tighten the Python runtime path so the modern manifest contract and the legacy scripting surface are clearly separated where required.
 - [ ] Add broader shared API helpers beyond the current message/log/user-count/user-info surface.
+- [ ] Rework the manifest plugin API before enabling it by default:
+  - [ ] Keep the manifest host disabled unless `FABULOR_ENABLE_MANIFEST_PLUGINS=1` is set.
+  - [ ] Investigate the connect/editbox crash in the current native API path using a debugger with symbols.
+  - [ ] Design a simpler add-on scripting flow that works from the user `addons` folder without manifest ceremony for small Tcl/Python aliases.
+- [ ] Finish the Enchant 2.8.19 spell-checker rollout after live validation:
+  - [x] Confirm Enchant 2 + WinSpell is live in Fabulor and catches edit-box typos, verified with `Hllo thre piples` -> `Hello there peoples`.
+  - [ ] Soak test the upgraded spell checker for a day or two before committing the rollout.
+  - [ ] Keep the Enchant 2 WinSpell build reproducible, including the temporary `bcp47.h` compatibility shim currently needed by the official source tarball.
+  - [ ] Replace or retire the current Enchant 1.6.1 fallback payload (`libenchant.dll`, `lib\enchant`) after Enchant 2 is verified.
+  - [ ] Retire or port the legacy `src\libenchant_win8` provider after confirming upstream WinSpell covers the required Windows spell-check behaviour.
+  - [ ] Verify spell checking, suggestions, "add to dictionary", and installer packaging on a clean install.
 
 ## 7. Documentation & Developer Guides
 

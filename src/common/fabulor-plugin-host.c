@@ -34,6 +34,7 @@
 #include "outbound.h"
 #include "server.h"
 #include "util.h"
+#include "zoitechatc.h"
 #include "fabulor-plugin-host.h"
 
 typedef struct
@@ -938,6 +939,49 @@ fabulor_tcl_command_cmd (ClientData client_data, Tcl_Interp *interp, int argc, c
 	return TCL_OK;
 }
 
+static int
+fabulor_tcl_add_user_command_cmd (ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[])
+{
+	(void) client_data;
+
+	if (argc != 3)
+	{
+		fabulor_tcl_set_result (interp, "wrong # args: should be \"zoitechat::add_user_command name command\"");
+		return TCL_ERROR;
+	}
+
+	if (!argv[1] || !*argv[1] || !argv[2] || !*argv[2])
+	{
+		fabulor_tcl_set_result (interp, "User command name and command must be non-empty.");
+		return TCL_ERROR;
+	}
+
+	list_delentry (&command_list, (char *) argv[1]);
+	list_addentry (&command_list, (char *) argv[2], (char *) argv[1]);
+	return TCL_OK;
+}
+
+static int
+fabulor_tcl_remove_user_command_cmd (ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[])
+{
+	(void) client_data;
+
+	if (argc != 2)
+	{
+		fabulor_tcl_set_result (interp, "wrong # args: should be \"zoitechat::remove_user_command name\"");
+		return TCL_ERROR;
+	}
+
+	if (!argv[1] || !*argv[1])
+	{
+		fabulor_tcl_set_result (interp, "User command name must be non-empty.");
+		return TCL_ERROR;
+	}
+
+	list_delentry (&command_list, (char *) argv[1]);
+	return TCL_OK;
+}
+
 static const char *
 fabulor_tcl_get_info_value (session *sess, const char *name)
 {
@@ -1215,6 +1259,8 @@ fabulor_tcl_register_commands (FabulorTclPluginState *state, GError **error)
 	fabulor_tcl_runtime.create_command (state->interp, "zoitechat::log", fabulor_tcl_log_cmd, state, NULL);
 	fabulor_tcl_runtime.create_command (state->interp, "zoitechat::print", fabulor_tcl_print_cmd, state, NULL);
 	fabulor_tcl_runtime.create_command (state->interp, "zoitechat::command", fabulor_tcl_command_cmd, state, NULL);
+	fabulor_tcl_runtime.create_command (state->interp, "zoitechat::add_user_command", fabulor_tcl_add_user_command_cmd, state, NULL);
+	fabulor_tcl_runtime.create_command (state->interp, "zoitechat::remove_user_command", fabulor_tcl_remove_user_command_cmd, state, NULL);
 	fabulor_tcl_runtime.create_command (state->interp, "zoitechat::getinfo", fabulor_tcl_getinfo_cmd, state, NULL);
 	fabulor_tcl_runtime.create_command (state->interp, "zoitechat::nickcmp", fabulor_tcl_nickcmp_cmd, state, NULL);
 	fabulor_tcl_runtime.create_command (state->interp, "zoitechat::send_message", fabulor_tcl_send_message_cmd, state, NULL);
@@ -2521,6 +2567,20 @@ fabulor_callback_registry_register (FabulorCallbackRegistry *registry,
 	entry->handler_name = g_strdup (handler_name);
 	g_ptr_array_add (entries, entry);
 	return TRUE;
+}
+
+gboolean
+fabulor_callback_registry_has_event (FabulorCallbackRegistry *registry, const char *event_name)
+{
+	GPtrArray *entries;
+
+	if (!registry || !event_name)
+	{
+		return FALSE;
+	}
+
+	entries = g_hash_table_lookup (registry->entries, event_name);
+	return entries && entries->len > 0;
 }
 
 static gboolean

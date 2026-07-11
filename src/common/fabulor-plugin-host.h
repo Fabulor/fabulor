@@ -139,6 +139,8 @@ gboolean fabulor_callback_registry_register (FabulorCallbackRegistry *registry,
 											 FabulorPluginLanguage language,
 											 const char *handler_name,
 											 GError **error);
+gboolean fabulor_callback_registry_has_event (FabulorCallbackRegistry *registry,
+											  const char *event_name);
 gboolean fabulor_callback_registry_fire_event (FabulorCallbackRegistry *registry,
 											   const char *event_name,
 											   const char *event_payload_json,

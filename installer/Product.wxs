@@ -30,6 +30,7 @@
         <Directory Id="LIBDIR" Name="lib" />
         <Directory Id="SHAREDIR" Name="share">
           <Directory Id="SHAREDOCDIR" Name="doc" />
+          <Directory Id="SHAREENCHANT2DIR" Name="enchant-2" />
           <Directory Id="SHAREGLIBDIR" Name="glib-2.0" />
           <Directory Id="SHAREICONSDIR" Name="icons">
             <Directory Id="ADWAITADIR" Name="Adwaita">
@@ -94,6 +95,7 @@
       <Feature Id="LegacyGtkCompatibilityFeature" Title="Legacy GTK compatibility data" Level="1">
         <ComponentGroupRef Id="LegacyGtkEtcRuntimeComponents" />
         <ComponentGroupRef Id="LegacyGtkLibRuntimeComponents" />
+        <ComponentGroupRef Id="LegacyGtkShareEnchantRuntimeComponents" />
         <ComponentGroupRef Id="LegacyGtkShareGlibRuntimeComponents" />
         <ComponentGroupRef Id="LegacyGtkShareXmlRuntimeComponents" />
       </Feature>
