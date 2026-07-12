@@ -73,11 +73,9 @@ The safe-mode shortcut disables all plugin autoload:
 
 ## Runtime Search Paths
 
-Manifest runtime search-path mutations are located only in manifest loader code:
+Manifest runtime loading behaviour is located only in manifest loader code:
 
-- `src/common/fabulor-plugin-host.c:782` - Tcl loader prepends runtime `bin` to `PATH`
-- `src/common/fabulor-plugin-host.c:831` - Tcl loader sets `TCL_LIBRARY`
-- `src/common/fabulor-plugin-host.c:834` - Tcl loader loads `tcl86t.dll`
+- `src/common/fabulor-plugin-host.c` - Tcl loader resolves the installed `Runtime\Tcl` root and loads `tcl86t.dll` without modifying process `PATH` or `TCL_LIBRARY`
 - `src/common/fabulor-plugin-host.c:1728` - C# loader loads `hostfxr.dll`
 - `src/common/fabulor-plugin-host.c:1804` - Python manifest loader loads `hcpython3.dll` through the legacy plugin loader
 
@@ -107,7 +105,7 @@ Coexistence decision, 2026-07-12:
 ## Follow-Up For Pass 2
 
 - Review manifest root canonicalization and containment before making the enable flag user-facing.
-- Review Tcl `PATH` mutation and absolute DLL loading strategy.
+- Continue live validation of manifest Tcl loading against the bundled runtime after installer rebuilds.
 - Review C# runtime root environment overrides before enabling third-party manifests.
 - Track the legacy native `addons` DLL path as trusted local code separate from the manifest-host boundary.
 
@@ -210,15 +208,13 @@ Minimum fix: require a relative entrypoint, reject absolute paths and `..`, cano
 
 ## Runtime Loading
 
-The Tcl runtime resolver accepts several roots and mutates process-global environment:
+The Tcl runtime resolver now treats the installed executable-relative runtime as the normal root:
 
-- `src/common/fabulor-plugin-host.c:725` - accepts `FABULOR_TCL_RUNTIME_ROOT`
-- `src/common/fabulor-plugin-host.c:731` and `src/common/fabulor-plugin-host.c:732` - accepts `Runtime/Tcl` under current working directory
-- `src/common/fabulor-plugin-host.c:740` - accepts a path relative to `manifest_plugin_get_libdir()`
-- `src/common/fabulor-plugin-host.c:750` - accepts `Runtime/Tcl` under the executable directory
-- `src/common/fabulor-plugin-host.c:782` - prepends Tcl `bin` to `PATH`
-- `src/common/fabulor-plugin-host.c:831` - sets `TCL_LIBRARY`
-- `src/common/fabulor-plugin-host.c:834` - loads `tcl86t.dll`
+- `src/common/fabulor-plugin-host.c` - resolves `Runtime\Tcl` beside `fabulor.exe` before any development roots.
+- `src/common/fabulor-plugin-host.c` - accepts `FABULOR_TCL_RUNTIME_ROOT`, current-working-directory `Runtime\Tcl`, and plugin-lib-relative roots only when `FABULOR_ENABLE_DEVELOPMENT_RUNTIME_ROOTS=1`.
+- `src/common/fabulor-plugin-host.c` - canonicalizes the selected Tcl runtime root and requires `bin\tcl86t.dll` to be a regular file.
+- `src/common/fabulor-plugin-host.c` - loads `tcl86t.dll` with `LoadLibraryExA()` using `LOAD_LIBRARY_SEARCH_DLL_LOAD_DIR | LOAD_LIBRARY_SEARCH_DEFAULT_DIRS`.
+- `src/common/fabulor-plugin-host.c` - sets Tcl's `tcl_library` variable on each interpreter before `Tcl_Init()` instead of setting process-global `TCL_LIBRARY`.
 
 The C# runtime resolver accepts environment and current-working-directory roots:
 
@@ -247,16 +243,19 @@ The Python path loads the legacy Python plugin and asks it to load the manifest 
 
 Pre-enable issues:
 
-- Tcl changes process-wide `PATH` and `TCL_LIBRARY`; this can affect later DLL/runtime resolution outside the plugin host.
-- Tcl and C# both trust developer-style environment and current-working-directory runtime roots.
+- C# still trusts developer-style environment and current-working-directory runtime roots.
 - Python does not have manifest-specific interpreter isolation; it uses the legacy Python plugin's global runtime and command surface. The path boundary is now narrower: simple add-ons resolve under the profile `addons` directory, and manifest entrypoints are accepted only from manifest plugin roots.
 - Python callback integration is not the shared manifest registry. `plugins/python/_zoitechat.py:304` implements callback helpers by mapping to legacy hooks.
 - C# dependency resolution is per assembly-load context, but native dependency policy and allowed dependency locations are not constrained by manifest capabilities.
 
-Minimum fix: restrict runtime roots to installed/bundled roots by default, move developer overrides behind a separate development flag or diagnostic build path, avoid global `PATH` mutation for Tcl if possible, define Python manifest interpreter isolation separately from legacy scripting, and define native dependency loading policy for C#.
+Minimum fix: restrict remaining C# runtime roots to installed/bundled roots by default, move developer overrides behind a separate development flag or diagnostic build path, define Python manifest interpreter isolation separately from legacy scripting, and define native dependency loading policy for C#.
 
 Fix status, 2026-07-12:
 
+- The Tcl runtime no longer prepends its `bin` directory to process `PATH`.
+- The Tcl runtime no longer sets process-global `TCL_LIBRARY`; it sets `tcl_library` on each manifest interpreter before `Tcl_Init()`.
+- The Tcl DLL is loaded from the selected absolute runtime root using `LoadLibraryExA()` with DLL-load-dir/default-dir search flags.
+- Normal Tcl runtime resolution is limited to the installed `Runtime\Tcl` beside the executable. `FABULOR_TCL_RUNTIME_ROOT`, current-working-directory `Runtime\Tcl`, and plugin-lib-relative roots require `FABULOR_ENABLE_DEVELOPMENT_RUNTIME_ROOTS=1`.
 - The Python runtime now canonicalizes requested script paths before loading.
 - Relative Python load requests are treated as simple add-ons and resolve under the profile `addons` directory, preferring the documented `addons\<name>\<name>.py` layout while keeping legacy flat `addons\*.py` as a compatibility fallback.
 - Absolute Python load requests are rejected unless the resolved `.py` file is under the profile `addons` directory, the profile `plugins` manifest root, or the bundled `Plugins` manifest root.
@@ -307,8 +306,8 @@ Before `FABULOR_ENABLE_MANIFEST_PLUGINS=1` becomes user-facing, require at least
 - Rejection of absolute entrypoints, `..`, symlink/reparse escapes, unreadable files, and language/extension mismatches.
 - Strict JSON parsing with schema/type validation and manifest size limits.
 - Per-plugin error isolation policy that does not let one bad manifest unexpectedly block unrelated plugins unless that is deliberately documented.
-- Runtime-root policy that removes normal-user reliance on environment variables and current working directory.
-- Removal or containment of Tcl process-wide `PATH` mutation.
+- Runtime-root policy that removes normal-user reliance on environment variables and current working directory. Status: addressed for Tcl; still required for C#.
+- Removal or containment of Tcl process-wide `PATH` mutation. Status: addressed for manifest Tcl loading.
 - A Python manifest host design that is separate from the legacy global Python plugin, or a clear decision that Python manifests remain disabled.
 - Callback event allowlists, length/count limits, duplicate policy, safe queued-dispatch lifetime, and per-plugin callback cleanup.
 - A capability policy decision: explicitly advisory-only with no security claims, or enforced gates for every exposed API and event surface.
@@ -606,7 +605,7 @@ Fix status, 2026-07-12:
 
 - Enchant loading in `src/fe-gtk/sexy-spell-entry.c` now prefers an absolute module path under the application installation directory for `libenchant-2-2.dll`, `libenchant-2.dll`, and the temporary legacy `libenchant.dll` fallback. This matches the Enchant 2.8.19 rollout while keeping the old Enchant payload as an app-local fallback only.
 - The legacy Perl plugin remains a legacy source/build surface and is not part of the documented Fabulor plugin model, which is C#, Python, and Tcl. The current WiX plugin payload does not package `hcperl.dll`.
-- Modern manifest Tcl and .NET runtime loading already uses absolute runtime paths under the executable/runtime root. Python manifest loading now rejects command-unsafe entrypoint paths before invoking the existing script runtime hook.
+- Modern manifest Tcl loading now uses the installed executable-relative runtime root by default, avoids process `PATH` and `TCL_LIBRARY` mutation, and loads `tcl86t.dll` with constrained `LoadLibraryExA()` flags. .NET runtime loading already uses absolute runtime paths under the selected runtime root, but its developer override policy still needs tightening. Python manifest loading now rejects command-unsafe entrypoint paths before invoking the existing script runtime hook.
 
 ## Finding: Theme Import And Legacy Add-On Loading Need Stronger Canonicalization
 

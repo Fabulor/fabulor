@@ -84,3 +84,4 @@ proc init {} {
 9. `zoitechat::get_user_info` returns a Tcl key/value list covering `nick`, `channel`, `server`, and `network`.
 10. A maintained sample manifest Tcl plugin lives under `samples\plugins\example.tcl.greeter\`.
 11. `zoitechat::add_user_command name command` registers a runtime User Command alias for the current session. It does not write `commands.conf`; use the built-in User Commands editor for persistent aliases.
+12. Manifest Tcl uses the installed `Runtime\Tcl` root by default. `FABULOR_TCL_RUNTIME_ROOT` and current-working-directory runtime roots are development-only and require `FABULOR_ENABLE_DEVELOPMENT_RUNTIME_ROOTS=1`.

@@ -77,6 +77,7 @@ typedef struct
 	gboolean attempted_initialisation;
 	HMODULE module;
 	char *runtime_root;
+	char *library_path;
 	GHashTable *plugins;
 	Tcl_Interp *(*create_interp) (void);
 	void (*delete_interp) (Tcl_Interp *interp);
@@ -85,6 +86,7 @@ typedef struct
 	int (*eval_file) (Tcl_Interp *interp, const char *file_name);
 	int (*eval_ex) (Tcl_Interp *interp, const char *script, int length, int flags);
 	char *(*get_string_result) (Tcl_Interp *interp);
+	const char *(*set_var) (Tcl_Interp *interp, const char *var_name, const char *new_value, int flags);
 	Tcl_Command (*create_command) (Tcl_Interp *interp,
 								   const char *cmd_name,
 								   Tcl_CmdProc *proc,
@@ -653,6 +655,14 @@ manifest_plugin_get_libdir (void)
 	return ZOITECHATLIBDIR;
 }
 
+static gboolean
+fabulor_development_runtime_roots_enabled (void)
+{
+	const char *enabled = g_getenv ("FABULOR_ENABLE_DEVELOPMENT_RUNTIME_ROOTS");
+
+	return enabled && g_ascii_strcasecmp (enabled, "1") == 0;
+}
+
 #ifdef WIN32
 static void
 fabulor_tcl_plugin_state_free (FabulorTclPluginState *state)
@@ -683,9 +693,20 @@ fabulor_tcl_root_has_runtime (const char *runtime_root)
 	}
 
 	dll_path = g_build_filename (runtime_root, "bin", "tcl86t.dll", NULL);
-	exists = g_file_test (dll_path, G_FILE_TEST_EXISTS);
+	exists = g_file_test (dll_path, G_FILE_TEST_IS_REGULAR);
 	g_free (dll_path);
 	return exists;
+}
+
+static char *
+fabulor_tcl_dup_runtime_root_if_valid (const char *runtime_root)
+{
+	if (!fabulor_tcl_root_has_runtime (runtime_root))
+	{
+		return NULL;
+	}
+
+	return g_canonicalize_filename (runtime_root, NULL);
 }
 
 static char *
@@ -721,66 +742,52 @@ fabulor_tcl_resolve_runtime_root (void)
 	char *libdir_root;
 	char *exe_dir;
 	char *exe_runtime_root;
-
-	env_root = g_getenv ("FABULOR_TCL_RUNTIME_ROOT");
-	if (fabulor_tcl_root_has_runtime (env_root))
-	{
-		return g_strdup (env_root);
-	}
-
-	cwd = g_get_current_dir ();
-	libdir_candidate = g_build_filename (cwd, "Runtime", "Tcl", NULL);
-	g_free (cwd);
-	if (fabulor_tcl_root_has_runtime (libdir_candidate))
-	{
-		return libdir_candidate;
-	}
-	g_free (libdir_candidate);
-
-	libdir_root = g_build_filename (manifest_plugin_get_libdir (), "..", "Runtime", "Tcl", NULL);
-	if (fabulor_tcl_root_has_runtime (libdir_root))
-	{
-		return libdir_root;
-	}
-	g_free (libdir_root);
+	char *resolved;
 
 	exe_dir = fabulor_tcl_executable_directory ();
 	if (exe_dir)
 	{
 		exe_runtime_root = g_build_filename (exe_dir, "Runtime", "Tcl", NULL);
 		g_free (exe_dir);
-		if (fabulor_tcl_root_has_runtime (exe_runtime_root))
-		{
-			return exe_runtime_root;
-		}
+		resolved = fabulor_tcl_dup_runtime_root_if_valid (exe_runtime_root);
 		g_free (exe_runtime_root);
+		if (resolved)
+		{
+			return resolved;
+		}
+	}
+
+	if (!fabulor_development_runtime_roots_enabled ())
+	{
+		return NULL;
+	}
+
+	env_root = g_getenv ("FABULOR_TCL_RUNTIME_ROOT");
+	resolved = fabulor_tcl_dup_runtime_root_if_valid (env_root);
+	if (resolved)
+	{
+		return resolved;
+	}
+
+	cwd = g_get_current_dir ();
+	libdir_candidate = g_build_filename (cwd, "Runtime", "Tcl", NULL);
+	g_free (cwd);
+	resolved = fabulor_tcl_dup_runtime_root_if_valid (libdir_candidate);
+	g_free (libdir_candidate);
+	if (resolved)
+	{
+		return resolved;
+	}
+
+	libdir_root = g_build_filename (manifest_plugin_get_libdir (), "..", "Runtime", "Tcl", NULL);
+	resolved = fabulor_tcl_dup_runtime_root_if_valid (libdir_root);
+	g_free (libdir_root);
+	if (resolved)
+	{
+		return resolved;
 	}
 
 	return NULL;
-}
-
-static void
-fabulor_tcl_prepend_path (const char *path)
-{
-	const char *existing;
-	char *updated;
-
-	if (!path || *path == '\0')
-	{
-		return;
-	}
-
-	existing = g_getenv ("PATH");
-	if (existing && g_strrstr (existing, path))
-	{
-		return;
-	}
-
-	updated = existing && *existing
-		? g_strdup_printf ("%s;%s", path, existing)
-		: g_strdup (path);
-	g_setenv ("PATH", updated, TRUE);
-	g_free (updated);
 }
 
 static gboolean
@@ -804,8 +811,6 @@ static gboolean
 fabulor_tcl_runtime_ensure_loaded (GError **error)
 {
 	char *dll_path;
-	char *library_path;
-	char *bin_path;
 
 	if (fabulor_tcl_runtime.module)
 	{
@@ -824,18 +829,16 @@ fabulor_tcl_runtime_ensure_loaded (GError **error)
 	}
 
 	dll_path = g_build_filename (fabulor_tcl_runtime.runtime_root, "bin", "tcl86t.dll", NULL);
-	library_path = g_build_filename (fabulor_tcl_runtime.runtime_root, "lib", "tcl8.6", NULL);
-	bin_path = g_build_filename (fabulor_tcl_runtime.runtime_root, "bin", NULL);
-	fabulor_tcl_prepend_path (bin_path);
-	g_free (bin_path);
-	g_setenv ("TCL_LIBRARY", library_path, TRUE);
-	g_free (library_path);
+	fabulor_tcl_runtime.library_path = g_build_filename (fabulor_tcl_runtime.runtime_root, "lib", "tcl8.6", NULL);
 
-	fabulor_tcl_runtime.module = LoadLibraryA (dll_path);
+	fabulor_tcl_runtime.module = LoadLibraryExA (dll_path,
+												 NULL,
+												 LOAD_LIBRARY_SEARCH_DLL_LOAD_DIR | LOAD_LIBRARY_SEARCH_DEFAULT_DIRS);
 	g_free (dll_path);
 	if (!fabulor_tcl_runtime.module)
 	{
 		g_set_error_literal (error, G_FILE_ERROR, G_FILE_ERROR_FAILED, "Failed to load tcl86t.dll from the bundled runtime.");
+		g_clear_pointer (&fabulor_tcl_runtime.library_path, g_free);
 		return FALSE;
 	}
 
@@ -846,6 +849,7 @@ fabulor_tcl_runtime_ensure_loaded (GError **error)
 		|| !fabulor_tcl_resolve_symbol ((FARPROC *) &fabulor_tcl_runtime.eval_file, "Tcl_EvalFile", error)
 		|| !fabulor_tcl_resolve_symbol ((FARPROC *) &fabulor_tcl_runtime.eval_ex, "Tcl_EvalEx", error)
 		|| !fabulor_tcl_resolve_symbol ((FARPROC *) &fabulor_tcl_runtime.get_string_result, "Tcl_GetStringResult", error)
+		|| !fabulor_tcl_resolve_symbol ((FARPROC *) &fabulor_tcl_runtime.set_var, "Tcl_SetVar", error)
 		|| !fabulor_tcl_resolve_symbol ((FARPROC *) &fabulor_tcl_runtime.create_command, "Tcl_CreateCommand", error)
 		|| !fabulor_tcl_resolve_symbol ((FARPROC *) &fabulor_tcl_runtime.merge_args, "Tcl_Merge", error)
 		|| !fabulor_tcl_resolve_symbol ((FARPROC *) &fabulor_tcl_runtime.free_value, "Tcl_Free", error)
@@ -853,6 +857,7 @@ fabulor_tcl_runtime_ensure_loaded (GError **error)
 	{
 		FreeLibrary (fabulor_tcl_runtime.module);
 		fabulor_tcl_runtime.module = NULL;
+		g_clear_pointer (&fabulor_tcl_runtime.library_path, g_free);
 		return FALSE;
 	}
 
@@ -1286,6 +1291,7 @@ fabulor_tcl_runtime_reset (void)
 		fabulor_tcl_runtime.module = NULL;
 	}
 
+	g_free (fabulor_tcl_runtime.library_path);
 	g_free (fabulor_tcl_runtime.runtime_root);
 	memset (&fabulor_tcl_runtime, 0, sizeof (fabulor_tcl_runtime));
 }
@@ -1889,6 +1895,17 @@ load_tcl_manifest (const FabulorPluginManifest *manifest,
 	{
 		fabulor_tcl_plugin_state_free (state);
 		g_set_error (error, G_FILE_ERROR, G_FILE_ERROR_FAILED, "Failed to create a Tcl interpreter for %s.", manifest->id);
+		return FALSE;
+	}
+
+	if (!fabulor_tcl_runtime.set_var (state->interp, "tcl_library", fabulor_tcl_runtime.library_path, TCL_GLOBAL_ONLY))
+	{
+		g_set_error (error,
+					 G_FILE_ERROR,
+					 G_FILE_ERROR_FAILED,
+					 "Failed to configure Tcl library path for %s.",
+					 manifest->id);
+		fabulor_tcl_plugin_state_free (state);
 		return FALSE;
 	}
 
