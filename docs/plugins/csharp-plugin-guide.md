@@ -75,7 +75,8 @@ public sealed class GreeterPlugin : IZoiteChatPlugin
 5. The current host scaffold keeps `ZoiteChatAPI` as a compatibility alias for `FabulorAPI` while the repo finishes the broader rebrand.
 6. C# manifests now load through the `src\managed\Fabulor.PluginHost` bridge, which calls `IZoiteChatPlugin.Init(...)` and routes callbacks back through the shared native registry.
 7. The installer now stages the managed bridge assemblies together with a bundled private `.NET` runtime root under `Runtime\DotNet`, including `hostfxr.dll` and the shared runtime payload.
-8. `ZoiteChatContext.RegisterCallback(...)` can subscribe to generic events such as `message`, `server`, `print`, and `command`, as well as specific forms like `server:NOTICE`, `print:Channel Message`, or `command:SAY`.
-9. `ZoiteChatEvent` now exposes richer payload accessors including `Channel`, `Network`, `Nick`, `Server`, `Time`, `Word1`-`Word4`, and `WordEol1`-`WordEol2`.
-10. `ZoiteChatContext.GetUserInfo()` returns the active session identity as a `ZoiteChatUserInfo` with `Nickname`, `Channel`, `ServerName`, and `NetworkName`.
-11. A maintained sample manifest C# plugin lives under `samples\plugins\example.csharp.greeter\`.
+8. Normal manifest loading accepts only that installed executable-relative runtime and bridge root. Development overrides such as `FABULOR_DOTNET_ROOT`, `DOTNET_ROOT`, `FABULOR_CSHARP_BRIDGE_ROOT`, current-directory runtime roots, source-tree bridge outputs, and the machine-wide .NET installation require `FABULOR_ENABLE_DEVELOPMENT_RUNTIME_ROOTS=1`.
+9. `ZoiteChatContext.RegisterCallback(...)` can subscribe to generic events such as `message`, `server`, `print`, and `command`, as well as specific forms like `server:NOTICE`, `print:Channel Message`, or `command:SAY`.
+10. `ZoiteChatEvent` now exposes richer payload accessors including `Channel`, `Network`, `Nick`, `Server`, `Time`, `Word1`-`Word4`, and `WordEol1`-`WordEol2`.
+11. `ZoiteChatContext.GetUserInfo()` returns the active session identity as a `ZoiteChatUserInfo` with `Nickname`, `Channel`, `ServerName`, and `NetworkName`.
+12. A maintained sample manifest C# plugin lives under `samples\plugins\example.csharp.greeter\`.

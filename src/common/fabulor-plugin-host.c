@@ -1347,11 +1347,33 @@ fabulor_csharp_bridge_root_has_payload (const char *bridge_root)
 
 	assembly_path = g_build_filename (bridge_root, "Fabulor.PluginHost.dll", NULL);
 	runtime_config_path = g_build_filename (bridge_root, "Fabulor.PluginHost.runtimeconfig.json", NULL);
-	exists = g_file_test (assembly_path, G_FILE_TEST_EXISTS)
-		&& g_file_test (runtime_config_path, G_FILE_TEST_EXISTS);
+	exists = g_file_test (assembly_path, G_FILE_TEST_IS_REGULAR)
+		&& g_file_test (runtime_config_path, G_FILE_TEST_IS_REGULAR);
 	g_free (assembly_path);
 	g_free (runtime_config_path);
 	return exists;
+}
+
+static char *
+fabulor_csharp_dup_dotnet_root_if_valid (const char *dotnet_root)
+{
+	if (!fabulor_csharp_root_has_hostfxr (dotnet_root))
+	{
+		return NULL;
+	}
+
+	return g_canonicalize_filename (dotnet_root, NULL);
+}
+
+static char *
+fabulor_csharp_dup_bridge_root_if_valid (const char *bridge_root)
+{
+	if (!fabulor_csharp_bridge_root_has_payload (bridge_root))
+	{
+		return NULL;
+	}
+
+	return g_canonicalize_filename (bridge_root, NULL);
 }
 
 static int
@@ -1425,7 +1447,7 @@ fabulor_csharp_find_latest_hostfxr_path (const char *dotnet_root)
 
 		candidate_dir = g_build_filename (fxr_root, entry_name, NULL);
 		candidate_dll = g_build_filename (candidate_dir, "hostfxr.dll", NULL);
-		if (g_file_test (candidate_dll, G_FILE_TEST_EXISTS)
+		if (g_file_test (candidate_dll, G_FILE_TEST_IS_REGULAR)
 			&& (!best_name || fabulor_csharp_compare_versions (entry_name, best_name) > 0))
 		{
 			g_free (best_name);
@@ -1478,46 +1500,57 @@ fabulor_csharp_resolve_dotnet_root (void)
 	char *cwd;
 	char *candidate;
 	char *exe_dir;
-
-	env_root = g_getenv ("FABULOR_DOTNET_ROOT");
-	if (fabulor_csharp_root_has_hostfxr (env_root))
-	{
-		return g_strdup (env_root);
-	}
-
-	env_root = g_getenv ("DOTNET_ROOT");
-	if (fabulor_csharp_root_has_hostfxr (env_root))
-	{
-		return g_strdup (env_root);
-	}
-
-	cwd = g_get_current_dir ();
-	candidate = g_build_filename (cwd, "Runtime", "DotNet", NULL);
-	g_free (cwd);
-	if (fabulor_csharp_root_has_hostfxr (candidate))
-	{
-		return candidate;
-	}
-	g_free (candidate);
+	char *resolved;
 
 	exe_dir = fabulor_tcl_executable_directory ();
 	if (exe_dir)
 	{
 		candidate = g_build_filename (exe_dir, "Runtime", "DotNet", NULL);
 		g_free (exe_dir);
-		if (fabulor_csharp_root_has_hostfxr (candidate))
-		{
-			return candidate;
-		}
+		resolved = fabulor_csharp_dup_dotnet_root_if_valid (candidate);
 		g_free (candidate);
+		if (resolved)
+		{
+			return resolved;
+		}
+	}
+
+	if (!fabulor_development_runtime_roots_enabled ())
+	{
+		return NULL;
+	}
+
+	env_root = g_getenv ("FABULOR_DOTNET_ROOT");
+	resolved = fabulor_csharp_dup_dotnet_root_if_valid (env_root);
+	if (resolved)
+	{
+		return resolved;
+	}
+
+	env_root = g_getenv ("DOTNET_ROOT");
+	resolved = fabulor_csharp_dup_dotnet_root_if_valid (env_root);
+	if (resolved)
+	{
+		return resolved;
+	}
+
+	cwd = g_get_current_dir ();
+	candidate = g_build_filename (cwd, "Runtime", "DotNet", NULL);
+	g_free (cwd);
+	resolved = fabulor_csharp_dup_dotnet_root_if_valid (candidate);
+	g_free (candidate);
+	if (resolved)
+	{
+		return resolved;
 	}
 
 	candidate = g_strdup ("C:\\Program Files\\dotnet");
-	if (fabulor_csharp_root_has_hostfxr (candidate))
-	{
-		return candidate;
-	}
+	resolved = fabulor_csharp_dup_dotnet_root_if_valid (candidate);
 	g_free (candidate);
+	if (resolved)
+	{
+		return resolved;
+	}
 	return NULL;
 }
 
@@ -1528,49 +1561,60 @@ fabulor_csharp_resolve_bridge_root (void)
 	char *cwd;
 	char *candidate;
 	char *exe_dir;
-
-	env_root = g_getenv ("FABULOR_CSHARP_BRIDGE_ROOT");
-	if (fabulor_csharp_bridge_root_has_payload (env_root))
-	{
-		return g_strdup (env_root);
-	}
-
-	cwd = g_get_current_dir ();
-
-	candidate = g_build_filename (cwd, "Runtime", "DotNet", NULL);
-	if (fabulor_csharp_bridge_root_has_payload (candidate))
-	{
-		g_free (cwd);
-		return candidate;
-	}
-	g_free (candidate);
-
-	candidate = g_build_filename (cwd, "src", "managed", "Fabulor.PluginHost", "bin", "Release", "net8.0", NULL);
-	if (fabulor_csharp_bridge_root_has_payload (candidate))
-	{
-		g_free (cwd);
-		return candidate;
-	}
-	g_free (candidate);
-
-	candidate = g_build_filename (cwd, "src", "managed", "Fabulor.PluginHost", "bin", "Debug", "net8.0", NULL);
-	g_free (cwd);
-	if (fabulor_csharp_bridge_root_has_payload (candidate))
-	{
-		return candidate;
-	}
-	g_free (candidate);
+	char *resolved;
 
 	exe_dir = fabulor_tcl_executable_directory ();
 	if (exe_dir)
 	{
 		candidate = g_build_filename (exe_dir, "Runtime", "DotNet", NULL);
 		g_free (exe_dir);
-		if (fabulor_csharp_bridge_root_has_payload (candidate))
-		{
-			return candidate;
-		}
+		resolved = fabulor_csharp_dup_bridge_root_if_valid (candidate);
 		g_free (candidate);
+		if (resolved)
+		{
+			return resolved;
+		}
+	}
+
+	if (!fabulor_development_runtime_roots_enabled ())
+	{
+		return NULL;
+	}
+
+	env_root = g_getenv ("FABULOR_CSHARP_BRIDGE_ROOT");
+	resolved = fabulor_csharp_dup_bridge_root_if_valid (env_root);
+	if (resolved)
+	{
+		return resolved;
+	}
+
+	cwd = g_get_current_dir ();
+
+	candidate = g_build_filename (cwd, "Runtime", "DotNet", NULL);
+	resolved = fabulor_csharp_dup_bridge_root_if_valid (candidate);
+	g_free (candidate);
+	if (resolved)
+	{
+		g_free (cwd);
+		return resolved;
+	}
+
+	candidate = g_build_filename (cwd, "src", "managed", "Fabulor.PluginHost", "bin", "Release", "net8.0", NULL);
+	resolved = fabulor_csharp_dup_bridge_root_if_valid (candidate);
+	g_free (candidate);
+	if (resolved)
+	{
+		g_free (cwd);
+		return resolved;
+	}
+
+	candidate = g_build_filename (cwd, "src", "managed", "Fabulor.PluginHost", "bin", "Debug", "net8.0", NULL);
+	g_free (cwd);
+	resolved = fabulor_csharp_dup_bridge_root_if_valid (candidate);
+	g_free (candidate);
+	if (resolved)
+	{
+		return resolved;
 	}
 
 	return NULL;
@@ -1731,7 +1775,9 @@ fabulor_csharp_runtime_ensure_loaded (const FabulorAPI *api, GError **error)
 		return FALSE;
 	}
 
-	fabulor_csharp_runtime.hostfxr_module = LoadLibraryA (hostfxr_path);
+	fabulor_csharp_runtime.hostfxr_module = LoadLibraryExA (hostfxr_path,
+													 NULL,
+													 LOAD_LIBRARY_SEARCH_DLL_LOAD_DIR | LOAD_LIBRARY_SEARCH_DEFAULT_DIRS);
 	g_free (hostfxr_path);
 	if (!fabulor_csharp_runtime.hostfxr_module)
 	{

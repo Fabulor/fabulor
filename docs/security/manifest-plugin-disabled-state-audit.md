@@ -216,15 +216,12 @@ The Tcl runtime resolver now treats the installed executable-relative runtime as
 - `src/common/fabulor-plugin-host.c` - loads `tcl86t.dll` with `LoadLibraryExA()` using `LOAD_LIBRARY_SEARCH_DLL_LOAD_DIR | LOAD_LIBRARY_SEARCH_DEFAULT_DIRS`.
 - `src/common/fabulor-plugin-host.c` - sets Tcl's `tcl_library` variable on each interpreter before `Tcl_Init()` instead of setting process-global `TCL_LIBRARY`.
 
-The C# runtime resolver accepts environment and current-working-directory roots:
+The C# runtime resolver now treats the installed executable-relative `Runtime\DotNet` directory as the normal runtime and managed-bridge root:
 
-- `src/common/fabulor-plugin-host.c:1476` - accepts `FABULOR_DOTNET_ROOT`
-- `src/common/fabulor-plugin-host.c:1482` - accepts `DOTNET_ROOT`
-- `src/common/fabulor-plugin-host.c:1488` and `src/common/fabulor-plugin-host.c:1489` - accepts `Runtime/DotNet` under current working directory
-- `src/common/fabulor-plugin-host.c:1500` - accepts `Runtime/DotNet` under executable directory
-- `src/common/fabulor-plugin-host.c:1526` - accepts `FABULOR_CSHARP_BRIDGE_ROOT`
-- `src/common/fabulor-plugin-host.c:1534` through `src/common/fabulor-plugin-host.c:1552` - accepts current-working-directory bridge candidates
-- `src/common/fabulor-plugin-host.c:1728` - loads `hostfxr.dll` from the selected root
+- Environment roots (`FABULOR_DOTNET_ROOT`, `DOTNET_ROOT`, and `FABULOR_CSHARP_BRIDGE_ROOT`), current-working-directory roots, source-tree bridge outputs, and the machine-wide .NET installation are accepted only when `FABULOR_ENABLE_DEVELOPMENT_RUNTIME_ROOTS=1`.
+- Selected runtime and bridge roots are canonicalized.
+- Managed bridge assemblies and runtime configuration files must be regular files.
+- `hostfxr.dll` must be a regular file and is loaded by absolute path with `LOAD_LIBRARY_SEARCH_DLL_LOAD_DIR | LOAD_LIBRARY_SEARCH_DEFAULT_DIRS`.
 
 The C# bridge creates a collectible assembly load context and resolves dependencies with `AssemblyDependencyResolver`:
 
@@ -241,9 +238,9 @@ The Python path loads the legacy Python plugin and asks it to load the manifest 
 - `src/common/fabulor-plugin-host.c:1836` - manifest file is loaded through the legacy `LOAD` command
 - `plugins/python/python.py:146` and `plugins/python/python.py:149` - Python plugin opens and executes the file
 
-Pre-enable issues:
+Runtime-root policy status, 2026-07-12:
 
-- C# still trusts developer-style environment and current-working-directory runtime roots.
+- Addressed for both Tcl and C#. Production manifest loading now anchors both runtimes beside `fabulor.exe`, while developer roots require the explicit `FABULOR_ENABLE_DEVELOPMENT_RUNTIME_ROOTS=1` gate.
 - Python does not have manifest-specific interpreter isolation; it uses the legacy Python plugin's global runtime and command surface. The path boundary is now narrower: simple add-ons resolve under the profile `addons` directory, and manifest entrypoints are accepted only from manifest plugin roots.
 - Python callback integration is not the shared manifest registry. `plugins/python/_zoitechat.py:304` implements callback helpers by mapping to legacy hooks.
 - C# dependency resolution is per assembly-load context, but native dependency policy and allowed dependency locations are not constrained by manifest capabilities.
@@ -306,7 +303,7 @@ Before `FABULOR_ENABLE_MANIFEST_PLUGINS=1` becomes user-facing, require at least
 - Rejection of absolute entrypoints, `..`, symlink/reparse escapes, unreadable files, and language/extension mismatches.
 - Strict JSON parsing with schema/type validation and manifest size limits.
 - Per-plugin error isolation policy that does not let one bad manifest unexpectedly block unrelated plugins unless that is deliberately documented.
-- Runtime-root policy that removes normal-user reliance on environment variables and current working directory. Status: addressed for Tcl; still required for C#.
+- Runtime-root policy that removes normal-user reliance on environment variables and current working directory. Status: addressed for Tcl and C# on 2026-07-12.
 - Removal or containment of Tcl process-wide `PATH` mutation. Status: addressed for manifest Tcl loading.
 - A Python manifest host design that is separate from the legacy global Python plugin, or a clear decision that Python manifests remain disabled.
 - Callback event allowlists, length/count limits, duplicate policy, safe queued-dispatch lifetime, and per-plugin callback cleanup.
@@ -605,7 +602,7 @@ Fix status, 2026-07-12:
 
 - Enchant loading in `src/fe-gtk/sexy-spell-entry.c` now prefers an absolute module path under the application installation directory for `libenchant-2-2.dll`, `libenchant-2.dll`, and the temporary legacy `libenchant.dll` fallback. This matches the Enchant 2.8.19 rollout while keeping the old Enchant payload as an app-local fallback only.
 - The legacy Perl plugin remains a legacy source/build surface and is not part of the documented Fabulor plugin model, which is C#, Python, and Tcl. The current WiX plugin payload does not package `hcperl.dll`.
-- Modern manifest Tcl loading now uses the installed executable-relative runtime root by default, avoids process `PATH` and `TCL_LIBRARY` mutation, and loads `tcl86t.dll` with constrained `LoadLibraryExA()` flags. .NET runtime loading already uses absolute runtime paths under the selected runtime root, but its developer override policy still needs tightening. Python manifest loading now rejects command-unsafe entrypoint paths before invoking the existing script runtime hook.
+- Modern manifest Tcl loading now uses the installed executable-relative runtime root by default, avoids process `PATH` and `TCL_LIBRARY` mutation, and loads `tcl86t.dll` with constrained `LoadLibraryExA()` flags. C# now uses the installed executable-relative `Runtime\DotNet` root by default, gates developer roots explicitly, canonicalizes selected roots, and loads `hostfxr.dll` with constrained `LoadLibraryExA()` flags. Python manifest loading now rejects command-unsafe entrypoint paths before invoking the existing script runtime hook.
 
 ## Finding: Theme Import And Legacy Add-On Loading Need Stronger Canonicalization
 

@@ -195,7 +195,7 @@ The manifest host is staged in progressively:
 4. The shared host validates manifests, resolves dependencies, applies blacklist decisions, and queues callback dispatch on the main thread.
 5. The managed C# contract assembly is scaffolded under `src\managed\Fabulor.PluginAbstractions` so plugin and host types are concrete.
 6. C# manifests load through the `src\managed\Fabulor.PluginHost` bridge, which is staged into `Runtime\DotNet` by the installer build.
-7. The installer now bundles a private `.NET` runtime root under `Runtime\DotNet`, including `host\fxr\` and `shared\Microsoft.NETCore.App\`.
+7. The installer now bundles a private `.NET` runtime root under `Runtime\DotNet`, including `host\fxr\` and `shared\Microsoft.NETCore.App\`. Normal loading uses only this executable-relative runtime and bridge root; environment, current-directory, source-tree, and machine-wide .NET roots require `FABULOR_ENABLE_DEVELOPMENT_RUNTIME_ROOTS=1`.
 8. Sample cross-language manifest plugins live under `samples\plugins\` and exercise the documented schema, dependency ordering, callback registration, and current user/session-info access.
 
 Python simple add-ons and Python manifest plugins still share the legacy embedded interpreter. The current boundary is path-based: simple add-ons resolve through the profile `addons` directory, while manifest entrypoints resolve through manifest plugin roots after the manifest host is explicitly enabled.
