@@ -21,6 +21,8 @@ For personal scripts and aliases, prefer the simple add-on layout:
 
 Use manifest plugins only when an add-on needs advanced dependency, capability, or versioning metadata. Python simple add-ons load only from the profile `addons` trust boundary; Python manifest entrypoints load only from the enabled manifest roots.
 
+The user-facing Fabulor plugin model is C#, Python, and Tcl. Legacy native C plugin DLLs remain an installed first-party compatibility surface, not a manifest language target for new third-party plugins.
+
 ## Maintenance Notes
 
 1. Keep examples aligned with the public plugin host contract in [To-Do.md](../To-Do.md) and `src/common/fabulor-plugin-host.h`.

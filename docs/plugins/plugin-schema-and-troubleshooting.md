@@ -70,6 +70,25 @@ For repository examples and validation assets, see `samples\plugins\`. Those sam
 
 The manifest host is currently disabled by default while the native API path is being hardened. Enable it only for development with `FABULOR_ENABLE_MANIFEST_PLUGINS=1`.
 
+## Legacy Native Plugin Coexistence
+
+Fabulor currently has two plugin families:
+
+1. Legacy native plugin DLLs loaded by the original plugin loader.
+2. C#, Python, and Tcl plugins loaded through the simple add-on and manifest plugin model.
+
+Legacy native C plugins are first-party compatibility components. On Windows the native autoload list includes installed DLLs such as checksum, Exec, FiSHLiM, Sysinfo, update, and language/runtime bridge plugins from the installed plugin library directory. User-selected native DLLs under the profile `addons` directory remain a local-trust compatibility path, but they are not the recommended third-party extension model.
+
+Manifest plugins do not introduce a C language target. The manifest schema intentionally remains limited to `csharp`, `python`, and `tcl` while the shared API, isolation model, and capability policy are being hardened. Existing native plugins should not be migrated into manifests just to make them appear in the new catalog; any migration should be a deliberate redesign of that plugin around the shared API.
+
+Operational policy:
+
+1. Keep bundled native plugin DLLs controlled by installer feature selection and the legacy `--no-plugins` safe-mode switch.
+2. Keep third-party/user-authored extensions on C#, Python, or Tcl.
+3. Treat native DLL add-ons as trusted local code with full process access, outside manifest dependency and capability policy.
+4. Do not add manifest support for native C/C++ entrypoints until there is a separate native sandboxing, signing, and dependency-loading design.
+5. If a first-party native plugin is replaced later, prefer a feature-specific migration plan rather than a blanket legacy-to-manifest conversion.
+
 ## plugin.json Schema
 
 Required and supported fields:
@@ -180,6 +199,8 @@ The manifest host is staged in progressively:
 8. Sample cross-language manifest plugins live under `samples\plugins\` and exercise the documented schema, dependency ordering, callback registration, and current user/session-info access.
 
 Python simple add-ons and Python manifest plugins still share the legacy embedded interpreter. The current boundary is path-based: simple add-ons resolve through the profile `addons` directory, while manifest entrypoints resolve through manifest plugin roots after the manifest host is explicitly enabled.
+
+Legacy native plugins continue to use the original plugin loader and are deliberately outside the manifest dependency resolver. This avoids creating a false security boundary around native code that already runs in-process with full application privileges.
 
 ## Related Guides
 

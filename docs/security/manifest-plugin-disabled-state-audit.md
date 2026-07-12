@@ -96,12 +96,20 @@ With `FABULOR_ENABLE_MANIFEST_PLUGINS` unset, the legacy plugin autoload path st
 
 This caveat does not weaken the manifest-host disabled boundary, but it matters for the broader checklist wording about user-controlled `addons` folders. For a startup mode that avoids user-controlled add-on loading entirely, use `--no-plugins`.
 
+Coexistence decision, 2026-07-12:
+
+- Legacy native C plugin DLLs remain first-party compatibility components loaded by the original plugin loader.
+- The user-facing Fabulor plugin model remains C#, Python, and Tcl.
+- Native DLL add-ons under the profile `addons` directory remain trusted local code and are outside manifest dependency resolution, manifest capability metadata, and the shared manifest callback registry.
+- The manifest schema will not grow a native C/C++ language target until there is a separate design for native dependency loading, signing/provenance, and sandboxing expectations.
+- Existing first-party native plugins should migrate only through plugin-specific redesigns around the shared API, not through a blanket manifest wrapper.
+
 ## Follow-Up For Pass 2
 
 - Review manifest root canonicalization and containment before making the enable flag user-facing.
 - Review Tcl `PATH` mutation and absolute DLL loading strategy.
 - Review C# runtime root environment overrides before enabling third-party manifests.
-- Decide whether the legacy `addons` autoload path needs a separate security plan item from the manifest-host boundary.
+- Track the legacy native `addons` DLL path as trusted local code separate from the manifest-host boundary.
 
 ## Pass 2 Scope
 

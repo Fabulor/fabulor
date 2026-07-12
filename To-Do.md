@@ -112,7 +112,7 @@
 - [x] Enforce per-plugin folder layout under discovered plugin roots:
   - [x] `plugins/<plugin-id>/plugin.json`
   - [x] `plugins/<plugin-id>/<entrypoint>`.
-- [ ] Decide and document how legacy built-in C plugins coexist with or migrate to the new manifest-driven model.
+- [x] Decide and document how legacy built-in C plugins coexist with or migrate to the new manifest-driven model.
 
 ## 4. Unified Loader & Dependency Resolver
 
@@ -159,7 +159,7 @@
 
 ## Current Runtime Gaps To Close Next
 
-- [ ] Decide and document the coexistence/migration plan for legacy built-in C plugins versus manifest-driven plugins.
+- [x] Decide and document the coexistence/migration plan for legacy built-in C plugins versus manifest-driven plugins.
 - [ ] Decide whether declared `capabilities` remain advisory/diagnostic metadata or become an enforced policy surface.
 - [x] Tighten the Python runtime path so the modern manifest contract and the legacy scripting surface are clearly separated where required.
 - [ ] Add broader shared API helpers beyond the current message/log/user-count/user-info surface.

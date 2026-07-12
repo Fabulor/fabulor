@@ -48,6 +48,8 @@ The file extension selects the language runtime:
 
 Only one primary script should use the folder name. Extra files may live beside it when the runtime supports them.
 
+Native plugin DLLs may still be loaded through the legacy Add-ons GUI for compatibility, but they are trusted local code and are not part of the simple C#/Python/Tcl add-on convention.
+
 ## Optional Metadata
 
 Metadata can be provided in comments at the top of the script. If metadata is absent, Fabulor uses the folder name.
@@ -91,3 +93,5 @@ The manifest host is currently disabled by default while the API is being harden
 ```text
 FABULOR_ENABLE_MANIFEST_PLUGINS=1
 ```
+
+Manifest plugins currently support C#, Python, and Tcl only. Native C/C++ DLL plugins remain on the legacy loader path.
