@@ -171,13 +171,15 @@ Use this sequence when a plugin does not load or behaves incorrectly:
 The manifest host is staged in progressively:
 
 1. Simple add-ons are the intended user-facing scripting path: `addons\<name>\<name>.tcl`, `addons\<name>\<name>.py`, or `addons\<name>\<name>.cs`.
-2. Python manifest plugins can be auto-loaded through the existing embedded Python runtime when `FABULOR_ENABLE_MANIFEST_PLUGINS=1` is set.
+2. Python manifest plugins can be auto-loaded through the existing embedded Python runtime when `FABULOR_ENABLE_MANIFEST_PLUGINS=1` is set. The Python runtime accepts manifest entrypoints only when the resolved `.py` path is under the bundled `Plugins\` root or the user profile `plugins\` root.
 3. Tcl manifest plugins can be auto-loaded through the bundled Tcl runtime with a minimal `zoitechat::*` command surface when `FABULOR_ENABLE_MANIFEST_PLUGINS=1` is set.
 4. The shared host validates manifests, resolves dependencies, applies blacklist decisions, and queues callback dispatch on the main thread.
 5. The managed C# contract assembly is scaffolded under `src\managed\Fabulor.PluginAbstractions` so plugin and host types are concrete.
 6. C# manifests load through the `src\managed\Fabulor.PluginHost` bridge, which is staged into `Runtime\DotNet` by the installer build.
 7. The installer now bundles a private `.NET` runtime root under `Runtime\DotNet`, including `host\fxr\` and `shared\Microsoft.NETCore.App\`.
 8. Sample cross-language manifest plugins live under `samples\plugins\` and exercise the documented schema, dependency ordering, callback registration, and current user/session-info access.
+
+Python simple add-ons and Python manifest plugins still share the legacy embedded interpreter. The current boundary is path-based: simple add-ons resolve through the profile `addons` directory, while manifest entrypoints resolve through manifest plugin roots after the manifest host is explicitly enabled.
 
 ## Related Guides
 

@@ -241,11 +241,18 @@ Pre-enable issues:
 
 - Tcl changes process-wide `PATH` and `TCL_LIBRARY`; this can affect later DLL/runtime resolution outside the plugin host.
 - Tcl and C# both trust developer-style environment and current-working-directory runtime roots.
-- Python does not have manifest-specific interpreter isolation; it uses the legacy Python plugin's global runtime and command surface.
+- Python does not have manifest-specific interpreter isolation; it uses the legacy Python plugin's global runtime and command surface. The path boundary is now narrower: simple add-ons resolve under the profile `addons` directory, and manifest entrypoints are accepted only from manifest plugin roots.
 - Python callback integration is not the shared manifest registry. `plugins/python/_zoitechat.py:304` implements callback helpers by mapping to legacy hooks.
 - C# dependency resolution is per assembly-load context, but native dependency policy and allowed dependency locations are not constrained by manifest capabilities.
 
-Minimum fix: restrict runtime roots to installed/bundled roots by default, move developer overrides behind a separate development flag or diagnostic build path, avoid global `PATH` mutation for Tcl if possible, define Python manifest isolation separately from legacy scripting, and define native dependency loading policy for C#.
+Minimum fix: restrict runtime roots to installed/bundled roots by default, move developer overrides behind a separate development flag or diagnostic build path, avoid global `PATH` mutation for Tcl if possible, define Python manifest interpreter isolation separately from legacy scripting, and define native dependency loading policy for C#.
+
+Fix status, 2026-07-12:
+
+- The Python runtime now canonicalizes requested script paths before loading.
+- Relative Python load requests are treated as simple add-ons and resolve under the profile `addons` directory, preferring the documented `addons\<name>\<name>.py` layout while keeping legacy flat `addons\*.py` as a compatibility fallback.
+- Absolute Python load requests are rejected unless the resolved `.py` file is under the profile `addons` directory, the profile `plugins` manifest root, or the bundled `Plugins` manifest root.
+- This reduces accidental crossing between the legacy scripting surface and manifest plugin roots, but it does not provide per-manifest Python interpreter isolation or move Python callbacks into the shared manifest callback registry.
 
 ## Callback And Event System
 

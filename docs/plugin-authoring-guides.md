@@ -19,7 +19,7 @@ For personal scripts and aliases, prefer the simple add-on layout:
 %APPDATA%\Fabulor\addons\<addon-name>\<addon-name>.cs
 ```
 
-Use manifest plugins only when an add-on needs advanced dependency, capability, or versioning metadata.
+Use manifest plugins only when an add-on needs advanced dependency, capability, or versioning metadata. Python simple add-ons load only from the profile `addons` trust boundary; Python manifest entrypoints load only from the enabled manifest roots.
 
 ## Maintenance Notes
 
@@ -27,4 +27,4 @@ Use manifest plugins only when an add-on needs advanced dependency, capability, 
 2. Keep these guides consistent with actual loader, validation, and callback behaviour in source.
 3. Use Australian English for user-facing documentation.
 4. Keep the sample plugins under `samples\plugins\` in sync with the documented manifest schema and current runtime behaviour.
-5. Keep the simple add-on guide aligned with the planned `addons\<name>\<name>.<ext>` loader.
+5. Keep the simple add-on guide aligned with the implemented `addons\<name>\<name>.<ext>` loader.

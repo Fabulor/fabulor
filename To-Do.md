@@ -161,7 +161,7 @@
 
 - [ ] Decide and document the coexistence/migration plan for legacy built-in C plugins versus manifest-driven plugins.
 - [ ] Decide whether declared `capabilities` remain advisory/diagnostic metadata or become an enforced policy surface.
-- [ ] Tighten the Python runtime path so the modern manifest contract and the legacy scripting surface are clearly separated where required.
+- [x] Tighten the Python runtime path so the modern manifest contract and the legacy scripting surface are clearly separated where required.
 - [ ] Add broader shared API helpers beyond the current message/log/user-count/user-info surface.
 - [ ] Rework the manifest plugin API before enabling it by default:
   - [ ] Keep the manifest host disabled unless `FABULOR_ENABLE_MANIFEST_PLUGINS=1` is set.

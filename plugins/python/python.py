@@ -28,6 +28,7 @@ zoitechat = None
 local_interp = None
 zoitechat_stdout = None
 plugins = set()
+python_plugin_libdir = None
 
 
 @contextmanager
@@ -145,11 +146,12 @@ class Plugin:
 
     def loadfile(self, filename):
         try:
-            self.filename = filename
-            with open(filename, 'rb') as f:
-                data = f.read().decode('utf-8')
-            compiled = compile_file(data, filename)
-            exec(compiled, self.globals)
+            self.filename = canonical_path(filename)
+            with change_cwd(os.path.dirname(self.filename)):
+                with open(self.filename, 'rb') as f:
+                    data = f.read().decode('utf-8')
+                compiled = compile_file(data, self.filename)
+                exec(compiled, self.globals)
 
             try:
                 self.name = self.globals['__module_name__']
@@ -161,7 +163,7 @@ class Plugin:
 
             self.version = self.globals.get('__module_version__', '')
             self.description = self.globals.get('__module_description__', '')
-            self.ph = lib.zoitechat_plugingui_add(lib.ph, filename.encode(), self.name.encode(),
+            self.ph = lib.zoitechat_plugingui_add(lib.ph, self.filename.encode(), self.name.encode(),
                                                 self.description.encode(), self.version.encode(), ffi.NULL)
 
         except Exception as e:
@@ -335,12 +337,108 @@ def _on_say_command(word, word_eol, userdata):
     return 1
 
 
-def load_filename(filename):
-    filename = os.path.expanduser(filename)
-    if not os.path.isabs(filename):
-        configdir = __decode(_cstr(lib.zoitechat_get_info(lib.ph, b'configdir')))
+def print_error(message):
+    lib.zoitechat_print(lib.ph, message.encode('utf-8', 'replace'))
 
-        filename = os.path.join(configdir, 'addons', filename)
+
+def config_dir():
+    return __decode(_cstr(lib.zoitechat_get_info(lib.ph, b'configdir')))
+
+
+def addons_dir():
+    return os.path.join(config_dir(), 'addons')
+
+
+def user_manifest_plugins_dir():
+    return os.path.join(config_dir(), 'plugins')
+
+
+def bundled_manifest_plugins_dir():
+    if not python_plugin_libdir:
+        return None
+    return os.path.join(python_plugin_libdir, 'Plugins')
+
+
+def canonical_path(path):
+    return os.path.realpath(os.path.abspath(os.path.expanduser(path)))
+
+
+def path_is_under(path, root):
+    if not path or not root:
+        return False
+
+    try:
+        path_cmp = os.path.normcase(canonical_path(path))
+        root_cmp = os.path.normcase(canonical_path(root))
+        return os.path.commonpath([path_cmp, root_cmp]) == root_cmp
+    except (AttributeError, ValueError):
+        root_cmp = os.path.normcase(canonical_path(root))
+        path_cmp = os.path.normcase(canonical_path(path))
+        return path_cmp == root_cmp or path_cmp.startswith(root_cmp + os.sep)
+
+
+def has_path_separator(path):
+    return os.sep in path or (os.altsep is not None and os.altsep in path)
+
+
+def trusted_python_roots(allow_manifest_roots):
+    roots = [addons_dir()]
+    if allow_manifest_roots:
+        roots.append(user_manifest_plugins_dir())
+        bundled_plugins_dir = bundled_manifest_plugins_dir()
+        if bundled_plugins_dir:
+            roots.append(bundled_plugins_dir)
+    return roots
+
+
+def relative_addon_candidates(filename):
+    addondir = addons_dir()
+    basename = os.path.basename(filename)
+    stem, ext = os.path.splitext(basename)
+
+    if not has_path_separator(filename):
+        if ext.lower() == '.py':
+            return [
+                os.path.join(addondir, stem, basename),
+                os.path.join(addondir, basename),
+            ]
+        if ext:
+            return [os.path.join(addondir, basename)]
+        return [
+            os.path.join(addondir, filename, filename + '.py'),
+            os.path.join(addondir, filename + '.py'),
+        ]
+
+    return [os.path.join(addondir, filename)]
+
+
+def resolve_load_filename(filename):
+    if not filename:
+        return None
+
+    filename = os.path.expanduser(filename)
+    absolute_request = os.path.isabs(filename)
+    candidates = [filename] if absolute_request else relative_addon_candidates(filename)
+    roots = trusted_python_roots(allow_manifest_roots=absolute_request)
+
+    for candidate in candidates:
+        resolved = canonical_path(candidate)
+        if not resolved.lower().endswith('.py'):
+            continue
+        if not os.path.isfile(resolved):
+            continue
+        if any(path_is_under(resolved, root) for root in roots):
+            return resolved
+
+    return None
+
+
+def load_filename(filename):
+    filename = resolve_load_filename(filename)
+
+    if not filename:
+        print_error('Python load rejected: file must be a .py script under the profile addons directory or an enabled manifest plugin root')
+        return False
 
     if filename and not any(plugin.filename == filename for plugin in plugins):
         plugin = Plugin()
@@ -381,14 +479,20 @@ def change_cwd(path):
 
 
 def autoload():
-    configdir = __decode(_cstr(lib.zoitechat_get_info(lib.ph, b'configdir')))
-    addondir = os.path.join(configdir, 'addons')
+    addondir = addons_dir()
     try:
         with change_cwd(addondir):
-            for f in os.listdir(addondir):
-                if f.endswith('.py'):
-                    log('Autoloading', f)
-                    load_filename(os.path.join(addondir, f))
+            for f in sorted(os.listdir(addondir)):
+                candidate = os.path.join(addondir, f, f + '.py')
+                if os.path.isfile(candidate):
+                    log('Autoloading', candidate)
+                    load_filename(candidate)
+
+            for f in sorted(os.listdir(addondir)):
+                candidate = os.path.join(addondir, f)
+                if os.path.isfile(candidate) and f.endswith('.py'):
+                    log('Autoloading legacy flat addon', candidate)
+                    load_filename(candidate)
 
     except FileNotFoundError as e:
         log('Autoload failed', e)
@@ -515,6 +619,7 @@ def _on_py_command(word, word_eol, userdata):
 def _on_plugin_init(plugin_name, plugin_desc, plugin_version, arg, libdir):
     global zoitechat
     global zoitechat_stdout
+    global python_plugin_libdir
 
     signal.signal(signal.SIGINT, signal.SIG_DFL)
 
@@ -524,6 +629,7 @@ def _on_plugin_init(plugin_name, plugin_desc, plugin_version, arg, libdir):
 
     try:
         libdir = __decode(_cstr(libdir))
+        python_plugin_libdir = canonical_path(libdir)
         modpaths = [
             os.path.abspath(os.path.join(libdir, '..', 'python')),
             os.path.abspath(os.path.join(libdir, 'python')),
@@ -574,11 +680,13 @@ def _on_plugin_deinit():
     global zoitechat
     global zoitechat_stdout
     global plugins
+    global python_plugin_libdir
 
     plugins = set()
     local_interp = None
     zoitechat = None
     zoitechat_stdout = None
+    python_plugin_libdir = None
     sys.stdout = sys.__stdout__
     sys.stderr = sys.__stderr__
     pydoc.help = pydoc.Helper()
