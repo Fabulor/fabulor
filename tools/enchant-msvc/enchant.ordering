@@ -1,0 +1,11 @@
+*:winspell,hunspell,nuspell,aspell
+en_AU:winspell,aspell,hunspell,nuspell
+en_CA:winspell,aspell,hunspell,nuspell
+en_GB:winspell,aspell,hunspell,nuspell
+en_US:winspell,aspell,hunspell,nuspell
+fi:winspell,voikko,hunspell,nuspell,aspell
+fi_FI:winspell,voikko,hunspell,nuspell,aspell
+he:winspell,hspell,hunspell,nuspell
+he_IL:winspell,hspell,hunspell,nuspell
+tr:winspell,zemberek,nuspell
+tr_TR:winspell,zemberek,nuspell

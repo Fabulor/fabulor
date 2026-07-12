@@ -169,8 +169,11 @@
   - [ ] Design a simpler add-on scripting flow that works from the user `addons` folder without manifest ceremony for small Tcl/Python aliases.
 - [ ] Finish the Enchant 2.8.19 spell-checker rollout after live validation:
   - [x] Confirm Enchant 2 + WinSpell is live in Fabulor and catches edit-box typos, verified with `Hllo thre piples` -> `Hello there peoples`.
+  - [ ] Revalidate URL paste, suggestions, add-to-dictionary, and persistence after installing the MSVC rebuild; the previous MinGW/MSVCRT payload caused reproducible heap corruption in `enchant_pwl_check`.
   - [ ] Soak test the upgraded spell checker for a day or two before committing the rollout.
-  - [ ] Keep the Enchant 2 WinSpell build reproducible, including the temporary `bcp47.h` compatibility shim currently needed by the official source tarball.
+  - [x] Keep the Enchant 2 WinSpell build reproducible, including the temporary `bcp47.h` compatibility shim currently needed by the official source tarball. The pinned MSVC recipe is under `tools\enchant-msvc` and `tools\build-enchant-msvc.ps1`.
+  - [x] Rebuild Enchant 2.8.19 core and WinSpell with MSVC/UCRT to match Fabulor's GTK/GLib payload and eliminate cross-CRT `FILE*` ownership.
+  - [x] Add an isolated native smoke test covering checks, suggestions, add-to-personal, broker restart, and personal-word persistence.
   - [ ] Replace or retire the current Enchant 1.6.1 fallback payload (`libenchant.dll`, `lib\enchant`) after Enchant 2 is verified.
   - [ ] Retire or port the legacy `src\libenchant_win8` provider after confirming upstream WinSpell covers the required Windows spell-check behaviour.
   - [ ] Verify spell checking, suggestions, "add to dictionary", and installer packaging on a clean install.

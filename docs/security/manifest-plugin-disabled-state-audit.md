@@ -602,6 +602,7 @@ Recommended fix:
 Fix status, 2026-07-12:
 
 - Enchant loading in `src/fe-gtk/sexy-spell-entry.c` now prefers an absolute module path under the application installation directory for `libenchant-2-2.dll`, `libenchant-2.dll`, and the temporary legacy `libenchant.dll` fallback. This matches the Enchant 2.8.19 rollout while keeping the old Enchant payload as an app-local fallback only.
+- A later URL-paste crash was traced with CDB to cross-CRT heap corruption in the MinGW/MSVCRT Enchant 2.8.19 personal-word-list path. Enchant core and WinSpell are now rebuilt with MSVC/UCRT against Fabulor's GTK/GLib libraries. The analysis and reproducible build are documented in `docs/security/enchant-windows-crash-analysis.md`.
 - The legacy Perl plugin remains a legacy source/build surface and is not part of the documented Fabulor plugin model, which is C#, Python, and Tcl. The current WiX plugin payload does not package `hcperl.dll`.
 - Modern manifest Tcl loading now uses the installed executable-relative runtime root by default, avoids process `PATH` and `TCL_LIBRARY` mutation, and loads `tcl86t.dll` with constrained `LoadLibraryExA()` flags. C# now uses the installed executable-relative `Runtime\DotNet` root by default, gates developer roots explicitly, canonicalizes selected roots, and loads `hostfxr.dll` with constrained `LoadLibraryExA()` flags. Python manifest loading now rejects command-unsafe entrypoint paths before invoking the existing script runtime hook.
 
