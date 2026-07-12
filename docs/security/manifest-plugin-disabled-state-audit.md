@@ -549,6 +549,10 @@ Recommended fix:
 - Check `CreatePipe()` and `CreateProcess()` return values before using handles.
 - Keep the plugin explicitly opt-in, and consider excluding it from default plugin autoload if the product security posture should not include a shell plugin.
 
+Fix status:
+
+- Addressed in `plugins/exec/exec.c` by replacing the fixed command buffer with a dynamically allocated command line, enforcing an 8192-character command limit, validating pipe/process creation, and preserving the plugin as optional/selectable.
+
 ## Finding: Bare-Name Dynamic Library Loading Remains In Legacy Paths
 
 Severity: medium.
