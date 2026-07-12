@@ -527,6 +527,18 @@ Recommended fix:
 - Avoid `G_SPAWN_SEARCH_PATH` for extraction helpers on Windows. Prefer an in-process archive reader or absolute helper paths from trusted system locations.
 - Add regression tests for traversal, absolute paths, symlinks, hardlinks, nested archive roots, and cleanup after partial extraction.
 
+Fix status, 2026-07-12:
+
+- Addressed for the in-process libarchive extractor in `src/common/gtk3-theme-service.c`.
+- Archive entry paths are now rejected before write when they are empty, absolute, drive-qualified, contain `..`, contain colon syntax, contain backslashes, contain control characters, or include empty components.
+- Symlink and hardlink entries are rejected outright for theme archives.
+- Libarchive secure extraction flags are enabled when compatible with the absolute temp-root destination rewrite: `ARCHIVE_EXTRACT_SECURE_NODOTDOT` and `ARCHIVE_EXTRACT_SECURE_SYMLINKS`. Absolute archive paths are rejected by explicit entry validation before the destination is rewritten.
+- Each destination is built under the canonical extraction root and checked for a root-prefix match before it is passed to libarchive.
+- Build files now define `HAVE_LIBARCHIVE` when libarchive is configured: Meson does this when `dependency('libarchive')` is found, and the MSBuild props do this only when both `ArchiveInclude` and `ArchiveLib` are present.
+- Windows builds now use the same libarchive-contained extractor when `HAVE_LIBARCHIVE` is set. If libarchive is unavailable on Windows, the existing external `powershell`/`tar.exe` fallback remains a residual medium-risk path because it cannot apply the in-process entry policy before extraction.
+- Added non-Windows regression coverage for `..` traversal with partial-extraction cleanup, absolute archive paths, symlink entries, and hardlink entries in `src/common/tests/test-gtk3-theme-service.c`.
+- Verification: `git diff --check` passed; the focused WSL GTK3 theme-service test binary compiled with GLib/GIO/libarchive and passed all 18 tests; `src\common\common.vcxproj` built successfully with 15 pre-existing conversion warnings and 0 errors; `src\fe-gtk\fe-gtk.vcxproj` built and linked successfully with 1 pre-existing const-qualifier warning and 0 errors.
+
 ## Finding: Exec Plugin Uses Unbounded Command Construction
 
 Severity: high if the legacy Exec plugin is installed and loaded.
@@ -575,6 +587,12 @@ Recommended fix:
 - On Windows, use `SetDefaultDllDirectories()` and `AddDllDirectory()`/`LoadLibraryEx()` with constrained search flags where compatible.
 - Keep user add-on loading under the explicit `addons` trust model, but avoid using general DLL search order for dependencies such as Enchant and Perl.
 
+Fix status, 2026-07-12:
+
+- Enchant loading in `src/fe-gtk/sexy-spell-entry.c` now prefers an absolute module path under the application installation directory for `libenchant-2-2.dll`, `libenchant-2.dll`, and the temporary legacy `libenchant.dll` fallback. This matches the Enchant 2.8.19 rollout while keeping the old Enchant payload as an app-local fallback only.
+- The legacy Perl plugin remains a legacy source/build surface and is not part of the documented Fabulor plugin model, which is C#, Python, and Tcl. The current WiX plugin payload does not package `hcperl.dll`.
+- Modern manifest Tcl and .NET runtime loading already uses absolute runtime paths under the executable/runtime root. Python manifest loading now rejects command-unsafe entrypoint paths before invoking the existing script runtime hook.
+
 ## Finding: Theme Import And Legacy Add-On Loading Need Stronger Canonicalization
 
 Severity: medium.
@@ -597,6 +615,15 @@ Recommended fix:
 - Escape or reject quotes and control characters before constructing `/LOAD`, or route the GUI through a direct plugin-load API instead of the command parser.
 - For theme imports, define whether symlinks/reparse points are allowed; if not, reject them during extraction and copy.
 
+Fix status, 2026-07-12:
+
+- Theme archive symlinks and hardlinks are rejected during extraction before the theme tree is copied.
+- The Add-ons GUI now canonicalizes the selected file and profile `addons` directory before containment checks.
+- External GUI-selected add-on files must copy into the profile `addons` directory before loading; failure to copy stops the load.
+- Native plugin DLLs selected through the Add-ons GUI load via `plugin_load()` directly instead of a `/LOAD` command string.
+- Script add-ons still use the existing language runtime command hooks, but `LOAD`, `UNLOAD`, and `RELOAD` GUI commands reject paths containing quotes or control characters before constructing the command.
+- The GUI file filter now matches the documented Fabulor add-on model: native plugin DLLs plus `.py`, `.tcl`, and `.cs` add-ons.
+
 ## Finding: Log Mask Can Write Outside The Config Directory By Design
 
 Severity: low to medium, depending on whether config files are considered trusted.
@@ -616,6 +643,11 @@ Recommended fix:
 - Keep the feature if needed, but document it as a trusted-config capability.
 - Consider UI warnings for absolute paths.
 - If configuration import is added later, either reject absolute log masks during import or require explicit confirmation.
+
+Fix status, 2026-07-12:
+
+- Documented absolute log masks and invalid TLS certificate acceptance as trusted local configuration in `docs/security/trusted-config.md`.
+- The documented policy is that normal chat traffic must not mutate these settings, defaults/imports/migrations must not silently enable them, and future config import code should reject or explicitly confirm these trusted-config capabilities.
 
 ## Reviewed And Downgraded Surfaces
 
@@ -649,11 +681,11 @@ No remotely triggered markup injection path was identified in this pass. `/GUI M
 
 Suggested ordering:
 
-1. Add archive extraction containment and tests for GTK3 theme import.
+1. Add archive extraction containment and tests for GTK3 theme import. Status: addressed for libarchive extraction on 2026-07-12; Windows external-helper fallback remains a documented residual if libarchive is unavailable at build time.
 2. Fix or disable-by-default the Exec plugin command construction.
-3. Constrain bare-name DLL loading for Enchant and Perl.
-4. Canonicalize add-on GUI containment and avoid `/LOAD` command-string interpolation.
-5. Document trusted-config behavior for absolute log masks and invalid TLS certificate acceptance.
+3. Constrain bare-name DLL loading for Enchant and Perl. Status: Enchant now uses app-local absolute loading first; Perl is documented as legacy/not packaged in the Fabulor C#/Python/Tcl plugin model.
+4. Canonicalize add-on GUI containment and avoid `/LOAD` command-string interpolation. Status: addressed for Add-ons GUI load/unload/reload paths on 2026-07-12; script runtimes still receive command-hook requests after path validation.
+5. Document trusted-config behavior for absolute log masks and invalid TLS certificate acceptance. Status: documented in `docs/security/trusted-config.md` on 2026-07-12.
 
 ## Local Scanner Follow-Up
 

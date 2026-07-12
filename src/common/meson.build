@@ -37,8 +37,13 @@ common_deps = [
   libcanberra_dep,
 ] + global_deps
 
+common_cflags = [
+  '-DHAVE_CONFIG_H',
+]
+
 if libarchive_dep.found()
   common_deps += libarchive_dep
+  common_cflags += '-DHAVE_LIBARCHIVE'
 endif
 if libsecret_dep.found()
   common_deps += libsecret_dep
@@ -47,10 +52,6 @@ endif
 common_includes = [
   config_h_include,
   include_directories('.')
-]
-
-common_cflags = [
-  '-DHAVE_CONFIG_H',
 ]
 
 if host_machine.system() == 'windows'
@@ -161,6 +162,7 @@ gtk3_theme_service_tests = executable('gtk3_theme_service_tests',
   ],
   include_directories: [config_h_include, include_directories('.')],
   dependencies: [libgio_dep] + (libarchive_dep.found() ? [libarchive_dep] : []),
+  c_args: common_cflags,
 )
 
 test('GTK3 Theme Service Tests', gtk3_theme_service_tests,

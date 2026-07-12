@@ -78,6 +78,8 @@ The intended simple loader behaviour is:
 4. Load add-ons alphabetically by folder name.
 5. Log failures and continue loading the remaining add-ons.
 
+The Add-ons GUI uses the profile `addons` directory as the trust boundary. When a user selects a supported add-on file from outside that directory, Fabulor copies it into `addons` by basename and loads the copied file. Paths containing control characters or quotes are rejected by the GUI loader because they cannot be passed safely to the legacy script-runtime command hooks.
+
 ## Manifest Plugins
 
 Use `plugins\<plugin-id>\plugin.json` only for advanced packaged plugins that need dependency resolution, capability declarations, strict API versioning, or complex runtime setup.

@@ -1814,6 +1814,23 @@ ensure_python_runtime_loaded (session *sess, GError **error)
 }
 
 static gboolean
+manifest_command_path_is_safe (const char *path)
+{
+	const unsigned char *p;
+
+	if (!path || !*path)
+		return FALSE;
+
+	for (p = (const unsigned char *) path; *p; p++)
+	{
+		if (*p < 0x20 || *p == 0x7f || *p == '"')
+			return FALSE;
+	}
+
+	return TRUE;
+}
+
+static gboolean
 load_python_manifest (const FabulorPluginManifest *manifest,
 					  const FabulorAPI *api,
 					  void *user_data,
@@ -1830,6 +1847,12 @@ load_python_manifest (const FabulorPluginManifest *manifest,
 
 	if (!ensure_python_runtime_loaded (sess, error))
 	{
+		return FALSE;
+	}
+
+	if (!manifest_command_path_is_safe (manifest->entrypoint_path))
+	{
+		g_set_error_literal (error, G_FILE_ERROR, G_FILE_ERROR_INVAL, "Python plugin entrypoint path contains unsupported command characters.");
 		return FALSE;
 	}
 
