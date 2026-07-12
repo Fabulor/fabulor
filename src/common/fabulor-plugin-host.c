@@ -178,6 +178,7 @@ static FabulorTclRuntime fabulor_tcl_runtime;
 static FabulorCallbackRegistry *fabulor_active_callback_registry;
 static const FabulorAPI *fabulor_active_api;
 static FabulorCSharpRuntime fabulor_csharp_runtime;
+static char *fabulor_python_manifest_token;
 #endif
 
 static void
@@ -1860,6 +1861,19 @@ ensure_python_runtime_loaded (session *sess, GError **error)
 	{
 		g_set_error (error, G_FILE_ERROR, G_FILE_ERROR_FAILED, "Python runtime load failed: %s", load_error);
 	}
+	else
+	{
+		char *command;
+
+		if (!fabulor_python_manifest_token)
+		{
+			fabulor_python_manifest_token = g_uuid_string_random ();
+		}
+
+		command = g_strdup_printf ("PY MANIFEST_INIT %s", fabulor_python_manifest_token);
+		handle_command (sess, command, FALSE);
+		g_free (command);
+	}
 
 	g_free (runtime_path);
 	return success;
@@ -1889,7 +1903,12 @@ load_python_manifest (const FabulorPluginManifest *manifest,
 					  GError **error)
 {
 	session *sess = (session *) user_data;
+	GString *capabilities;
+	char *encoded_capabilities;
+	char *encoded_entrypoint;
+	char *encoded_plugin_id;
 	char *command;
+	guint i;
 
 	if (!sess)
 	{
@@ -1908,11 +1927,33 @@ load_python_manifest (const FabulorPluginManifest *manifest,
 		return FALSE;
 	}
 
-	command = g_strdup_printf ("LOAD \"%s\"", manifest->entrypoint_path);
+	capabilities = g_string_new (NULL);
+	for (i = 0; i < manifest->capabilities->len; i++)
+	{
+		if (i > 0)
+		{
+			g_string_append_c (capabilities, ',');
+		}
+		g_string_append (capabilities, g_ptr_array_index (manifest->capabilities, i));
+	}
+
+	encoded_plugin_id = g_base64_encode ((const guchar *) manifest->id, strlen (manifest->id));
+	g_string_prepend (capabilities, "capabilities:");
+	encoded_capabilities = g_base64_encode ((const guchar *) capabilities->str, capabilities->len);
+	encoded_entrypoint = g_base64_encode ((const guchar *) manifest->entrypoint_path, strlen (manifest->entrypoint_path));
+	command = g_strdup_printf ("PY MANIFEST_LOAD %s %s %s %s",
+							 fabulor_python_manifest_token,
+							 encoded_plugin_id,
+							 encoded_capabilities,
+							 encoded_entrypoint);
 	handle_command (sess, command, FALSE);
 	g_free (command);
+	g_free (encoded_entrypoint);
+	g_free (encoded_capabilities);
+	g_free (encoded_plugin_id);
+	g_string_free (capabilities, TRUE);
 
-	fabulor_api_log (api, "Requested Python manifest load for %s from %s.", manifest->id, manifest->entrypoint_path);
+	fabulor_api_log (api, "Requested policy-bound Python manifest load for %s from %s.", manifest->id, manifest->entrypoint_path);
 	return TRUE;
 }
 

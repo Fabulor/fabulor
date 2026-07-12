@@ -1,6 +1,7 @@
 from __future__ import print_function
 
 import importlib
+import base64
 import os
 import pydoc
 import signal
@@ -29,6 +30,7 @@ local_interp = None
 zoitechat_stdout = None
 plugins = set()
 python_plugin_libdir = None
+manifest_load_token = None
 
 
 @contextmanager
@@ -117,12 +119,14 @@ else:
 
 
 class Plugin:
-    def __init__(self):
+    def __init__(self, manifest_id=None, capabilities=None):
         self.ph = None
         self.name = ''
         self.filename = ''
         self.version = ''
         self.description = ''
+        self.manifest_id = manifest_id
+        self.capabilities = frozenset(capabilities or ())
         self.hooks = set()
         self.globals = {
             '__plugin': weakref.proxy(self),
@@ -412,14 +416,14 @@ def relative_addon_candidates(filename):
     return [os.path.join(addondir, filename)]
 
 
-def resolve_load_filename(filename):
+def resolve_load_filename(filename, allow_manifest_roots=False):
     if not filename:
         return None
 
     filename = os.path.expanduser(filename)
     absolute_request = os.path.isabs(filename)
     candidates = [filename] if absolute_request else relative_addon_candidates(filename)
-    roots = trusted_python_roots(allow_manifest_roots=absolute_request)
+    roots = trusted_python_roots(allow_manifest_roots=allow_manifest_roots)
 
     for candidate in candidates:
         resolved = canonical_path(candidate)
@@ -433,15 +437,16 @@ def resolve_load_filename(filename):
     return None
 
 
-def load_filename(filename):
-    filename = resolve_load_filename(filename)
+def load_filename(filename, manifest_id=None, capabilities=None):
+    is_manifest = manifest_id is not None
+    filename = resolve_load_filename(filename, allow_manifest_roots=is_manifest)
 
     if not filename:
-        print_error('Python load rejected: file must be a .py script under the profile addons directory or an enabled manifest plugin root')
+        print_error('Python load rejected: ordinary scripts must be .py files under the profile addons directory')
         return False
 
     if filename and not any(plugin.filename == filename for plugin in plugins):
-        plugin = Plugin()
+        plugin = Plugin(manifest_id=manifest_id, capabilities=capabilities)
         if plugin.loadfile(filename):
             plugins.add(plugin)
             return True
@@ -453,6 +458,9 @@ def unload_name(name):
     if name:
         for plugin in plugins:
             if name in (plugin.name, plugin.filename, os.path.basename(plugin.filename)):
+                if plugin.manifest_id is not None:
+                    print_error('Python unload rejected: manifest plugins are owned by the manifest host')
+                    return False
                 plugins.remove(plugin)
                 return True
 
@@ -463,6 +471,9 @@ def reload_name(name):
     if name:
         for plugin in plugins:
             if name in (plugin.name, plugin.filename, os.path.basename(plugin.filename)):
+                if plugin.manifest_id is not None:
+                    print_error('Python reload rejected: manifest plugins are owned by the manifest host')
+                    return False
                 filename = plugin.filename
                 plugins.remove(plugin)
                 return load_filename(filename)
@@ -580,9 +591,33 @@ def _on_reload_command(word, word_eol, userdata):
 
 @ffi.def_extern(error=3)
 def _on_py_command(word, word_eol, userdata):
+    global manifest_load_token
+
     subcmd = __decode(ffi.string(word[2])).lower()
 
-    if subcmd == 'exec':
+    if subcmd == 'manifest_init':
+        token = __decode(_cstr(word[3]))
+        if token and manifest_load_token is None:
+            manifest_load_token = token
+
+    elif subcmd == 'manifest_load':
+        token = __decode(_cstr(word[3]))
+        if not manifest_load_token or token != manifest_load_token:
+            print_error('Python manifest load rejected: invalid host token')
+        else:
+            try:
+                manifest_id = base64.b64decode(_cstr(word[4]), validate=True).decode('utf-8')
+                capability_text = base64.b64decode(_cstr(word[5]), validate=True).decode('utf-8')
+                filename = base64.b64decode(_cstr(word[6]), validate=True).decode('utf-8')
+                if not capability_text.startswith('capabilities:'):
+                    raise ValueError('invalid capability metadata')
+                capability_text = capability_text[len('capabilities:'):]
+                capabilities = capability_text.split(',') if capability_text else []
+                load_filename(filename, manifest_id=manifest_id, capabilities=capabilities)
+            except (ValueError, UnicodeDecodeError):
+                print_error('Python manifest load rejected: malformed host metadata')
+
+    elif subcmd == 'exec':
         python = __decode(ffi.string(word_eol[3]))
         exec_in_interp(python)
 
@@ -681,12 +716,14 @@ def _on_plugin_deinit():
     global zoitechat_stdout
     global plugins
     global python_plugin_libdir
+    global manifest_load_token
 
     plugins = set()
     local_interp = None
     zoitechat = None
     zoitechat_stdout = None
     python_plugin_libdir = None
+    manifest_load_token = None
     sys.stdout = sys.__stdout__
     sys.stderr = sys.__stderr__
     pydoc.help = pydoc.Helper()

@@ -241,7 +241,7 @@ The Python path loads the legacy Python plugin and asks it to load the manifest 
 Runtime-root policy status, 2026-07-12:
 
 - Addressed for both Tcl and C#. Production manifest loading now anchors both runtimes beside `fabulor.exe`, while developer roots require the explicit `FABULOR_ENABLE_DEVELOPMENT_RUNTIME_ROOTS=1` gate.
-- Python does not have manifest-specific interpreter isolation; it uses the legacy Python plugin's global runtime and command surface. The path boundary is now narrower: simple add-ons resolve under the profile `addons` directory, and manifest entrypoints are accepted only from manifest plugin roots.
+- Python manifest entrypoints still share the legacy plugin's global interpreter, but loading now crosses a separate policy boundary. The native manifest host establishes a per-process token, sends base64-encoded manifest identity/capability/path metadata through a private internal command, and the Python loader attaches that policy to the loaded plugin object. Ordinary `/LOAD` and `/PY LOAD` requests are confined to the profile `addons` directory and cannot select manifest roots, and ordinary unload/reload commands cannot mutate manifest-host-owned plugins. This establishes call attribution for capability enforcement but is not an interpreter or process sandbox.
 - Python callback integration is not the shared manifest registry. `plugins/python/_zoitechat.py:304` implements callback helpers by mapping to legacy hooks.
 - C# dependency resolution is per assembly-load context, but native dependency policy and allowed dependency locations are not constrained by manifest capabilities.
 
@@ -305,7 +305,7 @@ Before `FABULOR_ENABLE_MANIFEST_PLUGINS=1` becomes user-facing, require at least
 - Per-plugin error isolation policy that does not let one bad manifest unexpectedly block unrelated plugins unless that is deliberately documented.
 - Runtime-root policy that removes normal-user reliance on environment variables and current working directory. Status: addressed for Tcl and C# on 2026-07-12.
 - Removal or containment of Tcl process-wide `PATH` mutation. Status: addressed for manifest Tcl loading.
-- A Python manifest host design that is separate from the legacy global Python plugin, or a clear decision that Python manifests remain disabled.
+- A Python manifest host design that is separate from the legacy global Python plugin, or a clear decision that Python manifests remain disabled. Status: the manifest load-authority and policy-attribution boundary was separated on 2026-07-12; per-plugin interpreter isolation remains outstanding.
 - Callback event allowlists, length/count limits, duplicate policy, safe queued-dispatch lifetime, and per-plugin callback cleanup.
 - A capability policy decision: explicitly advisory-only with no security claims, or enforced gates for every exposed API and event surface.
 

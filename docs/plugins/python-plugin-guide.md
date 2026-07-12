@@ -82,4 +82,6 @@ def init():
 6. Callback payloads now include richer context such as `source`, `time`, `channel`, `network`, `nick`, `server`, `word1`-`word4`, and `word_eol1`-`word_eol2` where the underlying event provides them.
 7. The host validates `plugin.json`, resolves declared dependencies, and dispatches callbacks on the main thread before language-specific execution.
 8. `zoitechat.get_user_info()` returns a dictionary with `nickname`, `channel`, `server_name`, and `network_name`.
+9. Manifest Python entrypoints use a host-authenticated internal load path. The loader attaches the manifest id and declared capabilities to the Python plugin object; ordinary `/LOAD` and `/PY LOAD` requests remain confined to the profile `addons` directory and cannot opt themselves into manifest roots. Ordinary unload/reload commands cannot mutate manifest-host-owned Python plugins.
+10. Python manifest plugins still share one embedded interpreter. The manifest boundary provides path and policy attribution, not process or interpreter sandboxing.
 9. A maintained sample manifest Python plugin lives under `samples\plugins\example.python.greeter\`.

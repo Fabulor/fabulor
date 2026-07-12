@@ -198,7 +198,7 @@ The manifest host is staged in progressively:
 7. The installer now bundles a private `.NET` runtime root under `Runtime\DotNet`, including `host\fxr\` and `shared\Microsoft.NETCore.App\`. Normal loading uses only this executable-relative runtime and bridge root; environment, current-directory, source-tree, and machine-wide .NET roots require `FABULOR_ENABLE_DEVELOPMENT_RUNTIME_ROOTS=1`.
 8. Sample cross-language manifest plugins live under `samples\plugins\` and exercise the documented schema, dependency ordering, callback registration, and current user/session-info access.
 
-Python simple add-ons and Python manifest plugins still share the legacy embedded interpreter. The current boundary is path-based: simple add-ons resolve through the profile `addons` directory, while manifest entrypoints resolve through manifest plugin roots after the manifest host is explicitly enabled.
+Python simple add-ons and Python manifest plugins still share the embedded interpreter, but they no longer share the same load authority. Simple add-ons resolve only through the profile `addons` directory. Manifest entrypoints require a host-authenticated internal load request, resolve through enabled manifest plugin roots, and receive their manifest id and declared capabilities as per-plugin policy metadata. This is an attribution and path boundary, not an interpreter sandbox.
 
 Tcl manifests use `LoadLibraryEx()` with the selected runtime DLL directory instead of modifying process `PATH`. The Tcl library path is configured per interpreter before `Tcl_Init`, rather than through process-global `TCL_LIBRARY`.
 
