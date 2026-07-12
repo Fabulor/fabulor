@@ -70,6 +70,7 @@ typedef struct
 	char *plugin_id;
 	Tcl_Interp *interp;
 	const FabulorAPI *api;
+	GHashTable *capabilities;
 } FabulorTclPluginState;
 
 typedef struct
@@ -128,9 +129,9 @@ typedef int (FABULOR_CORECLR_DELEGATE_CALLTYPE *FabulorLoadAssemblyAndGetFunctio
 typedef int (FABULOR_CORECLR_DELEGATE_CALLTYPE *FabulorComponentEntryPointFn) (void *arg, int32_t arg_size_in_bytes);
 
 typedef void (FABULOR_CORECLR_DELEGATE_CALLTYPE *FabulorManagedLogFn) (const char *text);
-typedef int (FABULOR_CORECLR_DELEGATE_CALLTYPE *FabulorManagedSendMessageFn) (const char *target, const char *text);
-typedef unsigned int (FABULOR_CORECLR_DELEGATE_CALLTYPE *FabulorManagedGetUserCountFn) (void);
-typedef int (FABULOR_CORECLR_DELEGATE_CALLTYPE *FabulorManagedGetUserInfoFn) (FabulorUserInfo *user_info);
+typedef int (FABULOR_CORECLR_DELEGATE_CALLTYPE *FabulorManagedSendMessageFn) (const char *plugin_id, const char *target, const char *text);
+typedef unsigned int (FABULOR_CORECLR_DELEGATE_CALLTYPE *FabulorManagedGetUserCountFn) (const char *plugin_id);
+typedef int (FABULOR_CORECLR_DELEGATE_CALLTYPE *FabulorManagedGetUserInfoFn) (const char *plugin_id, FabulorUserInfo *user_info);
 typedef int (FABULOR_CORECLR_DELEGATE_CALLTYPE *FabulorManagedRegisterCallbackFn) (const char *plugin_id, const char *event_name, const char *handler_name);
 
 typedef struct
@@ -217,6 +218,60 @@ fabulor_plugin_catalog_add_diagnostic (FabulorPluginCatalog *catalog, const char
 
 	g_ptr_array_add (catalog->diagnostics, message);
 	fabulor_api_log (catalog->api, "%s", message);
+}
+
+static gboolean
+fabulor_capability_is_known (const char *capability)
+{
+	static const char *known[] = {
+		"commands.execute", "commands.manage",
+		"events.command", "events.message", "events.print", "events.server", "events.timer", "events.unload",
+		"messages.write", "preferences.read", "preferences.write", "session.read", "ui.write"
+	};
+	guint i;
+
+	for (i = 0; i < G_N_ELEMENTS (known); i++)
+	{
+		if (g_strcmp0 (capability, known[i]) == 0)
+		{
+			return TRUE;
+		}
+	}
+	return FALSE;
+}
+
+static gboolean
+fabulor_manifest_has_capability (const FabulorPluginManifest *manifest, const char *capability)
+{
+	guint i;
+
+	if (!manifest || !capability)
+	{
+		return FALSE;
+	}
+
+	for (i = 0; i < manifest->capabilities->len; i++)
+	{
+		if (g_strcmp0 (g_ptr_array_index (manifest->capabilities, i), capability) == 0)
+		{
+			return TRUE;
+		}
+	}
+	return FALSE;
+}
+
+static const char *
+fabulor_event_capability (const char *event_name)
+{
+	if (g_strcmp0 (event_name, "message") == 0)
+		return "events.message";
+	if (g_strcmp0 (event_name, "server") == 0 || g_str_has_prefix (event_name, "server:"))
+		return "events.server";
+	if (g_str_has_prefix (event_name, "print:"))
+		return "events.print";
+	if (g_str_has_prefix (event_name, "command:"))
+		return "events.command";
+	return NULL;
 }
 
 static gboolean
@@ -612,6 +667,28 @@ fabulor_plugin_manifest_validate (FabulorPluginCatalog *catalog,
 		}
 	}
 
+	for (i = 0; i < manifest->capabilities->len; i++)
+	{
+		const char *capability = g_ptr_array_index (manifest->capabilities, i);
+		guint j;
+
+		if (!fabulor_capability_is_known (capability))
+		{
+			fabulor_plugin_manifest_add_validation (catalog, manifest, "Unknown capability '%s'.", capability);
+			valid = FALSE;
+		}
+
+		for (j = 0; j < i; j++)
+		{
+			if (g_strcmp0 (capability, g_ptr_array_index (manifest->capabilities, j)) == 0)
+			{
+				fabulor_plugin_manifest_add_validation (catalog, manifest, "Duplicate capability '%s'.", capability);
+				valid = FALSE;
+				break;
+			}
+		}
+	}
+
 	return valid;
 }
 
@@ -665,6 +742,8 @@ fabulor_development_runtime_roots_enabled (void)
 }
 
 #ifdef WIN32
+static void fabulor_tcl_set_result (Tcl_Interp *interp, const char *message);
+
 static void
 fabulor_tcl_plugin_state_free (FabulorTclPluginState *state)
 {
@@ -679,7 +758,29 @@ fabulor_tcl_plugin_state_free (FabulorTclPluginState *state)
 	}
 
 	g_free (state->plugin_id);
+	if (state->capabilities)
+	{
+		g_hash_table_unref (state->capabilities);
+	}
 	g_free (state);
+}
+
+static gboolean
+fabulor_tcl_require_capability (FabulorTclPluginState *state, Tcl_Interp *interp, const char *capability)
+{
+	char *message;
+
+	if (state && state->capabilities && g_hash_table_contains (state->capabilities, capability))
+	{
+		return TRUE;
+	}
+
+	message = g_strdup_printf ("Plugin '%s' lacks required capability '%s'.",
+							 state && state->plugin_id ? state->plugin_id : "unknown",
+							 capability);
+	fabulor_tcl_set_result (interp, message);
+	g_free (message);
+	return FALSE;
 }
 
 static gboolean
@@ -915,6 +1016,8 @@ fabulor_tcl_print_cmd (ClientData client_data, Tcl_Interp *interp, int argc, con
 		fabulor_tcl_set_result (interp, "wrong # args: should be \"zoitechat::print text\"");
 		return TCL_ERROR;
 	}
+	if (!fabulor_tcl_require_capability (state, interp, "ui.write"))
+		return TCL_ERROR;
 
 	fabulor_api_log (state->api, "%s", argv[1]);
 	return TCL_OK;
@@ -932,6 +1035,8 @@ fabulor_tcl_command_cmd (ClientData client_data, Tcl_Interp *interp, int argc, c
 		fabulor_tcl_set_result (interp, "wrong # args: should be \"zoitechat::command command ?arg ...?\"");
 		return TCL_ERROR;
 	}
+	if (!fabulor_tcl_require_capability (state, interp, "commands.execute"))
+		return TCL_ERROR;
 
 	if (!sess)
 	{
@@ -948,13 +1053,15 @@ fabulor_tcl_command_cmd (ClientData client_data, Tcl_Interp *interp, int argc, c
 static int
 fabulor_tcl_add_user_command_cmd (ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[])
 {
-	(void) client_data;
+	FabulorTclPluginState *state = client_data;
 
 	if (argc != 3)
 	{
 		fabulor_tcl_set_result (interp, "wrong # args: should be \"zoitechat::add_user_command name command\"");
 		return TCL_ERROR;
 	}
+	if (!fabulor_tcl_require_capability (state, interp, "commands.manage"))
+		return TCL_ERROR;
 
 	if (!argv[1] || !*argv[1] || !argv[2] || !*argv[2])
 	{
@@ -970,13 +1077,15 @@ fabulor_tcl_add_user_command_cmd (ClientData client_data, Tcl_Interp *interp, in
 static int
 fabulor_tcl_remove_user_command_cmd (ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[])
 {
-	(void) client_data;
+	FabulorTclPluginState *state = client_data;
 
 	if (argc != 2)
 	{
 		fabulor_tcl_set_result (interp, "wrong # args: should be \"zoitechat::remove_user_command name\"");
 		return TCL_ERROR;
 	}
+	if (!fabulor_tcl_require_capability (state, interp, "commands.manage"))
+		return TCL_ERROR;
 
 	if (!argv[1] || !*argv[1])
 	{
@@ -1073,6 +1182,8 @@ fabulor_tcl_getinfo_cmd (ClientData client_data, Tcl_Interp *interp, int argc, c
 		fabulor_tcl_set_result (interp, "wrong # args: should be \"zoitechat::getinfo name\"");
 		return TCL_ERROR;
 	}
+	if (!fabulor_tcl_require_capability (state, interp, "session.read"))
+		return TCL_ERROR;
 
 	value = fabulor_tcl_get_info_value (sess, argv[1]);
 	fabulor_tcl_set_result (interp, value ? value : "");
@@ -1092,6 +1203,8 @@ fabulor_tcl_nickcmp_cmd (ClientData client_data, Tcl_Interp *interp, int argc, c
 		fabulor_tcl_set_result (interp, "wrong # args: should be \"zoitechat::nickcmp left right\"");
 		return TCL_ERROR;
 	}
+	if (!fabulor_tcl_require_capability (state, interp, "session.read"))
+		return TCL_ERROR;
 
 	if (!sess || !sess->server || !sess->server->p_cmp)
 	{
@@ -1117,6 +1230,8 @@ fabulor_tcl_send_message_cmd (ClientData client_data, Tcl_Interp *interp, int ar
 		fabulor_tcl_set_result (interp, "wrong # args: should be \"zoitechat::send_message target text\"");
 		return TCL_ERROR;
 	}
+	if (!fabulor_tcl_require_capability (state, interp, "messages.write"))
+		return TCL_ERROR;
 
 	if (!state->api || !state->api->send_message
 		|| !state->api->send_message (state->api->user_data, argv[1], argv[2], &error))
@@ -1142,6 +1257,8 @@ fabulor_tcl_get_user_count_cmd (ClientData client_data, Tcl_Interp *interp, int 
 		fabulor_tcl_set_result (interp, "wrong # args: should be \"zoitechat::get_user_count\"");
 		return TCL_ERROR;
 	}
+	if (!fabulor_tcl_require_capability (state, interp, "session.read"))
+		return TCL_ERROR;
 
 	value = g_strdup_printf ("%u", state->api && state->api->get_user_count
 		? state->api->get_user_count (state->api->user_data)
@@ -1166,6 +1283,8 @@ fabulor_tcl_get_user_info_cmd (ClientData client_data, Tcl_Interp *interp, int a
 		fabulor_tcl_set_result (interp, "wrong # args: should be \"zoitechat::get_user_info\"");
 		return TCL_ERROR;
 	}
+	if (!fabulor_tcl_require_capability (state, interp, "session.read"))
+		return TCL_ERROR;
 
 	memset (&user_info, 0, sizeof (user_info));
 	if (state->api && state->api->get_user_info)
@@ -1201,6 +1320,17 @@ fabulor_tcl_register_callback_cmd (ClientData client_data, Tcl_Interp *interp, i
 	{
 		fabulor_tcl_set_result (interp, "wrong # args: should be \"zoitechat::register_callback event handler\"");
 		return TCL_ERROR;
+	}
+
+	{
+		const char *capability = fabulor_event_capability (argv[1]);
+		if (!capability)
+		{
+			fabulor_tcl_set_result (interp, "Unsupported callback event.");
+			return TCL_ERROR;
+		}
+		if (!fabulor_tcl_require_capability (state, interp, capability))
+			return TCL_ERROR;
 	}
 
 	if (!fabulor_active_callback_registry)
@@ -1630,13 +1760,33 @@ fabulor_csharp_native_log (const char *text)
 	}
 }
 
+static gboolean
+fabulor_csharp_require_capability (const char *plugin_id, const char *capability)
+{
+	const FabulorPluginManifest *manifest = NULL;
+
+	if (fabulor_active_callback_registry)
+	{
+		manifest = fabulor_plugin_catalog_find_manifest (fabulor_active_callback_registry->catalog, plugin_id);
+	}
+	if (fabulor_manifest_has_capability (manifest, capability))
+	{
+		return TRUE;
+	}
+
+	fabulor_api_log (fabulor_active_api, "[C#:%s] denied operation requiring capability '%s'.",
+					 plugin_id ? plugin_id : "unknown", capability);
+	return FALSE;
+}
+
 static int FABULOR_CORECLR_DELEGATE_CALLTYPE
-fabulor_csharp_native_send_message (const char *target, const char *text)
+fabulor_csharp_native_send_message (const char *plugin_id, const char *target, const char *text)
 {
 	GError *error = NULL;
 	gboolean success;
 
-	if (!fabulor_active_api || !fabulor_active_api->send_message)
+	if (!fabulor_csharp_require_capability (plugin_id, "messages.write")
+		|| !fabulor_active_api || !fabulor_active_api->send_message)
 	{
 		return 0;
 	}
@@ -1652,15 +1802,16 @@ fabulor_csharp_native_send_message (const char *target, const char *text)
 }
 
 static unsigned int FABULOR_CORECLR_DELEGATE_CALLTYPE
-fabulor_csharp_native_get_user_count (void)
+fabulor_csharp_native_get_user_count (const char *plugin_id)
 {
-	return fabulor_active_api && fabulor_active_api->get_user_count
+	return fabulor_csharp_require_capability (plugin_id, "session.read")
+		&& fabulor_active_api && fabulor_active_api->get_user_count
 		? fabulor_active_api->get_user_count (fabulor_active_api->user_data)
 		: 0U;
 }
 
 static int FABULOR_CORECLR_DELEGATE_CALLTYPE
-fabulor_csharp_native_get_user_info (FabulorUserInfo *user_info)
+fabulor_csharp_native_get_user_info (const char *plugin_id, FabulorUserInfo *user_info)
 {
 	if (!user_info)
 	{
@@ -1668,7 +1819,8 @@ fabulor_csharp_native_get_user_info (FabulorUserInfo *user_info)
 	}
 
 	memset (user_info, 0, sizeof (*user_info));
-	return fabulor_active_api && fabulor_active_api->get_user_info
+	return fabulor_csharp_require_capability (plugin_id, "session.read")
+		&& fabulor_active_api && fabulor_active_api->get_user_info
 		&& fabulor_active_api->get_user_info (fabulor_active_api->user_data, user_info);
 }
 
@@ -1681,6 +1833,14 @@ fabulor_csharp_native_register_callback (const char *plugin_id, const char *even
 	if (!fabulor_active_callback_registry)
 	{
 		return 0;
+	}
+
+	{
+		const char *capability = fabulor_event_capability (event_name);
+		if (!capability || !fabulor_csharp_require_capability (plugin_id, capability))
+		{
+			return 0;
+		}
 	}
 
 	success = fabulor_callback_registry_register (fabulor_active_callback_registry,
@@ -1966,6 +2126,7 @@ load_tcl_manifest (const FabulorPluginManifest *manifest,
 #ifdef WIN32
 	FabulorTclPluginState *state;
 	const char *init_script = "if {[llength [info commands init]]} { init }";
+	guint i;
 
 	(void) user_data;
 
@@ -1977,6 +2138,11 @@ load_tcl_manifest (const FabulorPluginManifest *manifest,
 	state = g_new0 (FabulorTclPluginState, 1);
 	state->plugin_id = g_strdup (manifest->id);
 	state->api = api;
+	state->capabilities = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, NULL);
+	for (i = 0; i < manifest->capabilities->len; i++)
+	{
+		g_hash_table_add (state->capabilities, g_strdup (g_ptr_array_index (manifest->capabilities, i)));
+	}
 	state->interp = fabulor_tcl_runtime.create_interp ();
 	if (!state->interp)
 	{
@@ -2679,6 +2845,20 @@ fabulor_callback_registry_register (FabulorCallbackRegistry *registry,
 					 fabulor_plugin_language_to_string (manifest->language),
 					 fabulor_plugin_language_to_string (language));
 		return FALSE;
+	}
+
+	{
+		const char *capability = fabulor_event_capability (event_name);
+		if (!capability)
+		{
+			g_set_error (error, G_FILE_ERROR, G_FILE_ERROR_INVAL, "Unsupported callback event '%s'.", event_name);
+			return FALSE;
+		}
+		if (!fabulor_manifest_has_capability (manifest, capability))
+		{
+			g_set_error (error, G_FILE_ERROR, G_FILE_ERROR_ACCES, "Plugin '%s' lacks required capability '%s'.", plugin_id, capability);
+			return FALSE;
+		}
 	}
 
 	entries = g_hash_table_lookup (registry->entries, event_name);

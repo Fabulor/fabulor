@@ -46,6 +46,14 @@ def __get_current_plugin():
     return frame.f_globals['__plugin']
 
 
+def __require_capability(capability):
+    plugin = __get_current_plugin()
+    if plugin.manifest_id is not None and capability not in plugin.capabilities:
+        raise PermissionError("Plugin '{}' lacks required capability '{}'.".format(
+            plugin.manifest_id, capability))
+    return plugin
+
+
 # Keeping API compat
 if sys.version_info[0] == 2:
     def __decode(string):
@@ -58,10 +66,12 @@ else:
 
 # ------------ API ------------
 def prnt(string):
+    __require_capability('ui.write')
     lib.zoitechat_print(lib.ph, string.encode())
 
 
 def emit_print(event_name, *args, **kwargs):
+    __require_capability('ui.write')
     time = kwargs.pop('time', 0)  # For py2 compat
     cargs = []
     for i in range(4):
@@ -80,18 +90,23 @@ def emit_print(event_name, *args, **kwargs):
 
 
 def command(command):
+    __require_capability('commands.execute')
     lib.zoitechat_command(lib.ph, command.encode())
 
 
 def log(text):
-    prnt(text)
+    plugin = __get_current_plugin()
+    prefix = '[Python:{}] '.format(plugin.manifest_id) if plugin.manifest_id is not None else ''
+    lib.zoitechat_print(lib.ph, (prefix + text).encode())
 
 
 def send_message(target, text):
-    command('MSG {} {}'.format(target, text))
+    __require_capability('messages.write')
+    lib.zoitechat_command(lib.ph, 'MSG {} {}'.format(target, text).encode())
 
 
 def nickcmp(string1, string2):
+    __require_capability('session.read')
     return lib.zoitechat_nickcmp(lib.ph, string1.encode(), string2.encode())
 
 
@@ -103,6 +118,7 @@ def strip(text, length=-1, flags=3):
 
 
 def get_info(name):
+    __require_capability('session.read')
     ret = lib.zoitechat_get_info(lib.ph, name.encode())
     if ret == ffi.NULL:
         return None
@@ -115,6 +131,7 @@ def get_info(name):
 
 
 def get_prefs(name):
+    __require_capability('preferences.read')
     string_out = ffi.new('char**')
     int_out = ffi.new('int*')
     _type = lib.zoitechat_get_prefs(lib.ph, name.encode(), string_out, int_out)
@@ -155,10 +172,12 @@ def __cached_decoded_str(string):
 
 
 def get_lists():
+    __require_capability('session.read')
     return [__cached_decoded_str(field) for field in __get_fields(b'lists')]
 
 
 def get_user_count():
+    __require_capability('session.read')
     users = get_list('users')
     if users is None:
         return 0
@@ -167,6 +186,7 @@ def get_user_count():
 
 
 def get_user_info():
+    __require_capability('session.read')
     return {
         'nickname': get_info('nick'),
         'channel': get_info('channel'),
@@ -194,6 +214,7 @@ else:
 
 
 def get_list(name):
+    __require_capability('session.read')
     # XXX: This function is extremely inefficient and could be interators and
     # lazily loaded properties, but for API compat we stay slow
     orig_name = name
@@ -246,6 +267,7 @@ def get_list(name):
 
 
 def hook_command(command, callback, userdata=None, priority=PRI_NORM, help=None):
+    __require_capability('events.command')
     plugin = __get_current_plugin()
     hook = plugin.add_hook(callback, userdata)
     handle = lib.zoitechat_hook_command(lib.ph, command.encode(), priority, lib._on_command_hook,
@@ -256,6 +278,7 @@ def hook_command(command, callback, userdata=None, priority=PRI_NORM, help=None)
 
 
 def hook_print(name, callback, userdata=None, priority=PRI_NORM):
+    __require_capability('events.print')
     plugin = __get_current_plugin()
     hook = plugin.add_hook(callback, userdata)
     handle = lib.zoitechat_hook_print(lib.ph, name.encode(), priority, lib._on_print_hook, hook.handle)
@@ -264,6 +287,7 @@ def hook_print(name, callback, userdata=None, priority=PRI_NORM):
 
 
 def hook_print_attrs(name, callback, userdata=None, priority=PRI_NORM):
+    __require_capability('events.print')
     plugin = __get_current_plugin()
     hook = plugin.add_hook(callback, userdata)
     handle = lib.zoitechat_hook_print_attrs(lib.ph, name.encode(), priority, lib._on_print_attrs_hook, hook.handle)
@@ -272,6 +296,7 @@ def hook_print_attrs(name, callback, userdata=None, priority=PRI_NORM):
 
 
 def hook_server(name, callback, userdata=None, priority=PRI_NORM):
+    __require_capability('events.server')
     plugin = __get_current_plugin()
     hook = plugin.add_hook(callback, userdata)
     handle = lib.zoitechat_hook_server(lib.ph, name.encode(), priority, lib._on_server_hook, hook.handle)
@@ -280,6 +305,7 @@ def hook_server(name, callback, userdata=None, priority=PRI_NORM):
 
 
 def hook_server_attrs(name, callback, userdata=None, priority=PRI_NORM):
+    __require_capability('events.server')
     plugin = __get_current_plugin()
     hook = plugin.add_hook(callback, userdata)
     handle = lib.zoitechat_hook_server_attrs(lib.ph, name.encode(), priority, lib._on_server_attrs_hook, hook.handle)
@@ -288,6 +314,7 @@ def hook_server_attrs(name, callback, userdata=None, priority=PRI_NORM):
 
 
 def hook_timer(timeout, callback, userdata=None):
+    __require_capability('events.timer')
     plugin = __get_current_plugin()
     hook = plugin.add_hook(callback, userdata)
     handle = lib.zoitechat_hook_timer(lib.ph, timeout, lib._on_timer_hook, hook.handle)
@@ -296,6 +323,7 @@ def hook_timer(timeout, callback, userdata=None):
 
 
 def hook_unload(callback, userdata=None):
+    __require_capability('events.unload')
     plugin = __get_current_plugin()
     hook = plugin.add_hook(callback, userdata, is_unload=True)
     return id(hook)
@@ -316,10 +344,16 @@ def register_callback(event_name, callback, userdata=None):
         return callback(event)
 
     if event_name == 'message':
+        plugin = __require_capability('events.message')
+
         def on_message(words, word_eol, local_userdata, attrs):
             return build_event(words, word_eol, local_userdata, attrs, 'PRIVMSG')
 
-        return hook_server_attrs('PRIVMSG', on_message, userdata)
+        hook = plugin.add_hook(on_message, userdata)
+        handle = lib.zoitechat_hook_server_attrs(lib.ph, b'PRIVMSG', PRI_NORM,
+                                                lib._on_server_attrs_hook, hook.handle)
+        hook.zoitechat_hook = handle
+        return id(hook)
 
     if event_name == 'server':
         def on_server(words, word_eol, local_userdata, attrs):
@@ -370,6 +404,7 @@ def unhook(handle):
 
 
 def set_pluginpref(name, value):
+    __require_capability('preferences.write')
     if isinstance(value, str):
         return bool(lib.zoitechat_pluginpref_set_str(lib.ph, name.encode(), value.encode()))
 
@@ -381,6 +416,7 @@ def set_pluginpref(name, value):
 
 
 def get_pluginpref(name):
+    __require_capability('preferences.read')
     name = name.encode()
     string_out = ffi.new('char[512]')
     if lib.zoitechat_pluginpref_get_str(lib.ph, name, string_out) != 1:
@@ -400,10 +436,12 @@ def get_pluginpref(name):
 
 
 def del_pluginpref(name):
+    __require_capability('preferences.write')
     return bool(lib.zoitechat_pluginpref_delete(lib.ph, name.encode()))
 
 
 def list_pluginpref():
+    __require_capability('preferences.read')
     prefs_str = ffi.new('char[4096]')
     if lib.zoitechat_pluginpref_list(lib.ph, prefs_str) == 1:
         return __decode(ffi.string(prefs_str)).split(',')
@@ -433,6 +471,7 @@ class Context:
         lib.zoitechat_set_context(lib.ph, old_ctx)
 
     def set(self):
+        __require_capability('session.read')
         # XXX: API addition, C plugin silently ignored failure
         return bool(lib.zoitechat_set_context(lib.ph, self._ctx))
 
@@ -459,11 +498,13 @@ class Context:
 
 
 def get_context():
+    __require_capability('session.read')
     ctx = lib.zoitechat_get_context(lib.ph)
     return Context(ctx)
 
 
 def find_context(server=None, channel=None):
+    __require_capability('session.read')
     server = server.encode() if server is not None else ffi.NULL
     channel = channel.encode() if channel is not None else ffi.NULL
     ctx = lib.zoitechat_find_context(lib.ph, server, channel)

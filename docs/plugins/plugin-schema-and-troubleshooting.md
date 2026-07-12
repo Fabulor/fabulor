@@ -102,7 +102,7 @@ Required and supported fields:
 | `entrypoint` | string | Relative entry file path inside the plugin folder. |
 | `requires_api_version` | string or number | Minimum Fabulor plugin API version needed by this plugin. |
 | `dependencies` | array of strings | Plugin ids that must load first. |
-| `capabilities` | array of strings | Declared capabilities for policy checks and diagnostics. |
+| `capabilities` | array of strings | Enforced permissions required by privileged host operations. |
 | `description` | string | Short summary of plugin behaviour. |
 | `author` | string | Plugin author or organisation. |
 | `homepage` | string | URL for source, docs, or support. |
@@ -152,7 +152,27 @@ The current runtime already enforces these checks:
 7. Dependency cycles are detected during load-order resolution.
 8. Safe mode and blacklist decisions are logged as diagnostics.
 
-The current runtime records but does not yet actively enforce `capabilities`. For now they are best treated as accurate declarative metadata for documentation, diagnostics, and future policy work.
+Manifest capabilities are deny-by-default and enforced across C#, Python, and Tcl. Unknown or duplicate capability names reject the manifest during validation. A plugin that calls an operation without declaring its capability is denied at runtime and receives a plugin-specific error or diagnostic.
+
+Supported capabilities:
+
+| Capability | Grants |
+| --- | --- |
+| `messages.write` | Send a message through the shared message API. |
+| `session.read` | Read active session, user, context, and list information. |
+| `ui.write` | Print or emit output into the client UI. |
+| `commands.execute` | Execute a client command. |
+| `commands.manage` | Add or remove user commands. |
+| `preferences.read` | Read client or plugin preference data. |
+| `preferences.write` | Set or delete plugin preference data. |
+| `events.message` | Register message callbacks. |
+| `events.server` | Register generic or named server callbacks. |
+| `events.print` | Register print-event callbacks. |
+| `events.command` | Register command callbacks. |
+| `events.timer` | Register timer callbacks. |
+| `events.unload` | Register unload callbacks. |
+
+Logging through the language-specific manifest logger and pure text stripping do not require capabilities. Capabilities constrain cooperation with the Fabulor host; they are not an operating-system sandbox and cannot contain native code or a compromised language runtime.
 
 ## Safe Mode
 

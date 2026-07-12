@@ -75,7 +75,7 @@ proc init {} {
 
 1. Keep callback handlers lightweight to avoid blocking the main thread.
 2. Use the simple `addons\<name>\<name>.tcl` layout for personal scripts and aliases.
-3. Keep manifest capabilities aligned with actual plugin behaviour when using the advanced manifest path.
+3. Declare every host operation the plugin uses. Tcl commands return `TCL_ERROR` with a plugin-specific message when the corresponding manifest capability is absent.
 4. The embedded Tcl host currently exposes `zoitechat::command`, `zoitechat::print`, `zoitechat::log`, `zoitechat::add_user_command`, `zoitechat::remove_user_command`, `zoitechat::getinfo`, `zoitechat::get_user_info`, `zoitechat::nickcmp`, `zoitechat::send_message`, `zoitechat::get_user_count`, and `zoitechat::register_callback`.
 5. `zoitechat::getinfo` currently covers the safe session-backed values `away`, `channel`, `configdir`, `host`, `libdirfs`, `modes`, `network`, `nick`, `server`, `topic`, `version`, `xchatdir`, and `xchatdirfs`.
 6. `zoitechat::register_callback` routes manifest callbacks through the shared host registry and can subscribe to generic events such as `message`, `server`, `print`, and `command`, as well as specific forms like `server:NOTICE`, `print:Channel Message`, or `command:SAY`.

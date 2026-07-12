@@ -76,7 +76,7 @@ def init():
 
 1. Keep callback handlers lightweight to avoid blocking the main thread.
 2. Use the simple `addons\<name>\<name>.py` layout for personal scripts and helpers. Relative Python load requests resolve under the profile `addons` directory.
-3. Keep manifest capabilities aligned with actual plugin behaviour when using the advanced manifest path. Manifest Python entrypoints must resolve under the bundled `Plugins\` root or the user profile `plugins\` root.
+3. Declare every host operation the plugin uses. Manifest Python API calls are denied when the corresponding capability is absent; simple add-ons remain outside manifest capability policy. Manifest Python entrypoints must resolve under the bundled `Plugins\` root or the user profile `plugins\` root.
 4. `zoitechat.log(...)`, `zoitechat.send_message(...)`, `zoitechat.get_user_count()`, `zoitechat.get_user_info()`, and `zoitechat.register_callback(...)` are available in the embedded host.
 5. `zoitechat.register_callback(...)` currently supports `message`, `server`, `server:<name>`, `print:<event>`, and `command:<name>`.
 6. Callback payloads now include richer context such as `source`, `time`, `channel`, `network`, `nick`, `server`, `word1`-`word4`, and `word_eol1`-`word_eol2` where the underlying event provides them.

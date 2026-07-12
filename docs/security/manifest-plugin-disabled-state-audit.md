@@ -127,7 +127,7 @@ The audit covers:
 
 Status: do not expose `FABULOR_ENABLE_MANIFEST_PLUGINS=1` to users yet.
 
-The manifest host is useful as a development scaffold, but it is not ready for third-party plugins. The largest blockers are unchecked path traversal in manifest entrypoints, regex-based manifest parsing with no strict schema or size limits, process-global runtime search-path mutations, environment/cwd runtime root overrides, no enforced capability policy, and uneven isolation across languages.
+The manifest host is useful as a development scaffold, but it is not ready for third-party plugins. The remaining largest blockers include strict JSON/schema validation, complete callback lifetime hardening, and uneven interpreter isolation across languages. Entrypoint containment, runtime-root policy, and capability enforcement have since been hardened as recorded below.
 
 ## Root Discovery
 
@@ -284,16 +284,17 @@ Minimum fix: define allowed event names and maximum lengths/counts, add duplicat
 
 ## Capabilities
 
-Capabilities are currently advisory metadata only:
+Status: enforced deny-by-default policy implemented on 2026-07-12.
 
-- `src/common/fabulor-plugin-host.c:393` - parses `capabilities`
-- `src/common/fabulor-plugin-host.c:2112` - allocates the capabilities array
-- `src/common/fabulor-plugin-host.c:2130` - frees the capabilities array
-- `docs/plugins/plugin-schema-and-troubleshooting.md:136` - documents that capabilities are recorded but not enforced
+- Manifest validation rejects unknown and duplicate capability names.
+- The allowlist covers message sending, session reads, UI output, command execution/management, preference reads/writes, and message/server/print/command/timer/unload callback families.
+- C# passes plugin identity on every privileged native callback; the native boundary checks the manifest before invoking the shared API.
+- Tcl stores a private capability set in each interpreter state and checks it before privileged commands.
+- Python manifest loading attaches identity and capabilities to each plugin object. API wrappers derive the calling plugin and deny undeclared operations; trusted simple add-ons are unaffected.
+- The shared callback registry independently verifies event-family capabilities for C# and Tcl registrations. Python's legacy hook-backed callbacks enforce the same mapping in the Python API layer.
+- Logging and pure text stripping remain unprivileged.
 
-Pre-enable issue: no runtime API call, callback registration, file/runtime access, or language loader decision is gated by manifest `capabilities`.
-
-Decision for now: treat `capabilities` as advisory only and do not expose third-party manifest plugins as policy-enforced. Before user-facing enablement, either remove policy language from user documentation or implement enforcement for at least `messages.write`, `session.read`, and `events.*`.
+Capabilities constrain access to cooperative Fabulor host APIs. They do not provide operating-system sandboxing, contain native code, or replace the outstanding per-plugin interpreter isolation work.
 
 ## Minimum Pre-Enable Fix List
 
@@ -307,7 +308,7 @@ Before `FABULOR_ENABLE_MANIFEST_PLUGINS=1` becomes user-facing, require at least
 - Removal or containment of Tcl process-wide `PATH` mutation. Status: addressed for manifest Tcl loading.
 - A Python manifest host design that is separate from the legacy global Python plugin, or a clear decision that Python manifests remain disabled. Status: the manifest load-authority and policy-attribution boundary was separated on 2026-07-12; per-plugin interpreter isolation remains outstanding.
 - Callback event allowlists, length/count limits, duplicate policy, safe queued-dispatch lifetime, and per-plugin callback cleanup.
-- A capability policy decision: explicitly advisory-only with no security claims, or enforced gates for every exposed API and event surface.
+- A capability policy decision: explicitly advisory-only with no security claims, or enforced gates for every exposed API and event surface. Status: enforced deny-by-default policy implemented across C#, Python, and Tcl on 2026-07-12.
 
 ## Repository Security Tool Pass Scope
 

@@ -70,7 +70,7 @@ public sealed class GreeterPlugin : IZoiteChatPlugin
 
 1. Keep callback handlers lightweight to avoid blocking the main thread.
 2. Use the simple `addons\<name>\<name>.cs` layout for personal C# add-ons.
-3. Keep manifest capabilities aligned with actual plugin behaviour when using the advanced manifest path.
+3. Declare every host operation the plugin uses. C# message, session-read, and callback operations are denied when the corresponding manifest capability is absent.
 4. The managed contract assembly lives in `src\managed\Fabulor.PluginAbstractions` and currently defines `IZoiteChatPlugin`, `ZoiteChatContext`, `ZoiteChatEvent`, and `ZoiteChatUserInfo`.
 5. The current host scaffold keeps `ZoiteChatAPI` as a compatibility alias for `FabulorAPI` while the repo finishes the broader rebrand.
 6. C# manifests now load through the `src\managed\Fabulor.PluginHost` bridge, which calls `IZoiteChatPlugin.Init(...)` and routes callbacks back through the shared native registry.

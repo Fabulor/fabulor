@@ -42,7 +42,7 @@
   - [ ] Review entrypoint resolution for path traversal, absolute paths, symlinks/reparse points, and extension/language mismatches.
   - [ ] Review C#, Python, and Tcl runtime loading paths, DLL search order, and interpreter initialization boundaries.
   - [ ] Review callback/event registration lifetime, main-thread dispatch, cleanup, and failure isolation.
-  - [ ] Decide which declared manifest `capabilities` are advisory versus enforced before enabling third-party plugins.
+  - [x] Decide which declared manifest `capabilities` are advisory versus enforced before enabling third-party plugins.
   - [ ] Define the minimum fixes required before `FABULOR_ENABLE_MANIFEST_PLUGINS=1` can become user-facing.
 - [ ] Repository security tool pass.
   - [ ] Inventory available local tools: MSVC `/analyze`, CodeQL CLI, Semgrep, gitleaks/trufflehog, dependency scanners, and GitHub Actions checks.
@@ -160,7 +160,7 @@
 ## Current Runtime Gaps To Close Next
 
 - [x] Decide and document the coexistence/migration plan for legacy built-in C plugins versus manifest-driven plugins.
-- [ ] Decide whether declared `capabilities` remain advisory/diagnostic metadata or become an enforced policy surface.
+- [x] Decide whether declared `capabilities` remain advisory/diagnostic metadata or become an enforced policy surface.
 - [x] Tighten the Python runtime path so the modern manifest contract and the legacy scripting surface are clearly separated where required.
 - [ ] Add broader shared API helpers beyond the current message/log/user-count/user-info surface.
 - [ ] Rework the manifest plugin API before enabling it by default:
