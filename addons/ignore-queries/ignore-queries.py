@@ -1,5 +1,5 @@
 # Fabulor-Name: Ignore Queries
-# Fabulor-Version: 1.0.0
+# Fabulor-Version: 1.0.2
 # Fabulor-Description: Suppresses private messages with per-network whitelists
 
 """Fabulor add-on for suppressing unwanted private messages."""
@@ -12,7 +12,7 @@ import zoitechat
 
 
 __module_name__ = "Ignore Queries"
-__module_version__ = "1.0.0"
+__module_version__ = "1.0.2"
 __module_description__ = (
     "Suppresses private messages with per-network toggles and whitelists"
 )
@@ -21,6 +21,13 @@ IGNORE_DURATION = 30 * 60
 WHITELIST_FILE = os.path.join(os.path.dirname(__file__), "whitelist.json")
 
 _state = {}
+
+_RFC1459_CASEMAP = str.maketrans({
+    "[": "{",
+    "]": "}",
+    "\\": "|",
+    "^": "~",
+})
 
 
 def _new_network_state():
@@ -94,9 +101,14 @@ def _save_whitelist():
     return True
 
 
-def _matching_nick(whitelist, nick):
-    for candidate in whitelist:
-        if zoitechat.nickcmp(candidate, nick) == 0:
+def _nick_key(nick):
+    return nick.casefold().translate(_RFC1459_CASEMAP)
+
+
+def _matching_nick(nicknames, nick):
+    wanted = _nick_key(nick)
+    for candidate in nicknames:
+        if _nick_key(candidate) == wanted:
             return candidate
     return None
 
@@ -168,9 +180,18 @@ def _show_help():
     _print("       /IGNOREQUERIES WHITELIST LIST")
 
 
+def _command_arguments(words, word_eol):
+    if word_eol and word_eol[0]:
+        tokens = word_eol[0].split()
+        if tokens and tokens[0].lstrip("/").upper() == "IGNOREQUERIES":
+            return tokens[1:]
+
+    return words[1:]
+
+
 def on_ignorequeries_command(words, word_eol, userdata):
-    del word_eol, userdata
-    args = words[1:]
+    del userdata
+    args = _command_arguments(words, word_eol)
     action = args[0].upper() if args else "STATUS"
 
     if action == "ON":
