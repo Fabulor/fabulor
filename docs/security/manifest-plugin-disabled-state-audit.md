@@ -304,6 +304,17 @@ Before `FABULOR_ENABLE_MANIFEST_PLUGINS=1` becomes user-facing, require at least
 - Callback event allowlists, length/count limits, duplicate policy, safe queued-dispatch lifetime, and per-plugin callback cleanup. Status: addressed on 2026-07-13 and completed for isolated Python callback ownership on 2026-07-14. Python uses bounded main-interpreter proxy hooks while callback functions and userdata remain in the owning subinterpreter.
 - A capability policy decision: explicitly advisory-only with no security claims, or enforced gates for every exposed API and event surface. Status: enforced deny-by-default policy implemented across C#, Python, and Tcl on 2026-07-12.
 
+Pass-2 decision, 2026-07-14:
+
+- The path, parser, runtime-root, interpreter-lifetime, callback-lifetime, and cooperative capability prerequisites above are addressed. The manifest host may proceed to an explicitly opt-in user preference; it must not become enabled by default.
+- The preference must state that manifest plugins are trusted local code running with the user's operating-system privileges. Capabilities restrict cooperative Fabulor API access; they are not a process sandbox and do not prevent Python, Tcl, or managed code from using their language and operating-system facilities.
+- Enabling the preference must require an explicit confirmation before the value is persisted. The confirmation must identify the profile plugin root and advise loading only trusted code.
+- The persisted preference must default to disabled for new and existing profiles, require a client restart to take effect, and be ignored when Fabulor safe mode disables third-party plugins.
+- `FABULOR_ENABLE_MANIFEST_PLUGINS=1` may remain as a documented developer/testing override while the preference is introduced, but installer defaults and migrations must not set either mechanism silently.
+- Startup must continue reporting successful lifecycle operations and per-plugin failures. Invalid or failed plugins remain isolated from unrelated valid plugins under the documented dependency policy.
+
+This decision closes the pre-enable design audit. Implementing and validating the preference, confirmation flow, restart behavior, safe-mode precedence, and disabled-profile migration tests is a separate product stage before the environment gate can be retired from normal use.
+
 ## Repository Security Tool Pass Scope
 
 This stage covers the repository security tool pass from `To-Do.md`.

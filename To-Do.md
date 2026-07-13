@@ -37,14 +37,14 @@
   - [ ] Confirm disabled startup does not parse, load, execute, or trust files from user-controlled plugin/addon folders.
   - [ ] Confirm disabled plugin code does not alter DLL/runtime search paths in a way that affects normal client startup.
   - [ ] Record exact files/functions that implement the enable gate.
-- [ ] Plugin loader boundary review, pass 2: pre-enable design audit.
+- [x] Plugin loader boundary review, pass 2: pre-enable design audit.
   - [x] Review and harden plugin root discovery so roots, direct plugin directories, and manifests remain inside approved canonical paths and reject symlink/reparse points.
   - [x] Review and harden manifest parsing and validation for required fields, strict types, bounded size, malformed JSON handling, and per-plugin error isolation.
   - [x] Review entrypoint resolution for path traversal, absolute paths, symlinks/reparse points, and extension/language mismatches.
   - [x] Review C#, Python, and Tcl runtime loading paths, DLL search order, and interpreter initialization boundaries.
   - [x] Review and harden callback/event registration lifetime, main-thread dispatch, cleanup, and failure isolation.
   - [x] Decide which declared manifest `capabilities` are advisory versus enforced before enabling third-party plugins.
-  - [ ] Define the minimum fixes required before `FABULOR_ENABLE_MANIFEST_PLUGINS=1` can become user-facing.
+  - [x] Define the minimum fixes required before `FABULOR_ENABLE_MANIFEST_PLUGINS=1` can become user-facing.
 - [ ] Repository security tool pass.
   - [ ] Inventory available local tools: MSVC `/analyze`, CodeQL CLI, Semgrep, gitleaks/trufflehog, dependency scanners, and GitHub Actions checks.
   - [ ] Run secret scanning across tracked files and review any hits.
