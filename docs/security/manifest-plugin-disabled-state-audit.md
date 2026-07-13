@@ -798,6 +798,15 @@ Validation:
   the rebuilt x64 MSI binding record confirms that the helper is packaged.
 - The x64 MSI and bootstrapper rebuild completed with 0 errors. The existing
   empty GTK4 `lib\\gio` harvest and same-version ICE61 warnings remain unchanged.
+- Installed-client validation exposed false "untrusted plugin directory"
+  diagnostics for legacy plugin DLLs stored beside manifest directories. Root
+  discovery now ignores ordinary non-directory entries before applying strict
+  directory containment checks; symbolic links and directory reparse points
+  still reach the rejecting validator. A native regression test covers the
+  legacy-DLL and manifest-directory distinction. The updated installed client
+  then loaded the Python greeter in its isolated interpreter, dispatched its
+  first message callback alongside C#, and closed normally without teardown
+  errors; the false legacy-DLL diagnostics were absent.
 
 This is interpreter isolation, not an operating-system sandbox. A Python plugin
 can still use standard-library and operating-system facilities available to the

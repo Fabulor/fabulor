@@ -377,6 +377,33 @@ test_path_policy_rejects_non_child_names (void)
 	g_assert_null (resolved);
 }
 
+static void
+test_path_policy_filters_regular_root_files (void)
+{
+	GError *error = NULL;
+	char *tmp_root = g_dir_make_tmp ("fabulor-manifest-filter-XXXXXX", &error);
+	char *legacy_plugin;
+	char *manifest_plugin;
+
+	g_assert_no_error (error);
+	g_assert_nonnull (tmp_root);
+	legacy_plugin = g_build_filename (tmp_root, "hcpython3.dll", NULL);
+	manifest_plugin = g_build_filename (tmp_root, "example.python.greeter", NULL);
+	g_assert_true (g_file_set_contents (legacy_plugin, "legacy", 6, &error));
+	g_assert_no_error (error);
+	g_assert_cmpint (g_mkdir (manifest_plugin, 0700), ==, 0);
+
+	g_assert_false (fabulor_plugin_path_is_directory_candidate (legacy_plugin));
+	g_assert_true (fabulor_plugin_path_is_directory_candidate (manifest_plugin));
+
+	g_remove (legacy_plugin);
+	g_rmdir (manifest_plugin);
+	g_rmdir (tmp_root);
+	g_free (manifest_plugin);
+	g_free (legacy_plugin);
+	g_free (tmp_root);
+}
+
 static gboolean
 create_test_symlink (const char *link_path, const char *target_path, gboolean directory)
 {
@@ -589,6 +616,7 @@ main (int argc, char **argv)
 	g_test_add_func ("/manifest-json/input-size-limit", test_input_size_limit);
 	g_test_add_func ("/manifest-paths/valid-tree", test_path_policy_valid_tree);
 	g_test_add_func ("/manifest-paths/rejects-non-child-names", test_path_policy_rejects_non_child_names);
+	g_test_add_func ("/manifest-paths/filters-regular-root-files", test_path_policy_filters_regular_root_files);
 	g_test_add_func ("/manifest-paths/rejects-links", test_path_policy_rejects_links);
 	return g_test_run ();
 }

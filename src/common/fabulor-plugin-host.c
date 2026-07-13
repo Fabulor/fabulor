@@ -518,6 +518,7 @@ discover_manifests_in_root (FabulorPluginCatalog *catalog, const char *plugins_r
 
 	while ((entry_name = g_dir_read_name (directory)) != NULL)
 	{
+		char *entry_path = NULL;
 		char *plugin_dir = NULL;
 		char *manifest_path = NULL;
 		GFile *manifest_file;
@@ -527,6 +528,14 @@ discover_manifests_in_root (FabulorPluginCatalog *catalog, const char *plugins_r
 		{
 			continue;
 		}
+
+		entry_path = g_build_filename (canonical_root, entry_name, NULL);
+		if (!fabulor_plugin_path_is_directory_candidate (entry_path))
+		{
+			g_free (entry_path);
+			continue;
+		}
+		g_free (entry_path);
 
 		if (!fabulor_plugin_path_resolve_child_directory (canonical_root,
 												 entry_name,
