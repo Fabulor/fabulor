@@ -1,10 +1,17 @@
 #include "fabulor-plugin-path-policy.h"
 
 #include <gio/gio.h>
+#include <glib/gstdio.h>
+#include <errno.h>
 #include <string.h>
 
 #ifdef WIN32
+#include <io.h>
 #include <windows.h>
+#define FABULOR_PLUGIN_READ_OK 4
+#else
+#include <unistd.h>
+#define FABULOR_PLUGIN_READ_OK R_OK
 #endif
 
 static gboolean
@@ -239,5 +246,55 @@ fabulor_plugin_path_resolve_regular_file (const char *canonical_directory,
 	}
 
 	*canonical_file = candidate;
+	return TRUE;
+}
+
+gboolean
+fabulor_plugin_path_resolve_entrypoint (const char *canonical_directory,
+										const char *entrypoint,
+										const char *expected_extension,
+										char **canonical_entrypoint,
+										GError **error)
+{
+	const char *extension;
+	char *resolved = NULL;
+
+	if (canonical_entrypoint)
+	{
+		*canonical_entrypoint = NULL;
+	}
+	if (!canonical_entrypoint || !expected_extension || expected_extension[0] != '.')
+	{
+		g_set_error_literal (error, G_FILE_ERROR, G_FILE_ERROR_INVAL,
+							 "Entrypoint resolution requires an output path and expected extension.");
+		return FALSE;
+	}
+
+	extension = entrypoint ? strrchr (entrypoint, '.') : NULL;
+	if (!extension || g_ascii_strcasecmp (extension, expected_extension) != 0)
+	{
+		g_set_error (error, G_FILE_ERROR, G_FILE_ERROR_INVAL,
+					 "Plugin entrypoint '%s' must use the %s extension.",
+					 entrypoint ? entrypoint : "(null)", expected_extension);
+		return FALSE;
+	}
+
+	if (!fabulor_plugin_path_resolve_regular_file (canonical_directory,
+													entrypoint,
+													&resolved,
+													error))
+	{
+		return FALSE;
+	}
+
+	if (g_access (resolved, FABULOR_PLUGIN_READ_OK) != 0)
+	{
+		g_set_error (error, G_FILE_ERROR, g_file_error_from_errno (errno),
+					 "Plugin entrypoint is not readable: %s", resolved);
+		g_free (resolved);
+		return FALSE;
+	}
+
+	*canonical_entrypoint = resolved;
 	return TRUE;
 }

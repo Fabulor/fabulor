@@ -16,7 +16,7 @@ proc fabulor::plugins::example_tcl_greeter::on_message {eventData} {
         set location $user(channel)
     }
 
-    zoitechat::log "Tcl sample observed its first message event in $location."
+    zoitechat::log "Tcl sample observed its first incoming message event in $location."
 }
 
 proc init {} {

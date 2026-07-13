@@ -12,7 +12,7 @@ def on_message(event):
     _reported_first_message = True
     user = zoitechat.get_user_info()
     location = user.get("channel") or "the active session"
-    zoitechat.log(f"Python sample observed its first message event in {location}.")
+    zoitechat.log(f"Python sample observed its first incoming message event in {location}.")
     return None
 
 
