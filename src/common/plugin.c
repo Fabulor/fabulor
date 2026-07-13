@@ -156,6 +156,7 @@ static FabulorAPI fabulor_plugin_api;
 
 extern const struct prefs vars[];	/* cfgfiles.c */
 static const char *plugin_get_libdir (void);
+static char *fabulor_manifest_bundled_plugins_root (void);
 
 static gboolean
 fabulor_manifest_plugins_enabled (void)
@@ -491,10 +492,11 @@ fabulor_plugin_host_autoload (session *sess)
 	fabulor_plugin_catalog_set_safe_mode (fabulor_plugin_catalog, arg_skip_plugins);
 	fabulor_plugin_host_blacklist_load ();
 
-	bundled_plugins_dir = g_build_filename (plugin_get_libdir (), "Plugins", NULL);
+	bundled_plugins_dir = fabulor_manifest_bundled_plugins_root ();
 	user_plugins_dir = g_build_filename (get_xdir (), "plugins", NULL);
 
-	if (g_file_test (bundled_plugins_dir, G_FILE_TEST_IS_DIR)
+	if (bundled_plugins_dir
+		&& g_file_test (bundled_plugins_dir, G_FILE_TEST_IS_DIR)
 		&& !fabulor_plugin_catalog_discover_root (fabulor_plugin_catalog, bundled_plugins_dir, &error))
 	{
 		fabulor_api_log (sess, error->message);
@@ -879,6 +881,32 @@ plugin_get_libdir (void)
 		return libdir;
 	else
 		return ZOITECHATLIBDIR;
+}
+
+static char *
+fabulor_manifest_bundled_plugins_root (void)
+{
+#ifdef WIN32
+	char *install_root;
+	char *plugins_root;
+	const char *development_roots_enabled;
+
+	install_root = g_win32_get_package_installation_directory_of_module (NULL);
+	if (install_root)
+	{
+		plugins_root = g_build_filename (install_root, "Plugins", NULL);
+		g_free (install_root);
+		return plugins_root;
+	}
+
+	development_roots_enabled = g_getenv ("FABULOR_ENABLE_DEVELOPMENT_RUNTIME_ROOTS");
+	if (!development_roots_enabled || g_ascii_strcasecmp (development_roots_enabled, "1") != 0)
+	{
+		return NULL;
+	}
+#endif
+
+	return g_build_filename (plugin_get_libdir (), "Plugins", NULL);
 }
 
 #ifdef WIN32

@@ -36,6 +36,7 @@ jobs:
           import pathlib
           import py_compile
           import sys
+          import unicodedata
           import yaml
 
           repo = pathlib.Path.cwd()
@@ -70,21 +71,92 @@ jobs:
               "homepage",
           }
 
+          manifest_string_limits = {
+              "id": 128,
+              "name": 256,
+              "version": 64,
+              "language": 16,
+              "entrypoint": 1024,
+              "description": 2048,
+              "author": 256,
+              "homepage": 2048,
+          }
+          manifest_array_limits = {
+              "dependencies": (64, 128),
+              "capabilities": (32, 64),
+          }
+
+          def strict_json_object(pairs):
+              value = {}
+              for key, item in pairs:
+                  if key in value:
+                      raise ValueError(f"Duplicate JSON field '{key}'.")
+                  value[key] = item
+              return value
+
+          def utf8_length(value):
+              return len(value.encode("utf-8"))
+
+          def contains_control(value):
+              return any(unicodedata.category(character) == "Cc" for character in value)
+
           manifest_root = repo / "samples" / "plugins"
           manifests = sorted(manifest_root.glob("*/plugin.json"))
           if not manifests:
               raise SystemExit("No sample plugin manifests were found under samples/plugins.")
 
           discovered_ids = {}
+          parsed_manifests = {}
           for manifest_path in manifests:
-              manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
-              missing = sorted(required_manifest_fields.difference(manifest))
-              if missing:
-                  raise SystemExit(f"{manifest_path} is missing required fields: {', '.join(missing)}")
+              manifest_bytes = manifest_path.read_bytes()
+              if not 1 <= len(manifest_bytes) <= 64 * 1024:
+                  raise SystemExit(f"{manifest_path} must be between 1 byte and 64 KiB.")
+              try:
+                  manifest = json.loads(
+                      manifest_bytes.decode("utf-8"),
+                      object_pairs_hook=strict_json_object,
+                  )
+              except (UnicodeDecodeError, json.JSONDecodeError, ValueError) as exc:
+                  raise SystemExit(f"{manifest_path} is not strict valid JSON: {exc}") from exc
+              if type(manifest) is not dict:
+                  raise SystemExit(f"{manifest_path} must contain one JSON object.")
+              if set(manifest) != required_manifest_fields:
+                  missing = sorted(required_manifest_fields.difference(manifest))
+                  unknown = sorted(set(manifest).difference(required_manifest_fields))
+                  details = []
+                  if missing:
+                      details.append(f"missing fields: {', '.join(missing)}")
+                  if unknown:
+                      details.append(f"unknown fields: {', '.join(unknown)}")
+                  raise SystemExit(f"{manifest_path} has an invalid schema ({'; '.join(details)}).")
+              for field, maximum_bytes in manifest_string_limits.items():
+                  value = manifest[field]
+                  if type(value) is not str or not value:
+                      raise SystemExit(f"{manifest_path} field '{field}' must be a non-empty string.")
+                  if utf8_length(value) > maximum_bytes:
+                      raise SystemExit(f"{manifest_path} field '{field}' exceeds {maximum_bytes} UTF-8 bytes.")
+                  if contains_control(value):
+                      raise SystemExit(f"{manifest_path} field '{field}' contains a control character.")
+              api_version = manifest["requires_api_version"]
+              if type(api_version) is not int or api_version < 1 or api_version > 0xFFFFFFFF:
+                  raise SystemExit(f"{manifest_path} field 'requires_api_version' must be an unsigned 32-bit integer of at least 1.")
+              for field, (maximum_items, maximum_bytes) in manifest_array_limits.items():
+                  value = manifest[field]
+                  if type(value) is not list or len(value) > maximum_items:
+                      raise SystemExit(f"{manifest_path} field '{field}' must be an array of at most {maximum_items} strings.")
+                  if any(type(item) is not str or not item for item in value):
+                      raise SystemExit(f"{manifest_path} field '{field}' must contain only non-empty strings.")
+                  if any(utf8_length(item) > maximum_bytes for item in value):
+                      raise SystemExit(f"{manifest_path} field '{field}' contains an item exceeding {maximum_bytes} UTF-8 bytes.")
+                  if any(contains_control(item) for item in value):
+                      raise SystemExit(f"{manifest_path} field '{field}' contains a control character.")
+                  if len(value) != len(set(value)):
+                      raise SystemExit(f"{manifest_path} field '{field}' contains duplicate strings.")
               plugin_id = manifest["id"]
               if plugin_id in discovered_ids:
                   raise SystemExit(f"Duplicate plugin id '{plugin_id}' found in {manifest_path} and {discovered_ids[plugin_id]}.")
               discovered_ids[plugin_id] = manifest_path
+              parsed_manifests[manifest_path] = manifest
  
               entrypoint = manifest_path.parent / manifest["entrypoint"]
               if not entrypoint.exists():
@@ -98,7 +170,7 @@ jobs:
                       raise SystemExit(f"{manifest_path} points at a missing entrypoint: {entrypoint}")
 
           for manifest_path in manifests:
-              manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+              manifest = parsed_manifests[manifest_path]
               for dependency in manifest["dependencies"]:
                   if dependency not in discovered_ids:
                       raise SystemExit(f"{manifest_path} declares an unknown dependency '{dependency}'.")

@@ -18,6 +18,7 @@
  */
 
 #include <glib.h>
+#include <gio/gio.h>
 #include <stdlib.h>
 #include <stdint.h>
 #include <stdarg.h>
@@ -36,6 +37,8 @@
 #include "util.h"
 #include "zoitechatc.h"
 #include "fabulor-plugin-host.h"
+#include "fabulor-plugin-manifest-json.h"
+#include "fabulor-plugin-path-policy.h"
 
 typedef struct
 {
@@ -58,6 +61,7 @@ struct _fabulor_plugin_catalog
 	GHashTable *manifest_index;
 	GHashTable *blacklist;
 	GPtrArray *diagnostics;
+	guint discovery_diagnostic_count;
 	gboolean safe_mode_enabled;
 };
 
@@ -367,148 +371,90 @@ fabulor_active_callback_registry_remove_plugin (const char *plugin_id)
 }
 #endif
 
-static gboolean
-extract_string_field (const char *json, const char *field_name, char **value, GError **error)
+static char *
+fabulor_plugin_manifest_read_bounded (const char *manifest_path, gsize *json_length, GError **error)
 {
-	GRegex *regex;
-	GMatchInfo *match_info;
-	gboolean matched;
-	gboolean success;
-	char *pattern;
-	char *field;
+	GFile *file;
+	GFileInfo *info;
+	GFileInputStream *stream;
+	GByteArray *contents;
+	char buffer[4096];
+	gssize bytes_read;
 
-	*value = NULL;
-
-	field = g_regex_escape_string (field_name, -1);
-	pattern = g_strdup_printf ("\"%s\"\\s*:\\s*\"((?:\\\\.|[^\"\\\\])*)\"", field);
-	regex = g_regex_new (pattern, G_REGEX_DOTALL, 0, error);
-	g_free (field);
-	g_free (pattern);
-
-	if (!regex)
+	*json_length = 0;
+	file = g_file_new_for_path (manifest_path);
+	info = g_file_query_info (file,
+							   G_FILE_ATTRIBUTE_STANDARD_TYPE "," G_FILE_ATTRIBUTE_STANDARD_SIZE,
+							   G_FILE_QUERY_INFO_NOFOLLOW_SYMLINKS,
+							   NULL,
+							   error);
+	if (!info)
 	{
-		return FALSE;
+		g_object_unref (file);
+		return NULL;
+	}
+	if (g_file_info_get_file_type (info) != G_FILE_TYPE_REGULAR)
+	{
+		g_set_error (error, G_FILE_ERROR, G_FILE_ERROR_INVAL, "Plugin manifest is not a regular file: %s", manifest_path);
+		g_object_unref (info);
+		g_object_unref (file);
+		return NULL;
+	}
+	if (g_file_info_get_size (info) == 0
+		|| g_file_info_get_size (info) > FABULOR_PLUGIN_MANIFEST_MAX_BYTES)
+	{
+		g_set_error (error,
+					 G_FILE_ERROR,
+					 G_FILE_ERROR_INVAL,
+					 "Plugin manifest must be between 1 and %u bytes: %s",
+					 FABULOR_PLUGIN_MANIFEST_MAX_BYTES,
+					 manifest_path);
+		g_object_unref (info);
+		g_object_unref (file);
+		return NULL;
+	}
+	g_object_unref (info);
+
+	stream = g_file_read (file, NULL, error);
+	g_object_unref (file);
+	if (!stream)
+	{
+		return NULL;
 	}
 
-	matched = g_regex_match (regex, json, 0, &match_info);
-	success = TRUE;
-
-	if (matched)
+	contents = g_byte_array_sized_new (4096);
+	while ((bytes_read = g_input_stream_read (G_INPUT_STREAM (stream), buffer, sizeof (buffer), NULL, error)) > 0)
 	{
-		char *raw = g_match_info_fetch (match_info, 1);
-		*value = g_strcompress (raw);
-		g_free (raw);
-	}
-
-	g_match_info_free (match_info);
-	g_regex_unref (regex);
-	return success;
-}
-
-static gboolean
-extract_uint_field (const char *json, const char *field_name, guint *value, GError **error)
-{
-	GRegex *regex;
-	GMatchInfo *match_info;
-	char *pattern;
-	char *field;
-	gboolean matched;
-	gboolean success;
-
-	field = g_regex_escape_string (field_name, -1);
-	pattern = g_strdup_printf ("\"%s\"\\s*:\\s*(?:\"([0-9]+)\"|([0-9]+))", field);
-	regex = g_regex_new (pattern, G_REGEX_DOTALL, 0, error);
-	g_free (field);
-	g_free (pattern);
-
-	if (!regex)
-	{
-		return FALSE;
-	}
-
-	matched = g_regex_match (regex, json, 0, &match_info);
-	success = TRUE;
-	*value = 0;
-
-	if (matched)
-	{
-		char *raw = g_match_info_fetch (match_info, 1);
-		if (!raw || *raw == '\0')
+		if (contents->len + (guint) bytes_read > FABULOR_PLUGIN_MANIFEST_MAX_BYTES)
 		{
-			g_free (raw);
-			raw = g_match_info_fetch (match_info, 2);
+			g_set_error (error,
+						 G_FILE_ERROR,
+						 G_FILE_ERROR_INVAL,
+						 "Plugin manifest exceeds the %u-byte limit: %s",
+						 FABULOR_PLUGIN_MANIFEST_MAX_BYTES,
+						 manifest_path);
+			g_byte_array_free (contents, TRUE);
+			g_object_unref (stream);
+			return NULL;
 		}
-
-		if (raw && *raw != '\0')
-		{
-			*value = (guint) g_ascii_strtoull (raw, NULL, 10);
-		}
-
-		g_free (raw);
+		g_byte_array_append (contents, (const guint8 *) buffer, (guint) bytes_read);
 	}
-
-	g_match_info_free (match_info);
-	g_regex_unref (regex);
-	return success;
-}
-
-static gboolean
-extract_string_array_field (const char *json, const char *field_name, GPtrArray *values, GError **error)
-{
-	GRegex *array_regex;
-	GMatchInfo *array_match;
-	char *array_pattern;
-	char *field;
-	gboolean matched;
-	gboolean success;
-
-	field = g_regex_escape_string (field_name, -1);
-	array_pattern = g_strdup_printf ("\"%s\"\\s*:\\s*\\[(.*?)\\]", field);
-	array_regex = g_regex_new (array_pattern, G_REGEX_DOTALL, 0, error);
-	g_free (field);
-	g_free (array_pattern);
-
-	if (!array_regex)
+	g_object_unref (stream);
+	if (bytes_read < 0)
 	{
-		return FALSE;
+		g_byte_array_free (contents, TRUE);
+		return NULL;
 	}
-
-	matched = g_regex_match (array_regex, json, 0, &array_match);
-	success = TRUE;
-
-	if (matched)
+	if (contents->len == 0)
 	{
-		GRegex *item_regex;
-		GMatchInfo *item_match;
-		char *body = g_match_info_fetch (array_match, 1);
-
-		item_regex = g_regex_new ("\"((?:\\\\.|[^\"\\\\])*)\"", G_REGEX_DOTALL, 0, error);
-		if (!item_regex)
-		{
-			g_free (body);
-			g_match_info_free (array_match);
-			g_regex_unref (array_regex);
-			return FALSE;
-		}
-
-		g_regex_match (item_regex, body, 0, &item_match);
-		while (g_match_info_matches (item_match))
-		{
-			char *raw = g_match_info_fetch (item_match, 1);
-			char *item = g_strcompress (raw);
-			g_free (raw);
-			g_ptr_array_add (values, item);
-			g_match_info_next (item_match, NULL);
-		}
-
-		g_match_info_free (item_match);
-		g_regex_unref (item_regex);
-		g_free (body);
+		g_set_error (error, G_FILE_ERROR, G_FILE_ERROR_INVAL, "Empty plugin manifest: %s", manifest_path);
+		g_byte_array_free (contents, TRUE);
+		return NULL;
 	}
 
-	g_match_info_free (array_match);
-	g_regex_unref (array_regex);
-	return success;
+	*json_length = contents->len;
+	g_byte_array_append (contents, (const guint8 *) "", 1);
+	return (char *) g_byte_array_free (contents, FALSE);
 }
 
 static FabulorPluginManifest *
@@ -518,15 +464,9 @@ fabulor_plugin_manifest_load_from_path (const char *manifest_path, GError **erro
 	char *json;
 	gsize json_length;
 
-	if (!g_file_get_contents (manifest_path, &json, &json_length, error))
+	json = fabulor_plugin_manifest_read_bounded (manifest_path, &json_length, error);
+	if (!json)
 	{
-		return NULL;
-	}
-
-	if (json_length == 0)
-	{
-		g_set_error (error, G_FILE_ERROR, G_FILE_ERROR_INVAL, "Empty plugin manifest: %s", manifest_path);
-		g_free (json);
 		return NULL;
 	}
 
@@ -534,17 +474,7 @@ fabulor_plugin_manifest_load_from_path (const char *manifest_path, GError **erro
 	manifest->manifest_path = g_strdup (manifest_path);
 	manifest->plugin_directory = g_path_get_dirname (manifest_path);
 
-	if (!extract_string_field (json, "id", &manifest->id, error)
-		|| !extract_string_field (json, "name", &manifest->name, error)
-		|| !extract_string_field (json, "version", &manifest->version, error)
-		|| !extract_string_field (json, "language", &manifest->language_name, error)
-		|| !extract_string_field (json, "entrypoint", &manifest->entrypoint, error)
-		|| !extract_uint_field (json, "requires_api_version", &manifest->requires_api_version, error)
-		|| !extract_string_array_field (json, "dependencies", manifest->dependencies, error)
-		|| !extract_string_array_field (json, "capabilities", manifest->capabilities, error)
-		|| !extract_string_field (json, "description", &manifest->description, error)
-		|| !extract_string_field (json, "author", &manifest->author, error)
-		|| !extract_string_field (json, "homepage", &manifest->homepage, error))
+	if (!fabulor_plugin_manifest_parse_json (json, json_length, manifest, error))
 	{
 		fabulor_plugin_manifest_free (manifest);
 		g_free (json);
@@ -572,27 +502,69 @@ discover_manifests_in_root (FabulorPluginCatalog *catalog, const char *plugins_r
 {
 	GDir *directory;
 	const char *entry_name;
+	char *canonical_root;
 
-	directory = g_dir_open (plugins_root, 0, error);
+	if (!fabulor_plugin_path_validate_root (plugins_root, &canonical_root, error))
+	{
+		return FALSE;
+	}
+
+	directory = g_dir_open (canonical_root, 0, error);
 	if (!directory)
 	{
+		g_free (canonical_root);
 		return FALSE;
 	}
 
 	while ((entry_name = g_dir_read_name (directory)) != NULL)
 	{
-		char *plugin_dir;
-		char *manifest_path;
+		char *plugin_dir = NULL;
+		char *manifest_path = NULL;
+		GFile *manifest_file;
+		GError *path_error = NULL;
 
 		if (entry_name[0] == '.')
 		{
 			continue;
 		}
 
-		plugin_dir = g_build_filename (plugins_root, entry_name, NULL);
-		manifest_path = g_build_filename (plugin_dir, "plugin.json", NULL);
+		if (!fabulor_plugin_path_resolve_child_directory (canonical_root,
+												 entry_name,
+												 &plugin_dir,
+												 &path_error))
+		{
+			fabulor_plugin_catalog_add_diagnostic (catalog,
+											 "Skipping untrusted plugin directory '%s' under %s: %s",
+											 entry_name,
+											 canonical_root,
+											 path_error ? path_error->message : "unknown path error");
+			g_clear_error (&path_error);
+			continue;
+		}
 
-		if (g_file_test (plugin_dir, G_FILE_TEST_IS_DIR) && g_file_test (manifest_path, G_FILE_TEST_EXISTS))
+		manifest_file = g_file_new_build_filename (plugin_dir, "plugin.json", NULL);
+		if (!g_file_query_exists (manifest_file, NULL))
+		{
+			g_object_unref (manifest_file);
+			g_free (plugin_dir);
+			continue;
+		}
+		g_object_unref (manifest_file);
+
+		if (!fabulor_plugin_path_resolve_regular_file (plugin_dir,
+											 "plugin.json",
+											 &manifest_path,
+											 &path_error))
+		{
+			fabulor_plugin_catalog_add_diagnostic (catalog,
+											 "Skipping untrusted plugin manifest under %s: %s",
+											 plugin_dir,
+											 path_error ? path_error->message : "unknown path error");
+			g_clear_error (&path_error);
+			g_free (plugin_dir);
+			continue;
+		}
+
 		{
 			FabulorPluginManifest *manifest;
 			GError *manifest_error = NULL;
@@ -628,6 +600,7 @@ discover_manifests_in_root (FabulorPluginCatalog *catalog, const char *plugins_r
 	}
 
 	g_dir_close (directory);
+	g_free (canonical_root);
 	return TRUE;
 }
 
@@ -3080,6 +3053,7 @@ fabulor_plugin_catalog_clear (FabulorPluginCatalog *catalog)
 	g_hash_table_remove_all (catalog->manifest_index);
 	g_ptr_array_set_size (catalog->manifests, 0);
 	g_ptr_array_set_size (catalog->diagnostics, 0);
+	catalog->discovery_diagnostic_count = 0;
 }
 
 void
@@ -3120,6 +3094,8 @@ fabulor_plugin_catalog_blacklist_plugin (FabulorPluginCatalog *catalog, const ch
 gboolean
 fabulor_plugin_catalog_discover (FabulorPluginCatalog *catalog, const char *plugins_root, GError **error)
 {
+	gboolean success;
+
 	if (!catalog || !plugins_root)
 	{
 		g_set_error_literal (error, G_FILE_ERROR, G_FILE_ERROR_INVAL, "Plugin discovery requires a valid catalog and root path.");
@@ -3127,19 +3103,25 @@ fabulor_plugin_catalog_discover (FabulorPluginCatalog *catalog, const char *plug
 	}
 
 	fabulor_plugin_catalog_clear (catalog);
-	return discover_manifests_in_root (catalog, plugins_root, error);
+	success = discover_manifests_in_root (catalog, plugins_root, error);
+	catalog->discovery_diagnostic_count = catalog->diagnostics->len;
+	return success;
 }
 
 gboolean
 fabulor_plugin_catalog_discover_root (FabulorPluginCatalog *catalog, const char *plugins_root, GError **error)
 {
+	gboolean success;
+
 	if (!catalog || !plugins_root)
 	{
 		g_set_error_literal (error, G_FILE_ERROR, G_FILE_ERROR_INVAL, "Plugin discovery requires a valid catalog and root path.");
 		return FALSE;
 	}
 
-	return discover_manifests_in_root (catalog, plugins_root, error);
+	success = discover_manifests_in_root (catalog, plugins_root, error);
+	catalog->discovery_diagnostic_count = catalog->diagnostics->len;
+	return success;
 }
 
 GPtrArray *
@@ -3147,6 +3129,7 @@ fabulor_plugin_catalog_resolve_load_order (FabulorPluginCatalog *catalog, guint 
 {
 	GPtrArray *ordered;
 	GPtrArray *enabled_manifests;
+	GHashTable *available_ids;
 	GHashTable *in_degrees;
 	GHashTable *dependents;
 	GQueue queue = G_QUEUE_INIT;
@@ -3154,17 +3137,17 @@ fabulor_plugin_catalog_resolve_load_order (FabulorPluginCatalog *catalog, guint 
 	gpointer key;
 	gpointer value;
 	guint i;
-	gboolean has_validation_errors = FALSE;
+	gboolean removed_dependency;
 
 	if (!catalog)
 	{
 		g_set_error_literal (error, G_FILE_ERROR, G_FILE_ERROR_INVAL, "Plugin load-order resolution requires a valid catalog.");
 		return NULL;
 	}
-
-	g_ptr_array_set_size (catalog->diagnostics, 0);
+	g_ptr_array_set_size (catalog->diagnostics, catalog->discovery_diagnostic_count);
 
 	enabled_manifests = g_ptr_array_new ();
+	available_ids = g_hash_table_new (g_str_hash, g_str_equal);
 	for (i = 0; i < catalog->manifests->len; i++)
 	{
 		FabulorPluginManifest *manifest = g_ptr_array_index (catalog->manifests, i);
@@ -3184,19 +3167,39 @@ fabulor_plugin_catalog_resolve_load_order (FabulorPluginCatalog *catalog, guint 
 
 		if (!fabulor_plugin_manifest_validate (catalog, manifest, api_version))
 		{
-			has_validation_errors = TRUE;
 			continue;
 		}
 
 		g_ptr_array_add (enabled_manifests, manifest);
+		g_hash_table_add (available_ids, manifest->id);
 	}
 
-	if (has_validation_errors)
+	do
 	{
-		g_set_error_literal (error, G_FILE_ERROR, G_FILE_ERROR_INVAL, "Plugin validation failed. Review diagnostics for details.");
-		g_ptr_array_free (enabled_manifests, TRUE);
-		return NULL;
-	}
+		removed_dependency = FALSE;
+		for (i = enabled_manifests->len; i > 0; i--)
+		{
+			FabulorPluginManifest *manifest = g_ptr_array_index (enabled_manifests, i - 1);
+			guint dependency_index;
+
+			for (dependency_index = 0; dependency_index < manifest->dependencies->len; dependency_index++)
+			{
+				const char *dependency = g_ptr_array_index (manifest->dependencies, dependency_index);
+				if (!g_hash_table_contains (available_ids, dependency))
+				{
+					fabulor_plugin_manifest_add_validation (catalog,
+														manifest,
+														"Skipped because dependency '%s' is disabled or invalid.",
+														dependency);
+					g_hash_table_remove (available_ids, manifest->id);
+					g_ptr_array_remove_index (enabled_manifests, i - 1);
+					removed_dependency = TRUE;
+					break;
+				}
+			}
+		}
+	} while (removed_dependency);
+	g_hash_table_unref (available_ids);
 
 	ordered = g_ptr_array_new ();
 	in_degrees = g_hash_table_new (g_str_hash, g_str_equal);

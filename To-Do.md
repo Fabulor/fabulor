@@ -37,8 +37,8 @@
   - [ ] Confirm disabled plugin code does not alter DLL/runtime search paths in a way that affects normal client startup.
   - [ ] Record exact files/functions that implement the enable gate.
 - [ ] Plugin loader boundary review, pass 2: pre-enable design audit.
-  - [ ] Review plugin root discovery and ensure paths stay inside approved roots.
-  - [ ] Review manifest parsing and validation for required fields, type checks, size limits, malformed JSON handling, and error isolation.
+  - [x] Review and harden plugin root discovery so roots, direct plugin directories, and manifests remain inside approved canonical paths and reject symlink/reparse points.
+  - [x] Review and harden manifest parsing and validation for required fields, strict types, bounded size, malformed JSON handling, and per-plugin error isolation.
   - [ ] Review entrypoint resolution for path traversal, absolute paths, symlinks/reparse points, and extension/language mismatches.
   - [ ] Review C#, Python, and Tcl runtime loading paths, DLL search order, and interpreter initialization boundaries.
   - [x] Review and harden callback/event registration lifetime, main-thread dispatch, cleanup, and failure isolation.

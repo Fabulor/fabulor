@@ -48,8 +48,31 @@
 #else
 
 #include "config.h"
+#include <limits.h>
 #include <winsock2.h>
 #include <ws2tcpip.h>
+
+static inline int
+zc_socket_store (SOCKET sok)
+{
+	if (sok == INVALID_SOCKET)
+		return -1;
+
+	/* GLib's Windows GIOChannel socket API accepts only a 32-bit gint. */
+	if (sok > (SOCKET) INT_MAX)
+	{
+		closesocket (sok);
+		WSASetLastError (WSAEMFILE);
+		return -1;
+	}
+
+	return (int) sok;
+}
+
+#define zc_socket_create(family, type, protocol) \
+	zc_socket_store (socket ((family), (type), (protocol)))
+#define zc_socket_accept(sok, addr, addrlen) \
+	zc_socket_store (accept ((SOCKET) (sok), (addr), (addrlen)))
 
 #define set_blocking(sok)	{ \
 									unsigned long zero = 0; \
@@ -62,6 +85,13 @@
 #define would_block() (WSAGetLastError() == WSAEWOULDBLOCK)
 #define sock_error WSAGetLastError
 
+#endif
+
+#ifndef WIN32
+#define zc_socket_create(family, type, protocol) \
+	socket ((family), (type), (protocol))
+#define zc_socket_accept(sok, addr, addrlen) \
+	accept ((sok), (addr), (addrlen))
 #endif
 
 #endif

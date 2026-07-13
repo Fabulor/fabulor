@@ -1,12 +1,33 @@
-param ([string] $templateFilename, [string] $outputFilename)
+[CmdletBinding()]
+param (
+	[Parameter(Mandatory = $true)]
+	[ValidateNotNullOrEmpty()]
+	[string] $templateFilename,
 
-$repoRoot = $env:SOLUTIONDIR
+	[Parameter(Mandatory = $true)]
+	[ValidateNotNullOrEmpty()]
+	[string] $outputFilename
+)
+
+Set-StrictMode -Version 2.0
+$ErrorActionPreference = 'Stop'
+
+if ([string]::IsNullOrWhiteSpace($env:SOLUTIONDIR))
+{
+	throw 'SOLUTIONDIR is not set.'
+}
+if (-not (Test-Path -LiteralPath $templateFilename -PathType Leaf))
+{
+	throw "Version template was not found: $templateFilename"
+}
+
+$repoRoot = [System.IO.Path]::GetFullPath($env:SOLUTIONDIR)
 $versionParts = $null
 
 $installerPropsPath = Join-Path $repoRoot 'installer\Directory.Build.props'
-if (Test-Path $installerPropsPath)
+if (Test-Path -LiteralPath $installerPropsPath -PathType Leaf)
 {
-	[xml] $installerProps = Get-Content $installerPropsPath -Encoding UTF8
+	[xml] $installerProps = Get-Content -LiteralPath $installerPropsPath -Encoding UTF8
 	$semanticVersion = $installerProps.Project.PropertyGroup.FabulorSemVer
 	if ([string]::IsNullOrWhiteSpace($semanticVersion))
 	{
@@ -21,9 +42,13 @@ if (Test-Path $installerPropsPath)
 if (-not $versionParts)
 {
 	$mesonVersionFile = Join-Path $repoRoot 'meson.build'
-	if (Test-Path $mesonVersionFile)
+	if (Test-Path -LiteralPath $mesonVersionFile -PathType Leaf)
 	{
-		$versionParts = Select-String -Path $mesonVersionFile -Pattern "  version: '([^']+)',$" | Select-Object -First 1 | %{ $_.Matches[0].Groups[1].Value.Split('.') }
+		$versionMatch = Select-String -LiteralPath $mesonVersionFile -Pattern "  version: '([^']+)',$" | Select-Object -First 1
+		if ($versionMatch)
+		{
+			$versionParts = $versionMatch.Matches[0].Groups[1].Value.Split('.')
+		}
 	}
 }
 
@@ -32,11 +57,23 @@ if (-not $versionParts)
 	throw "Unable to resolve version source. Neither installer semver nor meson.build version could be read."
 }
 
-[string[]] $contents = Get-Content $templateFilename -Encoding UTF8 | %{
+[string[]] $contents = Get-Content -LiteralPath $templateFilename -Encoding UTF8 | ForEach-Object {
 	while ($_ -match '^(.*?)<#=(.*?)#>(.*?)$') {
 		$_ = $Matches[1] + $(Invoke-Expression $Matches[2]) + $Matches[3]
 	}
 	$_
 }
 
-[System.IO.File]::WriteAllLines($outputFilename, $contents)
+if ($contents.Count -eq 0)
+{
+	throw "Version template is empty: $templateFilename"
+}
+
+$outputPath = [System.IO.Path]::GetFullPath($outputFilename)
+$outputDirectory = [System.IO.Path]::GetDirectoryName($outputPath)
+if (-not (Test-Path -LiteralPath $outputDirectory -PathType Container))
+{
+	throw "Version template output directory does not exist: $outputDirectory"
+}
+
+[System.IO.File]::WriteAllLines($outputPath, $contents)

@@ -372,9 +372,13 @@ def user_manifest_plugins_dir():
 
 
 def bundled_manifest_plugins_dir():
-    if not python_plugin_libdir:
-        return None
-    return os.path.join(python_plugin_libdir, 'Plugins')
+    executable = getattr(sys, 'executable', None)
+    if executable:
+        return os.path.join(os.path.dirname(canonical_path(executable)), 'Plugins')
+
+    if os.getenv('FABULOR_ENABLE_DEVELOPMENT_RUNTIME_ROOTS') == '1' and python_plugin_libdir:
+        return os.path.join(python_plugin_libdir, 'Plugins')
+    return None
 
 
 def canonical_path(path):
