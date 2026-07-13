@@ -189,4 +189,5 @@ jobs:
           '@ | python -
 
           python plugins/python/test_capabilities.py
+          python plugins/python/test_manifest_isolation.py
         shell: powershell

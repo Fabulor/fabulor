@@ -157,6 +157,18 @@ fabulor_plugin_path_validate_root (const char *root_path, char **canonical_root,
 }
 
 gboolean
+fabulor_plugin_path_is_directory_candidate (const char *path)
+{
+	if (!path || *path == '\0')
+	{
+		return FALSE;
+	}
+
+	return g_file_test (path, G_FILE_TEST_IS_DIR)
+		|| g_file_test (path, G_FILE_TEST_IS_SYMLINK);
+}
+
+gboolean
 fabulor_plugin_path_resolve_child_directory (const char *canonical_root,
 												 const char *child_name,
 												 char **canonical_child,

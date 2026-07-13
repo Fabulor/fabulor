@@ -127,7 +127,7 @@ The audit covers:
 
 Status: do not expose `FABULOR_ENABLE_MANIFEST_PLUGINS=1` to users yet.
 
-The manifest host is useful as a development scaffold, but it is not ready for third-party plugins. Strict JSON/schema validation, entrypoint containment, runtime-root policy, capability enforcement, and callback lifetime have since been hardened as recorded below. Per-plugin interpreter isolation remains uneven across languages.
+The manifest host is useful as a development scaffold, but it is not ready to enable by default for third-party plugins. Strict JSON/schema validation, entrypoint containment, runtime-root policy, capability enforcement, callback lifetime, and per-manifest runtime isolation have since been hardened as recorded below.
 
 ## Root Discovery
 
@@ -229,7 +229,7 @@ The Python path loads the legacy Python plugin and asks it to load the manifest 
 Runtime-root policy status, 2026-07-12:
 
 - Addressed for both Tcl and C#. Production manifest loading now anchors both runtimes beside `fabulor.exe`, while developer roots require the explicit `FABULOR_ENABLE_DEVELOPMENT_RUNTIME_ROOTS=1` gate.
-- Python manifest entrypoints still share the legacy plugin's global interpreter, but loading now crosses a separate policy boundary. The native manifest host establishes a per-process token, sends base64-encoded manifest identity/capability/path metadata through a private internal command, and the Python loader attaches that policy to the loaded plugin object. Ordinary `/LOAD` and `/PY LOAD` requests are confined to the profile `addons` directory and cannot select manifest roots, and ordinary unload/reload commands cannot mutate manifest-host-owned plugins. This establishes call attribution for capability enforcement but is not an interpreter or process sandbox.
+- Python manifest entrypoints no longer execute in the legacy plugin's global interpreter. The native manifest host establishes a per-process token and sends base64-encoded manifest identity/capability/path metadata through a private internal command. The trusted main Python interpreter then creates one Python 3.14 `concurrent.interpreters.Interpreter` for that manifest and loads a pure-Python proxy API there. Ordinary `/LOAD` and `/PY LOAD` requests remain confined to the profile `addons` directory and cannot select manifest roots, and ordinary unload/reload commands cannot mutate manifest-host-owned plugins.
 - Python callback integration is not the shared manifest registry. `plugins/python/_zoitechat.py:304` implements callback helpers by mapping to legacy hooks.
 - C# dependency resolution is per assembly-load context, but native dependency policy and allowed dependency locations are not constrained by manifest capabilities.
 
@@ -244,7 +244,7 @@ Fix status, 2026-07-12:
 - The Python runtime now canonicalizes requested script paths before loading.
 - Relative Python load requests are treated as simple add-ons and resolve under the profile `addons` directory, preferring the documented `addons\<name>\<name>.py` layout while keeping legacy flat `addons\*.py` as a compatibility fallback.
 - Absolute Python load requests are rejected unless the resolved `.py` file is under the profile `addons` directory, the profile `plugins` manifest root, or the bundled `Plugins` manifest root.
-- This reduces accidental crossing between the legacy scripting surface and manifest plugin roots, but it does not provide per-manifest Python interpreter isolation or move Python callbacks into the shared manifest callback registry.
+- Manifest Python entrypoints now receive per-plugin interpreter isolation. The CFFI extension remains confined to the trusted main scripting interpreter, avoiding unsupported cross-interpreter extension state. Manifest callbacks still use bounded legacy proxy hooks in that main interpreter rather than the shared native manifest registry.
 
 ## Callback And Event System
 
@@ -258,7 +258,7 @@ Status: callback lifetime hardening completed on 2026-07-13.
 - Cross-thread dispatch is capped at 256 queued events and 1 MiB per payload. Each queued item holds a registry reference and releases it through the main-context destroy notification. Caller-owned loader data is not retained across threads.
 - Shutdown marks the registry closed and removes all entries before C# or Tcl runtime teardown. Already queued items observe the closed state and return without entering a language runtime.
 - `fabulor_callback_registry_remove_plugin()` removes all entries owned by one plugin. Tcl, C#, simple C#, generic catalog, and application autoload failure paths call it so partially initialized plugins cannot leave native callbacks behind. The API also supplies the cleanup primitive for a future live manifest-unload operation.
-- Python manifest callbacks intentionally remain backed by the legacy Python hook engine pending the separate per-manifest interpreter design. That boundary now applies its documented event-family allowlist and the same 128-byte event-name limit, caps every manifest plugin at 64 hooks, rejects an identical event/callback registration, and releases hooks with the owning Python plugin object. Python callbacks therefore do not hold or depend on the native shared registry.
+- Python manifest callbacks remain backed by small legacy hook proxies in the trusted main interpreter. Callback functions and userdata live only in the owning subinterpreter; events and host operations cross the boundary as bounded JSON-compatible data. The boundary applies its documented event-family allowlist and 128-byte event-name limit, caps every manifest plugin at 64 hooks, rejects identical event/callback registrations, and removes proxy hooks before closing the interpreter. Python callbacks therefore do not hold or depend on the native shared registry.
 - Focused Python boundary tests cover capability isolation, event allowlisting and length, duplicate rejection, and callback count limits. The repository lint workflow executes these tests. The native host passed the x64 Release build and MSVC `/analyze`; no callback-host-specific analyzer findings were reported.
 
 ## Capabilities
@@ -273,7 +273,7 @@ Status: enforced deny-by-default policy implemented on 2026-07-12.
 - The shared callback registry independently verifies event-family capabilities for C# and Tcl registrations. Python's legacy hook-backed callbacks enforce the same mapping in the Python API layer.
 - Logging and pure text stripping remain unprivileged.
 
-Capabilities constrain access to cooperative Fabulor host APIs. They do not provide operating-system sandboxing, contain native code, or replace the outstanding per-plugin interpreter isolation work.
+Capabilities constrain access to cooperative Fabulor host APIs. They do not provide operating-system sandboxing or contain native code. Per-manifest runtime isolation prevents language-level plugin state from being shared accidentally, but does not change those operating-system limits.
 
 ## Minimum Pre-Enable Fix List
 
@@ -285,8 +285,8 @@ Before `FABULOR_ENABLE_MANIFEST_PLUGINS=1` becomes user-facing, require at least
 - Per-plugin error isolation policy that does not let one bad manifest unexpectedly block unrelated plugins unless that is deliberately documented. Status: addressed on 2026-07-13; dependency cycles remain a deliberate catalog-level error.
 - Runtime-root policy that removes normal-user reliance on environment variables and current working directory. Status: addressed for Tcl and C# on 2026-07-12.
 - Removal or containment of Tcl process-wide `PATH` mutation. Status: addressed for manifest Tcl loading.
-- A Python manifest host design that is separate from the legacy global Python plugin, or a clear decision that Python manifests remain disabled. Status: the manifest load-authority and policy-attribution boundary was separated on 2026-07-12; per-plugin interpreter isolation remains outstanding.
-- Callback event allowlists, length/count limits, duplicate policy, safe queued-dispatch lifetime, and per-plugin callback cleanup. Status: addressed on 2026-07-13; Python remains explicitly legacy-hook based until per-manifest interpreter isolation is implemented.
+- A Python manifest host design that is separate from the legacy global Python plugin, or a clear decision that Python manifests remain disabled. Status: addressed on 2026-07-14 with one Python 3.14 subinterpreter per manifest plugin and a pure-Python proxy API; trusted simple add-ons remain on the legacy shared interpreter.
+- Callback event allowlists, length/count limits, duplicate policy, safe queued-dispatch lifetime, and per-plugin callback cleanup. Status: addressed on 2026-07-13 and completed for isolated Python callback ownership on 2026-07-14. Python uses bounded main-interpreter proxy hooks while callback functions and userdata remain in the owning subinterpreter.
 - A capability policy decision: explicitly advisory-only with no security claims, or enforced gates for every exposed API and event surface. Status: enforced deny-by-default policy implemented across C#, Python, and Tcl on 2026-07-12.
 
 ## Repository Security Tool Pass Scope
@@ -583,7 +583,7 @@ Fix status, 2026-07-12:
 - Enchant loading in `src/fe-gtk/sexy-spell-entry.c` is restricted to the absolute application-local `libenchant-2-2.dll` path on Windows. After installed-client validation and soak testing, the Enchant 1.6.1 core/provider fallback and the in-tree legacy Win8 provider were retired; packaging now requires the MSVC/UCRT Enchant 2.8.19 core, upstream WinSpell provider, and ordering file.
 - A later URL-paste crash was traced with CDB to cross-CRT heap corruption in the MinGW/MSVCRT Enchant 2.8.19 personal-word-list path. Enchant core and WinSpell are now rebuilt with MSVC/UCRT against Fabulor's GTK/GLib libraries. The analysis and reproducible build are documented in `docs/security/enchant-windows-crash-analysis.md`.
 - The legacy Perl plugin remains as retained source only and is not part of the documented Fabulor plugin model, which is C#, Python, and Tcl. Its project was removed from the Windows solution, the `hcperl.dll` startup probe was removed, and the WiX plugin payload does not package it.
-- Modern manifest Tcl loading now uses the installed executable-relative runtime root by default, avoids process `PATH` and `TCL_LIBRARY` mutation, and loads `tcl86t.dll` with constrained `LoadLibraryExA()` flags. The installer preserves the matching `Runtime\Tcl\bin` and `Runtime\Tcl\lib` directories; an earlier flattened layout was detected during installed-package testing and corrected. Simple Tcl add-ons now load independently of the manifest gate from exact `addons\<name>\<name>.tcl` paths, receive separate interpreters, and reject reparse-point roots, directories, and scripts. Their direct command registry rejects duplicate command names and is cleaned up with interpreter state. C# now uses the installed executable-relative `Runtime\DotNet` root by default, gates developer roots explicitly, canonicalizes selected roots, and loads `hostfxr.dll` with constrained `LoadLibraryExA()` flags. The installer preserves the private runtime's `host\fxr` and `shared\Microsoft.NETCore.App` hierarchy and stages the managed bridge in `Runtime\DotNet`; installed-package inspection found and corrected an earlier flattened layout. Trusted simple C# add-ons load only from exact `addons\<name>\<name>.dll` paths after rejecting reparse-point roots, directories, and entry assemblies. They receive collectible managed load contexts, participate in callback dispatch while the manifest host is disabled, and are removed from managed/native registries when initialisation fails. Python manifest loading now rejects command-unsafe entrypoint paths before invoking the existing script runtime hook. The shared legacy/simple Python host now preloads `Runtime\Python314\python314.dll` from the executable-relative trusted root with constrained Windows search flags; ambient development lookup is available only behind `FABULOR_ENABLE_DEVELOPMENT_RUNTIME_ROOTS=1`. The Python installer feature includes `hcpython3.dll`, the API compatibility modules, and `_cffi_backend`, with build-time payload validation.
+- Modern manifest Tcl loading now uses the installed executable-relative runtime root by default, avoids process `PATH` and `TCL_LIBRARY` mutation, and loads `tcl86t.dll` with constrained `LoadLibraryExA()` flags. The installer preserves the matching `Runtime\Tcl\bin` and `Runtime\Tcl\lib` directories; an earlier flattened layout was detected during installed-package testing and corrected. Simple Tcl add-ons now load independently of the manifest gate from exact `addons\<name>\<name>.tcl` paths, receive separate interpreters, and reject reparse-point roots, directories, and scripts. Their direct command registry rejects duplicate command names and is cleaned up with interpreter state. C# now uses the installed executable-relative `Runtime\DotNet` root by default, gates developer roots explicitly, canonicalizes selected roots, and loads `hostfxr.dll` with constrained `LoadLibraryExA()` flags. The installer preserves the private runtime's `host\fxr` and `shared\Microsoft.NETCore.App` hierarchy and stages the managed bridge in `Runtime\DotNet`; installed-package inspection found and corrected an earlier flattened layout. Trusted simple C# add-ons load only from exact `addons\<name>\<name>.dll` paths after rejecting reparse-point roots, directories, and entry assemblies. They receive collectible managed load contexts, participate in callback dispatch while the manifest host is disabled, and are removed from managed/native registries when initialisation fails. Python manifest loading rejects command-unsafe entrypoint paths before invoking the authenticated runtime hook. The shared legacy/simple Python host preloads `Runtime\Python314\python314.dll` from the executable-relative trusted root with constrained Windows search flags; ambient development lookup is available only behind `FABULOR_ENABLE_DEVELOPMENT_RUNTIME_ROOTS=1`. Manifest Python code now runs in one subinterpreter per plugin without importing CFFI there. The Python installer feature includes `hcpython3.dll`, the API compatibility modules, the isolated manifest proxy, and `_cffi_backend`, with build-time payload validation.
 
 ## Finding: Theme Import And Legacy Add-On Loading Need Stronger Canonicalization
 
@@ -765,3 +765,50 @@ Validation:
 This removes the concrete compiler-warning set recorded by the local scanner
 follow-up. It does not replace the still-outstanding full MSVC `/analyze` or
 CodeQL tracing work.
+
+## Python Manifest Interpreter Isolation Follow-Up
+
+Date: 2026-07-14
+
+Python manifest plugins no longer execute beside trusted simple add-ons in the
+legacy CFFI interpreter. The authenticated manifest load path creates one Python
+3.14 `concurrent.interpreters.Interpreter` per plugin and imports a pure-Python
+`zoitechat` proxy before executing the entrypoint. Each plugin therefore owns its
+globals, imports, `sys.modules` state, callback functions, userdata, and shutdown
+lifetime.
+
+The CFFI extension and native plugin handle remain confined to the trusted main
+interpreter. Manifest API calls and callback events cross the interpreter
+boundary as bounded JSON-compatible values. The main interpreter rechecks
+capabilities while applying log, message, and callback-registration operations,
+and removes all proxy hooks before closing the subinterpreter. Simple Python
+add-ons retain their existing compatibility behavior.
+
+Validation:
+
+- Nine Python host capability/boundary tests pass, including an integration test
+  through the main-interpreter proxy and maintained manifest sample.
+- Seven new Python 3.14 tests create multiple live subinterpreters and verify
+  independent module/callback state, capability-failure isolation, legacy CFFI
+  module blocking, duplicate callback rejection, and the request, entrypoint,
+  and response size limits.
+- A full MSVC x64 Release rebuild regenerated `hcpython3.dll` with 0 warnings and
+  0 errors and passed all 15 native manifest/path tests.
+- The staged release payload contains `_fabulor_manifest.py` under `python`, and
+  the rebuilt x64 MSI binding record confirms that the helper is packaged.
+- The x64 MSI and bootstrapper rebuild completed with 0 errors. The existing
+  empty GTK4 `lib\\gio` harvest and same-version ICE61 warnings remain unchanged.
+- Installed-client validation exposed false "untrusted plugin directory"
+  diagnostics for legacy plugin DLLs stored beside manifest directories. Root
+  discovery now ignores ordinary non-directory entries before applying strict
+  directory containment checks; symbolic links and directory reparse points
+  still reach the rejecting validator. A native regression test covers the
+  legacy-DLL and manifest-directory distinction. The updated installed client
+  then loaded the Python greeter in its isolated interpreter, dispatched its
+  first message callback alongside C#, and closed normally without teardown
+  errors; the false legacy-DLL diagnostics were absent.
+
+This is interpreter isolation, not an operating-system sandbox. A Python plugin
+can still use standard-library and operating-system facilities available to the
+Fabulor process. The manifest capability model controls cooperative access to
+Fabulor host operations only.
