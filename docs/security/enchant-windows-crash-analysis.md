@@ -46,12 +46,12 @@ The script:
 
 Verified staged hashes from this remediation run:
 
-- `libenchant-2-2.dll`: `47F7F9049171FAC5BEF8849F3F320BC03BD2BD66943545E90B540FD68914BB79`
-- `lib\enchant-2\enchant_winspell.dll`: `7ACADC4E90C74B5BCF4EA9A0929155A2DD7A9CCD31CF90768DB169871166A88D`
+- `libenchant-2-2.dll`: `A2ABB91FFAD175665E73C0ED1E68C5F0782BF6313C5347E5E775A3B6AAAB8C8C`
+- `lib\enchant-2\enchant_winspell.dll`: `B4BDA944ADC2FF0917F40706EB46219EA8382D9EE4C4CC2E17EDCC147AA9D3B0`
 
 Import inspection confirms both rebuilt DLLs use `VCRUNTIME140.dll` and UCRT API sets and do not import `msvcrt.dll`.
 
-## Validation Status
+## Validation And Cutover Status
 
 Completed:
 
@@ -60,13 +60,13 @@ Completed:
 - Native smoke test under full PageHeap, with no allocator violation; the temporary `enchant_smoke.exe` PageHeap setting was disabled and verified absent afterward.
 - Fabulor Release x64 rebuild.
 - WiX MSI and bootstrapper rebuild.
-- Installer bind tracking confirms the rebuilt Enchant core, WinSpell provider, and ordering file are packaged.
+- Decompiled MSI tables confirm the rebuilt Enchant core, WinSpell provider, and ordering file are packaged; the retired DLL names are cleanup-only entries and the legacy provider/data directories are removed during installation.
+- Final verification package hashes: `Fabulor.msi` `37015E1E1BA75CF2A101BBCB1BEA35CE8D62246971EC771035D7BBE1C98E87F0`; `FabulorSetup.exe` `1B95AA5875A14381F70CD171D553AE4A38C35A1633630FD2192DA28A85FA4FA1`.
+- Installed-client testing confirmed repeated URL paste, typo detection, suggestion menus, add-to-personal, persistence after restart, and normal operation during the soak period.
+- The Enchant 1.6.1 core and provider fallback has been removed. Windows now loads only the app-local `libenchant-2-2.dll`, and the installer packages only the MSVC/UCRT core, upstream WinSpell provider, and Enchant 2 ordering file.
+- The legacy in-tree `libenchant_win8` provider is retired from the Windows solution; upstream WinSpell is the supported Windows provider.
+- An in-place update with the final package retained full Enchant functionality and removed `libenchant.dll`, `libenchant-2.dll`, `lib\enchant`, and `share\enchant` from the installed tree. Installed core and WinSpell hashes matched the audited staged binaries.
 
-Outstanding interactive validation after installing the rebuilt package:
-
-- Enable input-box spell checking and paste URLs repeatedly.
-- Confirm typo detection and suggestion menus.
-- Add a word to the dictionary and confirm it survives restart.
-- Soak test before removing the Enchant 1.6.1 fallback.
+Remaining rollout check: install the final rebuilt package on a clean system and repeat spell checking, suggestions, add-to-personal, and persistence validation.
 
 Full PageHeap was run after the Windows SDK Debugging Tools feature supplied `gflags.exe`. The isolated replacement PWL smoke test passed under full PageHeap, and the temporary image setting was disabled immediately afterward. The original dump was analyzed with CDB.

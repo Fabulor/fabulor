@@ -27,10 +27,14 @@
     <StandardDirectory Id="ProgramFiles64Folder">
       <Directory Id="INSTALLFOLDER" Name="Fabulor">
         <Directory Id="ETCDIR" Name="etc" />
-        <Directory Id="LIBDIR" Name="lib" />
+        <Directory Id="LIBDIR" Name="lib">
+          <Directory Id="LEGACYENCHANTDIR" Name="enchant" />
+          <Directory Id="LIBENCHANT2DIR" Name="enchant-2" />
+        </Directory>
         <Directory Id="SHAREDIR" Name="share">
           <Directory Id="SHAREDOCDIR" Name="doc" />
           <Directory Id="SHAREEMOJIFLAGSDIR" Name="emoji-flags" />
+          <Directory Id="SHARELEGACYENCHANTDIR" Name="enchant" />
           <Directory Id="SHAREENCHANT2DIR" Name="enchant-2" />
           <Directory Id="SHAREFONTSDIR" Name="fonts" />
           <Directory Id="SHAREGTK3DIR" Name="gtk-3.0">
@@ -96,6 +100,9 @@
       <ComponentGroupRef Id="PluginFolderComponents" />
       <ComponentGroupRef Id="PluginBaseComponents" />
       <ComponentGroupRef Id="CommonShareAssetComponents" />
+      <ComponentGroupRef Id="Enchant2ProviderComponents" />
+      <ComponentGroupRef Id="Enchant2DataComponents" />
+      <ComponentGroupRef Id="EnchantLegacyCleanupComponents" />
       <Feature Id="StartMenuFeature" Title="Start menu shortcuts" Level="1">
         <ComponentGroupRef Id="StartMenuComponents" />
       </Feature>
@@ -116,7 +123,6 @@
         <ComponentGroupRef Id="LegacyGtkEtcRuntimeComponents" />
         <ComponentGroupRef Id="LegacyGtkLibRuntimeComponents" />
         <ComponentGroupRef Id="LegacyGtkEmojiFlagRuntimeComponents" />
-        <ComponentGroupRef Id="LegacyGtkShareEnchantRuntimeComponents" />
         <ComponentGroupRef Id="LegacyGtkShareFontsRuntimeComponents" />
         <ComponentGroupRef Id="LegacyGtkShareGtk3EmojiRuntimeComponents" />
         <ComponentGroupRef Id="LegacyGtkShareGlibRuntimeComponents" />

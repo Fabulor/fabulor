@@ -40,6 +40,9 @@
 
   <Target Name="ValidateInstallerPayload" BeforeTargets="Build" DependsOnTargets="BuildManagedPluginHost">
     <Error Condition="!Exists('$(FabulorPayloadRoot)\fabulor.exe')" Text="Missing built Fabulor payload at $(FabulorPayloadRoot). Build win32\zoitechat.sln first so fabulor.exe and the staged rel payload exist." />
+    <Error Condition="!Exists('$(FabulorPayloadRoot)\libenchant-2-2.dll')" Text="Missing MSVC Enchant 2 core at $(FabulorPayloadRoot)\libenchant-2-2.dll. Run tools\build-enchant-msvc.ps1 before packaging." />
+    <Error Condition="!Exists('$(FabulorPayloadRoot)\lib\enchant-2\enchant_winspell.dll')" Text="Missing MSVC WinSpell provider under $(FabulorPayloadRoot)\lib\enchant-2. Run tools\build-enchant-msvc.ps1 before packaging." />
+    <Error Condition="!Exists('$(FabulorPayloadRoot)\share\enchant-2\enchant.ordering')" Text="Missing Enchant 2 provider ordering under $(FabulorPayloadRoot)\share\enchant-2. Run tools\build-enchant-msvc.ps1 before packaging." />
     <Error Condition="!Exists('$(FabulorPayloadRoot)\plugins')" Text="Missing plugin payload at $(FabulorPayloadRoot)\plugins. Build win32\zoitechat.sln first so the staged rel payload exists." />
     <Error Condition="!Exists('$(GtkRuntimeRoot)\bin\gtk-4-1.dll')" Text="Missing GTK4 runtime payload at $(GtkRuntimeRoot)." />
     <Error Condition="!Exists('$(ManagedPluginHostRoot)\Fabulor.PluginHost.runtimeconfig.json')" Text="Missing managed plugin host payload at $(ManagedPluginHostRoot)." />

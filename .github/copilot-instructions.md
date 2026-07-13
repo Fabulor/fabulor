@@ -47,8 +47,8 @@ unless a task adds tests of its own.
 
 - **`src\`** — core C application code: `common\` (protocol/back-end logic shared
   by all frontends), `fe-gtk\` (GTK front end — GTK3-based in the current source),
-  `fe-text\` (text-only front end), and `dirent\`/`libenchant_win8\` (Windows
-  compatibility shims). This is the HexChat-derived C codebase that the new
+  `fe-text\` (text-only front end), and `dirent\` (Windows compatibility shim).
+  This is the HexChat-derived C codebase that the new
   `ZoiteChatAPI` plugin ABI (see `To-Do.md`) is being layered onto.
 - **`plugins\`** — the existing built-in C plugins (`checksum`, `exec`, `fishlim`,
   `lua`, `perl`, `python`, `sysinfo`, `upd`), inherited from the HexChat fork.

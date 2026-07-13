@@ -6,7 +6,7 @@
     </ComponentGroup>
 
     <ComponentGroup Id="LegacyGtkLibRuntimeComponents" Directory="LIBDIR">
-      <Files Include="$(var.FabulorPayloadRoot)\lib\**" />
+      <Files Include="$(var.FabulorPayloadRoot)\lib\gdk-pixbuf-2.0\**" />
     </ComponentGroup>
 
     <ComponentGroup Id="LegacyGtkEmojiFlagRuntimeComponents" Directory="SHAREEMOJIFLAGSDIR">
@@ -19,10 +19,6 @@
 
     <ComponentGroup Id="LegacyGtkShareGlibRuntimeComponents" Directory="SHAREGLIBDIR">
       <Files Include="$(var.FabulorPayloadRoot)\share\glib-2.0\**" />
-    </ComponentGroup>
-
-    <ComponentGroup Id="LegacyGtkShareEnchantRuntimeComponents" Directory="SHAREENCHANT2DIR">
-      <Files Include="$(var.FabulorPayloadRoot)\share\enchant-2\**" />
     </ComponentGroup>
 
     <ComponentGroup Id="LegacyGtkShareFontsRuntimeComponents" Directory="SHAREFONTSDIR">

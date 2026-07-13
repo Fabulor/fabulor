@@ -228,12 +228,8 @@ initialize_enchant (void)
     const char * const libnames[] = {
 #ifdef G_OS_WIN32
         "libenchant-2-2.dll",
-        "libenchant-2.dll",
-        "libenchant.dll",
 #else
         "libenchant-2.so.2",
-        "libenchant.so.1",
-        "libenchant.so",
 #endif
     };
 

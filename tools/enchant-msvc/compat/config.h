@@ -12,7 +12,8 @@
 #define PACKAGE_NAME "enchant"
 #define PACKAGE_VERSION "2.8.19"
 #define INSTALLPREFIX "C:/fabulor"
-#define SYSCONFDIR "C:/fabulor/etc/enchant"
+/* Enchant appends its API major suffix to these base paths at runtime. */
+#define SYSCONFDIR "C:/fabulor/etc"
 #define PKGLIBDIR "C:/fabulor/lib/enchant"
 #define PKGDATADIR "C:/fabulor/share/enchant"
 
