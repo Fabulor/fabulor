@@ -3,6 +3,7 @@ fishlim_test_sources = [
   'mock-keystore.c',
   '../fish.c',
   '../utils.c',
+  '../dh1080.c',
 ]
 
 fishlim_tests = executable('fishlim_tests', fishlim_test_sources,

@@ -41,7 +41,7 @@ static const char *fish_modes[] = {"", "ECB", "CBC", NULL};
 
 static const char plugin_name[] = "FiSHLiM";
 static const char plugin_desc[] = "Encryption plugin for the FiSH protocol. Less is More!";
-static const char plugin_version[] = "1.0.0";
+static const char plugin_version[] = "1.1.0";
 
 static const char usage_setkey[] = "Usage: SETKEY [<nick or #channel>] [<mode>:]<password>, sets the key for a channel or nick. Modes: ECB, CBC";
 static const char usage_delkey[] = "Usage: DELKEY [<nick or #channel>], deletes the key for a channel or nick";
@@ -190,12 +190,14 @@ char *get_my_own_host(void) {
  *
  * @return Length of prefix
  */
-int get_prefix_length(void) {
+size_t get_prefix_length(void) {
     char *own_host;
-    int prefix_len = 0;
+    const char *nick;
+    size_t prefix_len;
 
     /* ':! ' + 'nick' + 'ident@host', e.g. ':user!~name@mynet.com ' */
-    prefix_len = 3 + strlen(zoitechat_get_info(ph, "nick"));
+    nick = zoitechat_get_info(ph, "nick");
+    prefix_len = 3 + (nick != NULL ? strlen(nick) : 0);
     own_host = get_my_own_host();
     if (own_host) {
         prefix_len += strlen(own_host);
@@ -221,7 +223,7 @@ char *decrypt_raw_message(const char *message, const char *key) {
     char *start = NULL, *end = NULL;
     char *left = NULL, *right = NULL;
     char *encrypted = NULL, *decrypted = NULL;
-    int length = 0;
+    size_t length = 0;
     int index_prefix;
     enum fish_mode mode;
     GString *message_decrypted;
@@ -246,7 +248,7 @@ char *decrypt_raw_message(const char *message, const char *key) {
             start += strlen(prefixes[index_prefix]);
             end = g_strstr_len(start, strlen(message), " ");
             if (end) {
-                length = end - start;
+                length = (size_t) (end - start);
                 right = end;
             }
 
@@ -1113,7 +1115,7 @@ int zoitechat_plugin_init(zoitechat_plugin *plugin_handle,
                       char *arg) {
     ph = plugin_handle;
 
-    /* Send our info to ZoiteChat */
+    /* Send our info to Fabulor. */
     *name = plugin_name;
     *desc = plugin_desc;
     *version = plugin_version;

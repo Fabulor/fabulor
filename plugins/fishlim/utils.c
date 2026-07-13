@@ -33,10 +33,13 @@
  * @param plaintext_len Size of clear text to encode
  * @return Size of encoded string
  */
-unsigned long base64_len(size_t plaintext_len) {
-    int length_unpadded = (4 * plaintext_len) / 3;
-    /* Add padding */
-    return length_unpadded % 4 != 0 ? length_unpadded + (4 - length_unpadded % 4) : length_unpadded;
+size_t base64_len(size_t plaintext_len) {
+    size_t blocks = plaintext_len / 3 + (plaintext_len % 3 != 0);
+
+    if (blocks > G_MAXSIZE / 4)
+        return 0;
+
+    return blocks * 4;
 }
 
 /**
@@ -45,10 +48,13 @@ unsigned long base64_len(size_t plaintext_len) {
  * @param plaintext_len Size of clear text to encode
  * @return Size of encoded string
  */
-unsigned long base64_fish_len(size_t plaintext_len) {
-    int length_unpadded = (12 * plaintext_len) / 8;
-    /* Add padding */
-    return length_unpadded % 12 != 0 ? length_unpadded + (12 - length_unpadded % 12) : length_unpadded;
+size_t base64_fish_len(size_t plaintext_len) {
+    size_t blocks = plaintext_len / 8 + (plaintext_len % 8 != 0);
+
+    if (blocks > G_MAXSIZE / 12)
+        return 0;
+
+    return blocks * 12;
 }
 
 /**
@@ -57,9 +63,21 @@ unsigned long base64_fish_len(size_t plaintext_len) {
  * @param plaintext_len  Size of clear text to encode
  * @return Size of encoded string
  */
-unsigned long cbc_len(size_t plaintext_len) {
-    /*IV + DATA + Zero Padding */
-    return base64_len(8 + (plaintext_len % 8 != 0 ? plaintext_len + 8 - (plaintext_len % 8) : plaintext_len));
+size_t cbc_len(size_t plaintext_len) {
+    size_t padded_len = plaintext_len;
+    size_t remainder = plaintext_len % 8;
+
+    if (remainder != 0)
+    {
+        if (padded_len > G_MAXSIZE - (8 - remainder))
+            return 0;
+        padded_len += 8 - remainder;
+    }
+
+    if (padded_len > G_MAXSIZE - 8)
+        return 0;
+
+    return base64_len(padded_len + 8);
 }
 
 /**
@@ -68,7 +86,7 @@ unsigned long cbc_len(size_t plaintext_len) {
  * @param plaintext_len  Size of clear text to encode
  * @return Size of encoded string
  */
-unsigned long ecb_len(size_t plaintext_len) {
+size_t ecb_len(size_t plaintext_len) {
     return base64_fish_len(plaintext_len);
 }
 
@@ -79,12 +97,11 @@ unsigned long ecb_len(size_t plaintext_len) {
  * @param mode          Encryption mode
  * @return Size of encoded string
  */
-unsigned long encoded_len(size_t plaintext_len, enum fish_mode mode) {
+size_t encoded_len(size_t plaintext_len, enum fish_mode mode) {
     switch (mode) {
 
         case FISH_CBC_MODE:
             return cbc_len(plaintext_len);
-            break;
 
         case FISH_ECB_MODE:
             return ecb_len(plaintext_len);
@@ -100,11 +117,21 @@ unsigned long encoded_len(size_t plaintext_len, enum fish_mode mode) {
  * @param mode      Encryption mode
  * @return Maximum allowed plaintext length
  */
-int max_text_command_len(size_t max_len, enum fish_mode mode) {
-    int len;
+size_t max_text_command_len(size_t max_len, enum fish_mode mode) {
+    size_t len = max_len;
+    size_t encrypted_len;
 
-    for (len = max_len; encoded_len(len, mode) > max_len; --len);
-    return len;
+    if (mode != FISH_CBC_MODE && mode != FISH_ECB_MODE)
+        return 0;
+
+    while (TRUE) {
+        encrypted_len = encoded_len(len, mode);
+        if (encrypted_len != 0 && encrypted_len <= max_len)
+            return len;
+        if (len == 0)
+            return 0;
+        len--;
+    }
 }
 
 /**
@@ -115,10 +142,15 @@ int max_text_command_len(size_t max_len, enum fish_mode mode) {
  * @param [out] chunk_len   Current chunk length
  * @return Pointer to current chunk position or NULL if not have more chunks
  */
-const char *foreach_utf8_data_chunks(const char *data, int max_chunk_len, int *chunk_len) {
-    int data_len, last_chunk_len = 0;
+const char *foreach_utf8_data_chunks(const char *data, size_t max_chunk_len, size_t *chunk_len) {
+    size_t data_len, last_chunk_len = 0;
+    const char *utf8_character;
 
-    if (!*data) {
+    g_return_val_if_fail (data != NULL, NULL);
+    g_return_val_if_fail (chunk_len != NULL, NULL);
+
+    *chunk_len = 0;
+    if (!*data || max_chunk_len == 0) {
         return NULL;
     }
 
@@ -129,23 +161,23 @@ const char *foreach_utf8_data_chunks(const char *data, int max_chunk_len, int *c
         return data;
     }
 
-    *chunk_len = 0;
-    const char *utf8_character = data;
+    utf8_character = data;
 
     /* Not valid UTF-8, but maybe valid text, just split into max length */
     if (!g_utf8_validate(data, -1, NULL)) {
         *chunk_len = max_chunk_len;
-        return utf8_character;
+        return data;
     }
 
-    while (*utf8_character && *chunk_len <= max_chunk_len) {
-        last_chunk_len = *chunk_len;
-        *chunk_len = (g_utf8_next_char(utf8_character) - data) * sizeof(*utf8_character);
+    while (*utf8_character) {
+        size_t next_len = (size_t) (g_utf8_next_char(utf8_character) - data);
+
+        if (next_len > max_chunk_len)
+            break;
+        last_chunk_len = next_len;
         utf8_character = g_utf8_next_char(utf8_character);
     }
 
-    /* We need the previous length before overflow the limit */
     *chunk_len = last_chunk_len;
-
-    return utf8_character;
+    return last_chunk_len != 0 ? data : NULL;
 }

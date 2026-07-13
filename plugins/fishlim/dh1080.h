@@ -1,4 +1,4 @@
-/* ZoiteChat
+/* Fabulor
 *
 * This program is free software; you can redistribute it and/or modify
 * it under the terms of the GNU General Public License as published by
@@ -21,4 +21,3 @@ int dh1080_generate_key (char **, char **);
 int dh1080_compute_key (const char *, const char *, char **);
 int dh1080_init (void);
 void dh1080_deinit (void);
-
