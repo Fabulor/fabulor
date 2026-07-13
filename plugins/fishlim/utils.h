@@ -28,12 +28,12 @@
 #include <stddef.h>
 #include "fish.h"
 
-unsigned long base64_len(size_t plaintext_len);
-unsigned long base64_fish_len(size_t plaintext_len);
-unsigned long cbc_len(size_t plaintext_len);
-unsigned long ecb_len(size_t plaintext_len);
-unsigned long encoded_len(size_t plaintext_len, enum fish_mode mode);
-int max_text_command_len(size_t max_len, enum fish_mode mode);
-const char *foreach_utf8_data_chunks(const char *data, int max_chunk_len, int *chunk_len);
+size_t base64_len(size_t plaintext_len);
+size_t base64_fish_len(size_t plaintext_len);
+size_t cbc_len(size_t plaintext_len);
+size_t ecb_len(size_t plaintext_len);
+size_t encoded_len(size_t plaintext_len, enum fish_mode mode);
+size_t max_text_command_len(size_t max_len, enum fish_mode mode);
+const char *foreach_utf8_data_chunks(const char *data, size_t max_chunk_len, size_t *chunk_len);
 
 #endif

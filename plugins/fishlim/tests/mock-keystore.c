@@ -29,7 +29,9 @@
 char *
 keystore_get_key(const char *nick, enum fish_mode *mode)
 {
-    return NULL;
+    (void) nick;
+    *mode = FISH_CBC_MODE;
+    return g_strdup("test-key");
 }
 
 /**
@@ -38,6 +40,9 @@ keystore_get_key(const char *nick, enum fish_mode *mode)
 gboolean
 keystore_store_key(const char *nick, const char *key, enum fish_mode mode)
 {
+    (void) nick;
+    (void) key;
+    (void) mode;
     return TRUE;
 }
 
@@ -47,5 +52,6 @@ keystore_store_key(const char *nick, const char *key, enum fish_mode mode)
 gboolean
 keystore_delete_nick(const char *nick)
 {
+    (void) nick;
     return TRUE;
 }
