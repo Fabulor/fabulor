@@ -2624,11 +2624,13 @@ cmd_load (struct session *sess, char *tbuf, char *word[], char *word_eol[])
 	if (strcmp (word[2], "-e") == 0)
 	{
 		file = expand_homedir (word[3]);
+		errno = 0;
 		if (!load_perform_file (sess, file))
 		{
+			int load_errno = errno;
 			buf = g_strdup_printf ("%s%c%s", get_xdir(), G_DIR_SEPARATOR, file);
 			PrintTextf (sess, _("Cannot access %s\n"), buf);
-			PrintText (sess, errorstring (errno));
+			PrintText (sess, errorstring (load_errno));
 			g_free (buf);
 		}
 		g_free (file);

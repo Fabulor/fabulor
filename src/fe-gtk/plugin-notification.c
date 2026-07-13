@@ -204,8 +204,8 @@ notification_plugin_init (zoitechat_plugin *plugin_handle, char **plugin_name, c
 	const char* error = NULL;
 
 	ph = plugin_handle;
-	*plugin_name = "";
-	*plugin_desc = "";
+	*plugin_name = "Notifications";
+	*plugin_desc = "Desktop notification integration";
 	*plugin_version = "";
 
 	if (!notification_backend_init (&error))

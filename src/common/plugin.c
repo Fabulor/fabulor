@@ -31,6 +31,9 @@
 #endif
 
 #include "zoitechat.h"
+#ifdef WIN32
+#include <glib/gwin32.h>
+#endif
 #include "fe.h"
 #include "util.h"
 #include "outbound.h"
@@ -155,6 +158,14 @@ extern const struct prefs vars[];	/* cfgfiles.c */
 static const char *plugin_get_libdir (void);
 
 static gboolean
+fabulor_manifest_plugins_enabled (void)
+{
+	const char *enabled = g_getenv ("FABULOR_ENABLE_MANIFEST_PLUGINS");
+
+	return enabled && g_ascii_strcasecmp (enabled, "1") == 0;
+}
+
+static gboolean
 fabulor_api_send_message (void *user_data, const char *target, const char *text, GError **error)
 {
 	session *sess = user_data;
@@ -244,6 +255,17 @@ fabulor_api_get_user_info (void *user_data, FabulorUserInfo *user_info)
 		|| user_info->channel != NULL
 		|| user_info->server_name != NULL
 		|| user_info->network_name != NULL;
+}
+
+static void
+fabulor_plugin_api_set_session (session *sess)
+{
+	fabulor_plugin_api.api_version = FABULOR_PLUGIN_API_VERSION;
+	fabulor_plugin_api.user_data = sess;
+	fabulor_plugin_api.send_message = fabulor_api_send_message;
+	fabulor_plugin_api.log = fabulor_api_log;
+	fabulor_plugin_api.get_user_count = fabulor_api_get_user_count;
+	fabulor_plugin_api.get_user_info = fabulor_api_get_user_info;
 }
 
 static void
@@ -364,7 +386,8 @@ fabulor_plugin_host_dispatch_event (session *sess,
 	const char *server_name = NULL;
 	const char *channel = NULL;
 
-	if (!fabulor_callback_registry)
+	if (!fabulor_callback_registry
+		|| !fabulor_callback_registry_has_event (fabulor_callback_registry, event_name))
 	{
 		return;
 	}
@@ -457,14 +480,7 @@ fabulor_plugin_host_autoload (session *sess)
 	char *user_plugins_dir;
 	guint i;
 
-	fabulor_plugin_host_free ();
-
-	fabulor_plugin_api.api_version = FABULOR_PLUGIN_API_VERSION;
-	fabulor_plugin_api.user_data = sess;
-	fabulor_plugin_api.send_message = fabulor_api_send_message;
-	fabulor_plugin_api.log = fabulor_api_log;
-	fabulor_plugin_api.get_user_count = fabulor_api_get_user_count;
-	fabulor_plugin_api.get_user_info = fabulor_api_get_user_info;
+	fabulor_plugin_api_set_session (sess);
 
 	fabulor_plugin_catalog = fabulor_plugin_catalog_new (&fabulor_plugin_api);
 	fabulor_plugin_catalog_set_safe_mode (fabulor_plugin_catalog, arg_skip_plugins);
@@ -859,15 +875,137 @@ plugin_get_libdir (void)
 		return ZOITECHATLIBDIR;
 }
 
+#ifdef WIN32
+static HMODULE python_runtime_module;
+
+static gboolean
+plugin_prepare_python_runtime (session *sess)
+{
+	char *install_root;
+	char *runtime_path;
+	wchar_t *runtime_path_utf16;
+	char *load_error;
+	const char *development_roots_enabled;
+
+	if (python_runtime_module)
+		return TRUE;
+
+	install_root = g_win32_get_package_installation_directory_of_module (NULL);
+	if (!install_root)
+		return TRUE;
+
+	runtime_path = g_build_filename (install_root, "Runtime", "Python314", "python314.dll", NULL);
+	g_free (install_root);
+
+	if (!g_file_test (runtime_path, G_FILE_TEST_IS_REGULAR))
+	{
+		development_roots_enabled = g_getenv ("FABULOR_ENABLE_DEVELOPMENT_RUNTIME_ROOTS");
+		if (!development_roots_enabled || g_ascii_strcasecmp (development_roots_enabled, "1") != 0)
+		{
+			PrintTextf (sess, "Python runtime is missing from the trusted path: %s\n", runtime_path);
+			g_free (runtime_path);
+			return FALSE;
+		}
+
+		/* Explicitly gated development builds may retain their configured DLL search path. */
+		g_free (runtime_path);
+		return TRUE;
+	}
+
+	runtime_path_utf16 = g_utf8_to_utf16 (runtime_path, -1, NULL, NULL, NULL);
+	if (runtime_path_utf16)
+	{
+		python_runtime_module = LoadLibraryExW (
+			runtime_path_utf16,
+			NULL,
+			LOAD_LIBRARY_SEARCH_DLL_LOAD_DIR | LOAD_LIBRARY_SEARCH_DEFAULT_DIRS);
+		g_free (runtime_path_utf16);
+	}
+
+	if (!python_runtime_module)
+	{
+		load_error = g_win32_error_message (GetLastError ());
+		PrintTextf (sess, "Python runtime load failed for %s: %s\n", runtime_path, load_error);
+		g_free (load_error);
+		g_free (runtime_path);
+		return FALSE;
+	}
+
+	g_free (runtime_path);
+	return TRUE;
+}
+#endif
+
+static gint
+plugin_startup_report_compare (gconstpointer left, gconstpointer right)
+{
+	const char *left_entry = *(const char * const *) left;
+	const char *right_entry = *(const char * const *) right;
+	return g_ascii_strcasecmp (left_entry, right_entry);
+}
+
+void
+plugin_print_startup_report (session *sess)
+{
+	GPtrArray *entries;
+	GSList *list;
+	guint i;
+
+	if (!sess)
+		return;
+
+	entries = g_ptr_array_new_with_free_func (g_free);
+	for (list = plugin_list; list; list = list->next)
+	{
+		zoitechat_plugin *plugin = list->data;
+		const char *name;
+		const char *version;
+		const char *filename;
+		const char *kind;
+
+		if (!plugin)
+			continue;
+
+		name = plugin->name && *plugin->name ? plugin->name : "unnamed";
+		version = plugin->version && *plugin->version ? plugin->version : NULL;
+		filename = plugin->filename && *plugin->filename ? file_part (plugin->filename) : NULL;
+		kind = plugin->fake && filename && g_str_has_suffix (filename, ".py")
+			? "Python add-on"
+			: (plugin->fake ? "Script add-on" : "Plugin");
+
+		if (version && filename)
+			g_ptr_array_add (entries, g_strdup_printf ("%s: %s %s [%s]", kind, name, version, filename));
+		else if (version)
+			g_ptr_array_add (entries, g_strdup_printf ("%s: %s %s", kind, name, version));
+		else if (filename)
+			g_ptr_array_add (entries, g_strdup_printf ("%s: %s [%s]", kind, name, filename));
+		else
+			g_ptr_array_add (entries, g_strdup_printf ("%s: %s", kind, name));
+	}
+
+	fabulor_plugin_host_append_loaded_simple_addons (entries);
+	g_ptr_array_sort (entries, plugin_startup_report_compare);
+
+	PrintTextf (sess, "\nFabulor loaded plugins and add-ons (%u):\n", entries->len);
+	for (i = 0; i < entries->len; i++)
+	{
+		PrintTextf (sess, "  %s\n", (const char *) g_ptr_array_index (entries, i));
+	}
+	PrintText (sess, "\n");
+	g_ptr_array_free (entries, TRUE);
+}
+
 void
 plugin_auto_load (session *sess)
 {
 	const char *lib_dir;
 	char *sub_dir;
 	ps = sess;
+	fabulor_plugin_host_free ();
 
 	lib_dir = plugin_get_libdir ();
 	sub_dir = g_build_filename (get_xdir (), "addons", NULL);
+	fabulor_plugin_api_set_session (sess);
 
 #ifdef WIN32
 	/* a long list of bundled plugins that should be loaded automatically,
@@ -877,7 +1015,8 @@ plugin_auto_load (session *sess)
 	for_files (lib_dir, "hcfishlim.dll", plugin_auto_load_cb);
 	for_files(lib_dir, "hclua.dll", plugin_auto_load_cb);
 	for_files (lib_dir, "hcperl.dll", plugin_auto_load_cb);
-	for_files (lib_dir, "hcpython3.dll", plugin_auto_load_cb);
+	if (plugin_prepare_python_runtime (sess))
+		for_files (lib_dir, "hcpython3.dll", plugin_auto_load_cb);
 	for_files (lib_dir, "hcupd.dll", plugin_auto_load_cb);
 	for_files (lib_dir, "hcsysinfo.dll", plugin_auto_load_cb);
 #else
@@ -886,7 +1025,39 @@ plugin_auto_load (session *sess)
 
 	for_files (sub_dir, "*."PLUGIN_SUFFIX, plugin_auto_load_cb);
 
-	fabulor_plugin_host_autoload (sess);
+	if (fabulor_manifest_plugins_enabled ())
+	{
+		fabulor_plugin_host_autoload (sess);
+	}
+	if (!fabulor_plugin_catalog)
+	{
+		fabulor_plugin_catalog = fabulor_plugin_catalog_new (&fabulor_plugin_api);
+		fabulor_plugin_catalog_set_safe_mode (fabulor_plugin_catalog, arg_skip_plugins);
+	}
+	if (!fabulor_callback_registry)
+	{
+		fabulor_callback_registry = fabulor_callback_registry_new (&fabulor_plugin_api, fabulor_plugin_catalog, NULL);
+	}
+
+	{
+		GError *csharp_error = NULL;
+		if (!fabulor_plugin_host_autoload_simple_csharp (sub_dir, &fabulor_plugin_api, &csharp_error))
+		{
+			fabulor_api_logf (sess, "Simple C# add-on loading failed: %s",
+							  csharp_error ? csharp_error->message : "unknown error");
+			g_clear_error (&csharp_error);
+		}
+	}
+
+	{
+		GError *tcl_error = NULL;
+		if (!fabulor_plugin_host_autoload_simple_tcl (sub_dir, &fabulor_plugin_api, &tcl_error))
+		{
+			fabulor_api_logf (sess, "Simple Tcl add-on loading failed: %s",
+							  tcl_error ? tcl_error->message : "unknown error");
+			g_clear_error (&tcl_error);
+		}
+	}
 
 	g_free (sub_dir);
 }
@@ -1031,6 +1202,21 @@ xit:
 int
 plugin_emit_command (session *sess, char *name, char *word[], char *word_eol[])
 {
+	GError *tcl_error = NULL;
+
+	fabulor_plugin_api_set_session (sess);
+	if (fabulor_plugin_host_handle_simple_tcl_command (name,
+												  word_eol && word_eol[2] ? word_eol[2] : "",
+												  &tcl_error))
+	{
+		if (tcl_error)
+		{
+			fabulor_api_logf (sess, "Simple Tcl command %s failed: %s", name, tcl_error->message);
+			g_clear_error (&tcl_error);
+		}
+		return 1;
+	}
+
 	if (name && word)
 	{
 		fabulor_plugin_host_fire_event (sess, "command", name, word, word_eol, 0);

@@ -86,13 +86,13 @@ public static class NativeExports
     private delegate void NativeLogDelegate(IntPtr textUtf8);
 
     [UnmanagedFunctionPointer(CallingConvention.StdCall)]
-    private delegate int NativeSendMessageDelegate(IntPtr targetUtf8, IntPtr textUtf8);
+    private delegate int NativeSendMessageDelegate(IntPtr pluginIdUtf8, IntPtr targetUtf8, IntPtr textUtf8);
 
     [UnmanagedFunctionPointer(CallingConvention.StdCall)]
-    private delegate uint NativeGetUserCountDelegate();
+    private delegate uint NativeGetUserCountDelegate(IntPtr pluginIdUtf8);
 
     [UnmanagedFunctionPointer(CallingConvention.StdCall)]
-    private delegate int NativeGetUserInfoDelegate(out NativeUserInfo userInfo);
+    private delegate int NativeGetUserInfoDelegate(IntPtr pluginIdUtf8, out NativeUserInfo userInfo);
 
     [UnmanagedFunctionPointer(CallingConvention.StdCall)]
     private delegate int NativeRegisterCallbackDelegate(IntPtr pluginIdUtf8, IntPtr eventNameUtf8, IntPtr handlerNameUtf8);
@@ -179,12 +179,22 @@ public static class NativeExports
 
             var context = new ZoiteChatContext(
                 text => Log($"[C#:{pluginId}] {text}"),
-                (target, text) => SendMessage(target, text),
-                () => checked((int)(_getUserCount?.Invoke() ?? 0U)),
-                () => GetUserInfo(),
+                (target, text) => SendMessage(state, target, text),
+                () => GetUserCount(state),
+                () => GetUserInfo(state),
                 (eventName, handler) => RegisterCallback(state, eventName, handler));
 
-            plugin.Init(context);
+            try
+            {
+                plugin.Init(context);
+            }
+            catch
+            {
+                state.Callbacks.Clear();
+                Plugins.Remove(pluginId);
+                loadContext.Unload();
+                throw;
+            }
             return 0;
         }
         catch (Exception ex)
@@ -271,25 +281,39 @@ public static class NativeExports
         }
     }
 
-    private static bool SendMessage(string target, string text)
+    private static bool SendMessage(ManagedPluginState state, string target, string text)
     {
         if (_sendMessage is null)
         {
             throw new InvalidOperationException("The native send-message callback is not available.");
         }
 
+        using var pluginIdHandle = new Utf8StringHandle(state.PluginId);
         using var targetHandle = new Utf8StringHandle(target);
         using var textHandle = new Utf8StringHandle(text);
-        return _sendMessage(targetHandle.Pointer, textHandle.Pointer) != 0;
+        return _sendMessage(pluginIdHandle.Pointer, targetHandle.Pointer, textHandle.Pointer) != 0;
     }
-    private static ZoiteChatUserInfo GetUserInfo()
+
+    private static int GetUserCount(ManagedPluginState state)
+    {
+        if (_getUserCount is null)
+        {
+            throw new InvalidOperationException("The native user-count callback is not available.");
+        }
+
+        using var pluginIdHandle = new Utf8StringHandle(state.PluginId);
+        return checked((int)_getUserCount(pluginIdHandle.Pointer));
+    }
+
+    private static ZoiteChatUserInfo GetUserInfo(ManagedPluginState state)
     {
         if (_getUserInfo is null)
         {
             throw new InvalidOperationException("The native user-info callback is not available.");
         }
 
-        if (_getUserInfo(out var userInfo) == 0)
+        using var pluginIdHandle = new Utf8StringHandle(state.PluginId);
+        if (_getUserInfo(pluginIdHandle.Pointer, out var userInfo) == 0)
         {
             return new ZoiteChatUserInfo(null, null, null, null);
         }

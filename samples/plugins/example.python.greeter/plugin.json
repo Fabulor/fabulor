@@ -6,8 +6,8 @@
   "entrypoint": "plugin.py",
   "requires_api_version": "1",
   "dependencies": [],
-  "capabilities": ["messages.write", "events.message", "session.read"],
-  "description": "Sample Python manifest plugin used to validate runtime behaviour.",
+  "capabilities": ["events.message", "session.read"],
+  "description": "Sample Python manifest plugin demonstrating initialization, session access, and message callbacks.",
   "author": "Fabulor",
   "homepage": "https://github.com/Fabulor/fabulor"
 }

@@ -66,6 +66,7 @@
 #include <windows.h>
 #include <shellapi.h>
 #include <gdk/gdkwin32.h>
+#include <glib/gwin32.h>
 
 static void
 mg_win32_allow_autohide_taskbar (GtkWindow *window, GdkEventWindowState *event)
@@ -173,6 +174,8 @@ enum
 #define TAG_UTIL 1      /* dcc, notify, chanlist */
 
 static void mg_apply_emoji_fallback_widget (GtkWidget *widget);
+static void mg_inputbox_insert_emoji_cb (GtkEntry *entry, gpointer user_data);
+static void mg_inputbox_icon_release_cb (GtkEntry *entry, GtkEntryIconPosition icon_pos, GdkEvent *event, gpointer user_data);
 static void mg_reply_show_child (GtkWidget *widget, gpointer data);
 
 #define MG_CONFIG_SAVE_DEBOUNCE_MS 250
@@ -3727,10 +3730,151 @@ mg_update_xtext (GtkWidget *wid)
         gtk_xtext_refresh (xtext);
 }
 
+static gboolean
+mg_scroll_to_bottom_is_at_bottom (GtkAdjustment *adj)
+{
+        gdouble value;
+        gdouble upper;
+        gdouble page_size;
+
+        if (!adj)
+                return TRUE;
+
+        value = gtk_adjustment_get_value (adj);
+        upper = gtk_adjustment_get_upper (adj);
+        page_size = gtk_adjustment_get_page_size (adj);
+
+        return upper <= page_size || value >= upper - page_size - 0.5;
+}
+
+void
+mg_update_scroll_to_bottom_button (session_gui *gui)
+{
+        GtkAdjustment *adj;
+
+        if (!gui || !GTK_IS_WIDGET (gui->scroll_bottom_button) || !GTK_IS_RANGE (gui->vscrollbar))
+                return;
+
+        adj = gtk_range_get_adjustment (GTK_RANGE (gui->vscrollbar));
+        if (!prefs.hex_gui_scroll_bottom_button || mg_scroll_to_bottom_is_at_bottom (adj))
+                gtk_widget_hide (gui->scroll_bottom_button);
+        else
+                gtk_widget_show (gui->scroll_bottom_button);
+}
+
+static void
+mg_scroll_to_bottom_adjustment_changed (GtkAdjustment *adj, gpointer userdata)
+{
+        GtkWidget *button = userdata;
+        session_gui *gui;
+
+        if (!GTK_IS_WIDGET (button))
+                return;
+
+        gui = g_object_get_data (G_OBJECT (button), "mg-session-gui");
+
+        mg_update_scroll_to_bottom_button (gui);
+}
+
+static void
+mg_scroll_to_bottom_activate (session_gui *gui)
+{
+        GtkAdjustment *adj;
+        gdouble lower;
+        gdouble target;
+
+        if (!gui || !GTK_IS_RANGE (gui->vscrollbar))
+                return;
+
+        adj = gtk_range_get_adjustment (GTK_RANGE (gui->vscrollbar));
+        lower = gtk_adjustment_get_lower (adj);
+        target = gtk_adjustment_get_upper (adj) - gtk_adjustment_get_page_size (adj);
+        if (target < lower)
+                target = lower;
+
+        gtk_adjustment_set_value (adj, target);
+	mg_update_scroll_to_bottom_button (gui);
+}
+
+static gboolean
+mg_scroll_to_bottom_button_press (GtkWidget *widget, GdkEventButton *event, gpointer userdata)
+{
+	if (event->button != 1)
+		return FALSE;
+
+	mg_scroll_to_bottom_activate (userdata);
+	return TRUE;
+}
+
+static gboolean
+mg_scroll_to_bottom_arrow_draw (GtkWidget *widget, cairo_t *cr, gpointer userdata)
+{
+	gdouble width = gtk_widget_get_allocated_width (widget);
+	gdouble height = gtk_widget_get_allocated_height (widget);
+	gdouble center_x = width / 2.0;
+	gdouble center_y = height / 2.0;
+
+	cairo_set_line_cap (cr, CAIRO_LINE_CAP_ROUND);
+	cairo_set_line_join (cr, CAIRO_LINE_JOIN_ROUND);
+
+	cairo_move_to (cr, center_x, center_y - 6.0);
+	cairo_line_to (cr, center_x, center_y + 5.0);
+	cairo_move_to (cr, center_x - 6.0, center_y);
+	cairo_line_to (cr, center_x, center_y + 6.0);
+	cairo_line_to (cr, center_x + 6.0, center_y);
+
+	cairo_set_source_rgba (cr, 0.0, 0.0, 0.0, 0.65);
+	cairo_set_line_width (cr, 5.0);
+	cairo_stroke_preserve (cr);
+
+	cairo_set_source_rgba (cr, 1.0, 1.0, 1.0, 0.96);
+	cairo_set_line_width (cr, 2.8);
+	cairo_stroke (cr);
+
+	return TRUE;
+}
+
+static void
+mg_create_scroll_to_bottom_button (session_gui *gui, GtkOverlay *overlay)
+{
+	GtkAdjustment *adj;
+
+	if (!gui || !overlay || !GTK_IS_RANGE (gui->vscrollbar))
+		return;
+
+	gui->scroll_bottom_button = gtk_drawing_area_new ();
+	g_object_set_data (G_OBJECT (gui->scroll_bottom_button), "mg-session-gui", gui);
+	gtk_widget_set_size_request (gui->scroll_bottom_button, 28, 28);
+	gtk_widget_set_app_paintable (gui->scroll_bottom_button, TRUE);
+	gtk_widget_add_events (gui->scroll_bottom_button, GDK_BUTTON_PRESS_MASK);
+	g_signal_connect (G_OBJECT (gui->scroll_bottom_button), "draw",
+	                  G_CALLBACK (mg_scroll_to_bottom_arrow_draw), NULL);
+	gtk_widget_set_tooltip_text (gui->scroll_bottom_button, _("Scroll to bottom"));
+        gtk_widget_set_halign (gui->scroll_bottom_button, GTK_ALIGN_END);
+        gtk_widget_set_valign (gui->scroll_bottom_button, GTK_ALIGN_END);
+        gtk_widget_set_margin_end (gui->scroll_bottom_button, 22);
+        gtk_widget_set_margin_bottom (gui->scroll_bottom_button, 12);
+        gtk_widget_set_no_show_all (gui->scroll_bottom_button, TRUE);
+        gtk_style_context_add_class (gtk_widget_get_style_context (gui->scroll_bottom_button), "zoitechat-scroll-bottom-button");
+        gtk_overlay_add_overlay (overlay, gui->scroll_bottom_button);
+
+	g_signal_connect (G_OBJECT (gui->scroll_bottom_button), "button-press-event",
+	                  G_CALLBACK (mg_scroll_to_bottom_button_press), gui);
+
+        adj = gtk_range_get_adjustment (GTK_RANGE (gui->vscrollbar));
+        g_signal_connect_object (G_OBJECT (adj), "value-changed",
+                                 G_CALLBACK (mg_scroll_to_bottom_adjustment_changed), gui->scroll_bottom_button, 0);
+        g_signal_connect_object (G_OBJECT (adj), "changed",
+                                 G_CALLBACK (mg_scroll_to_bottom_adjustment_changed), gui->scroll_bottom_button, 0);
+
+        gtk_widget_show_all (gui->scroll_bottom_button);
+        mg_update_scroll_to_bottom_button (gui);
+}
+
 static void
 mg_create_textarea (session *sess, GtkWidget *box)
 {
-        GtkWidget *inbox, *vbox, *frame;
+        GtkWidget *inbox, *vbox, *frame, *overlay;
         GtkXText *xtext;
         XTextColor xtext_palette[XTEXT_COLS];
         session_gui *gui = sess->gui;
@@ -3749,6 +3893,11 @@ mg_create_textarea (session *sess, GtkWidget *box)
         inbox = mg_box_new (GTK_ORIENTATION_HORIZONTAL, FALSE, 2);
         gtk_box_pack_start (GTK_BOX (vbox), inbox, TRUE, TRUE, 0);
 
+        overlay = gtk_overlay_new ();
+        gtk_widget_set_hexpand (overlay, TRUE);
+        gtk_widget_set_vexpand (overlay, TRUE);
+        gtk_box_pack_start (GTK_BOX (inbox), overlay, TRUE, TRUE, 0);
+
         frame = gtk_scrolled_window_new (NULL, NULL);
         gtk_widget_set_hexpand (frame, TRUE);
         gtk_widget_set_vexpand (frame, TRUE);
@@ -3756,7 +3905,7 @@ mg_create_textarea (session *sess, GtkWidget *box)
                                              GTK_SHADOW_IN);
         gtk_scrolled_window_set_policy (GTK_SCROLLED_WINDOW (frame),
                                         GTK_POLICY_NEVER, GTK_POLICY_AUTOMATIC);
-        gtk_box_pack_start (GTK_BOX (inbox), frame, TRUE, TRUE, 0);
+        gtk_container_add (GTK_CONTAINER (overlay), frame);
 
         theme_get_xtext_colors_for_widget (frame, xtext_palette, XTEXT_COLS);
         gui->xtext = gtk_xtext_new (xtext_palette, TRUE);
@@ -3773,6 +3922,7 @@ mg_create_textarea (session *sess, GtkWidget *box)
                                                         G_CALLBACK (mg_word_clicked), NULL);
 
         gui->vscrollbar = gtk_scrolled_window_get_vscrollbar (GTK_SCROLLED_WINDOW (frame));
+        mg_create_scroll_to_bottom_button (gui, GTK_OVERLAY (overlay));
 
         gtk_drag_dest_set (gui->vscrollbar, 5, dnd_dest_targets, 2,
                                                          GDK_ACTION_MOVE | GDK_ACTION_COPY | GDK_ACTION_LINK);
@@ -4359,6 +4509,432 @@ mg_inputbox_rightclick (GtkEntry *entry, GtkWidget *menu)
         mg_create_color_menu (menu, NULL);
 }
 
+typedef struct
+{
+        GtkEntry *entry;
+        GtkWidget *popover;
+        char *sequence;
+} EmojiFlagInsert;
+
+static const char *mg_emoji_flag_codes[] = {
+        "AC", "AD", "AE", "AF", "AG", "AI", "AL", "AM", "AO", "AQ", "AR", "AS",
+        "AT", "AU", "AW", "AX", "AZ", "BA", "BB", "BD", "BE", "BF", "BG", "BH",
+        "BI", "BJ", "BL", "BM", "BN", "BO", "BQ", "BR", "BS", "BT", "BV", "BW",
+        "BY", "BZ", "CA", "CC", "CD", "CF", "CG", "CH", "CI", "CK", "CL", "CM",
+        "CN", "CO", "CP", "CR", "CU", "CV", "CW", "CX", "CY", "CZ", "DE", "DG",
+        "DJ", "DK", "DM", "DO", "DZ", "EA", "EC", "EE", "EG", "EH", "ER", "ES",
+        "ET", "EU", "FI", "FJ", "FK", "FM", "FO", "FR", "GA", "GB", "GD", "GE",
+        "GF", "GG", "GH", "GI", "GL", "GM", "GN", "GP", "GQ", "GR", "GS", "GT",
+        "GU", "GW", "GY", "HK", "HM", "HN", "HR", "HT", "HU", "IC", "ID", "IE",
+        "IL", "IM", "IN", "IO", "IQ", "IR", "IS", "IT", "JE", "JM", "JO", "JP",
+        "KE", "KG", "KH", "KI", "KM", "KN", "KP", "KR", "KW", "KY", "KZ", "LA",
+        "LB", "LC", "LI", "LK", "LR", "LS", "LT", "LU", "LV", "LY", "MA", "MC",
+        "MD", "ME", "MF", "MG", "MH", "MK", "ML", "MM", "MN", "MO", "MP", "MQ",
+        "MR", "MS", "MT", "MU", "MV", "MW", "MX", "MY", "MZ", "NA", "NC", "NE",
+        "NF", "NG", "NI", "NL", "NO", "NP", "NR", "NU", "NZ", "OM", "PA", "PE",
+        "PF", "PG", "PH", "PK", "PL", "PM", "PN", "PR", "PS", "PT", "PW", "PY",
+        "QA", "RE", "RO", "RS", "RU", "RW", "SA", "SB", "SC", "SD", "SE", "SG",
+        "SH", "SI", "SJ", "SK", "SL", "SM", "SN", "SO", "SR", "SS", "ST", "SV",
+        "SX", "SY", "SZ", "TA", "TC", "TD", "TF", "TG", "TH", "TJ", "TK", "TL",
+        "TM", "TN", "TO", "TR", "TT", "TV", "TW", "TZ", "UA", "UG", "UM", "UN",
+        "US", "UY", "UZ", "VA", "VC", "VE", "VG", "VI", "VN", "VU", "WF", "WS",
+        "XK", "YE", "YT", "ZA", "ZM", "ZW", NULL
+};
+
+static const gunichar mg_emoji_smileys[] = {
+        0x1F600, 0x1F603, 0x1F604, 0x1F601, 0x1F606, 0x1F605, 0x1F923, 0x1F602,
+        0x1F642, 0x1F643, 0x1F609, 0x1F60A, 0x1F607, 0x1F970, 0x1F60D, 0x1F929,
+        0x1F618, 0x1F617, 0x1F61A, 0x1F619, 0x1F60B, 0x1F61B, 0x1F61C, 0x1F92A,
+        0x1F61D, 0x1F911, 0x1F917, 0x1F92D, 0x1F92B, 0x1F914, 0x1F910, 0x1F928,
+        0x1F610, 0x1F611, 0x1F636, 0x1F60F, 0x1F612, 0x1F644, 0x1F62C, 0x1F925,
+        0x1F60C, 0x1F614, 0x1F62A, 0x1F924, 0x1F634, 0x1F637, 0x1F912, 0x1F915,
+        0x1F922, 0x1F92E, 0x1F927, 0x1F975, 0x1F976, 0x1F974, 0x1F635, 0x1F92F,
+        0x1F920, 0x1F973, 0x1F978, 0x1F60E, 0x1F913, 0x1F9D0, 0
+};
+
+static const gunichar mg_emoji_people[] = {
+        0x1F44B, 0x1F91A, 0x1F590, 0x270B, 0x1F596, 0x1F44C, 0x1F90C, 0x1F90F,
+        0x270C, 0x1F91E, 0x1F91F, 0x1F918, 0x1F919, 0x1F448, 0x1F449, 0x1F446,
+        0x1F595, 0x1F447, 0x261D, 0x1F44D, 0x1F44E, 0x270A, 0x1F44A, 0x1F44F,
+        0x1F64C, 0x1F450, 0x1F932, 0x1F64F, 0x1F4AA, 0x1F9BE, 0x1F9BF, 0x1F9B5,
+        0x1F9B6, 0x1F442, 0x1F9BB, 0x1F443, 0x1F9E0, 0x1FAC0, 0x1FAC1, 0x1F9B7,
+        0x1F9B4, 0x1F440, 0x1F445, 0x1F444, 0x1F476, 0x1F9D2, 0x1F466, 0x1F467,
+        0x1F9D1, 0x1F471, 0x1F468, 0x1F469, 0x1F9D4, 0x1F474, 0x1F475, 0x1F64D,
+        0x1F64E, 0x1F645, 0x1F646, 0x1F481, 0x1F64B, 0
+};
+
+static const gunichar mg_emoji_animals[] = {
+        0x1F436, 0x1F431, 0x1F42D, 0x1F439, 0x1F430, 0x1F98A, 0x1F43B, 0x1F43C,
+        0x1F43B, 0x1F428, 0x1F42F, 0x1F981, 0x1F42E, 0x1F437, 0x1F43D, 0x1F438,
+        0x1F435, 0x1F648, 0x1F649, 0x1F64A, 0x1F412, 0x1F414, 0x1F427, 0x1F426,
+        0x1F424, 0x1F986, 0x1F985, 0x1F989, 0x1F987, 0x1F43A, 0x1F417, 0x1F434,
+        0x1F984, 0x1F41D, 0x1FAB1, 0x1F41B, 0x1F98B, 0x1F40C, 0x1F41E, 0x1F41C,
+        0x1FAB0, 0x1F422, 0x1F40D, 0x1F98E, 0x1F419, 0x1F991, 0x1F980, 0x1F99E,
+        0x1F420, 0x1F41F, 0x1F42C, 0x1F433, 0x1F40B, 0x1F98D, 0x1F405, 0x1F406,
+        0x1F993, 0x1F98C, 0x1F999, 0x1F992, 0
+};
+
+static const gunichar mg_emoji_food[] = {
+        0x1F347, 0x1F348, 0x1F349, 0x1F34A, 0x1F34B, 0x1F34C, 0x1F34D, 0x1F96D,
+        0x1F34E, 0x1F34F, 0x1F350, 0x1F351, 0x1F352, 0x1F353, 0x1FAD0, 0x1F95D,
+        0x1F345, 0x1FAD2, 0x1F965, 0x1F951, 0x1F346, 0x1F954, 0x1F955, 0x1F33D,
+        0x1F336, 0x1F952, 0x1F96C, 0x1F966, 0x1F9C4, 0x1F9C5, 0x1F344, 0x1F95C,
+        0x1F330, 0x1F35E, 0x1F950, 0x1F956, 0x1FAD3, 0x1F968, 0x1F96F, 0x1F95E,
+        0x1F9C7, 0x1F9C0, 0x1F356, 0x1F357, 0x1F969, 0x1F953, 0x1F354, 0x1F35F,
+        0x1F355, 0x1F32D, 0x1F96A, 0x1F32E, 0x1F32F, 0x1F959, 0x1F9C6, 0x1F95A,
+        0x1F373, 0x1F958, 0x1F372, 0x1F35C, 0x1F363, 0x1F364, 0x1F366, 0x1F370, 0
+};
+
+static const gunichar mg_emoji_travel[] = {
+        0x1F697, 0x1F695, 0x1F699, 0x1F68C, 0x1F68E, 0x1F3CE, 0x1F693, 0x1F691,
+        0x1F692, 0x1F690, 0x1F69A, 0x1F69B, 0x1F69C, 0x1F9AF, 0x1F9BD, 0x1F9BC,
+        0x1F6F4, 0x1F6B2, 0x1F6F5, 0x1F3CD, 0x1F6FA, 0x1F6A8, 0x1F694, 0x1F68D,
+        0x1F698, 0x1F696, 0x1F6A1, 0x1F6A0, 0x1F69F, 0x1F683, 0x1F68B, 0x1F69E,
+        0x1F682, 0x1F686, 0x1F684, 0x1F685, 0x1F688, 0x1F687, 0x1F69D, 0x1F68A,
+        0x1F689, 0x2708, 0x1F6EB, 0x1F6EC, 0x1FA82, 0x1F4BA, 0x1F681, 0x1F69F,
+        0x1F6A0, 0x1F6F0, 0x1F680, 0x1F6F8, 0x1F6CE, 0x1F9F3, 0x231B, 0x23F0,
+        0x1F30D, 0x1F30E, 0x1F30F, 0x1F5FA, 0x1F5FD, 0x1F3F0, 0
+};
+
+static const gunichar mg_emoji_objects[] = {
+        0x231A, 0x1F4F1, 0x1F4F2, 0x1F4BB, 0x2328, 0x1F5A5, 0x1F5A8, 0x1F5B1,
+        0x1F5B2, 0x1F579, 0x1F5DC, 0x1F4BD, 0x1F4BE, 0x1F4BF, 0x1F4C0, 0x1F4FC,
+        0x1F4F7, 0x1F4F8, 0x1F4F9, 0x1F3A5, 0x1F4DE, 0x260E, 0x1F4DF, 0x1F4E0,
+        0x1F4FA, 0x1F4FB, 0x1F399, 0x1F39A, 0x1F39B, 0x1F9ED, 0x23F1, 0x23F2,
+        0x1F570, 0x1F4A1, 0x1F526, 0x1F56F, 0x1FA94, 0x1F9EF, 0x1F6E2, 0x1F4B8,
+        0x1F4B5, 0x1F4B4, 0x1F4B6, 0x1F4B7, 0x1F4B0, 0x1F4B3, 0x1F48E, 0x2696,
+        0x1FA9C, 0x1F9F0, 0x1FA9B, 0x1F527, 0x1FA9A, 0x1F528, 0x2692, 0x1F6E0,
+        0x1F5E1, 0x2694, 0x1F52B, 0x1F3F9, 0x1F6E1, 0x1F9F2, 0x1F9EA, 0x1F9EC, 0
+};
+
+static const gunichar mg_emoji_symbols[] = {
+        0x2764, 0x1F9E1, 0x1F49B, 0x1F49A, 0x1F499, 0x1F49C, 0x1F90E, 0x1F5A4,
+        0x1F90D, 0x1F494, 0x2763, 0x1F495, 0x1F49E, 0x1F493, 0x1F497, 0x1F496,
+        0x1F498, 0x1F49D, 0x1F49F, 0x262E, 0x271D, 0x262A, 0x1F549, 0x2638,
+        0x2721, 0x1F52F, 0x1F54E, 0x262F, 0x2626, 0x1F6D0, 0x26CE, 0x2648,
+        0x2649, 0x264A, 0x264B, 0x264C, 0x264D, 0x264E, 0x264F, 0x2650,
+        0x2651, 0x2652, 0x2653, 0x1F194, 0x1F19A, 0x1F4A2, 0x1F4A5, 0x1F4AB,
+        0x1F4A6, 0x1F4A8, 0x1F573, 0x1F4AC, 0x1F441, 0x1F5E8, 0x1F5EF, 0x1F4AD, 0
+};
+
+typedef struct
+{
+        const char *title;
+        const gunichar *items;
+} EmojiCategory;
+
+static const EmojiCategory mg_emoji_categories[] = {
+        { N_("Smileys"), mg_emoji_smileys },
+        { N_("People"), mg_emoji_people },
+        { N_("Animals"), mg_emoji_animals },
+        { N_("Food"), mg_emoji_food },
+        { N_("Travel"), mg_emoji_travel },
+        { N_("Objects"), mg_emoji_objects },
+        { N_("Symbols"), mg_emoji_symbols },
+        { NULL, NULL }
+};
+
+static char *
+mg_emoji_flag_sequence (const char *code)
+{
+        GString *sequence;
+        gunichar regional;
+        char utf8[7];
+        int len;
+        int i;
+
+        if (!code || strlen (code) < 2)
+                return NULL;
+
+        sequence = g_string_sized_new (9);
+        for (i = 0; i < 2; i++)
+        {
+                if (code[i] < 'A' || code[i] > 'Z')
+                {
+                        g_string_free (sequence, TRUE);
+                        return NULL;
+                }
+
+                regional = 0x1F1E6 + (code[i] - 'A');
+                len = g_unichar_to_utf8 (regional, utf8);
+                utf8[len] = '\0';
+                g_string_append (sequence, utf8);
+        }
+
+        return g_string_free (sequence, FALSE);
+}
+
+static char *
+mg_emoji_codepoint_sequence (gunichar codepoint)
+{
+        char utf8[7];
+        int len;
+
+        len = g_unichar_to_utf8 (codepoint, utf8);
+        utf8[len] = '\0';
+        return g_strdup (utf8);
+}
+
+static GdkPixbuf *
+mg_emoji_flag_load_pixbuf (const char *code)
+{
+        char *name;
+        char *lower;
+        char *path;
+        char *base_path = NULL;
+        GdkPixbuf *pixbuf;
+        GError *error = NULL;
+
+        lower = g_ascii_strdown (code, -1);
+        name = g_strdup_printf ("%s.png", lower);
+
+#ifdef G_OS_WIN32
+        base_path = g_win32_get_package_installation_directory_of_module (NULL);
+        if (base_path)
+        {
+                path = g_build_filename (base_path, "share", "emoji-flags", name, NULL);
+                pixbuf = gdk_pixbuf_new_from_file_at_scale (path, 34, 28, TRUE, &error);
+                g_free (path);
+                if (pixbuf)
+                        goto cleanup;
+                g_clear_error (&error);
+        }
+#endif
+
+        path = g_build_filename ("share", "emoji-flags", name, NULL);
+        pixbuf = gdk_pixbuf_new_from_file_at_scale (path, 34, 28, TRUE, &error);
+
+        if (!pixbuf)
+        {
+                g_clear_error (&error);
+        }
+
+        g_free (path);
+cleanup:
+        g_free (base_path);
+        g_free (name);
+        g_free (lower);
+        return pixbuf;
+}
+
+static void
+mg_emoji_flag_insert_free (EmojiFlagInsert *insert)
+{
+        if (!insert)
+                return;
+
+        g_free (insert->sequence);
+        g_free (insert);
+}
+
+static void
+mg_emoji_flag_insert_cb (GtkWidget *button, gpointer user_data)
+{
+        EmojiFlagInsert *insert = user_data;
+        gint pos;
+
+        if (!insert || !insert->entry || !insert->sequence)
+                return;
+
+        pos = gtk_editable_get_position (GTK_EDITABLE (insert->entry));
+        gtk_editable_insert_text (GTK_EDITABLE (insert->entry), insert->sequence, -1, &pos);
+        gtk_editable_set_position (GTK_EDITABLE (insert->entry), pos);
+        gtk_widget_grab_focus (GTK_WIDGET (insert->entry));
+
+        if (insert->popover)
+                gtk_popover_popdown (GTK_POPOVER (insert->popover));
+}
+
+static GtkWidget *
+mg_emoji_grid_scroller_new (GtkWidget **grid_out)
+{
+        GtkWidget *scrolled;
+        GtkWidget *grid;
+
+        scrolled = gtk_scrolled_window_new (NULL, NULL);
+        gtk_scrolled_window_set_policy (GTK_SCROLLED_WINDOW (scrolled), GTK_POLICY_NEVER, GTK_POLICY_AUTOMATIC);
+        gtk_widget_set_size_request (scrolled, 500, 330);
+
+        grid = gtk_grid_new ();
+        gtk_grid_set_row_spacing (GTK_GRID (grid), 4);
+        gtk_grid_set_column_spacing (GTK_GRID (grid), 4);
+        gtk_container_add (GTK_CONTAINER (scrolled), grid);
+
+        *grid_out = grid;
+        return scrolled;
+}
+
+static void
+mg_emoji_add_button_sized (GtkWidget *grid, GtkEntry *entry, GtkWidget *popover, GtkWidget *child,
+                           const char *sequence, const char *tooltip, int index, int width, int height)
+{
+        GtkWidget *button;
+        EmojiFlagInsert *insert;
+
+        button = gtk_button_new ();
+        gtk_button_set_relief (GTK_BUTTON (button), GTK_RELIEF_NONE);
+        gtk_widget_set_can_focus (button, FALSE);
+        gtk_widget_set_size_request (button, width, height);
+        if (tooltip)
+                gtk_widget_set_tooltip_text (button, tooltip);
+        gtk_container_add (GTK_CONTAINER (button), child);
+
+        insert = g_new0 (EmojiFlagInsert, 1);
+        insert->entry = entry;
+        insert->popover = popover;
+        insert->sequence = g_strdup (sequence);
+        g_signal_connect_data (G_OBJECT (button), "clicked",
+                               G_CALLBACK (mg_emoji_flag_insert_cb),
+                               insert,
+                               (GClosureNotify) mg_emoji_flag_insert_free,
+                               0);
+
+        gtk_grid_attach (GTK_GRID (grid), button, index % 10, index / 10, 1, 1);
+}
+
+static void
+mg_emoji_add_button (GtkWidget *grid, GtkEntry *entry, GtkWidget *popover, GtkWidget *child,
+                     const char *sequence, const char *tooltip, int index)
+{
+        mg_emoji_add_button_sized (grid, entry, popover, child, sequence, tooltip, index, 46, 46);
+}
+
+static GtkWidget *
+mg_emoji_codepoint_page_new (GtkEntry *entry, GtkWidget *popover, const gunichar *items)
+{
+        GtkWidget *scrolled;
+        GtkWidget *grid;
+        GtkWidget *label;
+        char *sequence;
+        int i;
+
+        scrolled = mg_emoji_grid_scroller_new (&grid);
+
+        for (i = 0; items[i] != 0; i++)
+        {
+                PangoAttrList *attrs;
+
+                sequence = mg_emoji_codepoint_sequence (items[i]);
+                label = gtk_label_new (sequence);
+                attrs = pango_attr_list_new ();
+                pango_attr_list_insert (attrs, pango_attr_scale_new (PANGO_SCALE_XX_LARGE));
+                gtk_label_set_attributes (GTK_LABEL (label), attrs);
+                pango_attr_list_unref (attrs);
+                mg_apply_emoji_fallback_widget (label);
+                mg_emoji_add_button_sized (grid, entry, popover, label, sequence, sequence, i, 52, 48);
+                g_free (sequence);
+        }
+
+        return scrolled;
+}
+
+static GtkWidget *
+mg_emoji_flags_page_new (GtkEntry *entry, GtkWidget *popover)
+{
+        GtkWidget *scrolled;
+        GtkWidget *grid;
+        GtkWidget *box;
+        GtkWidget *image;
+        GtkWidget *label;
+        GdkPixbuf *pixbuf;
+        char *sequence;
+        char *tooltip;
+        int i;
+
+        scrolled = mg_emoji_grid_scroller_new (&grid);
+
+        for (i = 0; mg_emoji_flag_codes[i] != NULL; i++)
+        {
+                sequence = mg_emoji_flag_sequence (mg_emoji_flag_codes[i]);
+                if (sequence == NULL)
+                        continue;
+
+                pixbuf = mg_emoji_flag_load_pixbuf (mg_emoji_flag_codes[i]);
+                if (pixbuf)
+                {
+                        PangoAttrList *attrs;
+
+                        box = gtk_box_new (GTK_ORIENTATION_VERTICAL, 1);
+                        image = gtk_image_new_from_pixbuf (pixbuf);
+                        g_object_unref (pixbuf);
+
+                        label = gtk_label_new (mg_emoji_flag_codes[i]);
+                        attrs = pango_attr_list_new ();
+                        pango_attr_list_insert (attrs, pango_attr_scale_new (PANGO_SCALE_SMALL));
+                        gtk_label_set_attributes (GTK_LABEL (label), attrs);
+                        pango_attr_list_unref (attrs);
+                        gtk_widget_set_name (label, "fabulor-emoji-flag-code");
+                        gtk_box_pack_start (GTK_BOX (box), image, FALSE, FALSE, 0);
+                        gtk_box_pack_start (GTK_BOX (box), label, FALSE, FALSE, 0);
+
+                        tooltip = g_strdup_printf (_("Insert %s flag."), mg_emoji_flag_codes[i]);
+                        mg_emoji_add_button (grid, entry, popover, box, sequence, tooltip, i);
+                        g_free (tooltip);
+                }
+                else
+                {
+                        label = gtk_label_new (mg_emoji_flag_codes[i]);
+                        mg_emoji_add_button (grid, entry, popover, label, sequence, mg_emoji_flag_codes[i], i);
+                }
+
+                g_free (sequence);
+        }
+
+        return scrolled;
+}
+
+static void
+mg_show_emoji_popover (GtkEntry *entry)
+{
+        GtkWidget *popover;
+        GtkWidget *outer;
+        GtkWidget *notebook;
+        GtkWidget *page;
+        int i;
+
+        popover = gtk_popover_new (GTK_WIDGET (entry));
+        gtk_popover_set_position (GTK_POPOVER (popover), GTK_POS_TOP);
+        gtk_popover_set_modal (GTK_POPOVER (popover), TRUE);
+        gtk_popover_set_transitions_enabled (GTK_POPOVER (popover), FALSE);
+
+        outer = gtk_box_new (GTK_ORIENTATION_VERTICAL, 6);
+        gtk_container_set_border_width (GTK_CONTAINER (outer), 8);
+        gtk_container_add (GTK_CONTAINER (popover), outer);
+
+        notebook = gtk_notebook_new ();
+        gtk_notebook_set_tab_pos (GTK_NOTEBOOK (notebook), GTK_POS_TOP);
+        gtk_box_pack_start (GTK_BOX (outer), notebook, TRUE, TRUE, 0);
+
+        for (i = 0; mg_emoji_categories[i].title != NULL; i++)
+        {
+                page = mg_emoji_codepoint_page_new (entry, popover, mg_emoji_categories[i].items);
+                gtk_notebook_append_page (GTK_NOTEBOOK (notebook), page, gtk_label_new (_(mg_emoji_categories[i].title)));
+        }
+
+        page = mg_emoji_flags_page_new (entry, popover);
+        gtk_notebook_append_page (GTK_NOTEBOOK (notebook), page, gtk_label_new (_("Flags")));
+
+        gtk_widget_show_all (popover);
+        gtk_popover_popup (GTK_POPOVER (popover));
+        g_signal_connect (G_OBJECT (popover), "closed", G_CALLBACK (gtk_widget_destroy), NULL);
+}
+
+static void
+mg_inputbox_insert_emoji_cb (GtkEntry *entry, gpointer user_data)
+{
+        g_signal_stop_emission_by_name (entry, "insert-emoji");
+        mg_show_emoji_popover (entry);
+}
+
+static void
+mg_inputbox_icon_release_cb (GtkEntry *entry, GtkEntryIconPosition icon_pos, GdkEvent *event, gpointer user_data)
+{
+        if (icon_pos != GTK_ENTRY_ICON_SECONDARY)
+                return;
+
+        mg_show_emoji_popover (entry);
+}
+
 /* ------------------------------------------------------------------------- *
  * Emoji font handling
  *
@@ -4368,7 +4944,7 @@ mg_inputbox_rightclick (GtkEntry *entry, GtkWidget *menu)
 
 static const char *mg_emoji_family_fallback =
 #ifdef G_OS_WIN32
-        "Segoe UI Emoji, Segoe UI Symbol, Noto Color Emoji, Apple Color Emoji, Twemoji Mozilla, EmojiOne Color";
+        "Noto Color Emoji, Segoe UI Emoji, Segoe UI Symbol, Apple Color Emoji, Twemoji Mozilla, EmojiOne Color";
 #else
         "Noto Color Emoji, Segoe UI Emoji, Apple Color Emoji, Twemoji Mozilla, EmojiOne Color";
 #endif
@@ -4789,6 +5365,10 @@ mg_create_entry (session *sess, GtkWidget *box)
                                                         G_CALLBACK (mg_inputbox_focus), gui);
         g_signal_connect (G_OBJECT (entry), "populate-popup",
                                                         G_CALLBACK (mg_inputbox_rightclick), NULL);
+        g_signal_connect (G_OBJECT (entry), "insert-emoji",
+                                                        G_CALLBACK (mg_inputbox_insert_emoji_cb), NULL);
+        g_signal_connect (G_OBJECT (entry), "icon-release",
+                                                        G_CALLBACK (mg_inputbox_icon_release_cb), NULL);
         g_signal_connect (G_OBJECT (entry), "word-check",
                                                         G_CALLBACK (mg_spellcheck_cb), NULL);
         gtk_widget_grab_focus (entry);
@@ -4797,9 +5377,12 @@ mg_create_entry (session *sess, GtkWidget *box)
                 mg_apply_entry_style (entry);
         mg_apply_entry_scroll_artifact_fix (entry);
 
-        g_object_set (G_OBJECT (entry), "show-emoji-icon", TRUE, NULL);
+        g_object_set (G_OBJECT (entry), "show-emoji-icon", FALSE, NULL);
 
         emoji_fallback_icon_name = mg_find_available_icon_name (emoji_fallback_icon_names);
+        gtk_entry_set_icon_activatable (GTK_ENTRY (entry), GTK_ENTRY_ICON_SECONDARY, TRUE);
+        gtk_entry_set_icon_sensitive (GTK_ENTRY (entry), GTK_ENTRY_ICON_SECONDARY, TRUE);
+        gtk_entry_set_icon_tooltip_text (GTK_ENTRY (entry), GTK_ENTRY_ICON_SECONDARY, _("Insert emoji."));
         if (emoji_fallback_icon_name)
                 gtk_entry_set_icon_from_icon_name (GTK_ENTRY (entry), GTK_ENTRY_ICON_SECONDARY, emoji_fallback_icon_name);
 }

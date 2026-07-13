@@ -47,6 +47,8 @@ resource.h
 
 # Generated files
 data/zoitechat.gresource.xml
+__pycache__/
+*.py[cod]
 
 # Ignore VS Code workspace files (not per-repo settings)
 *.code-workspace

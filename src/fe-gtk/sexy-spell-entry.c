@@ -40,6 +40,7 @@
 
 #ifdef WIN32
 #include "../common/typedef.h"
+#include <glib/gwin32.h>
 #include <io.h>
 #else
 #include <unistd.h>
@@ -179,6 +180,34 @@ static guint signals[LAST_SIGNAL] = {0};
 
 static PangoAttrList *empty_attrs_list = NULL;
 
+#ifdef G_OS_WIN32
+static GModule *
+open_enchant_module_from_app_dir (const char *libname, char **loaded_path)
+{
+	GModule *module = NULL;
+	char *base_path;
+	char *candidate;
+
+	if (loaded_path)
+		*loaded_path = NULL;
+
+	base_path = g_win32_get_package_installation_directory_of_module (NULL);
+	if (!base_path)
+		return NULL;
+
+	candidate = g_build_filename (base_path, libname, NULL);
+	if (g_file_test (candidate, G_FILE_TEST_IS_REGULAR))
+		module = g_module_open (candidate, 0);
+
+	if (module && loaded_path)
+		*loaded_path = g_strdup (candidate);
+
+	g_free (candidate);
+	g_free (base_path);
+	return module;
+}
+#endif
+
 static gboolean
 spell_accumulator(GSignalInvocationHint *hint, GValue *return_accu, const GValue *handler_return, gpointer data)
 {
@@ -198,19 +227,34 @@ initialize_enchant (void)
     gsize i;
     const char * const libnames[] = {
 #ifdef G_OS_WIN32
-        "libenchant.dll",
+        "libenchant-2-2.dll",
+#else
+        "libenchant-2.so.2",
 #endif
     };
 
     for (i = 0; i < G_N_ELEMENTS(libnames); ++i)
     {
+#ifdef G_OS_WIN32
+        char *loaded_path = NULL;
+        enchant = open_enchant_module_from_app_dir(libnames[i], &loaded_path);
+#else
         enchant = g_module_open(libnames[i], 0);
+#endif
         if (enchant)
         {
+#ifdef G_OS_WIN32
+            g_info ("Loaded %s", loaded_path ? loaded_path : libnames[i]);
+            g_free (loaded_path);
+#else
             g_info ("Loaded %s", libnames[i]);
+#endif
             have_enchant = TRUE;
             break;
         }
+#ifdef G_OS_WIN32
+        g_free (loaded_path);
+#endif
     }
 
   if (!have_enchant)
@@ -219,7 +263,7 @@ initialize_enchant (void)
 #define MODULE_SYMBOL(name, func, alt_name) G_STMT_START { \
     const char *funcname = name; \
     gboolean ret = g_module_symbol(enchant, funcname, &funcptr); \
-    if (alt_name) { \
+    if (ret == FALSE && alt_name) { \
         funcname = alt_name; \
         ret = g_module_symbol(enchant, funcname, &funcptr); \
     } \

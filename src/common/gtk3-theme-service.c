@@ -20,23 +20,27 @@
 
 #include "gtk3-theme-service.h"
 
-#ifndef G_OS_WIN32
+#if !defined(G_OS_WIN32) || defined(HAVE_LIBARCHIVE)
 #if defined(__has_include)
 #if __has_include(<archive.h>)
 #include <archive.h>
 #include <archive_entry.h>
+#define ZOITECHAT_HAVE_LIBARCHIVE 1
 #elif __has_include(<libarchive/archive.h>)
 #include <libarchive/archive.h>
 #include <libarchive/archive_entry.h>
+#define ZOITECHAT_HAVE_LIBARCHIVE 1
 #elif __has_include(<archive/archive.h>)
 #include <archive/archive.h>
 #include <archive/archive_entry.h>
-#else
+#define ZOITECHAT_HAVE_LIBARCHIVE 1
+#elif !defined(G_OS_WIN32)
 #error "libarchive headers not found"
 #endif
 #else
 #include <archive.h>
 #include <archive_entry.h>
+#define ZOITECHAT_HAVE_LIBARCHIVE 1
 #endif
 #endif
 #include <glib/gstdio.h>
@@ -80,7 +84,7 @@ remove_tree (const char *path)
 	g_rmdir (path);
 }
 
-#ifdef G_OS_WIN32
+#if defined(G_OS_WIN32) && !defined(ZOITECHAT_HAVE_LIBARCHIVE)
 static gboolean
 path_tree_has_entries (const char *path)
 {
@@ -278,6 +282,26 @@ path_exists_as_dir (const char *path)
 	return path && g_file_test (path, G_FILE_TEST_IS_DIR);
 }
 
+static const char *
+path_get_user_data_dir_current (void)
+{
+	const char *xdg_data_home = g_getenv ("XDG_DATA_HOME");
+
+	if (xdg_data_home && xdg_data_home[0])
+		return xdg_data_home;
+	return g_get_user_data_dir ();
+}
+
+static char **
+path_get_system_data_dirs_current (void)
+{
+	const char *xdg_data_dirs = g_getenv ("XDG_DATA_DIRS");
+
+	if (xdg_data_dirs && xdg_data_dirs[0])
+		return g_strsplit (xdg_data_dirs, G_SEARCHPATH_SEPARATOR_S, -1);
+	return g_strdupv ((char **) g_get_system_data_dirs ());
+}
+
 static char *
 resolve_parent_theme_root (const char *child_theme_root, const char *parent_name)
 {
@@ -286,6 +310,9 @@ resolve_parent_theme_root (const char *child_theme_root, const char *parent_name
 	char *user_dir;
 	char *home_themes;
 	char *home_local;
+	char *user_data_themes;
+	char **system_data_dirs;
+	guint i;
 
 	if (!parent_name || !parent_name[0])
 		return NULL;
@@ -314,6 +341,24 @@ resolve_parent_theme_root (const char *child_theme_root, const char *parent_name
 	if (path_exists_as_dir (home_local))
 		return home_local;
 	g_free (home_local);
+
+	user_data_themes = g_build_filename (path_get_user_data_dir_current (), "themes", parent_name, NULL);
+	if (path_exists_as_dir (user_data_themes))
+		return user_data_themes;
+	g_free (user_data_themes);
+
+	system_data_dirs = path_get_system_data_dirs_current ();
+	for (i = 0; system_data_dirs && system_data_dirs[i]; i++)
+	{
+		candidate = g_build_filename (system_data_dirs[i], "themes", parent_name, NULL);
+		if (path_exists_as_dir (candidate))
+		{
+			g_strfreev (system_data_dirs);
+			return candidate;
+		}
+		g_free (candidate);
+	}
+	g_strfreev (system_data_dirs);
 
 	user_dir = zoitechat_gtk3_theme_service_get_user_themes_dir ();
 	candidate = g_build_filename (user_dir, parent_name, NULL);
@@ -624,7 +669,7 @@ zoitechat_gtk3_theme_service_discover (void)
 	GPtrArray *user_roots = g_ptr_array_new_with_free_func (g_free);
 	GHashTable *seen_user_roots = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, NULL);
 	GHashTable *seen_theme_roots = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, NULL);
-	const gchar *const *system_data_dirs;
+	char **system_data_dirs;
 	guint i;
 	char *user_data_themes;
 	char *user_dir = zoitechat_gtk3_theme_service_get_user_themes_dir ();
@@ -632,19 +677,20 @@ zoitechat_gtk3_theme_service_discover (void)
 
 	g_mkdir_with_parents (user_dir, 0700);
 
-	user_data_themes = g_build_filename (g_get_user_data_dir (), "themes", NULL);
+	user_data_themes = g_build_filename (path_get_user_data_dir_current (), "themes", NULL);
 	add_theme_root (user_roots, seen_user_roots, user_data_themes);
 	g_free (user_data_themes);
 	add_theme_root (user_roots, seen_user_roots, home_themes);
 	add_theme_root (user_roots, seen_user_roots, user_dir);
 
-	system_data_dirs = g_get_system_data_dirs ();
+	system_data_dirs = path_get_system_data_dirs_current ();
 	for (i = 0; system_data_dirs && system_data_dirs[i]; i++)
 	{
 		char *system_themes = g_build_filename (system_data_dirs[i], "themes", NULL);
 		add_theme_root (system_roots, seen_system_roots, system_themes);
 		g_free (system_themes);
 	}
+	g_strfreev (system_data_dirs);
 
 	for (i = 0; i < system_roots->len; i++)
 		discover_dir (themes, seen_theme_roots, g_ptr_array_index (system_roots, i), ZOITECHAT_GTK3_THEME_SOURCE_SYSTEM);
@@ -768,8 +814,8 @@ path_depth_from_root (const char *base, const char *path)
 static gint
 theme_root_candidate_compare (gconstpointer a, gconstpointer b)
 {
-	const ThemeRootCandidate *ca = a;
-	const ThemeRootCandidate *cb = b;
+	const ThemeRootCandidate *ca = *(const ThemeRootCandidate **) a;
+	const ThemeRootCandidate *cb = *(const ThemeRootCandidate **) b;
 	if (ca->has_index_theme != cb->has_index_theme)
 		return ca->has_index_theme ? -1 : 1;
 	if (ca->depth != cb->depth)
@@ -1021,11 +1067,172 @@ validate_theme_root_for_import (const char *theme_root, GError **error)
 	return TRUE;
 }
 
+#ifdef ZOITECHAT_HAVE_LIBARCHIVE
+static gboolean
+archive_path_component_is_drive_qualified (const char *component, gsize component_len)
+{
+	return component_len >= 2 && g_ascii_isalpha (component[0]) && component[1] == ':';
+}
+
+static gboolean
+archive_path_component_has_colon (const char *component, gsize component_len)
+{
+	gsize i;
+
+	for (i = 0; i < component_len; i++)
+	{
+		if (component[i] == ':')
+			return TRUE;
+	}
+
+	return FALSE;
+}
+
+static gboolean
+archive_path_component_is_safe (const char *component, gsize component_len)
+{
+	if (component_len == 0)
+		return FALSE;
+	if (component_len == 1 && component[0] == '.')
+		return FALSE;
+	if (component_len == 2 && component[0] == '.' && component[1] == '.')
+		return FALSE;
+	if (archive_path_component_is_drive_qualified (component, component_len))
+		return FALSE;
+	if (archive_path_component_has_colon (component, component_len))
+		return FALSE;
+	return TRUE;
+}
+
+static char *
+archive_entry_path_normalize (const char *path)
+{
+	const char *component;
+	const char *p;
+	gsize path_len;
+	GString *normalized;
+
+	if (!path || path[0] == '\0')
+		return NULL;
+	if (g_path_is_absolute (path))
+		return NULL;
+
+	path_len = strlen (path);
+	while (path_len > 0 && path[path_len - 1] == '/')
+		path_len--;
+	if (path_len == 0)
+		return NULL;
+
+	normalized = g_string_new (NULL);
+	component = path;
+	for (p = path; p < path + path_len; p++)
+	{
+		if ((guchar)*p < 0x20 || *p == 0x7f || *p == '\\')
+		{
+			g_string_free (normalized, TRUE);
+			return NULL;
+		}
+
+		if (*p == '/')
+		{
+			gsize component_len = p - component;
+			if (component_len == 1 && component[0] == '.')
+			{
+				component = p + 1;
+				continue;
+			}
+			if (!archive_path_component_is_safe (component, component_len))
+			{
+				g_string_free (normalized, TRUE);
+				return NULL;
+			}
+			if (normalized->len > 0)
+				g_string_append_c (normalized, '/');
+			g_string_append_len (normalized, component, component_len);
+			component = p + 1;
+		}
+	}
+
+	{
+		gsize component_len = p - component;
+		if (!(component_len == 1 && component[0] == '.'))
+		{
+			if (!archive_path_component_is_safe (component, component_len))
+			{
+				g_string_free (normalized, TRUE);
+				return NULL;
+			}
+			if (normalized->len > 0)
+				g_string_append_c (normalized, '/');
+			g_string_append_len (normalized, component, component_len);
+		}
+	}
+
+	return g_string_free (normalized, FALSE);
+}
+
+static gboolean
+archive_entry_is_safe_for_extract (struct archive_entry *entry, char **normalized_path)
+{
+	const char *entry_path;
+
+	if (normalized_path)
+		*normalized_path = NULL;
+
+	if (!entry)
+		return FALSE;
+
+	if (archive_entry_filetype (entry) == AE_IFLNK)
+		return FALSE;
+
+	if (archive_entry_hardlink (entry) != NULL)
+		return FALSE;
+
+	entry_path = archive_entry_pathname (entry);
+	if (normalized_path)
+		*normalized_path = archive_entry_path_normalize (entry_path);
+	if (!normalized_path || !*normalized_path)
+		return FALSE;
+
+	return TRUE;
+}
+
+static gboolean
+path_is_under_root (const char *root, const char *path)
+{
+	gsize root_len;
+
+	if (!root || !path)
+		return FALSE;
+
+	root_len = strlen (root);
+	if (strcmp (root, path) == 0)
+		return TRUE;
+
+	return g_str_has_prefix (path, root) && G_IS_DIR_SEPARATOR (path[root_len]);
+}
+
+static int
+archive_disk_extract_options (void)
+{
+	int options = ARCHIVE_EXTRACT_TIME | ARCHIVE_EXTRACT_PERM | ARCHIVE_EXTRACT_ACL | ARCHIVE_EXTRACT_FFLAGS;
+
+#ifdef ARCHIVE_EXTRACT_SECURE_NODOTDOT
+	options |= ARCHIVE_EXTRACT_SECURE_NODOTDOT;
+#endif
+#ifdef ARCHIVE_EXTRACT_SECURE_SYMLINKS
+	options |= ARCHIVE_EXTRACT_SECURE_SYMLINKS;
+#endif
+
+	return options;
+}
+#endif
+
 static char *
 extract_archive (const char *source, GError **error)
 {
 	char *tmp = g_dir_make_tmp ("zoitechat-gtk3-theme-XXXXXX", error);
-	#ifdef G_OS_WIN32
+	#if defined(G_OS_WIN32) && !defined(ZOITECHAT_HAVE_LIBARCHIVE)
 	char *stdout_text = NULL;
 	char *stderr_text = NULL;
 	char *system_tar = NULL;
@@ -1135,16 +1342,26 @@ extract_archive (const char *source, GError **error)
 	struct archive *archive = NULL;
 	struct archive *disk = NULL;
 	struct archive_entry *entry;
+	char *tmp_root;
 	int r;
 
 	if (!tmp)
 		return NULL;
 
+	tmp_root = path_canonicalize_compat (tmp);
+	if (!tmp_root)
+	{
+		remove_tree (tmp);
+		g_free (tmp);
+		g_set_error_literal (error, G_FILE_ERROR, G_FILE_ERROR_FAILED, "Failed to extract theme archive.");
+		return NULL;
+	}
+
 	archive = archive_read_new ();
 	disk = archive_write_disk_new ();
 	archive_read_support_filter_all (archive);
 	archive_read_support_format_all (archive);
-	archive_write_disk_set_options (disk, ARCHIVE_EXTRACT_TIME | ARCHIVE_EXTRACT_PERM | ARCHIVE_EXTRACT_ACL | ARCHIVE_EXTRACT_FFLAGS);
+	archive_write_disk_set_options (disk, archive_disk_extract_options ());
 	archive_write_disk_set_standard_lookup (disk);
 
 	r = archive_read_open_filename (archive, source, 10240);
@@ -1153,6 +1370,7 @@ extract_archive (const char *source, GError **error)
 		archive_read_free (archive);
 		archive_write_free (disk);
 		remove_tree (tmp);
+		g_free (tmp_root);
 		g_free (tmp);
 		g_set_error_literal (error, G_FILE_ERROR, G_FILE_ERROR_FAILED, "Failed to extract theme archive.");
 		return NULL;
@@ -1160,17 +1378,32 @@ extract_archive (const char *source, GError **error)
 
 	while ((r = archive_read_next_header (archive, &entry)) == ARCHIVE_OK)
 	{
-		const char *entry_path = archive_entry_pathname (entry);
+		char *entry_path = NULL;
 		char *dest;
 
-		if (!entry_path)
+		if (!archive_entry_is_safe_for_extract (entry, &entry_path))
 		{
 			r = ARCHIVE_FAILED;
 			break;
 		}
 
-		dest = g_build_filename (tmp, entry_path, NULL);
+		if (entry_path[0] == '\0')
+		{
+			g_free (entry_path);
+			continue;
+		}
+
+		dest = g_build_filename (tmp_root, entry_path, NULL);
+		if (!path_is_under_root (tmp_root, dest))
+		{
+			g_free (entry_path);
+			g_free (dest);
+			r = ARCHIVE_FAILED;
+			break;
+		}
+
 		archive_entry_set_pathname (entry, dest);
+		g_free (entry_path);
 		g_free (dest);
 
 		r = archive_write_header (disk, entry);
@@ -1212,11 +1445,13 @@ extract_archive (const char *source, GError **error)
 	if (r != ARCHIVE_OK)
 	{
 		remove_tree (tmp);
+		g_free (tmp_root);
 		g_free (tmp);
 		g_set_error_literal (error, G_FILE_ERROR, G_FILE_ERROR_FAILED, "Failed to extract theme archive.");
 		return NULL;
 	}
 
+	g_free (tmp_root);
 	return tmp;
 	#endif
 }

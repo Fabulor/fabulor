@@ -171,6 +171,7 @@ static const setting appearance_settings[] =
         {ST_TOGGLE, N_("Colored nick names"), P_OFFINTNL(hex_text_color_nicks), N_("Give each person on IRC a different color"),0,0},
         {ST_TOGGLR, N_("Indent nick names"), P_OFFINTNL(hex_text_indent), N_("Make nick names right-justified"),0,0},
         {ST_TOGGLE, N_ ("Show marker line"), P_OFFINTNL (hex_text_show_marker), N_ ("Insert a red line after the last read text."), 0, 0},
+        {ST_TOGGLE, N_("Show scroll-to-bottom button"), P_OFFINTNL(hex_gui_scroll_bottom_button), N_("Show a down-arrow button when the text box is scrolled up."),0,0},
 
         {ST_HEADER,     N_("Timestamps"),0,0,0},
         {ST_TOGGLE, N_("Enable timestamps"), P_OFFINTNL(hex_stamp_text),0,0,1},
@@ -2188,6 +2189,7 @@ static void
 setup_apply_to_sess (session_gui *gui)
 {
         mg_update_xtext (gui->xtext);
+        mg_update_scroll_to_bottom_button (gui);
 
         mg_apply_session_font_prefs (gui);
 

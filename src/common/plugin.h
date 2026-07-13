@@ -170,6 +170,7 @@ void plugin_add (session *sess, char *filename, void *handle, void *init_func, v
 int plugin_kill (char *name, int by_filename);
 void plugin_kill_all (void);
 void plugin_auto_load (session *sess);
+void plugin_print_startup_report (session *sess);
 int plugin_emit_command (session *sess, char *name, char *word[], char *word_eol[]);
 int plugin_emit_server (session *sess, char *name, char *word[], char *word_eol[],
 						time_t server_time);

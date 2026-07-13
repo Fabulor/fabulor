@@ -21,6 +21,7 @@
 #include <string.h>
 #include <ctype.h>
 #include <time.h>
+#include <errno.h>
 #include <sys/types.h>
 #include <fcntl.h>
 #include <sys/stat.h>
@@ -43,9 +44,6 @@
 #include "zoitechatc.h"
 #include "text.h"
 #include "typedef.h"
-#ifdef WIN32
-#include <windows.h>
-#endif
 
 #ifdef USE_LIBCANBERRA
 #include <canberra.h>
@@ -70,12 +68,79 @@ static ca_context *ca_con;
 static void mkdir_p (char *filename);
 static char *log_create_filename (char *channame);
 
+static gboolean
+log_is_blank_name (const char *name)
+{
+	return !name || !name[0];
+}
+
+static gboolean
+log_is_network_placeholder (const char *name)
+{
+	return name && !rfc_casecmp (name, "NETWORK");
+}
+
+static char *
+log_get_network_name (session *sess)
+{
+	char *netname = server_get_network (sess->server, FALSE);
+
+	if (netname && !sess->server->network &&
+	    (log_is_blank_name (netname) || log_is_network_placeholder (netname)))
+		return NULL;
+
+	return netname;
+}
+
+static gboolean
+log_session_has_network_placeholder (session *sess, char *netname)
+{
+	if (sess->server->network)
+		return FALSE;
+
+	if (log_is_blank_name (netname) && log_is_blank_name (sess->server->servername))
+		return TRUE;
+
+	if (log_is_network_placeholder (netname))
+		return TRUE;
+
+	if (!netname && log_is_network_placeholder (sess->server->servername))
+		return TRUE;
+
+	if (!netname && sess->server->server_session &&
+	    log_is_network_placeholder (sess->server->server_session->channel))
+		return TRUE;
+
+	return FALSE;
+}
+
+#ifdef WIN32
+static void
+log_sanitize_win32_path (char *path)
+{
+	char *read = path;
+	char *write = path;
+
+	while (*read)
+	{
+		if ((unsigned char) *read >= 32)
+		{
+			*write = *read;
+			write++;
+		}
+		read++;
+	}
+
+	*write = 0;
+}
+#endif
+
 static char *
 scrollback_get_filename (session *sess)
 {
 	char *net, *chan, *buf, *ret = NULL;
 
-	net = server_get_network (sess->server, FALSE);
+	net = log_get_network_name (sess);
 	if (!net)
 		return NULL;
 
@@ -509,7 +574,16 @@ log_create_pathname (char *servname, char *channame, char *netname)
 
 	if (!netname)
 	{
-		netname = g_strdup ("NETWORK");
+		if (log_is_blank_name (servname) || log_is_network_placeholder (servname))
+			return NULL;
+		netname = log_create_filename (servname);
+	}
+	else if (log_is_blank_name (netname))
+	{
+		if (log_is_blank_name (servname) || log_is_network_placeholder (servname))
+			return NULL;
+
+		netname = log_create_filename (servname);
 	}
 	else
 	{
@@ -549,11 +623,38 @@ log_create_pathname (char *servname, char *channame, char *netname)
 		g_snprintf (fname, sizeof (fname), "%s" G_DIR_SEPARATOR_S "logs" G_DIR_SEPARATOR_S "%s", get_xdir (), fnametime);
 	}
 
+#ifdef WIN32
+	log_sanitize_win32_path (fname);
+#endif
+
 	/* create all the subdirectories */
 	mkdir_p (fname);
 
 	return g_strdup (fname);
 }
+
+#ifdef WIN32
+static int
+log_open_file_win32 (char *file)
+{
+	gunichar2 *wide_file;
+	int fd;
+
+	wide_file = g_utf8_to_utf16 (file, -1, NULL, NULL, NULL);
+	if (!wide_file)
+	{
+		errno = EINVAL;
+		return -1;
+	}
+
+	fd = _wopen ((const wchar_t *) wide_file,
+	             _O_CREAT | _O_APPEND | _O_WRONLY | _O_BINARY,
+	             _S_IREAD | _S_IWRITE);
+	g_free (wide_file);
+
+	return fd;
+}
+#endif
 
 static int
 log_open_file (char *servname, char *channame, char *netname)
@@ -567,7 +668,11 @@ log_open_file (char *servname, char *channame, char *netname)
 	if (!file)
 		return -1;
 
+#ifdef WIN32
+	fd = log_open_file_win32 (file);
+#else
 	fd = g_open (file, O_CREAT | O_APPEND | O_WRONLY | OFLAGS, 0644);
+#endif
 	g_free (file);
 
 	if (fd == -1)
@@ -584,15 +689,27 @@ static void
 log_open (session *sess)
 {
 	static gboolean log_error = FALSE;
+	char *netname;
 
 	log_close (sess);
+	netname = log_get_network_name (sess);
+	if (log_session_has_network_placeholder (sess, netname))
+		return;
+
 	sess->logfd = log_open_file (sess->server->servername, sess->channel,
-										  server_get_network (sess->server, FALSE));
+										  netname);
 
 	if (!log_error && sess->logfd == -1)
 	{
-		char *filename = log_create_pathname (sess->server->servername, sess->channel, server_get_network (sess->server, FALSE));
-		char *message = g_strdup_printf (_("* Can't open log file(s) for writing. Check the\npermissions on %s"), filename);
+		int log_errno = errno;
+		char *filename = log_create_pathname (sess->server->servername, sess->channel, netname);
+		char *message;
+		if (!filename)
+			return;
+
+		message = g_strdup_printf (_("* Can't open log file(s) for writing:\n%s\n\n%s"),
+		                                  filename,
+		                                  errorstring (log_errno));
 
 		g_free (filename);
 
@@ -657,6 +774,7 @@ log_write (session *sess, char *text, time_t ts)
 	char *temp;
 	char *stamp;
 	char *file;
+	char *netname;
 	int len;
 
 	if (sess->text_logging == SET_DEFAULT)
@@ -675,8 +793,12 @@ log_write (session *sess, char *text, time_t ts)
 		log_open (sess);
 	}
 
+	netname = log_get_network_name (sess);
+	if (log_session_has_network_placeholder (sess, netname))
+		return;
+
 	/* change to a different log file? */
-	file = log_create_pathname (sess->server->servername, sess->channel, server_get_network (sess->server, FALSE));
+	file = log_create_pathname (sess->server->servername, sess->channel, netname);
 	if (file)
 	{
 		if (g_access (file, F_OK) != 0)
@@ -686,7 +808,7 @@ log_write (session *sess, char *text, time_t ts)
 				close (sess->logfd);
 			}
 
-			sess->logfd = log_open_file (sess->server->servername, sess->channel, server_get_network (sess->server, FALSE));
+			sess->logfd = log_open_file (sess->server->servername, sess->channel, netname);
 		}
 
 		g_free (file);

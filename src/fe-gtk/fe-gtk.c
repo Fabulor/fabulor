@@ -188,6 +188,116 @@ create_msg_dialog (gchar *title, gchar *message)
 
 static char *win32_argv0_dir;
 
+static char *
+win32_fontconfig_xml_path (const char *path)
+{
+	char *normalized;
+	char *escaped;
+	char *p;
+
+	normalized = g_strdup (path);
+	if (normalized == NULL)
+		return NULL;
+
+	for (p = normalized; *p != '\0'; p++)
+	{
+		if (*p == '\\')
+			*p = '/';
+	}
+
+	escaped = g_markup_escape_text (normalized, -1);
+	g_free (normalized);
+	return escaped;
+}
+
+static void
+win32_configure_font_rendering (void)
+{
+	char *base_path;
+	char *system_fonts_conf;
+	char *emoji_font;
+	char *emoji_font_dir;
+	char *user_fontconfig_dir;
+	char *user_fonts_conf;
+	char *system_fonts_conf_xml;
+	char *emoji_font_dir_xml;
+	char *config;
+	GError *error = NULL;
+
+	base_path = g_win32_get_package_installation_directory_of_module (NULL);
+	if (base_path == NULL)
+		return;
+
+	system_fonts_conf = g_build_filename (base_path, "etc", "fonts", "fonts.conf", NULL);
+	emoji_font = g_build_filename (base_path, "share", "fonts", "NotoColorEmoji.ttf", NULL);
+	if (!g_file_test (system_fonts_conf, G_FILE_TEST_IS_REGULAR) ||
+	    !g_file_test (emoji_font, G_FILE_TEST_IS_REGULAR))
+		goto cleanup_base;
+
+	emoji_font_dir = g_path_get_dirname (emoji_font);
+	system_fonts_conf_xml = win32_fontconfig_xml_path (system_fonts_conf);
+	emoji_font_dir_xml = win32_fontconfig_xml_path (emoji_font_dir);
+	if (system_fonts_conf_xml == NULL || emoji_font_dir_xml == NULL)
+		goto cleanup_paths;
+
+	user_fontconfig_dir = g_build_filename (get_xdir (), "fontconfig", NULL);
+	user_fonts_conf = g_build_filename (user_fontconfig_dir, "fabulor-fonts.conf", NULL);
+
+	if (g_mkdir_with_parents (user_fontconfig_dir, 0700) != 0)
+		goto cleanup_config_paths;
+
+	config = g_strdup_printf (
+		"<?xml version=\"1.0\"?>\n"
+		"<!DOCTYPE fontconfig SYSTEM \"urn:fontconfig:fonts.dtd\">\n"
+		"<fontconfig>\n"
+		"  <include>%s</include>\n"
+		"  <dir>%s</dir>\n"
+		"  <match target=\"pattern\">\n"
+		"    <test qual=\"any\" name=\"family\">\n"
+		"      <string>Segoe UI Emoji</string>\n"
+		"    </test>\n"
+		"    <edit name=\"family\" mode=\"prepend\" binding=\"strong\">\n"
+		"      <string>Noto Color Emoji</string>\n"
+		"    </edit>\n"
+		"  </match>\n"
+		"  <match target=\"pattern\">\n"
+		"    <test qual=\"any\" name=\"family\">\n"
+		"      <string>emoji</string>\n"
+		"    </test>\n"
+		"    <edit name=\"family\" mode=\"prepend\" binding=\"strong\">\n"
+		"      <string>Noto Color Emoji</string>\n"
+		"    </edit>\n"
+		"  </match>\n"
+		"</fontconfig>\n",
+		system_fonts_conf_xml,
+		emoji_font_dir_xml);
+
+	if (!g_file_set_contents (user_fonts_conf, config, -1, &error))
+	{
+		g_warning ("win32_configure_font_rendering: failed to write %s: %s",
+		           user_fonts_conf, error ? error->message : "unknown error");
+		g_clear_error (&error);
+		goto cleanup_config;
+	}
+
+	g_setenv ("PANGOCAIRO_BACKEND", "fc", FALSE);
+	g_setenv ("FONTCONFIG_FILE", user_fonts_conf, FALSE);
+
+cleanup_config:
+	g_free (config);
+cleanup_config_paths:
+	g_free (user_fonts_conf);
+	g_free (user_fontconfig_dir);
+cleanup_paths:
+	g_free (emoji_font_dir_xml);
+	g_free (system_fonts_conf_xml);
+	g_free (emoji_font_dir);
+cleanup_base:
+	g_free (emoji_font);
+	g_free (system_fonts_conf);
+	g_free (base_path);
+}
+
 static void
 win32_set_appusermodelid (void)
 {
@@ -682,6 +792,7 @@ fe_args (int argc, char *argv[])
 	}
 
 #ifdef WIN32
+	win32_configure_font_rendering ();
 	win32_set_gsettings_schema_dir ();
 	win32_set_appusermodelid ();
 	win32_configure_pixbuf_loaders ();
@@ -912,11 +1023,19 @@ log_handler (const gchar   *log_domain,
 static int
 fe_idle (gpointer data)
 {
-	session *sess = sess_list->data;
+	session *sess = data;
+
+	if (!is_session (sess))
+	{
+		if (!sess_list)
+			return 0;
+		sess = sess_list->data;
+	}
 
 	plugin_add (sess, NULL, NULL, notification_plugin_init, notification_plugin_deinit, NULL, FALSE);
 
 	plugin_add (sess, NULL, NULL, tray_plugin_init, tray_plugin_deinit, NULL, FALSE);
+	plugin_print_startup_report (sess);
 
 	if (arg_minimize == 1)
 		gtk_window_iconify (GTK_WINDOW (sess->gui->window));
@@ -951,7 +1070,7 @@ fe_new_window (session *sess, int focus)
 #endif
 
 	if (!sess_list->next)
-		g_idle_add (fe_idle, NULL);
+		g_idle_add (fe_idle, sess);
 
 	sess->scrollback_replay_marklast = gtk_xtext_set_marker_last;
 }

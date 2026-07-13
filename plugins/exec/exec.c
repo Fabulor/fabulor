@@ -21,9 +21,13 @@
  */
 
 #include <windows.h>
+#include <stdlib.h>
+#include <string.h>
 #include <time.h>
 
 #include "zoitechat-plugin.h"
+
+#define EXEC_COMMAND_MAX 8192
 
 static zoitechat_plugin *ph;
 static char name[] = "Exec";
@@ -33,20 +37,25 @@ static char version[] = "1.2";
 static int
 run_command (char *word[], char *word_eol[], void *userdata)
 {
-	char commandLine[1024];
+	const char commandPrefix[] = "cmd.exe /c ";
+	const char *command;
+	char *commandLine = NULL;
 	char buffer[4096];
 	DWORD dwRead = 0;
 	DWORD dwLeft = 0;
 	DWORD dwAvail = 0;
+	DWORD error;
 	time_t start;
 	double timeElapsed;
+	size_t commandLen;
+	size_t commandLineLen;
 
 	char *token;
 	char *context = NULL;
 	int announce = 0;
 
-	HANDLE readPipe;
-	HANDLE writePipe;
+	HANDLE readPipe = NULL;
+	HANDLE writePipe = NULL;
 	STARTUPINFO sInfo; 
 	PROCESS_INFORMATION pInfo; 
 	SECURITY_ATTRIBUTES secattr; 
@@ -59,19 +68,54 @@ run_command (char *word[], char *word_eol[], void *userdata)
 
 	if (strlen (word[2]) > 0)
 	{
-		strcpy (commandLine, "cmd.exe /c ");
-
 		if (!stricmp("-O", word[2]))
 		{
-			strcat (commandLine, word_eol[3]);
+			command = word_eol[3];
 			announce = 1;
 		}
 		else
 		{
-			strcat (commandLine, word_eol[2]);
+			command = word_eol[2];
 		}
 
-		CreatePipe (&readPipe, &writePipe, &secattr, 0);
+		if (!command || !*command)
+		{
+			zoitechat_command (ph, "help exec");
+			return ZOITECHAT_EAT_ZOITECHAT;
+		}
+
+		commandLen = strlen (command);
+		if (commandLen > EXEC_COMMAND_MAX)
+		{
+			zoitechat_printf (ph, "Command is too long. Maximum length is %u characters.\n", EXEC_COMMAND_MAX);
+			return ZOITECHAT_EAT_ZOITECHAT;
+		}
+
+		commandLineLen = sizeof (commandPrefix) + commandLen;
+		commandLine = malloc (commandLineLen);
+		if (!commandLine)
+		{
+			zoitechat_printf (ph, "Unable to allocate command buffer.\n");
+			return ZOITECHAT_EAT_ZOITECHAT;
+		}
+
+		if (strcpy_s (commandLine, commandLineLen, commandPrefix) != 0 ||
+			strcat_s (commandLine, commandLineLen, command) != 0)
+		{
+			zoitechat_printf (ph, "Unable to prepare command line.\n");
+			free (commandLine);
+			return ZOITECHAT_EAT_ZOITECHAT;
+		}
+
+		if (!CreatePipe (&readPipe, &writePipe, &secattr, 0))
+		{
+			error = GetLastError ();
+			zoitechat_printf (ph, "Unable to create command output pipe: %lu\n", error);
+			free (commandLine);
+			return ZOITECHAT_EAT_ZOITECHAT;
+		}
+
+		SetHandleInformation (readPipe, HANDLE_FLAG_INHERIT, 0);
 
 		ZeroMemory (&sInfo, sizeof (sInfo));
 		ZeroMemory (&pInfo, sizeof (pInfo));
@@ -81,7 +125,17 @@ run_command (char *word[], char *word_eol[], void *userdata)
 		sInfo.hStdOutput = writePipe;
 		sInfo.hStdError = writePipe;
 
-		CreateProcess (0, commandLine, 0, 0, TRUE, NORMAL_PRIORITY_CLASS | CREATE_NO_WINDOW, 0, 0, &sInfo, &pInfo);
+		if (!CreateProcess (0, commandLine, 0, 0, TRUE, NORMAL_PRIORITY_CLASS | CREATE_NO_WINDOW, 0, 0, &sInfo, &pInfo))
+		{
+			error = GetLastError ();
+			zoitechat_printf (ph, "Unable to execute command: %lu\n", error);
+			CloseHandle (writePipe);
+			CloseHandle (readPipe);
+			free (commandLine);
+			return ZOITECHAT_EAT_ZOITECHAT;
+		}
+
+		free (commandLine);
 		CloseHandle (writePipe);
 
 		start = time (0);

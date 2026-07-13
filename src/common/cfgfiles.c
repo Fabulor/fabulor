@@ -40,7 +40,7 @@
 
 #define DEF_FONT "Monospace 9"
 #ifdef WIN32
-#define DEF_FONT_ALTER "Segoe UI Emoji,Arial Unicode MS,Lucida Sans Unicode,Meiryo,Symbola,Unifont"
+#define DEF_FONT_ALTER "Noto Color Emoji,Segoe UI Emoji,Arial Unicode MS,Lucida Sans Unicode,Meiryo,Symbola,Unifont"
 #else
 #define DEF_FONT_ALTER "Arial Unicode MS,Segoe UI Emoji,Lucida Sans Unicode,Meiryo,Symbola,Unifont"
 #endif
@@ -436,6 +436,7 @@ const struct prefs vars[] =
 	{"gui_pane_right_size", P_OFFINT (hex_gui_pane_right_size), TYPE_INT},
 	{"gui_pane_right_size_min", P_OFFINT (hex_gui_pane_right_size_min), TYPE_INT},
 	{"gui_quit_dialog", P_OFFINT (hex_gui_quit_dialog), TYPE_BOOL},
+	{"gui_scroll_bottom_button", P_OFFINT (hex_gui_scroll_bottom_button), TYPE_BOOL},
 	{"gui_search_pos", P_OFFINT (hex_gui_search_pos), TYPE_INT},
 	/* {"gui_single", P_OFFINT (hex_gui_single), TYPE_BOOL}, */
 	{"gui_slist_fav", P_OFFINT (hex_gui_slist_fav), TYPE_BOOL},
@@ -783,6 +784,7 @@ load_default_config(void)
 	prefs.hex_input_history_save = 1;
 	prefs.hex_gui_join_dialog = 1;
 	prefs.hex_gui_quit_dialog = 1;
+	prefs.hex_gui_scroll_bottom_button = 1;
 	prefs.hex_gui_tab_chans = 1;
 	prefs.hex_gui_tab_dialogs = 1;
 	prefs.hex_gui_tab_icons = 1;

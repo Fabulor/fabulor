@@ -23,6 +23,8 @@
 #include "../cfgfiles.h"
 
 #include <glib/gstdio.h>
+#include <stdio.h>
+#include <string.h>
 
 char *xdir = NULL;
 
@@ -36,6 +38,19 @@ static void
 write_text_file (const char *path, const char *contents)
 {
 	g_file_set_contents (path, contents, -1, NULL);
+}
+
+static void
+write_zip_archive (const char *working_dir, const char *archive_path)
+{
+	char *argv[] = { "zip", "-qr", (char *)archive_path, ".", NULL };
+	GError *error = NULL;
+	int status = 0;
+
+	g_assert_true (g_spawn_sync (working_dir, argv, NULL, G_SPAWN_SEARCH_PATH, NULL, NULL,
+								 NULL, NULL, &status, &error));
+	g_assert_no_error (error);
+	g_assert_cmpint (status, ==, 0);
 }
 
 static char *
@@ -107,6 +122,110 @@ count_extract_temp_dirs (void)
 	g_dir_close (dir);
 	return count;
 }
+
+#ifndef G_OS_WIN32
+typedef struct
+{
+	const char *name;
+	char typeflag;
+	const char *linkname;
+	const char *contents;
+} TestTarEntry;
+
+static void
+test_tar_set_octal (char *field, gsize field_len, guint64 value)
+{
+	char buf[32];
+	gsize len;
+
+	memset (field, 0, field_len);
+	g_snprintf (buf, sizeof (buf), "%llo", (unsigned long long)value);
+	len = strlen (buf);
+	g_assert_cmpuint (len, <, field_len);
+	memcpy (field + field_len - len - 1, buf, len);
+}
+
+static void
+test_tar_write_entry (FILE *fp, const TestTarEntry *entry)
+{
+	unsigned char header[512];
+	unsigned char zero[512] = { 0 };
+	guint checksum = 0;
+	guint i;
+	gsize contents_len = entry->contents ? strlen (entry->contents) : 0;
+	gsize pad_len;
+
+	memset (header, 0, sizeof (header));
+	g_assert_cmpuint (strlen (entry->name), <, 100);
+	g_strlcpy ((char *)header, entry->name, 100);
+	test_tar_set_octal ((char *)header + 100, 8, 0644);
+	test_tar_set_octal ((char *)header + 108, 8, 0);
+	test_tar_set_octal ((char *)header + 116, 8, 0);
+	test_tar_set_octal ((char *)header + 124, 12, entry->typeflag == '0' ? contents_len : 0);
+	test_tar_set_octal ((char *)header + 136, 12, 0);
+	memset (header + 148, ' ', 8);
+	header[156] = entry->typeflag;
+	if (entry->linkname)
+	{
+		g_assert_cmpuint (strlen (entry->linkname), <, 100);
+		g_strlcpy ((char *)header + 157, entry->linkname, 100);
+	}
+	memcpy (header + 257, "ustar", 5);
+	memcpy (header + 263, "00", 2);
+
+	for (i = 0; i < sizeof (header); i++)
+		checksum += header[i];
+	g_snprintf ((char *)header + 148, 8, "%06o", checksum);
+	header[154] = '\0';
+	header[155] = ' ';
+
+	g_assert_cmpuint (fwrite (header, 1, sizeof (header), fp), ==, sizeof (header));
+
+	if (entry->typeflag == '0' && contents_len > 0)
+	{
+		g_assert_cmpuint (fwrite (entry->contents, 1, contents_len, fp), ==, contents_len);
+		pad_len = (512 - (contents_len % 512)) % 512;
+		if (pad_len > 0)
+			g_assert_cmpuint (fwrite (zero, 1, pad_len, fp), ==, pad_len);
+	}
+}
+
+static void
+write_test_tar (const char *path, const TestTarEntry *entries, gsize n_entries)
+{
+	FILE *fp;
+	unsigned char zero[512] = { 0 };
+	gsize i;
+
+	fp = g_fopen (path, "wb");
+	g_assert_nonnull (fp);
+
+	for (i = 0; i < n_entries; i++)
+		test_tar_write_entry (fp, &entries[i]);
+
+	g_assert_cmpuint (fwrite (zero, 1, sizeof (zero), fp), ==, sizeof (zero));
+	g_assert_cmpuint (fwrite (zero, 1, sizeof (zero), fp), ==, sizeof (zero));
+	g_assert_cmpint (fclose (fp), ==, 0);
+}
+
+static void
+assert_archive_rejected_during_extract (const char *archive_path)
+{
+	char *imported_id = NULL;
+	GError *error = NULL;
+	guint before_count;
+	guint after_count;
+
+	before_count = count_extract_temp_dirs ();
+	g_assert_false (zoitechat_gtk3_theme_service_import (archive_path, &imported_id, &error));
+	g_assert_null (imported_id);
+	g_assert_error (error, G_FILE_ERROR, G_FILE_ERROR_FAILED);
+	g_assert_cmpstr (error->message, ==, "Failed to extract theme archive.");
+	g_error_free (error);
+	after_count = count_extract_temp_dirs ();
+	g_assert_cmpuint (after_count, ==, before_count);
+}
+#endif
 
 
 static char *
@@ -361,13 +480,92 @@ test_invalid_archive_reports_extract_error (void)
 	teardown_test_xdir (tmp_root);
 }
 
+#ifndef G_OS_WIN32
+static void
+test_archive_rejects_dotdot_entry_and_cleans_partial_extract (void)
+{
+	char *tmp_root;
+	char *archive_path;
+	TestTarEntry entries[] = {
+		{ "Theme/index.theme", '0', NULL, "[Desktop Entry]\nName=Theme\n" },
+		{ "../escape.txt", '0', NULL, "escape" }
+	};
+
+	setup_test_xdir (&tmp_root);
+	archive_path = g_build_filename (tmp_root, "dotdot-theme.tar", NULL);
+	write_test_tar (archive_path, entries, G_N_ELEMENTS (entries));
+
+	assert_archive_rejected_during_extract (archive_path);
+
+	g_free (archive_path);
+	teardown_test_xdir (tmp_root);
+}
+
+static void
+test_archive_rejects_absolute_entry (void)
+{
+	char *tmp_root;
+	char *archive_path;
+	TestTarEntry entries[] = {
+		{ "/tmp/zoitechat-theme-escape.txt", '0', NULL, "escape" }
+	};
+
+	setup_test_xdir (&tmp_root);
+	archive_path = g_build_filename (tmp_root, "absolute-theme.tar", NULL);
+	write_test_tar (archive_path, entries, G_N_ELEMENTS (entries));
+
+	assert_archive_rejected_during_extract (archive_path);
+
+	g_free (archive_path);
+	teardown_test_xdir (tmp_root);
+}
+
+static void
+test_archive_rejects_symlink_entry (void)
+{
+	char *tmp_root;
+	char *archive_path;
+	TestTarEntry entries[] = {
+		{ "Theme/link", '2', "../escape.txt", NULL }
+	};
+
+	setup_test_xdir (&tmp_root);
+	archive_path = g_build_filename (tmp_root, "symlink-theme.tar", NULL);
+	write_test_tar (archive_path, entries, G_N_ELEMENTS (entries));
+
+	assert_archive_rejected_during_extract (archive_path);
+
+	g_free (archive_path);
+	teardown_test_xdir (tmp_root);
+}
+
+static void
+test_archive_rejects_hardlink_entry (void)
+{
+	char *tmp_root;
+	char *archive_path;
+	TestTarEntry entries[] = {
+		{ "Theme/index.theme", '0', NULL, "[Desktop Entry]\nName=Theme\n" },
+		{ "Theme/hardlink", '1', "Theme/index.theme", NULL }
+	};
+
+	setup_test_xdir (&tmp_root);
+	archive_path = g_build_filename (tmp_root, "hardlink-theme.tar", NULL);
+	write_test_tar (archive_path, entries, G_N_ELEMENTS (entries));
+
+	assert_archive_rejected_during_extract (archive_path);
+
+	g_free (archive_path);
+	teardown_test_xdir (tmp_root);
+}
+#endif
+
 static void
 test_archive_without_theme_reports_css_error (void)
 {
 	char *tmp_root;
 	char *archive_root;
 	char *archive_path;
-	char *command;
 	char *imported_id = NULL;
 	GError *error = NULL;
 
@@ -381,9 +579,7 @@ test_archive_without_theme_reports_css_error (void)
 	}
 	archive_path = g_build_filename (tmp_root, "invalid-theme.zip", NULL);
 
-	command = g_strdup_printf ("cd %s && zip -qr %s .", archive_root, archive_path);
-	g_assert_true (g_spawn_command_line_sync (command, NULL, NULL, NULL, NULL));
-	g_free (command);
+	write_zip_archive (archive_root, archive_path);
 
 	g_assert_false (zoitechat_gtk3_theme_service_import (archive_path, &imported_id, &error));
 	g_assert_null (imported_id);
@@ -491,7 +687,7 @@ test_import_collision_and_dark_detection (void)
 	setup_test_xdir (&tmp_root);
 	src_root = g_build_filename (tmp_root, "src", NULL);
 	g_mkdir_with_parents (src_root, 0700);
-	theme_one = make_theme_dir (src_root, "Ocean", TRUE, FALSE);
+	theme_one = make_theme_dir (src_root, "Ocean", TRUE, TRUE);
 
 	g_assert_true (zoitechat_gtk3_theme_service_import (theme_one, &id_one, NULL));
 	g_assert_true (zoitechat_gtk3_theme_service_import (theme_one, &id_two, NULL));
@@ -652,7 +848,6 @@ test_zip_import_nested_root (void)
 	char *nested;
 	char *theme;
 	char *archive_path;
-	char *command;
 	char *imported_id = NULL;
 	ZoitechatGtk3Theme *found;
 
@@ -660,12 +855,10 @@ test_zip_import_nested_root (void)
 	zip_root = g_build_filename (tmp_root, "zip-root", NULL);
 	nested = g_build_filename (zip_root, "bundle", "themes", NULL);
 	g_mkdir_with_parents (nested, 0700);
-	theme = make_theme_dir (nested, "Juno-ocean", TRUE, FALSE);
+	theme = make_theme_dir (nested, "Juno-ocean", TRUE, TRUE);
 	archive_path = g_build_filename (tmp_root, "themes.zip", NULL);
 
-	command = g_strdup_printf ("cd %s && zip -qr %s .", zip_root, archive_path);
-	g_assert_true (g_spawn_command_line_sync (command, NULL, NULL, NULL, NULL));
-	g_free (command);
+	write_zip_archive (zip_root, archive_path);
 
 	g_assert_true (zoitechat_gtk3_theme_service_import (archive_path, &imported_id, NULL));
 	found = zoitechat_gtk3_theme_find_by_id (imported_id);
@@ -696,6 +889,12 @@ main (int argc, char **argv)
 	g_test_add_func ("/gtk3-theme-service/archive-root-detection", test_archive_root_detection_prefers_index);
 	g_test_add_func ("/gtk3-theme-service/zip-import-nested-root", test_zip_import_nested_root);
 	g_test_add_func ("/gtk3-theme-service/invalid-archive-extract-error", test_invalid_archive_reports_extract_error);
+#ifndef G_OS_WIN32
+	g_test_add_func ("/gtk3-theme-service/archive-rejects-dotdot-entry", test_archive_rejects_dotdot_entry_and_cleans_partial_extract);
+	g_test_add_func ("/gtk3-theme-service/archive-rejects-absolute-entry", test_archive_rejects_absolute_entry);
+	g_test_add_func ("/gtk3-theme-service/archive-rejects-symlink-entry", test_archive_rejects_symlink_entry);
+	g_test_add_func ("/gtk3-theme-service/archive-rejects-hardlink-entry", test_archive_rejects_hardlink_entry);
+#endif
 	g_test_add_func ("/gtk3-theme-service/archive-without-theme-css-error", test_archive_without_theme_reports_css_error);
 	g_test_add_func ("/gtk3-theme-service/import-missing-index-theme", test_import_rejects_theme_missing_index_theme);
 	g_test_add_func ("/gtk3-theme-service/import-missing-desktop-entry", test_import_rejects_index_without_desktop_entry);

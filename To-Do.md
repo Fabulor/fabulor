@@ -10,6 +10,52 @@
   - [x] a bootstrapper `.exe`.
 - [x] Treat the WiX v4 installer as complete enough to shift the main effort to plugin/API modernisation.
 
+## Recently Completed QoL/UI Work
+
+- [x] Add configurable editbox history with max-history and save/restore options.
+- [x] Add optional channel scroll-to-bottom overlay and fix its icon rendering.
+- [x] Fix installed logging path handling so server logs open under the expected network log folders.
+- [x] Upgrade spell checking to Enchant 2 + WinSpell for live Windows spelling suggestions.
+- [x] Replace the GTK built-in emoji chooser path with a Fabulor-owned emoji picker.
+- [x] Bundle Noto Color Emoji and generated flag PNG assets for Windows installs.
+- [x] Render selected country flags as real images in channel/server text output.
+- [x] Convert bundled flag images to transparent-background PNGs.
+- [x] Add visible two-letter labels to flag picker buttons to disambiguate lookalike flags such as `FR`/`CP` and `IE`/`CI`.
+- [x] Enlarge non-flag emoji picker glyphs while leaving the flag tab compact.
+
+## Follow-Up QoL/UI Items
+
+- [ ] Decide whether the editbox should keep showing Windows regional-indicator labels (`FR`, `IE`) or receive a deeper custom inline-image rendering pass.
+- [ ] Consider country names or search/filter support in the flag picker if two-letter labels are not sufficient.
+
+## Security Scanning Plan
+
+- [ ] Plugin loader boundary review, pass 1: disabled-state audit.
+  - [ ] Confirm manifest plugins are inert unless the explicit enable gate is set.
+  - [ ] Confirm no config, environment, command-line, or installer default can accidentally enable the manifest plugin host.
+  - [ ] Confirm disabled startup does not parse, load, execute, or trust files from user-controlled plugin/addon folders.
+  - [ ] Confirm disabled plugin code does not alter DLL/runtime search paths in a way that affects normal client startup.
+  - [ ] Record exact files/functions that implement the enable gate.
+- [ ] Plugin loader boundary review, pass 2: pre-enable design audit.
+  - [ ] Review plugin root discovery and ensure paths stay inside approved roots.
+  - [ ] Review manifest parsing and validation for required fields, type checks, size limits, malformed JSON handling, and error isolation.
+  - [ ] Review entrypoint resolution for path traversal, absolute paths, symlinks/reparse points, and extension/language mismatches.
+  - [ ] Review C#, Python, and Tcl runtime loading paths, DLL search order, and interpreter initialization boundaries.
+  - [ ] Review callback/event registration lifetime, main-thread dispatch, cleanup, and failure isolation.
+  - [x] Decide which declared manifest `capabilities` are advisory versus enforced before enabling third-party plugins.
+  - [ ] Define the minimum fixes required before `FABULOR_ENABLE_MANIFEST_PLUGINS=1` can become user-facing.
+- [ ] Repository security tool pass.
+  - [ ] Inventory available local tools: MSVC `/analyze`, CodeQL CLI, Semgrep, gitleaks/trufflehog, dependency scanners, and GitHub Actions checks.
+  - [ ] Run secret scanning across tracked files and review any hits.
+  - [ ] Run static analysis suited to the C/C++ codebase and triage findings by exploitability.
+  - [ ] Run dependency/vulnerability checks for .NET, Python, Node, and bundled binary/runtime payloads where applicable.
+  - [ ] Review installer and runtime payload provenance, hashes, and packaging boundaries.
+- [ ] Targeted high-risk code review.
+  - [ ] File/path handling: logs, downloads, config, addon/plugin roots, installer paths, and portable-mode paths.
+  - [ ] Network/TLS handling: certificate loading, proxy settings, reconnect paths, and unsafe fallbacks.
+  - [ ] Process/library loading: plugin hosts, scripting runtimes, external commands, DLL search paths, and updater behavior.
+  - [ ] User-controlled text rendering: URL detection, markup escaping, emoji/flag rendering, and theme/config parsing.
+
 ## 1. WiX v4 Installer Completion
 
 - [ ] Finalise installed layout under `ProgramFiles\Fabulor\`:
@@ -21,6 +67,11 @@
   - [ ] `Runtime\DotNet\`
   - [ ] `Config\`.
 - [ ] Update WiX directory/component authoring to match that runtime layout exactly.
+- [ ] After the repo security review, remaining UI tweaks, and GTK4 migration are complete, audit and trim the installed `Runtime\` payload:
+  - [ ] Keep the GTK4 runtime broad enough for the GTK4-compliant Fabulor target.
+  - [ ] Remove build-time/development-only GTK data from the installed payload where it is not needed at runtime.
+  - [ ] Split the Tcl payload into core scripting support and optional extra packages.
+  - [ ] Keep Python314 as the bundled scripting runtime unless the plugin contract changes.
 - [ ] Implement WiX v4 components for:
   - [ ] core executable
   - [ ] plugin folders
@@ -61,7 +112,7 @@
 - [x] Enforce per-plugin folder layout under discovered plugin roots:
   - [x] `plugins/<plugin-id>/plugin.json`
   - [x] `plugins/<plugin-id>/<entrypoint>`.
-- [ ] Decide and document how legacy built-in C plugins coexist with or migrate to the new manifest-driven model.
+- [x] Decide and document how legacy built-in C plugins coexist with or migrate to the new manifest-driven model.
 
 ## 4. Unified Loader & Dependency Resolver
 
@@ -108,10 +159,25 @@
 
 ## Current Runtime Gaps To Close Next
 
-- [ ] Decide and document the coexistence/migration plan for legacy built-in C plugins versus manifest-driven plugins.
-- [ ] Decide whether declared `capabilities` remain advisory/diagnostic metadata or become an enforced policy surface.
-- [ ] Tighten the Python runtime path so the modern manifest contract and the legacy scripting surface are clearly separated where required.
+- [x] Decide and document the coexistence/migration plan for legacy built-in C plugins versus manifest-driven plugins.
+- [x] Decide whether declared `capabilities` remain advisory/diagnostic metadata or become an enforced policy surface.
+- [x] Tighten the Python runtime path so the modern manifest contract and the legacy scripting surface are clearly separated where required.
 - [ ] Add broader shared API helpers beyond the current message/log/user-count/user-info surface.
+- [ ] Rework the manifest plugin API before enabling it by default:
+  - [ ] Keep the manifest host disabled unless `FABULOR_ENABLE_MANIFEST_PLUGINS=1` is set.
+  - [ ] Investigate the connect/editbox crash in the current native API path using a debugger with symbols.
+  - [ ] Design a simpler add-on scripting flow that works from the user `addons` folder without manifest ceremony for small Tcl/Python aliases.
+- [x] Finish the Enchant 2.8.19 spell-checker rollout after live validation:
+  - [x] Confirm Enchant 2 + WinSpell is live in Fabulor and catches edit-box typos, verified with `Hllo thre piples` -> `Hello there peoples`.
+  - [x] Revalidate URL paste, suggestions, add-to-dictionary, and persistence after installing the MSVC rebuild; the previous MinGW/MSVCRT payload caused reproducible heap corruption in `enchant_pwl_check`.
+  - [x] Soak test the upgraded spell checker for a day or two before committing the rollout.
+  - [x] Keep the Enchant 2 WinSpell build reproducible, including the temporary `bcp47.h` compatibility shim currently needed by the official source tarball. The pinned MSVC recipe is under `tools\enchant-msvc` and `tools\build-enchant-msvc.ps1`.
+  - [x] Rebuild Enchant 2.8.19 core and WinSpell with MSVC/UCRT to match Fabulor's GTK/GLib payload and eliminate cross-CRT `FILE*` ownership.
+  - [x] Add an isolated native smoke test covering checks, suggestions, add-to-personal, broker restart, and personal-word persistence.
+  - [x] Remove the Enchant 1.6.1 fallback payload (`libenchant.dll`, `lib\enchant`) after Enchant 2 verification.
+  - [x] Retire the legacy `src\libenchant_win8` provider after confirming upstream WinSpell covers the required Windows spell-check behaviour.
+  - [x] Verify an in-place installer update preserves full spell-check functionality and removes the legacy Enchant DLL/provider/data payload.
+  - [x] Verify spell checking, suggestions, "add to dictionary", and installer packaging on a clean install.
 
 ## 7. Documentation & Developer Guides
 

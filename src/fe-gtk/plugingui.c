@@ -65,6 +65,59 @@ plugingui_get_target_session (void)
 	return NULL;
 }
 
+static gboolean
+plugingui_path_is_under_dir (const char *dir, const char *path)
+{
+	gsize dir_len;
+
+	if (!dir || !path)
+		return FALSE;
+
+	dir_len = strlen (dir);
+	if (strcmp (dir, path) == 0)
+		return TRUE;
+
+	return g_str_has_prefix (path, dir) && G_IS_DIR_SEPARATOR (path[dir_len]);
+}
+
+static gboolean
+plugingui_command_path_is_safe (const char *path)
+{
+	const unsigned char *p;
+
+	if (!path || !*path)
+		return FALSE;
+
+	for (p = (const unsigned char *) path; *p; p++)
+	{
+		if (*p < 0x20 || *p == 0x7f || *p == '"')
+			return FALSE;
+	}
+
+	return TRUE;
+}
+
+static char *
+plugingui_command_for_path (const char *command, const char *path)
+{
+	if (!plugingui_command_path_is_safe (path))
+		return NULL;
+
+	if (strchr (path, ' '))
+		return g_strdup_printf ("%s \"%s\"", command, path);
+
+	return g_strdup_printf ("%s %s", command, path);
+}
+
+static char *
+plugingui_canonicalize_path (const char *path)
+{
+	if (!path || !*path)
+		return NULL;
+
+	return g_canonicalize_filename (path, NULL);
+}
+
 #define ICON_PLUGIN_LOAD "zc-menu-load-plugin"
 #define ICON_PLUGIN_UNLOAD "zc-menu-delete"
 #define ICON_PLUGIN_RELOAD "zc-menu-refresh"
@@ -196,9 +249,12 @@ plugingui_load_cb (session *sess, char *file)
 		char *buf;
 		char *load_target;
 		char *addons_dir;
+		char *addons_dir_canonical;
+		char *file_canonical;
 		char *basename;
 		char *addons_target;
 		gboolean file_in_addons;
+		char *error;
 
 		target_sess = is_session (sess) ? sess : current_sess;
 		if (!is_session (target_sess))
@@ -207,35 +263,70 @@ plugingui_load_cb (session *sess, char *file)
 			return;
 		}
 
-		load_target = g_strdup (file);
 		addons_dir = g_build_filename (get_xdir (), "addons", NULL);
-		file_in_addons = g_str_has_prefix (file, addons_dir)
-			&& (file[strlen (addons_dir)] == G_DIR_SEPARATOR
-				|| file[strlen (addons_dir)] == '\0');
+		if (g_mkdir_with_parents (addons_dir, 0700) != 0)
+		{
+			fe_message (_("Could not create the addons directory."), FE_MSG_ERROR);
+			g_free (addons_dir);
+			return;
+		}
+
+		addons_dir_canonical = plugingui_canonicalize_path (addons_dir);
+		file_canonical = plugingui_canonicalize_path (file);
+		if (!addons_dir_canonical || !file_canonical)
+		{
+			fe_message (_("Could not resolve the selected addon path."), FE_MSG_ERROR);
+			g_free (file_canonical);
+			g_free (addons_dir_canonical);
+			g_free (addons_dir);
+			return;
+		}
+
+		load_target = g_strdup (file_canonical);
+		file_in_addons = plugingui_path_is_under_dir (addons_dir_canonical, file_canonical);
 
 		if (!file_in_addons)
 		{
-			char *contents;
+			char *contents = NULL;
 			gsize length;
 
-			if (g_mkdir_with_parents (addons_dir, 0700) == 0)
+			basename = g_path_get_basename (file_canonical);
+			addons_target = g_build_filename (addons_dir_canonical, basename, NULL);
+			if (!plugingui_path_is_under_dir (addons_dir_canonical, addons_target))
 			{
-				basename = g_path_get_basename (file);
-				addons_target = g_build_filename (addons_dir, basename, NULL);
-				if (g_file_get_contents (file, &contents, &length, NULL))
-				{
-					if (g_file_set_contents (addons_target, contents, length, NULL))
-					{
-						g_free (load_target);
-						load_target = g_strdup (addons_target);
-					}
-					g_free (contents);
-				}
 				g_free (addons_target);
 				g_free (basename);
+				g_free (load_target);
+				g_free (file_canonical);
+				g_free (addons_dir_canonical);
+				g_free (addons_dir);
+				fe_message (_("Selected addon path is outside the addons directory."), FE_MSG_ERROR);
+				return;
 			}
+
+			if (!g_file_get_contents (file_canonical, &contents, &length, NULL)
+				|| !g_file_set_contents (addons_target, contents, length, NULL))
+			{
+				g_free (contents);
+				g_free (addons_target);
+				g_free (basename);
+				g_free (load_target);
+				g_free (file_canonical);
+				g_free (addons_dir_canonical);
+				g_free (addons_dir);
+				fe_message (_("Could not copy the selected addon into the addons directory."), FE_MSG_ERROR);
+				return;
+			}
+
+			g_free (contents);
+			g_free (load_target);
+			load_target = g_strdup (addons_target);
+			g_free (addons_target);
+			g_free (basename);
 		}
 
+		g_free (file_canonical);
+		g_free (addons_dir_canonical);
 		g_free (addons_dir);
 
 #ifdef WIN32
@@ -246,13 +337,24 @@ plugingui_load_cb (session *sess, char *file)
 		g_strdelimit (load_target, "\\", '/');
 #endif
 
-		if (strchr (load_target, ' '))
-			buf = g_strdup_printf ("LOAD \"%s\"", load_target);
+		if (g_str_has_suffix (load_target, "."PLUGIN_SUFFIX))
+		{
+			error = plugin_load (target_sess, load_target, NULL);
+			if (error)
+				fe_message (error, FE_MSG_ERROR);
+		}
 		else
-			buf = g_strdup_printf ("LOAD %s", load_target);
-		handle_command (target_sess, buf, FALSE);
+		{
+			buf = plugingui_command_for_path ("LOAD", load_target);
+			if (!buf)
+				fe_message (_("Addon path contains characters that cannot be loaded safely."), FE_MSG_ERROR);
+			else
+			{
+				handle_command (target_sess, buf, FALSE);
+				g_free (buf);
+			}
+		}
 		g_free (load_target);
-		g_free (buf);
 	}
 }
 
@@ -266,7 +368,7 @@ plugingui_load (void)
 		sub_dir = g_build_filename (xdir, "addons", NULL);
 
 	gtkutil_file_req (NULL, _("Select a Plugin or Script to load"), plugingui_load_cb, NULL,
-						sub_dir, "*."PLUGIN_SUFFIX";*.lua;*.pl;*.py;*.tcl;*.js", FRF_FILTERISINITIAL|FRF_EXTENSIONS);
+						sub_dir, "*."PLUGIN_SUFFIX";*.py;*.tcl", FRF_FILTERISINITIAL|FRF_EXTENSIONS);
 		g_free (sub_dir);
 }
 
@@ -309,7 +411,7 @@ plugingui_unload (GtkWidget * wid, gpointer unused)
 	else
 	{
 		char *buf;
-		/* let python.so or perl.so handle it */
+		/* let the language runtime handle script unloads */
 		target_sess = plugingui_get_target_session ();
 		if (!target_sess)
 		{
@@ -318,12 +420,14 @@ plugingui_unload (GtkWidget * wid, gpointer unused)
 			return;
 		}
 
-		if (strchr (file, ' '))
-			buf = g_strdup_printf ("UNLOAD \"%s\"", file);
+		buf = plugingui_command_for_path ("UNLOAD", file);
+		if (!buf)
+			fe_message (_("Addon path contains characters that cannot be unloaded safely."), FE_MSG_ERROR);
 		else
-			buf = g_strdup_printf ("UNLOAD %s", file);
-		handle_command (target_sess, buf, FALSE);
-		g_free (buf);
+		{
+			handle_command (target_sess, buf, FALSE);
+			g_free (buf);
+		}
 	}
 
 	g_free (modname);
@@ -347,12 +451,14 @@ plugingui_reloadbutton_cb (GtkWidget *wid, GtkTreeView *view)
 			return;
 		}
 
-		if (strchr (file, ' '))
-			buf = g_strdup_printf ("RELOAD \"%s\"", file);
+		buf = plugingui_command_for_path ("RELOAD", file);
+		if (!buf)
+			fe_message (_("Addon path contains characters that cannot be reloaded safely."), FE_MSG_ERROR);
 		else
-			buf = g_strdup_printf ("RELOAD %s", file);
-		handle_command (target_sess, buf, FALSE);
-		g_free (buf);
+		{
+			handle_command (target_sess, buf, FALSE);
+			g_free (buf);
+		}
 		g_free (file);
 	}
 }

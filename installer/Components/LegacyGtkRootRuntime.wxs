@@ -6,7 +6,11 @@
     </ComponentGroup>
 
     <ComponentGroup Id="LegacyGtkLibRuntimeComponents" Directory="LIBDIR">
-      <Files Include="$(var.FabulorPayloadRoot)\lib\**" />
+      <Files Include="$(var.FabulorPayloadRoot)\lib\gdk-pixbuf-2.0\**" />
+    </ComponentGroup>
+
+    <ComponentGroup Id="LegacyGtkEmojiFlagRuntimeComponents" Directory="SHAREEMOJIFLAGSDIR">
+      <Files Include="$(var.FabulorPayloadRoot)\share\emoji-flags\**" />
     </ComponentGroup>
 
     <ComponentGroup Id="LegacyGtkShareDocRuntimeComponents" Directory="SHAREDOCDIR">
@@ -15,6 +19,14 @@
 
     <ComponentGroup Id="LegacyGtkShareGlibRuntimeComponents" Directory="SHAREGLIBDIR">
       <Files Include="$(var.FabulorPayloadRoot)\share\glib-2.0\**" />
+    </ComponentGroup>
+
+    <ComponentGroup Id="LegacyGtkShareFontsRuntimeComponents" Directory="SHAREFONTSDIR">
+      <Files Include="$(var.FabulorPayloadRoot)\share\fonts\**" />
+    </ComponentGroup>
+
+    <ComponentGroup Id="LegacyGtkShareGtk3EmojiRuntimeComponents" Directory="SHAREGTK3EMOJIDIR">
+      <Files Include="$(var.FabulorPayloadRoot)\share\gtk-3.0\emoji\**" />
     </ComponentGroup>
 
     <ComponentGroup Id="LegacyGtkShareXmlRuntimeComponents" Directory="SHAREXMLDIR">

@@ -24,6 +24,14 @@
       <Files Include="$(var.FabulorPayloadRoot)\plugins\hcfishlim.dll" />
     </ComponentGroup>
 
+    <ComponentGroup Id="PythonHostComponents" Directory="PLUGINDIR">
+      <Files Include="$(var.FabulorPayloadRoot)\plugins\hcpython3.dll" />
+    </ComponentGroup>
+
+    <ComponentGroup Id="PythonApiComponents" Directory="PYTHONAPIDIR">
+      <Files Include="$(var.FabulorPayloadRoot)\python\**" />
+    </ComponentGroup>
+
     <ComponentGroup Id="SysinfoPluginComponents" Directory="PLUGINDIR">
       <Files Include="$(var.FabulorPayloadRoot)\plugins\hcsysinfo.dll" />
     </ComponentGroup>

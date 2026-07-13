@@ -139,11 +139,23 @@ gboolean fabulor_callback_registry_register (FabulorCallbackRegistry *registry,
 											 FabulorPluginLanguage language,
 											 const char *handler_name,
 											 GError **error);
+gboolean fabulor_callback_registry_has_event (FabulorCallbackRegistry *registry,
+											  const char *event_name);
 gboolean fabulor_callback_registry_fire_event (FabulorCallbackRegistry *registry,
 											   const char *event_name,
 											   const char *event_payload_json,
 											   void *loader_user_data,
 											   GError **error);
+gboolean fabulor_plugin_host_autoload_simple_tcl (const char *addons_root,
+											   const FabulorAPI *api,
+											   GError **error);
+gboolean fabulor_plugin_host_autoload_simple_csharp (const char *addons_root,
+												  const FabulorAPI *api,
+												  GError **error);
+gboolean fabulor_plugin_host_handle_simple_tcl_command (const char *command_name,
+												 const char *arguments,
+												 GError **error);
+void fabulor_plugin_host_append_loaded_simple_addons (GPtrArray *entries);
 void fabulor_plugin_host_shutdown (void);
 
 #ifdef __cplusplus

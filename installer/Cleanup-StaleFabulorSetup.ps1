@@ -9,6 +9,7 @@ $ErrorActionPreference = 'Stop'
 $uninstallRoot = 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall'
 $dependencyRoot = 'HKLM:\SOFTWARE\Classes\Installer\Dependencies'
 $packageCacheRoot = 'C:\ProgramData\Package Cache'
+$bundleUpgradeCode = 'D9F4A5C2-7F3B-4F9E-9A21-3C8F6B7E4A10'
 
 $removed = 0
 $preservedBundleCachePath = $null
@@ -32,10 +33,20 @@ function Test-SamePath {
     }
 }
 
+function Test-FabulorSetupBundleEntry {
+    param(
+        [Parameter(Mandatory = $true)]$Props
+    )
+
+    return $Props.DisplayName -eq 'Fabulor Setup' -and (
+        $Props.BundleProviderKey -eq 'Fabulor.Setup.Bundle' -or
+        ($Props.BundleUpgradeCode -and $Props.BundleUpgradeCode -like "*$bundleUpgradeCode*"))
+}
+
 if (-not $RemoveAll -and (Test-Path -LiteralPath $uninstallRoot)) {
     $setupEntries = Get-ChildItem -LiteralPath $uninstallRoot | ForEach-Object {
         $props = Get-ItemProperty -LiteralPath $_.PSPath
-        if ($props.DisplayName -eq 'Fabulor Setup' -and $props.BundleProviderKey -eq 'Fabulor.Setup.Bundle') {
+        if (Test-FabulorSetupBundleEntry $props) {
             [pscustomobject]@{
                 Key = $_
                 BundleCachePath = $props.BundleCachePath
@@ -72,7 +83,7 @@ if (-not $RemoveAll -and (Test-Path -LiteralPath $uninstallRoot)) {
 if (Test-Path -LiteralPath $uninstallRoot) {
     Get-ChildItem -LiteralPath $uninstallRoot | ForEach-Object {
         $props = Get-ItemProperty -LiteralPath $_.PSPath
-        if ($props.DisplayName -eq 'Fabulor Setup' -and $props.BundleProviderKey -eq 'Fabulor.Setup.Bundle') {
+        if (Test-FabulorSetupBundleEntry $props) {
             if (-not $RemoveAll -and $preservedBundleCachePath -and $props.BundleCachePath -and (Test-SamePath $props.BundleCachePath $preservedBundleCachePath)) {
                 Write-Host "Preserved current uninstall registration: $($_.PSChildName)"
             } else {
@@ -102,7 +113,9 @@ if (Test-Path -LiteralPath $dependencyRoot) {
         $props = Get-ItemProperty -LiteralPath $_.PSPath
         $displayName = $props.DisplayName
         $isCurrentMsiDependency = -not $RemoveAll -and $preservedMsiProductCode -and $_.PSChildName.StartsWith($preservedMsiProductCode, [System.StringComparison]::OrdinalIgnoreCase)
-        $isCurrentBundleDependency = -not $RemoveAll -and $_.PSChildName -eq 'Fabulor.Setup.Bundle'
+        $isCurrentBundleDependency = -not $RemoveAll -and (
+            $_.PSChildName -eq 'Fabulor.Setup.Bundle' -or
+            ($preservedBundleCode -and $_.PSChildName -eq $preservedBundleCode))
 
         if ($isCurrentMsiDependency -or $isCurrentBundleDependency) {
             Write-Host "Preserved current dependency registration: $($_.PSChildName)"

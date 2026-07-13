@@ -48,7 +48,6 @@
       <None Include="$(DepsRoot)\bin\*iconv*.dll" />
       <None Include="$(DepsRoot)\bin\*crypto*.dll" />
       <None Include="$(DepsRoot)\bin\*ssl*.dll" />
-      <None Include="$(DepsRoot)\bin\*enchant*.dll" />
       <None Include="$(DepsRoot)\bin\*ffi*.dll" />
       <None Include="$(DepsRoot)\bin\*intl*.dll" />
       <None Include="$(DepsRoot)\bin\*jpeg*.dll" />
@@ -72,13 +71,15 @@
       <LuaShare Include="$(LuaShareDir)\**\*.lua" Condition="'$(LuaEnabled)'=='true' and '$(LuaShareDir)'!=''" />
       <Typelib Include="$(DepsRoot)\lib\girepository-1.0\*.typelib" Condition="'$(LuaEnabled)'=='true' and '$(LuaLibDir)'!=''" />
 
-      <EnchantProviders Include="$(DepsRoot)\lib\enchant\*.dll" />
-
       <Gtk3Immodules Include="$(DepsRoot)\lib\gtk-3.0\3.0.0\immodules\**\*" />
       <Gtk3PrintBackends Include="$(DepsRoot)\lib\gtk-3.0\3.0.0\printbackends\**\*" />
+      <Gtk3EmojiData Include="$(DepsRoot)\share\gtk-3.0\emoji\**\*" />
       <GSettingsSchemas Include="$(DepsRoot)\share\glib-2.0\schemas\*" />
       <GdkPixbufLoaders Include="$(DepsRoot)\lib\gdk-pixbuf-2.0\**\loaders\**\*" />
       <GdkPixbufLoaderCache Include="$(DepsRoot)\lib\gdk-pixbuf-2.0\**\loaders.cache" />
+      <NotoEmojiFont Include="..\..\data\fonts\NotoColorEmoji.ttf" />
+      <NotoEmojiLicense Include="..\..\data\fonts\NotoColorEmoji-LICENSE.txt" />
+      <EmojiFlagImages Include="..\..\data\emoji-flags\*.png" />
 
       <FontConfig Include="$(DepsRoot)\etc\fonts\*" />
       <Share Include="share\**\*" />
@@ -92,13 +93,16 @@
     <Copy SourceFiles="@(FontConfig)" DestinationFolder="$(ZoiteChatRel)\etc\fonts" />
     <Copy SourceFiles="@(Gtk3Immodules)" DestinationFiles="@(Gtk3Immodules->'$(ZoiteChatRel)\lib\gtk-3.0\3.0.0\immodules\%(RecursiveDir)%(Filename)%(Extension)')" />
     <Copy SourceFiles="@(Gtk3PrintBackends)" DestinationFiles="@(Gtk3PrintBackends->'$(ZoiteChatRel)\lib\gtk-3.0\3.0.0\printbackends\%(RecursiveDir)%(Filename)%(Extension)')" />
+    <Copy SourceFiles="@(Gtk3EmojiData)" DestinationFiles="@(Gtk3EmojiData->'$(ZoiteChatRel)\share\gtk-3.0\emoji\%(RecursiveDir)%(Filename)%(Extension)')" />
     <Copy SourceFiles="@(GdkPixbufLoaders)" DestinationFiles="@(GdkPixbufLoaders->'$(ZoiteChatRel)\lib\gdk-pixbuf-2.0\%(RecursiveDir)%(Filename)%(Extension)')" />
     <Copy SourceFiles="@(GdkPixbufLoaderCache)" DestinationFiles="@(GdkPixbufLoaderCache->'$(ZoiteChatRel)\lib\gdk-pixbuf-2.0\%(RecursiveDir)%(Filename)%(Extension)')" />
     <Copy SourceFiles="@(GSettingsSchemas)" DestinationFiles="@(GSettingsSchemas->'$(ZoiteChatRel)\share\glib-2.0\schemas\%(Filename)%(Extension)')" />
     <Copy SourceFiles="@(Share)" DestinationFiles="@(Share->'$(ZoiteChatRel)\share\%(RecursiveDir)%(Filename)%(Extension)')" />
+    <Copy SourceFiles="@(NotoEmojiFont)" DestinationFolder="$(ZoiteChatRel)\share\fonts" />
+    <Copy SourceFiles="@(NotoEmojiLicense)" DestinationFolder="$(ZoiteChatRel)\share\doc\NotoColorEmoji" />
+    <Copy SourceFiles="@(EmojiFlagImages)" DestinationFolder="$(ZoiteChatRel)\share\emoji-flags" />
     <Copy SourceFiles="..\..\COPYING" DestinationFolder="$(ZoiteChatRel)\share\doc\fabulor" />
     <Copy SourceFiles="$(WinSparklePath)\COPYING" DestinationFolder="$(ZoiteChatRel)\share\doc\WinSparkle" Condition="Exists('$(WinSparklePath)\COPYING')" />
-    <Copy SourceFiles="@(EnchantProviders)" DestinationFolder="$(ZoiteChatRel)\lib\enchant" />
     <Copy SourceFiles="@(Locale)" DestinationFiles="@(Locale->'$(ZoiteChatRel)\share\locale\%(RecursiveDir)%(Filename)%(Extension)')" />
     <Copy SourceFiles="@(MSWindowsTheme)" DestinationFiles="@(MSWindowsTheme->'$(ZoiteChatRel)\share\themes\MS-Windows\%(RecursiveDir)%(Filename)%(Extension)')" />
     <Copy SourceFiles="@(HicolorIcons)" DestinationFiles="@(HicolorIcons->'$(ZoiteChatRel)\share\icons\hicolor\%(RecursiveDir)%(Filename)%(Extension)')" />

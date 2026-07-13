@@ -5,9 +5,9 @@
   "language": "tcl",
   "entrypoint": "plugin.tcl",
   "requires_api_version": "1",
-  "dependencies": ["example.python.greeter"],
-  "capabilities": ["messages.write", "events.message", "session.read"],
-  "description": "Sample Tcl manifest plugin used to validate runtime behaviour.",
+  "dependencies": [],
+  "capabilities": ["events.message", "session.read"],
+  "description": "Sample Tcl manifest plugin demonstrating initialization, session access, and message callbacks.",
   "author": "Fabulor",
   "homepage": "https://github.com/Fabulor/fabulor"
 }
