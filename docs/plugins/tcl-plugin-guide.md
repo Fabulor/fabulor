@@ -46,7 +46,7 @@ proc init {} {
   "version": "1.0.0",
   "language": "tcl",
   "entrypoint": "plugin.tcl",
-  "requires_api_version": "1",
+  "requires_api_version": 1,
   "dependencies": [],
   "capabilities": ["events.message", "session.read"],
   "description": "Minimal Tcl event-observer plugin.",

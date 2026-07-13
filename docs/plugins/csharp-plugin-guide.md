@@ -64,7 +64,7 @@ public sealed class HelperPlugin : IZoiteChatPlugin
   "version": "1.0.0",
   "language": "csharp",
   "entrypoint": "bin\\Release\\net8.0\\GreeterPlugin.dll",
-  "requires_api_version": "1",
+  "requires_api_version": 1,
   "dependencies": [],
   "capabilities": ["events.message", "session.read"],
   "description": "Minimal C# event-observer plugin.",

@@ -100,7 +100,7 @@ Required and supported fields:
 | `version` | string | Plugin version. Semantic versioning is recommended. |
 | `language` | string | One of `csharp`, `python`, or `tcl`. |
 | `entrypoint` | string | Relative entry file path inside the plugin folder. |
-| `requires_api_version` | string or number | Minimum Fabulor plugin API version needed by this plugin. |
+| `requires_api_version` | unsigned integer | Minimum Fabulor plugin API version needed by this plugin. Must be at least `1`. |
 | `dependencies` | array of strings | Plugin ids that must load first. |
 | `capabilities` | array of strings | Enforced permissions required by privileged host operations. |
 | `description` | string | Short summary of plugin behaviour. |
@@ -116,7 +116,7 @@ Minimal example:
   "version": "1.0.0",
   "language": "python",
   "entrypoint": "plugin.py",
-  "requires_api_version": "1",
+  "requires_api_version": 1,
   "dependencies": [],
   "capabilities": ["events.message", "session.read"],
   "description": "Logs a local greeting and observes message events.",
@@ -139,6 +139,25 @@ Use these rules to keep plugins loadable across upgrades:
 
 The current host scaffold exposes the public contract in `src/common/fabulor-plugin-host.h`. It keeps `ZoiteChatAPI` as a compatibility alias for `FabulorAPI` while the plugin-facing host names are modernised.
 
+Manifests are strict JSON. The root must be one object containing exactly the documented fields. Duplicate or unknown fields, trailing content, trailing commas, invalid UTF-8 or Unicode escapes, control characters in strings, and values of the wrong JSON type are rejected. The manifest file must be a regular file between 1 byte and 64 KiB; symbolic-link manifests are rejected.
+
+Discovery is confined to direct plugin folders under the approved roots: `Plugins` beside `fabulor.exe` for bundled plugins and `plugins` beneath the Fabulor profile directory for user plugins. The roots, plugin folders, and `plugin.json` files must not be symbolic links, junctions, or other Windows reparse points. A rejected plugin is reported and skipped without blocking unrelated sibling plugins.
+
+Field limits are measured after JSON string decoding, in UTF-8 bytes:
+
+| Field | Maximum |
+| --- | --- |
+| `id` | 128 bytes |
+| `name` | 256 bytes |
+| `version` | 64 bytes |
+| `language` | 16 bytes |
+| `entrypoint` | 1,024 bytes |
+| `description` | 2,048 bytes |
+| `author` | 256 bytes |
+| `homepage` | 2,048 bytes |
+| `dependencies` | 64 unique, non-empty strings; 128 bytes each |
+| `capabilities` | 32 unique, non-empty strings; 64 bytes each |
+
 ## Current Enforcement Notes
 
 The current runtime already enforces these checks:
@@ -151,6 +170,8 @@ The current runtime already enforces these checks:
 6. Duplicate plugin ids are rejected.
 7. Dependency cycles are detected during load-order resolution.
 8. Safe mode and blacklist decisions are logged as diagnostics.
+9. An invalid manifest is skipped without blocking unrelated valid plugins.
+10. Plugins that depend directly or transitively on an invalid, incompatible, disabled, or blacklisted plugin are also skipped with a diagnostic.
 
 Manifest capabilities are deny-by-default and enforced across C#, Python, and Tcl. Unknown or duplicate capability names reject the manifest during validation. A plugin that calls an operation without declaring its capability is denied at runtime and receives a plugin-specific error or diagnostic.
 

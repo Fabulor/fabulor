@@ -44,7 +44,7 @@ def init():
   "version": "1.0.0",
   "language": "python",
   "entrypoint": "plugin.py",
-  "requires_api_version": "1",
+  "requires_api_version": 1,
   "dependencies": [],
   "capabilities": ["events.message", "session.read"],
   "description": "Minimal Python event-observer plugin.",

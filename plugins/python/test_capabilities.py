@@ -3,6 +3,7 @@ import pathlib
 import sys
 import types
 import unittest
+from unittest import mock
 
 
 class FakeFfi:
@@ -133,6 +134,15 @@ class CapabilityTests(unittest.TestCase):
             plugin.add_hook(lambda _userdata: None, None, is_unload=True,
                             callback_key=('message', 64))
         plugin.hooks.clear()
+
+    def test_bundled_manifest_root_is_executable_relative(self):
+        executable = pathlib.Path('C:/Program Files/Fabulor/fabulor.exe')
+        with mock.patch.object(sys, 'executable', str(executable)):
+            root = self.plugin_host.bundled_manifest_plugins_dir()
+        self.assertEqual(
+            self.plugin_host.canonical_path(root),
+            self.plugin_host.canonical_path(str(executable.parent / 'Plugins')),
+        )
 
 
 if __name__ == '__main__':

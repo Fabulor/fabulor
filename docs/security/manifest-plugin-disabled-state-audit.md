@@ -127,60 +127,48 @@ The audit covers:
 
 Status: do not expose `FABULOR_ENABLE_MANIFEST_PLUGINS=1` to users yet.
 
-The manifest host is useful as a development scaffold, but it is not ready for third-party plugins. The remaining largest blockers include strict JSON/schema validation and uneven interpreter isolation across languages. Entrypoint containment, runtime-root policy, capability enforcement, and callback lifetime have since been hardened as recorded below.
+The manifest host is useful as a development scaffold, but it is not ready for third-party plugins. Strict JSON/schema validation, entrypoint containment, runtime-root policy, capability enforcement, and callback lifetime have since been hardened as recorded below. Per-plugin interpreter isolation remains uneven across languages.
 
 ## Root Discovery
 
-Manifest autoload discovers two roots:
+Status: addressed on 2026-07-13.
 
-- `src/common/plugin.c:483` - bundled root is `plugin_get_libdir()/Plugins`
-- `src/common/plugin.c:484` - user root is `get_xdir()/plugins`
-- `src/common/plugin.c:487` and `src/common/plugin.c:494` - both roots are passed to `fabulor_plugin_catalog_discover_root()`
+Manifest autoload has two explicit production roots:
 
-The bundled root is indirectly environment-influenced because `plugin_get_libdir()` honors `ZOITECHAT_LIBDIR`:
+- The bundled root is `Plugins` beside `fabulor.exe`, resolved from the executable installation directory.
+- The user root is `plugins` beneath the Fabulor profile directory returned by `get_xdir()`.
 
-- `src/common/plugin.c:861` - `plugin_get_libdir()`
-- `src/common/plugin.c:865` - reads `ZOITECHAT_LIBDIR`
+The bundled manifest root no longer inherits the legacy `ZOITECHAT_LIBDIR` environment override during normal Windows operation. The legacy library-relative fallback is reachable only when executable-directory resolution fails and `FABULOR_ENABLE_DEVELOPMENT_RUNTIME_ROOTS=1` explicitly enables development roots.
 
-Discovery itself enumerates direct child folders and looks for `plugin.json`:
+`src/common/fabulor-plugin-path-policy.c` now applies the discovery boundary before manifest parsing:
 
-- `src/common/fabulor-plugin-host.c:425` - opens the root with `g_dir_open()`
-- `src/common/fabulor-plugin-host.c:442` - appends `plugin.json` under each child
-- `src/common/fabulor-plugin-host.c:444` - accepts a child directory with an existing manifest
+- Each approved root is converted to an absolute canonical lexical path and must be a real directory.
+- Root paths, direct plugin directories, and `plugin.json` files are queried without following symbolic links.
+- Windows additionally rejects any of those paths carrying `FILE_ATTRIBUTE_REPARSE_POINT`, covering junctions and other reparse types even when GIO does not classify them as symbolic links.
+- Enumerated plugin names must be direct child names: empty names, `.`, `..`, absolute paths, separators, and Windows alternate-data-stream colons are rejected before path construction.
+- Constructed plugin directories must remain strict children of the approved root, and manifests must remain strict children of their plugin directory.
+- Plugin directories must be directories and manifests must be regular files. Rejected entries are isolated with diagnostics while discovery continues for unrelated siblings; an invalid root rejects only that root.
+- Canonical trusted paths are retained in the parsed manifest rather than rebuilding execution paths from the original caller text.
 
-Pre-enable issue: discovered roots and plugin child directories are not canonicalized, not checked against approved canonical roots, and not protected from symlink/reparse-point escapes. The environment-influenced bundled root is acceptable for developer testing but should not be a user-facing trust boundary.
-
-Minimum fix: canonicalize approved roots and child plugin directories, reject paths outside those roots after canonicalization, decide whether `ZOITECHAT_LIBDIR` remains honored when manifest plugins are user-facing, and explicitly handle symlinks/reparse points on Windows.
+Native regression coverage in `src/common/tests/test-fabulor-plugin-manifest-json.c` exercises valid canonical trees, traversal and absolute-name rejection, and privilege-free NTFS junction rejection for both roots and plugin directories. File symbolic-link rejection is also exercised when the Windows environment grants symbolic-link creation.
 
 ## Manifest Parsing And Validation
 
-The current parser is regex-based:
+Status: addressed on 2026-07-13.
 
-- `src/common/fabulor-plugin-host.c:220` - string field extraction
-- `src/common/fabulor-plugin-host.c:258` - unsigned integer extraction
-- `src/common/fabulor-plugin-host.c:305` - string-array extraction
-- `src/common/fabulor-plugin-host.c:370` - reads the full manifest into memory
-- `src/common/fabulor-plugin-host.c:375` - only rejects empty manifests
-- `src/common/fabulor-plugin-host.c:386` through `src/common/fabulor-plugin-host.c:396` - extracts known fields
+The regex field extractor has been replaced by a bounded, schema-aware JSON parser in `src/common/fabulor-plugin-manifest-json.c`. Manifest loading in `src/common/fabulor-plugin-host.c` now:
 
-Validation checks required fields, supported language, entrypoint existence, API version, and dependency discovery:
+- Requires `plugin.json` to be a regular, non-symbolic-link file.
+- Rejects files outside the 1-byte to 64-KiB range before allocation and enforces the same limit while streaming the file to handle size changes safely.
+- Requires exactly one root object with all 11 documented fields and no unknown or duplicate fields.
+- Requires the documented JSON types; notably, `requires_api_version` is an unsigned JSON integer from `1` through the host `guint` maximum, not a quoted string.
+- Rejects malformed JSON, trailing commas/content, invalid UTF-8, invalid Unicode escapes/surrogate pairs, decoded NUL, and control characters in strings.
+- Enforces documented UTF-8 byte limits for strings and count/item limits for dependency and capability arrays.
+- Rejects empty or duplicate dependency and capability strings during parsing.
 
-- `src/common/fabulor-plugin-host.c:541` through `src/common/fabulor-plugin-host.c:598` - required field checks
-- `src/common/fabulor-plugin-host.c:559` - language must be known
-- `src/common/fabulor-plugin-host.c:570` - entrypoint path must exist
-- `src/common/fabulor-plugin-host.c:576` - required API version must not exceed host version
-- `src/common/fabulor-plugin-host.c:602` through `src/common/fabulor-plugin-host.c:607` - dependencies must be discovered
+Discovery records a diagnostic for an unreadable or invalid manifest and continues scanning sibling plugin directories. Load-order resolution no longer fails all plugins because one manifest is invalid. It skips that plugin and skips direct or transitive dependants of invalid, incompatible, safe-mode-disabled, or blacklisted plugins. Unrelated valid plugins remain eligible to load. Dependency cycles among the remaining eligible plugins continue to be a catalog-level error because no valid load order exists for that cycle.
 
-Pre-enable issues:
-
-- No strict JSON parser is used, so malformed JSON can be accepted if the regexes find matching field fragments.
-- No schema rejection exists for wrong field types beyond what the regexes happen to ignore.
-- No manifest size limit exists before `g_file_get_contents()`.
-- Arrays are not type-strict; the parser extracts quoted strings from the matched array body and ignores other values.
-- Unknown fields are ignored, which is acceptable only if explicitly documented.
-- If any enabled manifest has validation errors, `fabulor_plugin_catalog_resolve_load_order()` aborts all manifest loading rather than isolating the bad plugin.
-
-Minimum fix: replace regex parsing with a real JSON parser, enforce a documented schema and maximum manifest size, reject malformed JSON and wrong field types deterministically, and decide whether one invalid plugin should block all manifest plugins or only itself and dependents.
+Coverage is provided by `src/common/tests/test-fabulor-plugin-manifest-json.c`, built and executed through `manifest-json-tests.vcxproj` as part of the Windows solution. The repository manifest lint independently checks the same strict sample schema, duplicate keys, JSON types, and limits. Authoring documentation and all C#, Python, and Tcl sample manifests now use the strict contract.
 
 ## Entrypoint Resolution
 
@@ -291,10 +279,10 @@ Capabilities constrain access to cooperative Fabulor host APIs. They do not prov
 
 Before `FABULOR_ENABLE_MANIFEST_PLUGINS=1` becomes user-facing, require at least:
 
-- Canonical root containment for discovered roots, plugin directories, manifest paths, and entrypoints.
+- Canonical root containment for discovered roots, plugin directories, manifest paths, and entrypoints. Status: discovery roots, plugin directories, and manifest paths addressed on 2026-07-13; entrypoint containment is tracked separately below.
 - Rejection of absolute entrypoints, `..`, symlink/reparse escapes, unreadable files, and language/extension mismatches.
-- Strict JSON parsing with schema/type validation and manifest size limits.
-- Per-plugin error isolation policy that does not let one bad manifest unexpectedly block unrelated plugins unless that is deliberately documented.
+- Strict JSON parsing with schema/type validation and manifest size limits. Status: addressed on 2026-07-13.
+- Per-plugin error isolation policy that does not let one bad manifest unexpectedly block unrelated plugins unless that is deliberately documented. Status: addressed on 2026-07-13; dependency cycles remain a deliberate catalog-level error.
 - Runtime-root policy that removes normal-user reliance on environment variables and current working directory. Status: addressed for Tcl and C# on 2026-07-12.
 - Removal or containment of Tcl process-wide `PATH` mutation. Status: addressed for manifest Tcl loading.
 - A Python manifest host design that is separate from the legacy global Python plugin, or a clear decision that Python manifests remain disabled. Status: the manifest load-authority and policy-attribution boundary was separated on 2026-07-12; per-plugin interpreter isolation remains outstanding.
