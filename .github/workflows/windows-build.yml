@@ -176,7 +176,7 @@ jobs:
           msbuild win32\zoitechat.sln /m /verbosity:minimal /p:Configuration=Release /p:Platform=${{ matrix.platform }}
           if errorlevel 1 exit /b 1
 
-          powershell -NoProfile -ExecutionPolicy Bypass -File tools\build-enchant-msvc.ps1
+          powershell -NoProfile -ExecutionPolicy Bypass -File tools\build-enchant-msvc.ps1 -GtkRoot C:\gtk-build\gtk\x64\release
           if errorlevel 1 exit /b 1
 
           rem Publish artefacts from the WiX v4 installer surface only.
