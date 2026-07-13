@@ -368,7 +368,7 @@ servlist_import_client_cert_cb (GtkWidget *button, gpointer userdata)
 		 g_file_get_contents (source_file, &contents, &length, NULL) &&
 		 g_file_set_contents (cert_file, contents, length, NULL))
 	{
-		chmod (cert_file, 0600);
+		g_chmod (cert_file, 0600);
 		servlist_update_cert_buttons (net);
 		message = gtk_message_dialog_new (GTK_WINDOW (edit_win),
 													 GTK_DIALOG_DESTROY_WITH_PARENT | GTK_DIALOG_MODAL,
@@ -479,7 +479,7 @@ servlist_generate_client_cert_cb (GtkWidget *button, gpointer userdata)
 			pem_data = g_strconcat (key_data, crt_data, NULL);
 			if (pem_data && g_file_set_contents (cert_file, pem_data, -1, NULL))
 			{
-				chmod (cert_file, 0600);
+				g_chmod (cert_file, 0600);
 				success = TRUE;
 			}
 		}

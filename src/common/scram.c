@@ -140,7 +140,7 @@ process_server_first (scram_session *session, const char *data, char **output,
 	unsigned char *client_key, stored_key[EVP_MAX_MD_SIZE], *client_signature, *client_proof;
 	unsigned int i, param_count, iteration_count, client_key_len, stored_key_len;
 	gsize salt_len = 0;
-	size_t client_nonce_len;
+	size_t client_nonce_len, password_len;
 
 	params = g_strsplit (data, ",", -1);
 	param_count = g_strv_length (params);
@@ -191,16 +191,33 @@ process_server_first (scram_session *session, const char *data, char **output,
 		strncmp (server_nonce_b64, session->client_nonce_b64, client_nonce_len))
 	{
 		session->error = g_strdup_printf ("Invalid server nonce: %s", server_nonce_b64);
+		g_free (server_nonce_b64);
+		g_free (salt);
 		return SCRAM_ERROR;
 	}
 
 	g_base64_decode_inplace ((gchar *) salt, &salt_len);
+	password_len = strlen (session->password);
+	if (password_len > G_MAXINT || salt_len > G_MAXINT || iteration_count > G_MAXINT)
+	{
+		session->error = g_strdup ("SCRAM input exceeds the supported size");
+		g_free (server_nonce_b64);
+		g_free (salt);
+		return SCRAM_ERROR;
+	}
 
 	session->salted_password = g_malloc (session->digest_size);
 
-	PKCS5_PBKDF2_HMAC (session->password, strlen (session->password), (unsigned char *) salt,
-					   salt_len, iteration_count, session->digest, session->digest_size,
-					   session->salted_password);
+	if (!PKCS5_PBKDF2_HMAC (session->password, (int)password_len, (unsigned char *) salt,
+						(int)salt_len, (int)iteration_count, session->digest, session->digest_size,
+						session->salted_password))
+	{
+		session->error = g_strdup ("SCRAM password derivation failed");
+		g_clear_pointer (&session->salted_password, g_free);
+		g_free (server_nonce_b64);
+		g_free (salt);
+		return SCRAM_ERROR;
+	}
 
 	client_final_message_without_proof = g_strdup_printf ("c=biws,r=%s", server_nonce_b64);
 

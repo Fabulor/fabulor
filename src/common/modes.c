@@ -204,7 +204,8 @@ nick_access (server * serv, char *nick, int *modechars)
 		nick++;
 	}
 
-	*modechars = nick - orig;
+	g_assert (nick - orig <= G_MAXINT);
+	*modechars = (int)(nick - orig);
 
 	return access;
 }
@@ -256,10 +257,12 @@ record_chan_mode (session *sess, char sign, char mode, char *arg)
 	/* find out if the mode currently exists */
 	arguments_start = g_strstr_len(current->str	, -1, " ");
 	if (arguments_start) {
-		modes_length = arguments_start - current->str;
+		g_assert (arguments_start - current->str <= G_MAXINT);
+		modes_length = (gint)(arguments_start - current->str);
 	}
 	else {
-		modes_length = current->len;
+		g_assert (current->len <= G_MAXINT);
+		modes_length = (gint)current->len;
 		/* set this to the end of the modes */
 		arguments_start = current->str + current->len;
 	}
@@ -302,7 +305,8 @@ record_chan_mode (session *sess, char sign, char mode, char *arg)
 			if (i != argument_num)
 				current_char++;
 		}
-		argument_offset = current_char - current->str;
+		g_assert (current_char - current->str <= G_MAXINT);
+		argument_offset = (gint)(current_char - current->str);
 
 		/* how long the existing argument is for this key
 		 * important for malloc and strncpy */

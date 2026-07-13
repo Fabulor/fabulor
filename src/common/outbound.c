@@ -4476,7 +4476,7 @@ auto_insert (char *dest, gsize destlen, unsigned char *src, char *word[],
 				switch (src[0])
 				{
 				case '%':
-					if ((dest - orig) + 2u >= destlen)
+					if ((gsize)(dest - orig) + 2u >= destlen)
 						return 2;
 					dest[0] = '%';
 					dest[1] = 0;
@@ -4564,7 +4564,7 @@ check_special_chars (char *cmd, int do_ascii) /* check for %X */
 	size_t len = strlen (cmd);
 	char *buf, *utf;
 	char tbuf[4];
-	int i = 0, j = 0;
+	gsize i = 0, j = 0;
 	gsize utf_len;
 
 	if (!len)
@@ -4664,7 +4664,8 @@ nick_comp_cb (struct User *user, nickdata *data)
 
 	if (!rfc_ncasecmp (user->nick, data->nick, data->len))
 	{
-		lenu = strlen (user->nick);
+		g_assert (strlen (user->nick) <= G_MAXINT);
+		lenu = (int)strlen (user->nick);
 		if (lenu == data->len)
 		{
 			g_snprintf (data->tbuf, TBUFSIZE, "%s%s", user->nick, data->space);
@@ -4689,7 +4690,8 @@ perform_nick_completion (struct session *sess, char *cmd, char *tbuf)
 	{
 		if (space[-1] == prefs.hex_completion_suffix[0] && space - 1 != cmd)
 		{
-			len = space - cmd - 1;
+			g_assert (space - cmd - 1 <= G_MAXINT);
+			len = (int)(space - cmd - 1);
 			if (len < NICKLEN)
 			{
 				char nick[NICKLEN];
