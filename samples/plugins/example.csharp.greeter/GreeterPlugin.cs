@@ -24,6 +24,6 @@ public sealed class GreeterPlugin : IZoiteChatPlugin
         var location = string.IsNullOrWhiteSpace(evt.Channel)
             ? "the active session"
             : evt.Channel;
-        _context.Log($"C# sample observed its first message event in {location}.");
+        _context.Log($"C# sample observed its first incoming message event in {location}.");
     }
 }

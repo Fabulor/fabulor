@@ -157,8 +157,24 @@ jobs:
                   raise SystemExit(f"Duplicate plugin id '{plugin_id}' found in {manifest_path} and {discovered_ids[plugin_id]}.")
               discovered_ids[plugin_id] = manifest_path
               parsed_manifests[manifest_path] = manifest
- 
-              entrypoint = manifest_path.parent / manifest["entrypoint"]
+
+              entrypoint_name = manifest["entrypoint"]
+              expected_extensions = {
+                  "csharp": ".dll",
+                  "python": ".py",
+                  "tcl": ".tcl",
+              }
+              expected_extension = expected_extensions.get(manifest["language"])
+              if expected_extension is None:
+                  raise SystemExit(f"{manifest_path} declares unsupported language '{manifest['language']}'.")
+              if any(separator in entrypoint_name for separator in ("/", "\\", ":")) or entrypoint_name in (".", ".."):
+                  raise SystemExit(f"{manifest_path} entrypoint must be a direct child filename: {entrypoint_name}")
+              if pathlib.PurePath(entrypoint_name).suffix.lower() != expected_extension:
+                  raise SystemExit(
+                      f"{manifest_path} entrypoint must use {expected_extension} for language '{manifest['language']}'."
+                  )
+
+              entrypoint = manifest_path.parent / entrypoint_name
               if not entrypoint.exists():
                   if manifest["language"] == "csharp":
                       csproj_files = sorted(manifest_path.parent.glob("*.csproj"))

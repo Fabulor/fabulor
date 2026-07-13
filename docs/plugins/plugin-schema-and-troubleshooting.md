@@ -186,7 +186,7 @@ Supported capabilities:
 | `commands.manage` | Add or remove user commands. |
 | `preferences.read` | Read client or plugin preference data. |
 | `preferences.write` | Set or delete plugin preference data. |
-| `events.message` | Register message callbacks. |
+| `events.message` | Register incoming IRC `PRIVMSG` callbacks. Locally entered channel text is an outgoing `command:SAY` event unless the server echoes it back. |
 | `events.server` | Register generic or named server callbacks. |
 | `events.print` | Register print-event callbacks. |
 | `events.command` | Register command callbacks. |

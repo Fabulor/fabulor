@@ -72,7 +72,7 @@ proc onMessage {eventData} {
     if {[info exists user(channel)] && $user(channel) ne ""} {
         set location $user(channel)
     }
-    zoitechat::log "Tcl sample observed its first message event in $location."
+    zoitechat::log "Tcl sample observed its first incoming message event in $location."
 }
 
 proc init {} {
@@ -94,7 +94,7 @@ proc init {} {
 4. The embedded Tcl host currently exposes `zoitechat::command`, `zoitechat::print`, `zoitechat::log`, `zoitechat::add_user_command`, `zoitechat::remove_user_command`, `zoitechat::register_command`, `zoitechat::getinfo`, `zoitechat::get_user_info`, `zoitechat::nickcmp`, `zoitechat::send_message`, `zoitechat::get_user_count`, and `zoitechat::register_callback`.
 5. `zoitechat::getinfo` currently covers the safe session-backed values `away`, `channel`, `configdir`, `host`, `libdirfs`, `modes`, `network`, `nick`, `server`, `topic`, `version`, `xchatdir`, and `xchatdirfs`.
 6. Simple Tcl add-ons use `zoitechat::register_command name handler`. The handler receives the command's remaining text as one argument. Duplicate command names are rejected.
-7. `zoitechat::register_callback` is currently manifest-only. It routes manifest callbacks through the shared host registry and can subscribe to generic events such as `message`, `server`, `print`, and `command`, as well as specific forms like `server:NOTICE`, `print:Channel Message`, or `command:SAY`.
+7. `zoitechat::register_callback` is currently manifest-only. It routes manifest callbacks through the shared host registry and can subscribe to generic events such as `message`, `server`, `print`, and `command`, as well as specific forms like `server:NOTICE`, `print:Channel Message`, or `command:SAY`. `message` represents an incoming IRC `PRIVMSG`; locally entered channel text uses `command:SAY` unless the server echoes it back.
 8. Callback payload JSON now includes richer context such as `source`, `time`, `channel`, `network`, `nick`, `server`, `word1`-`word4`, and `word_eol1`-`word_eol2` where the underlying event provides them.
 9. Use safe mode when diagnosing Tcl startup faults so third-party plugins stay disabled while core startup is verified.
 10. `zoitechat::get_user_info` returns a Tcl key/value list covering `nick`, `channel`, `server`, and `network`.

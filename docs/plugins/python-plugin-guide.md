@@ -69,7 +69,7 @@ def on_message(event):
     _reported_first_message = True
     user = zoitechat.get_user_info()
     location = user.get("channel") or "the active session"
-    zoitechat.log(f"Python sample observed its first message event in {location}.")
+    zoitechat.log(f"Python sample observed its first incoming message event in {location}.")
     return None
 
 
@@ -86,7 +86,7 @@ def init():
 2. Use the simple `addons\<name>\<name>.py` layout for personal scripts and helpers. Relative Python load requests resolve under the profile `addons` directory.
 3. Declare every host operation the plugin uses. Manifest Python API calls are denied when the corresponding capability is absent; simple add-ons remain outside manifest capability policy. Manifest Python entrypoints must resolve under the bundled `Plugins\` root or the user profile `plugins\` root.
 4. `zoitechat.log(...)`, `zoitechat.send_message(...)`, `zoitechat.get_user_count()`, `zoitechat.get_user_info()`, and `zoitechat.register_callback(...)` are available in the embedded host.
-5. `zoitechat.register_callback(...)` currently supports `message`, `server`, `server:<name>`, `print:<event>`, and `command:<name>`.
+5. `zoitechat.register_callback(...)` currently supports `message`, `server`, `server:<name>`, `print:<event>`, and `command:<name>`. `message` represents an incoming IRC `PRIVMSG`; locally entered channel text uses `command:SAY` unless the server echoes it back.
 6. Callback payloads now include richer context such as `source`, `time`, `channel`, `network`, `nick`, `server`, `word1`-`word4`, and `word_eol1`-`word_eol2` where the underlying event provides them.
 7. The host validates `plugin.json`, resolves declared dependencies, and dispatches callbacks on the main thread before language-specific execution.
 8. `zoitechat.get_user_info()` returns a dictionary with `nickname`, `channel`, `server_name`, and `network_name`.

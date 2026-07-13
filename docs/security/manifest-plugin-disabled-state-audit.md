@@ -206,6 +206,8 @@ Fix status, 2026-07-14:
 - A full MSVC x64 Release rebuild completed with 0 warnings and 0 errors and passed all 17 manifest/path tests.
 - The Python host capability and interpreter-isolation suites passed all 9 and 7 tests respectively.
 - The x64 MSI and bootstrapper rebuilt with 0 errors when external ICE validation was suppressed; the existing empty GTK4 `lib\\gio` harvest warning remains. Local ICE validation could not be completed because the Windows Installer service was unavailable to the first run and the elevated validator did not terminate before the command timeout.
+- Installed-upgrade follow-up found that the maintained C# sample still declared its build-tree DLL path, which conflicts with the direct-child runtime policy. The sample and authoring guide now declare the flattened deployment path `GreeterPlugin.dll`, and repository manifest lint enforces direct filenames plus the language-specific extension so future samples cannot drift from the host policy.
+- The same live check confirmed that all three manifest samples load under the gate. Their `message` callbacks intentionally observe incoming IRC `PRIVMSG` events, not locally entered `command:SAY` text; sample output and authoring documentation now state that distinction explicitly.
 
 ## Runtime Loading
 

@@ -63,7 +63,7 @@ public sealed class HelperPlugin : IZoiteChatPlugin
   "name": "CSharp Greeter",
   "version": "1.0.0",
   "language": "csharp",
-  "entrypoint": "bin\\Release\\net8.0\\GreeterPlugin.dll",
+  "entrypoint": "GreeterPlugin.dll",
   "requires_api_version": 1,
   "dependencies": [],
   "capabilities": ["events.message", "session.read"],
@@ -100,7 +100,7 @@ public sealed class GreeterPlugin : IZoiteChatPlugin
         var location = string.IsNullOrWhiteSpace(evt.Channel)
             ? "the active session"
             : evt.Channel;
-        _context.Log($"C# sample observed its first message event in {location}.");
+        _context.Log($"C# sample observed its first incoming message event in {location}.");
     }
 }
 ```
@@ -115,8 +115,8 @@ public sealed class GreeterPlugin : IZoiteChatPlugin
 6. C# manifests now load through the `src\managed\Fabulor.PluginHost` bridge, which calls `IZoiteChatPlugin.Init(...)` and routes callbacks back through the shared native registry.
 7. The installer stages the managed bridge assemblies together with a bundled private `.NET` runtime under `Runtime\DotNet`, preserving `host\fxr` and `shared\Microsoft.NETCore.App`.
 8. Normal manifest loading accepts only that installed executable-relative runtime and bridge root. Development overrides such as `FABULOR_DOTNET_ROOT`, `DOTNET_ROOT`, `FABULOR_CSHARP_BRIDGE_ROOT`, current-directory runtime roots, source-tree bridge outputs, and the machine-wide .NET installation require `FABULOR_ENABLE_DEVELOPMENT_RUNTIME_ROOTS=1`.
-9. `ZoiteChatContext.RegisterCallback(...)` can subscribe to generic events such as `message`, `server`, `print`, and `command`, as well as specific forms like `server:NOTICE`, `print:Channel Message`, or `command:SAY`.
+9. `ZoiteChatContext.RegisterCallback(...)` can subscribe to generic events such as `message`, `server`, `print`, and `command`, as well as specific forms like `server:NOTICE`, `print:Channel Message`, or `command:SAY`. `message` represents an incoming IRC `PRIVMSG`; locally entered channel text uses the outgoing `command:SAY` event unless the server echoes it back.
 10. `ZoiteChatEvent` now exposes richer payload accessors including `Channel`, `Network`, `Nick`, `Server`, `Time`, `Word1`-`Word4`, and `WordEol1`-`WordEol2`.
 11. `ZoiteChatContext.GetUserInfo()` returns the active session identity as a `ZoiteChatUserInfo` with `Nickname`, `Channel`, `ServerName`, and `NetworkName`.
-12. A maintained sample manifest C# plugin lives under `samples\plugins\example.csharp.greeter\`.
+12. A maintained sample manifest C# plugin lives under `samples\plugins\example.csharp.greeter\`. Build it, then deploy `plugin.json`, `GreeterPlugin.dll`, and any plugin-owned dependencies together as direct children of one profile add-on folder. Build-tree paths such as `bin\Release\net8.0\GreeterPlugin.dll` are not valid manifest entrypoints.
 13. Callback event names are limited to 128 UTF-8 bytes, generated handler names to 256 bytes, each plugin to 64 callbacks, and each event to 256 callbacks. Registering the same event/handler pair twice is rejected.
