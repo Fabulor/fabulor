@@ -167,7 +167,7 @@
   - [ ] Keep the manifest host disabled unless `FABULOR_ENABLE_MANIFEST_PLUGINS=1` is set.
   - [ ] Investigate the connect/editbox crash in the current native API path using a debugger with symbols.
   - [ ] Design a simpler add-on scripting flow that works from the user `addons` folder without manifest ceremony for small Tcl/Python aliases.
-- [ ] Finish the Enchant 2.8.19 spell-checker rollout after live validation:
+- [x] Finish the Enchant 2.8.19 spell-checker rollout after live validation:
   - [x] Confirm Enchant 2 + WinSpell is live in Fabulor and catches edit-box typos, verified with `Hllo thre piples` -> `Hello there peoples`.
   - [x] Revalidate URL paste, suggestions, add-to-dictionary, and persistence after installing the MSVC rebuild; the previous MinGW/MSVCRT payload caused reproducible heap corruption in `enchant_pwl_check`.
   - [x] Soak test the upgraded spell checker for a day or two before committing the rollout.
@@ -177,7 +177,7 @@
   - [x] Remove the Enchant 1.6.1 fallback payload (`libenchant.dll`, `lib\enchant`) after Enchant 2 verification.
   - [x] Retire the legacy `src\libenchant_win8` provider after confirming upstream WinSpell covers the required Windows spell-check behaviour.
   - [x] Verify an in-place installer update preserves full spell-check functionality and removes the legacy Enchant DLL/provider/data payload.
-  - [ ] Verify spell checking, suggestions, "add to dictionary", and installer packaging on a clean install.
+  - [x] Verify spell checking, suggestions, "add to dictionary", and installer packaging on a clean install.
 
 ## 7. Documentation & Developer Guides
 

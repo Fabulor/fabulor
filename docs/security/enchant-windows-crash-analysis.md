@@ -66,7 +66,6 @@ Completed:
 - The Enchant 1.6.1 core and provider fallback has been removed. Windows now loads only the app-local `libenchant-2-2.dll`, and the installer packages only the MSVC/UCRT core, upstream WinSpell provider, and Enchant 2 ordering file.
 - The legacy in-tree `libenchant_win8` provider is retired from the Windows solution; upstream WinSpell is the supported Windows provider.
 - An in-place update with the final package retained full Enchant functionality and removed `libenchant.dll`, `libenchant-2.dll`, `lib\enchant`, and `share\enchant` from the installed tree. Installed core and WinSpell hashes matched the audited staged binaries.
-
-Remaining rollout check: install the final rebuilt package on a clean system and repeat spell checking, suggestions, add-to-personal, and persistence validation.
+- A clean uninstall/reinstall produced only `libenchant-2-2.dll`, `lib\enchant-2\enchant_winspell.dll`, and `share\enchant-2\enchant.ordering`; no legacy Enchant DLL/provider/data path remained, and live spell checking functioned correctly. The Enchant 2.8.19 rollout is complete.
 
 Full PageHeap was run after the Windows SDK Debugging Tools feature supplied `gflags.exe`. The isolated replacement PWL smoke test passed under full PageHeap, and the temporary image setting was disabled immediately afterward. The original dump was analyzed with CDB.
