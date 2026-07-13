@@ -19,7 +19,7 @@ The audit covers:
 
 Status: pass for the manifest host disabled boundary, with one legacy-plugin caveat.
 
-The manifest host is only reachable when `FABULOR_ENABLE_MANIFEST_PLUGINS=1` is present in the process environment and the normal plugin autoload path is not skipped by `--no-plugins`.
+At the time of this initial disabled-state audit, the manifest host was only reachable when `FABULOR_ENABLE_MANIFEST_PLUGINS=1` was present in the process environment and the normal plugin autoload path was not skipped by `--no-plugins`. The later confirmed profile preference is recorded in the rollout follow-up below.
 
 No config setting, command-line flag, installer property, installer shortcut, or bootstrapper code path found in this pass sets `FABULOR_ENABLE_MANIFEST_PLUGINS` or otherwise enables the manifest host.
 
@@ -314,6 +314,27 @@ Pass-2 decision, 2026-07-14:
 - Startup must continue reporting successful lifecycle operations and per-plugin failures. Invalid or failed plugins remain isolated from unrelated valid plugins under the documented dependency policy.
 
 This decision closes the pre-enable design audit. Implementing and validating the preference, confirmation flow, restart behavior, safe-mode precedence, and disabled-profile migration tests is a separate product stage before the environment gate can be retired from normal use.
+
+## Manifest Plugin Preference Rollout
+
+Date: 2026-07-14
+
+The first user-facing implementation remains explicitly opt-in:
+
+- `gui_manifest_plugins` is a Boolean profile preference. New profiles and existing profiles without the key receive the zero-initialized disabled default; installers and migrations do not enable it.
+- **Preferences > Advanced** exposes **Enable manifest plugins (requires restart)**. Changing the preference from disabled to enabled requires a modal confirmation before preferences are saved.
+- The confirmation identifies the profile `plugins` root and states that manifest plugins are trusted code running with the user's operating-system privileges. Cancelling leaves the saved preference disabled.
+- Startup enables the manifest host when either the saved preference is enabled or the developer override is exactly `FABULOR_ENABLE_MANIFEST_PLUGINS=1`.
+- Safe mode (`--no-plugins`) takes precedence over both enable paths and prevents manifest discovery and runtime initialization.
+- Disabling the preference also requires restart so the active host can complete its normal process-lifetime teardown rather than attempting partial live unload.
+
+Validation so far:
+
+- A focused policy test covers default-disabled profiles, valid and invalid environment values, preference enabling, and safe-mode precedence.
+- The native manifest/path/policy suite passes all 18 tests.
+- A full MSVC x64 Release rebuild completed with 0 warnings and 0 errors.
+
+Installed-upgrade validation completed successfully on 2026-07-14. The disabled default did not load manifest plugins; cancelling the trusted-code confirmation did not enable them; accepting and saving the preference persisted it and loaded all three maintained manifest samples after a normal restart; disabling it again persisted across restart; and safe mode suppressed manifest loading even while the preference was enabled. No environment override was present during these checks, so the result exercised the saved preference directly. The environment override remains available for developer and recovery testing only.
 
 ## Repository Security Tool Pass Scope
 

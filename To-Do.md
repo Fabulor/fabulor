@@ -45,6 +45,11 @@
   - [x] Review and harden callback/event registration lifetime, main-thread dispatch, cleanup, and failure isolation.
   - [x] Decide which declared manifest `capabilities` are advisory versus enforced before enabling third-party plugins.
   - [x] Define the minimum fixes required before `FABULOR_ENABLE_MANIFEST_PLUGINS=1` can become user-facing.
+- [x] Manifest plugin opt-in preference rollout.
+  - [x] Add an off-by-default persisted preference with an explicit trusted-code confirmation and restart notice.
+  - [x] Keep `FABULOR_ENABLE_MANIFEST_PLUGINS=1` as a developer override and make `--no-plugins` take precedence over both enable paths.
+  - [x] Add native policy tests for disabled defaults, preference/override enabling, invalid override values, and safe-mode precedence.
+  - [x] Validate the preference, cancellation, persistence, normal restart, disabled restart, and safe-mode behavior in an installed upgrade.
 - [ ] Repository security tool pass.
   - [ ] Inventory available local tools: MSVC `/analyze`, CodeQL CLI, Semgrep, gitleaks/trufflehog, dependency scanners, and GitHub Actions checks.
   - [ ] Run secret scanning across tracked files and review any hits.
@@ -169,9 +174,9 @@
 - [x] Tighten the Python runtime path so the modern manifest contract and the legacy scripting surface are clearly separated where required.
 - [ ] Add broader shared API helpers beyond the current message/log/user-count/user-info surface.
 - [ ] Rework the manifest plugin API before enabling it by default:
-  - [ ] Keep the manifest host disabled unless `FABULOR_ENABLE_MANIFEST_PLUGINS=1` is set.
-  - [ ] Investigate the connect/editbox crash in the current native API path using a debugger with symbols.
-  - [ ] Design a simpler add-on scripting flow that works from the user `addons` folder without manifest ceremony for small Tcl/Python aliases.
+  - [x] Keep the manifest host disabled by default; allow explicit opt-in through the confirmed profile preference or `FABULOR_ENABLE_MANIFEST_PLUGINS=1` developer override.
+  - [x] Investigate the connect/editbox crash in the current native API path using a debugger with symbols.
+  - [x] Design a simpler add-on scripting flow that works from the user `addons` folder without manifest ceremony for small Tcl/Python aliases.
 - [x] Finish the Enchant 2.8.19 spell-checker rollout after live validation:
   - [x] Confirm Enchant 2 + WinSpell is live in Fabulor and catches edit-box typos, verified with `Hllo thre piples` -> `Hello there peoples`.
   - [x] Revalidate URL paste, suggestions, add-to-dictionary, and persistence after installing the MSVC rebuild; the previous MinGW/MSVCRT payload caused reproducible heap corruption in `enchant_pwl_check`.

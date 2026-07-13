@@ -593,6 +593,9 @@ static const setting advanced_settings[] =
         {ST_NUMBER,     N_("Auto join delay:"), P_OFFINTNL(hex_irc_join_delay), 0, 0, 9999},
         {ST_MENU,       N_("Ban Type:"), P_OFFINTNL(hex_irc_ban_type), N_("Attempt to use this banmask when banning or quieting. (requires irc_who_join)"), bantypemenu, 0},
 
+        {ST_HEADER,     N_("Plugins"), 0, 0, 0},
+        {ST_TOGGLE,     N_("Enable manifest plugins (requires restart)"), P_OFFINTNL(hex_gui_manifest_plugins), N_("Load trusted manifest plugins from your Fabulor profile after restarting."), 0, 0},
+
         {ST_END, 0, 0, 0, 0, 0}
 };
 
@@ -2313,6 +2316,8 @@ setup_apply (struct zoitechatprefs *pr)
                 noapply = TRUE;
         if (DIFF (hex_gui_lagometer))
                 noapply = TRUE;
+        if (DIFF (hex_gui_manifest_plugins))
+                noapply = TRUE;
         if (DIFF (hex_gui_mode_buttons_inline))
                 noapply = TRUE;
         if (DIFF (hex_gui_tab_icons))
@@ -2400,12 +2405,50 @@ setup_apply (struct zoitechatprefs *pr)
 #endif
 }
 
+static gboolean
+setup_confirm_manifest_plugins (GtkWidget *parent)
+{
+        GtkWidget *dialog;
+        char *plugins_root;
+        int response;
+
+        plugins_root = g_build_filename (get_xdir (), "plugins", NULL);
+        dialog = gtk_message_dialog_new (GTK_WINDOW (parent),
+                                         GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT,
+                                         GTK_MESSAGE_WARNING,
+                                         GTK_BUTTONS_NONE,
+                                         "%s",
+                                         _("Enable manifest plugins?"));
+        gtk_message_dialog_format_secondary_text (
+                GTK_MESSAGE_DIALOG (dialog),
+                _("Manifest plugins are trusted code and run with your user account's operating-system privileges. Only place plugins you trust in:\n%s\n\nThe change takes effect after restarting Fabulor."),
+                plugins_root);
+        gtk_dialog_add_buttons (GTK_DIALOG (dialog),
+                                _("_Cancel"), GTK_RESPONSE_CANCEL,
+                                _("_Enable"), GTK_RESPONSE_ACCEPT,
+                                NULL);
+        gtk_dialog_set_default_response (GTK_DIALOG (dialog), GTK_RESPONSE_CANCEL);
+
+        response = gtk_dialog_run (GTK_DIALOG (dialog));
+        gtk_widget_destroy (dialog);
+        g_free (plugins_root);
+
+        return response == GTK_RESPONSE_ACCEPT;
+}
+
 static void
 setup_ok_cb (GtkWidget *but, GtkWidget *win)
 {
         PreferencesPersistenceResult save_result;
         struct zoitechatprefs old_prefs;
         char buffer[192];
+
+        if (setup_prefs.hex_gui_manifest_plugins
+                && !prefs.hex_gui_manifest_plugins
+                && !setup_confirm_manifest_plugins (win))
+        {
+                return;
+        }
 
         memcpy (&old_prefs, &prefs, sizeof (prefs));
         setup_apply (&setup_prefs);

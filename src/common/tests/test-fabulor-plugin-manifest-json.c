@@ -3,6 +3,7 @@
 #include <string.h>
 
 #include "../fabulor-plugin-manifest-json.h"
+#include "../fabulor-plugin-enable-policy.h"
 #include "../fabulor-plugin-path-policy.h"
 
 #ifdef WIN32
@@ -33,6 +34,19 @@ manifest_init (FabulorPluginManifest *manifest)
 	memset (manifest, 0, sizeof (*manifest));
 	manifest->dependencies = g_ptr_array_new_with_free_func (g_free);
 	manifest->capabilities = g_ptr_array_new_with_free_func (g_free);
+}
+
+static void
+test_manifest_autoload_policy (void)
+{
+	g_assert_false (fabulor_plugin_enable_policy_should_autoload (FALSE, NULL, FALSE));
+	g_assert_false (fabulor_plugin_enable_policy_should_autoload (FALSE, "", FALSE));
+	g_assert_false (fabulor_plugin_enable_policy_should_autoload (FALSE, "0", FALSE));
+	g_assert_false (fabulor_plugin_enable_policy_should_autoload (FALSE, "true", FALSE));
+	g_assert_true (fabulor_plugin_enable_policy_should_autoload (TRUE, NULL, FALSE));
+	g_assert_true (fabulor_plugin_enable_policy_should_autoload (FALSE, "1", FALSE));
+	g_assert_false (fabulor_plugin_enable_policy_should_autoload (TRUE, "1", TRUE));
+	g_assert_false (fabulor_plugin_enable_policy_should_autoload (FALSE, "1", TRUE));
 }
 
 static void
@@ -685,6 +699,7 @@ int
 main (int argc, char **argv)
 {
 	g_test_init (&argc, &argv, NULL);
+	g_test_add_func ("/manifest-policy/autoload", test_manifest_autoload_policy);
 	g_test_add_func ("/manifest-json/valid", test_valid_manifest);
 	g_test_add_func ("/manifest-json/unicode-escapes", test_unicode_escapes);
 	g_test_add_func ("/manifest-json/malformed", test_malformed_json);
