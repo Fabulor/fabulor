@@ -12,10 +12,12 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="test-fabulor-plugin-manifest-json.c" />
+    <ClCompile Include="..\fabulor-plugin-enable-policy.c" />
     <ClCompile Include="..\fabulor-plugin-manifest-json.c" />
     <ClCompile Include="..\fabulor-plugin-path-policy.c" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\fabulor-plugin-enable-policy.h" />
     <ClInclude Include="..\fabulor-plugin-manifest-json.h" />
     <ClInclude Include="..\fabulor-plugin-path-policy.h" />
     <ClInclude Include="..\fabulor-plugin-host.h" />

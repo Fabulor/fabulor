@@ -49,6 +49,7 @@ typedef struct session zoitechat_context;
 #include "zoitechat-plugin.h"
 #include "plugin.h"
 #include "fabulor-plugin-host.h"
+#include "fabulor-plugin-enable-policy.h"
 #include "typedef.h"
 
 
@@ -163,7 +164,9 @@ fabulor_manifest_plugins_enabled (void)
 {
 	const char *enabled = g_getenv ("FABULOR_ENABLE_MANIFEST_PLUGINS");
 
-	return enabled && g_ascii_strcasecmp (enabled, "1") == 0;
+	return fabulor_plugin_enable_policy_should_autoload (prefs.hex_gui_manifest_plugins,
+												 enabled,
+												 arg_skip_plugins);
 }
 
 static gboolean

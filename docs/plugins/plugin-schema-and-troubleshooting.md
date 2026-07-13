@@ -68,7 +68,7 @@ The current runtime discovers manifest plugins from these roots when they exist:
 
 For repository examples and validation assets, see `samples\plugins\`. Those samples are intentionally outside the runtime discovery roots used by the live application.
 
-The manifest host is currently disabled by default while the native API path is being hardened. Enable it only for development with `FABULOR_ENABLE_MANIFEST_PLUGINS=1`.
+The manifest host is disabled by default. To opt in, open **Preferences > Advanced**, enable **Enable manifest plugins (requires restart)**, review the trusted-code warning, and restart Fabulor. Manifest plugins run with your user account's operating-system privileges; capabilities constrain cooperative Fabulor API access but do not provide a process sandbox. `FABULOR_ENABLE_MANIFEST_PLUGINS=1` remains available as a developer/testing override. Safe mode (`--no-plugins`) takes precedence over both enable paths.
 
 ## Legacy Native Plugin Coexistence
 
@@ -231,8 +231,8 @@ Use this sequence when a plugin does not load or behaves incorrectly:
 The manifest host is staged in progressively:
 
 1. Simple add-ons are the intended user-facing path: `addons\<name>\<name>.tcl`, `addons\<name>\<name>.py`, or a compiled C# `addons\<name>\<name>.dll`.
-2. Python manifest plugins can be auto-loaded through the existing embedded Python runtime when `FABULOR_ENABLE_MANIFEST_PLUGINS=1` is set. The Python runtime accepts manifest entrypoints only when the resolved `.py` path is under the bundled `Plugins\` root or the user profile `plugins\` root.
-3. Tcl manifest plugins can be auto-loaded through the bundled Tcl runtime with a minimal `zoitechat::*` command surface when `FABULOR_ENABLE_MANIFEST_PLUGINS=1` is set. The normal Tcl runtime root is the installed `Runtime\Tcl` directory beside `fabulor.exe`; development-only runtime roots require `FABULOR_ENABLE_DEVELOPMENT_RUNTIME_ROOTS=1`.
+2. Python manifest plugins can be auto-loaded through the embedded Python runtime when the confirmed profile preference or developer override is enabled. The Python runtime accepts manifest entrypoints only when the resolved `.py` path is under the bundled `Plugins\` root or the user profile `plugins\` root.
+3. Tcl manifest plugins can be auto-loaded through the bundled Tcl runtime with a minimal `zoitechat::*` command surface when the confirmed profile preference or developer override is enabled. The normal Tcl runtime root is the installed `Runtime\Tcl` directory beside `fabulor.exe`; development-only runtime roots require `FABULOR_ENABLE_DEVELOPMENT_RUNTIME_ROOTS=1`.
 4. The shared host validates manifests, resolves dependencies, applies blacklist decisions, and queues callback dispatch on the main thread.
 5. The managed C# contract assembly is scaffolded under `src\managed\Fabulor.PluginAbstractions` so plugin and host types are concrete.
 6. C# manifests load through the `src\managed\Fabulor.PluginHost` bridge, which is staged into `Runtime\DotNet` by the installer build.

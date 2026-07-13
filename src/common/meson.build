@@ -3,6 +3,7 @@ common_sources = [
   'chanopt.c',
   'ctcp.c',
   'dcc.c',
+  'fabulor-plugin-enable-policy.c',
   'gtk3-theme-service.c',
   'zoitechat.c',
   'history.c',

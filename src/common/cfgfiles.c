@@ -429,6 +429,7 @@ const struct prefs vars[] =
 	{"input_history_max", P_OFFINT (hex_input_history_max), TYPE_INT},
 	{"gui_lagometer", P_OFFINT (hex_gui_lagometer), TYPE_INT},
 	{"gui_lang", P_OFFINT (hex_gui_lang), TYPE_INT},
+	{"gui_manifest_plugins", P_OFFINT (hex_gui_manifest_plugins), TYPE_BOOL},
 	{"gui_mode_buttons", P_OFFINT (hex_gui_mode_buttons), TYPE_BOOL},
 	{"gui_mode_buttons_inline", P_OFFINT (hex_gui_mode_buttons_inline), TYPE_BOOL},
 	{"gui_pane_divider_position", P_OFFINT (hex_gui_pane_divider_position), TYPE_INT},

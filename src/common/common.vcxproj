@@ -15,6 +15,7 @@
     <ClInclude Include="chanopt.h" />
     <ClInclude Include="ctcp.h" />
     <ClInclude Include="dcc.h" />
+    <ClInclude Include="fabulor-plugin-enable-policy.h" />
     <ClInclude Include="fabulor-plugin-host.h" />
     <ClInclude Include="fabulor-plugin-manifest-json.h" />
     <ClInclude Include="fabulor-plugin-path-policy.h" />
@@ -58,6 +59,7 @@
     <ClCompile Include="chanopt.c" />
     <ClCompile Include="ctcp.c" />
     <ClCompile Include="dcc.c" />
+    <ClCompile Include="fabulor-plugin-enable-policy.c" />
     <ClCompile Include="fabulor-plugin-host.c" />
     <ClCompile Include="fabulor-plugin-manifest-json.c" />
     <ClCompile Include="fabulor-plugin-path-policy.c" />
