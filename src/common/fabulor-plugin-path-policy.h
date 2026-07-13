@@ -15,5 +15,10 @@ gboolean fabulor_plugin_path_resolve_regular_file (const char *canonical_directo
 												  const char *file_name,
 												  char **canonical_file,
 												  GError **error);
+gboolean fabulor_plugin_path_resolve_entrypoint (const char *canonical_directory,
+											 const char *entrypoint,
+											 const char *expected_extension,
+											 char **canonical_entrypoint,
+											 GError **error);
 
 #endif

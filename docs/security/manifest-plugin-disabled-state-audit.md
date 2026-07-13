@@ -172,7 +172,7 @@ Coverage is provided by `src/common/tests/test-fabulor-plugin-manifest-json.c`, 
 
 ## Entrypoint Resolution
 
-Entrypoints are built as a simple child path and checked only for existence:
+At the time of the initial audit, entrypoints were built as a simple child path and checked only for existence:
 
 - `src/common/fabulor-plugin-host.c:384` - manifest directory is taken from the manifest path
 - `src/common/fabulor-plugin-host.c:406` - `entrypoint_path` is built from `plugin_directory` plus manifest `entrypoint`
@@ -193,6 +193,19 @@ Pre-enable issues:
 - Readability and file type are not checked; existence alone is not enough.
 
 Minimum fix: require a relative entrypoint, reject absolute paths and `..`, canonicalize the resolved path, verify it remains under the canonical plugin directory, reject symlink/reparse escapes or define a safe policy, require a regular readable file, and enforce `.dll`, `.py`, and `.tcl` by language.
+
+Fix status, 2026-07-14:
+
+- Manifest parsing no longer constructs an executable path by concatenating untrusted data.
+- Catalog validation resolves the entrypoint through the canonical plugin directory and accepts only a direct child regular file. Absolute, traversal, and nested names are rejected.
+- Symbolic links and Windows reparse points are rejected without following them, and read access is required.
+- Language and extension are enforced as `.dll` for C#, `.py` for Python, and `.tcl` for Tcl.
+- The same policy is rerun immediately before each language loader call, and only the refreshed accepted path is passed to the runtime.
+- These checks contain accidental and cooperative path escapes. As with the rest of the manifest model, they are not an operating-system sandbox and cannot prevent the same user from replacing ordinary file contents after validation.
+- The native suite now has 17 tests, including valid C#/Python/Tcl entrypoints and rejection of absolute, traversal, nested, missing, wrong-extension, wrong-type, symbolic-link, and directory-reparse cases.
+- A full MSVC x64 Release rebuild completed with 0 warnings and 0 errors and passed all 17 manifest/path tests.
+- The Python host capability and interpreter-isolation suites passed all 9 and 7 tests respectively.
+- The x64 MSI and bootstrapper rebuilt with 0 errors when external ICE validation was suppressed; the existing empty GTK4 `lib\\gio` harvest warning remains. Local ICE validation could not be completed because the Windows Installer service was unavailable to the first run and the elevated validator did not terminate before the command timeout.
 
 ## Runtime Loading
 
@@ -279,8 +292,8 @@ Capabilities constrain access to cooperative Fabulor host APIs. They do not prov
 
 Before `FABULOR_ENABLE_MANIFEST_PLUGINS=1` becomes user-facing, require at least:
 
-- Canonical root containment for discovered roots, plugin directories, manifest paths, and entrypoints. Status: discovery roots, plugin directories, and manifest paths addressed on 2026-07-13; entrypoint containment is tracked separately below.
-- Rejection of absolute entrypoints, `..`, symlink/reparse escapes, unreadable files, and language/extension mismatches.
+- Canonical root containment for discovered roots, plugin directories, manifest paths, and entrypoints. Status: addressed on 2026-07-14.
+- Rejection of absolute entrypoints, `..`, symlink/reparse escapes, unreadable files, and language/extension mismatches. Status: addressed on 2026-07-14.
 - Strict JSON parsing with schema/type validation and manifest size limits. Status: addressed on 2026-07-13.
 - Per-plugin error isolation policy that does not let one bad manifest unexpectedly block unrelated plugins unless that is deliberately documented. Status: addressed on 2026-07-13; dependency cycles remain a deliberate catalog-level error.
 - Runtime-root policy that removes normal-user reliance on environment variables and current working directory. Status: addressed for Tcl and C# on 2026-07-12.

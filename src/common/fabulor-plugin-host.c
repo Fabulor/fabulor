@@ -482,10 +482,6 @@ fabulor_plugin_manifest_load_from_path (const char *manifest_path, GError **erro
 	}
 
 	manifest->language = fabulor_plugin_language_from_string (manifest->language_name);
-	if (manifest->entrypoint && manifest->plugin_directory)
-	{
-		manifest->entrypoint_path = g_build_filename (manifest->plugin_directory, manifest->entrypoint, NULL);
-	}
 
 	g_free (json);
 	return manifest;
@@ -495,6 +491,52 @@ static gboolean
 manifest_field_missing (const char *value)
 {
 	return value == NULL || *value == '\0';
+}
+
+static const char *
+manifest_entrypoint_extension (FabulorPluginLanguage language)
+{
+	switch (language)
+	{
+	case FABULOR_PLUGIN_LANGUAGE_CSHARP:
+		return ".dll";
+	case FABULOR_PLUGIN_LANGUAGE_PYTHON:
+		return ".py";
+	case FABULOR_PLUGIN_LANGUAGE_TCL:
+		return ".tcl";
+	case FABULOR_PLUGIN_LANGUAGE_UNKNOWN:
+	default:
+		return NULL;
+	}
+}
+
+static gboolean
+manifest_refresh_entrypoint_path (FabulorPluginManifest *manifest, GError **error)
+{
+	const char *expected_extension;
+	char *resolved = NULL;
+
+	expected_extension = manifest_entrypoint_extension (manifest->language);
+	if (!expected_extension)
+	{
+		g_set_error (error, G_FILE_ERROR, G_FILE_ERROR_INVAL,
+					 "Unsupported manifest language '%s'.",
+					 manifest->language_name ? manifest->language_name : "");
+		return FALSE;
+	}
+
+	if (!fabulor_plugin_path_resolve_entrypoint (manifest->plugin_directory,
+												 manifest->entrypoint,
+												 expected_extension,
+												 &resolved,
+												 error))
+	{
+		return FALSE;
+	}
+
+	g_free (manifest->entrypoint_path);
+	manifest->entrypoint_path = resolved;
+	return TRUE;
 }
 
 static gboolean
@@ -665,9 +707,10 @@ fabulor_plugin_manifest_add_validation (FabulorPluginCatalog *catalog,
 
 static gboolean
 fabulor_plugin_manifest_validate (FabulorPluginCatalog *catalog,
-								   const FabulorPluginManifest *manifest,
+								   FabulorPluginManifest *manifest,
 								   guint api_version)
 {
+	GError *entrypoint_error = NULL;
 	gboolean valid = TRUE;
 	guint i;
 
@@ -700,10 +743,17 @@ fabulor_plugin_manifest_validate (FabulorPluginCatalog *catalog,
 		fabulor_plugin_manifest_add_validation (catalog, manifest, "Missing required field 'entrypoint'.");
 		valid = FALSE;
 	}
-	else if (!manifest->entrypoint_path || !g_file_test (manifest->entrypoint_path, G_FILE_TEST_EXISTS))
+	else if (manifest->language != FABULOR_PLUGIN_LANGUAGE_UNKNOWN)
 	{
-		fabulor_plugin_manifest_add_validation (catalog, manifest, "Entrypoint '%s' was not found.", manifest->entrypoint);
-		valid = FALSE;
+		if (!manifest_refresh_entrypoint_path (manifest, &entrypoint_error))
+		{
+			fabulor_plugin_manifest_add_validation (catalog, manifest,
+											 "Invalid entrypoint '%s': %s",
+											 manifest->entrypoint,
+											 entrypoint_error ? entrypoint_error->message : "unknown path error");
+			g_clear_error (&entrypoint_error);
+			valid = FALSE;
+		}
 	}
 
 	if (manifest->requires_api_version > api_version)
@@ -3318,8 +3368,18 @@ fabulor_plugin_catalog_load (FabulorPluginCatalog *catalog, GPtrArray *ordered_m
 
 	for (i = 0; i < ordered_manifests->len; i++)
 	{
-		const FabulorPluginManifest *manifest = g_ptr_array_index (ordered_manifests, i);
+		FabulorPluginManifest *manifest = g_ptr_array_index (ordered_manifests, i);
 		const FabulorPluginLoader *loader = fabulor_plugin_loader_for_language (manifest->language);
+		GError *entrypoint_error = NULL;
+
+		if (!manifest_refresh_entrypoint_path (manifest, &entrypoint_error))
+		{
+			g_propagate_prefixed_error (error,
+								entrypoint_error,
+								"Entrypoint revalidation failed for '%s': ",
+								manifest->id ? manifest->id : "(unknown)");
+			return FALSE;
+		}
 
 		if (!loader)
 		{

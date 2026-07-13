@@ -40,7 +40,7 @@
 - [ ] Plugin loader boundary review, pass 2: pre-enable design audit.
   - [x] Review and harden plugin root discovery so roots, direct plugin directories, and manifests remain inside approved canonical paths and reject symlink/reparse points.
   - [x] Review and harden manifest parsing and validation for required fields, strict types, bounded size, malformed JSON handling, and per-plugin error isolation.
-  - [ ] Review entrypoint resolution for path traversal, absolute paths, symlinks/reparse points, and extension/language mismatches.
+  - [x] Review entrypoint resolution for path traversal, absolute paths, symlinks/reparse points, and extension/language mismatches.
   - [x] Review C#, Python, and Tcl runtime loading paths, DLL search order, and interpreter initialization boundaries.
   - [x] Review and harden callback/event registration lifetime, main-thread dispatch, cleanup, and failure isolation.
   - [x] Decide which declared manifest `capabilities` are advisory versus enforced before enabling third-party plugins.

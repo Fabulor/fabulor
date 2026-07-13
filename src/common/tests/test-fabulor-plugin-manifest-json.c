@@ -404,6 +404,85 @@ test_path_policy_filters_regular_root_files (void)
 	g_free (tmp_root);
 }
 
+static void
+test_path_policy_resolves_entrypoints (void)
+{
+	GError *error = NULL;
+	char *tmp_root = g_dir_make_tmp ("fabulor-entrypoints-XXXXXX", &error);
+	char *plugin_dir;
+	char *python_file;
+	char *csharp_file;
+	char *tcl_file;
+	char *text_file;
+	char *wrong_type;
+	char *resolved = NULL;
+
+	g_assert_no_error (error);
+	g_assert_nonnull (tmp_root);
+	plugin_dir = g_build_filename (tmp_root, "example.plugin", NULL);
+	python_file = g_build_filename (plugin_dir, "plugin.py", NULL);
+	csharp_file = g_build_filename (plugin_dir, "plugin.dll", NULL);
+	tcl_file = g_build_filename (plugin_dir, "plugin.tcl", NULL);
+	text_file = g_build_filename (plugin_dir, "plugin.txt", NULL);
+	wrong_type = g_build_filename (plugin_dir, "directory.py", NULL);
+	g_assert_cmpint (g_mkdir (plugin_dir, 0700), ==, 0);
+	g_assert_true (g_file_set_contents (python_file, "pass\n", 5, &error));
+	g_assert_no_error (error);
+	g_assert_true (g_file_set_contents (csharp_file, "assembly", 8, &error));
+	g_assert_no_error (error);
+	g_assert_true (g_file_set_contents (tcl_file, "return\n", 7, &error));
+	g_assert_no_error (error);
+	g_assert_true (g_file_set_contents (text_file, "text", 4, &error));
+	g_assert_no_error (error);
+	g_assert_cmpint (g_mkdir (wrong_type, 0700), ==, 0);
+
+	g_assert_true (fabulor_plugin_path_resolve_entrypoint (plugin_dir, "plugin.py", ".py", &resolved, &error));
+	g_assert_no_error (error);
+	g_assert_cmpstr (resolved, ==, python_file);
+	g_clear_pointer (&resolved, g_free);
+	g_assert_true (fabulor_plugin_path_resolve_entrypoint (plugin_dir, "plugin.dll", ".dll", &resolved, &error));
+	g_assert_no_error (error);
+	g_clear_pointer (&resolved, g_free);
+	g_assert_true (fabulor_plugin_path_resolve_entrypoint (plugin_dir, "plugin.tcl", ".tcl", &resolved, &error));
+	g_assert_no_error (error);
+	g_clear_pointer (&resolved, g_free);
+
+	g_assert_false (fabulor_plugin_path_resolve_entrypoint (plugin_dir, "plugin.txt", ".py", &resolved, &error));
+	g_assert_nonnull (strstr (error->message, "must use the .py extension"));
+	g_clear_error (&error);
+	g_assert_false (fabulor_plugin_path_resolve_entrypoint (plugin_dir, "../outside.py", ".py", &resolved, &error));
+	g_assert_nonnull (strstr (error->message, "not a direct child name"));
+	g_clear_error (&error);
+	g_assert_false (fabulor_plugin_path_resolve_entrypoint (plugin_dir, "nested/plugin.py", ".py", &resolved, &error));
+	g_assert_nonnull (strstr (error->message, "not a direct child name"));
+	g_clear_error (&error);
+	g_assert_false (fabulor_plugin_path_resolve_entrypoint (plugin_dir, python_file, ".py", &resolved, &error));
+	g_assert_nonnull (strstr (error->message, "not a direct child name"));
+	g_clear_error (&error);
+	g_assert_false (fabulor_plugin_path_resolve_entrypoint (plugin_dir, "missing.py", ".py", &resolved, &error));
+	g_assert_nonnull (error);
+	g_clear_error (&error);
+	g_assert_false (fabulor_plugin_path_resolve_entrypoint (plugin_dir, "directory.py", ".py", &resolved, &error));
+	g_assert_nonnull (strstr (error->message, "wrong file type"));
+	g_clear_error (&error);
+	g_assert_null (resolved);
+
+	g_rmdir (wrong_type);
+	g_remove (text_file);
+	g_remove (tcl_file);
+	g_remove (csharp_file);
+	g_remove (python_file);
+	g_rmdir (plugin_dir);
+	g_rmdir (tmp_root);
+	g_free (wrong_type);
+	g_free (text_file);
+	g_free (tcl_file);
+	g_free (csharp_file);
+	g_free (python_file);
+	g_free (plugin_dir);
+	g_free (tmp_root);
+}
+
 static gboolean
 create_test_symlink (const char *link_path, const char *target_path, gboolean directory)
 {
@@ -578,6 +657,10 @@ test_path_policy_rejects_links (void)
 		g_assert_nonnull (error);
 		g_clear_error (&error);
 		g_assert_null (resolved);
+		g_assert_false (fabulor_plugin_path_resolve_entrypoint (canonical_plugin, "plugin.json", ".json", &resolved, &error));
+		g_assert_nonnull (error);
+		g_clear_error (&error);
+		g_assert_null (resolved);
 	}
 	else
 	{
@@ -617,6 +700,7 @@ main (int argc, char **argv)
 	g_test_add_func ("/manifest-paths/valid-tree", test_path_policy_valid_tree);
 	g_test_add_func ("/manifest-paths/rejects-non-child-names", test_path_policy_rejects_non_child_names);
 	g_test_add_func ("/manifest-paths/filters-regular-root-files", test_path_policy_filters_regular_root_files);
+	g_test_add_func ("/manifest-paths/resolves-entrypoints", test_path_policy_resolves_entrypoints);
 	g_test_add_func ("/manifest-paths/rejects-links", test_path_policy_rejects_links);
 	return g_test_run ();
 }

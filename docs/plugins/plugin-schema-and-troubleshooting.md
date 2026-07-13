@@ -164,7 +164,7 @@ The current runtime already enforces these checks:
 
 1. Required manifest fields must be present and non-empty.
 2. `language` must resolve to a supported loader.
-3. `entrypoint` must exist relative to the plugin folder.
+3. `entrypoint` must name one readable regular file directly inside the plugin folder. Absolute paths, `..`, nested paths, symbolic links, and Windows reparse points are rejected. The extension must match the declared language: `.dll` for `csharp`, `.py` for `python`, or `.tcl` for `tcl`.
 4. `requires_api_version` must not exceed the host API version.
 5. Every declared dependency must be discoverable.
 6. Duplicate plugin ids are rejected.
