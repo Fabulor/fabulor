@@ -52,12 +52,12 @@
     <None Include="xchat.py" />
     <None Include="hexchat.py" />
     <None Include="_fabulor.py" />
+    <None Include="_fabulor_manifest.py" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="$(IntDir)python.c" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
 </Project>
-
 
 

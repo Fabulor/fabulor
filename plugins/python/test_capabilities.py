@@ -30,9 +30,25 @@ class FakeLib:
 
     def __init__(self):
         self.commands = []
+        self.prints = []
+        self.removed_plugins = []
 
     def zoitechat_command(self, _ph, command):
         self.commands.append(command)
+
+    def zoitechat_print(self, _ph, text):
+        self.prints.append(text)
+
+    @staticmethod
+    def zoitechat_plugingui_add(*_args):
+        return object()
+
+    def zoitechat_plugingui_remove(self, _ph, plugin):
+        self.removed_plugins.append(plugin)
+
+    @staticmethod
+    def zoitechat_unhook(*_args):
+        return None
 
     @staticmethod
     def zoitechat_hook_server_attrs(*_args):
@@ -87,6 +103,8 @@ class CapabilityTests(unittest.TestCase):
 
     def setUp(self):
         self.lib.commands.clear()
+        self.lib.prints.clear()
+        self.lib.removed_plugins.clear()
 
     def test_trusted_simple_addon_is_not_capability_gated(self):
         plugin = FakePlugin(None, ())
@@ -143,6 +161,50 @@ class CapabilityTests(unittest.TestCase):
             self.plugin_host.canonical_path(root),
             self.plugin_host.canonical_path(str(executable.parent / 'Plugins')),
         )
+
+    def test_manifest_plugin_uses_isolated_interpreter_proxy(self):
+        if self.plugin_host.interpreters is None:
+            self.skipTest('Python 3.14 concurrent interpreters are unavailable')
+
+        logs = []
+        callbacks = []
+        api = types.SimpleNamespace(
+            get_user_count=lambda: 4,
+            get_user_info=lambda: {
+                'nickname': 'Tester',
+                'channel': '#fabulor',
+                'server_name': 'irc.example',
+                'network_name': 'Example',
+            },
+            log=logs.append,
+            send_message=lambda target, text: self.lib.commands.append(
+                'MSG {} {}'.format(target, text).encode()),
+        )
+
+        def register_callback(plugin, event_name, callback, userdata=None):
+            callbacks.append((plugin, event_name, callback, userdata))
+            return len(callbacks)
+
+        self.plugin_host.zoitechat = api
+        self.plugin_host.zoitechat_internal = types.SimpleNamespace(
+            _register_callback_for_plugin=register_callback)
+        self.plugin_host.python_manifest_runtime_path = str(
+            pathlib.Path(__file__).with_name('_fabulor_manifest.py').resolve())
+        entrypoint = (pathlib.Path(__file__).parents[2] / 'samples' / 'plugins' /
+                      'example.python.greeter' / 'plugin.py').resolve()
+        plugin = self.plugin_host.ManifestPlugin(
+            'example.python.greeter', ('events.message', 'session.read'))
+        try:
+            self.assertTrue(plugin.loadfile(str(entrypoint)))
+            self.assertEqual(callbacks[0][1], 'message')
+            self.assertIn('Hello, Tester. Python sample ready.', logs)
+            callbacks[0][2]({'event': 'message', 'source': 'PRIVMSG'})
+            self.assertTrue(any('observed its first message' in message for message in logs))
+        finally:
+            plugin.close()
+            self.plugin_host.zoitechat = None
+            self.plugin_host.zoitechat_internal = None
+            self.plugin_host.python_manifest_runtime_path = None
 
 
 if __name__ == '__main__':

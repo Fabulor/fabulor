@@ -113,6 +113,7 @@
     <Copy SourceFiles="..\..\plugins\python\hexchat.py" DestinationFolder="$(ZoiteChatRel)\python" Condition="'$(Python3Enabled)'=='true'" />
     <Copy SourceFiles="..\..\plugins\python\zoitechat.py" DestinationFolder="$(ZoiteChatRel)\python" Condition="'$(Python3Enabled)'=='true'" />
     <Copy SourceFiles="..\..\plugins\python\_zoitechat.py" DestinationFolder="$(ZoiteChatRel)\python" Condition="'$(Python3Enabled)'=='true'" />
+    <Copy SourceFiles="..\..\plugins\python\_fabulor_manifest.py" DestinationFolder="$(ZoiteChatRel)\python" Condition="'$(Python3Enabled)'=='true'" />
     <Copy SourceFiles="..\..\plugins\python\fabulor.py" DestinationFolder="$(ZoiteChatRel)\python" Condition="'$(Python3Enabled)'=='true'" />
     <Copy SourceFiles="..\..\plugins\python\_fabulor.py" DestinationFolder="$(ZoiteChatRel)\python" Condition="'$(Python3Enabled)'=='true'" />
 

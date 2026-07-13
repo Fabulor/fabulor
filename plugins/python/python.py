@@ -2,6 +2,7 @@ from __future__ import print_function
 
 import importlib
 import base64
+import json
 import os
 import pydoc
 import signal
@@ -9,6 +10,11 @@ import sys
 import traceback
 import weakref
 from contextlib import contextmanager
+
+try:
+    import concurrent.interpreters as interpreters
+except ImportError:
+    interpreters = None
 
 from _zoitechat_embedded import ffi, lib
 
@@ -26,13 +32,16 @@ PLUGIN_DESC = ffi.new('char[]', b'Python %d.%d scripting interface' % (sys.versi
 PLUGIN_VERSION = ffi.new('char[]', VERSION)
 
 zoitechat = None
+zoitechat_internal = None
 local_interp = None
 zoitechat_stdout = None
 plugins = set()
 python_plugin_libdir = None
+python_manifest_runtime_path = None
 manifest_load_token = None
 
 MANIFEST_CALLBACKS_PER_PLUGIN_MAX = 64
+MANIFEST_RESPONSE_MAX = 1024 * 1024
 
 
 @contextmanager
@@ -205,6 +214,164 @@ class Plugin:
         del self.hooks
         if self.ph is not None:
             lib.zoitechat_plugingui_remove(lib.ph, self.ph)
+
+
+class ManifestPlugin(Plugin):
+    def __init__(self, manifest_id, capabilities):
+        super().__init__(manifest_id=manifest_id, capabilities=capabilities)
+        self.name = manifest_id
+        self.interpreter = None
+        self.closed = False
+        self.globals['zoitechat'] = zoitechat
+        self.context_reader = eval(
+            "lambda: {'user_count': zoitechat.get_user_count(), "
+            "'user_info': zoitechat.get_user_info()}", self.globals)
+        self.host_log = eval('lambda text: zoitechat.log(text)', self.globals)
+        self.host_send_message = eval(
+            'lambda target, text: zoitechat.send_message(target, text)', self.globals)
+
+    def _call(self, request):
+        request_json = json.dumps(request, ensure_ascii=False, separators=(',', ':'))
+        if len(request_json.encode('utf-8')) > MANIFEST_RESPONSE_MAX:
+            raise RuntimeError('Isolated Python runtime request exceeds the 1 MiB limit')
+        response_json = self.interpreter.call(
+            lambda payload: __import__('_fabulor_manifest').handle(payload), request_json)
+        if not isinstance(response_json, str) or len(response_json.encode('utf-8')) > MANIFEST_RESPONSE_MAX:
+            raise RuntimeError('Isolated Python runtime returned an invalid or oversized response')
+        response = json.loads(response_json)
+        if not isinstance(response, dict) or not isinstance(response.get('operations'), list):
+            raise RuntimeError('Isolated Python runtime returned a malformed response')
+        return response
+
+    def _apply_operations(self, operations, allow_callbacks=True):
+        if len(operations) > 256:
+            raise RuntimeError('Isolated Python runtime returned too many host operations')
+
+        for operation in operations:
+            if not isinstance(operation, dict):
+                raise RuntimeError('Isolated Python runtime returned a malformed host operation')
+            operation_name = operation.get('op')
+            if operation_name == 'log':
+                self.host_log(operation.get('text', ''))
+            elif operation_name == 'send_message':
+                self.host_send_message(operation.get('target'), operation.get('text'))
+            elif operation_name == 'register_callback' and allow_callbacks:
+                event_name = operation.get('event')
+                handler_name = operation.get('handler')
+                if not isinstance(event_name, str) or not isinstance(handler_name, str):
+                    raise RuntimeError('Isolated Python callback registration is malformed')
+                plugin = weakref.proxy(self)
+
+                def isolated_callback(event, handler=handler_name, plugin_ref=plugin):
+                    return plugin_ref.dispatch(handler, event)
+
+                zoitechat_internal._register_callback_for_plugin(
+                    self, event_name, isolated_callback)
+            else:
+                raise RuntimeError("Unsupported isolated Python host operation '{}'".format(
+                    operation_name))
+
+    def _context(self):
+        context = self.context_reader()
+        if not isinstance(context, dict):
+            raise RuntimeError('Python host context snapshot failed')
+        return context
+
+    def loadfile(self, filename):
+        try:
+            if interpreters is None:
+                raise RuntimeError('Python 3.14 concurrent interpreters are unavailable')
+            if not python_manifest_runtime_path:
+                raise RuntimeError('Trusted Python manifest runtime is unavailable')
+
+            self.filename = canonical_path(filename)
+            self.interpreter = interpreters.create()
+            self.interpreter.prepare_main(
+                _fabulor_runtime_path=python_manifest_runtime_path,
+                _fabulor_plugin_path=os.path.dirname(self.filename),
+            )
+            self.interpreter.exec(
+                "import importlib.util\n"
+                "import sys\n"
+                "_fabulor_spec = importlib.util.spec_from_file_location(\n"
+                "    '_fabulor_manifest', _fabulor_runtime_path)\n"
+                "if _fabulor_spec is None or _fabulor_spec.loader is None:\n"
+                "    raise ImportError('Unable to load the trusted manifest runtime')\n"
+                "_fabulor_runtime = importlib.util.module_from_spec(_fabulor_spec)\n"
+                "sys.modules['_fabulor_manifest'] = _fabulor_runtime\n"
+                "_fabulor_spec.loader.exec_module(_fabulor_runtime)\n"
+                "if _fabulor_plugin_path not in sys.path:\n"
+                "    sys.path.insert(0, _fabulor_plugin_path)\n"
+            )
+            response = self._call({
+                'action': 'load',
+                'plugin_id': self.manifest_id,
+                'entrypoint': self.filename,
+                'capabilities': sorted(self.capabilities),
+                'context': self._context(),
+            })
+            if not response.get('ok'):
+                raise RuntimeError(response.get('error') or 'isolated plugin initialisation failed')
+            self._apply_operations(response['operations'])
+            self.ph = lib.zoitechat_plugingui_add(
+                lib.ph, self.filename.encode(), self.name.encode(),
+                b'Isolated Python manifest plugin', b'', ffi.NULL)
+            return True
+        except Exception as error:
+            print_error("Failed to load isolated Python manifest '{}': {}".format(
+                self.manifest_id, error))
+            self.close()
+            return False
+
+    def dispatch(self, handler_name, event):
+        if self.closed or self.interpreter is None:
+            return 0
+        try:
+            response = self._call({
+                'action': 'dispatch',
+                'handler': handler_name,
+                'event': event,
+                'context': self._context(),
+            })
+            if not response.get('ok'):
+                raise RuntimeError(response.get('error') or 'isolated callback failed')
+            self._apply_operations(response['operations'])
+            return int(response.get('result') or 0)
+        except Exception as error:
+            print_error("Isolated Python callback failed for '{}': {}".format(
+                self.manifest_id, error))
+            return 0
+
+    def close(self):
+        if self.closed:
+            return
+        self.closed = True
+
+        if self.interpreter is not None:
+            try:
+                response = self._call({'action': 'shutdown'})
+                if response.get('ok'):
+                    self._apply_operations(response['operations'], allow_callbacks=False)
+            except Exception as error:
+                log('Isolated Python shutdown failed', self.manifest_id, error)
+
+        self.hooks.clear()
+        self.callback_registrations.clear()
+        if self.ph is not None:
+            lib.zoitechat_plugingui_remove(lib.ph, self.ph)
+            self.ph = None
+        if self.interpreter is not None:
+            try:
+                self.interpreter.close()
+            except Exception as error:
+                log('Isolated Python interpreter close failed', self.manifest_id, error)
+            self.interpreter = None
+
+    def __del__(self):
+        try:
+            self.close()
+        except Exception:
+            pass
 
 
 if sys.version_info[0] == 2:
@@ -464,10 +631,15 @@ def load_filename(filename, manifest_id=None, capabilities=None):
         return False
 
     if filename and not any(plugin.filename == filename for plugin in plugins):
-        plugin = Plugin(manifest_id=manifest_id, capabilities=capabilities)
+        if is_manifest:
+            plugin = ManifestPlugin(manifest_id=manifest_id, capabilities=capabilities)
+        else:
+            plugin = Plugin(manifest_id=manifest_id, capabilities=capabilities)
         if plugin.loadfile(filename):
             plugins.add(plugin)
             return True
+        if isinstance(plugin, ManifestPlugin):
+            plugin.close()
 
     return False
 
@@ -673,8 +845,10 @@ def _on_py_command(word, word_eol, userdata):
 @ffi.def_extern()
 def _on_plugin_init(plugin_name, plugin_desc, plugin_version, arg, libdir):
     global zoitechat
+    global zoitechat_internal
     global zoitechat_stdout
     global python_plugin_libdir
+    global python_manifest_runtime_path
 
     signal.signal(signal.SIGINT, signal.SIG_DFL)
 
@@ -701,6 +875,10 @@ def _on_plugin_init(plugin_name, plugin_desc, plugin_version, arg, libdir):
                 sys.path.append(modpath)
 
         zoitechat = importlib.import_module('zoitechat')
+        zoitechat_internal = importlib.import_module('_zoitechat')
+        python_manifest_runtime_path = next((canonical_path(os.path.join(
+            path, '_fabulor_manifest.py')) for path in modpaths
+            if os.path.isfile(os.path.join(path, '_fabulor_manifest.py'))), None)
 
     except (UnicodeDecodeError, ImportError) as e:
         lib.zoitechat_print(lib.ph, b'Failed to import module: ' + repr(e).encode())
@@ -733,16 +911,23 @@ def _on_plugin_init(plugin_name, plugin_desc, plugin_version, arg, libdir):
 def _on_plugin_deinit():
     global local_interp
     global zoitechat
+    global zoitechat_internal
     global zoitechat_stdout
     global plugins
     global python_plugin_libdir
+    global python_manifest_runtime_path
     global manifest_load_token
 
+    for plugin in list(plugins):
+        if isinstance(plugin, ManifestPlugin):
+            plugin.close()
     plugins = set()
     local_interp = None
     zoitechat = None
+    zoitechat_internal = None
     zoitechat_stdout = None
     python_plugin_libdir = None
+    python_manifest_runtime_path = None
     manifest_load_token = None
     sys.stdout = sys.__stdout__
     sys.stderr = sys.__stderr__

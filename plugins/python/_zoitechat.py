@@ -49,6 +49,10 @@ def __get_current_plugin():
 
 def __require_capability(capability):
     plugin = __get_current_plugin()
+    return _require_plugin_capability(plugin, capability)
+
+
+def _require_plugin_capability(plugin, capability):
     if plugin.manifest_id is not None and capability not in plugin.capabilities:
         raise PermissionError("Plugin '{}' lacks required capability '{}'.".format(
             plugin.manifest_id, capability))
@@ -350,6 +354,10 @@ def __validate_callback_event(event_name):
 
 
 def register_callback(event_name, callback, userdata=None):
+    return _register_callback_for_plugin(__get_current_plugin(), event_name, callback, userdata)
+
+
+def _register_callback_for_plugin(plugin, event_name, callback, userdata=None):
     event_name = __validate_callback_event(event_name)
     callback_key = (event_name, id(callback))
 
@@ -365,7 +373,7 @@ def register_callback(event_name, callback, userdata=None):
         return callback(event)
 
     if event_name == 'message':
-        plugin = __require_capability('events.message')
+        _require_plugin_capability(plugin, 'events.message')
 
         def on_message(words, word_eol, local_userdata, attrs):
             return build_event(words, word_eol, local_userdata, attrs, 'PRIVMSG')
@@ -377,7 +385,7 @@ def register_callback(event_name, callback, userdata=None):
         return id(hook)
 
     if event_name == 'server':
-        plugin = __require_capability('events.server')
+        _require_plugin_capability(plugin, 'events.server')
 
         def on_server(words, word_eol, local_userdata, attrs):
             source_name = words[0] if words else 'RAW LINE'
@@ -390,7 +398,7 @@ def register_callback(event_name, callback, userdata=None):
         return id(hook)
 
     if event_name.startswith('server:'):
-        plugin = __require_capability('events.server')
+        _require_plugin_capability(plugin, 'events.server')
         server_name = event_name.split(':', 1)[1].upper()
 
         def on_named_server(words, word_eol, local_userdata, attrs):
@@ -403,7 +411,7 @@ def register_callback(event_name, callback, userdata=None):
         return id(hook)
 
     if event_name.startswith('print:'):
-        plugin = __require_capability('events.print')
+        _require_plugin_capability(plugin, 'events.print')
         print_name = event_name.split(':', 1)[1]
 
         def on_print(words, word_eol, local_userdata, attrs):
@@ -417,7 +425,7 @@ def register_callback(event_name, callback, userdata=None):
         return id(hook)
 
     if event_name.startswith('command:'):
-        plugin = __require_capability('events.command')
+        _require_plugin_capability(plugin, 'events.command')
         command_name = event_name.split(':', 1)[1].upper()
 
         def on_command(words, word_eol, local_userdata):
