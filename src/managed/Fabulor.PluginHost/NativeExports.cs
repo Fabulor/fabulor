@@ -184,7 +184,17 @@ public static class NativeExports
                 () => GetUserInfo(state),
                 (eventName, handler) => RegisterCallback(state, eventName, handler));
 
-            plugin.Init(context);
+            try
+            {
+                plugin.Init(context);
+            }
+            catch
+            {
+                state.Callbacks.Clear();
+                Plugins.Remove(pluginId);
+                loadContext.Unload();
+                throw;
+            }
             return 0;
         }
         catch (Exception ex)

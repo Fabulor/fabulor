@@ -252,8 +252,8 @@ identd_plugin_init (zoitechat_plugin *plugin_handle, char **plugin_name,
 					char **plugin_desc, char **plugin_version, char *arg)
 {
 	ph = plugin_handle;
-	*plugin_name = "";
-	*plugin_desc = "";
+	*plugin_name = "Identd";
+	*plugin_desc = "Built-in ident service";
 	*plugin_version = "";
 
 

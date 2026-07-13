@@ -46,6 +46,9 @@
     <Error Condition="!Exists('$(BundledDotNetRoot)\host\fxr')" Text="Missing .NET hostfxr root at $(BundledDotNetRoot)." />
     <Error Condition="!Exists('$(BundledDotNetRoot)\shared\Microsoft.NETCore.App')" Text="Missing .NET shared runtime payload under $(BundledDotNetRoot)\shared\Microsoft.NETCore.App." />
     <Error Condition="!Exists('$(PythonRuntimeRoot)\$(PythonRuntimeDll)')" Text="Missing Python 3.14 runtime payload at $(PythonRuntimeRoot)." />
+    <Error Condition="!Exists('$(FabulorPayloadRoot)\plugins\hcpython3.dll')" Text="Missing Python plugin host at $(FabulorPayloadRoot)\plugins\hcpython3.dll. Build plugins\python\python3.vcxproj first." />
+    <Error Condition="!Exists('$(FabulorPayloadRoot)\python\zoitechat.py')" Text="Missing staged Python API modules at $(FabulorPayloadRoot)\python. Build win32\copy\copy.vcxproj first." />
+    <Error Condition="$([System.IO.Directory]::GetFiles('$(FabulorPayloadRoot)', '_cffi_backend.*.pyd').Length) == 0" Text="Missing staged Python CFFI backend under $(FabulorPayloadRoot). Build win32\copy\copy.vcxproj first." />
     <Error Condition="!Exists('$(TclRuntimeRoot)\bin\tcl86t.dll')" Text="Missing Tcl runtime payload at $(TclRuntimeRoot)." />
   </Target>
 

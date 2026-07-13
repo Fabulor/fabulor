@@ -1023,11 +1023,19 @@ log_handler (const gchar   *log_domain,
 static int
 fe_idle (gpointer data)
 {
-	session *sess = sess_list->data;
+	session *sess = data;
+
+	if (!is_session (sess))
+	{
+		if (!sess_list)
+			return 0;
+		sess = sess_list->data;
+	}
 
 	plugin_add (sess, NULL, NULL, notification_plugin_init, notification_plugin_deinit, NULL, FALSE);
 
 	plugin_add (sess, NULL, NULL, tray_plugin_init, tray_plugin_deinit, NULL, FALSE);
+	plugin_print_startup_report (sess);
 
 	if (arg_minimize == 1)
 		gtk_window_iconify (GTK_WINDOW (sess->gui->window));
@@ -1062,7 +1070,7 @@ fe_new_window (session *sess, int focus)
 #endif
 
 	if (!sess_list->next)
-		g_idle_add (fe_idle, NULL);
+		g_idle_add (fe_idle, sess);
 
 	sess->scrollback_replay_marklast = gtk_xtext_set_marker_last;
 }

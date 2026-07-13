@@ -1564,8 +1564,8 @@ tray_plugin_init (zoitechat_plugin *plugin_handle, char **plugin_name,
 	/* we need to save this for use with any zoitechat_* functions */
 	ph = plugin_handle;
 
-	*plugin_name = "";
-	*plugin_desc = "";
+	*plugin_name = "Tray";
+	*plugin_desc = "System tray integration";
 	*plugin_version = "";
 
 	zoitechat_hook_print (ph, "Channel Msg Hilight", -1, tray_hilight_cb, NULL);

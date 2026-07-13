@@ -3,7 +3,7 @@
   <Fragment>
     <ComponentGroup Id="PythonRuntimeComponents" Directory="PYDIR">
       <Files Include="$(var.PythonRuntimeRoot)\**" />
+      <Files Include="$(var.FabulorPayloadRoot)\_cffi_backend.*.pyd" />
     </ComponentGroup>
   </Fragment>
 </Wix>
-

@@ -16,7 +16,7 @@ For personal scripts and aliases, prefer the simple add-on layout:
 ```text
 %APPDATA%\Fabulor\addons\<addon-name>\<addon-name>.tcl
 %APPDATA%\Fabulor\addons\<addon-name>\<addon-name>.py
-%APPDATA%\Fabulor\addons\<addon-name>\<addon-name>.cs
+%APPDATA%\Fabulor\addons\<addon-name>\<addon-name>.dll
 ```
 
 Use manifest plugins only when an add-on needs advanced dependency, capability, or versioning metadata. Python simple add-ons load only from the profile `addons` trust boundary; Python manifest entrypoints load only from the enabled manifest roots.

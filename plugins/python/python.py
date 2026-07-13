@@ -151,6 +151,7 @@ class Plugin:
     def loadfile(self, filename):
         try:
             self.filename = canonical_path(filename)
+            self.globals['__file__'] = self.filename
             with change_cwd(os.path.dirname(self.filename)):
                 with open(self.filename, 'rb') as f:
                     data = f.read().decode('utf-8')
@@ -485,8 +486,10 @@ def reload_name(name):
 def change_cwd(path):
     old_cwd = os.getcwd()
     os.chdir(path)
-    yield
-    os.chdir(old_cwd)
+    try:
+        yield
+    finally:
+        os.chdir(old_cwd)
 
 
 def autoload():

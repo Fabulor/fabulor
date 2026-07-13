@@ -46,8 +46,8 @@ def init():
   "entrypoint": "plugin.py",
   "requires_api_version": "1",
   "dependencies": [],
-  "capabilities": ["messages.write", "events.message", "session.read"],
-  "description": "Minimal Python greeting plugin.",
+  "capabilities": ["events.message", "session.read"],
+  "description": "Minimal Python event-observer plugin.",
   "author": "Fabulor",
   "homepage": "https://github.com/Fabulor/fabulor"
 }
@@ -58,17 +58,25 @@ def init():
 ```python
 import zoitechat
 
+_reported_first_message = False
+
 
 def on_message(event):
-    # Keep callback handlers resilient and non-blocking.
+    global _reported_first_message
+    if _reported_first_message:
+        return None
+
+    _reported_first_message = True
+    user = zoitechat.get_user_info()
+    location = user.get("channel") or "the active session"
+    zoitechat.log(f"Python sample observed its first message event in {location}.")
     return None
 
 
 def init():
     user = zoitechat.get_user_info()
-    target = user.get("channel") or "#fabulor"
-    zoitechat.log("Python plugin initialised")
-    zoitechat.send_message(target, "Hello from Python plugin")
+    nickname = user.get("nickname") or "unknown"
+    zoitechat.log(f"Hello, {nickname}. Python sample ready.")
     zoitechat.register_callback("message", on_message)
 ```
 
@@ -84,4 +92,4 @@ def init():
 8. `zoitechat.get_user_info()` returns a dictionary with `nickname`, `channel`, `server_name`, and `network_name`.
 9. Manifest Python entrypoints use a host-authenticated internal load path. The loader attaches the manifest id and declared capabilities to the Python plugin object; ordinary `/LOAD` and `/PY LOAD` requests remain confined to the profile `addons` directory and cannot opt themselves into manifest roots. Ordinary unload/reload commands cannot mutate manifest-host-owned Python plugins.
 10. Python manifest plugins still share one embedded interpreter. The manifest boundary provides path and policy attribution, not process or interpreter sandboxing.
-9. A maintained sample manifest Python plugin lives under `samples\plugins\example.python.greeter\`.
+11. A maintained sample manifest Python plugin lives under `samples\plugins\example.python.greeter\`.

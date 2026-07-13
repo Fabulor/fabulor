@@ -71,7 +71,14 @@ typedef struct
 	Tcl_Interp *interp;
 	const FabulorAPI *api;
 	GHashTable *capabilities;
+	gboolean simple_addon;
 } FabulorTclPluginState;
+
+typedef struct
+{
+	FabulorTclPluginState *state;
+	char *handler_name;
+} FabulorTclCommandEntry;
 
 typedef struct
 {
@@ -80,6 +87,7 @@ typedef struct
 	char *runtime_root;
 	char *library_path;
 	GHashTable *plugins;
+	GHashTable *commands;
 	Tcl_Interp *(*create_interp) (void);
 	void (*delete_interp) (Tcl_Interp *interp);
 	void (*find_executable) (const char *argv0);
@@ -179,6 +187,7 @@ static FabulorTclRuntime fabulor_tcl_runtime;
 static FabulorCallbackRegistry *fabulor_active_callback_registry;
 static const FabulorAPI *fabulor_active_api;
 static FabulorCSharpRuntime fabulor_csharp_runtime;
+static GHashTable *fabulor_simple_csharp_manifests;
 static char *fabulor_python_manifest_token;
 #endif
 
@@ -258,6 +267,24 @@ fabulor_manifest_has_capability (const FabulorPluginManifest *manifest, const ch
 		}
 	}
 	return FALSE;
+}
+
+static const FabulorPluginManifest *
+fabulor_runtime_find_manifest (const FabulorPluginCatalog *catalog, const char *plugin_id)
+{
+	const FabulorPluginManifest *manifest = NULL;
+
+	if (catalog)
+	{
+		manifest = fabulor_plugin_catalog_find_manifest (catalog, plugin_id);
+	}
+#ifdef WIN32
+	if (!manifest && fabulor_simple_csharp_manifests)
+	{
+		manifest = g_hash_table_lookup (fabulor_simple_csharp_manifests, plugin_id);
+	}
+#endif
+	return manifest;
 }
 
 static const char *
@@ -745,6 +772,25 @@ fabulor_development_runtime_roots_enabled (void)
 static void fabulor_tcl_set_result (Tcl_Interp *interp, const char *message);
 
 static void
+fabulor_tcl_command_entry_free (FabulorTclCommandEntry *entry)
+{
+	if (!entry)
+		return;
+
+	g_free (entry->handler_name);
+	g_free (entry);
+}
+
+static gboolean
+fabulor_tcl_remove_state_command (gpointer key, gpointer value, gpointer user_data)
+{
+	FabulorTclCommandEntry *entry = value;
+
+	(void) key;
+	return entry && entry->state == user_data;
+}
+
+static void
 fabulor_tcl_plugin_state_free (FabulorTclPluginState *state)
 {
 	if (!state)
@@ -755,6 +801,12 @@ fabulor_tcl_plugin_state_free (FabulorTclPluginState *state)
 	if (state->interp && fabulor_tcl_runtime.delete_interp)
 	{
 		fabulor_tcl_runtime.delete_interp (state->interp);
+	}
+	if (fabulor_tcl_runtime.commands)
+	{
+		g_hash_table_foreach_remove (fabulor_tcl_runtime.commands,
+									 fabulor_tcl_remove_state_command,
+									 state);
 	}
 
 	g_free (state->plugin_id);
@@ -769,6 +821,11 @@ static gboolean
 fabulor_tcl_require_capability (FabulorTclPluginState *state, Tcl_Interp *interp, const char *capability)
 {
 	char *message;
+
+	if (state && state->simple_addon)
+	{
+		return TRUE;
+	}
 
 	if (state && state->capabilities && g_hash_table_contains (state->capabilities, capability))
 	{
@@ -833,6 +890,21 @@ fabulor_tcl_executable_directory (void)
 
 	*last_slash = '\0';
 	return g_strdup (buffer);
+}
+
+static DWORD
+fabulor_win32_get_file_attributes_utf8 (const char *path)
+{
+	wchar_t *path_utf16;
+	DWORD attributes;
+
+	path_utf16 = g_utf8_to_utf16 (path, -1, NULL, NULL, NULL);
+	if (!path_utf16)
+		return INVALID_FILE_ATTRIBUTES;
+
+	attributes = GetFileAttributesW (path_utf16);
+	g_free (path_utf16);
+	return attributes;
 }
 
 static char *
@@ -966,9 +1038,16 @@ fabulor_tcl_runtime_ensure_loaded (GError **error)
 	if (!fabulor_tcl_runtime.plugins)
 	{
 		fabulor_tcl_runtime.plugins = g_hash_table_new_full (g_str_hash,
-															 g_str_equal,
-															 g_free,
-															 (GDestroyNotify) fabulor_tcl_plugin_state_free);
+														 g_str_equal,
+														 g_free,
+														 (GDestroyNotify) fabulor_tcl_plugin_state_free);
+	}
+	if (!fabulor_tcl_runtime.commands)
+	{
+		fabulor_tcl_runtime.commands = g_hash_table_new_full (g_str_hash,
+														 g_str_equal,
+														 g_free,
+														 (GDestroyNotify) fabulor_tcl_command_entry_free);
 	}
 
 	if (!fabulor_tcl_runtime.attempted_initialisation)
@@ -1094,6 +1173,50 @@ fabulor_tcl_remove_user_command_cmd (ClientData client_data, Tcl_Interp *interp,
 	}
 
 	list_delentry (&command_list, (char *) argv[1]);
+	return TCL_OK;
+}
+
+static int
+fabulor_tcl_register_command_cmd (ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[])
+{
+	FabulorTclPluginState *state = client_data;
+	FabulorTclCommandEntry *entry;
+	char *command_name;
+
+	if (argc != 3)
+	{
+		fabulor_tcl_set_result (interp, "wrong # args: should be \"zoitechat::register_command name handler\"");
+		return TCL_ERROR;
+	}
+	if (!state || !state->simple_addon)
+	{
+		fabulor_tcl_set_result (interp, "Direct command registration is available only to simple Tcl add-ons.");
+		return TCL_ERROR;
+	}
+	if (!argv[1] || !*argv[1] || !argv[2] || !*argv[2])
+	{
+		fabulor_tcl_set_result (interp, "Command name and handler must be non-empty.");
+		return TCL_ERROR;
+	}
+
+	command_name = g_ascii_strup (argv[1], -1);
+	if (strpbrk (command_name, " \t\r\n/") != NULL)
+	{
+		fabulor_tcl_set_result (interp, "Command names cannot contain whitespace or '/'.");
+		g_free (command_name);
+		return TCL_ERROR;
+	}
+	if (g_hash_table_contains (fabulor_tcl_runtime.commands, command_name))
+	{
+		fabulor_tcl_set_result (interp, "A simple Tcl add-on already registered that command.");
+		g_free (command_name);
+		return TCL_ERROR;
+	}
+
+	entry = g_new0 (FabulorTclCommandEntry, 1);
+	entry->state = state;
+	entry->handler_name = g_strdup (argv[2]);
+	g_hash_table_insert (fabulor_tcl_runtime.commands, command_name, entry);
 	return TCL_OK;
 }
 
@@ -1397,6 +1520,7 @@ fabulor_tcl_register_commands (FabulorTclPluginState *state, GError **error)
 	fabulor_tcl_runtime.create_command (state->interp, "zoitechat::command", fabulor_tcl_command_cmd, state, NULL);
 	fabulor_tcl_runtime.create_command (state->interp, "zoitechat::add_user_command", fabulor_tcl_add_user_command_cmd, state, NULL);
 	fabulor_tcl_runtime.create_command (state->interp, "zoitechat::remove_user_command", fabulor_tcl_remove_user_command_cmd, state, NULL);
+	fabulor_tcl_runtime.create_command (state->interp, "zoitechat::register_command", fabulor_tcl_register_command_cmd, state, NULL);
 	fabulor_tcl_runtime.create_command (state->interp, "zoitechat::getinfo", fabulor_tcl_getinfo_cmd, state, NULL);
 	fabulor_tcl_runtime.create_command (state->interp, "zoitechat::nickcmp", fabulor_tcl_nickcmp_cmd, state, NULL);
 	fabulor_tcl_runtime.create_command (state->interp, "zoitechat::send_message", fabulor_tcl_send_message_cmd, state, NULL);
@@ -1409,6 +1533,12 @@ fabulor_tcl_register_commands (FabulorTclPluginState *state, GError **error)
 static void
 fabulor_tcl_runtime_reset (void)
 {
+	if (fabulor_tcl_runtime.commands)
+	{
+		g_hash_table_remove_all (fabulor_tcl_runtime.commands);
+		g_hash_table_unref (fabulor_tcl_runtime.commands);
+		fabulor_tcl_runtime.commands = NULL;
+	}
 	if (fabulor_tcl_runtime.plugins)
 	{
 		g_hash_table_remove_all (fabulor_tcl_runtime.plugins);
@@ -1438,6 +1568,11 @@ fabulor_csharp_runtime_reset (void)
 	if (fabulor_csharp_runtime.hostfxr_module)
 	{
 		FreeLibrary (fabulor_csharp_runtime.hostfxr_module);
+	}
+	if (fabulor_simple_csharp_manifests)
+	{
+		g_hash_table_unref (fabulor_simple_csharp_manifests);
+		fabulor_simple_csharp_manifests = NULL;
 	}
 
 	g_free (fabulor_csharp_runtime.dotnet_root);
@@ -1767,7 +1902,7 @@ fabulor_csharp_require_capability (const char *plugin_id, const char *capability
 
 	if (fabulor_active_callback_registry)
 	{
-		manifest = fabulor_plugin_catalog_find_manifest (fabulor_active_callback_registry->catalog, plugin_id);
+		manifest = fabulor_runtime_find_manifest (fabulor_active_callback_registry->catalog, plugin_id);
 	}
 	if (fabulor_manifest_has_capability (manifest, capability))
 	{
@@ -2205,6 +2340,214 @@ load_tcl_manifest (const FabulorPluginManifest *manifest,
 #endif
 }
 
+gboolean
+fabulor_plugin_host_autoload_simple_tcl (const char *addons_root,
+											 const FabulorAPI *api,
+											 GError **error)
+{
+#ifdef WIN32
+	GDir *directory;
+	GList *names = NULL;
+	GList *item;
+	const char *entry_name;
+	char *canonical_root;
+	gsize root_length;
+	DWORD root_attributes;
+
+	if (!addons_root || !api || !g_file_test (addons_root, G_FILE_TEST_IS_DIR))
+		return TRUE;
+
+	canonical_root = g_canonicalize_filename (addons_root, NULL);
+	root_length = strlen (canonical_root);
+	root_attributes = fabulor_win32_get_file_attributes_utf8 (canonical_root);
+	if (root_attributes == INVALID_FILE_ATTRIBUTES
+		|| !(root_attributes & FILE_ATTRIBUTE_DIRECTORY)
+		|| (root_attributes & FILE_ATTRIBUTE_REPARSE_POINT))
+	{
+		g_set_error (error, G_FILE_ERROR, G_FILE_ERROR_INVAL,
+					 "Simple Tcl add-ons root is not a trusted regular directory: %s", canonical_root);
+		g_free (canonical_root);
+		return FALSE;
+	}
+	directory = g_dir_open (canonical_root, 0, error);
+	if (!directory)
+	{
+		g_free (canonical_root);
+		return FALSE;
+	}
+
+	while ((entry_name = g_dir_read_name (directory)) != NULL)
+	{
+		if (entry_name[0] != '.')
+			names = g_list_insert_sorted (names, g_strdup (entry_name), (GCompareFunc) g_ascii_strcasecmp);
+	}
+	g_dir_close (directory);
+
+	for (item = names; item; item = item->next)
+	{
+		const char *addon_name = item->data;
+		FabulorTclPluginState *state;
+		GError *load_error = NULL;
+		char *addon_dir = g_build_filename (canonical_root, addon_name, NULL);
+		char *script_name = g_strconcat (addon_name, ".tcl", NULL);
+		char *script_path = g_build_filename (addon_dir, script_name, NULL);
+		char *canonical_script = g_canonicalize_filename (script_path, NULL);
+		char *plugin_id = g_strdup_printf ("simple-tcl:%s", addon_name);
+		DWORD addon_attributes;
+		DWORD script_attributes;
+		const char *init_script = "if {[llength [info commands init]]} { init }";
+
+		addon_attributes = fabulor_win32_get_file_attributes_utf8 (addon_dir);
+		script_attributes = fabulor_win32_get_file_attributes_utf8 (canonical_script);
+		if (addon_attributes == INVALID_FILE_ATTRIBUTES
+			|| script_attributes == INVALID_FILE_ATTRIBUTES
+			|| !(addon_attributes & FILE_ATTRIBUTE_DIRECTORY)
+			|| (script_attributes & FILE_ATTRIBUTE_DIRECTORY)
+			|| (addon_attributes & FILE_ATTRIBUTE_REPARSE_POINT)
+			|| (script_attributes & FILE_ATTRIBUTE_REPARSE_POINT)
+			|| g_ascii_strncasecmp (canonical_script, canonical_root, root_length) != 0
+			|| (canonical_script[root_length] != G_DIR_SEPARATOR && canonical_script[root_length] != '/'))
+		{
+			g_free (plugin_id);
+			g_free (canonical_script);
+			g_free (script_path);
+			g_free (script_name);
+			g_free (addon_dir);
+			continue;
+		}
+
+		if (!fabulor_tcl_runtime_ensure_loaded (error))
+		{
+			g_free (plugin_id);
+			g_free (canonical_script);
+			g_free (script_path);
+			g_free (script_name);
+			g_free (addon_dir);
+			g_list_free_full (names, g_free);
+			g_free (canonical_root);
+			return FALSE;
+		}
+
+		state = g_new0 (FabulorTclPluginState, 1);
+		state->plugin_id = g_strdup (plugin_id);
+		state->api = api;
+		state->simple_addon = TRUE;
+		state->interp = fabulor_tcl_runtime.create_interp ();
+
+		g_hash_table_replace (fabulor_tcl_runtime.plugins, g_strdup (plugin_id), state);
+		if (!state->interp
+			|| !fabulor_tcl_runtime.set_var (state->interp, "tcl_library", fabulor_tcl_runtime.library_path, TCL_GLOBAL_ONLY)
+			|| fabulor_tcl_runtime.init_interp (state->interp) != TCL_OK
+			|| !fabulor_tcl_register_commands (state, &load_error)
+			|| fabulor_tcl_runtime.eval_file (state->interp, canonical_script) != TCL_OK
+			|| fabulor_tcl_runtime.eval_ex (state->interp, init_script, -1, 0) != TCL_OK)
+		{
+			fabulor_api_log (api, "Skipping simple Tcl add-on %s: %s",
+							 addon_name,
+							 load_error ? load_error->message
+								: (state->interp ? fabulor_tcl_runtime.get_string_result (state->interp) : "interpreter creation failed"));
+			g_clear_error (&load_error);
+			g_hash_table_remove (fabulor_tcl_runtime.plugins, plugin_id);
+		}
+		else
+		{
+			fabulor_api_log (api, "Loaded simple Tcl add-on %s from %s.", addon_name, canonical_script);
+		}
+
+		g_free (plugin_id);
+		g_free (canonical_script);
+		g_free (script_path);
+		g_free (script_name);
+		g_free (addon_dir);
+	}
+
+	g_list_free_full (names, g_free);
+	g_free (canonical_root);
+	return TRUE;
+#else
+	(void) addons_root;
+	(void) api;
+	(void) error;
+	return TRUE;
+#endif
+}
+
+gboolean
+fabulor_plugin_host_handle_simple_tcl_command (const char *command_name,
+												const char *arguments,
+												GError **error)
+{
+#ifdef WIN32
+	FabulorTclCommandEntry *entry;
+	const char *argv[2];
+	char *normalized_name;
+
+	if (!fabulor_tcl_runtime.commands || !command_name || !*command_name)
+		return FALSE;
+
+	normalized_name = g_ascii_strup (command_name, -1);
+	entry = g_hash_table_lookup (fabulor_tcl_runtime.commands, normalized_name);
+	g_free (normalized_name);
+	if (!entry || !entry->state || !entry->state->interp)
+		return FALSE;
+
+	argv[0] = entry->handler_name;
+	argv[1] = arguments ? arguments : "";
+	fabulor_tcl_eval_command (entry->state->interp, 2, argv, error);
+	return TRUE;
+#else
+	(void) command_name;
+	(void) arguments;
+	(void) error;
+	return FALSE;
+#endif
+}
+
+void
+fabulor_plugin_host_append_loaded_simple_addons (GPtrArray *entries)
+{
+#ifdef WIN32
+	GHashTableIter iterator;
+	gpointer value;
+
+	if (!entries)
+		return;
+
+	if (fabulor_tcl_runtime.plugins)
+	{
+		g_hash_table_iter_init (&iterator, fabulor_tcl_runtime.plugins);
+		while (g_hash_table_iter_next (&iterator, NULL, &value))
+		{
+			FabulorTclPluginState *state = value;
+			const char *name;
+
+			if (!state || !state->simple_addon || !state->plugin_id)
+				continue;
+
+			name = g_str_has_prefix (state->plugin_id, "simple-tcl:")
+				? state->plugin_id + strlen ("simple-tcl:")
+				: state->plugin_id;
+			g_ptr_array_add (entries, g_strdup_printf ("Tcl add-on: %s [%s.tcl]", name, name));
+		}
+	}
+
+	if (fabulor_simple_csharp_manifests)
+	{
+		g_hash_table_iter_init (&iterator, fabulor_simple_csharp_manifests);
+		while (g_hash_table_iter_next (&iterator, NULL, &value))
+		{
+			FabulorPluginManifest *manifest = value;
+			if (manifest && manifest->name && manifest->entrypoint)
+			{
+				g_ptr_array_add (entries, g_strdup_printf ("C# add-on: %s [%s]", manifest->name, manifest->entrypoint));
+			}
+		}
+	}
+#else
+	(void) entries;
+#endif
+}
+
 static gboolean
 dispatch_tcl_callback (const FabulorPluginManifest *manifest,
 					   const char *handler_name,
@@ -2333,6 +2676,154 @@ load_csharp_manifest (const FabulorPluginManifest *manifest,
 	(void) user_data;
 	g_set_error_literal (error, G_FILE_ERROR, G_FILE_ERROR_NOSYS, "C# manifest loading is only available on Windows builds.");
 	return FALSE;
+#endif
+}
+
+gboolean
+fabulor_plugin_host_autoload_simple_csharp (const char *addons_root,
+												 const FabulorAPI *api,
+												 GError **error)
+{
+#ifdef WIN32
+	static const char *trusted_capabilities[] = {
+		"commands.execute", "commands.manage",
+		"events.command", "events.message", "events.print", "events.server", "events.timer", "events.unload",
+		"messages.write", "preferences.read", "preferences.write", "session.read", "ui.write"
+	};
+	GDir *directory;
+	GList *names = NULL;
+	GList *item;
+	const char *entry_name;
+	char *canonical_root;
+	gsize root_length;
+	DWORD root_attributes;
+
+	if (!addons_root || !api || !g_file_test (addons_root, G_FILE_TEST_IS_DIR))
+		return TRUE;
+
+	canonical_root = g_canonicalize_filename (addons_root, NULL);
+	root_length = strlen (canonical_root);
+	root_attributes = fabulor_win32_get_file_attributes_utf8 (canonical_root);
+	if (root_attributes == INVALID_FILE_ATTRIBUTES
+		|| !(root_attributes & FILE_ATTRIBUTE_DIRECTORY)
+		|| (root_attributes & FILE_ATTRIBUTE_REPARSE_POINT))
+	{
+		g_set_error (error, G_FILE_ERROR, G_FILE_ERROR_INVAL,
+					 "Simple C# add-ons root is not a trusted regular directory: %s", canonical_root);
+		g_free (canonical_root);
+		return FALSE;
+	}
+
+	directory = g_dir_open (canonical_root, 0, error);
+	if (!directory)
+	{
+		g_free (canonical_root);
+		return FALSE;
+	}
+	while ((entry_name = g_dir_read_name (directory)) != NULL)
+	{
+		if (entry_name[0] != '.')
+			names = g_list_insert_sorted (names, g_strdup (entry_name), (GCompareFunc) g_ascii_strcasecmp);
+	}
+	g_dir_close (directory);
+
+	if (!fabulor_simple_csharp_manifests)
+	{
+		fabulor_simple_csharp_manifests = g_hash_table_new_full (g_str_hash,
+															 g_str_equal,
+															 g_free,
+															 (GDestroyNotify) fabulor_plugin_manifest_free);
+	}
+
+	for (item = names; item; item = item->next)
+	{
+		const char *addon_name = item->data;
+		FabulorPluginManifest *manifest;
+		FabulorManagedLoadPluginArgs args;
+		GError *load_error = NULL;
+		char *addon_dir = g_build_filename (canonical_root, addon_name, NULL);
+		char *assembly_name = g_strconcat (addon_name, ".dll", NULL);
+		char *assembly_path = g_build_filename (addon_dir, assembly_name, NULL);
+		char *canonical_assembly = g_canonicalize_filename (assembly_path, NULL);
+		char *plugin_id = g_strdup_printf ("simple-csharp:%s", addon_name);
+		DWORD addon_attributes = fabulor_win32_get_file_attributes_utf8 (addon_dir);
+		DWORD assembly_attributes = fabulor_win32_get_file_attributes_utf8 (canonical_assembly);
+		guint capability_index;
+		int rc;
+
+		if (addon_attributes == INVALID_FILE_ATTRIBUTES
+			|| assembly_attributes == INVALID_FILE_ATTRIBUTES
+			|| !(addon_attributes & FILE_ATTRIBUTE_DIRECTORY)
+			|| (assembly_attributes & FILE_ATTRIBUTE_DIRECTORY)
+			|| (addon_attributes & FILE_ATTRIBUTE_REPARSE_POINT)
+			|| (assembly_attributes & FILE_ATTRIBUTE_REPARSE_POINT)
+			|| strlen (canonical_assembly) <= root_length
+			|| g_ascii_strncasecmp (canonical_assembly, canonical_root, root_length) != 0
+			|| (canonical_assembly[root_length] != G_DIR_SEPARATOR && canonical_assembly[root_length] != '/'))
+		{
+			g_free (plugin_id);
+			g_free (canonical_assembly);
+			g_free (assembly_path);
+			g_free (assembly_name);
+			g_free (addon_dir);
+			continue;
+		}
+
+		if (!fabulor_csharp_runtime_ensure_loaded (api, &load_error))
+		{
+			fabulor_api_log (api, "Skipping simple C# add-on %s: %s", addon_name,
+							 load_error ? load_error->message : "managed runtime initialisation failed");
+			g_clear_error (&load_error);
+			g_free (plugin_id);
+			g_free (canonical_assembly);
+			g_free (assembly_path);
+			g_free (assembly_name);
+			g_free (addon_dir);
+			continue;
+		}
+
+		manifest = fabulor_plugin_manifest_new ();
+		manifest->id = g_strdup (plugin_id);
+		manifest->name = g_strdup (addon_name);
+		manifest->language = FABULOR_PLUGIN_LANGUAGE_CSHARP;
+		manifest->language_name = g_strdup ("csharp");
+		manifest->plugin_directory = g_strdup (addon_dir);
+		manifest->entrypoint = g_strdup (assembly_name);
+		manifest->entrypoint_path = g_strdup (canonical_assembly);
+		for (capability_index = 0; capability_index < G_N_ELEMENTS (trusted_capabilities); capability_index++)
+		{
+			g_ptr_array_add (manifest->capabilities, g_strdup (trusted_capabilities[capability_index]));
+		}
+
+		g_hash_table_insert (fabulor_simple_csharp_manifests, g_strdup (plugin_id), manifest);
+		args.plugin_id = manifest->id;
+		args.assembly_path = manifest->entrypoint_path;
+		rc = fabulor_csharp_runtime.load_plugin (&args, sizeof (args));
+		if (rc != 0)
+		{
+			fabulor_api_log (api, "Skipping simple C# add-on %s: managed plugin load failed (0x%x).", addon_name, rc);
+			g_hash_table_remove (fabulor_simple_csharp_manifests, plugin_id);
+		}
+		else
+		{
+			fabulor_api_log (api, "Loaded simple C# add-on %s from %s.", addon_name, canonical_assembly);
+		}
+
+		g_free (plugin_id);
+		g_free (canonical_assembly);
+		g_free (assembly_path);
+		g_free (assembly_name);
+		g_free (addon_dir);
+	}
+
+	g_list_free_full (names, g_free);
+	g_free (canonical_root);
+	return TRUE;
+#else
+	(void) addons_root;
+	(void) api;
+	(void) error;
+	return TRUE;
 #endif
 }
 
@@ -2831,7 +3322,7 @@ fabulor_callback_registry_register (FabulorCallbackRegistry *registry,
 		return FALSE;
 	}
 
-	manifest = fabulor_plugin_catalog_find_manifest (registry->catalog, plugin_id);
+	manifest = fabulor_runtime_find_manifest (registry->catalog, plugin_id);
 	if (!manifest)
 	{
 		g_set_error (error, G_FILE_ERROR, G_FILE_ERROR_NOENT, "Cannot register callback for unknown plugin '%s'.", plugin_id);
@@ -2909,7 +3400,7 @@ fabulor_callback_registry_dispatch_now (FabulorCallbackRegistry *registry,
 	for (i = 0; i < entries->len; i++)
 	{
 		FabulorCallbackEntry *entry = g_ptr_array_index (entries, i);
-		const FabulorPluginManifest *manifest = fabulor_plugin_catalog_find_manifest (registry->catalog, entry->plugin_id);
+		const FabulorPluginManifest *manifest = fabulor_runtime_find_manifest (registry->catalog, entry->plugin_id);
 		const FabulorPluginLoader *loader = fabulor_plugin_loader_for_language (entry->language);
 		GError *dispatch_error = NULL;
 

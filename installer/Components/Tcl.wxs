@@ -1,8 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">
   <Fragment>
-    <ComponentGroup Id="TclComponents" Directory="TCLDIR">
+    <ComponentGroup Id="TclBinComponents" Directory="TCLBINDIR">
       <Files Include="$(var.TclRuntimeRoot)\bin\**" />
+    </ComponentGroup>
+
+    <ComponentGroup Id="TclLibComponents" Directory="TCLLIBDIR">
       <Files Include="$(var.TclRuntimeRoot)\lib\**" />
     </ComponentGroup>
   </Fragment>

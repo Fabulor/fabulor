@@ -14,15 +14,45 @@ Read shared rules first:
 Preferred layout:
 
 ```text
-%APPDATA%\Fabulor\addons\helper\helper.cs
+%APPDATA%\Fabulor\addons\helper\
+  helper.dll
+  dependency.dll
 ```
 
-Optional metadata:
+Fabulor does not compile C# source. Create a .NET 8 class-library project whose assembly name matches the add-on folder:
+
+```xml
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <AssemblyName>helper</AssemblyName>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Reference Include="Fabulor.PluginAbstractions">
+      <HintPath>C:\Program Files\Fabulor\Runtime\DotNet\Fabulor.PluginAbstractions.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+  </ItemGroup>
+</Project>
+```
+
+Build the project and copy `helper.dll` plus any private dependencies into the `helper` add-on folder. Do not copy `Fabulor.PluginAbstractions.dll`; Fabulor supplies its installed contract assembly. Restart Fabulor to load a new build.
+
+The entry assembly must contain one concrete, constructible implementation of `IZoiteChatPlugin`:
 
 ```csharp
-// Fabulor-Name: Helper
-// Fabulor-Version: 1.0
-// Fabulor-Description: Small C# helper add-on
+using Fabulor.Plugins;
+
+public sealed class HelperPlugin : IZoiteChatPlugin
+{
+    public void Init(ZoiteChatContext context)
+    {
+        context.Log("Helper initialised");
+    }
+}
 ```
 
 ## Advanced C# plugin.json
@@ -35,9 +65,9 @@ Optional metadata:
   "language": "csharp",
   "entrypoint": "bin\\Release\\net8.0\\GreeterPlugin.dll",
   "requires_api_version": "1",
-  "dependencies": ["example.tcl.greeter"],
-  "capabilities": ["messages.write", "events.message", "session.read"],
-  "description": "Minimal C# greeting plugin.",
+  "dependencies": [],
+  "capabilities": ["events.message", "session.read"],
+  "description": "Minimal C# event-observer plugin.",
   "author": "Fabulor",
   "homepage": "https://github.com/Fabulor/fabulor"
 }
@@ -50,18 +80,27 @@ using Fabulor.Plugins;
 
 public sealed class GreeterPlugin : IZoiteChatPlugin
 {
-    public void Init(ZoiteChatContext ctx)
+    private ZoiteChatContext? _context;
+    private bool _reportedFirstMessage;
+
+    public void Init(ZoiteChatContext context)
     {
-        var user = ctx.GetUserInfo();
-        var target = string.IsNullOrWhiteSpace(user.Channel) ? "#fabulor" : user.Channel;
-        ctx.Log("C# plugin initialised");
-        ctx.SendMessage(target, $"Hello from C# plugin as {user.Nickname ?? "unknown"}");
-        ctx.RegisterCallback("message", OnMessage);
+        _context = context;
+        var user = context.GetUserInfo();
+        context.Log($"Hello, {user.Nickname ?? "unknown"}. C# sample ready.");
+        context.RegisterCallback("message", OnMessage);
     }
 
     private void OnMessage(ZoiteChatEvent evt)
     {
-        // Keep callback handlers resilient and non-blocking.
+        if (_reportedFirstMessage || _context is null)
+            return;
+
+        _reportedFirstMessage = true;
+        var location = string.IsNullOrWhiteSpace(evt.Channel)
+            ? "the active session"
+            : evt.Channel;
+        _context.Log($"C# sample observed its first message event in {location}.");
     }
 }
 ```
@@ -69,12 +108,12 @@ public sealed class GreeterPlugin : IZoiteChatPlugin
 ## Notes
 
 1. Keep callback handlers lightweight to avoid blocking the main thread.
-2. Use the simple `addons\<name>\<name>.cs` layout for personal C# add-ons.
-3. Declare every host operation the plugin uses. C# message, session-read, and callback operations are denied when the corresponding manifest capability is absent.
+2. Use the compiled simple `addons\<name>\<name>.dll` layout for personal C# add-ons. The folder and assembly basenames must match.
+3. Simple profile add-ons are trusted local code and do not declare capabilities. Advanced manifest plug-ins must declare every host operation they use; undeclared message, session-read, and callback operations are denied.
 4. The managed contract assembly lives in `src\managed\Fabulor.PluginAbstractions` and currently defines `IZoiteChatPlugin`, `ZoiteChatContext`, `ZoiteChatEvent`, and `ZoiteChatUserInfo`.
 5. The current host scaffold keeps `ZoiteChatAPI` as a compatibility alias for `FabulorAPI` while the repo finishes the broader rebrand.
 6. C# manifests now load through the `src\managed\Fabulor.PluginHost` bridge, which calls `IZoiteChatPlugin.Init(...)` and routes callbacks back through the shared native registry.
-7. The installer now stages the managed bridge assemblies together with a bundled private `.NET` runtime root under `Runtime\DotNet`, including `hostfxr.dll` and the shared runtime payload.
+7. The installer stages the managed bridge assemblies together with a bundled private `.NET` runtime under `Runtime\DotNet`, preserving `host\fxr` and `shared\Microsoft.NETCore.App`.
 8. Normal manifest loading accepts only that installed executable-relative runtime and bridge root. Development overrides such as `FABULOR_DOTNET_ROOT`, `DOTNET_ROOT`, `FABULOR_CSHARP_BRIDGE_ROOT`, current-directory runtime roots, source-tree bridge outputs, and the machine-wide .NET installation require `FABULOR_ENABLE_DEVELOPMENT_RUNTIME_ROOTS=1`.
 9. `ZoiteChatContext.RegisterCallback(...)` can subscribe to generic events such as `message`, `server`, `print`, and `command`, as well as specific forms like `server:NOTICE`, `print:Channel Message`, or `command:SAY`.
 10. `ZoiteChatEvent` now exposes richer payload accessors including `Channel`, `Network`, `Nick`, `Server`, `Time`, `Word1`-`Word4`, and `WordEol1`-`WordEol2`.

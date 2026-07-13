@@ -61,11 +61,26 @@
           <Directory Id="CONFIGSOUNDDIR" Name="sounds" />
         </Directory>
         <Directory Id="PLUGINDIR" Name="Plugins" />
+        <Directory Id="PYTHONAPIDIR" Name="python" />
         <Directory Id="RUNTIMEDIR" Name="Runtime">
-          <Directory Id="DOTNETDIR" Name="DotNet" />
+          <Directory Id="DOTNETDIR" Name="DotNet">
+            <Directory Id="DOTNETHOSTDIR" Name="host">
+              <Directory Id="DOTNETFXRDIR" Name="fxr">
+                <Directory Id="DOTNETFXRVERSIONDIR" Name="$(var.BundledDotNetRuntimeVersion)" />
+              </Directory>
+            </Directory>
+            <Directory Id="DOTNETSHAREDDIR" Name="shared">
+              <Directory Id="DOTNETCOREAPPDIR" Name="Microsoft.NETCore.App">
+                <Directory Id="DOTNETCOREAPPVERSIONDIR" Name="$(var.BundledDotNetRuntimeVersion)" />
+              </Directory>
+            </Directory>
+          </Directory>
           <Directory Id="GTK4DIR" Name="GTK4" />
           <Directory Id="PYDIR" Name="$(var.PythonRuntimeFolderName)" />
-          <Directory Id="TCLDIR" Name="Tcl" />
+          <Directory Id="TCLDIR" Name="Tcl">
+            <Directory Id="TCLBINDIR" Name="bin" />
+            <Directory Id="TCLLIBDIR" Name="lib" />
+          </Directory>
         </Directory>
       </Directory>
     </StandardDirectory>
@@ -111,13 +126,19 @@
         <ComponentGroupRef Id="LegacyGtkShareDocRuntimeComponents" />
       </Feature>
       <Feature Id="DotNetRuntimeFeature" Title="C# plugin host and bundled .NET runtime" Level="1">
-        <ComponentGroupRef Id="DotNetComponents" />
+        <ComponentGroupRef Id="DotNetFolderComponents" />
+        <ComponentGroupRef Id="ManagedPluginHostComponents" />
+        <ComponentGroupRef Id="DotNetHostFxrComponents" />
+        <ComponentGroupRef Id="DotNetSharedRuntimeComponents" />
       </Feature>
       <Feature Id="PythonRuntimeFeature" Title="Python plugin runtime (3.14)" Level="1">
         <ComponentGroupRef Id="PythonRuntimeComponents" />
+        <ComponentGroupRef Id="PythonHostComponents" />
+        <ComponentGroupRef Id="PythonApiComponents" />
       </Feature>
       <Feature Id="TclRuntimeFeature" Title="Tcl plugin runtime (8.6)" Level="1">
-        <ComponentGroupRef Id="TclComponents" />
+        <ComponentGroupRef Id="TclBinComponents" />
+        <ComponentGroupRef Id="TclLibComponents" />
       </Feature>
       <Feature Id="ChecksumPluginFeature" Title="Checksum plugin" Level="1">
         <ComponentGroupRef Id="ChecksumPluginComponents" />

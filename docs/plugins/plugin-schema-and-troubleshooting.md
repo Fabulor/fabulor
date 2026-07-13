@@ -30,7 +30,7 @@ Supported simple add-on extensions:
 ```text
 .tcl
 .py
-.cs
+.dll
 ```
 
 The extension selects the runtime. Metadata can be supplied as optional `Fabulor-*` comments at the top of the script.
@@ -118,8 +118,8 @@ Minimal example:
   "entrypoint": "plugin.py",
   "requires_api_version": "1",
   "dependencies": [],
-  "capabilities": ["messages.write", "events.message"],
-  "description": "Sends a greeting when initialised.",
+  "capabilities": ["events.message", "session.read"],
+  "description": "Logs a local greeting and observes message events.",
   "author": "Fabulor",
   "homepage": "https://github.com/Fabulor/fabulor"
 }
@@ -195,7 +195,7 @@ Blacklisted plugin ids can be listed one per line in `plugin-blacklist.txt` unde
 Use this sequence when a plugin does not load or behaves incorrectly:
 
 1. For simple add-ons, confirm the folder and file names match: `addons\<name>\<name>.<ext>`.
-2. Confirm the extension is supported: `.tcl`, `.py`, or `.cs`.
+2. Confirm the extension is supported: `.tcl`, `.py`, or a compiled C# `.dll` implementing `IZoiteChatPlugin`.
 3. For manifest plugins, confirm folder layout under `plugins/<plugin-id>/`.
 4. Validate `plugin.json` and check `language` and `entrypoint`.
 5. Confirm the entrypoint file exists and is readable.
@@ -209,7 +209,7 @@ Use this sequence when a plugin does not load or behaves incorrectly:
 
 The manifest host is staged in progressively:
 
-1. Simple add-ons are the intended user-facing scripting path: `addons\<name>\<name>.tcl`, `addons\<name>\<name>.py`, or `addons\<name>\<name>.cs`.
+1. Simple add-ons are the intended user-facing path: `addons\<name>\<name>.tcl`, `addons\<name>\<name>.py`, or a compiled C# `addons\<name>\<name>.dll`.
 2. Python manifest plugins can be auto-loaded through the existing embedded Python runtime when `FABULOR_ENABLE_MANIFEST_PLUGINS=1` is set. The Python runtime accepts manifest entrypoints only when the resolved `.py` path is under the bundled `Plugins\` root or the user profile `plugins\` root.
 3. Tcl manifest plugins can be auto-loaded through the bundled Tcl runtime with a minimal `zoitechat::*` command surface when `FABULOR_ENABLE_MANIFEST_PLUGINS=1` is set. The normal Tcl runtime root is the installed `Runtime\Tcl` directory beside `fabulor.exe`; development-only runtime roots require `FABULOR_ENABLE_DEVELOPMENT_RUNTIME_ROOTS=1`.
 4. The shared host validates manifests, resolves dependencies, applies blacklist decisions, and queues callback dispatch on the main thread.
