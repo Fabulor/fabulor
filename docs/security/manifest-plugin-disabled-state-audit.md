@@ -127,7 +127,7 @@ The audit covers:
 
 Status: do not expose `FABULOR_ENABLE_MANIFEST_PLUGINS=1` to users yet.
 
-The manifest host is useful as a development scaffold, but it is not ready for third-party plugins. The remaining largest blockers include strict JSON/schema validation, complete callback lifetime hardening, and uneven interpreter isolation across languages. Entrypoint containment, runtime-root policy, and capability enforcement have since been hardened as recorded below.
+The manifest host is useful as a development scaffold, but it is not ready for third-party plugins. The remaining largest blockers include strict JSON/schema validation and uneven interpreter isolation across languages. Entrypoint containment, runtime-root policy, capability enforcement, and callback lifetime have since been hardened as recorded below.
 
 ## Root Discovery
 
@@ -260,27 +260,18 @@ Fix status, 2026-07-12:
 
 ## Callback And Event System
 
-The registry is per manifest host and records callback entries by event name:
+The registry is per manifest host and records callback entries by event name. The relevant boundaries are `fabulor_callback_registry_new()`, `fabulor_callback_registry_register()`, `fabulor_callback_registry_fire_event()`, `fabulor_callback_registry_remove_plugin()`, `fabulor_callback_registry_shutdown()`, and `fabulor_plugin_host_shutdown()` in `src/common/fabulor-plugin-host.c`.
 
-- `src/common/fabulor-plugin-host.c:2490` - creates the callback registry
-- `src/common/fabulor-plugin-host.c:2495` - stores event entries in a hash table
-- `src/common/fabulor-plugin-host.c:2524` - callback registration entry point
-- `src/common/fabulor-plugin-host.c:2541` - rejects unknown plugin ids
-- `src/common/fabulor-plugin-host.c:2548` - rejects language mismatches
-- `src/common/fabulor-plugin-host.c:2587` - dispatches callbacks and logs per-callback failures
-- `src/common/fabulor-plugin-host.c:2646` - fire-event entry point
-- `src/common/fabulor-plugin-host.c:2673` - non-main-thread dispatch is queued with `g_main_context_invoke_full()`
-- `src/common/fabulor-plugin-host.c:2684` - shutdown resets C# and Tcl runtimes
+Status: callback lifetime hardening completed on 2026-07-13.
 
-Pre-enable issues:
-
-- Event names and handler names are not allowlisted or length-limited.
-- Duplicate callback registrations are not deduplicated or capped.
-- Queued dispatch stores a raw registry pointer and does not refcount or otherwise pin the registry until the main-context callback runs.
-- Callback cleanup is mostly whole-host cleanup. There is no per-plugin unload/removal path for manifest callback entries.
-- Python manifest callbacks do not use this registry, so callback semantics are inconsistent across languages.
-
-Minimum fix: define allowed event names and maximum lengths/counts, add duplicate policy, make queued dispatch lifetime safe, add per-plugin callback cleanup, and either integrate Python with the shared registry or document Python as legacy-hook based until the manifest Python host is redesigned.
+- C# and Tcl registrations in the shared registry accept only `message`, `server`, `server:<name>`, `print`, `print:<event>`, `command`, and `command:<name>` event forms. Event names are valid UTF-8 without control characters and are limited to 128 bytes; handler names use the same character policy and are limited to 256 bytes.
+- The registry permits at most 64 callbacks per plugin and 256 callbacks for one event. An identical plugin/language/event/handler tuple is rejected as a duplicate.
+- Registration is restricted to the plugin host thread. Dispatch copies the selected callback entries while holding the registry mutex and invokes the snapshot without holding that mutex, so callback code cannot invalidate the active iteration.
+- Cross-thread dispatch is capped at 256 queued events and 1 MiB per payload. Each queued item holds a registry reference and releases it through the main-context destroy notification. Caller-owned loader data is not retained across threads.
+- Shutdown marks the registry closed and removes all entries before C# or Tcl runtime teardown. Already queued items observe the closed state and return without entering a language runtime.
+- `fabulor_callback_registry_remove_plugin()` removes all entries owned by one plugin. Tcl, C#, simple C#, generic catalog, and application autoload failure paths call it so partially initialized plugins cannot leave native callbacks behind. The API also supplies the cleanup primitive for a future live manifest-unload operation.
+- Python manifest callbacks intentionally remain backed by the legacy Python hook engine pending the separate per-manifest interpreter design. That boundary now applies its documented event-family allowlist and the same 128-byte event-name limit, caps every manifest plugin at 64 hooks, rejects an identical event/callback registration, and releases hooks with the owning Python plugin object. Python callbacks therefore do not hold or depend on the native shared registry.
+- Focused Python boundary tests cover capability isolation, event allowlisting and length, duplicate rejection, and callback count limits. The repository lint workflow executes these tests. The native host passed the x64 Release build and MSVC `/analyze`; no callback-host-specific analyzer findings were reported.
 
 ## Capabilities
 
@@ -307,7 +298,7 @@ Before `FABULOR_ENABLE_MANIFEST_PLUGINS=1` becomes user-facing, require at least
 - Runtime-root policy that removes normal-user reliance on environment variables and current working directory. Status: addressed for Tcl and C# on 2026-07-12.
 - Removal or containment of Tcl process-wide `PATH` mutation. Status: addressed for manifest Tcl loading.
 - A Python manifest host design that is separate from the legacy global Python plugin, or a clear decision that Python manifests remain disabled. Status: the manifest load-authority and policy-attribution boundary was separated on 2026-07-12; per-plugin interpreter isolation remains outstanding.
-- Callback event allowlists, length/count limits, duplicate policy, safe queued-dispatch lifetime, and per-plugin callback cleanup.
+- Callback event allowlists, length/count limits, duplicate policy, safe queued-dispatch lifetime, and per-plugin callback cleanup. Status: addressed on 2026-07-13; Python remains explicitly legacy-hook based until per-manifest interpreter isolation is implemented.
 - A capability policy decision: explicitly advisory-only with no security claims, or enforced gates for every exposed API and event surface. Status: enforced deny-by-default policy implemented across C#, Python, and Tcl on 2026-07-12.
 
 ## Repository Security Tool Pass Scope
@@ -603,7 +594,7 @@ Fix status, 2026-07-12:
 
 - Enchant loading in `src/fe-gtk/sexy-spell-entry.c` is restricted to the absolute application-local `libenchant-2-2.dll` path on Windows. After installed-client validation and soak testing, the Enchant 1.6.1 core/provider fallback and the in-tree legacy Win8 provider were retired; packaging now requires the MSVC/UCRT Enchant 2.8.19 core, upstream WinSpell provider, and ordering file.
 - A later URL-paste crash was traced with CDB to cross-CRT heap corruption in the MinGW/MSVCRT Enchant 2.8.19 personal-word-list path. Enchant core and WinSpell are now rebuilt with MSVC/UCRT against Fabulor's GTK/GLib libraries. The analysis and reproducible build are documented in `docs/security/enchant-windows-crash-analysis.md`.
-- The legacy Perl plugin remains a legacy source/build surface and is not part of the documented Fabulor plugin model, which is C#, Python, and Tcl. The current WiX plugin payload does not package `hcperl.dll`.
+- The legacy Perl plugin remains as retained source only and is not part of the documented Fabulor plugin model, which is C#, Python, and Tcl. Its project was removed from the Windows solution, the `hcperl.dll` startup probe was removed, and the WiX plugin payload does not package it.
 - Modern manifest Tcl loading now uses the installed executable-relative runtime root by default, avoids process `PATH` and `TCL_LIBRARY` mutation, and loads `tcl86t.dll` with constrained `LoadLibraryExA()` flags. The installer preserves the matching `Runtime\Tcl\bin` and `Runtime\Tcl\lib` directories; an earlier flattened layout was detected during installed-package testing and corrected. Simple Tcl add-ons now load independently of the manifest gate from exact `addons\<name>\<name>.tcl` paths, receive separate interpreters, and reject reparse-point roots, directories, and scripts. Their direct command registry rejects duplicate command names and is cleaned up with interpreter state. C# now uses the installed executable-relative `Runtime\DotNet` root by default, gates developer roots explicitly, canonicalizes selected roots, and loads `hostfxr.dll` with constrained `LoadLibraryExA()` flags. The installer preserves the private runtime's `host\fxr` and `shared\Microsoft.NETCore.App` hierarchy and stages the managed bridge in `Runtime\DotNet`; installed-package inspection found and corrected an earlier flattened layout. Trusted simple C# add-ons load only from exact `addons\<name>\<name>.dll` paths after rejecting reparse-point roots, directories, and entry assemblies. They receive collectible managed load contexts, participate in callback dispatch while the manifest host is disabled, and are removed from managed/native registries when initialisation fails. Python manifest loading now rejects command-unsafe entrypoint paths before invoking the existing script runtime hook. The shared legacy/simple Python host now preloads `Runtime\Python314\python314.dll` from the executable-relative trusted root with constrained Windows search flags; ambient development lookup is available only behind `FABULOR_ENABLE_DEVELOPMENT_RUNTIME_ROOTS=1`. The Python installer feature includes `hcpython3.dll`, the API compatibility modules, and `_cffi_backend`, with build-time payload validation.
 
 ## Finding: Theme Import And Legacy Add-On Loading Need Stronger Canonicalization

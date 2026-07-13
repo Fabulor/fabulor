@@ -119,3 +119,4 @@ public sealed class GreeterPlugin : IZoiteChatPlugin
 10. `ZoiteChatEvent` now exposes richer payload accessors including `Channel`, `Network`, `Nick`, `Server`, `Time`, `Word1`-`Word4`, and `WordEol1`-`WordEol2`.
 11. `ZoiteChatContext.GetUserInfo()` returns the active session identity as a `ZoiteChatUserInfo` with `Nickname`, `Channel`, `ServerName`, and `NetworkName`.
 12. A maintained sample manifest C# plugin lives under `samples\plugins\example.csharp.greeter\`.
+13. Callback event names are limited to 128 UTF-8 bytes, generated handler names to 256 bytes, each plugin to 64 callbacks, and each event to 256 callbacks. Registering the same event/handler pair twice is rejected.

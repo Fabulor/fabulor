@@ -271,6 +271,11 @@ fabulor_plugin_api_set_session (session *sess)
 static void
 fabulor_plugin_host_free (void)
 {
+	if (fabulor_callback_registry)
+	{
+		fabulor_callback_registry_shutdown (fabulor_callback_registry);
+	}
+
 	fabulor_plugin_host_shutdown ();
 
 	if (fabulor_callback_registry)
@@ -535,6 +540,7 @@ fabulor_plugin_host_autoload (session *sess)
 
 		if (!loader->load (manifest, &fabulor_plugin_api, sess, &error))
 		{
+			fabulor_callback_registry_remove_plugin (fabulor_callback_registry, manifest->id);
 			fabulor_api_logf (sess, "Skipping %s: %s", manifest->id, error ? error->message : "unknown loader failure");
 			g_clear_error (&error);
 			continue;
@@ -1014,7 +1020,6 @@ plugin_auto_load (session *sess)
 	for_files (lib_dir, "hcexec.dll", plugin_auto_load_cb);
 	for_files (lib_dir, "hcfishlim.dll", plugin_auto_load_cb);
 	for_files(lib_dir, "hclua.dll", plugin_auto_load_cb);
-	for_files (lib_dir, "hcperl.dll", plugin_auto_load_cb);
 	if (plugin_prepare_python_runtime (sess))
 		for_files (lib_dir, "hcpython3.dll", plugin_auto_load_cb);
 	for_files (lib_dir, "hcupd.dll", plugin_auto_load_cb);

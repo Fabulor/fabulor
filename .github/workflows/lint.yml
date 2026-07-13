@@ -115,4 +115,6 @@ jobs:
 
           print(f"Validated {len(workflow_files)} workflow files, {len(manifests)} sample manifests, and Python syntax checks.")
           '@ | python -
+
+          python plugins/python/test_capabilities.py
         shell: powershell

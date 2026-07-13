@@ -1,5 +1,6 @@
 import inspect
 import sys
+import unicodedata
 from contextlib import contextmanager
 
 from _zoitechat_embedded import ffi, lib
@@ -329,8 +330,28 @@ def hook_unload(callback, userdata=None):
     return id(hook)
 
 
-def register_callback(event_name, callback, userdata=None):
+def __validate_callback_event(event_name):
+    if not isinstance(event_name, str):
+        raise TypeError('Callback event names must be strings')
+
     event_name = event_name.lower()
+    if not event_name or len(event_name.encode('utf-8')) > 128:
+        raise ValueError('Callback event names must be between 1 and 128 UTF-8 bytes')
+    if any(unicodedata.category(character).startswith('C') for character in event_name):
+        raise ValueError('Callback event names cannot contain control characters')
+
+    if event_name in ('message', 'server'):
+        return event_name
+    if any(event_name.startswith(prefix) and len(event_name) > len(prefix)
+           for prefix in ('server:', 'print:', 'command:')):
+        return event_name
+
+    raise ValueError('Supported callback events are "message", "server", "server:<name>", "print:<event>", and "command:<name>"')
+
+
+def register_callback(event_name, callback, userdata=None):
+    event_name = __validate_callback_event(event_name)
+    callback_key = (event_name, id(callback))
 
     def build_event(words, word_eol, local_userdata, attrs, source_name):
         event = {
@@ -349,37 +370,54 @@ def register_callback(event_name, callback, userdata=None):
         def on_message(words, word_eol, local_userdata, attrs):
             return build_event(words, word_eol, local_userdata, attrs, 'PRIVMSG')
 
-        hook = plugin.add_hook(on_message, userdata)
+        hook = plugin.add_hook(on_message, userdata, callback_key=callback_key)
         handle = lib.zoitechat_hook_server_attrs(lib.ph, b'PRIVMSG', PRI_NORM,
                                                 lib._on_server_attrs_hook, hook.handle)
         hook.zoitechat_hook = handle
         return id(hook)
 
     if event_name == 'server':
+        plugin = __require_capability('events.server')
+
         def on_server(words, word_eol, local_userdata, attrs):
             source_name = words[0] if words else 'RAW LINE'
             return build_event(words, word_eol, local_userdata, attrs, source_name)
 
-        return hook_server_attrs('RAW LINE', on_server, userdata)
+        hook = plugin.add_hook(on_server, userdata, callback_key=callback_key)
+        handle = lib.zoitechat_hook_server_attrs(lib.ph, b'RAW LINE', PRI_NORM,
+                                                lib._on_server_attrs_hook, hook.handle)
+        hook.zoitechat_hook = handle
+        return id(hook)
 
     if event_name.startswith('server:'):
+        plugin = __require_capability('events.server')
         server_name = event_name.split(':', 1)[1].upper()
 
         def on_named_server(words, word_eol, local_userdata, attrs):
             return build_event(words, word_eol, local_userdata, attrs, server_name)
 
-        return hook_server_attrs(server_name, on_named_server, userdata)
+        hook = plugin.add_hook(on_named_server, userdata, callback_key=callback_key)
+        handle = lib.zoitechat_hook_server_attrs(lib.ph, server_name.encode(), PRI_NORM,
+                                                lib._on_server_attrs_hook, hook.handle)
+        hook.zoitechat_hook = handle
+        return id(hook)
 
     if event_name.startswith('print:'):
+        plugin = __require_capability('events.print')
         print_name = event_name.split(':', 1)[1]
 
         def on_print(words, word_eol, local_userdata, attrs):
             source_name = words[0] if words else print_name
             return build_event(words, word_eol, local_userdata, attrs, source_name)
 
-        return hook_print_attrs(print_name, on_print, userdata)
+        hook = plugin.add_hook(on_print, userdata, callback_key=callback_key)
+        handle = lib.zoitechat_hook_print_attrs(lib.ph, print_name.encode(), PRI_NORM,
+                                               lib._on_print_attrs_hook, hook.handle)
+        hook.zoitechat_hook = handle
+        return id(hook)
 
     if event_name.startswith('command:'):
+        plugin = __require_capability('events.command')
         command_name = event_name.split(':', 1)[1].upper()
 
         def on_command(words, word_eol, local_userdata):
@@ -393,9 +431,11 @@ def register_callback(event_name, callback, userdata=None):
             }
             return callback(event)
 
-        return hook_command(command_name, on_command, userdata)
-
-    raise ValueError('Supported callback events are "message", "server", "server:<name>", "print:<event>", and "command:<name>"')
+        hook = plugin.add_hook(on_command, userdata, callback_key=callback_key)
+        handle = lib.zoitechat_hook_command(lib.ph, command_name.encode(), PRI_NORM,
+                                          lib._on_command_hook, ffi.NULL, hook.handle)
+        hook.zoitechat_hook = handle
+        return id(hook)
 
 
 def unhook(handle):

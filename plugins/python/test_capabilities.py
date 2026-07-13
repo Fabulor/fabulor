@@ -12,6 +12,16 @@ class FakeFfi:
     def new_handle(value):
         return value
 
+    @staticmethod
+    def new(_declaration, value):
+        return value
+
+    @staticmethod
+    def def_extern(*args, **_kwargs):
+        if args and callable(args[0]):
+            return args[0]
+        return lambda function: function
+
 
 class FakeLib:
     ph = object()
@@ -33,16 +43,22 @@ class FakePlugin:
         self.manifest_id = manifest_id
         self.capabilities = frozenset(capabilities)
         self.hooks = []
+        self.callback_registrations = set()
 
-    def add_hook(self, callback, userdata, is_unload=False):
+    def add_hook(self, callback, userdata, is_unload=False, callback_key=None):
+        if callback_key is not None and callback_key in self.callback_registrations:
+            raise ValueError("Callback '{}' is already registered.".format(callback_key[0]))
         hook = types.SimpleNamespace(
             callback=callback,
             userdata=userdata,
             is_unload=is_unload,
+            callback_key=callback_key,
             handle=object(),
             zoitechat_hook=None,
         )
         self.hooks.append(hook)
+        if callback_key is not None:
+            self.callback_registrations.add(callback_key)
         return hook
 
 
@@ -57,6 +73,11 @@ class CapabilityTests(unittest.TestCase):
         spec = importlib.util.spec_from_file_location('_zoitechat_capability_test', module_path)
         cls.api = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(cls.api)
+
+        plugin_host_path = pathlib.Path(__file__).with_name('python.py')
+        plugin_host_spec = importlib.util.spec_from_file_location('_zoitechat_plugin_host_test', plugin_host_path)
+        cls.plugin_host = importlib.util.module_from_spec(plugin_host_spec)
+        plugin_host_spec.loader.exec_module(cls.plugin_host)
 
     def invoke(self, plugin, expression):
         namespace = {'__plugin': plugin, 'api': self.api}
@@ -86,6 +107,32 @@ class CapabilityTests(unittest.TestCase):
         self.invoke(plugin, "api.register_callback('message', lambda event: None)")
         with self.assertRaisesRegex(PermissionError, 'events.server'):
             self.invoke(plugin, "api.hook_server('NOTICE', lambda *args: None)")
+
+    def test_callback_event_names_are_bounded_and_allowlisted(self):
+        plugin = FakePlugin('example.events', ('events.message',))
+        with self.assertRaisesRegex(ValueError, 'Supported callback events'):
+            self.invoke(plugin, "api.register_callback('timer', lambda event: None)")
+        with self.assertRaisesRegex(ValueError, '128 UTF-8 bytes'):
+            self.invoke(plugin, "api.register_callback('server:' + ('x' * 122), lambda event: None)")
+
+    def test_duplicate_callback_registration_is_rejected(self):
+        plugin = FakePlugin('example.events', ('events.message',))
+        callback = lambda event: None
+        namespace = {'__plugin': plugin, 'api': self.api, 'callback': callback}
+        exec('def call():\n    return api.register_callback(\'message\', callback)', namespace)
+        namespace['call']()
+        with self.assertRaisesRegex(ValueError, 'already registered'):
+            namespace['call']()
+
+    def test_manifest_hook_count_is_limited(self):
+        plugin = self.plugin_host.Plugin('example.events', ('events.message',))
+        for index in range(64):
+            plugin.add_hook(lambda _userdata: None, None, is_unload=True,
+                            callback_key=('message', index))
+        with self.assertRaisesRegex(RuntimeError, '64-callback limit'):
+            plugin.add_hook(lambda _userdata: None, None, is_unload=True,
+                            callback_key=('message', 64))
+        plugin.hooks.clear()
 
 
 if __name__ == '__main__':

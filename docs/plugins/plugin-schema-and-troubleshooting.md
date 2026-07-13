@@ -217,6 +217,7 @@ The manifest host is staged in progressively:
 6. C# manifests load through the `src\managed\Fabulor.PluginHost` bridge, which is staged into `Runtime\DotNet` by the installer build.
 7. The installer now bundles a private `.NET` runtime root under `Runtime\DotNet`, including `host\fxr\` and `shared\Microsoft.NETCore.App\`. Normal loading uses only this executable-relative runtime and bridge root; environment, current-directory, source-tree, and machine-wide .NET roots require `FABULOR_ENABLE_DEVELOPMENT_RUNTIME_ROOTS=1`.
 8. Sample cross-language manifest plugins live under `samples\plugins\` and exercise the documented schema, dependency ordering, callback registration, and current user/session-info access.
+9. Shared C#/Tcl callbacks are bounded to 64 registrations per plugin and 256 per event. Cross-thread event delivery retains the registry safely, caps queued work, and is discarded before runtime teardown. Python applies matching per-plugin and event-name limits through its legacy hook-backed plugin object.
 
 Python simple add-ons and Python manifest plugins still share the embedded interpreter, but they no longer share the same load authority. Simple add-ons resolve only through the profile `addons` directory. Manifest entrypoints require a host-authenticated internal load request, resolve through enabled manifest plugin roots, and receive their manifest id and declared capabilities as per-plugin policy metadata. This is an attribution and path boundary, not an interpreter sandbox.
 

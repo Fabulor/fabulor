@@ -42,8 +42,14 @@ typedef struct
 	FabulorCallbackRegistry *registry;
 	char *event_name;
 	char *event_payload_json;
-	void *loader_user_data;
 } FabulorDeferredDispatch;
+
+#define FABULOR_CALLBACK_EVENT_NAME_MAX 128U
+#define FABULOR_CALLBACK_HANDLER_NAME_MAX 256U
+#define FABULOR_CALLBACKS_PER_PLUGIN_MAX 64U
+#define FABULOR_CALLBACKS_PER_EVENT_MAX 256U
+#define FABULOR_CALLBACK_QUEUED_DISPATCH_MAX 256U
+#define FABULOR_CALLBACK_PAYLOAD_MAX (1024U * 1024U)
 
 struct _fabulor_plugin_catalog
 {
@@ -62,6 +68,10 @@ struct _fabulor_callback_registry
 	GHashTable *entries;
 	GMainContext *main_context;
 	GThread *main_thread;
+	GMutex mutex;
+	volatile gint ref_count;
+	gboolean shutting_down;
+	guint queued_dispatches;
 };
 
 #ifdef WIN32
@@ -185,6 +195,7 @@ typedef struct
 
 static FabulorTclRuntime fabulor_tcl_runtime;
 static FabulorCallbackRegistry *fabulor_active_callback_registry;
+G_LOCK_DEFINE_STATIC (fabulor_active_callback_registry_lock);
 static const FabulorAPI *fabulor_active_api;
 static FabulorCSharpRuntime fabulor_csharp_runtime;
 static GHashTable *fabulor_simple_csharp_manifests;
@@ -294,12 +305,67 @@ fabulor_event_capability (const char *event_name)
 		return "events.message";
 	if (g_strcmp0 (event_name, "server") == 0 || g_str_has_prefix (event_name, "server:"))
 		return "events.server";
-	if (g_str_has_prefix (event_name, "print:"))
+	if (g_strcmp0 (event_name, "print") == 0 || g_str_has_prefix (event_name, "print:"))
 		return "events.print";
-	if (g_str_has_prefix (event_name, "command:"))
+	if (g_strcmp0 (event_name, "command") == 0 || g_str_has_prefix (event_name, "command:"))
 		return "events.command";
 	return NULL;
 }
+
+#ifdef WIN32
+static gboolean
+fabulor_active_callback_registry_has_capability (const char *plugin_id, const char *capability)
+{
+	const FabulorPluginManifest *manifest = NULL;
+	gboolean allowed;
+
+	G_LOCK (fabulor_active_callback_registry_lock);
+	if (fabulor_active_callback_registry)
+	{
+		manifest = fabulor_runtime_find_manifest (fabulor_active_callback_registry->catalog, plugin_id);
+	}
+	allowed = fabulor_manifest_has_capability (manifest, capability);
+	G_UNLOCK (fabulor_active_callback_registry_lock);
+	return allowed;
+}
+
+static gboolean
+fabulor_active_callback_registry_register (const char *event_name,
+											 const char *plugin_id,
+											 FabulorPluginLanguage language,
+											 const char *handler_name,
+											 GError **error)
+{
+	gboolean success;
+
+	G_LOCK (fabulor_active_callback_registry_lock);
+	if (!fabulor_active_callback_registry)
+	{
+		G_UNLOCK (fabulor_active_callback_registry_lock);
+		g_set_error_literal (error, G_FILE_ERROR, G_FILE_ERROR_FAILED, "Callback registry is not available.");
+		return FALSE;
+	}
+	success = fabulor_callback_registry_register (fabulor_active_callback_registry,
+													 event_name,
+													 plugin_id,
+													 language,
+													 handler_name,
+													 error);
+	G_UNLOCK (fabulor_active_callback_registry_lock);
+	return success;
+}
+
+static void
+fabulor_active_callback_registry_remove_plugin (const char *plugin_id)
+{
+	G_LOCK (fabulor_active_callback_registry_lock);
+	if (fabulor_active_callback_registry)
+	{
+		fabulor_callback_registry_remove_plugin (fabulor_active_callback_registry, plugin_id);
+	}
+	G_UNLOCK (fabulor_active_callback_registry_lock);
+}
+#endif
 
 static gboolean
 extract_string_field (const char *json, const char *field_name, char **value, GError **error)
@@ -1456,18 +1522,11 @@ fabulor_tcl_register_callback_cmd (ClientData client_data, Tcl_Interp *interp, i
 			return TCL_ERROR;
 	}
 
-	if (!fabulor_active_callback_registry)
-	{
-		fabulor_tcl_set_result (interp, "Callback registry is not available.");
-		return TCL_ERROR;
-	}
-
-	if (!fabulor_callback_registry_register (fabulor_active_callback_registry,
-											 argv[1],
-											 state->plugin_id,
-											 FABULOR_PLUGIN_LANGUAGE_TCL,
-											 argv[2],
-											 &error))
+	if (!fabulor_active_callback_registry_register (argv[1],
+												state->plugin_id,
+												FABULOR_PLUGIN_LANGUAGE_TCL,
+												argv[2],
+												&error))
 	{
 		fabulor_tcl_set_result (interp, error ? error->message : "Callback registration failed.");
 		g_clear_error (&error);
@@ -1898,13 +1957,7 @@ fabulor_csharp_native_log (const char *text)
 static gboolean
 fabulor_csharp_require_capability (const char *plugin_id, const char *capability)
 {
-	const FabulorPluginManifest *manifest = NULL;
-
-	if (fabulor_active_callback_registry)
-	{
-		manifest = fabulor_runtime_find_manifest (fabulor_active_callback_registry->catalog, plugin_id);
-	}
-	if (fabulor_manifest_has_capability (manifest, capability))
+	if (fabulor_active_callback_registry_has_capability (plugin_id, capability))
 	{
 		return TRUE;
 	}
@@ -1965,11 +2018,6 @@ fabulor_csharp_native_register_callback (const char *plugin_id, const char *even
 	GError *error = NULL;
 	gboolean success;
 
-	if (!fabulor_active_callback_registry)
-	{
-		return 0;
-	}
-
 	{
 		const char *capability = fabulor_event_capability (event_name);
 		if (!capability || !fabulor_csharp_require_capability (plugin_id, capability))
@@ -1978,12 +2026,11 @@ fabulor_csharp_native_register_callback (const char *plugin_id, const char *even
 		}
 	}
 
-	success = fabulor_callback_registry_register (fabulor_active_callback_registry,
-												 event_name,
-												 plugin_id,
-												 FABULOR_PLUGIN_LANGUAGE_CSHARP,
-												 handler_name,
-												 &error);
+	success = fabulor_active_callback_registry_register (event_name,
+												  plugin_id,
+												  FABULOR_PLUGIN_LANGUAGE_CSHARP,
+												  handler_name,
+												  &error);
 	if (!success)
 	{
 		fabulor_api_log (fabulor_active_api, "[C#] register_callback failed: %s", error ? error->message : "unknown error");
@@ -2325,6 +2372,7 @@ load_tcl_manifest (const FabulorPluginManifest *manifest,
 						 fabulor_tcl_runtime.get_string_result (state->interp));
 		}
 
+		fabulor_active_callback_registry_remove_plugin (manifest->id);
 		g_hash_table_remove (fabulor_tcl_runtime.plugins, manifest->id);
 		return FALSE;
 	}
@@ -2658,6 +2706,7 @@ load_csharp_manifest (const FabulorPluginManifest *manifest,
 	rc = fabulor_csharp_runtime.load_plugin (&args, sizeof (args));
 	if (rc != 0)
 	{
+		fabulor_active_callback_registry_remove_plugin (manifest->id);
 		g_set_error (error,
 					 G_FILE_ERROR,
 					 G_FILE_ERROR_FAILED,
@@ -2802,6 +2851,7 @@ fabulor_plugin_host_autoload_simple_csharp (const char *addons_root,
 		if (rc != 0)
 		{
 			fabulor_api_log (api, "Skipping simple C# add-on %s: managed plugin load failed (0x%x).", addon_name, rc);
+			fabulor_active_callback_registry_remove_plugin (plugin_id);
 			g_hash_table_remove (fabulor_simple_csharp_manifests, plugin_id);
 		}
 		else
@@ -2864,6 +2914,16 @@ fabulor_callback_entry_free (FabulorCallbackEntry *entry)
 	g_free (entry);
 }
 
+static FabulorCallbackEntry *
+fabulor_callback_entry_copy (const FabulorCallbackEntry *entry)
+{
+	FabulorCallbackEntry *copy = g_new0 (FabulorCallbackEntry, 1);
+	copy->plugin_id = g_strdup (entry->plugin_id);
+	copy->language = entry->language;
+	copy->handler_name = g_strdup (entry->handler_name);
+	return copy;
+}
+
 static void
 fabulor_callback_entry_array_free (GPtrArray *entries)
 {
@@ -2876,6 +2936,76 @@ fabulor_callback_entry_array_free (GPtrArray *entries)
 }
 
 static void
+fabulor_callback_registry_unref (FabulorCallbackRegistry *registry)
+{
+	if (!g_atomic_int_dec_and_test (&registry->ref_count))
+	{
+		return;
+	}
+
+	g_hash_table_unref (registry->entries);
+	g_main_context_unref (registry->main_context);
+	g_mutex_clear (&registry->mutex);
+	g_free (registry);
+}
+
+static FabulorCallbackRegistry *
+fabulor_callback_registry_ref (FabulorCallbackRegistry *registry)
+{
+	g_atomic_int_inc (&registry->ref_count);
+	return registry;
+}
+
+static gboolean
+fabulor_callback_text_is_valid (const char *text, gsize maximum_length)
+{
+	const char *cursor;
+
+	if (!text || *text == '\0' || strlen (text) > maximum_length || !g_utf8_validate (text, -1, NULL))
+	{
+		return FALSE;
+	}
+
+	for (cursor = text; *cursor; cursor = g_utf8_next_char (cursor))
+	{
+		if (g_unichar_iscntrl (g_utf8_get_char (cursor)))
+		{
+			return FALSE;
+		}
+	}
+
+	return TRUE;
+}
+
+static gboolean
+fabulor_callback_event_is_valid (const char *event_name)
+{
+	const char *suffix = NULL;
+
+	if (!fabulor_callback_text_is_valid (event_name, FABULOR_CALLBACK_EVENT_NAME_MAX))
+	{
+		return FALSE;
+	}
+
+	if (g_strcmp0 (event_name, "message") == 0
+		|| g_strcmp0 (event_name, "server") == 0
+		|| g_strcmp0 (event_name, "print") == 0
+		|| g_strcmp0 (event_name, "command") == 0)
+	{
+		return TRUE;
+	}
+
+	if (g_str_has_prefix (event_name, "server:"))
+		suffix = event_name + strlen ("server:");
+	else if (g_str_has_prefix (event_name, "print:"))
+		suffix = event_name + strlen ("print:");
+	else if (g_str_has_prefix (event_name, "command:"))
+		suffix = event_name + strlen ("command:");
+
+	return suffix && *suffix != '\0';
+}
+
+static void
 fabulor_deferred_dispatch_free (FabulorDeferredDispatch *dispatch)
 {
 	if (!dispatch)
@@ -2885,6 +3015,12 @@ fabulor_deferred_dispatch_free (FabulorDeferredDispatch *dispatch)
 
 	g_free (dispatch->event_name);
 	g_free (dispatch->event_payload_json);
+
+	g_mutex_lock (&dispatch->registry->mutex);
+	g_assert (dispatch->registry->queued_dispatches > 0);
+	dispatch->registry->queued_dispatches--;
+	g_mutex_unlock (&dispatch->registry->mutex);
+	fabulor_callback_registry_unref (dispatch->registry);
 	g_free (dispatch);
 }
 
@@ -3182,6 +3318,9 @@ fabulor_plugin_catalog_load (FabulorPluginCatalog *catalog, GPtrArray *ordered_m
 
 		if (!loader->load (manifest, catalog->api, loader_user_data, error))
 		{
+#ifdef WIN32
+			fabulor_active_callback_registry_remove_plugin (manifest->id);
+#endif
 			return FALSE;
 		}
 	}
@@ -3279,10 +3418,36 @@ fabulor_callback_registry_new (const FabulorAPI *api, const FabulorPluginCatalog
 	registry->entries = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, (GDestroyNotify) fabulor_callback_entry_array_free);
 	registry->main_context = main_context ? g_main_context_ref (main_context) : g_main_context_ref (g_main_context_default ());
 	registry->main_thread = g_thread_self ();
+	registry->ref_count = 1;
+	g_mutex_init (&registry->mutex);
 #ifdef WIN32
+	G_LOCK (fabulor_active_callback_registry_lock);
 	fabulor_active_callback_registry = registry;
+	G_UNLOCK (fabulor_active_callback_registry_lock);
 #endif
 	return registry;
+}
+
+void
+fabulor_callback_registry_shutdown (FabulorCallbackRegistry *registry)
+{
+	if (!registry)
+	{
+		return;
+	}
+
+#ifdef WIN32
+	G_LOCK (fabulor_active_callback_registry_lock);
+	if (fabulor_active_callback_registry == registry)
+	{
+		fabulor_active_callback_registry = NULL;
+	}
+	G_UNLOCK (fabulor_active_callback_registry_lock);
+#endif
+	g_mutex_lock (&registry->mutex);
+	registry->shutting_down = TRUE;
+	g_hash_table_remove_all (registry->entries);
+	g_mutex_unlock (&registry->mutex);
 }
 
 void
@@ -3293,15 +3458,47 @@ fabulor_callback_registry_free (FabulorCallbackRegistry *registry)
 		return;
 	}
 
-	g_hash_table_unref (registry->entries);
-	g_main_context_unref (registry->main_context);
-#ifdef WIN32
-	if (fabulor_active_callback_registry == registry)
+	fabulor_callback_registry_shutdown (registry);
+	fabulor_callback_registry_unref (registry);
+}
+
+guint
+fabulor_callback_registry_remove_plugin (FabulorCallbackRegistry *registry, const char *plugin_id)
+{
+	GHashTableIter iter;
+	gpointer value;
+	guint removed = 0;
+
+	if (!registry || !plugin_id || *plugin_id == '\0')
 	{
-		fabulor_active_callback_registry = NULL;
+		return 0;
 	}
-#endif
-	g_free (registry);
+
+	g_mutex_lock (&registry->mutex);
+	g_hash_table_iter_init (&iter, registry->entries);
+	while (g_hash_table_iter_next (&iter, NULL, &value))
+	{
+		GPtrArray *entries = value;
+		guint i = entries->len;
+
+		while (i > 0)
+		{
+			FabulorCallbackEntry *entry = g_ptr_array_index (entries, --i);
+			if (g_strcmp0 (entry->plugin_id, plugin_id) == 0)
+			{
+				g_ptr_array_remove_index (entries, i);
+				removed++;
+			}
+		}
+
+		if (entries->len == 0)
+		{
+			g_hash_table_iter_remove (&iter);
+		}
+	}
+	g_mutex_unlock (&registry->mutex);
+
+	return removed;
 }
 
 gboolean
@@ -3315,10 +3512,28 @@ fabulor_callback_registry_register (FabulorCallbackRegistry *registry,
 	FabulorCallbackEntry *entry;
 	GPtrArray *entries;
 	const FabulorPluginManifest *manifest;
+	guint plugin_callback_count = 0;
+	GHashTableIter iter;
+	gpointer value;
 
 	if (!registry || !event_name || !plugin_id || !handler_name)
 	{
 		g_set_error_literal (error, G_FILE_ERROR, G_FILE_ERROR_INVAL, "Callback registration requires an event name, plugin id, and handler name.");
+		return FALSE;
+	}
+	if (g_thread_self () != registry->main_thread)
+	{
+		g_set_error_literal (error, G_FILE_ERROR, G_FILE_ERROR_INVAL, "Callback registration must run on the plugin host thread.");
+		return FALSE;
+	}
+	if (!fabulor_callback_event_is_valid (event_name))
+	{
+		g_set_error (error, G_FILE_ERROR, G_FILE_ERROR_INVAL, "Unsupported or invalid callback event '%s'.", event_name);
+		return FALSE;
+	}
+	if (!fabulor_callback_text_is_valid (handler_name, FABULOR_CALLBACK_HANDLER_NAME_MAX))
+	{
+		g_set_error_literal (error, G_FILE_ERROR, G_FILE_ERROR_INVAL, "Callback handler names must be valid UTF-8 without control characters and at most 256 bytes.");
 		return FALSE;
 	}
 
@@ -3352,11 +3567,65 @@ fabulor_callback_registry_register (FabulorCallbackRegistry *registry,
 		}
 	}
 
+	g_mutex_lock (&registry->mutex);
+	if (registry->shutting_down)
+	{
+		g_mutex_unlock (&registry->mutex);
+		g_set_error_literal (error, G_FILE_ERROR, G_FILE_ERROR_FAILED, "Callback registration is closed during plugin host shutdown.");
+		return FALSE;
+	}
+
+	g_hash_table_iter_init (&iter, registry->entries);
+	while (g_hash_table_iter_next (&iter, NULL, &value))
+	{
+		GPtrArray *registered = value;
+		guint i;
+		for (i = 0; i < registered->len; i++)
+		{
+			FabulorCallbackEntry *registered_entry = g_ptr_array_index (registered, i);
+			if (g_strcmp0 (registered_entry->plugin_id, plugin_id) == 0)
+			{
+				plugin_callback_count++;
+			}
+		}
+	}
+
+	if (plugin_callback_count >= FABULOR_CALLBACKS_PER_PLUGIN_MAX)
+	{
+		g_mutex_unlock (&registry->mutex);
+		g_set_error (error, G_FILE_ERROR, G_FILE_ERROR_NOSPC, "Plugin '%s' reached the 64-callback limit.", plugin_id);
+		return FALSE;
+	}
+
 	entries = g_hash_table_lookup (registry->entries, event_name);
 	if (!entries)
 	{
 		entries = g_ptr_array_new_with_free_func ((GDestroyNotify) fabulor_callback_entry_free);
 		g_hash_table_insert (registry->entries, g_strdup (event_name), entries);
+	}
+	else
+	{
+		guint i;
+		if (entries->len >= FABULOR_CALLBACKS_PER_EVENT_MAX)
+		{
+			g_mutex_unlock (&registry->mutex);
+			g_set_error (error, G_FILE_ERROR, G_FILE_ERROR_NOSPC, "Callback event '%s' reached the 256-callback limit.", event_name);
+			return FALSE;
+		}
+
+		for (i = 0; i < entries->len; i++)
+		{
+			FabulorCallbackEntry *registered_entry = g_ptr_array_index (entries, i);
+			if (registered_entry->language == language
+				&& g_strcmp0 (registered_entry->plugin_id, plugin_id) == 0
+				&& g_strcmp0 (registered_entry->handler_name, handler_name) == 0)
+			{
+				g_mutex_unlock (&registry->mutex);
+				g_set_error (error, G_FILE_ERROR, G_FILE_ERROR_EXIST, "Callback '%s' is already registered for plugin '%s' and event '%s'.",
+						 handler_name, plugin_id, event_name);
+				return FALSE;
+			}
+		}
 	}
 
 	entry = g_new0 (FabulorCallbackEntry, 1);
@@ -3364,6 +3633,7 @@ fabulor_callback_registry_register (FabulorCallbackRegistry *registry,
 	entry->language = language;
 	entry->handler_name = g_strdup (handler_name);
 	g_ptr_array_add (entries, entry);
+	g_mutex_unlock (&registry->mutex);
 	return TRUE;
 }
 
@@ -3371,14 +3641,18 @@ gboolean
 fabulor_callback_registry_has_event (FabulorCallbackRegistry *registry, const char *event_name)
 {
 	GPtrArray *entries;
+	gboolean has_event;
 
 	if (!registry || !event_name)
 	{
 		return FALSE;
 	}
 
-	entries = g_hash_table_lookup (registry->entries, event_name);
-	return entries && entries->len > 0;
+	g_mutex_lock (&registry->mutex);
+	entries = registry->shutting_down ? NULL : g_hash_table_lookup (registry->entries, event_name);
+	has_event = entries && entries->len > 0;
+	g_mutex_unlock (&registry->mutex);
+	return has_event;
 }
 
 static gboolean
@@ -3389,13 +3663,27 @@ fabulor_callback_registry_dispatch_now (FabulorCallbackRegistry *registry,
 										GError **error)
 {
 	GPtrArray *entries;
+	GPtrArray *registered_entries;
 	guint i;
 
-	entries = g_hash_table_lookup (registry->entries, event_name);
-	if (!entries)
+	entries = g_ptr_array_new_with_free_func ((GDestroyNotify) fabulor_callback_entry_free);
+	g_mutex_lock (&registry->mutex);
+	if (registry->shutting_down)
 	{
+		g_mutex_unlock (&registry->mutex);
+		g_ptr_array_free (entries, TRUE);
 		return TRUE;
 	}
+
+	registered_entries = g_hash_table_lookup (registry->entries, event_name);
+	if (registered_entries)
+	{
+		for (i = 0; i < registered_entries->len; i++)
+		{
+			g_ptr_array_add (entries, fabulor_callback_entry_copy (g_ptr_array_index (registered_entries, i)));
+		}
+	}
+	g_mutex_unlock (&registry->mutex);
 
 	for (i = 0; i < entries->len; i++)
 	{
@@ -3424,6 +3712,7 @@ fabulor_callback_registry_dispatch_now (FabulorCallbackRegistry *registry,
 		}
 	}
 
+	g_ptr_array_free (entries, TRUE);
 	return TRUE;
 }
 
@@ -3434,9 +3723,8 @@ fabulor_callback_registry_invoke_main_thread (gpointer user_data)
 	fabulor_callback_registry_dispatch_now (dispatch->registry,
 										 dispatch->event_name,
 										 dispatch->event_payload_json,
-										 dispatch->loader_user_data,
+										 NULL,
 										 NULL);
-	fabulor_deferred_dispatch_free (dispatch);
 	return G_SOURCE_REMOVE;
 }
 
@@ -3447,9 +3735,23 @@ fabulor_callback_registry_fire_event (FabulorCallbackRegistry *registry,
 									  void *loader_user_data,
 									  GError **error)
 {
+	gsize payload_length;
+
 	if (!registry || !event_name)
 	{
 		g_set_error_literal (error, G_FILE_ERROR, G_FILE_ERROR_INVAL, "Event dispatch requires a registry and event name.");
+		return FALSE;
+	}
+	if (!fabulor_callback_event_is_valid (event_name))
+	{
+		g_set_error (error, G_FILE_ERROR, G_FILE_ERROR_INVAL, "Unsupported or invalid callback event '%s'.", event_name);
+		return FALSE;
+	}
+
+	payload_length = event_payload_json ? strlen (event_payload_json) : 2;
+	if (payload_length > FABULOR_CALLBACK_PAYLOAD_MAX)
+	{
+		g_set_error_literal (error, G_FILE_ERROR, G_FILE_ERROR_NOSPC, "Callback event payload exceeds the 1 MiB limit.");
 		return FALSE;
 	}
 
@@ -3461,18 +3763,39 @@ fabulor_callback_registry_fire_event (FabulorCallbackRegistry *registry,
 													 loader_user_data,
 													 error);
 	}
+	if (loader_user_data)
+	{
+		g_set_error_literal (error, G_FILE_ERROR, G_FILE_ERROR_INVAL, "Queued callback dispatch cannot retain caller-owned loader data.");
+		return FALSE;
+	}
 
 	{
 		FabulorDeferredDispatch *dispatch = g_new0 (FabulorDeferredDispatch, 1);
-		dispatch->registry = registry;
+
+		g_mutex_lock (&registry->mutex);
+		if (registry->shutting_down)
+		{
+			g_mutex_unlock (&registry->mutex);
+			g_free (dispatch);
+			return TRUE;
+		}
+		if (registry->queued_dispatches >= FABULOR_CALLBACK_QUEUED_DISPATCH_MAX)
+		{
+			g_mutex_unlock (&registry->mutex);
+			g_free (dispatch);
+			g_set_error_literal (error, G_FILE_ERROR, G_FILE_ERROR_NOSPC, "Callback dispatch queue reached its 256-event limit.");
+			return FALSE;
+		}
+		registry->queued_dispatches++;
+		dispatch->registry = fabulor_callback_registry_ref (registry);
+		g_mutex_unlock (&registry->mutex);
 		dispatch->event_name = g_strdup (event_name);
 		dispatch->event_payload_json = g_strdup (event_payload_json ? event_payload_json : "{}");
-		dispatch->loader_user_data = loader_user_data;
 		g_main_context_invoke_full (registry->main_context,
 									G_PRIORITY_DEFAULT,
 									fabulor_callback_registry_invoke_main_thread,
 									dispatch,
-									NULL);
+									(GDestroyNotify) fabulor_deferred_dispatch_free);
 	}
 
 	return TRUE;
@@ -3482,6 +3805,7 @@ void
 fabulor_plugin_host_shutdown (void)
 {
 #ifdef WIN32
+	fabulor_callback_registry_shutdown (fabulor_active_callback_registry);
 	fabulor_csharp_runtime_reset ();
 	fabulor_tcl_runtime_reset ();
 	fabulor_active_api = NULL;

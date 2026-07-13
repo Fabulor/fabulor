@@ -101,3 +101,4 @@ proc init {} {
 11. A maintained sample manifest Tcl plugin lives under `samples\plugins\example.tcl.greeter\`.
 12. `zoitechat::add_user_command name command` registers a runtime User Command alias for the current session. It does not write `commands.conf`; use the built-in User Commands editor for persistent aliases.
 13. Manifest Tcl uses the installed `Runtime\Tcl` root by default. `FABULOR_TCL_RUNTIME_ROOT` and current-working-directory runtime roots are development-only and require `FABULOR_ENABLE_DEVELOPMENT_RUNTIME_ROOTS=1`.
+14. Callback event names are limited to 128 UTF-8 bytes, Tcl handler names to 256 bytes, each plugin to 64 callbacks, and each event to 256 callbacks. Registering the same event/handler pair twice is rejected.
