@@ -41,7 +41,7 @@
   - [ ] Review manifest parsing and validation for required fields, type checks, size limits, malformed JSON handling, and error isolation.
   - [ ] Review entrypoint resolution for path traversal, absolute paths, symlinks/reparse points, and extension/language mismatches.
   - [ ] Review C#, Python, and Tcl runtime loading paths, DLL search order, and interpreter initialization boundaries.
-  - [ ] Review callback/event registration lifetime, main-thread dispatch, cleanup, and failure isolation.
+  - [x] Review and harden callback/event registration lifetime, main-thread dispatch, cleanup, and failure isolation.
   - [x] Decide which declared manifest `capabilities` are advisory versus enforced before enabling third-party plugins.
   - [ ] Define the minimum fixes required before `FABULOR_ENABLE_MANIFEST_PLUGINS=1` can become user-facing.
 - [ ] Repository security tool pass.
@@ -147,6 +147,10 @@
   - [x] `dispatch_tcl`.
 - [x] Ensure all callbacks run on the main thread.
 - [x] Add robust error logging and isolation.
+- [x] Allowlist and bound callback event/handler names and registration counts.
+- [x] Reject duplicate registrations and cap queued dispatch work.
+- [x] Pin queued registry lifetime, dispatch from snapshots, and discard work during shutdown.
+- [x] Remove per-plugin callbacks after failed loads and before runtime teardown.
 
 ## 6. Security Model
 

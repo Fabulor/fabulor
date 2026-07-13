@@ -32,6 +32,8 @@ plugins = set()
 python_plugin_libdir = None
 manifest_load_token = None
 
+MANIFEST_CALLBACKS_PER_PLUGIN_MAX = 64
+
 
 @contextmanager
 def redirected_stdout():
@@ -83,11 +85,12 @@ class Attribute:
 
 
 class Hook:
-    def __init__(self, plugin, callback, userdata, is_unload):
+    def __init__(self, plugin, callback, userdata, is_unload, callback_key=None):
         self.is_unload = is_unload
         self.plugin = weakref.proxy(plugin)
         self.callback = callback
         self.userdata = userdata
+        self.callback_key = callback_key
         self.zoitechat_hook = None
         self.handle = ffi.new_handle(weakref.proxy(self))
 
@@ -128,14 +131,22 @@ class Plugin:
         self.manifest_id = manifest_id
         self.capabilities = frozenset(capabilities or ())
         self.hooks = set()
+        self.callback_registrations = set()
         self.globals = {
             '__plugin': weakref.proxy(self),
             '__name__': '__main__',
         }
 
-    def add_hook(self, callback, userdata, is_unload=False):
-        hook = Hook(self, callback, userdata, is_unload=is_unload)
+    def add_hook(self, callback, userdata, is_unload=False, callback_key=None):
+        if self.manifest_id is not None and len(self.hooks) >= MANIFEST_CALLBACKS_PER_PLUGIN_MAX:
+            raise RuntimeError("Plugin '{}' reached the 64-callback limit.".format(self.manifest_id))
+        if callback_key is not None and callback_key in self.callback_registrations:
+            raise ValueError("Callback '{}' is already registered.".format(callback_key[0]))
+
+        hook = Hook(self, callback, userdata, is_unload=is_unload, callback_key=callback_key)
         self.hooks.add(hook)
+        if callback_key is not None:
+            self.callback_registrations.add(callback_key)
         return hook
 
     def remove_hook(self, hook):
@@ -143,6 +154,8 @@ class Plugin:
             if id(h) == hook:
                 ud = h.userdata
                 self.hooks.remove(h)
+                if h.callback_key is not None:
+                    self.callback_registrations.discard(h.callback_key)
                 return ud
 
         log('Hook not found')

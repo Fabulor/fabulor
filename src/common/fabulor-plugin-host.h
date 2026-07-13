@@ -133,6 +133,9 @@ FabulorCallbackRegistry *fabulor_callback_registry_new (const FabulorAPI *api,
 														const FabulorPluginCatalog *catalog,
 														GMainContext *main_context);
 void fabulor_callback_registry_free (FabulorCallbackRegistry *registry);
+void fabulor_callback_registry_shutdown (FabulorCallbackRegistry *registry);
+guint fabulor_callback_registry_remove_plugin (FabulorCallbackRegistry *registry,
+											const char *plugin_id);
 gboolean fabulor_callback_registry_register (FabulorCallbackRegistry *registry,
 											 const char *event_name,
 											 const char *plugin_id,
