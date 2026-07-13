@@ -740,3 +740,28 @@ Updated scanner follow-up:
 - Fix or make deterministic generation of `public_suffix_data.h` for redirected/native scanner builds.
 - Investigate why CodeQL's Windows C/C++ tracer is not seeing the local MSBuild/CL invocations, or rely on the existing GitHub Actions CodeQL jobs for CodeQL coverage.
 - Investigate Semgrep's Windows cert-store startup failure and Python wrapper temp-directory cleanup failure before treating Semgrep as locally usable.
+
+## Compiler Warning Remediation Follow-Up
+
+Date: 2026-07-14
+
+The warnings observed during the earlier MSVC analysis and release builds were
+reviewed rather than suppressed. The cleanup adds checked narrowing at the Lua
+API, socket, text-conversion, IRC-mode, nickname-completion, and timestamp
+boundaries; uses the GLib portability API for certificate permissions; and
+removes the const-qualification mismatch in the OpenSSL common-name fallback.
+
+The SCRAM review also found and fixed two adjacent error-path issues: invalid
+server nonces now release their temporary values, and PBKDF2 input sizes and
+failure results are validated before authentication continues.
+
+Validation:
+
+- A full MSVC x64 Release rebuild of `win32\zoitechat.sln` completed with 0
+  warnings and 0 errors.
+- All 15 manifest JSON and path-policy tests passed during that rebuild.
+- `git diff --check` passed.
+
+This removes the concrete compiler-warning set recorded by the local scanner
+follow-up. It does not replace the still-outstanding full MSVC `/analyze` or
+CodeQL tracing work.

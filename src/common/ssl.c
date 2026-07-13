@@ -504,7 +504,7 @@ _SSL_check_common_name (X509 *cert, const char *host)
 {
 	const X509_NAME *name;
 	const X509_NAME_ENTRY *entry;
-	const ASN1_STRING *common_name_asn1;
+	ASN1_STRING *common_name_asn1;
 	const unsigned char *common_name;
 	int common_name_len;
 	int common_name_index;

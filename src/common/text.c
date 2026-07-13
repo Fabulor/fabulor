@@ -765,7 +765,8 @@ get_stamp_str (char *fmt, time_t tim, char **ret)
 		return 0;
 	}
 
-	return len_utf8;
+	g_assert (len_utf8 <= G_MAXINT);
+	return (int)len_utf8;
 }
 
 static void

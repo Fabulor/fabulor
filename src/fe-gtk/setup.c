@@ -2030,13 +2030,17 @@ setup_create_pages (GtkWidget *box)
 {
         GtkWidget *book;
         GtkWindow *win = GTK_WINDOW (setup_window);
+        int i;
 
         (void)box;
         book = gtk_notebook_new ();
 
-        memset (setup_page_factories, 0, sizeof (setup_page_factories));
-        memset (setup_page_settings, 0, sizeof (setup_page_settings));
-        memset (setup_page_containers, 0, sizeof (setup_page_containers));
+        for (i = 0; i < SETUP_MAX_PAGES; i++)
+        {
+                setup_page_factories[i] = NULL;
+                setup_page_settings[i] = NULL;
+                setup_page_containers[i] = NULL;
+        }
         setup_page_count = 0;
 
         setup_register_page (cata_interface[0], book, setup_page_from_appearance, NULL);

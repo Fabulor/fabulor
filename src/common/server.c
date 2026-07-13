@@ -126,16 +126,23 @@ int
 tcp_send_real (void *ssl, int sok, GIConv write_converter, char *buf, int len)
 {
 	int ret;
+	int encoded_len;
 
 	gsize buf_encoded_len;
 	gchar *buf_encoded = text_convert_invalid (buf, len, write_converter, arbitrary_encoding_fallback_string, &buf_encoded_len);
+	if (buf_encoded_len > G_MAXINT)
+	{
+		g_free (buf_encoded);
+		return -1;
+	}
+	encoded_len = (int)buf_encoded_len;
 #ifdef USE_OPENSSL
 	if (!ssl)
-		ret = send (sok, buf_encoded, buf_encoded_len, 0);
+		ret = send (sok, buf_encoded, encoded_len, 0);
 	else
-		ret = _SSL_send (ssl, buf_encoded, buf_encoded_len);
+		ret = _SSL_send (ssl, buf_encoded, encoded_len);
 #else
-	ret = send (sok, buf_encoded, buf_encoded_len, 0);
+	ret = send (sok, buf_encoded, encoded_len, 0);
 #endif
 	g_free (buf_encoded);
 
@@ -317,15 +324,23 @@ static void
 server_inline (server *serv, char *line, gssize len)
 {
 	gsize len_utf8;
+	int inline_len;
 	if (!strcmp (serv->encoding, "UTF-8"))
 		line = text_fixup_invalid_utf8 (line, len, &len_utf8);
 	else
 		line = text_convert_invalid (line, len, serv->read_converter, unicode_fallback_string, &len_utf8);
 
-	fe_add_rawlog (serv, line, len_utf8, FALSE);
+	if (len_utf8 > G_MAXINT)
+	{
+		g_free (line);
+		return;
+	}
+	inline_len = (int)len_utf8;
+
+	fe_add_rawlog (serv, line, inline_len, FALSE);
 
 	/* let proto-irc.c handle it */
-	serv->p_inline (serv, line, len_utf8);
+	serv->p_inline (serv, line, inline_len);
 
 	g_free (line);
 }

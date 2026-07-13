@@ -20,6 +20,7 @@
 
 #include <stdlib.h>
 #include <stdint.h>
+#include <limits.h>
 #include <string.h>
 
 #include <lua.h>
@@ -55,6 +56,29 @@ static char command_help[] =
 static char registry_field[] = "plugin";
 
 static zoitechat_plugin *ph;
+
+static int
+lua_integer_to_int_arg(lua_State *L, int arg, lua_Integer value)
+{
+        if(value < INT_MIN || value > INT_MAX)
+                return luaL_argerror(L, arg, "integer is outside the supported range");
+
+        return (int)value;
+}
+
+static int
+lua_result_to_int(lua_State *L, int index, int fallback)
+{
+        lua_Integer value = lua_tointeger(L, index);
+
+        if(value < INT_MIN || value > INT_MAX)
+        {
+                zoitechat_printf(ph, "Lua hook returned an integer outside the supported range");
+                return fallback;
+        }
+
+        return (int)value;
+}
 
 #if LUA_VERSION_NUM < 502
 #define lua_rawlen lua_objlen
@@ -182,32 +206,35 @@ static int api_zoitechat_emit_print_attrs(lua_State *L)
 
 static int api_zoitechat_send_modes(lua_State *L)
 {
-        size_t i, n;
-        int modes;
+        size_t n;
+        int i, modes, target_count;
         char const *mode;
         char const **targets;
 
         luaL_checktype(L, 1, LUA_TTABLE);
         n = lua_rawlen(L, 1);
+        if(n > INT_MAX)
+                return luaL_argerror(L, 1, "too many mode targets");
+        target_count = (int)n;
         mode = luaL_checkstring(L, 2);
         if(strlen(mode) != 2)
                 return luaL_argerror(L, 2, "expected sign followed by a mode letter");
-        modes = luaL_optinteger(L, 3, 0);
-        targets = g_new(char const *, n);
+        modes = lua_integer_to_int_arg(L, 3, luaL_optinteger(L, 3, 0));
+        targets = g_new(char const *, target_count);
 
-        for(i = 0; i < n; i++)
+        for(i = 0; i < target_count; i++)
         {
                 lua_rawgeti(L, 1, i + 1);
                 if(lua_type(L, -1) != LUA_TSTRING)
                 {
-                        g_free(targets);
+                        g_free((void *)targets);
                         return luaL_argerror(L, 1, "expected an array of strings");
                 }
                 targets[i] = lua_tostring(L, -1);
                 lua_pop(L, 1);
         }
-        zoitechat_send_modes(ph, targets, n, modes, mode[0], mode[1]);
-        g_free(targets);
+        zoitechat_send_modes(ph, targets, target_count, modes, mode[0], mode[1]);
+        g_free((void *)targets);
         return 0;
 }
 
@@ -226,9 +253,11 @@ static int api_zoitechat_strip(lua_State *L)
 
         luaL_checktype(L, 1, LUA_TSTRING);
         text = lua_tolstring(L, 1, &len);
+        if(len > INT_MAX)
+                return luaL_argerror(L, 1, "text is too long");
         leave_colors = lua_toboolean(L, 2);
         leave_attrs = lua_toboolean(L, 3);
-        result = zoitechat_strip(ph, text, len, (leave_colors ? 0 : 1) | (leave_attrs ? 0 : 2));
+        result = zoitechat_strip(ph, text, (int)len, (leave_colors ? 0 : 1) | (leave_attrs ? 0 : 2));
         if(result)
         {
                 lua_pushstring(L, result);
@@ -297,7 +326,7 @@ static int api_command_closure(char *word[], char *word_eol[], void *udata)
                 check_deferred(script);
                 return ZOITECHAT_EAT_NONE;
         }
-        ret = lua_tointeger(L, -1);
+        ret = lua_result_to_int(L, -1, ZOITECHAT_EAT_NONE);
         lua_pop(L, 2);
         check_deferred(script);
         return ret;
@@ -313,7 +342,7 @@ static int api_zoitechat_hook_command(lua_State *L)
         lua_pushvalue(L, 2);
         ref = luaL_ref(L, LUA_REGISTRYINDEX);
         help = luaL_optstring(L, 3, NULL);
-        pri = luaL_optinteger(L, 4, ZOITECHAT_PRI_NORM);
+        pri = lua_integer_to_int_arg(L, 4, luaL_optinteger(L, 4, ZOITECHAT_PRI_NORM));
         info = g_new(hook_info, 1);
         info->state = L;
         info->ref = ref;
@@ -357,7 +386,7 @@ static int api_print_closure(char *word[], void *udata)
                 check_deferred(script);
                 return ZOITECHAT_EAT_NONE;
         }
-        ret = lua_tointeger(L, -1);
+        ret = lua_result_to_int(L, -1, ZOITECHAT_EAT_NONE);
         lua_pop(L, 2);
         check_deferred(script);
         return ret;
@@ -371,7 +400,7 @@ static int api_zoitechat_hook_print(lua_State *L)
 
         lua_pushvalue(L, 2);
         ref = luaL_ref(L, LUA_REGISTRYINDEX);
-        pri = luaL_optinteger(L, 3, ZOITECHAT_PRI_NORM);
+        pri = lua_integer_to_int_arg(L, 3, luaL_optinteger(L, 3, ZOITECHAT_PRI_NORM));
         info = g_new(hook_info, 1);
         info->state = L;
         info->ref = ref;
@@ -426,7 +455,7 @@ static int api_print_attrs_closure(char *word[], zoitechat_event_attrs *attrs, v
                 check_deferred(script);
                 return ZOITECHAT_EAT_NONE;
         }
-        ret = lua_tointeger(L, -1);
+        ret = lua_result_to_int(L, -1, ZOITECHAT_EAT_NONE);
         lua_pop(L, 2);
         check_deferred(script);
         return ret;
@@ -440,7 +469,7 @@ static int api_zoitechat_hook_print_attrs(lua_State *L)
 
         lua_pushvalue(L, 2);
         ref = luaL_ref(L, LUA_REGISTRYINDEX);
-        pri = luaL_optinteger(L, 3, ZOITECHAT_PRI_NORM);
+        pri = lua_integer_to_int_arg(L, 3, luaL_optinteger(L, 3, ZOITECHAT_PRI_NORM));
         info = g_new(hook_info, 1);
         info->state = L;
         info->ref = ref;
@@ -484,7 +513,7 @@ static int api_server_closure(char *word[], char *word_eol[], void *udata)
                 check_deferred(script);
                 return ZOITECHAT_EAT_NONE;
         }
-        ret = lua_tointeger(L, -1);
+        ret = lua_result_to_int(L, -1, ZOITECHAT_EAT_NONE);
         lua_pop(L, 2);
         check_deferred(script);
         return ret;
@@ -498,7 +527,7 @@ static int api_zoitechat_hook_server(lua_State *L)
 
         lua_pushvalue(L, 2);
         ref = luaL_ref(L, LUA_REGISTRYINDEX);
-        pri = luaL_optinteger(L, 3, ZOITECHAT_PRI_NORM);
+        pri = lua_integer_to_int_arg(L, 3, luaL_optinteger(L, 3, ZOITECHAT_PRI_NORM));
         info = g_new(hook_info, 1);
         info->state = L;
         info->ref = ref;
@@ -548,7 +577,7 @@ static int api_server_attrs_closure(char *word[], char *word_eol[], zoitechat_ev
                 check_deferred(script);
                 return ZOITECHAT_EAT_NONE;
         }
-        ret = lua_tointeger(L, -1);
+        ret = lua_result_to_int(L, -1, ZOITECHAT_EAT_NONE);
         lua_pop(L, 2);
         check_deferred(script);
         return ret;
@@ -562,7 +591,7 @@ static int api_zoitechat_hook_server_attrs(lua_State *L)
 
         lua_pushvalue(L, 2);
         ref = luaL_ref(L, LUA_REGISTRYINDEX);
-        pri = luaL_optinteger(L, 3, ZOITECHAT_PRI_NORM);
+        pri = lua_integer_to_int_arg(L, 3, luaL_optinteger(L, 3, ZOITECHAT_PRI_NORM));
         info = g_new(hook_info, 1);
         info->state = L;
         info->ref = ref;
@@ -602,7 +631,7 @@ static int api_timer_closure(void *udata)
 
 static int api_zoitechat_hook_timer(lua_State *L)
 {
-        int ref, timeout = luaL_checkinteger (L, 1);
+        int ref, timeout = lua_integer_to_int_arg(L, 1, luaL_checkinteger(L, 1));
         hook_info *info, **u;
 
         lua_pushvalue(L, 2);
@@ -905,7 +934,8 @@ static int api_zoitechat_pluginprefs_meta_newindex(lua_State *L)
                         zoitechat_pluginpref_set_str(h, key, lua_tostring(L, 3));
                         return 0;
                 case LUA_TNUMBER:
-                        zoitechat_pluginpref_set_int(h, key, lua_tointeger(L, 3));
+                        zoitechat_pluginpref_set_int(h, key,
+                                lua_integer_to_int_arg(L, 3, lua_tointeger(L, 3)));
                         return 0;
                 case LUA_TNIL: case LUA_TNONE:
                         zoitechat_pluginpref_delete(h, key);

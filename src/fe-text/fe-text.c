@@ -118,7 +118,7 @@ fe_new_window (struct session *sess, int focus)
 static int
 get_stamp_str (time_t tim, char *dest, int size)
 {
-	return strftime_validated (dest, size, prefs.hex_stamp_text_format, localtime (&tim));
+	return (int)strftime_validated (dest, (size_t)size, prefs.hex_stamp_text_format, localtime (&tim));
 }
 
 static int
@@ -132,7 +132,7 @@ timecat (char *buf, time_t stamp)
 
 	get_stamp_str (stamp, stampbuf, sizeof (stampbuf));
 	strcat (buf, stampbuf);
-	return strlen (stampbuf);
+	return (int)strlen (stampbuf);
 }
 
 /* Windows doesn't handle ANSI codes in cmd.exe, need to not display them */
