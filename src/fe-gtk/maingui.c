@@ -4516,6 +4516,18 @@ typedef struct
         char *sequence;
 } EmojiFlagInsert;
 
+typedef struct
+{
+        GtkEntry *entry;
+        GtkWidget *popover;
+        const gunichar *items;
+        gboolean flags;
+        gboolean loaded;
+} EmojiPickerPage;
+
+#define MG_EMOJI_POPOVER_DATA "fabulor-emoji-popover"
+#define MG_EMOJI_PAGE_DATA "fabulor-emoji-page"
+
 static const char *mg_emoji_flag_codes[] = {
         "AC", "AD", "AE", "AF", "AG", "AI", "AL", "AM", "AO", "AQ", "AR", "AS",
         "AT", "AU", "AW", "AX", "AZ", "BA", "BB", "BD", "BE", "BF", "BG", "BH",
@@ -4883,6 +4895,62 @@ mg_emoji_flags_page_new (GtkEntry *entry, GtkWidget *popover)
         return scrolled;
 }
 
+static GtkWidget *
+mg_emoji_lazy_page_new (GtkEntry *entry, GtkWidget *popover,
+                        const gunichar *items, gboolean flags)
+{
+        EmojiPickerPage *state;
+        GtkWidget *page;
+
+        page = gtk_box_new (GTK_ORIENTATION_VERTICAL, 0);
+        state = g_new0 (EmojiPickerPage, 1);
+        state->entry = entry;
+        state->popover = popover;
+        state->items = items;
+        state->flags = flags;
+        g_object_set_data_full (G_OBJECT (page), MG_EMOJI_PAGE_DATA, state, g_free);
+        return page;
+}
+
+static void
+mg_emoji_lazy_page_load (GtkWidget *page)
+{
+        EmojiPickerPage *state;
+        GtkWidget *contents;
+
+        state = g_object_get_data (G_OBJECT (page), MG_EMOJI_PAGE_DATA);
+        if (!state || state->loaded)
+                return;
+
+        state->loaded = TRUE;
+        if (state->flags)
+                contents = mg_emoji_flags_page_new (state->entry, state->popover);
+        else
+                contents = mg_emoji_codepoint_page_new (state->entry, state->popover, state->items);
+        gtk_box_pack_start (GTK_BOX (page), contents, TRUE, TRUE, 0);
+        gtk_widget_show_all (page);
+}
+
+static void
+mg_emoji_notebook_switch_page_cb (GtkNotebook *notebook, GtkWidget *page,
+                                   guint page_num, gpointer user_data)
+{
+        (void) notebook;
+        (void) page_num;
+        (void) user_data;
+        mg_emoji_lazy_page_load (page);
+}
+
+static void
+mg_emoji_entry_destroy_cb (GtkWidget *entry, gpointer user_data)
+{
+        GtkWidget *popover = GTK_WIDGET (user_data);
+
+        g_object_set_data (G_OBJECT (entry), MG_EMOJI_POPOVER_DATA, NULL);
+        gtk_widget_destroy (popover);
+        g_object_unref (popover);
+}
+
 static void
 mg_show_emoji_popover (GtkEntry *entry)
 {
@@ -4892,7 +4960,18 @@ mg_show_emoji_popover (GtkEntry *entry)
         GtkWidget *page;
         int i;
 
+        popover = g_object_get_data (G_OBJECT (entry), MG_EMOJI_POPOVER_DATA);
+        if (popover)
+        {
+                gtk_popover_popup (GTK_POPOVER (popover));
+                return;
+        }
+
         popover = gtk_popover_new (GTK_WIDGET (entry));
+        g_object_ref_sink (popover);
+        g_object_set_data (G_OBJECT (entry), MG_EMOJI_POPOVER_DATA, popover);
+        g_signal_connect (G_OBJECT (entry), "destroy",
+                          G_CALLBACK (mg_emoji_entry_destroy_cb), popover);
         gtk_popover_set_position (GTK_POPOVER (popover), GTK_POS_TOP);
         gtk_popover_set_modal (GTK_POPOVER (popover), TRUE);
         gtk_popover_set_transitions_enabled (GTK_POPOVER (popover), FALSE);
@@ -4907,16 +4986,19 @@ mg_show_emoji_popover (GtkEntry *entry)
 
         for (i = 0; mg_emoji_categories[i].title != NULL; i++)
         {
-                page = mg_emoji_codepoint_page_new (entry, popover, mg_emoji_categories[i].items);
+                page = mg_emoji_lazy_page_new (entry, popover, mg_emoji_categories[i].items, FALSE);
                 gtk_notebook_append_page (GTK_NOTEBOOK (notebook), page, gtk_label_new (_(mg_emoji_categories[i].title)));
         }
 
-        page = mg_emoji_flags_page_new (entry, popover);
+        page = mg_emoji_lazy_page_new (entry, popover, NULL, TRUE);
         gtk_notebook_append_page (GTK_NOTEBOOK (notebook), page, gtk_label_new (_("Flags")));
+        g_signal_connect (G_OBJECT (notebook), "switch-page",
+                          G_CALLBACK (mg_emoji_notebook_switch_page_cb), NULL);
+        page = gtk_notebook_get_nth_page (GTK_NOTEBOOK (notebook), 0);
+        mg_emoji_lazy_page_load (page);
 
         gtk_widget_show_all (popover);
         gtk_popover_popup (GTK_POPOVER (popover));
-        g_signal_connect (G_OBJECT (popover), "closed", G_CALLBACK (gtk_widget_destroy), NULL);
 }
 
 static void
