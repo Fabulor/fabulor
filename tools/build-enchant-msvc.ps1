@@ -32,11 +32,22 @@ if ([string]::IsNullOrWhiteSpace($CMakePath) -or -not (Test-Path -LiteralPath $C
 }
 
 New-Item -ItemType Directory -Force -Path $WorkRoot | Out-Null
-if (-not (Test-Path -LiteralPath $archive)) {
-    Invoke-WebRequest -Uri "https://github.com/rrthomas/enchant/releases/download/v$version/enchant-$version.tar.gz" -OutFile $archive
+$archiveValid = (Test-Path -LiteralPath $archive) -and
+    ((Get-FileHash -Algorithm SHA256 -LiteralPath $archive).Hash -eq $archiveHash)
+for ($attempt = 1; -not $archiveValid -and $attempt -le 4; $attempt++) {
+    Remove-Item -LiteralPath $archive -Force -ErrorAction SilentlyContinue
+    try {
+        Invoke-WebRequest -Uri "https://github.com/rrthomas/enchant/releases/download/v$version/enchant-$version.tar.gz" -OutFile $archive
+        $archiveValid = (Get-FileHash -Algorithm SHA256 -LiteralPath $archive).Hash -eq $archiveHash
+    } catch {
+        $archiveValid = $false
+    }
+    if (-not $archiveValid -and $attempt -lt 4) {
+        Start-Sleep -Seconds ([math]::Pow(2, $attempt))
+    }
 }
-if ((Get-FileHash -Algorithm SHA256 -LiteralPath $archive).Hash -ne $archiveHash) {
-    throw 'Enchant source archive hash mismatch.'
+if (-not $archiveValid) {
+    throw 'Enchant source archive failed SHA-256 verification after four download attempts.'
 }
 if (-not (Test-Path -LiteralPath $source)) {
     tar -xf $archive -C $WorkRoot
