@@ -336,7 +336,7 @@ dcc_connect_sok (struct DCC *dcc)
 	int sok;
 	struct sockaddr_in addr;
 
-	sok = socket (AF_INET, SOCK_STREAM, 0);
+	sok = zc_socket_create (AF_INET, SOCK_STREAM, 0);
 	if (sok == -1)
 		return -1;
 
@@ -1558,7 +1558,7 @@ dcc_accept (GIOChannel *source, GIOCondition condition, struct DCC *dcc)
 	socklen_t len;
 
 	len = sizeof (CAddr);
-	sok = accept (dcc->sok, (struct sockaddr *) &CAddr, &len);
+	sok = zc_socket_accept (dcc->sok, (struct sockaddr *) &CAddr, &len);
 	fe_input_remove (dcc->iotag);
 	dcc->iotag = 0;
 	closesocket (dcc->sok);
@@ -1629,7 +1629,7 @@ dcc_listen_init (struct DCC *dcc, session *sess)
 	int i, bindretval = -1;
 	socklen_t len;
 
-	dcc->sok = socket (AF_INET, SOCK_STREAM, 0);
+	dcc->sok = zc_socket_create (AF_INET, SOCK_STREAM, 0);
 	if (dcc->sok == -1)
 		return FALSE;
 
