@@ -1,0 +1,196 @@
+# GTK4 Validation Log
+
+Status: baseline and reusable test matrix
+
+Baseline date: 2026-07-14
+
+## Purpose
+
+This document is the evidence log for GTK4 conversion work. Update it in every
+GTK4 PR with the exact build, automated-test, manual-test, screenshot, runtime,
+and packaging results relevant to that change.
+
+Do not mark a migration stage complete from compilation alone.
+
+## Baseline Record
+
+The pre-migration Windows client is GTK3-based. Recent x64 Release validation
+before this documentation stage established:
+
+- MSVC solution rebuilds with 0 warnings and 0 errors
+- native manifest/path/policy tests pass 18/18
+- C#, Python, and Tcl manifest samples load and dispatch incoming message events
+- the manifest preference default, confirmation, persistence, restart, disable,
+  and safe-mode behaviour pass in an installed upgrade
+- Enchant 2.8.19 checking, suggestions, add-to-dictionary, URL paste, and personal
+  dictionary persistence work in the installed client
+- emoji picker and edit-box responsiveness are acceptable after the recent
+  caching and spell-check fixes
+- the WiX installer builds with the known empty GTK4 `lib/gio` harvest warning
+  when external ICE validation is suppressed
+
+These results are a behavioural baseline, not GTK4 validation.
+
+## Per-PR Record Template
+
+Copy this section for each GTK4 PR:
+
+```text
+### PR: <number and title>
+
+Date:
+Commit:
+Migration stage:
+Files/workflows converted:
+GTK version:
+GLib version:
+Build configuration:
+
+Automated checks:
+- [ ] MSVC x64 Release
+- [ ] Meson build/tests
+- [ ] repository lint
+- [ ] CodeQL
+- [ ] focused unit tests
+- [ ] installer build
+
+Manual checks:
+- [ ] converted workflow
+- [ ] keyboard-only operation
+- [ ] high-DPI layout
+- [ ] repeated open/close
+- [ ] error and cancellation paths
+
+Performance observations:
+Screenshots/artifacts:
+Known regressions:
+Follow-up:
+```
+
+## Build Matrix
+
+| Check | GTK3 shipping target | GTK4 candidate | Final GTK4 target |
+|---|---|---|---|
+| MSVC x64 Release | required until cutover | required when target exists | required |
+| Meson build | required where dependencies are available | required when target exists | required |
+| Native tests | required | required | required |
+| Repository lint | required | required | required |
+| CodeQL C/C++ | required | required | required |
+| WiX MSI/bootstrapper | required for packaging changes | required before cutover | required |
+| Clean install | baseline | required before cutover | required |
+| In-place upgrade | baseline | required before cutover | required |
+
+## Core Workflow Matrix
+
+| Workflow | Required checks | Status |
+|---|---|---|
+| Startup and shutdown | normal, safe mode, repeated restart, clean exit | not run on GTK4 |
+| Network lifecycle | connect, TLS, proxy, reconnect, disconnect, ZNC | not run on GTK4 |
+| Channel use | join/part, switch, topic, modes, user list, nick menu | not run on GTK4 |
+| Messaging | type, paste, Enter, actions, notices, queries, history | not run on GTK4 |
+| Transcript | colours, timestamps, wrap, search, URLs, selection, copy | not run on GTK4 |
+| Scrollback | replay, marker, wheel, Page Up/Down, scroll-to-bottom | not run on GTK4 |
+| Completion | nick/channel/command completion and popup behaviour | not run on GTK4 |
+| Spell check | underline, suggestions, replace, add, persistence, URLs | not run on GTK4 |
+| Emoji and flags | picker open/search/page/insert and flag rendering | not run on GTK4 |
+| Server list | create/edit/delete/reorder/connect and password storage | not run on GTK4 |
+| Preferences | every page, save/cancel, restart-only settings | not run on GTK4 |
+| Operational lists | channel, notify, ignore, ban, DCC, key bindings | not run on GTK4 |
+| Themes | built-in, custom CSS, dark mode, import, persistence | not run on GTK4 |
+| Tray/notifications | states, click actions, hide/show, notification click | not run on GTK4 |
+| Add-ons/plugins | built-ins, simple add-ons, manifest C#/Python/Tcl | not run on GTK4 |
+| Updater | check, UI, cancellation, installer handoff | not run on GTK4 |
+
+## Input And Performance Gates
+
+Measure on the same machine and representative network/session where possible.
+Record raw observations rather than only "feels fast".
+
+| Scenario | Baseline to preserve | GTK4 result |
+|---|---|---|
+| Continuous edit-box typing | no visible keystroke backlog | not measured |
+| Enter-to-local-echo | no sustained delay after warm-up | not measured |
+| URL paste with spell check | no crash or prolonged input stall | not measured |
+| Emoji picker first open | responsive with cached subsequent pages | not measured |
+| Large scrollback wheel/Page Up | continuous and correctly framed | not measured |
+| Busy channel updates | input remains responsive | not measured |
+| Large channel/user list | sorting and selection remain responsive | not measured |
+| Startup to usable server window | no material regression without cause | not measured |
+
+For rendering changes, capture CPU usage and frame behaviour where practical.
+For regressions, record profile size, scrollback size, plugin set, spell-check
+state, network, and lag meter value.
+
+## Visual Matrix
+
+Capture screenshots for affected surfaces at:
+
+- 100%, 125%, 150%, and 200% Windows scale where available
+- normal and maximized windows
+- narrow and wide layouts
+- tabs and tree channel-switcher modes
+- light, dark, and custom theme states
+- long translated labels where translation assets are available
+
+Check:
+
+- no clipped labels, buttons, rows, icons, menus, or dialog content
+- no overlapping edit box, topic bar, transcript, user list, or status areas
+- stable row heights and icon alignment
+- crisp text, emoji, flags, tray icons, and high-DPI assets
+- sensible focus indication, selection colours, and disabled states
+- popup/menu placement on multi-monitor and mixed-DPI setups
+
+## Keyboard And Accessibility Matrix
+
+- traverse every converted control with keyboard only
+- preserve menu accelerators and configurable key bindings
+- verify focus order, default buttons, Escape/cancel, and Enter activation
+- verify transcript and list selection semantics
+- inspect accessible names/roles/states for custom controls
+- test screen-reader exposure on Windows when custom widgets change
+- preserve high-contrast/theme readability
+- avoid pointer-only access to required commands
+
+## Runtime And Packaging Matrix
+
+| Check | Status |
+|---|---|
+| `fabulor.exe` imports GTK4 and not GTK3 | not run |
+| no duplicate GLib/GObject/GIO families loaded | not run |
+| executable-relative runtime works from unrelated CWD | not run |
+| clean install has allowlisted GTK4 payload | not run |
+| upgrade removes legacy GTK3 payload | not run |
+| repair restores required GTK4 files | not run |
+| uninstall removes GTK payload and preserves profile | not run |
+| fontconfig, pixbuf loaders, schemas, icons, and locales resolve | not run |
+| Enchant/WinSpell smoke test passes against final runtime | not run |
+| built-in and manifest plugins load against final runtime | not run |
+| MSI/bootstrapper hashes recorded | not run |
+| payload manifest/SBOM matches installed files | not run |
+
+## Crash And Diagnostic Evidence
+
+For GTK4 crashes or hangs, record:
+
+- exact build commit and runtime versions
+- Event Viewer exception code/module/offset
+- debugger stack with symbols
+- loaded module list, especially GTK/GLib/CRT duplicates
+- reproduction profile and steps
+- whether spell check, themes, plugins, tray, or notifications were active
+- relevant GDK/GTK debug environment output
+
+Keep crash dumps and large logs out of Git. Record their local path/hash or attach
+them to the corresponding issue/PR according to project policy.
+
+## Stage Completion Rule
+
+A stage can move to complete in `migration-plan.md` only when:
+
+1. its API inventory rows are converted or deliberately retired;
+2. automated checks are green;
+3. affected manual workflows pass;
+4. performance and visual results are recorded;
+5. packaging impact is either validated or explicitly not applicable; and
+6. known regressions have owners and follow-up issues rather than being hidden.
