@@ -22,6 +22,7 @@
 - [x] Convert bundled flag images to transparent-background PNGs.
 - [x] Add visible two-letter labels to flag picker buttons to disambiguate lookalike flags such as `FR`/`CP` and `IE`/`CI`.
 - [x] Enlarge non-flag emoji picker glyphs while leaving the flag tab compact.
+- [x] Build emoji picker categories lazily and reuse the popover so opening it does not synchronously rebuild every page and decode every flag image.
 
 ## Follow-Up QoL/UI Items
 
