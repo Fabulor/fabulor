@@ -38,11 +38,13 @@ Enchant 2.8.19 core and `enchant_winspell.dll` are now built with MSVC using the
 The script:
 
 1. Downloads the official `enchant-2.8.19.tar.gz` archive if absent.
-2. Requires SHA-256 `8E7F6CB0C3B79BE3146EB3AB93650484ADBC59DAE5F2C1958FDE557080BA678C`.
+2. Requires SHA-256 `C8D70991D544EE39274B96BD01D2858A009FE732FF43F2AAF605FD61ECD06F60`.
 3. Builds Enchant core and WinSpell as x64 MSVC DLLs against `C:\gtk-build\gtk`.
 4. Uses a checked-in WinSpell-first provider ordering and temporary `bcp47.h` compatibility shim.
 5. Stages the DLLs into `C:\zoitechat-build\x64\rel`.
 6. Runs an isolated native smoke test covering checks, suggestions, personal-word addition, broker restart, and persistence.
+
+Upstream replaced the `v2.8.19` release archive on 2026-07-13 while the Windows CI rollout was being validated. GitHub records the replacement asset digest above. Comparison with the previously audited `8E7F6CB0C3B79BE3146EB3AB93650484ADBC59DAE5F2C1958FDE557080BA678C` archive confirmed that every core source, public/provider header, and WinSpell source consumed by the MSVC recipe is byte-identical; the replacement adds or regenerates Autotools and gnulib distribution files that this recipe does not compile.
 
 Verified staged hashes from this remediation run:
 

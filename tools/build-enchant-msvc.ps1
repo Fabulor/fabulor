@@ -7,7 +7,7 @@ param(
 
 $ErrorActionPreference = 'Stop'
 $version = '2.8.19'
-$archiveHash = '8E7F6CB0C3B79BE3146EB3AB93650484ADBC59DAE5F2C1958FDE557080BA678C'
+$archiveHash = 'C8D70991D544EE39274B96BD01D2858A009FE732FF43F2AAF605FD61ECD06F60'
 $archive = Join-Path $WorkRoot "enchant-$version.tar.gz"
 $source = Join-Path $WorkRoot "enchant-$version"
 $build = Join-Path $WorkRoot 'build-msvc'
