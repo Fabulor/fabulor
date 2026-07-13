@@ -1,7 +1,8 @@
 param(
     [string]$GtkRoot = 'C:\gtk-build\gtk',
     [string]$StageRoot = 'C:\zoitechat-build\x64\rel',
-    [string]$WorkRoot = (Join-Path $env:TEMP 'fabulor-enchant-msvc')
+    [string]$WorkRoot = (Join-Path $env:TEMP 'fabulor-enchant-msvc'),
+    [string]$CMakePath = ''
 )
 
 $ErrorActionPreference = 'Stop'
@@ -11,8 +12,24 @@ $archive = Join-Path $WorkRoot "enchant-$version.tar.gz"
 $source = Join-Path $WorkRoot "enchant-$version"
 $build = Join-Path $WorkRoot 'build-msvc'
 $install = Join-Path $WorkRoot 'install-msvc'
-$cmake = 'C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin\cmake.exe'
 $recipe = Join-Path $PSScriptRoot 'enchant-msvc'
+
+if ([string]::IsNullOrWhiteSpace($CMakePath)) {
+    $cmakeCommand = Get-Command cmake.exe -ErrorAction SilentlyContinue
+    if ($cmakeCommand) {
+        $CMakePath = $cmakeCommand.Source
+    } else {
+        $CMakePath = @(
+            'C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin\cmake.exe',
+            'C:\Program Files\Microsoft Visual Studio\2022\Enterprise\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin\cmake.exe',
+            'C:\Program Files\Microsoft Visual Studio\2022\Professional\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin\cmake.exe',
+            'C:\Program Files\Microsoft Visual Studio\2022\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin\cmake.exe'
+        ) | Where-Object { Test-Path -LiteralPath $_ } | Select-Object -First 1
+    }
+}
+if ([string]::IsNullOrWhiteSpace($CMakePath) -or -not (Test-Path -LiteralPath $CMakePath -PathType Leaf)) {
+    throw 'CMake was not found. Install CMake, add cmake.exe to PATH, or pass -CMakePath.'
+}
 
 New-Item -ItemType Directory -Force -Path $WorkRoot | Out-Null
 if (-not (Test-Path -LiteralPath $archive)) {
@@ -25,10 +42,10 @@ if (-not (Test-Path -LiteralPath $source)) {
     tar -xf $archive -C $WorkRoot
 }
 
-& $cmake -S $recipe -B $build -G 'Visual Studio 17 2022' -A x64 `
+& $CMakePath -S $recipe -B $build -G 'Visual Studio 17 2022' -A x64 `
     "-DENCHANT_SOURCE_DIR=$source" "-DGTK_ROOT=$GtkRoot" "-DCMAKE_INSTALL_PREFIX=$install"
 if ($LASTEXITCODE -ne 0) { throw 'Enchant CMake configuration failed.' }
-& $cmake --build $build --config Release --target install
+& $CMakePath --build $build --config Release --target install
 if ($LASTEXITCODE -ne 0) { throw 'Enchant MSVC build failed.' }
 
 New-Item -ItemType Directory -Force -Path (Join-Path $StageRoot 'lib\enchant-2') | Out-Null
