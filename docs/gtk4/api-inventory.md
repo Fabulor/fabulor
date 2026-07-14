@@ -71,6 +71,13 @@ is limited to five children with a known owning `GtkBox`. The box helper
 preserves explicit widget alignment/expansion, adds GTK3 packing padding to
 existing directional margins, and is used only where append order is exact.
 
+Stage 3 now stores the 16 command identities shared by main-menu accelerators
+and configurable keyboard shortcuts directly on their canonical menu
+definitions. Menu construction and shortcut dispatch therefore consume the
+same stable names and typed identifiers without relying on parallel positional
+tables. This foundation does not yet abstract GTK3 menu widgets, state,
+sensitivity, or popup ownership.
+
 ## Quantitative API Baseline
 
 | GTK3 family or type | Matching lines | Files | Migration direction | Stage | Status |

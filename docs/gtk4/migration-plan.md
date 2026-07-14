@@ -215,6 +215,15 @@ Exit criteria:
 
 ### Stage 3: Actions, Menus, Dialogs, And File Selection
 
+Action-identity foundation pass 1 (2026-07-14): the 16 commands shared by
+main-menu accelerators and configurable keyboard shortcuts now carry their
+stable names and typed internal identifiers directly in the canonical menu
+definition. Menu construction and shortcut dispatch consume that same data,
+removing duplicated string and positional mappings while preserving every
+existing callback, accelerator, and special Ctrl+Q preference check. GTK3 menu
+widgets, dynamic menu mutation, state, sensitivity, dialogs, and popup/event
+handling remain unchanged.
+
 Primary surfaces:
 
 - `menu.c`, context menus, tray menus, and user-defined menus

@@ -446,6 +446,39 @@ Scope: parent ownership and exact shell construction order only. Tree models,
 renderers, selection, sorting, context menus, drag/drop, and pointer/key events
 remain unchanged for their Stage 3-5 conversions.
 
+### PR: [#29 - GTK4 Menu Action-Identity Foundation, Pass 1](https://github.com/Fabulor/fabulor/pull/29)
+
+Date: 2026-07-14
+
+Commit: `7a19ec75`
+
+Migration stage: 3, canonical menu command identity and dispatch
+
+Files/workflows converted: main-menu accelerator identity lookup and
+configurable keyboard-shortcut dispatch in `menu.c`
+
+GTK version: 4.22.4
+
+GLib version: 2.88.0
+
+Build configuration: MSVC x64 Release and Meson 1.11.2 Release with MSVC 19.44
+
+Automated checks:
+
+- [x] production GTK3 frontend compile and link with 0 warnings and 0 errors
+- [x] canonical menu action entries: 16 unique command identities
+- [x] menu construction and shortcut dispatch share definitions without a
+  positional action table
+- [x] GTK4 validator unit tests: 8/8, plus repository root validation
+- [x] isolated GTK4 MSVC compile, link, and runtime probe with no warnings
+- [x] isolated GTK4 Meson configure, compile, link, and runtime test
+- [x] production GTK3 MSVC x64 Release rebuild and native tests: 18/18
+- [x] GitHub Actions required checks: 5/5
+
+Scope: command identity and dispatch only. GTK3 menu widgets, action binding,
+state, sensitivity, dynamic mutation, popup ownership, accelerators, dialogs,
+and pointer/key event handling remain unchanged for later Stage 3-4 passes.
+
 ## Per-PR Record Template
 
 Copy this section for each GTK4 PR:
