@@ -409,9 +409,11 @@ Scope: the already response-driven Join Channel dialog and the shared button
 constructor's exact child/parent ownership. Menu items, actions, accelerators,
 models, file selection, and synchronous dialog flows remain unchanged.
 
-### Stage 2 Operational-List Shell Layout, Pass 1
+### PR: [#28 - GTK4 Operational-List Shell Layout, Pass 1](https://github.com/Fabulor/fabulor/pull/28)
 
 Date: 2026-07-14
+
+Commit: `8af2bab6`
 
 Migration stage: 2, typed operational-list scroller and channel-list shell
 ownership
