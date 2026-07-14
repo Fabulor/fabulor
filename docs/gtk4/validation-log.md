@@ -335,9 +335,11 @@ Scope: only rows where construction order is the final visual order. Dynamic
 nickname/meter insertion, trailing-tab placement, explicit dialog-button
 reordering, menus, and model-heavy layouts remain unchanged.
 
-### Stage 2 Dynamic Main-Window Layout And Lifecycle, Pass 2
+### PR: [#26 - GTK4 Dynamic Main-Window Layout And Lifecycle Pass 2](https://github.com/Fabulor/fabulor/pull/26)
 
 Date: 2026-07-14
+
+Commit: `0d6d76bb`
 
 Migration stage: 2, dynamic main-window ordering and box-owned lifecycle
 
