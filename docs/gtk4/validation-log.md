@@ -163,11 +163,11 @@ Scope: start-only modules where GTK4 append order is identical to GTK3 packing
 order. Mixed start/end layouts, menus, operational list models, generic
 visibility, and destruction remain deferred.
 
-### PR: GTK4 Widget Ownership And Layout, Pass 3
+### PR: [#21 - GTK4 Widget Ownership And Layout, Pass 3](https://github.com/Fabulor/fabulor/pull/21)
 
 Date: 2026-07-14
 
-Commit: pending
+Commit: `e16ede91`
 
 Migration stage: 2, reviewed mixed box ordering
 
@@ -188,7 +188,7 @@ Automated checks:
 - [x] GTK4 validator unit tests: 8/8, plus repository root validation
 - [x] isolated GTK4 MSVC and Meson compile, link, and runtime probes
 - [x] production GTK3 MSVC x64 Release rebuild and native tests: 18/18
-- [ ] GitHub Actions required checks
+- [x] GitHub Actions required checks: 5/5
 
 Scope: mixed layouts whose existing expanding leading child preserves trailing
 placement under ordered append, plus one explicitly reordered channel-family
