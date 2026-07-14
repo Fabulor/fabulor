@@ -230,9 +230,11 @@ destruction of statically known `GtkWindow`/`GtkDialog` instances. Menus,
 conditionally hidden main-window content, generic signal callbacks, and
 non-window widgets remain explicit.
 
-### Stage 2 Visibility And Lifecycle, Pass 2
+### PR: [#23 - GTK4 Widget Lifecycle, Pass 2](https://github.com/Fabulor/fabulor/pull/23)
 
 Date: 2026-07-14
+
+Commit: `12161b00`
 
 Migration stage: 2, shared prompt and application-window lifecycle
 
