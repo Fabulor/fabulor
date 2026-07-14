@@ -267,9 +267,11 @@ application windows. Generic Escape/button destroy helpers, menu ownership,
 notebook/channel-view children, dynamic controls, unparented probes,
 spell-entry menu items, and GTK3-only tests remain explicit.
 
-### Stage 2 Generic Dialog Layout
+### PR: [#24 - GTK4 Generic Dialog Layout Pass](https://github.com/Fabulor/fabulor/pull/24)
 
 Date: 2026-07-14
+
+Commit: `cda2b16c`
 
 Migration stage: 2, typed dialog content ownership and trailing-pair layout
 
