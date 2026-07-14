@@ -376,6 +376,7 @@ fe_notify_ask (char *nick, char *networks)
 	GtkWidget *label;
 	GtkWidget *wid;
 	GtkWidget *table;
+	GtkWidget *content_area;
 	char *msg = _("Enter nickname to add:");
 	char buf[256];
 
@@ -388,11 +389,12 @@ fe_notify_ask (char *nick, char *networks)
 		gtk_window_set_transient_for (GTK_WINDOW (dialog), GTK_WINDOW (parent_window));
 	gtk_window_set_position (GTK_WINDOW (dialog), GTK_WIN_POS_MOUSE);
 
+	content_area = gtk_dialog_get_content_area (GTK_DIALOG (dialog));
 	table = gtkutil_grid_new (2, 3, FALSE);
 	gtk_container_set_border_width (GTK_CONTAINER (table), 12);
 	gtk_grid_set_row_spacing (GTK_GRID (table), 3);
 	gtk_grid_set_column_spacing (GTK_GRID (table), 8);
-	gtk_container_add (GTK_CONTAINER (gtk_dialog_get_content_area (GTK_DIALOG (dialog))), table);
+	fabulor_gtk_box_append (GTK_BOX (content_area), table, TRUE, TRUE, 0);
 
 	label = gtk_label_new (msg);
 	gtkutil_grid_attach_defaults (table, label, 0, 1, 0, 1);

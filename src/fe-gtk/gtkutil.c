@@ -565,6 +565,7 @@ fe_get_str (char *msg, char *def, void *callback, void *userdata)
 	GtkWidget *entry;
 	GtkWidget *hbox;
 	GtkWidget *label;
+	GtkWidget *content_area;
 	extern GtkWidget *parent_window;
 
 	dialog = gtk_dialog_new_with_buttons (msg, NULL, 0,
@@ -574,7 +575,8 @@ fe_get_str (char *msg, char *def, void *callback, void *userdata)
 	theme_manager_attach_window (dialog);
 
 	gtk_window_set_transient_for (GTK_WINDOW (dialog), GTK_WINDOW (parent_window));
-	gtk_box_set_homogeneous (GTK_BOX (gtk_dialog_get_content_area (GTK_DIALOG (dialog))), TRUE);
+	content_area = gtk_dialog_get_content_area (GTK_DIALOG (dialog));
+	gtk_box_set_homogeneous (GTK_BOX (content_area), TRUE);
 
 	if (userdata == (void *)1)	/* nick box is usually on the very bottom, make it centered */
 	{
@@ -594,15 +596,14 @@ fe_get_str (char *msg, char *def, void *callback, void *userdata)
 	g_signal_connect (G_OBJECT (entry), "activate",
 						 	G_CALLBACK (gtkutil_str_enter), dialog);
 	gtk_entry_set_text (GTK_ENTRY (entry), def);
-	gtk_box_pack_end (GTK_BOX (hbox), entry, 0, 0, 0);
 
 	label = gtk_label_new (msg);
-	gtk_box_pack_end (GTK_BOX (hbox), label, 0, 0, 0);
+	fabulor_gtk_box_append_trailing_pair (GTK_BOX (hbox), label, entry);
 
 	g_signal_connect (G_OBJECT (dialog), "response",
 						   G_CALLBACK (gtkutil_get_str_response), entry);
 
-	gtk_container_add (GTK_CONTAINER (gtk_dialog_get_content_area (GTK_DIALOG (dialog))), hbox);
+	fabulor_gtk_box_append (GTK_BOX (content_area), hbox, TRUE, TRUE, 0);
 
 	fabulor_gtk_widget_reveal_tree (dialog);
 }
@@ -660,6 +661,7 @@ fe_get_int (char *msg, int def, void *callback, void *userdata)
 	GtkWidget *spin;
 	GtkWidget *hbox;
 	GtkWidget *label;
+	GtkWidget *content_area;
 	GtkAdjustment *adj;
 	extern GtkWidget *parent_window;
 
@@ -668,7 +670,8 @@ fe_get_int (char *msg, int def, void *callback, void *userdata)
 										_("_OK"), GTK_RESPONSE_ACCEPT,
 										NULL);
 	theme_manager_attach_window (dialog);
-	gtk_box_set_homogeneous (GTK_BOX (gtk_dialog_get_content_area (GTK_DIALOG (dialog))), TRUE);
+	content_area = gtk_dialog_get_content_area (GTK_DIALOG (dialog));
+	gtk_box_set_homogeneous (GTK_BOX (content_area), TRUE);
 	gtk_window_set_position (GTK_WINDOW (dialog), GTK_WIN_POS_MOUSE);
 	gtk_window_set_transient_for (GTK_WINDOW (dialog), GTK_WINDOW (parent_window));
 
@@ -683,15 +686,14 @@ fe_get_int (char *msg, int def, void *callback, void *userdata)
 	gtk_adjustment_set_upper (adj, 1024);
 	gtk_adjustment_set_step_increment (adj, 1);
 	gtk_spin_button_set_value ((GtkSpinButton*)spin, def);
-	gtk_box_pack_end (GTK_BOX (hbox), spin, 0, 0, 0);
 
 	label = gtk_label_new (msg);
-	gtk_box_pack_end (GTK_BOX (hbox), label, 0, 0, 0);
+	fabulor_gtk_box_append_trailing_pair (GTK_BOX (hbox), label, spin);
 
 	g_signal_connect (G_OBJECT (dialog), "response",
 						   G_CALLBACK (gtkutil_get_number_response), spin);
 
-	gtk_container_add (GTK_CONTAINER (gtk_dialog_get_content_area (GTK_DIALOG (dialog))), hbox);
+	fabulor_gtk_box_append (GTK_BOX (content_area), hbox, TRUE, TRUE, 0);
 
 	fabulor_gtk_widget_reveal_tree (dialog);
 }
@@ -701,6 +703,7 @@ fe_get_bool (char *title, char *prompt, void *callback, void *userdata)
 {
 	GtkWidget *dialog;
 	GtkWidget *prompt_label;
+	GtkWidget *content_area;
 	extern GtkWidget *parent_window;
 
 	dialog = gtk_dialog_new_with_buttons (title, NULL, 0,
@@ -708,7 +711,8 @@ fe_get_bool (char *title, char *prompt, void *callback, void *userdata)
 		_("_Yes"), GTK_RESPONSE_ACCEPT,
 		NULL);
 	theme_manager_attach_window (dialog);
-	gtk_box_set_homogeneous (GTK_BOX (gtk_dialog_get_content_area (GTK_DIALOG (dialog))), TRUE);
+	content_area = gtk_dialog_get_content_area (GTK_DIALOG (dialog));
+	gtk_box_set_homogeneous (GTK_BOX (content_area), TRUE);
 	gtk_window_set_position (GTK_WINDOW (dialog), GTK_WIN_POS_MOUSE);
 	gtk_window_set_transient_for (GTK_WINDOW (dialog), GTK_WINDOW (parent_window));
 
@@ -721,7 +725,7 @@ fe_get_bool (char *title, char *prompt, void *callback, void *userdata)
 	g_signal_connect (G_OBJECT (dialog), "response",
 		G_CALLBACK (gtkutil_get_bool_response), NULL);
 
-	gtk_container_add (GTK_CONTAINER (gtk_dialog_get_content_area (GTK_DIALOG (dialog))), prompt_label);
+	fabulor_gtk_box_append (GTK_BOX (content_area), prompt_label, TRUE, TRUE, 0);
 
 	fabulor_gtk_widget_reveal_tree (dialog);
 }
