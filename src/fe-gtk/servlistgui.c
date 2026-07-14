@@ -34,6 +34,7 @@
 
 #include "fe-gtk.h"
 #include "gtkutil.h"
+#include "gtk-compat.h"
 #include "menu.h"
 #include "pixmaps.h"
 #include "fkeys.h"
@@ -2423,7 +2424,7 @@ servlist_open_edit (GtkWidget *parent, ircnet *net)
 	gtk_window_set_role (GTK_WINDOW (editwindow), "editserv");
 
 	vbox5 = gtkutil_box_new (GTK_ORIENTATION_VERTICAL, FALSE, 0);
-	gtk_container_add (GTK_CONTAINER (editwindow), vbox5);
+	fabulor_gtk_window_set_child (GTK_WINDOW (editwindow), vbox5);
 
 
 	/* Tabs and buttons */
@@ -2462,7 +2463,7 @@ servlist_open_edit (GtkWidget *parent, ircnet *net)
 	g_signal_connect (G_OBJECT (gtk_tree_view_get_selection (GTK_TREE_VIEW (treeview_servers))),
 							"changed", G_CALLBACK (servlist_server_row_cb), NULL);
 	g_object_unref (model);
-	gtk_container_add (GTK_CONTAINER (scrolledwindow2), treeview_servers);
+	fabulor_gtk_scrolled_window_set_child (GTK_SCROLLED_WINDOW (scrolledwindow2), treeview_servers);
 	gtk_widget_set_size_request (treeview_servers, -1, 80);
 	gtk_tree_view_set_headers_visible (GTK_TREE_VIEW (treeview_servers),
 												  FALSE);
@@ -2487,7 +2488,7 @@ servlist_open_edit (GtkWidget *parent, ircnet *net)
 	g_signal_connect (G_OBJECT (gtk_tree_view_get_selection (GTK_TREE_VIEW (treeview_channels))),
 							"changed", G_CALLBACK (servlist_channel_row_cb), NULL);
 	g_object_unref (model);
-	gtk_container_add (GTK_CONTAINER (scrolledwindow4), treeview_channels);
+	fabulor_gtk_scrolled_window_set_child (GTK_SCROLLED_WINDOW (scrolledwindow4), treeview_channels);
 	gtk_tree_view_set_headers_visible (GTK_TREE_VIEW (treeview_channels), TRUE);
 
 	renderer = gtk_cell_renderer_text_new ();
@@ -2524,7 +2525,7 @@ servlist_open_edit (GtkWidget *parent, ircnet *net)
 	g_signal_connect (G_OBJECT (gtk_tree_view_get_selection (GTK_TREE_VIEW (treeview_commands))),
 							"changed", G_CALLBACK (servlist_command_row_cb), NULL);
 	g_object_unref (model);
-	gtk_container_add (GTK_CONTAINER (scrolledwindow5), treeview_commands);
+	fabulor_gtk_scrolled_window_set_child (GTK_SCROLLED_WINDOW (scrolledwindow5), treeview_commands);
 	gtk_tree_view_set_headers_visible (GTK_TREE_VIEW (treeview_commands),
 												  FALSE);
 
@@ -2794,7 +2795,7 @@ servlist_open_networks (void)
 
 	vbox1 = gtkutil_box_new (GTK_ORIENTATION_VERTICAL, FALSE, 0);
 	gtk_widget_show (vbox1);
-	gtk_container_add (GTK_CONTAINER (servlist), vbox1);
+	fabulor_gtk_window_set_child (GTK_WINDOW (servlist), vbox1);
 
 	label2 = bold_label (_("User Information"));
 	gtk_box_pack_start (GTK_BOX (vbox1), label2, FALSE, FALSE, 0);
@@ -2919,7 +2920,7 @@ servlist_open_networks (void)
 	networks_tree = treeview_networks = gtk_tree_view_new_with_model (model);
 	g_object_unref (model);
 	gtk_widget_show (treeview_networks);
-	gtk_container_add (GTK_CONTAINER (scrolledwindow3), treeview_networks);
+	fabulor_gtk_scrolled_window_set_child (GTK_SCROLLED_WINDOW (scrolledwindow3), treeview_networks);
 	gtk_tree_view_set_headers_visible (GTK_TREE_VIEW (treeview_networks),
 												  FALSE);
 

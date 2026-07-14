@@ -25,6 +25,7 @@
 #include "../common/zoitechat.h"
 #include "../common/zoitechatc.h"
 #include "gtkutil.h"
+#include "gtk-compat.h"
 #include "ascii.h"
 #include "maingui.h"
 
@@ -163,7 +164,7 @@ ascii_open (void)
 
 	frame = gtk_frame_new ("");
 	gtk_container_add (GTK_CONTAINER (hbox), frame);
-	gtk_container_add (GTK_CONTAINER (frame), label);
+	fabulor_gtk_frame_set_child (GTK_FRAME (frame), label);
 	gtk_widget_show (label);
 	gtk_widget_show (frame);
 

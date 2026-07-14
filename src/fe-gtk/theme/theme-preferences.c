@@ -28,6 +28,7 @@
 #include <glib/gstdio.h>
 
 #include "../gtkutil.h"
+#include "../gtk-compat.h"
 #include "../../common/fe.h"
 #include "../../common/cfgfiles.h"
 #include "../../common/util.h"
@@ -388,7 +389,7 @@ theme_preferences_manager_create_preview (theme_color_manager_ui *ui)
         frame = gtk_frame_new (_("Live preview"));
         vbox = gtk_box_new (GTK_ORIENTATION_VERTICAL, 6);
         gtk_container_set_border_width (GTK_CONTAINER (vbox), 8);
-        gtk_container_add (GTK_CONTAINER (frame), vbox);
+        fabulor_gtk_frame_set_child (GTK_FRAME (frame), vbox);
 
         ui->preview_window = gtk_event_box_new ();
         gtk_event_box_set_visible_window (GTK_EVENT_BOX (ui->preview_window), TRUE);
@@ -836,7 +837,7 @@ theme_preferences_create_color_manager_dialog (GtkWindow *parent, gboolean *colo
         gtk_widget_set_hexpand (list, TRUE);
         gtk_widget_set_vexpand (list, TRUE);
         gtk_list_box_set_selection_mode (GTK_LIST_BOX (list), GTK_SELECTION_NONE);
-        gtk_container_add (GTK_CONTAINER (scroller), list);
+        fabulor_gtk_scrolled_window_set_child (GTK_SCROLLED_WINDOW (scroller), list);
 
         preview_frame = theme_preferences_manager_create_preview (ui);
         gtk_widget_set_size_request (preview_frame, 300, -1);
@@ -1222,7 +1223,7 @@ theme_preferences_create_color_button (GtkWidget *table,
         box = gtk_event_box_new ();
         gtk_event_box_set_visible_window (GTK_EVENT_BOX (box), TRUE);
         gtk_container_add (GTK_CONTAINER (box), label);
-        gtk_container_add (GTK_CONTAINER (but), box);
+        fabulor_gtk_button_set_child (GTK_BUTTON (but), box);
         gtk_widget_set_halign (box, GTK_ALIGN_CENTER);
         gtk_widget_set_valign (box, GTK_ALIGN_CENTER);
         gtk_widget_show (label);
@@ -1737,7 +1738,7 @@ theme_preferences_create_page (GtkWindow *parent,
         gtk_box_pack_start (GTK_BOX (box), colors_frame, FALSE, FALSE, 0);
         colors_box = gtk_box_new (GTK_ORIENTATION_VERTICAL, 6);
         gtk_container_set_border_width (GTK_CONTAINER (colors_box), 6);
-        gtk_container_add (GTK_CONTAINER (colors_frame), colors_box);
+        fabulor_gtk_frame_set_child (GTK_FRAME (colors_frame), colors_box);
 
         label = gtk_label_new (_("GTK3 theme colors are used by default. Open the color manager to set custom colors."));
         gtk_widget_set_halign (label, GTK_ALIGN_START);
@@ -1762,7 +1763,7 @@ theme_preferences_create_page (GtkWindow *parent,
         gtk_container_set_border_width (GTK_CONTAINER (gtk3_grid), 6);
         gtk_grid_set_row_spacing (GTK_GRID (gtk3_grid), 6);
         gtk_grid_set_column_spacing (GTK_GRID (gtk3_grid), 6);
-        gtk_container_add (GTK_CONTAINER (gtk3_frame), gtk3_grid);
+        fabulor_gtk_frame_set_child (GTK_FRAME (gtk3_frame), gtk3_grid);
 
         label = gtk_label_new (_("GTK3 theme:"));
         gtk_widget_set_halign (label, GTK_ALIGN_START);

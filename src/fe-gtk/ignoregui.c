@@ -30,6 +30,7 @@
 #include "../common/cfgfiles.h"
 #include "../common/fe.h"
 #include "gtkutil.h"
+#include "gtk-compat.h"
 #include "maingui.h"
 
 #define ICON_IGNORE_NEW "document-new"
@@ -368,7 +369,7 @@ ignore_gui_open ()
 
 	stat_box = gtk_box_new (GTK_ORIENTATION_HORIZONTAL, 2);
 	gtk_container_set_border_width (GTK_CONTAINER (stat_box), 6);
-	gtk_container_add (GTK_CONTAINER (frame), stat_box);
+	fabulor_gtk_frame_set_child (GTK_FRAME (frame), stat_box);
 	gtk_widget_show (stat_box);
 
 	num_chan = ignore_stats_entry (stat_box, _("Channel:"), ignored_chan);

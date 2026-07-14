@@ -98,6 +98,39 @@ Scope: type-specific single-child assignment and window destruction only. No
 generic ownership, layout, dialog, menu, event, model, or user-facing workflow
 conversion is included.
 
+### PR: [#19 - GTK4 Widget Ownership And Layout, Pass 1](https://github.com/Fabulor/fabulor/pull/19)
+
+Date: 2026-07-14
+
+Commit: `1cc45829`
+
+Migration stage: 2, typed single-child ownership
+
+Files/workflows converted: 38 additional child assignments across utility
+windows, channel views, main-window construction, server-list editors,
+preferences, raw log, event editor, theme preferences, and user-list scrollers
+
+GTK version: 4.22.4
+
+GLib version: 2.88.0
+
+Build configuration: MSVC x64 Release and Meson 1.11.2 Release with MSVC 19.44
+
+Automated checks:
+
+- [x] production GTK3 frontend compile and link with no warnings
+- [x] compatibility usage inventory: 39 typed child assignments
+- [x] remaining direct `gtk_container_*` inventory: 117 lines in 23 files
+- [x] GTK4 validator unit tests: 8/8, plus repository root validation
+- [x] isolated GTK4 MSVC and Meson compile, link, and runtime probes
+- [x] production GTK3 MSVC x64 Release rebuild and native tests: 18/18
+- [x] GitHub Actions required checks: 5/5
+
+Scope: statically identifiable single-child windows, scrolled windows, frames,
+buttons, overlays, and popovers. Ambiguous containers, packing, dialog content,
+menus, list rows, event boxes, viewport-dependent code, visibility, and generic
+destruction remain deferred.
+
 ## Per-PR Record Template
 
 Copy this section for each GTK4 PR:

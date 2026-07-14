@@ -27,6 +27,7 @@
 #include "fe-gtk.h"
 #include "maingui.h"
 #include "gtkutil.h"
+#include "gtk-compat.h"
 #include "chanview.h"
 #include "theme/theme-manager.h"
 #include "theme/theme-access.h"
