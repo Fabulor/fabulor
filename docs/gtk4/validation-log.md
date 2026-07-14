@@ -479,9 +479,11 @@ Scope: command identity and dispatch only. GTK3 menu widgets, action binding,
 state, sensitivity, dynamic mutation, popup ownership, accelerators, dialogs,
 and pointer/key event handling remain unchanged for later Stage 3-4 passes.
 
-### Stage 3 Stateless Menu Action Activation, Pass 2
+### PR: [#30 - GTK4 Stateless Menu Action Activation, Pass 2](https://github.com/Fabulor/fabulor/pull/30)
 
 Date: 2026-07-14
+
+Commit: `422bf0d2`
 
 Migration stage: 3, stateless canonical menu action activation
 
