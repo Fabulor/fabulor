@@ -189,6 +189,27 @@
   - [x] Verify an in-place installer update preserves full spell-check functionality and removes the legacy Enchant DLL/provider/data payload.
   - [x] Verify spell checking, suggestions, "add to dictionary", and installer packaging on a clean install.
 
+## GTK4 Migration
+
+Detailed planning and evidence live in:
+
+- [`docs/gtk4/migration-plan.md`](docs/gtk4/migration-plan.md)
+- [`docs/gtk4/api-inventory.md`](docs/gtk4/api-inventory.md)
+- [`docs/gtk4/runtime-packaging.md`](docs/gtk4/runtime-packaging.md)
+- [`docs/gtk4/validation-log.md`](docs/gtk4/validation-log.md)
+
+- [x] Establish the documentation baseline, source/API inventory, packaging inventory, and validation matrix.
+- [ ] Establish deterministic GTK4 build roots and compatibility helpers while keeping the GTK3 production build green.
+- [ ] Convert widget ownership, layout, visibility, and lifecycle APIs.
+- [ ] Convert actions, menus, dialogs, and file-selection flows.
+- [ ] Convert input events, shortcuts, clipboard, drag/drop, and pointer gestures.
+- [ ] Convert tree/list models, cell renderers, channel navigation, and operational lists.
+- [ ] Port the transcript and spell-check input widgets to GTK4 rendering and event semantics.
+- [ ] Add the GTK4 theme adapter and validate tray, notifications, icons, fonts, and platform integration.
+- [ ] Cut production builds, CI, staging, and WiX packaging over to an allowlisted GTK4 runtime.
+- [ ] Remove GTK3 code, build inputs, runtime files, installer components, and compatibility helpers.
+- [ ] Complete clean-install, upgrade, accessibility, visual, performance, plugin, and packaging validation.
+
 ## 7. Documentation & Developer Guides
 
 - [x] Write C# plugin authoring guide.
