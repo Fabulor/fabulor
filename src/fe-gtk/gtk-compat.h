@@ -85,6 +85,27 @@ fabulor_gtk_horizontal_box_append_trailing (GtkBox *box, GtkWidget *child)
 }
 
 static inline void
+fabulor_gtk_box_insert_before_trailing (GtkBox *box, GtkWidget *child,
+										 GtkWidget *trailing)
+{
+	g_return_if_fail (GTK_IS_BOX (box));
+	g_return_if_fail (GTK_IS_WIDGET (child));
+	g_return_if_fail (GTK_IS_WIDGET (trailing));
+	g_return_if_fail (gtk_widget_get_parent (trailing) == GTK_WIDGET (box));
+
+#if GTK_MAJOR_VERSION >= 4
+	GtkWidget *previous = gtk_widget_get_prev_sibling (trailing);
+
+	if (previous)
+		gtk_box_insert_child_after (box, child, previous);
+	else
+		gtk_box_prepend (box, child);
+#else
+	gtk_box_pack_start (box, child, FALSE, FALSE, 0);
+#endif
+}
+
+static inline void
 fabulor_gtk_box_append_trailing_pair (GtkBox *box, GtkWidget *leading,
 									 GtkWidget *trailing)
 {
@@ -100,6 +121,20 @@ fabulor_gtk_box_append_trailing_pair (GtkBox *box, GtkWidget *leading,
 #else
 	gtk_box_pack_end (box, trailing, FALSE, FALSE, 0);
 	gtk_box_pack_end (box, leading, FALSE, FALSE, 0);
+#endif
+}
+
+static inline void
+fabulor_gtk_box_remove_child (GtkBox *box, GtkWidget *child)
+{
+	g_return_if_fail (GTK_IS_BOX (box));
+	g_return_if_fail (GTK_IS_WIDGET (child));
+	g_return_if_fail (gtk_widget_get_parent (child) == GTK_WIDGET (box));
+
+#if GTK_MAJOR_VERSION >= 4
+	gtk_box_remove (box, child);
+#else
+	gtk_widget_destroy (child);
 #endif
 }
 

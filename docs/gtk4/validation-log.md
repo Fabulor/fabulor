@@ -335,6 +335,42 @@ Scope: only rows where construction order is the final visual order. Dynamic
 nickname/meter insertion, trailing-tab placement, explicit dialog-button
 reordering, menus, and model-heavy layouts remain unchanged.
 
+### Stage 2 Dynamic Main-Window Layout And Lifecycle, Pass 2
+
+Date: 2026-07-14
+
+Migration stage: 2, dynamic main-window ordering and box-owned lifecycle
+
+Files/workflows converted: nickname access icon and connection progress,
+permanent nickname button, user-list button grid, lag/throttle meter layout
+and refresh, dialog-button refresh, and obsolete generic-tab comment cleanup
+
+GTK version: 4.22.4
+
+GLib version: 2.88.0
+
+Build configuration: MSVC x64 Release and Meson 1.11.2 Release with MSVC 19.44
+
+Automated checks:
+
+- [x] production GTK3 frontend compile and link with 0 warnings and 0 errors
+- [x] compatibility usage inventory: 143 start-ordered additions, two
+  horizontal trailing children, two before-trailing insertions, and five
+  box-owned dynamic removals
+- [x] remaining direct `gtk_box_pack_*`: 38 lines in six files and zero in
+  `maingui.c`
+- [x] remaining direct `gtk_widget_show_all`: 18 lines in eight files
+- [x] remaining direct `gtk_widget_destroy`: 32 lines in 13 files
+- [x] GTK4 validator unit tests: 8/8, plus repository root validation
+- [x] isolated GTK4 MSVC compile, link, and runtime probe with no warnings
+- [x] isolated GTK4 Meson configure, compile, link, and runtime test
+- [x] production GTK3 MSVC x64 Release rebuild and native tests: 18/18
+- [ ] GitHub Actions required checks: 5/5
+
+Scope: dynamic children with exact box ownership and reviewed final order.
+Meter `GtkEventBox` wrappers, menus, model-heavy layouts, and generic widget
+destruction remain unchanged for their owning stages.
+
 ## Per-PR Record Template
 
 Copy this section for each GTK4 PR:

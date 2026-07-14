@@ -19,8 +19,12 @@ check_compatibility_helper_signatures (void)
 		fabulor_gtk_box_append;
 	void (*volatile horizontal_box_append_trailing) (GtkBox *, GtkWidget *) =
 		fabulor_gtk_horizontal_box_append_trailing;
+	void (*volatile box_insert_before_trailing) (GtkBox *, GtkWidget *, GtkWidget *) =
+		fabulor_gtk_box_insert_before_trailing;
 	void (*volatile box_append_trailing_pair) (GtkBox *, GtkWidget *, GtkWidget *) =
 		fabulor_gtk_box_append_trailing_pair;
+	void (*volatile box_remove_child) (GtkBox *, GtkWidget *) =
+		fabulor_gtk_box_remove_child;
 	void (*volatile window_set_child) (GtkWindow *, GtkWidget *) =
 		fabulor_gtk_window_set_child;
 	void (*volatile scrolled_window_set_child) (GtkScrolledWindow *, GtkWidget *) =
@@ -41,7 +45,9 @@ check_compatibility_helper_signatures (void)
 
 	(void) box_append;
 	(void) horizontal_box_append_trailing;
+	(void) box_insert_before_trailing;
 	(void) box_append_trailing_pair;
+	(void) box_remove_child;
 	(void) window_set_child;
 	(void) scrolled_window_set_child;
 	(void) frame_set_child;
