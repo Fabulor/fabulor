@@ -720,11 +720,11 @@ Scope: static Server menu action, model, and sensitivity projection only. The
 displayed GTK3 menu, remaining static commands, dynamic menus, popup ownership,
 dialogs, and pointer/key event handling remain unchanged for later passes.
 
-### PR: GTK4 Channel Switcher Menu Model, Pass 9
+### PR: [#37 - GTK4 Channel Switcher Menu Model, Pass 9](https://github.com/Fabulor/fabulor/pull/37)
 
 Date: 2026-07-15
 
-Commit: pending
+Commit: `21cec91b`
 
 Migration stage: 3, first targeted selection action and fifth canonical
 `GMenuModel` subtree projection
