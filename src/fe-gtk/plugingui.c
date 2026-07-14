@@ -154,7 +154,7 @@ plugingui_treeview_new (GtkWidget *box)
 	store = gtk_list_store_new (N_COLUMNS, G_TYPE_STRING, G_TYPE_STRING,
 	                            G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING);
 	g_return_val_if_fail (store != NULL, NULL);
-	view = gtkutil_treeview_new (box, GTK_TREE_MODEL (store), NULL,
+	view = gtkutil_treeview_new (GTK_BOX (box), GTK_TREE_MODEL (store), NULL,
 	                             NAME_COLUMN, _("Name"),
 	                             VERSION_COLUMN, _("Version"),
 	                             FILE_COLUMN, _("File"),

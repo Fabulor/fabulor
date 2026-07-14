@@ -1003,7 +1003,7 @@ userlist_key_cb (GtkWidget *wid, GdkEventKey *evt, gpointer userdata)
 }
 
 GtkWidget *
-userlist_create (GtkWidget *box)
+userlist_create (GtkBox *box)
 {
 	GtkWidget *sw, *treeview;
 	static const GtkTargetEntry dnd_dest_targets[] =
@@ -1024,7 +1024,7 @@ userlist_create (GtkWidget *box)
 	gtk_scrolled_window_set_policy (GTK_SCROLLED_WINDOW (sw),
 										  GTK_POLICY_AUTOMATIC, GTK_POLICY_AUTOMATIC);
 	gtk_scrolled_window_set_min_content_width (GTK_SCROLLED_WINDOW (sw), 1);
-	gtk_box_pack_start (GTK_BOX (box), sw, TRUE, TRUE, 0);
+	fabulor_gtk_box_append (box, sw, TRUE, TRUE, 0);
 	gtk_widget_show (sw);
 
 	treeview = gtk_tree_view_new ();

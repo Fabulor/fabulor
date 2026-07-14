@@ -40,6 +40,7 @@
 #include "../common/fe.h"
 #include "../common/server.h"
 #include "gtkutil.h"
+#include "gtk-compat.h"
 #include "maingui.h"
 #include "menu.h"
 
@@ -953,14 +954,14 @@ chanlist_opengui (server *serv, int do_refresh)
 
 	/* make a label to store the user/channel info */
 	wid = gtk_label_new (NULL);
-	gtk_box_pack_start (GTK_BOX (vbox), wid, 0, 0, 0);
+	fabulor_gtk_box_append (GTK_BOX (vbox), wid, FALSE, FALSE, 0);
 	gtk_widget_show (wid);
 	serv->gui->chanlist_label = wid;
 
 	/* ============================================================= */
 
 	store = (GtkListStore *) custom_list_new();
-	view = gtkutil_treeview_new (vbox, GTK_TREE_MODEL (store), NULL, -1);
+	view = gtkutil_treeview_new (GTK_BOX (vbox), GTK_TREE_MODEL (store), NULL, -1);
 	gtk_scrolled_window_set_shadow_type (GTK_SCROLLED_WINDOW (gtk_widget_get_parent (view)),
 													 GTK_SHADOW_IN);
 	serv->gui->chanlist_list = view;
@@ -1015,7 +1016,7 @@ chanlist_opengui (server *serv, int do_refresh)
 	table = gtk_grid_new ();
 	gtk_grid_set_column_spacing (GTK_GRID (table), 12);
 	gtk_grid_set_row_spacing (GTK_GRID (table), 3);
-	gtk_box_pack_start (GTK_BOX (vbox), table, 0, 1, 0);
+	fabulor_gtk_box_append (GTK_BOX (vbox), table, FALSE, TRUE, 0);
 	gtk_widget_show (table);
 
 	wid = chanlist_icon_button (_("_Search"), ICON_CHANLIST_FIND,
@@ -1057,7 +1058,7 @@ chanlist_opengui (server *serv, int do_refresh)
 	gtk_widget_show (hbox);
 
 	wid = gtk_label_new (_("channels with"));
-	gtk_box_pack_start (GTK_BOX (hbox), wid, 0, 0, 0);
+	fabulor_gtk_box_append (GTK_BOX (hbox), wid, FALSE, FALSE, 0);
 	gtk_widget_show (wid);
 
 	wid = gtk_spin_button_new_with_range (1, 999999, 1);
@@ -1065,12 +1066,12 @@ chanlist_opengui (server *serv, int do_refresh)
 										serv->gui->chanlist_minusers);
 	g_signal_connect (G_OBJECT (wid), "value-changed",
 							G_CALLBACK (chanlist_minusers), serv);
-	gtk_box_pack_start (GTK_BOX (hbox), wid, 0, 0, 0);
+	fabulor_gtk_box_append (GTK_BOX (hbox), wid, FALSE, FALSE, 0);
 	gtk_widget_show (wid);
 	serv->gui->chanlist_min_spin = wid;
 
 	wid = gtk_label_new (_("to"));
-	gtk_box_pack_start (GTK_BOX (hbox), wid, 0, 0, 0);
+	fabulor_gtk_box_append (GTK_BOX (hbox), wid, FALSE, FALSE, 0);
 	gtk_widget_show (wid);
 
 	wid = gtk_spin_button_new_with_range (1, 999999, 1);
@@ -1078,11 +1079,11 @@ chanlist_opengui (server *serv, int do_refresh)
 										serv->gui->chanlist_maxusers);
 	g_signal_connect (G_OBJECT (wid), "value-changed",
 							G_CALLBACK (chanlist_maxusers), serv);
-	gtk_box_pack_start (GTK_BOX (hbox), wid, 0, 0, 0);
+	fabulor_gtk_box_append (GTK_BOX (hbox), wid, FALSE, FALSE, 0);
 	gtk_widget_show (wid);
 
 	wid = gtk_label_new (_("users."));
-	gtk_box_pack_start (GTK_BOX (hbox), wid, 0, 0, 0);
+	fabulor_gtk_box_append (GTK_BOX (hbox), wid, FALSE, FALSE, 0);
 	gtk_widget_show (wid);
 
 	/* ============================================================= */
@@ -1103,7 +1104,7 @@ chanlist_opengui (server *serv, int do_refresh)
 	gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (wid), TRUE);
 	g_signal_connect (G_OBJECT (wid), "toggled",
 							  G_CALLBACK(chanlist_match_channel_button_toggled), serv);
-	gtk_box_pack_start (GTK_BOX (hbox), wid, 0, 0, 0);
+	fabulor_gtk_box_append (GTK_BOX (hbox), wid, FALSE, FALSE, 0);
 	gtk_widget_show (wid);
 
 	wid = gtk_check_button_new_with_label (_("Topic"));
@@ -1111,7 +1112,7 @@ chanlist_opengui (server *serv, int do_refresh)
 	g_signal_connect (G_OBJECT (wid), "toggled",
 							  G_CALLBACK (chanlist_match_topic_button_toggled),
 							  serv);
-	gtk_box_pack_start (GTK_BOX (hbox), wid, 0, 0, 0);
+	fabulor_gtk_box_append (GTK_BOX (hbox), wid, FALSE, FALSE, 0);
 	gtk_widget_show (wid);
 
 	serv->gui->chanlist_match_wants_channel = 1;

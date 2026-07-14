@@ -159,7 +159,7 @@ ignore_treeview_new (GtkWidget *box)
 	                            G_TYPE_BOOLEAN, G_TYPE_BOOLEAN);
 	g_return_val_if_fail (store != NULL, NULL);
 
-	view = gtkutil_treeview_new (box, GTK_TREE_MODEL (store),
+	view = gtkutil_treeview_new (GTK_BOX (box), GTK_TREE_MODEL (store),
 	                             NULL,
 	                             MASK_COLUMN, _("Mask"),
 	                             CHAN_COLUMN, _("Channel"),

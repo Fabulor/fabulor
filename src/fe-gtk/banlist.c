@@ -718,7 +718,7 @@ banlist_treeview_new (GtkWidget *box, banlist_info *banl)
 	sortable = GTK_TREE_SORTABLE (store);
 	gtk_tree_sortable_set_sort_func (sortable, DATE_COLUMN, banlist_date_sort, GINT_TO_POINTER (DATE_COLUMN), NULL);
 
-	view = gtkutil_treeview_new (box, GTK_TREE_MODEL (store), NULL,
+	view = gtkutil_treeview_new (GTK_BOX (box), GTK_TREE_MODEL (store), NULL,
 										  TYPE_COLUMN, _("Type"),
 										  MASK_COLUMN, _("Mask"),
 										  FROM_COLUMN, _("From"),

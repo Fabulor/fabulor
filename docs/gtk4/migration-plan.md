@@ -182,6 +182,16 @@ container calls 110 lines in 23 files, direct recursive reveal 17 lines in
 eight files, and direct widget destruction 31 lines in 13 files. Menu items,
 actions, accelerators, and menu models remain unchanged for Stage 3.
 
+Operational-list shell pass 1 (2026-07-14): the shared tree-view constructor
+now requires a `GtkBox` parent and attaches all nine operational-list scrollers
+through explicit expanding append semantics. The main user-list constructor
+uses the same typed parent contract. Channel-list status, filter, range, and
+search-option rows now use explicit append order, while its tree model,
+renderers, selection, context menu, and events are unchanged. Direct packing
+is now 25 lines in four files and direct container calls 109 lines in 23 files.
+The two remaining channel-list packing calls belong to its menu-item row;
+server-list layouts remain with their Stage 5 model conversion.
+
 Primary API families:
 
 - `gtk_container_*`

@@ -95,7 +95,7 @@ url_treeview_new (GtkWidget *box)
 	store = gtk_list_store_new (N_COLUMNS, G_TYPE_STRING);
 	g_return_val_if_fail (store != NULL, NULL);
 
-	view = gtkutil_treeview_new (box, GTK_TREE_MODEL (store), NULL,
+	view = gtkutil_treeview_new (GTK_BOX (box), GTK_TREE_MODEL (store), NULL,
 	                             URL_COLUMN, _("URL"), -1);
 	scroll = gtk_widget_get_parent (view);
 	gtk_widget_set_hexpand (scroll, TRUE);
