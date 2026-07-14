@@ -210,7 +210,8 @@ Detailed planning and evidence live in:
     - [ ] Convert mixed start/end layouts through per-surface child ordering reviews.
       - [x] Convert reviewed trailing action rows and channel-tab separators where expanding predecessors preserve placement.
       - [x] Convert shared prompt and notify dialog content with explicit trailing-pair order and typed content-area ownership.
-      - [ ] Convert remaining main-window, menu-dialog, menu, and model-surface ordering with their dedicated stages.
+      - [x] Convert reviewed main-window topic, transcript, user-list, emoji, search, reply, and input rows with exact append order.
+      - [ ] Convert remaining dynamic main-window, menu-dialog, menu, and model-surface ordering with their dedicated stages.
   - [ ] Replace recursive visibility and generic widget destruction with surface-specific GTK4 lifecycle handling.
     - [x] Convert completed utility-window/dialog trees and statically typed window destruction without changing menu or conditional-child behaviour.
     - [x] Convert shared prompt dialogs, exact response callbacks, frontend session windows, and concrete main-window/dialog lifetimes.

@@ -36,6 +36,7 @@ Update this file in every GTK4 conversion PR. Use these status values:
 `src/fe-gtk/gtk-compat.h` provides type-specific, header-only helpers for:
 
 - start-ordered box insertion with explicit expansion, fill, and padding
+- horizontal trailing-child insertion with preserved end alignment
 - trailing label/control pair insertion with preserved end alignment
 - window, scrolled-window, frame, button, overlay, and popover child assignment
 - completed-tree reveal with distinct GTK3 recursive and GTK4 root semantics
@@ -47,6 +48,9 @@ helper bodies. The GTK4 probes also take each helper's address so every GTK4
 branch is linked, not merely preprocessed. Production now uses 39 typed child
 assignments across 14 source files: 7 windows, 18 scrolled windows, 7 frames,
 5 buttons, 1 overlay, and 1 popover.
+
+Production now also uses 137 reviewed start-ordered box additions across 17
+files, one horizontal trailing child, and two trailing label/control pairs.
 
 The visibility helper is limited to 15 reviewed roots whose descendants have
 finished construction and have no intentional hidden state at reveal time.
@@ -62,7 +66,7 @@ to existing directional margins, and is used only where append order is exact.
 | GTK3 family or type | Matching lines | Files | Migration direction | Stage | Status |
 |---|---:|---:|---|---:|---|
 | `gtk_container_*` | 113 | 23 | explicit widget-specific child APIs | 2 | in progress |
-| `gtk_box_pack_*` | 88 | 7 | `gtk_box_append/prepend` and reorder APIs | 2 | in progress |
+| `gtk_box_pack_*` | 48 | 7 | `gtk_box_append/prepend` and reorder APIs | 2 | in progress |
 | `gtk_widget_show_all` | 19 | 8 | explicit visibility; GTK4 children visible by default | 2 | in progress |
 | `gtk_widget_destroy` | 37 | 13 | window close and object ownership appropriate to type | 2 | in progress |
 | `GtkEventBox` / `gtk_event_box_*` | 8 | 2 | ordinary widgets plus controllers/gestures | 2/4 | not started |

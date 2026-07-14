@@ -149,6 +149,16 @@ in visual order and aligns the completed row to the end. Direct
 `gtk_container_*` usage is 113 lines in 23 files. Menu dialogs and model-heavy
 server-list layouts remain with their owning stages.
 
+Main-window layout pass 1 (2026-07-14): 39 reviewed additions now use explicit
+append order and one uses typed trailing alignment across quit-dialog content,
+channel-mode/topic controls,
+transcript scaffolding, information frames, user-list structure, centre panes,
+emoji pages, search controls, and reply/input rows. Conditional visibility is
+unchanged, including the hidden reply bar. Direct `gtk_box_pack_*` usage has
+fallen from 88 lines to 48 lines across the same seven files. The 10 remaining
+`maingui.c` matches are dynamic nickname/meter insertion, a trailing tab,
+explicit dialog-button reordering, and one commented legacy block.
+
 Primary API families:
 
 - `gtk_container_*`
