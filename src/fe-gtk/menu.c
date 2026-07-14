@@ -71,6 +71,11 @@
 
 static GSList *submenu_list;
 
+#define FABULOR_MENU_ACTION_GROUP "fabulor-menu-action-group"
+#define FABULOR_MENU_ACTION_NAME "fabulor-menu-action-name"
+
+static gboolean menu_action_set_item_state (GtkWidget *item, gboolean state);
+
 static GtkWidget *
 menu_icon_widget_new (const char *icon)
 {
@@ -967,7 +972,9 @@ menu_setting_foreach (void (*callback) (session *), int id, guint state)
 			{
 				GtkWidget *menu_item = sess->gui->menu_item[id];
 
-				if (menu_item != NULL && GTK_IS_CHECK_MENU_ITEM (menu_item))
+				if (menu_item != NULL &&
+					!menu_action_set_item_state (menu_item, state) &&
+					GTK_IS_CHECK_MENU_ITEM (menu_item))
 				{
 					guint toggled_signal = g_signal_lookup ("toggled", G_OBJECT_TYPE (menu_item));
 
@@ -995,7 +1002,8 @@ void
 menu_bar_toggle (void)
 {
 	prefs.hex_gui_hide_menu = !prefs.hex_gui_hide_menu;
-	menu_setting_foreach (menu_showhide_cb, -1, !prefs.hex_gui_hide_menu);
+	menu_setting_foreach (menu_showhide_cb, MENU_ID_MENUBAR,
+						  !prefs.hex_gui_hide_menu);
 }
 
 static void
@@ -1993,6 +2001,7 @@ static struct mymenu mymenu[] = {
 		{N_("Both"), menu_metres_both, 0, M_MENURADIO, 0, 0, 1},
 		{0, 0, 0, M_END, 0, 0, 0},	/* 32 */
 	{ 0, 0, 0, M_SEP, 0, 0, 0 },
+#define FULLSCREEN_OFFSET (34)
 	{N_ ("_Fullscreen"), menu_fullscreen_toggle, 0, M_MENUTOG, MENU_ID_FULLSCREEN, 0, 1, 0,
 		"fullscreen-toggle", MENU_ACTION_FULLSCREEN_TOGGLE},
 
@@ -2250,12 +2259,30 @@ menu_action_is_stateless (menu_action_id id)
 	}
 }
 
+static gboolean
+menu_action_is_view_stateful (menu_action_id id)
+{
+	return id == MENU_ACTION_MENU_TOGGLE ||
+		   id == MENU_ACTION_USER_LIST_TOGGLE ||
+		   id == MENU_ACTION_FULLSCREEN_TOGGLE;
+}
+
 static void
 menu_action_activate (GSimpleAction *action, GVariant *parameter,
 					  gpointer user_data)
 {
+	GVariant *state;
+
 	(void) parameter;
 	(void) user_data;
+
+	state = g_action_get_state (G_ACTION (action));
+	if (state)
+	{
+		g_simple_action_set_state (action,
+							   g_variant_new_boolean (!g_variant_get_boolean (state)));
+		g_variant_unref (state);
+	}
 
 	menu_key_action (g_action_get_name (G_ACTION (action)), 0, 0);
 }
@@ -2270,11 +2297,17 @@ menu_action_group_new (void)
 	group = g_simple_action_group_new ();
 	for (i = 0; i < G_N_ELEMENTS (mymenu); i++)
 	{
-		if (!mymenu[i].action_name ||
-			!menu_action_is_stateless (mymenu[i].action_id))
+		if (!mymenu[i].action_name)
 			continue;
 
-		action = g_simple_action_new (mymenu[i].action_name, NULL);
+		if (menu_action_is_stateless (mymenu[i].action_id))
+			action = g_simple_action_new (mymenu[i].action_name, NULL);
+		else if (menu_action_is_view_stateful (mymenu[i].action_id))
+			action = g_simple_action_new_stateful (mymenu[i].action_name, NULL,
+										   g_variant_new_boolean (mymenu[i].state));
+		else
+			continue;
+
 		g_signal_connect (action, "activate",
 						  G_CALLBACK (menu_action_activate), NULL);
 		g_action_map_add_action (G_ACTION_MAP (group), G_ACTION (action));
@@ -2291,14 +2324,44 @@ menu_action_bind_item (GtkWidget *item, GSimpleActionGroup *group,
 	char *detailed_name;
 
 	if (!definition->action_name ||
-		!menu_action_is_stateless (definition->action_id))
+		(!menu_action_is_stateless (definition->action_id) &&
+		 !menu_action_is_view_stateful (definition->action_id)))
 		return FALSE;
 
 	detailed_name = g_strconcat ("fabulor.", definition->action_name, NULL);
 	gtk_widget_insert_action_group (item, "fabulor", G_ACTION_GROUP (group));
 	gtk_actionable_set_action_name (GTK_ACTIONABLE (item), detailed_name);
+	g_object_set_data (G_OBJECT (item), FABULOR_MENU_ACTION_GROUP, group);
+	g_object_set_data (G_OBJECT (item), FABULOR_MENU_ACTION_NAME,
+					   (gpointer) definition->action_name);
 	g_free (detailed_name);
 
+	return TRUE;
+}
+
+static gboolean
+menu_action_set_item_state (GtkWidget *item, gboolean state)
+{
+	GAction *action;
+	GActionGroup *group;
+	const GVariantType *state_type;
+	const char *name;
+
+	group = g_object_get_data (G_OBJECT (item), FABULOR_MENU_ACTION_GROUP);
+	name = g_object_get_data (G_OBJECT (item), FABULOR_MENU_ACTION_NAME);
+	if (!group || !name)
+		return FALSE;
+
+	action = g_action_map_lookup_action (G_ACTION_MAP (group), name);
+	if (!G_IS_SIMPLE_ACTION (action))
+		return FALSE;
+
+	state_type = g_action_get_state_type (action);
+	if (!state_type || !g_variant_type_equal (state_type, G_VARIANT_TYPE_BOOLEAN))
+		return FALSE;
+
+	g_simple_action_set_state (G_SIMPLE_ACTION (action),
+							 g_variant_new_boolean (state));
 	return TRUE;
 }
 
@@ -2319,6 +2382,9 @@ void
 menu_set_fullscreen (session_gui *gui, int full)
 {
 	GtkCheckMenuItem *item = GTK_CHECK_MENU_ITEM (gui->menu_item[MENU_ID_FULLSCREEN]);
+
+	if (menu_action_set_item_state (GTK_WIDGET (item), full))
+		return;
 
 	g_signal_handlers_block_by_func (G_OBJECT (item), menu_fullscreen_toggle, NULL);
 	gtk_check_menu_item_set_active (item, full);
@@ -2784,7 +2850,6 @@ menu_create_main (void *accel_group, int bar, int away, int toplevel,
 	}
 	else
 		menu_bar = menu_new ();
-	action_group = menu_action_group_new ();
 
 	/* /MENU needs to know this later */
 	g_object_set_data (G_OBJECT (menu_bar), "accel", accel_group);
@@ -2798,6 +2863,7 @@ menu_create_main (void *accel_group, int bar, int away, int toplevel,
 	mymenu[MENUBAR_OFFSET+2].state = !prefs.hex_gui_ulist_hide;
 	mymenu[MENUBAR_OFFSET+3].state = prefs.hex_gui_ulist_buttons;
 	mymenu[MENUBAR_OFFSET+4].state = prefs.hex_gui_mode_buttons;
+	mymenu[FULLSCREEN_OFFSET].state = prefs.hex_gui_win_fullscreen;
 
 	mymenu[AWAY_OFFSET].state = away;
 
@@ -2866,6 +2932,10 @@ menu_create_main (void *accel_group, int bar, int away, int toplevel,
 		mymenu[CLOSE_OFFSET].text = N_("_Close");
 	}
 
+	action_group = menu_action_group_new ();
+	g_object_set_data_full (G_OBJECT (menu_bar), FABULOR_MENU_ACTION_GROUP,
+						 action_group, g_object_unref);
+
 	while (1)
 	{
 		item = NULL;
@@ -2932,6 +3002,7 @@ normalitem:
 		case M_MENUTOG:
 			item = gtk_check_menu_item_new_with_mnemonic (_(mymenu[i].text));
 togitem:
+			action_bound = menu_action_bind_item (item, action_group, &mymenu[i]);
 			g_object_set_data (G_OBJECT (item), "zc-key-action", (gpointer) menu_get_key_action_name (i));
 			menu_add_keybinding_accel (item, accel_group, menu_get_key_action_name (i));
 			/* must avoid callback for Radio buttons */
@@ -2944,7 +3015,7 @@ togitem:
 											mymenu[i].id == MENU_ID_FULLSCREEN ? 0 :
 											mymenu[i].id == MENU_ID_AWAY ? away_mask :
 											STATE_CTRL, GTK_ACCEL_VISIBLE);
-			if (mymenu[i].callback)
+			if (mymenu[i].callback && !action_bound)
 				g_signal_connect (G_OBJECT (item), "toggled",
 									G_CALLBACK (mymenu[i].callback), NULL);
 
@@ -2991,7 +3062,6 @@ togitem:
 				}
 				if (usermenu)
 					usermenu_create (usermenu);
-				g_object_unref (action_group);
 				return (menu_bar);
 			}
 			submenu = NULL;
