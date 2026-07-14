@@ -78,6 +78,13 @@ same stable names and typed identifiers without relying on parallel positional
 tables. This foundation does not yet abstract GTK3 menu widgets, state,
 sensitivity, or popup ownership.
 
+Twelve stateless canonical commands now activate through a per-menu
+`GSimpleActionGroup` and `GtkActionable` binding. The same group is retained by
+each bound item after construction, while configurable shortcuts continue to
+use the canonical dispatcher. The four stateful identities remain on their
+existing toggle callbacks until action state and menu sensitivity move
+together.
+
 ## Quantitative API Baseline
 
 | GTK3 family or type | Matching lines | Files | Migration direction | Stage | Status |
