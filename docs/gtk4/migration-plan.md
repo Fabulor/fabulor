@@ -102,6 +102,15 @@ files to 117 lines in 23 files. Box packing, dialog content areas, menu/list
 children, event boxes, GTK3 viewport access, recursive visibility, and generic
 destruction remain explicit for their dedicated conversion passes.
 
+Box-layout progress (2026-07-14): 54 start-ordered additions across the
+character chart, list/key editors, ignore dialog, join dialog, event editor,
+and theme preferences now use an exact GTK3/GTK4 helper. The GTK4 path maps
+expansion to the box axis, centres non-filled children unless they already have
+explicit alignment, and adds packing padding to existing directional margins.
+Direct `gtk_box_pack_*` usage has fallen from 186 lines in 22 files to 132
+lines in 15 files. Mixed start/end layouts are deliberately deferred for
+per-surface ordering review.
+
 Primary API families:
 
 - `gtk_container_*`

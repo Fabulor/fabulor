@@ -35,6 +35,7 @@ Update this file in every GTK4 conversion PR. Use these status values:
 
 `src/fe-gtk/gtk-compat.h` provides type-specific, header-only helpers for:
 
+- start-ordered box insertion with explicit expansion, fill, and padding
 - window, scrolled-window, frame, button, overlay, and popover child assignment
 - window destruction
 
@@ -45,16 +46,18 @@ assignments across 14 source files: 7 windows, 18 scrolled windows, 7 frames,
 5 buttons, 1 overlay, and 1 popover.
 
 The boundary deliberately does not abstract generic widget destruction,
-box expansion/fill/padding, recursive visibility, menus, dialogs, events,
+mixed start/end box ordering, recursive visibility, menus, dialogs, events,
 clipboard ownership, or list/tree models. Those operations have GTK4 lifetime
-or behaviour changes that must remain visible at each caller.
+or behaviour changes that must remain visible at each caller. The box helper
+preserves explicit widget alignment/expansion, adds GTK3 packing padding to
+existing directional margins, and is used only where append order is exact.
 
 ## Quantitative API Baseline
 
 | GTK3 family or type | Matching lines | Files | Migration direction | Stage | Status |
 |---|---:|---:|---|---:|---|
 | `gtk_container_*` | 117 | 23 | explicit widget-specific child APIs | 2 | in progress |
-| `gtk_box_pack_*` | 186 | 22 | `gtk_box_append/prepend` and reorder APIs | 2 | not started |
+| `gtk_box_pack_*` | 132 | 15 | `gtk_box_append/prepend` and reorder APIs | 2 | in progress |
 | `gtk_widget_show_all` | 34 | 18 | explicit visibility; GTK4 children visible by default | 2 | not started |
 | `gtk_widget_destroy` | 81 | 23 | window close and object ownership appropriate to type | 2 | not started |
 | `GtkEventBox` / `gtk_event_box_*` | 8 | 2 | ordinary widgets plus controllers/gestures | 2/4 | not started |

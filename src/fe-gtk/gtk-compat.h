@@ -18,6 +18,55 @@
 
 G_BEGIN_DECLS
 
+#if GTK_MAJOR_VERSION >= 4
+static inline gint
+fabulor_gtk_margin_with_padding (gint margin, guint padding)
+{
+	if (padding > (guint) (G_MAXINT - margin))
+		return G_MAXINT;
+
+	return margin + (gint) padding;
+}
+#endif
+
+static inline void
+fabulor_gtk_box_append (GtkBox *box, GtkWidget *child, gboolean expand,
+						gboolean fill, guint padding)
+{
+	g_return_if_fail (GTK_IS_BOX (box));
+	g_return_if_fail (GTK_IS_WIDGET (child));
+
+#if GTK_MAJOR_VERSION >= 4
+	if (gtk_orientable_get_orientation (GTK_ORIENTABLE (box)) ==
+		GTK_ORIENTATION_HORIZONTAL)
+	{
+		if (expand)
+			gtk_widget_set_hexpand (child, TRUE);
+		if (!fill && gtk_widget_get_halign (child) == GTK_ALIGN_FILL)
+			gtk_widget_set_halign (child, GTK_ALIGN_CENTER);
+		gtk_widget_set_margin_start (child,
+			fabulor_gtk_margin_with_padding (gtk_widget_get_margin_start (child), padding));
+		gtk_widget_set_margin_end (child,
+			fabulor_gtk_margin_with_padding (gtk_widget_get_margin_end (child), padding));
+	}
+	else
+	{
+		if (expand)
+			gtk_widget_set_vexpand (child, TRUE);
+		if (!fill && gtk_widget_get_valign (child) == GTK_ALIGN_FILL)
+			gtk_widget_set_valign (child, GTK_ALIGN_CENTER);
+		gtk_widget_set_margin_top (child,
+			fabulor_gtk_margin_with_padding (gtk_widget_get_margin_top (child), padding));
+		gtk_widget_set_margin_bottom (child,
+			fabulor_gtk_margin_with_padding (gtk_widget_get_margin_bottom (child), padding));
+	}
+
+	gtk_box_append (box, child);
+#else
+	gtk_box_pack_start (box, child, expand, fill, padding);
+#endif
+}
+
 static inline void
 fabulor_gtk_window_set_child (GtkWindow *window, GtkWidget *child)
 {

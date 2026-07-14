@@ -1174,7 +1174,7 @@ key_dialog_treeview_new (GtkWidget *box)
 	gtk_tree_view_column_set_resizable (col, TRUE);
 
 	fabulor_gtk_scrolled_window_set_child (GTK_SCROLLED_WINDOW (scroll), view);
-	gtk_box_pack_start (GTK_BOX (box), scroll, TRUE, TRUE, 0);
+	fabulor_gtk_box_append (GTK_BOX (box), scroll, TRUE, TRUE, 0);
 
 	return view;
 }
@@ -1232,7 +1232,7 @@ key_dialog_show ()
 	view = key_dialog_treeview_new (vbox);
 	theme_get_xtext_colors (xtext_palette, XTEXT_COLS);
 	xtext = gtk_xtext_new (xtext_palette, 0);
-	gtk_box_pack_start (GTK_BOX (vbox), xtext, FALSE, TRUE, 2);
+	fabulor_gtk_box_append (GTK_BOX (vbox), xtext, FALSE, TRUE, 2);
 	gtk_xtext_set_font (GTK_XTEXT (xtext), prefs.hex_text_font);
 
 	g_object_set_data (G_OBJECT (key_dialog), "view", view);
@@ -1243,7 +1243,7 @@ key_dialog_show ()
 
 	box = gtk_button_box_new (GTK_ORIENTATION_HORIZONTAL);
 	gtk_button_box_set_layout (GTK_BUTTON_BOX (box), GTK_BUTTONBOX_SPREAD);
-	gtk_box_pack_start (GTK_BOX (vbox), box, FALSE, FALSE, 2);
+	fabulor_gtk_box_append (GTK_BOX (vbox), box, FALSE, FALSE, 2);
 	gtk_container_set_border_width (GTK_CONTAINER (box), 5);
 
 	gtkutil_button (box, ICON_FKEYS_NEW, NULL, key_dialog_add,

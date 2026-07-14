@@ -322,7 +322,7 @@ editlist_treeview_new (GtkWidget *box, char *title1, char *title2)
 	gtk_tree_view_column_set_min_width (col, 100);
 
 	fabulor_gtk_scrolled_window_set_child (GTK_SCROLLED_WINDOW (scroll), view);
-	gtk_box_pack_start (GTK_BOX (box), scroll, TRUE, TRUE, 0);
+	fabulor_gtk_box_append (GTK_BOX (box), scroll, TRUE, TRUE, 0);
 	gtk_widget_show_all (box);
 
 	return view;
@@ -356,7 +356,7 @@ editlist_gui_open (char *title1, char *title2, GSList *list, char *title, char *
 
 	box = gtk_button_box_new (GTK_ORIENTATION_HORIZONTAL);
 	gtk_button_box_set_layout (GTK_BUTTON_BOX (box), GTK_BUTTONBOX_SPREAD);
-	gtk_box_pack_start (GTK_BOX (vbox), box, FALSE, FALSE, 2);
+	fabulor_gtk_box_append (GTK_BOX (vbox), box, FALSE, FALSE, 2);
 	gtk_container_set_border_width (GTK_CONTAINER (box), 5);
 	gtk_widget_show (box);
 
