@@ -299,9 +299,11 @@ Scope: four typed dialog-content insertions and two reviewed trailing
 label/control pairs. Synchronous response behavior, menu dialogs, generic
 button helpers, and model-heavy server-list layouts remain unchanged.
 
-### Stage 2 Main-Window Layout, Pass 1
+### PR: [#25 - GTK4 Main-Window Layout Pass 1](https://github.com/Fabulor/fabulor/pull/25)
 
 Date: 2026-07-14
+
+Commit: `7d9bc5fe`
 
 Migration stage: 2, reviewed main-window append order
 
