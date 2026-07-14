@@ -1877,7 +1877,7 @@ fe_server_event (server *serv, int type, int arg)
 
 			case FE_SE_CONNECT:
 				/* enable Disconnect and Away menu items */
-				gtk_widget_set_sensitive (gui->menu_item[MENU_ID_AWAY], 1);
+				menu_set_away_sensitive (gui, 1);
 				gtk_widget_set_sensitive (gui->menu_item[MENU_ID_DISCONNECT], 1);
 				break;
 
@@ -1890,7 +1890,7 @@ fe_server_event (server *serv, int type, int arg)
 
 			case FE_SE_DISCONNECT:
 				/* disable Disconnect and Away menu items */
-				gtk_widget_set_sensitive (gui->menu_item[MENU_ID_AWAY], 0);
+				menu_set_away_sensitive (gui, 0);
 				gtk_widget_set_sensitive (gui->menu_item[MENU_ID_DISCONNECT], 0);
 				gtk_widget_set_sensitive (gui->menu_item[MENU_ID_JOIN], 0);
 				/* close the join-dialog, if one exists */

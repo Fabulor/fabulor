@@ -86,9 +86,14 @@ use the canonical dispatcher.
 Menu-bar visibility, user-list visibility, and fullscreen now use boolean
 `GSimpleAction` state. Shared preference updates synchronize every window's
 corresponding action, and the window-state event remains authoritative for
-correcting fullscreen state after a platform transition. Away remains on its
-existing session callback until its server-specific state and connection
-sensitivity can move together.
+correcting fullscreen state after a platform transition.
+
+Away now completes the 16-command action set as a session-aware boolean
+`GSimpleAction`. Server-confirmed away/back events own its state, while active
+tab changes and connect/disconnect events update its enabled state for the
+selected server. Activation continues through the canonical command dispatcher
+without optimistically changing server state, and the existing plain GTK3 menu
+presentation remains unchanged.
 
 ## Quantitative API Baseline
 

@@ -20,7 +20,9 @@
 #ifndef ZOITECHAT_MENU_H
 #define ZOITECHAT_MENU_H
 
-GtkWidget *menu_create_main (void *accel_group, int bar, int away, int toplevel, GtkWidget **menu_widgets);
+GtkWidget *menu_create_main (void *accel_group, int bar, int away,
+								 int away_sensitive, int toplevel,
+								 GtkWidget **menu_widgets);
 void menu_urlmenu (GdkEventButton * event, char *url);
 void menu_chanmenu (session *sess, GdkEventButton * event, char *chan);
 void menu_addfavoritemenu (server *serv, GtkWidget *menu, char *channel, gboolean istree);
@@ -42,6 +44,7 @@ void menu_update_quit_accel (void);
 gboolean menu_key_action (const char *name, guint keyval, GdkModifierType state);
 
 void menu_set_away (session_gui *gui, int away);
+void menu_set_away_sensitive (session_gui *gui, int sensitive);
 void menu_set_fullscreen (session_gui *gui, int fullscreen);
 
 /* for menu_quick functions */

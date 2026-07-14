@@ -1077,7 +1077,8 @@ menu_middlemenu (session *sess, GdkEventButton *event)
 	GtkAccelGroup *accel_group;
 
 	accel_group = gtk_accel_group_new ();
-	menu = menu_create_main (accel_group, FALSE, sess->server->is_away, !sess->gui->is_tab, NULL);
+	menu = menu_create_main (accel_group, FALSE, sess->server->is_away,
+							 sess->server->connected, !sess->gui->is_tab, NULL);
 	menu_popup (menu, event, accel_group);
 }
 
@@ -2267,24 +2268,33 @@ menu_action_is_view_stateful (menu_action_id id)
 		   id == MENU_ACTION_FULLSCREEN_TOGGLE;
 }
 
+static gboolean
+menu_action_is_session_stateful (menu_action_id id)
+{
+	return id == MENU_ACTION_AWAY_TOGGLE;
+}
+
 static void
 menu_action_activate (GSimpleAction *action, GVariant *parameter,
 					  gpointer user_data)
 {
+	const struct mymenu *definition = user_data;
 	GVariant *state;
 
 	(void) parameter;
-	(void) user_data;
 
-	state = g_action_get_state (G_ACTION (action));
-	if (state)
+	if (menu_action_is_view_stateful (definition->action_id))
 	{
-		g_simple_action_set_state (action,
-							   g_variant_new_boolean (!g_variant_get_boolean (state)));
-		g_variant_unref (state);
+		state = g_action_get_state (G_ACTION (action));
+		if (state)
+		{
+			g_simple_action_set_state (action,
+								   g_variant_new_boolean (!g_variant_get_boolean (state)));
+			g_variant_unref (state);
+		}
 	}
 
-	menu_key_action (g_action_get_name (G_ACTION (action)), 0, 0);
+	menu_key_action (definition->action_name, 0, 0);
 }
 
 static GSimpleActionGroup *
@@ -2302,14 +2312,17 @@ menu_action_group_new (void)
 
 		if (menu_action_is_stateless (mymenu[i].action_id))
 			action = g_simple_action_new (mymenu[i].action_name, NULL);
-		else if (menu_action_is_view_stateful (mymenu[i].action_id))
+		else if (menu_action_is_view_stateful (mymenu[i].action_id) ||
+				 menu_action_is_session_stateful (mymenu[i].action_id))
 			action = g_simple_action_new_stateful (mymenu[i].action_name, NULL,
 										   g_variant_new_boolean (mymenu[i].state));
 		else
 			continue;
 
+		if (menu_action_is_session_stateful (mymenu[i].action_id))
+			g_simple_action_set_enabled (action, mymenu[i].sensitive);
 		g_signal_connect (action, "activate",
-						  G_CALLBACK (menu_action_activate), NULL);
+						  G_CALLBACK (menu_action_activate), &mymenu[i]);
 		g_action_map_add_action (G_ACTION_MAP (group), G_ACTION (action));
 		g_object_unref (action);
 	}
@@ -2325,7 +2338,8 @@ menu_action_bind_item (GtkWidget *item, GSimpleActionGroup *group,
 
 	if (!definition->action_name ||
 		(!menu_action_is_stateless (definition->action_id) &&
-		 !menu_action_is_view_stateful (definition->action_id)))
+		 !menu_action_is_view_stateful (definition->action_id) &&
+		 !menu_action_is_session_stateful (definition->action_id)))
 		return FALSE;
 
 	detailed_name = g_strconcat ("fabulor.", definition->action_name, NULL);
@@ -2339,35 +2353,61 @@ menu_action_bind_item (GtkWidget *item, GSimpleActionGroup *group,
 	return TRUE;
 }
 
-static gboolean
-menu_action_set_item_state (GtkWidget *item, gboolean state)
+static GSimpleAction *
+menu_action_get_item_action (GtkWidget *item)
 {
 	GAction *action;
 	GActionGroup *group;
-	const GVariantType *state_type;
 	const char *name;
+
+	if (!GTK_IS_WIDGET (item))
+		return NULL;
 
 	group = g_object_get_data (G_OBJECT (item), FABULOR_MENU_ACTION_GROUP);
 	name = g_object_get_data (G_OBJECT (item), FABULOR_MENU_ACTION_NAME);
 	if (!group || !name)
-		return FALSE;
+		return NULL;
 
 	action = g_action_map_lookup_action (G_ACTION_MAP (group), name);
-	if (!G_IS_SIMPLE_ACTION (action))
+	return G_IS_SIMPLE_ACTION (action) ? G_SIMPLE_ACTION (action) : NULL;
+}
+
+static gboolean
+menu_action_set_item_state (GtkWidget *item, gboolean state)
+{
+	GSimpleAction *action;
+	const GVariantType *state_type;
+
+	action = menu_action_get_item_action (item);
+	if (!action)
 		return FALSE;
 
-	state_type = g_action_get_state_type (action);
+	state_type = g_action_get_state_type (G_ACTION (action));
 	if (!state_type || !g_variant_type_equal (state_type, G_VARIANT_TYPE_BOOLEAN))
 		return FALSE;
 
-	g_simple_action_set_state (G_SIMPLE_ACTION (action),
-							 g_variant_new_boolean (state));
+	g_simple_action_set_state (action, g_variant_new_boolean (state));
+	return TRUE;
+}
+
+static gboolean
+menu_action_set_item_enabled (GtkWidget *item, gboolean enabled)
+{
+	GSimpleAction *action = menu_action_get_item_action (item);
+
+	if (!action)
+		return FALSE;
+
+	g_simple_action_set_enabled (action, enabled);
 	return TRUE;
 }
 
 void
 menu_set_away (session_gui *gui, int away)
 {
+	if (menu_action_set_item_state (gui->menu_item[MENU_ID_AWAY], away))
+		return;
+
 	if (GTK_IS_CHECK_MENU_ITEM (gui->menu_item[MENU_ID_AWAY]))
 	{
 		GtkCheckMenuItem *item = GTK_CHECK_MENU_ITEM (gui->menu_item[MENU_ID_AWAY]);
@@ -2376,6 +2416,15 @@ menu_set_away (session_gui *gui, int away)
 		gtk_check_menu_item_set_active (item, away);
 		g_signal_handlers_unblock_by_func (G_OBJECT (item), menu_away, NULL);
 	}
+}
+
+void
+menu_set_away_sensitive (session_gui *gui, int sensitive)
+{
+	GtkWidget *item = gui->menu_item[MENU_ID_AWAY];
+
+	if (!menu_action_set_item_enabled (item, sensitive) && GTK_IS_WIDGET (item))
+		gtk_widget_set_sensitive (item, sensitive);
 }
 
 void
@@ -2825,8 +2874,8 @@ menu_add_plugin_items (GtkWidget *menu, char *root, char *target)
 /* === END STUFF FOR /MENU === */
 
 GtkWidget *
-menu_create_main (void *accel_group, int bar, int away, int toplevel,
-						GtkWidget **menu_widgets)
+menu_create_main (void *accel_group, int bar, int away, int away_sensitive,
+					 int toplevel, GtkWidget **menu_widgets)
 {
 	int i = 0;
 	gboolean action_bound;
@@ -2866,6 +2915,7 @@ menu_create_main (void *accel_group, int bar, int away, int toplevel,
 	mymenu[FULLSCREEN_OFFSET].state = prefs.hex_gui_win_fullscreen;
 
 	mymenu[AWAY_OFFSET].state = away;
+	mymenu[AWAY_OFFSET].sensitive = away_sensitive;
 
 	switch (prefs.hex_gui_tab_layout)
 	{

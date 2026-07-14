@@ -547,6 +547,41 @@ Scope: window-view boolean state only. Away state and connection sensitivity,
 dynamic menus, popup ownership, dialogs, and pointer/key event handling remain
 unchanged for later passes.
 
+### PR: GTK4 Session-Aware Away Action State, Pass 4
+
+Date: 2026-07-14
+
+Commit: pending
+
+Migration stage: 3, session-aware Away action state and availability
+
+Files/workflows converted: Away menu creation, active-tab synchronization,
+server-confirmed away/back state, and connect/disconnect sensitivity in
+`menu.c`, `maingui.c`, and `fe-gtk.c`
+
+GTK version: 4.22.4
+
+GLib version: 2.88.0
+
+Build configuration: MSVC x64 Release and Meson 1.11.2 Release with MSVC 19.44
+
+Automated checks:
+
+- [x] production GTK3 frontend compile and link with 0 warnings and 0 errors
+- [x] canonical action bindings: all 16 commands
+- [x] focused GTK3 action probe: disabled activation suppression
+- [x] focused GTK3 action probe: enabled state propagates to the bound menu item
+- [x] focused GTK3 action probe: authoritative boolean state update
+- [x] GTK4 validator unit tests: 8/8, plus repository root validation
+- [x] isolated GTK4 MSVC compile, link, and runtime probe with no warnings
+- [x] isolated GTK4 Meson configure, compile, link, and runtime test
+- [x] production GTK3 MSVC x64 Release rebuild and native tests: 18/18
+- [ ] GitHub Actions required checks: 5/5
+
+Scope: canonical Away action state and availability only. GTK4 menu models,
+dynamic menus, popup ownership, dialogs, and pointer/key event handling remain
+unchanged for later passes.
+
 ## Per-PR Record Template
 
 Copy this section for each GTK4 PR:
