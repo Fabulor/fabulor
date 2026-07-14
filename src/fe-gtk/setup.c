@@ -37,6 +37,7 @@
 #include "theme/theme-manager.h"
 #include "theme/theme-preferences.h"
 #include "gtkutil.h"
+#include "gtk-compat.h"
 #include "maingui.h"
 #include "pixmaps.h"
 #include "menu.h"
@@ -1868,7 +1869,7 @@ setup_create_sound_page (void)
         g_signal_connect (G_OBJECT (sel), "changed",
                                                         G_CALLBACK (setup_snd_row_cb), NULL);
         gtk_widget_show (sound_tree);
-        gtk_container_add (GTK_CONTAINER (scrolledwindow1), sound_tree);
+        fabulor_gtk_scrolled_window_set_child (GTK_SCROLLED_WINDOW (scrolledwindow1), sound_tree);
         gtk_tree_view_set_grid_lines (GTK_TREE_VIEW (sound_tree), GTK_TREE_VIEW_GRID_LINES_HORIZONTAL);
 
         table1 = gtkutil_grid_new (2, 3, FALSE);
@@ -2180,7 +2181,7 @@ setup_create_tree (GtkWidget *box, GtkWidget *book)
         gtk_tree_view_expand_all (GTK_TREE_VIEW (tree));
 
         frame = gtk_frame_new (NULL);
-        gtk_container_add (GTK_CONTAINER (frame), tree);
+        fabulor_gtk_frame_set_child (GTK_FRAME (frame), tree);
         gtk_box_pack_start (GTK_BOX (box), frame, 0, 0, 0);
         gtk_box_reorder_child (GTK_BOX (box), frame, 0);
 
@@ -2486,7 +2487,7 @@ setup_window_open (void)
 
         vbox = gtkutil_box_new (GTK_ORIENTATION_VERTICAL, FALSE, 5);
         gtk_container_set_border_width (GTK_CONTAINER (vbox), 6);
-        gtk_container_add (GTK_CONTAINER (win), vbox);
+        fabulor_gtk_window_set_child (GTK_WINDOW (win), vbox);
 
         hbox = gtkutil_box_new (GTK_ORIENTATION_HORIZONTAL, FALSE, 4);
         gtk_box_pack_start (GTK_BOX (vbox), hbox, TRUE, TRUE, 0);

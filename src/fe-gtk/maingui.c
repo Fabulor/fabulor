@@ -46,6 +46,7 @@
 #include "theme/theme-css.h"
 #include "banlist.h"
 #include "gtkutil.h"
+#include "gtk-compat.h"
 #include "icon-resolver.h"
 #include "joind.h"
 #include "theme/theme-access.h"
@@ -2221,7 +2222,7 @@ mg_link_gentab (chan *ch, GtkWidget *box)
         /* so it doesn't try to chan_remove (there's no tab anymore) */
         g_object_steal_data (G_OBJECT (box), "ch");
         gtk_container_set_border_width (GTK_CONTAINER (box), 0);
-        gtk_container_add (GTK_CONTAINER (win), box);
+        fabulor_gtk_window_set_child (GTK_WINDOW (win), box);
         gtk_widget_show (win);
 
         g_object_unref (box);
@@ -3081,7 +3082,7 @@ mg_create_flagbutton (char *tip, GtkWidget *box, char *face)
         gtk_widget_set_tooltip_text (btn, tip);
         gtk_button_set_relief (GTK_BUTTON (btn), GTK_RELIEF_NONE);
         mg_apply_compact_mode_css (btn);
-        gtk_container_add (GTK_CONTAINER(btn), lbl);
+        fabulor_gtk_button_set_child (GTK_BUTTON (btn), lbl);
 
         gtk_box_pack_start (GTK_BOX (box), btn, 0, 0, 0);
         g_signal_connect (G_OBJECT (btn), "toggled",
@@ -3573,7 +3574,7 @@ mg_create_topicbar (session *sess, GtkWidget *box)
 		GTK_POLICY_EXTERNAL, GTK_POLICY_NEVER);
 	gtk_scrolled_window_set_propagate_natural_width (GTK_SCROLLED_WINDOW (topic_scroll), FALSE);
 	gtk_scrolled_window_set_shadow_type (GTK_SCROLLED_WINDOW (topic_scroll), GTK_SHADOW_NONE);
-	gtk_container_add (GTK_CONTAINER (topic_scroll), topic);
+	fabulor_gtk_scrolled_window_set_child (GTK_SCROLLED_WINDOW (topic_scroll), topic);
         mg_topicbar_update_height (topic);
         gtk_box_pack_start (GTK_BOX (hbox), topic_scroll, TRUE, TRUE, 0);
         gtk_widget_add_events (topic, GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK |
@@ -3905,7 +3906,7 @@ mg_create_textarea (session *sess, GtkWidget *box)
                                              GTK_SHADOW_IN);
         gtk_scrolled_window_set_policy (GTK_SCROLLED_WINDOW (frame),
                                         GTK_POLICY_NEVER, GTK_POLICY_AUTOMATIC);
-        gtk_container_add (GTK_CONTAINER (overlay), frame);
+        fabulor_gtk_overlay_set_child (GTK_OVERLAY (overlay), frame);
 
         theme_get_xtext_colors_for_widget (frame, xtext_palette, XTEXT_COLS);
         gui->xtext = gtk_xtext_new (xtext_palette, TRUE);
@@ -3914,7 +3915,7 @@ mg_create_textarea (session *sess, GtkWidget *box)
         gtk_xtext_set_thin_separator (xtext, prefs.hex_text_thin_sep);
         gtk_xtext_set_urlcheck_function (xtext, mg_word_check);
         gtk_xtext_set_max_lines (xtext, prefs.hex_text_max_lines);
-        gtk_container_add (GTK_CONTAINER (frame), GTK_WIDGET (xtext));
+        fabulor_gtk_scrolled_window_set_child (GTK_SCROLLED_WINDOW (frame), GTK_WIDGET (xtext));
 
         mg_update_xtext (GTK_WIDGET (xtext));
 
@@ -3951,7 +3952,7 @@ mg_create_infoframe (GtkWidget *box)
         gtk_box_pack_start (GTK_BOX (box), frame, TRUE, TRUE, 0);
 
         hbox = mg_box_new (GTK_ORIENTATION_HORIZONTAL, FALSE, 0);
-        gtk_container_add (GTK_CONTAINER (frame), hbox);
+        fabulor_gtk_frame_set_child (GTK_FRAME (frame), hbox);
 
         label = gtk_label_new (NULL);
         gtk_box_pack_start (GTK_BOX (hbox), label, TRUE, TRUE, 0);
@@ -4770,7 +4771,7 @@ mg_emoji_grid_scroller_new (GtkWidget **grid_out)
         grid = gtk_grid_new ();
         gtk_grid_set_row_spacing (GTK_GRID (grid), 4);
         gtk_grid_set_column_spacing (GTK_GRID (grid), 4);
-        gtk_container_add (GTK_CONTAINER (scrolled), grid);
+        fabulor_gtk_scrolled_window_set_child (GTK_SCROLLED_WINDOW (scrolled), grid);
 
         *grid_out = grid;
         return scrolled;
@@ -4789,7 +4790,7 @@ mg_emoji_add_button_sized (GtkWidget *grid, GtkEntry *entry, GtkWidget *popover,
         gtk_widget_set_size_request (button, width, height);
         if (tooltip)
                 gtk_widget_set_tooltip_text (button, tooltip);
-        gtk_container_add (GTK_CONTAINER (button), child);
+        fabulor_gtk_button_set_child (GTK_BUTTON (button), child);
 
         insert = g_new0 (EmojiFlagInsert, 1);
         insert->entry = entry;
@@ -4978,7 +4979,7 @@ mg_show_emoji_popover (GtkEntry *entry)
 
         outer = gtk_box_new (GTK_ORIENTATION_VERTICAL, 6);
         gtk_container_set_border_width (GTK_CONTAINER (outer), 8);
-        gtk_container_add (GTK_CONTAINER (popover), outer);
+        fabulor_gtk_popover_set_child (GTK_POPOVER (popover), outer);
 
         notebook = gtk_notebook_new ();
         gtk_notebook_set_tab_pos (GTK_NOTEBOOK (notebook), GTK_POS_TOP);
@@ -5627,7 +5628,7 @@ mg_create_topwindow (session *sess)
         gtk_grid_set_row_spacing (GTK_GRID (table), GUI_SPACING);
         /* left and right borders */
         gtk_grid_set_column_spacing (GTK_GRID (table), 1);
-        gtk_container_add (GTK_CONTAINER (win), table);
+        fabulor_gtk_window_set_child (GTK_WINDOW (win), table);
 
         mg_create_irctab (sess, table);
         mg_create_menu (sess->gui, table, sess->server->is_away);
@@ -5828,7 +5829,7 @@ mg_create_tabwindow (session *sess)
         gtk_grid_set_row_spacing (GTK_GRID (table), GUI_SPACING);
         /* left and right borders */
         gtk_grid_set_column_spacing (GTK_GRID (table), 1);
-        gtk_container_add (GTK_CONTAINER (win), table);
+        fabulor_gtk_window_set_child (GTK_WINDOW (win), table);
 
         mg_create_irctab (sess, table);
         mg_create_tabs (sess->gui);
@@ -6148,7 +6149,7 @@ mg_create_generic_tab (char *name, char *title, int force_toplevel,
                 win = gtkutil_window_new (title, name, width, height, 2);
                 vbox = mg_box_new (GTK_ORIENTATION_VERTICAL, FALSE, 0);
                 *vbox_ret = vbox;
-                gtk_container_add (GTK_CONTAINER (win), vbox);
+                fabulor_gtk_window_set_child (GTK_WINDOW (win), vbox);
                 gtk_widget_show (vbox);
                 if (close_callback)
                         g_signal_connect (G_OBJECT (win), "destroy",

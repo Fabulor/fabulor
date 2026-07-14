@@ -36,6 +36,7 @@
 #include "../common/cfgfiles.h"
 #include "../common/server.h"
 #include "gtkutil.h"
+#include "gtk-compat.h"
 #include "theme/theme-access.h"
 #include "theme/theme-manager.h"
 #include "maingui.h"
@@ -176,7 +177,8 @@ open_rawlog (struct server *serv)
 
 	theme_get_xtext_colors_for_widget (scrolledwindow, xtext_palette, XTEXT_COLS);
 	serv->gui->rawlog_textlist = gtk_xtext_new (xtext_palette, 0);
-	gtk_container_add (GTK_CONTAINER (scrolledwindow), serv->gui->rawlog_textlist);
+	fabulor_gtk_scrolled_window_set_child (GTK_SCROLLED_WINDOW (scrolledwindow),
+	                                       serv->gui->rawlog_textlist);
 	gtk_xtext_set_font (GTK_XTEXT (serv->gui->rawlog_textlist), prefs.hex_text_font);
 	GTK_XTEXT (serv->gui->rawlog_textlist)->ignore_hidden = 1;
 	g_object_set_data (G_OBJECT (serv->gui->rawlog_window), "rawlog-xtext", serv->gui->rawlog_textlist);

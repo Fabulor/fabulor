@@ -1,6 +1,6 @@
 # GTK4 API Inventory
 
-Status: initial inventory
+Status: maintained migration inventory
 
 Baseline date: 2026-07-14
 
@@ -40,8 +40,9 @@ Update this file in every GTK4 conversion PR. Use these status values:
 
 The production GTK3 build and isolated GTK4 MSVC/Meson probes compile the same
 helper bodies. The GTK4 probes also take each helper's address so every GTK4
-branch is linked, not merely preprocessed. The first production adoption is the
-tree-view child assignment in `gtkutil_treeview_new()`.
+branch is linked, not merely preprocessed. Production now uses 39 typed child
+assignments across 14 source files: 7 windows, 18 scrolled windows, 7 frames,
+5 buttons, 1 overlay, and 1 popover.
 
 The boundary deliberately does not abstract generic widget destruction,
 box expansion/fill/padding, recursive visibility, menus, dialogs, events,
@@ -52,7 +53,7 @@ or behaviour changes that must remain visible at each caller.
 
 | GTK3 family or type | Matching lines | Files | Migration direction | Stage | Status |
 |---|---:|---:|---|---:|---|
-| `gtk_container_*` | 155 | 25 | explicit widget-specific child APIs | 2 | in progress |
+| `gtk_container_*` | 117 | 23 | explicit widget-specific child APIs | 2 | in progress |
 | `gtk_box_pack_*` | 186 | 22 | `gtk_box_append/prepend` and reorder APIs | 2 | not started |
 | `gtk_widget_show_all` | 34 | 18 | explicit visibility; GTK4 children visible by default | 2 | not started |
 | `gtk_widget_destroy` | 81 | 23 | window close and object ownership appropriate to type | 2 | not started |

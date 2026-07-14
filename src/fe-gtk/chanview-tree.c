@@ -183,7 +183,7 @@ cv_tree_init (chanview *cv)
 	}
 
 
-	gtk_container_add (GTK_CONTAINER (win), view);
+	fabulor_gtk_scrolled_window_set_child (GTK_SCROLLED_WINDOW (win), view);
 	col = gtk_tree_view_column_new();
 
 	if (cv->use_icons)

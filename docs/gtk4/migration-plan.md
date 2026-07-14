@@ -94,6 +94,14 @@ Exit criteria:
 
 ### Stage 2: Widget Ownership And Layout
 
+Progress (2026-07-14): 39 statically typed single-child assignments now use
+the shared GTK3/GTK4 compatibility boundary across 14 source files. This covers
+windows, scrolled windows, frames, buttons, the transcript overlay, and the
+emoji popover. Direct `gtk_container_*` usage has fallen from 155 lines in 25
+files to 117 lines in 23 files. Box packing, dialog content areas, menu/list
+children, event boxes, GTK3 viewport access, recursive visibility, and generic
+destruction remain explicit for their dedicated conversion passes.
+
 Primary API families:
 
 - `gtk_container_*`

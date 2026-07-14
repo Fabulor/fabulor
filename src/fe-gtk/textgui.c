@@ -33,6 +33,7 @@
 #include "../common/fe.h"
 #include "../common/text.h"
 #include "gtkutil.h"
+#include "gtk-compat.h"
 #include "xtext.h"
 #include "maingui.h"
 #include "theme/theme-access.h"
@@ -436,7 +437,7 @@ pevent_treeview_new (GtkWidget *box)
 	gtk_tree_view_column_set_resizable (col, TRUE);
 	gtk_tree_view_column_set_min_width (col, 100);
 
-	gtk_container_add (GTK_CONTAINER (scroll), view);
+	fabulor_gtk_scrolled_window_set_child (GTK_SCROLLED_WINDOW (scroll), view);
 	gtk_container_add (GTK_CONTAINER (box), scroll);
 
 	return view;
@@ -480,7 +481,7 @@ pevent_hlist_treeview_new (GtkWidget *box)
 	col = gtk_tree_view_get_column (GTK_TREE_VIEW (view), 0);
 	gtk_tree_view_column_set_sizing (col, GTK_TREE_VIEW_COLUMN_AUTOSIZE);
 
-	gtk_container_add (GTK_CONTAINER (scroll), view);
+	fabulor_gtk_scrolled_window_set_child (GTK_SCROLLED_WINDOW (scroll), view);
 	gtk_container_add (GTK_CONTAINER (box), scroll);
 
 	return view;
@@ -519,7 +520,7 @@ pevent_dialog_show ()
 	pevent_dialog_twid = gtk_xtext_new (xtext_palette, 0);
 	gtk_widget_set_sensitive (pevent_dialog_twid, FALSE);
 	gtk_widget_set_size_request (pevent_dialog_twid, -1, 75);
-	gtk_container_add (GTK_CONTAINER (wid), pevent_dialog_twid);
+	fabulor_gtk_scrolled_window_set_child (GTK_SCROLLED_WINDOW (wid), pevent_dialog_twid);
 	gtk_xtext_set_font (GTK_XTEXT (pevent_dialog_twid), prefs.hex_text_font);
 	g_object_set_data (G_OBJECT (pevent_dialog), "xtext", pevent_dialog_twid);
 	g_object_set_data (G_OBJECT (pevent_dialog), PEVENT_THEME_LISTENER_ID_KEY,

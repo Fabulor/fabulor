@@ -705,10 +705,10 @@ cv_tabs_add (chanview *cv, chan *ch, char *name, GtkTreeIter *parent)
 	gtk_image_set_pixel_size (GTK_IMAGE (close_icon), 8);
 	gtk_button_set_always_show_image (GTK_BUTTON (close_button), TRUE);
 	gtk_widget_set_can_focus (close_button, FALSE);
-	gtk_container_add (GTK_CONTAINER (close_button), close_icon);
+	fabulor_gtk_button_set_child (GTK_BUTTON (close_button), close_icon);
 	gtk_box_pack_start (GTK_BOX (hbox), label, TRUE, TRUE, 0);
 	gtk_box_pack_end (GTK_BOX (hbox), close_button, FALSE, FALSE, 0);
-	gtk_container_add (GTK_CONTAINER (but), hbox);
+	fabulor_gtk_button_set_child (GTK_BUTTON (but), hbox);
 	g_object_set_data (G_OBJECT (but), "tab-label", label);
 	g_object_set_data (G_OBJECT (but), "tab-close-button", close_button);
 	g_object_set_data (G_OBJECT (but), "c", ch);

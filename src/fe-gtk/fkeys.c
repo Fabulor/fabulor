@@ -46,6 +46,7 @@
 #include "../common/typedef.h"
 #include <gdk/gdkkeysyms.h>
 #include "gtkutil.h"
+#include "gtk-compat.h"
 #include "menu.h"
 #include "xtext.h"
 #include "theme/theme-access.h"
@@ -1172,7 +1173,7 @@ key_dialog_treeview_new (GtkWidget *box)
 	gtk_tree_view_column_set_min_width (col, 80);
 	gtk_tree_view_column_set_resizable (col, TRUE);
 
-	gtk_container_add (GTK_CONTAINER (scroll), view);
+	fabulor_gtk_scrolled_window_set_child (GTK_SCROLLED_WINDOW (scroll), view);
 	gtk_box_pack_start (GTK_BOX (box), scroll, TRUE, TRUE, 0);
 
 	return view;

@@ -204,6 +204,9 @@ Detailed planning and evidence live in:
   - [x] Compile, link, and execute isolated MSVC and Meson probes against the same validated GTK4 root in CI.
   - [x] Introduce narrowly scoped compatibility helpers before converting production frontend modules.
 - [ ] Convert widget ownership, layout, visibility, and lifecycle APIs.
+  - [x] Route statically typed single-child window, scroller, frame, button, overlay, and popover assignments through the GTK3/GTK4 compatibility boundary.
+  - [ ] Convert box packing and legacy child enumeration with explicit GTK4 expansion, alignment, ordering, and margin semantics.
+  - [ ] Replace recursive visibility and generic widget destruction with surface-specific GTK4 lifecycle handling.
 - [ ] Convert actions, menus, dialogs, and file-selection flows.
 - [ ] Convert input events, shortcuts, clipboard, drag/drop, and pointer gestures.
 - [ ] Convert tree/list models, cell renderers, channel navigation, and operational lists.

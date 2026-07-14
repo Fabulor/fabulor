@@ -39,6 +39,7 @@
 #include "../common/fe.h"
 #include "menu.h"
 #include "gtkutil.h"
+#include "gtk-compat.h"
 #include "maingui.h"
 #include "editlist.h"
 
@@ -320,7 +321,7 @@ editlist_treeview_new (GtkWidget *box, char *title1, char *title2)
 	gtk_tree_view_column_set_resizable (col, TRUE);
 	gtk_tree_view_column_set_min_width (col, 100);
 
-	gtk_container_add (GTK_CONTAINER (scroll), view);
+	fabulor_gtk_scrolled_window_set_child (GTK_SCROLLED_WINDOW (scroll), view);
 	gtk_box_pack_start (GTK_BOX (box), scroll, TRUE, TRUE, 0);
 	gtk_widget_show_all (box);
 

@@ -34,6 +34,7 @@
 #include "../common/zoitechatc.h"
 #include "../common/fe.h"
 #include "gtkutil.h"
+#include "gtk-compat.h"
 #include "theme/theme-gtk.h"
 #include "maingui.h"
 #include "menu.h"
@@ -1066,7 +1067,7 @@ userlist_create (GtkWidget *box)
 
 	userlist_add_columns (GTK_TREE_VIEW (treeview));
 
-	gtk_container_add (GTK_CONTAINER (sw), treeview);
+	fabulor_gtk_scrolled_window_set_child (GTK_SCROLLED_WINDOW (sw), treeview);
 	gtk_widget_show (treeview);
 
 	return treeview;
