@@ -582,11 +582,11 @@ Scope: canonical Away action state and availability only. GTK4 menu models,
 dynamic menus, popup ownership, dialogs, and pointer/key event handling remain
 unchanged for later passes.
 
-### PR: GTK4 Search Menu Model, Pass 5
+### PR: [#33 - GTK4 Search Menu Model, Pass 5](https://github.com/Fabulor/fabulor/pull/33)
 
 Date: 2026-07-14
 
-Commit: pending
+Commit: `26097d56`
 
 Migration stage: 3, first canonical `GMenuModel` subtree projection
 
