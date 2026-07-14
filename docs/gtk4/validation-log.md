@@ -756,6 +756,45 @@ Scope: Channel Switcher action, target, model, and synchronization only. The
 displayed GTK3 radio controls, remaining static commands, dynamic menus, popup
 ownership, dialogs, and pointer/key event handling remain unchanged.
 
+### PR: pending - GTK4 Network Meters Menu Model, Pass 10
+
+Date: 2026-07-15
+
+Commit: pending
+
+Migration stage: 3, second targeted selection action and sixth canonical
+`GMenuModel` subtree projection
+
+Files/workflows converted: shared Network Meters action identity; canonical
+Off, Graph, Text, and Both targets; retained four-item model; cross-window
+action-state synchronization; preserved GTK3 radio callback, timer, and meter
+refresh behaviour
+
+GTK version: 4.22.4
+
+GLib version: 2.88.0
+
+Build configuration: MSVC x64 Release and Meson 1.11.2 Release with MSVC 19.44
+
+Automated checks:
+
+- [x] production GTK3 frontend compile and link with 0 warnings and 0 errors
+- [x] distinct action identities: 25, including Network Meters selection
+- [x] focused GTK3/GIO probe: exactly 4 canonical model targets
+- [x] focused GTK3/GIO probe: existing radio callback activates exactly once
+- [x] focused GTK3/GIO probe: typed action activates once and state sync does not reactivate
+- [x] focused GTK3/GIO probe: invalid selection target is rejected without changing state
+- [x] GTK4 validator unit tests: 8/8, plus repository root validation
+- [x] isolated GTK4 MSVC compile, link, and runtime probe with no warnings
+- [x] isolated GTK4 Meson configure, compile, link, and runtime test
+- [x] production GTK3 MSVC x64 Release rebuild and native tests: 18/18
+- [ ] GitHub Actions required checks: 0/5 pending
+
+Scope: Network Meters action, targets, model, and synchronization only. The
+displayed GTK3 radio controls, independent Preferences meter values, remaining
+static commands, dynamic menus, popup ownership, dialogs, and pointer/key event
+handling remain unchanged.
+
 ## Per-PR Record Template
 
 Copy this section for each GTK4 PR:

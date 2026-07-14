@@ -75,6 +75,7 @@ static GSList *submenu_list;
 #define FABULOR_MENU_ACTION_NAME "fabulor-menu-action-name"
 #define FABULOR_MENU_ACTION_TARGET "fabulor-menu-action-target"
 #define FABULOR_MENU_CHANNEL_SWITCHER_MODEL "fabulor-menu-channel-switcher-model"
+#define FABULOR_MENU_NETWORK_METERS_MODEL "fabulor-menu-network-meters-model"
 #define FABULOR_MENU_NEW_MODEL "fabulor-menu-new-model"
 #define FABULOR_MENU_SERVER_MODEL "fabulor-menu-server-model"
 #define FABULOR_MENU_SEARCH_MODEL "fabulor-menu-search-model"
@@ -150,6 +151,7 @@ typedef enum
 	MENU_ACTION_USER_LIST_TOGGLE,
 	MENU_ACTION_FULLSCREEN_TOGGLE,
 	MENU_ACTION_CHANNEL_SWITCHER,
+	MENU_ACTION_NETWORK_METERS,
 	MENU_ACTION_DISCONNECT,
 	MENU_ACTION_RECONNECT,
 	MENU_ACTION_JOIN_CHANNEL,
@@ -1843,51 +1845,92 @@ menu_apply_metres_cb (session *sess)
 }
 
 static void
+menu_action_sync_selection (const char *name, const char *target)
+{
+	GHashTable *seen;
+	GSList *list;
+
+	seen = g_hash_table_new (g_direct_hash, g_direct_equal);
+	for (list = sess_list; list; list = g_slist_next (list))
+	{
+		GAction *action;
+		GActionGroup *group;
+		GtkWidget *menu_root;
+		session *sess = list->data;
+
+		if (!sess || !sess->gui || !sess->gui->menu)
+			continue;
+
+		menu_root = sess->gui->menu;
+		if (g_hash_table_contains (seen, menu_root))
+			continue;
+		g_hash_table_add (seen, menu_root);
+
+		group = g_object_get_data (G_OBJECT (menu_root), FABULOR_MENU_ACTION_GROUP);
+		if (!group)
+			continue;
+		action = g_action_map_lookup_action (G_ACTION_MAP (group), name);
+		if (G_IS_SIMPLE_ACTION (action) &&
+			g_variant_type_equal (g_action_get_state_type (action),
+								 G_VARIANT_TYPE_STRING))
+			g_simple_action_set_state (G_SIMPLE_ACTION (action),
+								   g_variant_new_string (target));
+	}
+	g_hash_table_unref (seen);
+}
+
+static const char *
+menu_metres_target (int mode)
+{
+	switch (mode)
+	{
+	case 0:
+		return "off";
+	case 1:
+		return "graph";
+	case 2:
+		return "text";
+	default:
+		return "both";
+	}
+}
+
+static void
+menu_set_metres (int mode)
+{
+	prefs.hex_gui_lagometer = mode;
+	prefs.hex_gui_throttlemeter = mode;
+	menu_action_sync_selection ("network-meters", menu_metres_target (mode));
+	zoitechat_reinit_timers ();
+	menu_setting_foreach (menu_apply_metres_cb, -1, 0);
+}
+
+static void
 menu_metres_off (GtkWidget *item, gpointer none)
 {
 	if (gtk_check_menu_item_get_active (GTK_CHECK_MENU_ITEM (item)))
-	{
-		prefs.hex_gui_lagometer = 0;
-		prefs.hex_gui_throttlemeter = 0;
-		zoitechat_reinit_timers ();
-		menu_setting_foreach (menu_apply_metres_cb, -1, 0);
-	}
+		menu_set_metres (0);
 }
 
 static void
 menu_metres_text (GtkWidget *item, gpointer none)
 {
 	if (gtk_check_menu_item_get_active (GTK_CHECK_MENU_ITEM (item)))
-	{
-		prefs.hex_gui_lagometer = 2;
-		prefs.hex_gui_throttlemeter = 2;
-		zoitechat_reinit_timers ();
-		menu_setting_foreach (menu_apply_metres_cb, -1, 0);
-	}
+		menu_set_metres (2);
 }
 
 static void
 menu_metres_graph (GtkWidget *item, gpointer none)
 {
 	if (gtk_check_menu_item_get_active (GTK_CHECK_MENU_ITEM (item)))
-	{
-		prefs.hex_gui_lagometer = 1;
-		prefs.hex_gui_throttlemeter = 1;
-		zoitechat_reinit_timers ();
-		menu_setting_foreach (menu_apply_metres_cb, -1, 0);
-	}
+		menu_set_metres (1);
 }
 
 static void
 menu_metres_both (GtkWidget *item, gpointer none)
 {
 	if (gtk_check_menu_item_get_active (GTK_CHECK_MENU_ITEM (item)))
-	{
-		prefs.hex_gui_lagometer = 3;
-		prefs.hex_gui_throttlemeter = 3;
-		zoitechat_reinit_timers ();
-		menu_setting_foreach (menu_apply_metres_cb, -1, 0);
-	}
+		menu_set_metres (3);
 }
 
 static void
@@ -2019,12 +2062,18 @@ static struct mymenu mymenu[] = {
 		{N_("T_ree"), 0, 0, M_MENURADIO, MENU_ID_LAYOUT_TREE, 0, 1, 0,
 			"channel-switcher", MENU_ACTION_CHANNEL_SWITCHER, "tree"},
 		{0, 0, 0, M_END, 0, 0, 0},
+#define NETWORK_METERS_OFFSET (27)
+#define NETWORK_METERS_ACTION_COUNT (4)
 	{N_("_Network Meters"), 0, 0, M_MENUSUB, 0, 0, 1},	/* 27 */
 #define METRE_OFFSET (28)
-		{N_("Off"), menu_metres_off, 0, M_MENURADIO, 0, 0, 1},
-		{N_("Graph"), menu_metres_graph, 0, M_MENURADIO, 0, 0, 1},
-		{N_("Text"), menu_metres_text, 0, M_MENURADIO, 0, 0, 1},
-		{N_("Both"), menu_metres_both, 0, M_MENURADIO, 0, 0, 1},
+		{N_("Off"), menu_metres_off, 0, M_MENURADIO, 0, 0, 1, 0,
+			"network-meters", MENU_ACTION_NETWORK_METERS, "off"},
+		{N_("Graph"), menu_metres_graph, 0, M_MENURADIO, 0, 0, 1, 0,
+			"network-meters", MENU_ACTION_NETWORK_METERS, "graph"},
+		{N_("Text"), menu_metres_text, 0, M_MENURADIO, 0, 0, 1, 0,
+			"network-meters", MENU_ACTION_NETWORK_METERS, "text"},
+		{N_("Both"), menu_metres_both, 0, M_MENURADIO, 0, 0, 1, 0,
+			"network-meters", MENU_ACTION_NETWORK_METERS, "both"},
 		{0, 0, 0, M_END, 0, 0, 0},	/* 32 */
 	{ 0, 0, 0, M_SEP, 0, 0, 0 },
 #define FULLSCREEN_OFFSET (34)
@@ -2340,7 +2389,19 @@ menu_action_is_session_stateful (menu_action_id id)
 static gboolean
 menu_action_is_selection_stateful (menu_action_id id)
 {
-	return id == MENU_ACTION_CHANNEL_SWITCHER;
+	return id == MENU_ACTION_CHANNEL_SWITCHER ||
+		   id == MENU_ACTION_NETWORK_METERS;
+}
+
+static const char *
+menu_action_selection_target (menu_action_id id)
+{
+	if (id == MENU_ACTION_CHANNEL_SWITCHER)
+		return mymenu[TABS_OFFSET].state ? "tabs" : "tree";
+	if (id == MENU_ACTION_NETWORK_METERS)
+		return menu_metres_target (prefs.hex_gui_lagometer);
+
+	return NULL;
 }
 
 static void
@@ -2357,12 +2418,34 @@ menu_action_activate (GSimpleAction *action, GVariant *parameter,
 			return;
 
 		target = g_variant_get_string (parameter, NULL);
-		if (g_strcmp0 (target, "tabs") != 0 && g_strcmp0 (target, "tree") != 0)
-			return;
+		if (definition->action_id == MENU_ACTION_CHANNEL_SWITCHER)
+		{
+			if (g_strcmp0 (target, "tabs") != 0 &&
+				g_strcmp0 (target, "tree") != 0)
+				return;
 
-		g_simple_action_set_state (action, parameter);
-		prefs.hex_gui_tab_layout = g_strcmp0 (target, "tabs") == 0 ? 0 : 2;
-		menu_change_layout ();
+			g_simple_action_set_state (action, parameter);
+			prefs.hex_gui_tab_layout = g_strcmp0 (target, "tabs") == 0 ? 0 : 2;
+			menu_change_layout ();
+		}
+		else if (definition->action_id == MENU_ACTION_NETWORK_METERS)
+		{
+			int mode;
+
+			if (g_strcmp0 (target, "off") == 0)
+				mode = 0;
+			else if (g_strcmp0 (target, "graph") == 0)
+				mode = 1;
+			else if (g_strcmp0 (target, "text") == 0)
+				mode = 2;
+			else if (g_strcmp0 (target, "both") == 0)
+				mode = 3;
+			else
+				return;
+
+			g_simple_action_set_state (action, parameter);
+			menu_set_metres (mode);
+		}
 		return;
 	}
 
@@ -2402,8 +2485,8 @@ menu_action_group_new (void)
 		else if (menu_action_is_selection_stateful (mymenu[i].action_id))
 			action = g_simple_action_new_stateful (mymenu[i].action_name,
 											 G_VARIANT_TYPE_STRING,
-											 g_variant_new_string (mymenu[TABS_OFFSET].state ?
-																	   "tabs" : "tree"));
+											 g_variant_new_string (
+												 menu_action_selection_target (mymenu[i].action_id)));
 		else if (menu_action_is_view_stateful (mymenu[i].action_id) ||
 				 menu_action_is_session_stateful (mymenu[i].action_id))
 			action = g_simple_action_new_stateful (mymenu[i].action_name, NULL,
@@ -3071,6 +3154,7 @@ menu_create_main (void *accel_group, int bar, int away, int away_sensitive,
 	GMenuModel *channel_switcher_model;
 	GMenuModel *help_model;
 	GMenuModel *new_model;
+	GMenuModel *network_meters_model;
 	GMenuModel *search_model;
 	GMenuModel *server_model;
 	GtkWidget *item;
@@ -3186,6 +3270,10 @@ menu_create_main (void *accel_group, int bar, int away, int away_sensitive,
 														CHANNEL_SWITCHER_ACTION_COUNT);
 	g_object_set_data_full (G_OBJECT (menu_bar), FABULOR_MENU_CHANNEL_SWITCHER_MODEL,
 						 channel_switcher_model, g_object_unref);
+	network_meters_model = menu_action_model_new (NETWORK_METERS_OFFSET,
+												NETWORK_METERS_ACTION_COUNT);
+	g_object_set_data_full (G_OBJECT (menu_bar), FABULOR_MENU_NETWORK_METERS_MODEL,
+						 network_meters_model, g_object_unref);
 	new_model = menu_action_model_new (NEW_OFFSET, NEW_ACTION_COUNT);
 	g_object_set_data_full (G_OBJECT (menu_bar), FABULOR_MENU_NEW_MODEL,
 						 new_model, g_object_unref);

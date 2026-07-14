@@ -291,6 +291,14 @@ retain their existing callback because GTK3 does not reliably dispatch a radio
 target through `GtkActionable`; both user and programmatic layout changes keep
 the action state synchronized without duplicate activation or layout work.
 
+Network Meters menu-model pass 10 (2026-07-15): Off, Graph, Text, and Both now
+share the twenty-fifth canonical action identity, a string-valued
+`network-meters` action with four typed targets. The retained model stores the
+complete submenu for GTK4, while the displayed GTK3 radio items keep their
+existing callbacks. Both activation paths use one meter update routine, keep
+open menu action groups synchronized, reinitialize lag timers, and refresh the
+meter UI exactly as before.
+
 Primary surfaces:
 
 - `menu.c`, context menus, tray menus, and user-defined menus
