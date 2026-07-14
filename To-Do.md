@@ -208,6 +208,8 @@ Detailed planning and evidence live in:
   - [ ] Convert box packing and legacy child enumeration with explicit GTK4 expansion, alignment, ordering, and margin semantics.
     - [x] Convert start-only utility and preferences layouts with explicit expansion, fill, and directional padding semantics.
     - [ ] Convert mixed start/end layouts through per-surface child ordering reviews.
+      - [x] Convert reviewed trailing action rows and channel-tab separators where expanding predecessors preserve placement.
+      - [ ] Convert remaining main-window, generic-dialog, menu, and model-surface ordering with their dedicated stages.
   - [ ] Replace recursive visibility and generic widget destruction with surface-specific GTK4 lifecycle handling.
 - [ ] Convert actions, menus, dialogs, and file-selection flows.
 - [ ] Convert input events, shortcuts, clipboard, drag/drop, and pointer gestures.

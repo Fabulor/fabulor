@@ -1024,15 +1024,15 @@ setup_create_spin (GtkWidget *table, int row, const setting *set)
                 g_signal_connect (G_OBJECT (unit), "changed",
                                                         G_CALLBACK (setup_dcc_speed_unit_cb), data);
 
-                gtk_box_pack_start (GTK_BOX (rbox), wid, 0, 0, 0);
-                gtk_box_pack_start (GTK_BOX (rbox), unit, 0, 0, 6);
+                fabulor_gtk_box_append (GTK_BOX (rbox), wid, FALSE, FALSE, 0);
+                fabulor_gtk_box_append (GTK_BOX (rbox), unit, FALSE, FALSE, 6);
         } else
         {
                 gtk_spin_button_set_value (GTK_SPIN_BUTTON (wid),
                                                                                 setup_get_int (&setup_prefs, set));
                 g_signal_connect (G_OBJECT (wid), "value-changed",
                                                         G_CALLBACK (setup_spin_cb), (gpointer)set);
-                gtk_box_pack_start (GTK_BOX (rbox), wid, 0, 0, 0);
+                fabulor_gtk_box_append (GTK_BOX (rbox), wid, FALSE, FALSE, 0);
         }
 
         if (set->list)
@@ -1042,7 +1042,7 @@ setup_create_spin (GtkWidget *table, int row, const setting *set)
                         label = setup_create_italic_label (text + 1);
                 else
                         label = gtk_label_new (text);
-                gtk_box_pack_start (GTK_BOX (rbox), label, 0, 0, 6);
+                fabulor_gtk_box_append (GTK_BOX (rbox), label, FALSE, FALSE, 6);
         }
 
         return wid;
@@ -1269,7 +1269,7 @@ setup_create_menu (GtkWidget *table, int row, const setting *set)
                                                         G_CALLBACK (setup_menu_cb), (gpointer)set);
 
         box = gtkutil_box_new (GTK_ORIENTATION_HORIZONTAL, FALSE, 0);
-        gtk_box_pack_start (GTK_BOX (box), cbox, 0, 0, 0);
+        fabulor_gtk_box_append (GTK_BOX (box), cbox, FALSE, FALSE, 0);
         setup_table_attach (table, box, 3, 4, row, row + 1, TRUE, FALSE,
                             SETUP_ALIGN_FILL, SETUP_ALIGN_FILL, 0, 0);
 }
@@ -1654,10 +1654,10 @@ setup_create_appearance_page (void)
         gtk_widget_set_margin_top (theme_label, 1);
         gtk_widget_set_margin_bottom (theme_label, 1);
 
-        gtk_box_pack_start (GTK_BOX (box), appearance_page, FALSE, FALSE, 0);
-        gtk_box_pack_start (GTK_BOX (box), theme_label, FALSE, FALSE, 2);
-        gtk_box_pack_start (GTK_BOX (box), theme_page, FALSE, FALSE, 0);
-        gtk_box_pack_start (GTK_BOX (box), advanced_page, FALSE, FALSE, 0);
+        fabulor_gtk_box_append (GTK_BOX (box), appearance_page, FALSE, FALSE, 0);
+        fabulor_gtk_box_append (GTK_BOX (box), theme_label, FALSE, FALSE, 2);
+        fabulor_gtk_box_append (GTK_BOX (box), theme_page, FALSE, FALSE, 0);
+        fabulor_gtk_box_append (GTK_BOX (box), advanced_page, FALSE, FALSE, 0);
 
         return box;
 }
@@ -1851,11 +1851,11 @@ setup_create_sound_page (void)
 
         vbox2 = gtkutil_box_new (GTK_ORIENTATION_VERTICAL, FALSE, 0);
         gtk_widget_show (vbox2);
-        gtk_box_pack_start (GTK_BOX (vbox1), vbox2, TRUE, TRUE, 0);
+        fabulor_gtk_box_append (GTK_BOX (vbox1), vbox2, TRUE, TRUE, 0);
 
         scrolledwindow1 = gtk_scrolled_window_new (NULL, NULL);
         gtk_widget_show (scrolledwindow1);
-        gtk_box_pack_start (GTK_BOX (vbox2), scrolledwindow1, TRUE, TRUE, 0);
+        fabulor_gtk_box_append (GTK_BOX (vbox2), scrolledwindow1, TRUE, TRUE, 0);
         gtk_scrolled_window_set_policy (GTK_SCROLLED_WINDOW (scrolledwindow1),
                                                                                           GTK_POLICY_AUTOMATIC, GTK_POLICY_ALWAYS);
         gtk_scrolled_window_set_shadow_type (GTK_SCROLLED_WINDOW (scrolledwindow1),
@@ -1874,7 +1874,7 @@ setup_create_sound_page (void)
 
         table1 = gtkutil_grid_new (2, 3, FALSE);
         gtk_widget_show (table1);
-        gtk_box_pack_start (GTK_BOX (vbox2), table1, FALSE, TRUE, 8);
+        fabulor_gtk_box_append (GTK_BOX (vbox2), table1, FALSE, TRUE, 8);
         gtk_grid_set_row_spacing (GTK_GRID (table1), 2);
         gtk_grid_set_column_spacing (GTK_GRID (table1), 4);
 
@@ -1948,9 +1948,9 @@ setup_add_page (const char *title, GtkWidget *book, GtkWidget *tab)
         gtk_widget_set_margin_end (label, 2);
         gtk_widget_set_margin_top (label, 1);
         gtk_widget_set_margin_bottom (label, 1);
-        gtk_box_pack_start (GTK_BOX (vvbox), label, FALSE, FALSE, 2);
+        fabulor_gtk_box_append (GTK_BOX (vvbox), label, FALSE, FALSE, 2);
 
-        gtk_box_pack_start (GTK_BOX (vvbox), tab, TRUE, TRUE, 0);
+        fabulor_gtk_box_append (GTK_BOX (vvbox), tab, TRUE, TRUE, 0);
 
         sw = GTK_SCROLLED_WINDOW(gtk_scrolled_window_new (NULL, NULL));
         gtk_scrolled_window_set_shadow_type (sw, GTK_SHADOW_IN);
@@ -2081,7 +2081,7 @@ setup_create_pages (GtkWidget *box)
 
         gtk_notebook_set_show_tabs (GTK_NOTEBOOK (book), FALSE);
         gtk_notebook_set_show_border (GTK_NOTEBOOK (book), FALSE);
-        gtk_box_pack_start (GTK_BOX (box), book, TRUE, TRUE, 0);
+        fabulor_gtk_box_append (GTK_BOX (box), book, TRUE, TRUE, 0);
 
         return book;
 }
@@ -2182,7 +2182,7 @@ setup_create_tree (GtkWidget *box, GtkWidget *book)
 
         frame = gtk_frame_new (NULL);
         fabulor_gtk_frame_set_child (GTK_FRAME (frame), tree);
-        gtk_box_pack_start (GTK_BOX (box), frame, 0, 0, 0);
+        fabulor_gtk_box_append (GTK_BOX (box), frame, FALSE, FALSE, 0);
         gtk_box_reorder_child (GTK_BOX (box), frame, 0);
 
         if (sel_iter)
@@ -2490,7 +2490,7 @@ setup_window_open (void)
         fabulor_gtk_window_set_child (GTK_WINDOW (win), vbox);
 
         hbox = gtkutil_box_new (GTK_ORIENTATION_HORIZONTAL, FALSE, 4);
-        gtk_box_pack_start (GTK_BOX (vbox), hbox, TRUE, TRUE, 0);
+        fabulor_gtk_box_append (GTK_BOX (vbox), hbox, TRUE, TRUE, 0);
 
         setup_create_tree (hbox, setup_create_pages (hbox));
 
@@ -2498,17 +2498,17 @@ setup_window_open (void)
         hbbox = gtk_button_box_new (GTK_ORIENTATION_HORIZONTAL);
         gtk_button_box_set_layout (GTK_BUTTON_BOX (hbbox), GTK_BUTTONBOX_END);
         gtk_box_set_spacing (GTK_BOX (hbbox), 4);
-        gtk_box_pack_end (GTK_BOX (vbox), hbbox, FALSE, FALSE, 0);
+        fabulor_gtk_box_append (GTK_BOX (vbox), hbbox, FALSE, FALSE, 0);
 
         cancel_button = wid = gtkutil_button_new_from_stock ("gtk-cancel", _("_Cancel"));
         g_signal_connect (G_OBJECT (wid), "clicked",
                                                         G_CALLBACK (gtkutil_destroy), win);
-        gtk_box_pack_start (GTK_BOX (hbbox), wid, FALSE, FALSE, 0);
+        fabulor_gtk_box_append (GTK_BOX (hbbox), wid, FALSE, FALSE, 0);
 
         wid = gtkutil_button_new_from_stock ("gtk-ok", _("_OK"));
         g_signal_connect (G_OBJECT (wid), "clicked",
                                                         G_CALLBACK (setup_ok_cb), win);
-        gtk_box_pack_start (GTK_BOX (hbbox), wid, FALSE, FALSE, 0);
+        fabulor_gtk_box_append (GTK_BOX (hbbox), wid, FALSE, FALSE, 0);
 
         gtk_widget_show_all (win);
 

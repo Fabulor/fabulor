@@ -35,6 +35,7 @@
 #include "../common/outbound.h"
 #include "../common/zoitechatc.h"
 #include "gtkutil.h"
+#include "gtk-compat.h"
 #include "maingui.h"
 #include "banlist.h"
 
@@ -823,7 +824,7 @@ banlist_opengui (struct session *sess)
 	banl->treeview = banlist_treeview_new (vbox, banl);
 
 	table = banlist_table_new ();
-	gtk_box_pack_start (GTK_BOX (vbox), table, 0, 0, 0);
+	fabulor_gtk_box_append (GTK_BOX (vbox), table, FALSE, FALSE, 0);
 
 	for (i = 0; i < MODE_CT; i++)
 	{
@@ -840,7 +841,7 @@ banlist_opengui (struct session *sess)
 	bbox = gtk_button_box_new (GTK_ORIENTATION_HORIZONTAL);
 	gtk_button_box_set_layout (GTK_BUTTON_BOX (bbox), GTK_BUTTONBOX_SPREAD);
 	gtk_container_set_border_width (GTK_CONTAINER (bbox), 5);
-	gtk_box_pack_end (GTK_BOX (vbox), bbox, 0, 0, 0);
+	fabulor_gtk_box_append (GTK_BOX (vbox), bbox, FALSE, FALSE, 0);
 	gtk_widget_show (bbox);
 
 	banl->but_remove = gtkutil_button (bbox, ICON_BANLIST_REMOVE, 0, banlist_unban, banl,

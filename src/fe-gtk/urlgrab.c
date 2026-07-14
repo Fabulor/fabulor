@@ -29,6 +29,7 @@
 #include "../common/url.h"
 #include "../common/tree.h"
 #include "gtkutil.h"
+#include "gtk-compat.h"
 #include "menu.h"
 #include "maingui.h"
 #include "urlgrab.h"
@@ -210,7 +211,7 @@ url_opengui ()
 	hbox = gtk_button_box_new (GTK_ORIENTATION_HORIZONTAL);
 	gtk_button_box_set_layout (GTK_BUTTON_BOX (hbox), GTK_BUTTONBOX_SPREAD);
 	gtk_container_set_border_width (GTK_CONTAINER (hbox), 5);
-	gtk_box_pack_end (GTK_BOX (vbox), hbox, 0, 0, 0);
+	fabulor_gtk_box_append (GTK_BOX (vbox), hbox, FALSE, FALSE, 0);
 	gtk_widget_show (hbox);
 
 	gtkutil_button (hbox, ICON_URLGRAB_CLEAR,

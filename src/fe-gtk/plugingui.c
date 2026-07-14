@@ -34,6 +34,7 @@ typedef struct session zoitechat_context;
 #include "../common/zoitechatc.h"
 #include "../common/cfgfiles.h"
 #include "gtkutil.h"
+#include "gtk-compat.h"
 #include "maingui.h"
 
 /* model for the plugin treeview */
@@ -496,7 +497,7 @@ plugingui_open (void)
 	hbox = gtk_button_box_new (GTK_ORIENTATION_HORIZONTAL);
 	gtk_button_box_set_layout (GTK_BUTTON_BOX (hbox), GTK_BUTTONBOX_SPREAD);
 	gtk_container_set_border_width (GTK_CONTAINER (hbox), 5);
-	gtk_box_pack_end (GTK_BOX (vbox), hbox, 0, 0, 0);
+	fabulor_gtk_box_append (GTK_BOX (vbox), hbox, FALSE, FALSE, 0);
 
 	{
 		plugingui_icon_button (hbox, _("_Load..."), ICON_PLUGIN_LOAD,

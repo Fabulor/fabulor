@@ -371,7 +371,7 @@ cv_tabs_init (chanview *cv)
 	cv_add_scroll_events (viewport);
 	g_signal_connect (G_OBJECT (viewport), "scroll-event",
 							G_CALLBACK (tab_scroll_cb), cv);
-	gtk_box_pack_start (GTK_BOX (outer), viewport, 1, 1, 0);
+	fabulor_gtk_box_append (GTK_BOX (outer), viewport, TRUE, TRUE, 0);
 	gtk_widget_show (viewport);
 
 	if (cv->vertical)
@@ -389,7 +389,7 @@ cv_tabs_init (chanview *cv)
 	tree = gtk_tree_view_new_with_model (GTK_TREE_MODEL (cv->store));
 	gtk_widget_set_name (tree, "zoitechat-tree");
 	gtk_widget_set_no_show_all (tree, TRUE);
-	gtk_box_pack_start (GTK_BOX (outer), tree, 0, 0, 0);
+	fabulor_gtk_box_append (GTK_BOX (outer), tree, FALSE, FALSE, 0);
 
 	gtk_container_add (GTK_CONTAINER (cv->box), outer);
 }
@@ -409,7 +409,7 @@ tab_add_sorted (chanview *cv, GtkWidget *box, GtkWidget *tab, chan *ch)
 
 	if (!cv->sorted)
 	{
-		gtk_box_pack_start (GTK_BOX (box), tab, 0, 0, 0);
+		fabulor_gtk_box_append (GTK_BOX (box), tab, FALSE, FALSE, 0);
 		gtk_widget_show (tab);
 		return;
 	}
@@ -430,7 +430,7 @@ tab_add_sorted (chanview *cv, GtkWidget *box, GtkWidget *tab, chan *ch)
 
 			if (ch->tag == 0 && cv->cb_compare (a, b) > 0)
 			{
-				gtk_box_pack_start (GTK_BOX (box), tab, 0, 0, 0);
+				fabulor_gtk_box_append (GTK_BOX (box), tab, FALSE, FALSE, 0);
 				gtk_box_reorder_child (GTK_BOX (box), tab, ++i);
 				gtk_widget_show (tab);
 				return;
@@ -441,7 +441,7 @@ tab_add_sorted (chanview *cv, GtkWidget *box, GtkWidget *tab, chan *ch)
 	}
 
 	/* append */
-	gtk_box_pack_start (GTK_BOX (box), tab, 0, 0, 0);
+	fabulor_gtk_box_append (GTK_BOX (box), tab, FALSE, FALSE, 0);
 	gtk_box_reorder_child (GTK_BOX (box), tab, i);
 	gtk_widget_show (tab);
 }
@@ -537,11 +537,11 @@ tab_add_real (chanview *cv, GtkWidget *tab, chan *ch)
 		sep = gtk_separator_new (GTK_ORIENTATION_VERTICAL);
 	}
 
-	gtk_box_pack_end (GTK_BOX (box), sep, 0, 0, 4);
 	gtk_widget_show (sep);
-	gtk_box_pack_start (GTK_BOX (inner), box, 0, 0, 0);
+	fabulor_gtk_box_append (GTK_BOX (inner), box, FALSE, FALSE, 0);
 	g_object_set_data (G_OBJECT (box), "f", ch->family);
-	gtk_box_pack_start (GTK_BOX (box), tab, 0, 0, 0);
+	fabulor_gtk_box_append (GTK_BOX (box), tab, FALSE, FALSE, 0);
+	fabulor_gtk_box_append (GTK_BOX (box), sep, FALSE, FALSE, 4);
 	gtk_widget_show (tab);
 	gtk_widget_show (box);
 	gtk_widget_queue_resize (gtk_widget_get_parent(inner));
@@ -706,8 +706,8 @@ cv_tabs_add (chanview *cv, chan *ch, char *name, GtkTreeIter *parent)
 	gtk_button_set_always_show_image (GTK_BUTTON (close_button), TRUE);
 	gtk_widget_set_can_focus (close_button, FALSE);
 	fabulor_gtk_button_set_child (GTK_BUTTON (close_button), close_icon);
-	gtk_box_pack_start (GTK_BOX (hbox), label, TRUE, TRUE, 0);
-	gtk_box_pack_end (GTK_BOX (hbox), close_button, FALSE, FALSE, 0);
+	fabulor_gtk_box_append (GTK_BOX (hbox), label, TRUE, TRUE, 0);
+	fabulor_gtk_box_append (GTK_BOX (hbox), close_button, FALSE, FALSE, 0);
 	fabulor_gtk_button_set_child (GTK_BUTTON (but), hbox);
 	g_object_set_data (G_OBJECT (but), "tab-label", label);
 	g_object_set_data (G_OBJECT (but), "tab-close-button", close_button);

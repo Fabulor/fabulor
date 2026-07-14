@@ -173,7 +173,7 @@ open_rawlog (struct server *serv)
 	gtk_scrolled_window_set_shadow_type (GTK_SCROLLED_WINDOW (scrolledwindow), GTK_SHADOW_IN);
 	gtk_widget_set_hexpand (scrolledwindow, TRUE);
 	gtk_widget_set_vexpand (scrolledwindow, TRUE);
-	gtk_box_pack_start (GTK_BOX (vbox), scrolledwindow, TRUE, TRUE, 0);
+	fabulor_gtk_box_append (GTK_BOX (vbox), scrolledwindow, TRUE, TRUE, 0);
 
 	theme_get_xtext_colors_for_widget (scrolledwindow, xtext_palette, XTEXT_COLS);
 	serv->gui->rawlog_textlist = gtk_xtext_new (xtext_palette, 0);
@@ -185,7 +185,7 @@ open_rawlog (struct server *serv)
 
 	bbox = gtk_button_box_new (GTK_ORIENTATION_HORIZONTAL);
 	gtk_button_box_set_layout (GTK_BUTTON_BOX (bbox), GTK_BUTTONBOX_SPREAD);
-	gtk_box_pack_end (GTK_BOX (vbox), bbox, 0, 0, 4);
+	fabulor_gtk_box_append (GTK_BOX (vbox), bbox, FALSE, FALSE, 4);
 
 	gtkutil_button (bbox, ICON_RAWLOG_CLEAR, NULL, rawlog_clearbutton,
 						 serv, _("Clear Raw Log"));

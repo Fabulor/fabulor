@@ -111,6 +111,15 @@ Direct `gtk_box_pack_*` usage has fallen from 186 lines in 22 files to 132
 lines in 15 files. Mixed start/end layouts are deliberately deferred for
 per-surface ordering review.
 
+Mixed-layout progress (2026-07-14): 40 reviewed additions across channel tabs,
+ban/DCC/friends/add-on/URL utility windows, raw log, and preferences now use
+explicit append order. Trailing rows were converted only where an expanding
+list, scroller, or content child already consumes spare space. The channel-tab
+family separator is appended after its tab explicitly, preserving the former
+start/end visual order. Direct `gtk_box_pack_*` usage is now 92 lines in seven
+files, isolated to main-window dynamics, generic dialogs, menus, operational
+models, and the spell-entry menu for their dedicated stages.
+
 Primary API families:
 
 - `gtk_container_*`

@@ -57,7 +57,7 @@ existing directional margins, and is used only where append order is exact.
 | GTK3 family or type | Matching lines | Files | Migration direction | Stage | Status |
 |---|---:|---:|---|---:|---|
 | `gtk_container_*` | 117 | 23 | explicit widget-specific child APIs | 2 | in progress |
-| `gtk_box_pack_*` | 132 | 15 | `gtk_box_append/prepend` and reorder APIs | 2 | in progress |
+| `gtk_box_pack_*` | 92 | 7 | `gtk_box_append/prepend` and reorder APIs | 2 | in progress |
 | `gtk_widget_show_all` | 34 | 18 | explicit visibility; GTK4 children visible by default | 2 | not started |
 | `gtk_widget_destroy` | 81 | 23 | window close and object ownership appropriate to type | 2 | not started |
 | `GtkEventBox` / `gtk_event_box_*` | 8 | 2 | ordinary widgets plus controllers/gestures | 2/4 | not started |
