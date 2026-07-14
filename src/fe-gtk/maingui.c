@@ -693,14 +693,15 @@ mg_set_access_icon (session_gui *gui, GdkPixbuf *pix, gboolean away)
                         return;
                 }
 
-                gtk_widget_destroy (gui->op_xpm);
+                fabulor_gtk_box_remove_child (GTK_BOX (gui->nick_box), gui->op_xpm);
                 gui->op_xpm = NULL;
         }
 
         if (pix && prefs.hex_gui_input_icon)
         {
                 gui->op_xpm = gtk_image_new_from_pixbuf (pix);
-                gtk_box_pack_start (GTK_BOX (gui->nick_box), gui->op_xpm, 0, 0, 0);
+                fabulor_gtk_box_insert_before_trailing (GTK_BOX (gui->nick_box),
+                                                       gui->op_xpm, gui->nick_label);
                 gtk_widget_show (gui->op_xpm);
         }
 
@@ -1348,7 +1349,8 @@ void
 mg_progressbar_create (session_gui *gui)
 {
         gui->bar = gtk_progress_bar_new ();
-        gtk_box_pack_start (GTK_BOX (gui->nick_box), gui->bar, 0, 0, 0);
+        fabulor_gtk_box_insert_before_trailing (GTK_BOX (gui->nick_box), gui->bar,
+                                               gui->nick_label);
         gtk_widget_show (gui->bar);
         gui->bartag = fe_timeout_add (50, mg_progressbar_update, gui->bar);
 }
@@ -1357,7 +1359,7 @@ void
 mg_progressbar_destroy (session_gui *gui)
 {
         fe_timeout_remove (gui->bartag);
-        gtk_widget_destroy (gui->bar);
+        fabulor_gtk_box_remove_child (GTK_BOX (gui->nick_box), gui->bar);
         gui->bar = 0;
         gui->bartag = 0;
 }
@@ -2632,7 +2634,7 @@ mg_create_userlistbuttons (GtkWidget *box)
         GtkWidget *tab;
 
         tab = gtk_grid_new ();
-        gtk_box_pack_end (GTK_BOX (box), tab, FALSE, FALSE, 0);
+        fabulor_gtk_box_append (GTK_BOX (box), tab, FALSE, FALSE, 0);
 
         while (list)
         {
@@ -3966,12 +3968,12 @@ mg_create_meters (session_gui *gui, GtkWidget *parent_box)
         GtkWidget *infbox, *wid, *box;
 
         gui->meter_box = infbox = box = mg_box_new (GTK_ORIENTATION_VERTICAL, FALSE, 1);
-        gtk_box_pack_end (GTK_BOX (parent_box), box, 0, 0, 0);
+        fabulor_gtk_box_append (GTK_BOX (parent_box), box, FALSE, FALSE, 0);
 
         if ((prefs.hex_gui_lagometer & 2) || (prefs.hex_gui_throttlemeter & 2))
         {
                 infbox = mg_box_new (GTK_ORIENTATION_HORIZONTAL, TRUE, 0);
-                gtk_box_pack_start (GTK_BOX (box), infbox, 0, 0, 0);
+                fabulor_gtk_box_append (GTK_BOX (box), infbox, FALSE, FALSE, 0);
         }
 
         if (prefs.hex_gui_lagometer & 1)
@@ -3985,7 +3987,7 @@ mg_create_meters (session_gui *gui, GtkWidget *parent_box)
 
                 wid = gtk_event_box_new ();
                 gtk_container_add (GTK_CONTAINER (wid), gui->lagometer);
-                gtk_box_pack_start (GTK_BOX (box), wid, 0, 0, 0);
+                fabulor_gtk_box_append (GTK_BOX (box), wid, FALSE, FALSE, 0);
         }
         if (prefs.hex_gui_lagometer & 2)
         {
@@ -4004,7 +4006,7 @@ mg_create_meters (session_gui *gui, GtkWidget *parent_box)
 
                 wid = gtk_event_box_new ();
                 gtk_container_add (GTK_CONTAINER (wid), gui->throttlemeter);
-                gtk_box_pack_start (GTK_BOX (box), wid, 0, 0, 0);
+                fabulor_gtk_box_append (GTK_BOX (box), wid, FALSE, FALSE, 0);
         }
         if (prefs.hex_gui_throttlemeter & 2)
         {
@@ -4016,7 +4018,7 @@ mg_create_meters (session_gui *gui, GtkWidget *parent_box)
 void
 mg_update_meters (session_gui *gui)
 {
-        gtk_widget_destroy (gui->meter_box);
+        fabulor_gtk_box_remove_child (GTK_BOX (gui->button_box_parent), gui->meter_box);
         gui->lagometer = NULL;
         gui->laginfo = NULL;
         gui->throttlemeter = NULL;
@@ -4169,10 +4171,9 @@ mg_create_userlist (session_gui *gui, GtkWidget *box)
         g_signal_connect (G_OBJECT (ulist), "destroy", G_CALLBACK (mg_theme_userlist_destroy_cb), gui);
         mg_theme_apply_userlist_style (gui);
 
-        mg_create_meters (gui, vbox);
-
         gui->button_box_parent = vbox;
         gui->button_box = mg_create_userlistbuttons (vbox);
+        mg_create_meters (gui, vbox);
 }
 
 static void
@@ -5424,7 +5425,7 @@ mg_create_entry (session *sess, GtkWidget *box)
         gui->nick_label = but = gtk_button_new_with_label (sess->server->nick);
         gtk_button_set_relief (GTK_BUTTON (but), GTK_RELIEF_NONE);
         gtk_widget_set_can_focus (but, FALSE);
-        gtk_box_pack_end (GTK_BOX (gui->nick_box), but, 0, 0, 0);
+        fabulor_gtk_horizontal_box_append_trailing (GTK_BOX (gui->nick_box), but);
         g_signal_connect (G_OBJECT (but), "clicked",
                                                         G_CALLBACK (mg_nickclick_cb), NULL);
 
@@ -5962,7 +5963,7 @@ fe_clear_channel (session *sess)
 
                 if (gui->op_xpm)
                 {
-                        gtk_widget_destroy (gui->op_xpm);
+                        fabulor_gtk_box_remove_child (GTK_BOX (gui->nick_box), gui->op_xpm);
                         gui->op_xpm = 0;
                 }
         } else
@@ -5986,14 +5987,15 @@ fe_dlgbuttons_update (session *sess)
         GtkWidget *box;
         session_gui *gui = sess->gui;
 
-        gtk_widget_destroy (gui->dialogbutton_box);
+        fabulor_gtk_box_remove_child (
+                GTK_BOX (gtk_widget_get_parent (gui->dialogbutton_box)),
+                gui->dialogbutton_box);
 
         gui->dialogbutton_box = box = mg_box_new (GTK_ORIENTATION_HORIZONTAL, FALSE, 0);
-        gtk_box_pack_start (GTK_BOX (gui->topic_bar), box, 0, 0, 0);
-        gtk_box_reorder_child (GTK_BOX (gui->topic_bar), box, 3);
+        fabulor_gtk_box_append (GTK_BOX (gui->topic_bar), box, FALSE, FALSE, 0);
         mg_create_dialogbuttons (box);
 
-        gtk_widget_show_all (box);
+        fabulor_gtk_widget_reveal_tree (box);
 
         if (current_tab && current_tab->type != SESS_DIALOG)
                 gtk_widget_hide (current_tab->gui->dialogbutton_box);
@@ -6168,14 +6170,6 @@ mg_create_generic_tab (char *name, char *title, int force_toplevel,
                                                                 G_CALLBACK (close_callback), userdata);
 
         mg_add_generic_tab (name, title, family, vbox);
-
-/*      if (link_buttons)
-        {
-                hbox = mg_box_new (GTK_ORIENTATION_HORIZONTAL, FALSE, 0);
-                gtk_box_pack_start (GTK_BOX (vbox), hbox, 0, 0, 0);
-                mg_create_link_buttons (hbox, ch);
-                gtk_widget_show (hbox);
-        }*/
 
         return vbox;
 }

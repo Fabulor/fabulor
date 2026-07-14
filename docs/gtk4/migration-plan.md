@@ -159,6 +159,18 @@ fallen from 88 lines to 48 lines across the same seven files. The 10 remaining
 `maingui.c` matches are dynamic nickname/meter insertion, a trailing tab,
 explicit dialog-button reordering, and one commented legacy block.
 
+Dynamic main-window pass 2 (2026-07-14): runtime nickname icons and connection
+progress now insert immediately before the permanent trailing nickname button,
+and their removal is constrained to the known owning box. User-list buttons
+are constructed before meters so explicit append order preserves the prior
+bottom-edge layout; meter refresh and dialog-button replacement also use typed
+box-owned removal. Refreshed dialog buttons use the reviewed reveal boundary,
+and the obsolete commented link-button block is removed. `maingui.c` now has
+no direct `gtk_box_pack_*` calls. Repository-wide direct packing has fallen to
+38 lines in six files, direct recursive reveal to 18 lines in eight files, and
+direct widget destruction to 32 lines in 13 files. The two meter
+`GtkEventBox` wrappers remain for the Stage 4 event-controller pass.
+
 Primary API families:
 
 - `gtk_container_*`

@@ -37,7 +37,9 @@ Update this file in every GTK4 conversion PR. Use these status values:
 
 - start-ordered box insertion with explicit expansion, fill, and padding
 - horizontal trailing-child insertion with preserved end alignment
+- ordered insertion immediately before a permanent trailing child
 - trailing label/control pair insertion with preserved end alignment
+- box-owned dynamic child removal
 - window, scrolled-window, frame, button, overlay, and popover child assignment
 - completed-tree reveal with distinct GTK3 recursive and GTK4 root semantics
 - window destruction
@@ -49,26 +51,29 @@ branch is linked, not merely preprocessed. Production now uses 39 typed child
 assignments across 14 source files: 7 windows, 18 scrolled windows, 7 frames,
 5 buttons, 1 overlay, and 1 popover.
 
-Production now also uses 137 reviewed start-ordered box additions across 17
-files, one horizontal trailing child, and two trailing label/control pairs.
+Production now also uses 143 reviewed start-ordered box additions across 17
+files, two horizontal trailing children, two ordered insertions before a
+permanent trailing child, two trailing label/control pairs, and five
+box-owned dynamic child removals.
 
-The visibility helper is limited to 15 reviewed roots whose descendants have
+The visibility helper is limited to 16 reviewed roots whose descendants have
 finished construction and have no intentional hidden state at reveal time.
 The boundary deliberately does not abstract generic widget destruction,
-remaining mixed start/end box ordering, menu/item visibility, dynamic content,
-events, clipboard ownership, or list/tree models. Those operations have GTK4
-lifetime or behaviour changes that must remain visible at each caller. The box
-helper preserves explicit widget alignment/expansion, adds GTK3 packing padding
-to existing directional margins, and is used only where append order is exact.
+remaining mixed start/end box ordering, menu/item visibility, events,
+clipboard ownership, or list/tree models. Those operations have GTK4 lifetime
+or behaviour changes that must remain visible at each caller. Dynamic removal
+is limited to five children with a known owning `GtkBox`. The box helper
+preserves explicit widget alignment/expansion, adds GTK3 packing padding to
+existing directional margins, and is used only where append order is exact.
 
 ## Quantitative API Baseline
 
 | GTK3 family or type | Matching lines | Files | Migration direction | Stage | Status |
 |---|---:|---:|---|---:|---|
 | `gtk_container_*` | 113 | 23 | explicit widget-specific child APIs | 2 | in progress |
-| `gtk_box_pack_*` | 48 | 7 | `gtk_box_append/prepend` and reorder APIs | 2 | in progress |
-| `gtk_widget_show_all` | 19 | 8 | explicit visibility; GTK4 children visible by default | 2 | in progress |
-| `gtk_widget_destroy` | 37 | 13 | window close and object ownership appropriate to type | 2 | in progress |
+| `gtk_box_pack_*` | 38 | 6 | `gtk_box_append/prepend` and reorder APIs | 2 | in progress |
+| `gtk_widget_show_all` | 18 | 8 | explicit visibility; GTK4 children visible by default | 2 | in progress |
+| `gtk_widget_destroy` | 32 | 13 | window close and object ownership appropriate to type | 2 | in progress |
 | `GtkEventBox` / `gtk_event_box_*` | 8 | 2 | ordinary widgets plus controllers/gestures | 2/4 | not started |
 | `GtkTable` / `gtk_table_*` | 2 | 1 | `GtkGrid` | 2 | not started |
 | `gtk_dialog_run` | 9 | 5 | response-driven/asynchronous dialog flow | 3 | not started |
