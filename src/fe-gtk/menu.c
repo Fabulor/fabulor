@@ -73,6 +73,7 @@ static GSList *submenu_list;
 
 #define FABULOR_MENU_ACTION_GROUP "fabulor-menu-action-group"
 #define FABULOR_MENU_ACTION_NAME "fabulor-menu-action-name"
+#define FABULOR_MENU_NEW_MODEL "fabulor-menu-new-model"
 #define FABULOR_MENU_SEARCH_MODEL "fabulor-menu-search-model"
 #define FABULOR_MENU_HELP_MODEL "fabulor-menu-help-model"
 
@@ -137,7 +138,9 @@ typedef enum
 	MENU_ACTION_NONE,
 	MENU_ACTION_NETWORK_LIST,
 	MENU_ACTION_NEW_SERVER_TAB,
+	MENU_ACTION_NEW_CHANNEL_TAB,
 	MENU_ACTION_NEW_SERVER_WINDOW,
+	MENU_ACTION_NEW_CHANNEL_WINDOW,
 	MENU_ACTION_CLOSE,
 	MENU_ACTION_QUIT,
 	MENU_ACTION_MENU_TOGGLE,
@@ -1962,13 +1965,17 @@ static struct mymenu mymenu[] = {
 		"network-list", MENU_ACTION_NETWORK_LIST},
 	{0, 0, 0, M_SEP, 0, 0, 0},
 
+#define NEW_OFFSET (3)
+#define NEW_ACTION_COUNT (4)
 	{N_("_New"), 0, 0, M_MENUSUB, 0, 0, 1},
 		{N_("Server Tab"), menu_newserver_tab, 0, M_MENUITEM, 0, 0, 1, 0,
 			"new-server-tab", MENU_ACTION_NEW_SERVER_TAB},
-		{N_("Channel Tab"), menu_newchannel_tab, 0, M_MENUITEM, 0, 0, 1},
+		{N_("Channel Tab"), menu_newchannel_tab, 0, M_MENUITEM, 0, 0, 1, 0,
+			"new-channel-tab", MENU_ACTION_NEW_CHANNEL_TAB},
 		{N_("Server Window"), menu_newserver_window, 0, M_MENUITEM, 0, 0, 1, 0,
 			"new-server-window", MENU_ACTION_NEW_SERVER_WINDOW},
-		{N_("Channel Window"), menu_newchannel_window, 0, M_MENUITEM, 0, 0, 1},
+		{N_("Channel Window"), menu_newchannel_window, 0, M_MENUITEM, 0, 0, 1, 0,
+			"new-channel-window", MENU_ACTION_NEW_CHANNEL_WINDOW},
 		{0, 0, 0, M_END, 0, 0, 0},
 	{0, 0, 0, M_SEP, 0, 0, 0},
 
@@ -2193,8 +2200,14 @@ menu_key_action (const char *name, guint keyval, GdkModifierType state)
 	case MENU_ACTION_NEW_SERVER_TAB:
 		menu_newserver_tab (NULL, NULL);
 		break;
+	case MENU_ACTION_NEW_CHANNEL_TAB:
+		menu_newchannel_tab (NULL, NULL);
+		break;
 	case MENU_ACTION_NEW_SERVER_WINDOW:
 		menu_newserver_window (NULL, NULL);
+		break;
+	case MENU_ACTION_NEW_CHANNEL_WINDOW:
+		menu_newchannel_window (NULL, NULL);
 		break;
 	case MENU_ACTION_CLOSE:
 		menu_close (NULL, NULL);
@@ -2254,7 +2267,9 @@ menu_action_is_stateless (menu_action_id id)
 	{
 	case MENU_ACTION_NETWORK_LIST:
 	case MENU_ACTION_NEW_SERVER_TAB:
+	case MENU_ACTION_NEW_CHANNEL_TAB:
 	case MENU_ACTION_NEW_SERVER_WINDOW:
+	case MENU_ACTION_NEW_CHANNEL_WINDOW:
 	case MENU_ACTION_CLOSE:
 	case MENU_ACTION_QUIT:
 	case MENU_ACTION_RESET_MARKER:
@@ -2917,6 +2932,7 @@ menu_create_main (void *accel_group, int bar, int away, int away_sensitive,
 	gboolean action_bound;
 	GSimpleActionGroup *action_group;
 	GMenuModel *help_model;
+	GMenuModel *new_model;
 	GMenuModel *search_model;
 	GtkWidget *item;
 	GtkWidget *menu = 0;
@@ -3025,6 +3041,9 @@ menu_create_main (void *accel_group, int bar, int away, int away_sensitive,
 								G_ACTION_GROUP (action_group));
 	g_object_set_data_full (G_OBJECT (menu_bar), FABULOR_MENU_ACTION_GROUP,
 						 action_group, g_object_unref);
+	new_model = menu_action_model_new (NEW_OFFSET, NEW_ACTION_COUNT);
+	g_object_set_data_full (G_OBJECT (menu_bar), FABULOR_MENU_NEW_MODEL,
+						 new_model, g_object_unref);
 	search_model = menu_action_model_new (SEARCH_OFFSET, SEARCH_ACTION_COUNT);
 	g_object_set_data_full (G_OBJECT (menu_bar), FABULOR_MENU_SEARCH_MODEL,
 						 search_model, g_object_unref);

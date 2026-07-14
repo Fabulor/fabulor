@@ -650,6 +650,41 @@ Scope: static Help menu action and model projection only. The displayed GTK3
 menu, remaining static commands, dynamic menus, popup ownership, dialog
 lifecycle, and pointer/key event handling remain unchanged for later passes.
 
+### PR: GTK4 New Menu Model, Pass 7
+
+Date: 2026-07-14
+
+Commit: pending
+
+Migration stage: 3, third canonical `GMenuModel` subtree projection
+
+Files/workflows converted: Channel Tab and Channel Window command identities,
+retained four-entry New submenu model in `menu.c`, and built-in shortcut help
+in `fkeys.c`
+
+GTK version: 4.22.4
+
+GLib version: 2.88.0
+
+Build configuration: MSVC x64 Release and Meson 1.11.2 Release with MSVC 19.44
+
+Automated checks:
+
+- [x] production GTK3 frontend compile and link with 0 warnings and 0 errors
+- [x] canonical action bindings: 19 commands
+- [x] focused GTK3/GIO probe: exactly 4 New model entries
+- [x] focused GTK3/GIO probe: canonical labels and `fabulor.*` action names
+- [x] focused GTK3/GIO probe: shared Channel Window action activates once
+- [x] GTK4 validator unit tests: 8/8, plus repository root validation
+- [x] isolated GTK4 MSVC compile, link, and runtime probe with no warnings
+- [x] isolated GTK4 Meson configure, compile, link, and runtime test
+- [x] production GTK3 MSVC x64 Release rebuild and native tests: 18/18
+- [ ] GitHub Actions required checks: 5/5
+
+Scope: static New submenu action and model projection only. The displayed GTK3
+menu, remaining static commands, dynamic menus, popup ownership, dialogs, and
+pointer/key event handling remain unchanged for later passes.
+
 ## Per-PR Record Template
 
 Copy this section for each GTK4 PR:

@@ -71,14 +71,14 @@ is limited to five children with a known owning `GtkBox`. The box helper
 preserves explicit widget alignment/expansion, adds GTK3 packing padding to
 existing directional margins, and is used only where append order is exact.
 
-Stage 3 now stores the 17 command identities shared by main-menu accelerators
+Stage 3 now stores the 19 command identities shared by main-menu accelerators
 and configurable keyboard shortcuts directly on their canonical menu
 definitions. Menu construction and shortcut dispatch therefore consume the
 same stable names and typed identifiers without relying on parallel positional
 tables. This foundation does not yet abstract GTK3 menu widgets, state,
 sensitivity, or popup ownership.
 
-Thirteen stateless canonical commands now activate through a per-menu
+Fifteen stateless canonical commands now activate through a per-menu
 `GSimpleActionGroup` and `GtkActionable` binding. The same group is retained by
 each bound item after construction, while configurable shortcuts continue to
 use the canonical dispatcher.
@@ -107,6 +107,13 @@ canonical action identity and dispatcher entry alongside Contents, and both
 items are projected through the shared range-based model builder. This expands
 the canonical set to 17 commands while preserving Help menu presentation and
 dialog behaviour in GTK3.
+
+The static New submenu is the third complete model boundary. Channel Tab and
+Channel Window now have canonical action identities alongside the existing
+Server Tab and Server Window commands, and all four entries are projected
+through the shared range-based model builder. The existing creation handlers,
+preference restoration, default shortcuts, and displayed GTK3 submenu remain
+unchanged.
 
 ## Quantitative API Baseline
 
