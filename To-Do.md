@@ -20,7 +20,8 @@
 - [x] Bundle Noto Color Emoji and generated flag PNG assets for Windows installs.
 - [x] Render selected country flags as real images in channel/server text output.
 - [x] Convert bundled flag images to transparent-background PNGs.
-- [x] Add visible two-letter labels to flag picker buttons to disambiguate lookalike flags such as `FR`/`CP` and `IE`/`CI`.
+- [x] Replace the bundled country flags with the flat PNG set and align the picker list with its 253 two-letter assets.
+- [x] Add visible two-letter labels to flag picker buttons to disambiguate lookalike flags such as `IE`/`CI`.
 - [x] Enlarge non-flag emoji picker glyphs while leaving the flag tab compact.
 - [x] Build emoji picker categories lazily and reuse the popover so opening it does not synchronously rebuild every page and decode every flag image.
 
