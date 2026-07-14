@@ -1755,8 +1755,8 @@ mg_populate (session *sess)
         /* menu items */
         menu_set_away (gui, sess->server->is_away);
         menu_set_away_sensitive (gui, sess->server->connected);
-        gtk_widget_set_sensitive (gui->menu_item[MENU_ID_JOIN], sess->server->end_of_motd);
-        gtk_widget_set_sensitive (gui->menu_item[MENU_ID_DISCONNECT],
+        menu_set_join_sensitive (gui, sess->server->end_of_motd);
+        menu_set_disconnect_sensitive (gui,
                                                                           sess->server->connected || sess->server->recondelay_tag);
 
         mg_set_topic_tip (sess);
@@ -5562,9 +5562,9 @@ mg_topwin_focus_cb (GtkWindow * win, GdkEventFocus *event, session *sess)
 }
 
 static void
-mg_create_menu (session_gui *gui, GtkWidget *table, int away_state,
-                                int away_sensitive)
+mg_create_menu (session *sess, GtkWidget *table)
 {
+        session_gui *gui = sess->gui;
         GtkAccelGroup *accel_group;
 
         accel_group = gtk_accel_group_new ();
@@ -5572,8 +5572,10 @@ mg_create_menu (session_gui *gui, GtkWidget *table, int away_state,
                                                                                  accel_group);
         g_object_unref (accel_group);
 
-        gui->menu = menu_create_main (accel_group, TRUE, away_state,
-                                                                                   away_sensitive, !gui->is_tab,
+        gui->menu = menu_create_main (accel_group, TRUE, sess->server->is_away,
+                                                                                   sess->server->connected,
+                                                                                   sess->server->connected || sess->server->recondelay_tag,
+                                                                                   sess->server->end_of_motd, !gui->is_tab,
                                                                                    gui->menu_item);
         gtk_widget_set_hexpand (gui->menu, TRUE);
         gtk_widget_set_vexpand (gui->menu, FALSE);
@@ -5634,8 +5636,7 @@ mg_create_topwindow (session *sess)
         fabulor_gtk_window_set_child (GTK_WINDOW (win), table);
 
         mg_create_irctab (sess, table);
-        mg_create_menu (sess->gui, table, sess->server->is_away,
-                                        sess->server->connected);
+        mg_create_menu (sess, table);
 
         if (sess->res->buffer == NULL)
         {
@@ -5837,8 +5838,7 @@ mg_create_tabwindow (session *sess)
 
         mg_create_irctab (sess, table);
         mg_create_tabs (sess->gui);
-        mg_create_menu (sess->gui, table, sess->server->is_away,
-                                        sess->server->connected);
+        mg_create_menu (sess, table);
 
         mg_focus (sess);
 

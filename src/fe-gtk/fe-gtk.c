@@ -1872,17 +1872,17 @@ fe_server_event (server *serv, int type, int arg)
 			case FE_SE_CONNECTING:	/* connecting in progress */
 			case FE_SE_RECONDELAY:	/* reconnect delay begun */
 				/* enable Disconnect item */
-				gtk_widget_set_sensitive (gui->menu_item[MENU_ID_DISCONNECT], 1);
+				menu_set_disconnect_sensitive (gui, 1);
 				break;
 
 			case FE_SE_CONNECT:
 				/* enable Disconnect and Away menu items */
 				menu_set_away_sensitive (gui, 1);
-				gtk_widget_set_sensitive (gui->menu_item[MENU_ID_DISCONNECT], 1);
+				menu_set_disconnect_sensitive (gui, 1);
 				break;
 
 			case FE_SE_LOGGEDIN:	/* end of MOTD */
-				gtk_widget_set_sensitive (gui->menu_item[MENU_ID_JOIN], 1);
+				menu_set_join_sensitive (gui, 1);
 				/* if number of auto-join channels is zero, open joind */
 				if (arg == 0)
 					joind_open (serv);
@@ -1891,8 +1891,8 @@ fe_server_event (server *serv, int type, int arg)
 			case FE_SE_DISCONNECT:
 				/* disable Disconnect and Away menu items */
 				menu_set_away_sensitive (gui, 0);
-				gtk_widget_set_sensitive (gui->menu_item[MENU_ID_DISCONNECT], 0);
-				gtk_widget_set_sensitive (gui->menu_item[MENU_ID_JOIN], 0);
+				menu_set_disconnect_sensitive (gui, 0);
+				menu_set_join_sensitive (gui, 0);
 				/* close the join-dialog, if one exists */
 				joind_close (serv);
 			}

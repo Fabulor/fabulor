@@ -300,7 +300,7 @@ static const struct key_action key_actions[KEY_MAX_ACTIONS + 1] = {
 	{key_action_put_history, "Push input line into history",
 	 N_("Push input line into history but doesn't send to server")},
 	{key_action_menu_shortcut, "Menu Shortcut",
-	 N_("Runs one of the built-in menu shortcuts. Set Data 1 to: network-list, new-server-tab, new-channel-tab, new-server-window, new-channel-window, close, quit, menu-toggle, user-list-toggle, fullscreen-toggle, away-toggle, reset-marker, move-marker, copy-selection, search-text, search-next, search-previous, contents or about.")},
+	 N_("Runs one of the built-in menu shortcuts. Set Data 1 to: network-list, new-server-tab, new-channel-tab, new-server-window, new-channel-window, close, quit, menu-toggle, user-list-toggle, fullscreen-toggle, disconnect, reconnect, join-channel, channel-list, away-toggle, reset-marker, move-marker, copy-selection, search-text, search-next, search-previous, contents or about.")},
 	{key_action_reopen_closed_tab, "Reopen Closed Tab",
 	 N_("Reopens the most recently closed channel tab")},
 };

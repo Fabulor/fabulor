@@ -74,6 +74,7 @@ static GSList *submenu_list;
 #define FABULOR_MENU_ACTION_GROUP "fabulor-menu-action-group"
 #define FABULOR_MENU_ACTION_NAME "fabulor-menu-action-name"
 #define FABULOR_MENU_NEW_MODEL "fabulor-menu-new-model"
+#define FABULOR_MENU_SERVER_MODEL "fabulor-menu-server-model"
 #define FABULOR_MENU_SEARCH_MODEL "fabulor-menu-search-model"
 #define FABULOR_MENU_HELP_MODEL "fabulor-menu-help-model"
 
@@ -146,6 +147,10 @@ typedef enum
 	MENU_ACTION_MENU_TOGGLE,
 	MENU_ACTION_USER_LIST_TOGGLE,
 	MENU_ACTION_FULLSCREEN_TOGGLE,
+	MENU_ACTION_DISCONNECT,
+	MENU_ACTION_RECONNECT,
+	MENU_ACTION_JOIN_CHANNEL,
+	MENU_ACTION_CHANNEL_LIST,
 	MENU_ACTION_AWAY_TOGGLE,
 	MENU_ACTION_RESET_MARKER,
 	MENU_ACTION_MOVE_MARKER,
@@ -1084,7 +1089,9 @@ menu_middlemenu (session *sess, GdkEventButton *event)
 
 	accel_group = gtk_accel_group_new ();
 	menu = menu_create_main (accel_group, FALSE, sess->server->is_away,
-							 sess->server->connected, !sess->gui->is_tab, NULL);
+							 sess->server->connected,
+							 sess->server->connected || sess->server->recondelay_tag,
+							 sess->server->end_of_motd, !sess->gui->is_tab, NULL);
 	menu_popup (menu, event, accel_group);
 }
 
@@ -2016,11 +2023,17 @@ static struct mymenu mymenu[] = {
 	{N_ ("_Fullscreen"), menu_fullscreen_toggle, 0, M_MENUTOG, MENU_ID_FULLSCREEN, 0, 1, 0,
 		"fullscreen-toggle", MENU_ACTION_FULLSCREEN_TOGGLE},
 
+#define SERVER_OFFSET (35)
+#define SERVER_ACTION_COUNT (4)
 	{N_("_Server"), 0, 0, M_NEWMENU, 0, 0, 1},
-	{N_("_Disconnect"), menu_disconnect, 0, M_MENUITEM, MENU_ID_DISCONNECT, 0, 1},
-	{N_("_Reconnect"), menu_reconnect, 0, M_MENUITEM, MENU_ID_RECONNECT, 0, 1},
-	{N_("_Join a Channel" ELLIPSIS), menu_join, 0, M_MENUITEM, MENU_ID_JOIN, 0, 1},
-	{N_("Channel _List"), menu_chanlist, 0, M_MENUITEM, 0, 0, 1},
+	{N_("_Disconnect"), menu_disconnect, 0, M_MENUITEM, MENU_ID_DISCONNECT, 0, 1, 0,
+		"disconnect", MENU_ACTION_DISCONNECT},
+	{N_("_Reconnect"), menu_reconnect, 0, M_MENUITEM, MENU_ID_RECONNECT, 0, 1, 0,
+		"reconnect", MENU_ACTION_RECONNECT},
+	{N_("_Join a Channel" ELLIPSIS), menu_join, 0, M_MENUITEM, MENU_ID_JOIN, 0, 1, 0,
+		"join-channel", MENU_ACTION_JOIN_CHANNEL},
+	{N_("Channel _List"), menu_chanlist, 0, M_MENUITEM, 0, 0, 1, 0,
+		"channel-list", MENU_ACTION_CHANNEL_LIST},
 	{0, 0, 0, M_SEP, 0, 0, 0},
 #define AWAY_OFFSET (41)
 	{N_("Marked _Away"), menu_away_toggle, 0, M_MENUITEM, MENU_ID_AWAY, 0, 1, 0,
@@ -2226,6 +2239,18 @@ menu_key_action (const char *name, guint keyval, GdkModifierType state)
 	case MENU_ACTION_FULLSCREEN_TOGGLE:
 		menu_fullscreen_toggle (NULL, NULL);
 		break;
+	case MENU_ACTION_DISCONNECT:
+		menu_disconnect (NULL, NULL);
+		break;
+	case MENU_ACTION_RECONNECT:
+		menu_reconnect (NULL, NULL);
+		break;
+	case MENU_ACTION_JOIN_CHANNEL:
+		menu_join (NULL, NULL);
+		break;
+	case MENU_ACTION_CHANNEL_LIST:
+		menu_chanlist (NULL, NULL);
+		break;
 	case MENU_ACTION_AWAY_TOGGLE:
 		menu_away_toggle (NULL, NULL);
 		break;
@@ -2272,6 +2297,10 @@ menu_action_is_stateless (menu_action_id id)
 	case MENU_ACTION_NEW_CHANNEL_WINDOW:
 	case MENU_ACTION_CLOSE:
 	case MENU_ACTION_QUIT:
+	case MENU_ACTION_DISCONNECT:
+	case MENU_ACTION_RECONNECT:
+	case MENU_ACTION_JOIN_CHANNEL:
+	case MENU_ACTION_CHANNEL_LIST:
 	case MENU_ACTION_RESET_MARKER:
 	case MENU_ACTION_MOVE_MARKER:
 	case MENU_ACTION_COPY_SELECTION:
@@ -2345,8 +2374,7 @@ menu_action_group_new (void)
 		else
 			continue;
 
-		if (menu_action_is_session_stateful (mymenu[i].action_id))
-			g_simple_action_set_enabled (action, mymenu[i].sensitive);
+		g_simple_action_set_enabled (action, mymenu[i].sensitive);
 		g_signal_connect (action, "activate",
 						  G_CALLBACK (menu_action_activate), &mymenu[i]);
 		g_action_map_add_action (G_ACTION_MAP (group), G_ACTION (action));
@@ -2363,19 +2391,45 @@ menu_action_detailed_name (const struct mymenu *definition)
 }
 
 static GMenuModel *
-menu_action_model_new (guint offset, guint action_count)
+menu_action_model_range_new (guint first, guint action_count)
 {
 	GMenu *model;
 	guint i;
 
 	model = g_menu_new ();
-	for (i = offset + 1; i <= offset + action_count; i++)
+	for (i = first; i < first + action_count; i++)
 	{
 		char *detailed_name = menu_action_detailed_name (&mymenu[i]);
 
 		g_menu_append (model, _(mymenu[i].text), detailed_name);
 		g_free (detailed_name);
 	}
+	g_menu_freeze (model);
+
+	return G_MENU_MODEL (model);
+}
+
+static GMenuModel *
+menu_action_model_new (guint offset, guint action_count)
+{
+	return menu_action_model_range_new (offset + 1, action_count);
+}
+
+static GMenuModel *
+menu_server_action_model_new (void)
+{
+	GMenu *model;
+	GMenuModel *commands;
+	GMenuModel *away;
+
+	model = g_menu_new ();
+	commands = menu_action_model_range_new (SERVER_OFFSET + 1,
+										 SERVER_ACTION_COUNT);
+	away = menu_action_model_range_new (AWAY_OFFSET, 1);
+	g_menu_append_section (model, NULL, commands);
+	g_menu_append_section (model, NULL, away);
+	g_object_unref (commands);
+	g_object_unref (away);
 	g_menu_freeze (model);
 
 	return G_MENU_MODEL (model);
@@ -2476,6 +2530,27 @@ menu_set_away_sensitive (session_gui *gui, int sensitive)
 
 	if (!menu_action_set_item_enabled (item, sensitive) && GTK_IS_WIDGET (item))
 		gtk_widget_set_sensitive (item, sensitive);
+}
+
+static void
+menu_set_item_sensitive (session_gui *gui, int id, int sensitive)
+{
+	GtkWidget *item = gui->menu_item[id];
+
+	if (!menu_action_set_item_enabled (item, sensitive) && GTK_IS_WIDGET (item))
+		gtk_widget_set_sensitive (item, sensitive);
+}
+
+void
+menu_set_disconnect_sensitive (session_gui *gui, int sensitive)
+{
+	menu_set_item_sensitive (gui, MENU_ID_DISCONNECT, sensitive);
+}
+
+void
+menu_set_join_sensitive (session_gui *gui, int sensitive)
+{
+	menu_set_item_sensitive (gui, MENU_ID_JOIN, sensitive);
 }
 
 void
@@ -2926,7 +3001,8 @@ menu_add_plugin_items (GtkWidget *menu, char *root, char *target)
 
 GtkWidget *
 menu_create_main (void *accel_group, int bar, int away, int away_sensitive,
-					 int toplevel, GtkWidget **menu_widgets)
+					 int disconnect_sensitive, int join_sensitive, int toplevel,
+					 GtkWidget **menu_widgets)
 {
 	int i = 0;
 	gboolean action_bound;
@@ -2934,6 +3010,7 @@ menu_create_main (void *accel_group, int bar, int away, int away_sensitive,
 	GMenuModel *help_model;
 	GMenuModel *new_model;
 	GMenuModel *search_model;
+	GMenuModel *server_model;
 	GtkWidget *item;
 	GtkWidget *menu = 0;
 	GtkWidget *menu_item = 0;
@@ -2970,6 +3047,8 @@ menu_create_main (void *accel_group, int bar, int away, int away_sensitive,
 
 	mymenu[AWAY_OFFSET].state = away;
 	mymenu[AWAY_OFFSET].sensitive = away_sensitive;
+	mymenu[SERVER_OFFSET+1].sensitive = disconnect_sensitive;
+	mymenu[SERVER_OFFSET+3].sensitive = join_sensitive;
 
 	switch (prefs.hex_gui_tab_layout)
 	{
@@ -3044,6 +3123,9 @@ menu_create_main (void *accel_group, int bar, int away, int away_sensitive,
 	new_model = menu_action_model_new (NEW_OFFSET, NEW_ACTION_COUNT);
 	g_object_set_data_full (G_OBJECT (menu_bar), FABULOR_MENU_NEW_MODEL,
 						 new_model, g_object_unref);
+	server_model = menu_server_action_model_new ();
+	g_object_set_data_full (G_OBJECT (menu_bar), FABULOR_MENU_SERVER_MODEL,
+						 server_model, g_object_unref);
 	search_model = menu_action_model_new (SEARCH_OFFSET, SEARCH_ACTION_COUNT);
 	g_object_set_data_full (G_OBJECT (menu_bar), FABULOR_MENU_SEARCH_MODEL,
 						 search_model, g_object_unref);

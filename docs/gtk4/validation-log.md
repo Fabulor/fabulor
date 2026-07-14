@@ -685,6 +685,41 @@ Scope: static New submenu action and model projection only. The displayed GTK3
 menu, remaining static commands, dynamic menus, popup ownership, dialogs, and
 pointer/key event handling remain unchanged for later passes.
 
+### PR: [#36 - GTK4 Server Menu Model, Pass 8](https://github.com/Fabulor/fabulor/pull/36)
+
+Date: 2026-07-15
+
+Commit: `1f93cac9`
+
+Migration stage: 3, fourth canonical `GMenuModel` subtree projection
+
+Files/workflows converted: Disconnect, Reconnect, Join a Channel, and Channel
+List identities and dispatch; retained two-section Server model; action-backed
+Disconnect and Join sensitivity; built-in shortcut help
+
+GTK version: 4.22.4
+
+GLib version: 2.88.0
+
+Build configuration: MSVC x64 Release and Meson 1.11.2 Release with MSVC 19.44
+
+Automated checks:
+
+- [x] production GTK3 frontend compile and link with 0 warnings and 0 errors
+- [x] canonical action bindings: 23 commands
+- [x] focused GTK3/GIO probe: 2 Server sections containing exactly 5 actions
+- [x] focused GTK3/GIO probe: canonical labels and `fabulor.*` action names
+- [x] focused GTK3/GIO probe: Disconnect sensitivity sync and one activation
+- [x] GTK4 validator unit tests: 8/8, plus repository root validation
+- [x] isolated GTK4 MSVC compile, link, and runtime probe with no warnings
+- [x] isolated GTK4 Meson configure, compile, link, and runtime test
+- [x] production GTK3 MSVC x64 Release rebuild and native tests: 18/18
+- [x] GitHub Actions required checks: 5/5
+
+Scope: static Server menu action, model, and sensitivity projection only. The
+displayed GTK3 menu, remaining static commands, dynamic menus, popup ownership,
+dialogs, and pointer/key event handling remain unchanged for later passes.
+
 ## Per-PR Record Template
 
 Copy this section for each GTK4 PR:

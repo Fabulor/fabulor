@@ -21,7 +21,8 @@
 #define ZOITECHAT_MENU_H
 
 GtkWidget *menu_create_main (void *accel_group, int bar, int away,
-								 int away_sensitive, int toplevel,
+								 int away_sensitive, int disconnect_sensitive,
+								 int join_sensitive, int toplevel,
 								 GtkWidget **menu_widgets);
 void menu_urlmenu (GdkEventButton * event, char *url);
 void menu_chanmenu (session *sess, GdkEventButton * event, char *chan);
@@ -45,6 +46,8 @@ gboolean menu_key_action (const char *name, guint keyval, GdkModifierType state)
 
 void menu_set_away (session_gui *gui, int away);
 void menu_set_away_sensitive (session_gui *gui, int sensitive);
+void menu_set_disconnect_sensitive (session_gui *gui, int sensitive);
+void menu_set_join_sensitive (session_gui *gui, int sensitive);
 void menu_set_fullscreen (session_gui *gui, int fullscreen);
 
 /* for menu_quick functions */
