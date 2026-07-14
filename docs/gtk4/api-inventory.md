@@ -71,14 +71,14 @@ is limited to five children with a known owning `GtkBox`. The box helper
 preserves explicit widget alignment/expansion, adds GTK3 packing padding to
 existing directional margins, and is used only where append order is exact.
 
-Stage 3 now stores the 19 command identities shared by main-menu accelerators
+Stage 3 now stores the 23 command identities shared by main-menu accelerators
 and configurable keyboard shortcuts directly on their canonical menu
 definitions. Menu construction and shortcut dispatch therefore consume the
 same stable names and typed identifiers without relying on parallel positional
 tables. This foundation does not yet abstract GTK3 menu widgets, state,
 sensitivity, or popup ownership.
 
-Fifteen stateless canonical commands now activate through a per-menu
+Nineteen stateless canonical commands now activate through a per-menu
 `GSimpleActionGroup` and `GtkActionable` binding. The same group is retained by
 each bound item after construction, while configurable shortcuts continue to
 use the canonical dispatcher.
@@ -88,12 +88,11 @@ Menu-bar visibility, user-list visibility, and fullscreen now use boolean
 corresponding action, and the window-state event remains authoritative for
 correcting fullscreen state after a platform transition.
 
-Away now completes the 16-command action set as a session-aware boolean
-`GSimpleAction`. Server-confirmed away/back events own its state, while active
-tab changes and connect/disconnect events update its enabled state for the
-selected server. Activation continues through the canonical command dispatcher
-without optimistically changing server state, and the existing plain GTK3 menu
-presentation remains unchanged.
+Away uses a session-aware boolean `GSimpleAction`. Server-confirmed away/back
+events own its state, while active tab changes and connect/disconnect events
+update its enabled state for the selected server. Activation continues through
+the canonical command dispatcher without optimistically changing server state,
+and the existing plain GTK3 menu presentation remains unchanged.
 
 The first complete model boundary now projects the static Search submenu into
 an immutable `GMenuModel` containing its three canonical action names. The
@@ -114,6 +113,14 @@ Server Tab and Server Window commands, and all four entries are projected
 through the shared range-based model builder. The existing creation handlers,
 preference restoration, default shortcuts, and displayed GTK3 submenu remain
 unchanged.
+
+The static Server menu is the fourth complete model boundary. Disconnect,
+Reconnect, Join a Channel, and Channel List now have canonical stateless
+actions alongside Away. Two retained sections preserve the separator before
+Away, while Disconnect and Join availability initialize from and continue to
+track the selected server through the shared action group. Existing IRC
+commands, dialogs, connection handling, shortcuts, and GTK3 presentation
+remain unchanged.
 
 ## Quantitative API Baseline
 
