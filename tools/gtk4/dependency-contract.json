@@ -24,6 +24,7 @@
     "lib/glib-2.0.lib",
     "lib/glib-2.0/include/glibconfig.h",
     "lib/graphene-1.0/include/graphene-config.h",
+    "lib/gobject-2.0.lib",
     "lib/gtk-4.lib",
     "lib/pkgconfig/glib-2.0.pc",
     "lib/pkgconfig/gtk4.pc"

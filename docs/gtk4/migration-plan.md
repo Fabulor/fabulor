@@ -71,7 +71,9 @@ Progress (2026-07-14): the Windows x64 GTK4 archive is pinned by URL, size, and
 SHA-256 in `tools/gtk4/dependency-contract.json`. The isolated MSVC and Meson
 probes validate GTK/GLib versions, x64 architecture, required files, and GTK3
 contamination before compiling, linking, and executing against the same root.
-Production targets remain on GTK3. Compatibility helpers have not started.
+The first compatibility boundary covers single-child assignment and window
+destruction, and the same header is compiled against GTK3 and GTK4. Production
+targets remain on GTK3; broader frontend conversion has not started.
 
 Deliverables:
 

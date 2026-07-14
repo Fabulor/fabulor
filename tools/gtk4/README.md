@@ -44,7 +44,7 @@ This is a self-contained Meson project because the repository currently has
 only legacy Meson fragments and no top-level Meson project:
 
 ```powershell
-python -m mesonbuild.mesonmain setup build\gtk4-probe-meson tools\gtk4 -Dgtk4_root=C:\fabulor-master\Runtime\GTK4
+python -m mesonbuild.mesonmain setup --buildtype=release build\gtk4-probe-meson tools\gtk4 -Dgtk4_root=C:\fabulor-master\Runtime\GTK4
 python -m mesonbuild.mesonmain compile -C build\gtk4-probe-meson
 python -m mesonbuild.mesonmain test -C build\gtk4-probe-meson --print-errorlogs
 ```
@@ -52,3 +52,8 @@ python -m mesonbuild.mesonmain test -C build\gtk4-probe-meson --print-errorlogs
 The MSVC and Meson probes compile, link, and execute the same `probe.c`. The
 program does not initialise a display; it verifies that the loaded GTK/GLib
 runtime versions match the headers used at compile time.
+
+The probe also includes `src/fe-gtk/gtk-compat.h` directly and takes the address
+of every compatibility helper. This makes both build systems compile and link
+all GTK4 helper branches without creating a display or changing the production
+frontend target.

@@ -78,6 +78,7 @@ FOR %%I IN ("$(ZoiteChatLib)fabulor.rc") DO IF %%~zI EQU 0 (
     <ClInclude Include="editlist.h" />
     <ClInclude Include="fe-gtk.h" />
     <ClInclude Include="fkeys.h" />
+    <ClInclude Include="gtk-compat.h" />
     <ClInclude Include="gtkutil.h" />
     <ClInclude Include="icon-resolver.h" />
     <ClInclude Include="joind.h" />
