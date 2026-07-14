@@ -685,11 +685,11 @@ Scope: static New submenu action and model projection only. The displayed GTK3
 menu, remaining static commands, dynamic menus, popup ownership, dialogs, and
 pointer/key event handling remain unchanged for later passes.
 
-### PR: GTK4 Server Menu Model, Pass 8
+### PR: [#36 - GTK4 Server Menu Model, Pass 8](https://github.com/Fabulor/fabulor/pull/36)
 
 Date: 2026-07-15
 
-Commit: pending
+Commit: `1f93cac9`
 
 Migration stage: 3, fourth canonical `GMenuModel` subtree projection
 
