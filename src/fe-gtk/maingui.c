@@ -1754,7 +1754,7 @@ mg_populate (session *sess)
 
         /* menu items */
         menu_set_away (gui, sess->server->is_away);
-        gtk_widget_set_sensitive (gui->menu_item[MENU_ID_AWAY], sess->server->connected);
+        menu_set_away_sensitive (gui, sess->server->connected);
         gtk_widget_set_sensitive (gui->menu_item[MENU_ID_JOIN], sess->server->end_of_motd);
         gtk_widget_set_sensitive (gui->menu_item[MENU_ID_DISCONNECT],
                                                                           sess->server->connected || sess->server->recondelay_tag);
@@ -5562,7 +5562,8 @@ mg_topwin_focus_cb (GtkWindow * win, GdkEventFocus *event, session *sess)
 }
 
 static void
-mg_create_menu (session_gui *gui, GtkWidget *table, int away_state)
+mg_create_menu (session_gui *gui, GtkWidget *table, int away_state,
+                                int away_sensitive)
 {
         GtkAccelGroup *accel_group;
 
@@ -5571,8 +5572,9 @@ mg_create_menu (session_gui *gui, GtkWidget *table, int away_state)
                                                                                  accel_group);
         g_object_unref (accel_group);
 
-        gui->menu = menu_create_main (accel_group, TRUE, away_state, !gui->is_tab,
-                                                                                        gui->menu_item);
+        gui->menu = menu_create_main (accel_group, TRUE, away_state,
+                                                                                   away_sensitive, !gui->is_tab,
+                                                                                   gui->menu_item);
         gtk_widget_set_hexpand (gui->menu, TRUE);
         gtk_widget_set_vexpand (gui->menu, FALSE);
         gtk_widget_set_halign (gui->menu, GTK_ALIGN_START);
@@ -5632,7 +5634,8 @@ mg_create_topwindow (session *sess)
         fabulor_gtk_window_set_child (GTK_WINDOW (win), table);
 
         mg_create_irctab (sess, table);
-        mg_create_menu (sess->gui, table, sess->server->is_away);
+        mg_create_menu (sess->gui, table, sess->server->is_away,
+                                        sess->server->connected);
 
         if (sess->res->buffer == NULL)
         {
@@ -5834,7 +5837,8 @@ mg_create_tabwindow (session *sess)
 
         mg_create_irctab (sess, table);
         mg_create_tabs (sess->gui);
-        mg_create_menu (sess->gui, table, sess->server->is_away);
+        mg_create_menu (sess->gui, table, sess->server->is_away,
+                                        sess->server->connected);
 
         mg_focus (sess);
 

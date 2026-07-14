@@ -242,6 +242,15 @@ the platform-observed result. Existing command names, accelerators, callbacks,
 and GTK3 behaviour are preserved. Away remains deferred because its state and
 sensitivity belong to the active server session rather than the window alone.
 
+Session-aware Away pass 4 (2026-07-14): the final canonical command now binds
+to a boolean `GSimpleAction` whose state is updated only by confirmed server
+away/back events. Menu creation, active-tab changes, and connect/disconnect
+events synchronize action availability with the selected server. Disabled
+actions suppress menu and accelerator activation, while configurable shortcuts
+retain their existing canonical direct-dispatch path. The plain GTK3 menu-item
+presentation and IRC command behaviour remain unchanged; GTK4 menu models are
+still deferred.
+
 Primary surfaces:
 
 - `menu.c`, context menus, tray menus, and user-defined menus
