@@ -73,6 +73,7 @@ static GSList *submenu_list;
 
 #define FABULOR_MENU_ACTION_GROUP "fabulor-menu-action-group"
 #define FABULOR_MENU_ACTION_NAME "fabulor-menu-action-name"
+#define FABULOR_MENU_SEARCH_MODEL "fabulor-menu-search-model"
 
 static gboolean menu_action_set_item_state (GtkWidget *item, gboolean state);
 
@@ -2051,6 +2052,7 @@ static struct mymenu mymenu[] = {
 	{N_("C_lear Text"), menu_flushbuffer, 0, M_MENUITEM, 0, 0, 1},
 	{N_("Save Text" ELLIPSIS), menu_savebuffer, 0, M_MENUITEM, 0, 0, 1},
 #define SEARCH_OFFSET (70)
+#define SEARCH_ACTION_COUNT (3)
 	{N_("Search"), 0, 0, M_MENUSUB, 0, 0, 1},
 		{N_("Search Text" ELLIPSIS), menu_search, 0, M_MENUITEM, 0, 0, 1, 0,
 			"search-text", MENU_ACTION_SEARCH_TEXT},
@@ -2330,6 +2332,31 @@ menu_action_group_new (void)
 	return group;
 }
 
+static char *
+menu_action_detailed_name (const struct mymenu *definition)
+{
+	return g_strconcat ("fabulor.", definition->action_name, NULL);
+}
+
+static GMenuModel *
+menu_action_search_model_new (void)
+{
+	GMenu *model;
+	guint i;
+
+	model = g_menu_new ();
+	for (i = SEARCH_OFFSET + 1; i <= SEARCH_OFFSET + SEARCH_ACTION_COUNT; i++)
+	{
+		char *detailed_name = menu_action_detailed_name (&mymenu[i]);
+
+		g_menu_append (model, _(mymenu[i].text), detailed_name);
+		g_free (detailed_name);
+	}
+	g_menu_freeze (model);
+
+	return G_MENU_MODEL (model);
+}
+
 static gboolean
 menu_action_bind_item (GtkWidget *item, GSimpleActionGroup *group,
 					   const struct mymenu *definition)
@@ -2342,7 +2369,7 @@ menu_action_bind_item (GtkWidget *item, GSimpleActionGroup *group,
 		 !menu_action_is_session_stateful (definition->action_id)))
 		return FALSE;
 
-	detailed_name = g_strconcat ("fabulor.", definition->action_name, NULL);
+	detailed_name = menu_action_detailed_name (definition);
 	gtk_widget_insert_action_group (item, "fabulor", G_ACTION_GROUP (group));
 	gtk_actionable_set_action_name (GTK_ACTIONABLE (item), detailed_name);
 	g_object_set_data (G_OBJECT (item), FABULOR_MENU_ACTION_GROUP, group);
@@ -2880,6 +2907,7 @@ menu_create_main (void *accel_group, int bar, int away, int away_sensitive,
 	int i = 0;
 	gboolean action_bound;
 	GSimpleActionGroup *action_group;
+	GMenuModel *search_model;
 	GtkWidget *item;
 	GtkWidget *menu = 0;
 	GtkWidget *menu_item = 0;
@@ -2983,8 +3011,13 @@ menu_create_main (void *accel_group, int bar, int away, int away_sensitive,
 	}
 
 	action_group = menu_action_group_new ();
+	gtk_widget_insert_action_group (menu_bar, "fabulor",
+								G_ACTION_GROUP (action_group));
 	g_object_set_data_full (G_OBJECT (menu_bar), FABULOR_MENU_ACTION_GROUP,
 						 action_group, g_object_unref);
+	search_model = menu_action_search_model_new ();
+	g_object_set_data_full (G_OBJECT (menu_bar), FABULOR_MENU_SEARCH_MODEL,
+						 search_model, g_object_unref);
 
 	while (1)
 	{

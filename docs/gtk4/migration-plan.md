@@ -251,6 +251,14 @@ retain their existing canonical direct-dispatch path. The plain GTK3 menu-item
 presentation and IRC command behaviour remain unchanged; GTK4 menu models are
 still deferred.
 
+Search menu-model pass 5 (2026-07-14): the first complete static subtree now
+has an immutable `GMenuModel` projection generated from the same canonical
+labels and action identities as the live menu. The three Search commands and
+the shared action group are retained together on the menu root; the existing
+GTK3 submenu remains the displayed surface and preserves its callbacks,
+accelerators, and layout. Dynamic `/MENU`, plugin, and user-menu content is
+excluded from this pass pending a dedicated mutation and ownership boundary.
+
 Primary surfaces:
 
 - `menu.c`, context menus, tray menus, and user-defined menus
