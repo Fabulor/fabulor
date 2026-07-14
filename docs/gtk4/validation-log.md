@@ -299,6 +299,40 @@ Scope: four typed dialog-content insertions and two reviewed trailing
 label/control pairs. Synchronous response behavior, menu dialogs, generic
 button helpers, and model-heavy server-list layouts remain unchanged.
 
+### Stage 2 Main-Window Layout, Pass 1
+
+Date: 2026-07-14
+
+Migration stage: 2, reviewed main-window append order
+
+Files/workflows converted: quit content, channel mode/topic controls,
+transcript scaffolding, information frames, user-list structure, centre panes,
+emoji pages, search controls, reply bar, and input row
+
+GTK version: 4.22.4
+
+GLib version: 2.88.0
+
+Build configuration: MSVC x64 Release and Meson 1.11.2 Release with MSVC 19.44
+
+Automated checks:
+
+- [x] production GTK3 frontend compile and link with 0 warnings and 0 errors
+- [x] compatibility usage inventory: 137 start-ordered additions in 17 files,
+  one horizontal trailing child, and two trailing pairs
+- [x] remaining direct `gtk_box_pack_*`: 48 lines in seven files
+- [x] remaining `maingui.c` direct packing: 10 lines, including one commented
+  legacy block
+- [x] GTK4 validator unit tests: 8/8, plus repository root validation
+- [x] isolated GTK4 MSVC compile, link, and runtime probe with no warnings
+- [x] isolated GTK4 Meson configure, compile, link, and runtime test
+- [x] production GTK3 MSVC x64 Release rebuild and native tests: 18/18
+- [ ] GitHub Actions required checks: 5/5
+
+Scope: only rows where construction order is the final visual order. Dynamic
+nickname/meter insertion, trailing-tab placement, explicit dialog-button
+reordering, menus, and model-heavy layouts remain unchanged.
+
 ## Per-PR Record Template
 
 Copy this section for each GTK4 PR:

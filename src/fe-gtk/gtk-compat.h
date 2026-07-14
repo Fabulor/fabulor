@@ -68,6 +68,23 @@ fabulor_gtk_box_append (GtkBox *box, GtkWidget *child, gboolean expand,
 }
 
 static inline void
+fabulor_gtk_horizontal_box_append_trailing (GtkBox *box, GtkWidget *child)
+{
+	g_return_if_fail (GTK_IS_BOX (box));
+	g_return_if_fail (GTK_IS_WIDGET (child));
+	g_return_if_fail (gtk_orientable_get_orientation (GTK_ORIENTABLE (box)) ==
+					  GTK_ORIENTATION_HORIZONTAL);
+
+#if GTK_MAJOR_VERSION >= 4
+	gtk_widget_set_hexpand (child, TRUE);
+	gtk_widget_set_halign (child, GTK_ALIGN_END);
+	gtk_box_append (box, child);
+#else
+	gtk_box_pack_end (box, child, FALSE, FALSE, 0);
+#endif
+}
+
+static inline void
 fabulor_gtk_box_append_trailing_pair (GtkBox *box, GtkWidget *leading,
 									 GtkWidget *trailing)
 {

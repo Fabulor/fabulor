@@ -2054,7 +2054,7 @@ mg_open_quit_dialog (gboolean minimize_button)
 
         table1 = gtk_grid_new ();
         gtk_widget_show (table1);
-        gtk_box_pack_start (GTK_BOX (dialog_vbox1), table1, TRUE, TRUE, 0);
+        fabulor_gtk_box_append (GTK_BOX (dialog_vbox1), table1, TRUE, TRUE, 0);
         gtk_container_set_border_width (GTK_CONTAINER (table1), 6);
         gtk_grid_set_row_spacing (GTK_GRID (table1), 12);
         gtk_grid_set_column_spacing (GTK_GRID (table1), 12);
@@ -3084,7 +3084,7 @@ mg_create_flagbutton (char *tip, GtkWidget *box, char *face)
         mg_apply_compact_mode_css (btn);
         fabulor_gtk_button_set_child (GTK_BUTTON (btn), lbl);
 
-        gtk_box_pack_start (GTK_BOX (box), btn, 0, 0, 0);
+        fabulor_gtk_box_append (GTK_BOX (box), btn, FALSE, FALSE, 0);
         g_signal_connect (G_OBJECT (btn), "toggled",
                                                         G_CALLBACK (mg_flagbutton_cb), face);
         show_and_unfocus (btn);
@@ -3203,7 +3203,7 @@ mg_create_chanmodebuttons (session_gui *gui, GtkWidget *box)
         gtk_widget_set_name (gui->key_entry, "zoitechat-inputbox");
         gtk_entry_set_max_length (GTK_ENTRY (gui->key_entry), 23);
         gtk_widget_set_size_request (gui->key_entry, 58, 11);
-        gtk_box_pack_start (GTK_BOX (box), gui->key_entry, 0, 0, 0);
+        fabulor_gtk_box_append (GTK_BOX (box), gui->key_entry, FALSE, FALSE, 0);
         mg_apply_emoji_fallback_widget (gui->key_entry);
         mg_apply_compact_mode_css (gui->key_entry);
         g_signal_connect (G_OBJECT (gui->key_entry), "activate",
@@ -3221,7 +3221,7 @@ mg_create_chanmodebuttons (session_gui *gui, GtkWidget *box)
         gtk_entry_set_max_length (GTK_ENTRY (gui->limit_entry), 10);
 	gtk_entry_set_width_chars (GTK_ENTRY (gui->limit_entry), 5);
         gtk_widget_set_size_request (gui->limit_entry, 45, 11);
-        gtk_box_pack_start (GTK_BOX (box), gui->limit_entry, 0, 0, 0);
+        fabulor_gtk_box_append (GTK_BOX (box), gui->limit_entry, FALSE, FALSE, 0);
         mg_apply_emoji_fallback_widget (gui->limit_entry);
         mg_apply_compact_mode_css (gui->limit_entry);
         g_signal_connect (G_OBJECT (gui->limit_entry), "activate",
@@ -3286,7 +3286,7 @@ mg_dialog_button (GtkWidget *box, char *name, char *cmd)
         GtkWidget *wid;
 
         wid = gtk_button_new_with_label (name);
-        gtk_box_pack_start (GTK_BOX (box), wid, FALSE, FALSE, 0);
+        fabulor_gtk_box_append (GTK_BOX (box), wid, FALSE, FALSE, 0);
         g_signal_connect (G_OBJECT (wid), "clicked",
                                                         G_CALLBACK (mg_dialog_button_cb), cmd);
         gtk_widget_set_size_request (wid, -1, 0);
@@ -3541,10 +3541,10 @@ mg_create_topicbar (session *sess, GtkWidget *box)
 	session_gui *gui = sess->gui;
 
 	gui->topic_bar = vbox = mg_box_new (GTK_ORIENTATION_VERTICAL, FALSE, 0);
-	gtk_box_pack_start (GTK_BOX (box), vbox, 0, 0, 0);
+	fabulor_gtk_box_append (GTK_BOX (box), vbox, FALSE, FALSE, 0);
 
 	hbox = mg_box_new (GTK_ORIENTATION_HORIZONTAL, FALSE, 0);
-	gtk_box_pack_start (GTK_BOX (vbox), hbox, 0, 0, 0);
+	fabulor_gtk_box_append (GTK_BOX (vbox), hbox, FALSE, FALSE, 0);
 
         if (!gui->is_tab)
                 sess->res->tab = NULL;
@@ -3576,7 +3576,7 @@ mg_create_topicbar (session *sess, GtkWidget *box)
 	gtk_scrolled_window_set_shadow_type (GTK_SCROLLED_WINDOW (topic_scroll), GTK_SHADOW_NONE);
 	fabulor_gtk_scrolled_window_set_child (GTK_SCROLLED_WINDOW (topic_scroll), topic);
         mg_topicbar_update_height (topic);
-        gtk_box_pack_start (GTK_BOX (hbox), topic_scroll, TRUE, TRUE, 0);
+	fabulor_gtk_box_append (GTK_BOX (hbox), topic_scroll, TRUE, TRUE, 0);
         gtk_widget_add_events (topic, GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK |
                                       GDK_POINTER_MOTION_MASK | GDK_LEAVE_NOTIFY_MASK);
         g_signal_connect (G_OBJECT (topic), "key-press-event",
@@ -3589,18 +3589,18 @@ mg_create_topicbar (session *sess, GtkWidget *box)
                                                         G_CALLBACK (mg_topic_leave_cb), NULL);
 
 	gui->dialogbutton_box = bbox = mg_box_new (GTK_ORIENTATION_HORIZONTAL, FALSE, 0);
-	gtk_box_pack_start (GTK_BOX (hbox), bbox, 0, 0, 0);
+	fabulor_gtk_box_append (GTK_BOX (hbox), bbox, FALSE, FALSE, 0);
 	mg_create_dialogbuttons (bbox);
 
 	mode_hbox = mg_box_new (GTK_ORIENTATION_HORIZONTAL, FALSE, 0);
 	if (prefs.hex_gui_mode_buttons_inline)
-		gtk_box_pack_start (GTK_BOX (hbox), mode_hbox, 0, 0, 0);
+		fabulor_gtk_box_append (GTK_BOX (hbox), mode_hbox, FALSE, FALSE, 0);
 	else
-		gtk_box_pack_start (GTK_BOX (vbox), mode_hbox, 0, 0, 0);
+		fabulor_gtk_box_append (GTK_BOX (vbox), mode_hbox, FALSE, FALSE, 0);
 
 	gui->topicbutton_box = bbox = mg_box_new (GTK_ORIENTATION_HORIZONTAL, FALSE, 0);
 	gtk_widget_set_valign (bbox, GTK_ALIGN_CENTER);
-	gtk_box_pack_end (GTK_BOX (mode_hbox), bbox, 0, 0, 0);
+	fabulor_gtk_horizontal_box_append_trailing (GTK_BOX (mode_hbox), bbox);
 	mg_create_chanmodebuttons (gui, bbox);
 }
 
@@ -3890,14 +3890,14 @@ mg_create_textarea (session *sess, GtkWidget *box)
         };
 
         vbox = mg_box_new (GTK_ORIENTATION_VERTICAL, FALSE, 0);
-        gtk_box_pack_start (GTK_BOX (box), vbox, TRUE, TRUE, 0);
+        fabulor_gtk_box_append (GTK_BOX (box), vbox, TRUE, TRUE, 0);
         inbox = mg_box_new (GTK_ORIENTATION_HORIZONTAL, FALSE, 2);
-        gtk_box_pack_start (GTK_BOX (vbox), inbox, TRUE, TRUE, 0);
+        fabulor_gtk_box_append (GTK_BOX (vbox), inbox, TRUE, TRUE, 0);
 
         overlay = gtk_overlay_new ();
         gtk_widget_set_hexpand (overlay, TRUE);
         gtk_widget_set_vexpand (overlay, TRUE);
-        gtk_box_pack_start (GTK_BOX (inbox), overlay, TRUE, TRUE, 0);
+        fabulor_gtk_box_append (GTK_BOX (inbox), overlay, TRUE, TRUE, 0);
 
         frame = gtk_scrolled_window_new (NULL, NULL);
         gtk_widget_set_hexpand (frame, TRUE);
@@ -3949,13 +3949,13 @@ mg_create_infoframe (GtkWidget *box)
 
         frame = gtk_frame_new (0);
         gtk_frame_set_shadow_type ((GtkFrame*)frame, GTK_SHADOW_OUT);
-        gtk_box_pack_start (GTK_BOX (box), frame, TRUE, TRUE, 0);
+        fabulor_gtk_box_append (GTK_BOX (box), frame, TRUE, TRUE, 0);
 
         hbox = mg_box_new (GTK_ORIENTATION_HORIZONTAL, FALSE, 0);
         fabulor_gtk_frame_set_child (GTK_FRAME (frame), hbox);
 
         label = gtk_label_new (NULL);
-        gtk_box_pack_start (GTK_BOX (hbox), label, TRUE, TRUE, 0);
+        fabulor_gtk_box_append (GTK_BOX (hbox), label, TRUE, TRUE, 0);
 
         return label;
 }
@@ -4148,7 +4148,7 @@ mg_create_userlist (session_gui *gui, GtkWidget *box)
         GtkWidget *ulist, *vbox;
 
         vbox = mg_box_new (GTK_ORIENTATION_VERTICAL, FALSE, 1);
-        gtk_box_pack_start (GTK_BOX (box), vbox, TRUE, TRUE, 0);
+        fabulor_gtk_box_append (GTK_BOX (box), vbox, TRUE, TRUE, 0);
 
         gui->namelistinfo = gtk_label_new (NULL);
         gtk_label_set_xalign (GTK_LABEL (gui->namelistinfo), 0.5f);
@@ -4160,7 +4160,7 @@ mg_create_userlist (session_gui *gui, GtkWidget *box)
         gtk_widget_set_hexpand (gui->namelistinfo, TRUE);
         gtk_widget_set_halign (gui->namelistinfo, GTK_ALIGN_FILL);
         if (prefs.hex_gui_ulist_count)
-                gtk_box_pack_start (GTK_BOX (vbox), gui->namelistinfo, 0, 0, 0);
+                fabulor_gtk_box_append (GTK_BOX (vbox), gui->namelistinfo, FALSE, FALSE, 0);
 
         gui->user_tree = ulist = userlist_create (vbox);
 
@@ -4268,7 +4268,7 @@ mg_create_center (session *sess, session_gui *gui, GtkWidget *box)
         }
         gtk_paned_pack2 (GTK_PANED (gui->hpane_right), gui->vpane_right, FALSE, TRUE);
 
-        gtk_box_pack_start (GTK_BOX (box), gui->hpane_left, TRUE, TRUE, 0);
+        fabulor_gtk_box_append (GTK_BOX (box), gui->hpane_left, TRUE, TRUE, 0);
 
         gui->note_book = book = gtk_notebook_new ();
         gtk_notebook_set_show_tabs (GTK_NOTEBOOK (book), FALSE);
@@ -4877,8 +4877,8 @@ mg_emoji_flags_page_new (GtkEntry *entry, GtkWidget *popover)
                         gtk_label_set_attributes (GTK_LABEL (label), attrs);
                         pango_attr_list_unref (attrs);
                         gtk_widget_set_name (label, "fabulor-emoji-flag-code");
-                        gtk_box_pack_start (GTK_BOX (box), image, FALSE, FALSE, 0);
-                        gtk_box_pack_start (GTK_BOX (box), label, FALSE, FALSE, 0);
+                        fabulor_gtk_box_append (GTK_BOX (box), image, FALSE, FALSE, 0);
+                        fabulor_gtk_box_append (GTK_BOX (box), label, FALSE, FALSE, 0);
 
                         tooltip = g_strdup_printf (_("Insert %s flag."), mg_emoji_flag_codes[i]);
                         mg_emoji_add_button (grid, entry, popover, box, sequence, tooltip, i);
@@ -4928,7 +4928,7 @@ mg_emoji_lazy_page_load (GtkWidget *page)
                 contents = mg_emoji_flags_page_new (state->entry, state->popover);
         else
                 contents = mg_emoji_codepoint_page_new (state->entry, state->popover, state->items);
-        gtk_box_pack_start (GTK_BOX (page), contents, TRUE, TRUE, 0);
+        fabulor_gtk_box_append (GTK_BOX (page), contents, TRUE, TRUE, 0);
         gtk_widget_show_all (page);
 }
 
@@ -4983,7 +4983,7 @@ mg_show_emoji_popover (GtkEntry *entry)
 
         notebook = gtk_notebook_new ();
         gtk_notebook_set_tab_pos (GTK_NOTEBOOK (notebook), GTK_POS_TOP);
-        gtk_box_pack_start (GTK_BOX (outer), notebook, TRUE, TRUE, 0);
+        fabulor_gtk_box_append (GTK_BOX (outer), notebook, TRUE, TRUE, 0);
 
         for (i = 0; mg_emoji_categories[i].title != NULL; i++)
         {
@@ -5319,20 +5319,20 @@ mg_create_search(session *sess, GtkWidget *box)
         session_gui *gui = sess->gui;
 
         gui->shbox = mg_box_new (GTK_ORIENTATION_HORIZONTAL, FALSE, 5);
-        gtk_box_pack_start(GTK_BOX(box), gui->shbox, FALSE, FALSE, 0);
+        fabulor_gtk_box_append (GTK_BOX (box), gui->shbox, FALSE, FALSE, 0);
 
         close = gtk_button_new ();
         gtk_button_set_image (GTK_BUTTON (close), gtkutil_image_new_from_stock (ICON_TAB_CLOSE, GTK_ICON_SIZE_MENU));
         gtk_button_set_relief(GTK_BUTTON(close), GTK_RELIEF_NONE);
         gtk_widget_set_can_focus (close, FALSE);
-        gtk_box_pack_start(GTK_BOX(gui->shbox), close, FALSE, FALSE, 0);
+        fabulor_gtk_box_append (GTK_BOX (gui->shbox), close, FALSE, FALSE, 0);
         g_signal_connect_swapped(G_OBJECT(close), "clicked", G_CALLBACK(mg_search_toggle), sess);
 
         label = gtk_label_new(_("Find:"));
-        gtk_box_pack_start(GTK_BOX(gui->shbox), label, FALSE, FALSE, 0);
+        fabulor_gtk_box_append (GTK_BOX (gui->shbox), label, FALSE, FALSE, 0);
 
         gui->shentry = entry = gtk_entry_new();
-        gtk_box_pack_start(GTK_BOX(gui->shbox), entry, FALSE, FALSE, 0);
+        fabulor_gtk_box_append (GTK_BOX (gui->shbox), entry, FALSE, FALSE, 0);
         gtk_widget_set_size_request (gui->shentry, 180, -1);
         mg_apply_emoji_fallback_widget (entry);
         mg_apply_entry_scroll_artifact_fix (entry);
@@ -5346,14 +5346,14 @@ mg_create_search(session *sess, GtkWidget *box)
         gtk_button_set_image (GTK_BUTTON (previous), gtkutil_image_new_from_stock (ICON_TAB_PREVIOUS, GTK_ICON_SIZE_MENU));
         gtk_button_set_relief(GTK_BUTTON(previous), GTK_RELIEF_NONE);
         gtk_widget_set_can_focus (previous, FALSE);
-        gtk_box_pack_start(GTK_BOX(gui->shbox), previous, FALSE, FALSE, 0);
+        fabulor_gtk_box_append (GTK_BOX (gui->shbox), previous, FALSE, FALSE, 0);
         g_signal_connect(G_OBJECT(previous), "clicked", G_CALLBACK(mg_search_handle_previous), sess);
 
         next = gtk_button_new ();
         gtk_button_set_image (GTK_BUTTON (next), gtkutil_image_new_from_stock (ICON_TAB_NEXT, GTK_ICON_SIZE_MENU));
         gtk_button_set_relief(GTK_BUTTON(next), GTK_RELIEF_NONE);
         gtk_widget_set_can_focus (next, FALSE);
-        gtk_box_pack_start(GTK_BOX(gui->shbox), next, FALSE, FALSE, 0);
+        fabulor_gtk_box_append (GTK_BOX (gui->shbox), next, FALSE, FALSE, 0);
         g_signal_connect(G_OBJECT(next), "clicked", G_CALLBACK(mg_search_handle_next), sess);
 
         highlight = gtk_check_button_new_with_mnemonic (_("_Highlight all"));
@@ -5361,26 +5361,26 @@ mg_create_search(session *sess, GtkWidget *box)
         gtk_widget_set_can_focus (highlight, FALSE);
         g_signal_connect (G_OBJECT (highlight), "toggled", G_CALLBACK (search_set_option), &prefs.hex_text_search_highlight_all);
         g_signal_connect (G_OBJECT (highlight), "toggled", G_CALLBACK (search_handle_refresh), sess);
-        gtk_box_pack_start(GTK_BOX(gui->shbox), highlight, FALSE, FALSE, 0);
+        fabulor_gtk_box_append (GTK_BOX (gui->shbox), highlight, FALSE, FALSE, 0);
         gtk_widget_set_tooltip_text (highlight, _("Highlight all occurrences, and underline the current occurrence."));
 
         matchcase = gtk_check_button_new_with_mnemonic (_("Mat_ch case"));
         gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON(matchcase), prefs.hex_text_search_case_match);
         gtk_widget_set_can_focus (matchcase, FALSE);
         g_signal_connect (G_OBJECT (matchcase), "toggled", G_CALLBACK (search_set_option), &prefs.hex_text_search_case_match);
-        gtk_box_pack_start(GTK_BOX(gui->shbox), matchcase, FALSE, FALSE, 0);
+        fabulor_gtk_box_append (GTK_BOX (gui->shbox), matchcase, FALSE, FALSE, 0);
         gtk_widget_set_tooltip_text (matchcase, _("Perform a case-sensitive search."));
 
         regex = gtk_check_button_new_with_mnemonic (_("_Regex"));
         gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON(regex), prefs.hex_text_search_regexp);
         gtk_widget_set_can_focus (regex, FALSE);
         g_signal_connect (G_OBJECT (regex), "toggled", G_CALLBACK (search_set_option), &prefs.hex_text_search_regexp);
-        gtk_box_pack_start(GTK_BOX(gui->shbox), regex, FALSE, FALSE, 0);
+        fabulor_gtk_box_append (GTK_BOX (gui->shbox), regex, FALSE, FALSE, 0);
         gtk_widget_set_tooltip_text (regex, _("Regard search string as a regular expression."));
 
         gui->shchan = channels = gtk_check_button_new_with_mnemonic (_("_Channels only"));
         gtk_widget_set_can_focus (channels, FALSE);
-        gtk_box_pack_start (GTK_BOX (gui->shbox), channels, FALSE, FALSE, 0);
+        fabulor_gtk_box_append (GTK_BOX (gui->shbox), channels, FALSE, FALSE, 0);
         gtk_widget_set_tooltip_text (channels, _("Search channel names in your current channel list."));
         g_signal_connect (G_OBJECT (channels), "toggled", G_CALLBACK (search_handle_refresh), sess);
 }
@@ -5404,22 +5404,22 @@ mg_create_entry (session *sess, GtkWidget *box)
         gui->reply_box = mg_box_new (GTK_ORIENTATION_HORIZONTAL, FALSE, 6);
         gtk_widget_set_name (gui->reply_box, "zoitechat-replybar");
         gtk_widget_set_no_show_all (gui->reply_box, TRUE);
-        gtk_box_pack_start (GTK_BOX (box), gui->reply_box, 0, 0, 0);
+        fabulor_gtk_box_append (GTK_BOX (box), gui->reply_box, FALSE, FALSE, 0);
         gui->reply_label = gtk_label_new ("");
         gtk_label_set_ellipsize (GTK_LABEL (gui->reply_label), PANGO_ELLIPSIZE_END);
-        gtk_box_pack_start (GTK_BOX (gui->reply_box), gui->reply_label, TRUE, TRUE, 8);
+        fabulor_gtk_box_append (GTK_BOX (gui->reply_box), gui->reply_label, TRUE, TRUE, 8);
         but = gtk_button_new_with_label ("×");
         gtk_button_set_relief (GTK_BUTTON (but), GTK_RELIEF_NONE);
         gtk_widget_set_can_focus (but, FALSE);
-        gtk_box_pack_start (GTK_BOX (gui->reply_box), but, FALSE, FALSE, 0);
+        fabulor_gtk_box_append (GTK_BOX (gui->reply_box), but, FALSE, FALSE, 0);
         g_signal_connect (G_OBJECT (but), "clicked", G_CALLBACK (mg_reply_cancel_cb), sess);
         gtk_widget_hide (gui->reply_box);
 
         hbox = mg_box_new (GTK_ORIENTATION_HORIZONTAL, FALSE, 0);
-        gtk_box_pack_start (GTK_BOX (box), hbox, 0, 0, 0);
+        fabulor_gtk_box_append (GTK_BOX (box), hbox, FALSE, FALSE, 0);
 
         gui->nick_box = mg_box_new (GTK_ORIENTATION_HORIZONTAL, FALSE, 0);
-        gtk_box_pack_start (GTK_BOX (hbox), gui->nick_box, 0, 0, 0);
+        fabulor_gtk_box_append (GTK_BOX (hbox), gui->nick_box, FALSE, FALSE, 0);
 
         gui->nick_label = but = gtk_button_new_with_label (sess->server->nick);
         gtk_button_set_relief (GTK_BUTTON (but), GTK_RELIEF_NONE);
@@ -5439,7 +5439,7 @@ mg_create_entry (session *sess, GtkWidget *box)
                                                         G_CALLBACK (mg_inputbox_cb), gui);
         g_signal_connect (G_OBJECT (entry), "changed",
                                                         G_CALLBACK (mg_inputbox_changed), gui);
-        gtk_box_pack_start (GTK_BOX (hbox), entry, TRUE, TRUE, 0);
+        fabulor_gtk_box_append (GTK_BOX (hbox), entry, TRUE, TRUE, 0);
 
         gtk_widget_set_name (entry, "zoitechat-inputbox");
         g_signal_connect (G_OBJECT (entry), "key-press-event",
