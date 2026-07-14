@@ -373,6 +373,42 @@ Scope: dynamic children with exact box ownership and reviewed final order.
 Meter `GtkEventBox` wrappers, menus, model-heavy layouts, and generic widget
 destruction remain unchanged for their owning stages.
 
+### PR: [#27 - GTK4 Menu-Dialog And Shared-Button Ownership](https://github.com/Fabulor/fabulor/pull/27)
+
+Date: 2026-07-14
+
+Commit: `bbd7863d`
+
+Migration stage: 2, typed Join Channel dialog and shared button ownership
+
+Files/workflows converted: Join Channel dialog content, ordering, reveal, and
+response destruction; labelled and label-less `gtkutil_button()` construction
+
+GTK version: 4.22.4
+
+GLib version: 2.88.0
+
+Build configuration: MSVC x64 Release and Meson 1.11.2 Release with MSVC 19.44
+
+Automated checks:
+
+- [x] production GTK3 frontend compile and link with 0 warnings and 0 errors
+- [x] compatibility usage inventory: 145 start-ordered additions, three
+  trailing pairs, 40 typed child assignments, and 17 reviewed reveals
+- [x] remaining direct `gtk_box_pack_*`: 35 lines in five files
+- [x] remaining direct `gtk_container_*`: 110 lines in 23 files
+- [x] remaining direct `gtk_widget_show_all`: 17 lines in eight files
+- [x] remaining direct `gtk_widget_destroy`: 31 lines in 13 files
+- [x] GTK4 validator unit tests: 8/8, plus repository root validation
+- [x] isolated GTK4 MSVC compile, link, and runtime probe with no warnings
+- [x] isolated GTK4 Meson configure, compile, link, and runtime test
+- [x] production GTK3 MSVC x64 Release rebuild and native tests: 18/18
+- [x] GitHub Actions required checks: 5/5
+
+Scope: the already response-driven Join Channel dialog and the shared button
+constructor's exact child/parent ownership. Menu items, actions, accelerators,
+models, file selection, and synchronous dialog flows remain unchanged.
+
 ## Per-PR Record Template
 
 Copy this section for each GTK4 PR:

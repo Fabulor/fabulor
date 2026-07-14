@@ -51,6 +51,7 @@
 #include "editlist.h"
 #include "fkeys.h"
 #include "gtkutil.h"
+#include "gtk-compat.h"
 #include "maingui.h"
 #include "notifygui.h"
 #include "pixmaps.h"
@@ -1506,7 +1507,7 @@ menu_reconnect (GtkWidget * wid, gpointer none)
 }
 
 static void
-menu_join_cb (GtkWidget *dialog, gint response, GtkEntry *entry)
+menu_join_cb (GtkDialog *dialog, gint response, GtkEntry *entry)
 {
 	switch (response)
 	{
@@ -1519,7 +1520,7 @@ menu_join_cb (GtkWidget *dialog, gint response, GtkEntry *entry)
 		break;
 	}
 
-	gtk_widget_destroy (dialog);
+	fabulor_gtk_window_destroy (GTK_WINDOW (dialog));
 }
 
 static void
@@ -1551,17 +1552,15 @@ menu_join (GtkWidget * wid, gpointer none)
 	gtk_entry_set_text (GTK_ENTRY (entry), "#");
 	g_signal_connect (G_OBJECT (entry), "activate",
 						 	G_CALLBACK (menu_join_entry_cb), dialog);
-	gtk_box_pack_end (GTK_BOX (hbox), entry, 0, 0, 0);
-
 	label = gtk_label_new (_("Enter Channel to Join:"));
-	gtk_box_pack_end (GTK_BOX (hbox), label, 0, 0, 0);
+	fabulor_gtk_box_append_trailing_pair (GTK_BOX (hbox), label, entry);
 
 	g_signal_connect (G_OBJECT (dialog), "response",
 						   G_CALLBACK (menu_join_cb), entry);
 
-	gtk_container_add (GTK_CONTAINER (content_area), hbox);
+	fabulor_gtk_box_append (GTK_BOX (content_area), hbox, TRUE, TRUE, 0);
 
-	gtk_widget_show_all (dialog);
+	fabulor_gtk_widget_reveal_tree (dialog);
 
 	gtk_editable_set_editable (GTK_EDITABLE (entry), TRUE);
 	gtk_editable_set_position (GTK_EDITABLE (entry), 1);

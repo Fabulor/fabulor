@@ -171,6 +171,17 @@ no direct `gtk_box_pack_*` calls. Repository-wide direct packing has fallen to
 direct widget destruction to 32 lines in 13 files. The two meter
 `GtkEventBox` wrappers remain for the Stage 4 event-controller pass.
 
+Menu-dialog and shared-button ownership pass (2026-07-14): the response-driven
+Join Channel dialog now preserves its label/entry end order through the typed
+trailing-pair helper, attaches content through its exact `GtkBox`, uses the
+reviewed reveal boundary, and destroys its concrete dialog window through the
+typed lifecycle helper. `gtkutil_button()` now assigns its label-less child box
+and optional parent box through typed helpers while preserving labelled and
+label-less callers. Direct packing is now 35 lines in five files, direct
+container calls 110 lines in 23 files, direct recursive reveal 17 lines in
+eight files, and direct widget destruction 31 lines in 13 files. Menu items,
+actions, accelerators, and menu models remain unchanged for Stage 3.
+
 Primary API families:
 
 - `gtk_container_*`

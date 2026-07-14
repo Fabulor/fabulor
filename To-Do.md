@@ -212,11 +212,13 @@ Detailed planning and evidence live in:
       - [x] Convert shared prompt and notify dialog content with explicit trailing-pair order and typed content-area ownership.
       - [x] Convert reviewed main-window topic, transcript, user-list, emoji, search, reply, and input rows with exact append order.
       - [x] Convert dynamic main-window nickname, meter, user-list-button, and refreshed dialog-button ordering.
-      - [ ] Convert remaining menu-dialog, menu, and model-surface ordering with their dedicated stages.
+      - [x] Convert the Join Channel dialog and shared button-helper ownership without changing menu actions.
+      - [ ] Convert remaining menu and model-surface ordering with their dedicated stages.
   - [ ] Replace recursive visibility and generic widget destruction with surface-specific GTK4 lifecycle handling.
     - [x] Convert completed utility-window/dialog trees and statically typed window destruction without changing menu or conditional-child behaviour.
     - [x] Convert shared prompt dialogs, exact response callbacks, frontend session windows, and concrete main-window/dialog lifetimes.
     - [x] Convert box-owned dynamic main-window nickname, progress, meter, and dialog-button child lifecycles.
+    - [x] Convert the response-driven Join Channel dialog reveal and destruction lifecycle.
     - [ ] Convert remaining menu, unparented-widget, GTK3-test, and non-window child lifecycles in their owning stages.
 - [ ] Convert actions, menus, dialogs, and file-selection flows.
 - [ ] Convert input events, shortcuts, clipboard, drag/drop, and pointer gestures.
