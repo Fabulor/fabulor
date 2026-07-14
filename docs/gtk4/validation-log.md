@@ -547,11 +547,11 @@ Scope: window-view boolean state only. Away state and connection sensitivity,
 dynamic menus, popup ownership, dialogs, and pointer/key event handling remain
 unchanged for later passes.
 
-### PR: GTK4 Session-Aware Away Action State, Pass 4
+### PR: [#32 - GTK4 Session-Aware Away Action State, Pass 4](https://github.com/Fabulor/fabulor/pull/32)
 
 Date: 2026-07-14
 
-Commit: pending
+Commit: `d9e77679`
 
 Migration stage: 3, session-aware Away action state and availability
 
