@@ -17,6 +17,8 @@ check_compatibility_helper_signatures (void)
 {
 	void (*volatile box_append) (GtkBox *, GtkWidget *, gboolean, gboolean, guint) =
 		fabulor_gtk_box_append;
+	void (*volatile box_append_trailing_pair) (GtkBox *, GtkWidget *, GtkWidget *) =
+		fabulor_gtk_box_append_trailing_pair;
 	void (*volatile window_set_child) (GtkWindow *, GtkWidget *) =
 		fabulor_gtk_window_set_child;
 	void (*volatile scrolled_window_set_child) (GtkScrolledWindow *, GtkWidget *) =
@@ -36,6 +38,7 @@ check_compatibility_helper_signatures (void)
 		fabulor_gtk_dialog_destroy_on_response;
 
 	(void) box_append;
+	(void) box_append_trailing_pair;
 	(void) window_set_child;
 	(void) scrolled_window_set_child;
 	(void) frame_set_child;

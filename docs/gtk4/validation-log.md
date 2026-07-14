@@ -267,6 +267,38 @@ application windows. Generic Escape/button destroy helpers, menu ownership,
 notebook/channel-view children, dynamic controls, unparented probes,
 spell-entry menu items, and GTK3-only tests remain explicit.
 
+### PR: [#24 - GTK4 Generic Dialog Layout Pass](https://github.com/Fabulor/fabulor/pull/24)
+
+Date: 2026-07-14
+
+Commit: `cda2b16c`
+
+Migration stage: 2, typed dialog content ownership and trailing-pair layout
+
+Files/workflows converted: shared string/integer/boolean prompts and the
+notify-add dialog
+
+GTK version: 4.22.4
+
+GLib version: 2.88.0
+
+Build configuration: MSVC x64 Release and Meson 1.11.2 Release with MSVC 19.44
+
+Automated checks:
+
+- [x] production GTK3 frontend compile and link with 0 warnings and 0 errors
+- [x] remaining direct `gtk_box_pack_*`: 88 lines in seven files
+- [x] remaining direct `gtk_container_*`: 113 lines in 23 files
+- [x] GTK4 validator unit tests: 8/8, plus repository root validation
+- [x] isolated GTK4 MSVC compile, link, and runtime probe with no warnings
+- [x] isolated GTK4 Meson configure, compile, link, and runtime test
+- [x] production GTK3 MSVC x64 Release rebuild and native tests: 18/18
+- [x] GitHub Actions required checks: 5/5
+
+Scope: four typed dialog-content insertions and two reviewed trailing
+label/control pairs. Synchronous response behavior, menu dialogs, generic
+button helpers, and model-heavy server-list layouts remain unchanged.
+
 ## Per-PR Record Template
 
 Copy this section for each GTK4 PR:

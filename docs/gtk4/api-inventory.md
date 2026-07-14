@@ -36,6 +36,7 @@ Update this file in every GTK4 conversion PR. Use these status values:
 `src/fe-gtk/gtk-compat.h` provides type-specific, header-only helpers for:
 
 - start-ordered box insertion with explicit expansion, fill, and padding
+- trailing label/control pair insertion with preserved end alignment
 - window, scrolled-window, frame, button, overlay, and popover child assignment
 - completed-tree reveal with distinct GTK3 recursive and GTK4 root semantics
 - window destruction
@@ -60,8 +61,8 @@ to existing directional margins, and is used only where append order is exact.
 
 | GTK3 family or type | Matching lines | Files | Migration direction | Stage | Status |
 |---|---:|---:|---|---:|---|
-| `gtk_container_*` | 117 | 23 | explicit widget-specific child APIs | 2 | in progress |
-| `gtk_box_pack_*` | 92 | 7 | `gtk_box_append/prepend` and reorder APIs | 2 | in progress |
+| `gtk_container_*` | 113 | 23 | explicit widget-specific child APIs | 2 | in progress |
+| `gtk_box_pack_*` | 88 | 7 | `gtk_box_append/prepend` and reorder APIs | 2 | in progress |
 | `gtk_widget_show_all` | 19 | 8 | explicit visibility; GTK4 children visible by default | 2 | in progress |
 | `gtk_widget_destroy` | 37 | 13 | window close and object ownership appropriate to type | 2 | in progress |
 | `GtkEventBox` / `gtk_event_box_*` | 8 | 2 | ordinary widgets plus controllers/gestures | 2/4 | not started |

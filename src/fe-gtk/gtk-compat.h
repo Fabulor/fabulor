@@ -68,6 +68,25 @@ fabulor_gtk_box_append (GtkBox *box, GtkWidget *child, gboolean expand,
 }
 
 static inline void
+fabulor_gtk_box_append_trailing_pair (GtkBox *box, GtkWidget *leading,
+									 GtkWidget *trailing)
+{
+	g_return_if_fail (GTK_IS_BOX (box));
+	g_return_if_fail (GTK_IS_WIDGET (leading));
+	g_return_if_fail (GTK_IS_WIDGET (trailing));
+
+#if GTK_MAJOR_VERSION >= 4
+	/* GTK3 pack_end reverses call order and keeps this pair at the box end. */
+	gtk_widget_set_halign (GTK_WIDGET (box), GTK_ALIGN_END);
+	gtk_box_append (box, leading);
+	gtk_box_append (box, trailing);
+#else
+	gtk_box_pack_end (box, trailing, FALSE, FALSE, 0);
+	gtk_box_pack_end (box, leading, FALSE, FALSE, 0);
+#endif
+}
+
+static inline void
 fabulor_gtk_window_set_child (GtkWindow *window, GtkWidget *child)
 {
 	g_return_if_fail (GTK_IS_WINDOW (window));

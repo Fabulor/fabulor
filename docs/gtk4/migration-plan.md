@@ -140,6 +140,15 @@ usage is now 19 lines in eight files and direct `gtk_widget_destroy` usage is
 children, dynamic main-window controls, unparented probes, spell-entry items,
 or GTK3-only test fixtures and require type-specific migration.
 
+Generic-dialog layout progress (2026-07-14): the shared string, integer, and
+boolean prompts plus the notify-add dialog now attach content through typed
+`GtkBox` ownership. A narrow trailing-pair helper preserves GTK3 `pack_end`
+order and right alignment while the GTK4 path appends the label/control pair
+in visual order and aligns the completed row to the end. Direct
+`gtk_box_pack_*` usage is now 88 lines in seven files and direct
+`gtk_container_*` usage is 113 lines in 23 files. Menu dialogs and model-heavy
+server-list layouts remain with their owning stages.
+
 Primary API families:
 
 - `gtk_container_*`
