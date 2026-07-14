@@ -45,7 +45,7 @@ GTK version: 4.22.4
 
 GLib version: 2.88.0
 
-Build configuration: MSVC x64 Release and Meson 1.11.2 with MSVC 19.44
+Build configuration: MSVC x64 Release and Meson 1.11.2 Release with MSVC 19.44
 
 Automated checks:
 
@@ -65,6 +65,38 @@ target toolchain for Meson.
 
 Production impact: none. The Fabulor solution and frontend remain linked to
 GTK3; no GTK4 widget or compatibility code is enabled.
+
+### PR: GTK4 Compatibility Helpers, Pass 1
+
+Date: 2026-07-14
+
+Commit: pending
+
+Migration stage: 1, compatibility helper boundary
+
+Files/workflows converted: `src/fe-gtk/gtk-compat.h`, one scrolled-window child
+assignment in `gtkutil.c`, and the isolated GTK4 probes
+
+GTK version: 4.22.4
+
+GLib version: 2.88.0
+
+Build configuration: MSVC x64 Release and Meson 1.11.2 with MSVC 19.44
+
+Automated checks:
+
+- [x] GTK4 validator unit tests: 8/8
+- [x] repository `Runtime/GTK4` root validation, including GObject import library
+- [x] isolated GTK4 MSVC compile, link, and runtime probe with no warnings
+- [x] isolated GTK4 Meson configure, compile, link, and runtime test
+- [x] production GTK3 MSVC x64 Release rebuild, including native tests 18/18
+- [ ] GitHub Actions required checks
+
+Observed probe identity: GTK 4.22.4 / GLib 2.88.0 / 64-bit.
+
+Scope: type-specific single-child assignment and window destruction only. No
+generic ownership, layout, dialog, menu, event, model, or user-facing workflow
+conversion is included.
 
 ## Per-PR Record Template
 

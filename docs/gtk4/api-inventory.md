@@ -10,6 +10,8 @@ This inventory combines source review with literal symbol searches under
 `src/fe-gtk`. Counts are migration indicators, not compiler diagnostics: one
 line may contain several calls, wrappers may hide additional work, and some GTK
 types remain available in GTK4 while still requiring model or lifecycle changes.
+Direct-call counts exclude `gtk-compat.h`; the helper implementations are
+tracked separately in the compatibility boundary below.
 
 Update this file in every GTK4 conversion PR. Use these status values:
 
@@ -29,11 +31,28 @@ Update this file in every GTK4 conversion PR. Use these status values:
 | Windows runtime payload | separate GTK4 tree already downloaded and packaged | same audited runtime used by the executable | in progress |
 | Staged release root | GTK3 DLLs and data beside `fabulor.exe` | GTK4-only final layout | not started |
 
+## Compatibility Helper Boundary
+
+`src/fe-gtk/gtk-compat.h` provides type-specific, header-only helpers for:
+
+- window, scrolled-window, frame, button, overlay, and popover child assignment
+- window destruction
+
+The production GTK3 build and isolated GTK4 MSVC/Meson probes compile the same
+helper bodies. The GTK4 probes also take each helper's address so every GTK4
+branch is linked, not merely preprocessed. The first production adoption is the
+tree-view child assignment in `gtkutil_treeview_new()`.
+
+The boundary deliberately does not abstract generic widget destruction,
+box expansion/fill/padding, recursive visibility, menus, dialogs, events,
+clipboard ownership, or list/tree models. Those operations have GTK4 lifetime
+or behaviour changes that must remain visible at each caller.
+
 ## Quantitative API Baseline
 
 | GTK3 family or type | Matching lines | Files | Migration direction | Stage | Status |
 |---|---:|---:|---|---:|---|
-| `gtk_container_*` | 156 | 25 | explicit widget-specific child APIs | 2 | not started |
+| `gtk_container_*` | 155 | 25 | explicit widget-specific child APIs | 2 | in progress |
 | `gtk_box_pack_*` | 186 | 22 | `gtk_box_append/prepend` and reorder APIs | 2 | not started |
 | `gtk_widget_show_all` | 34 | 18 | explicit visibility; GTK4 children visible by default | 2 | not started |
 | `gtk_widget_destroy` | 81 | 23 | window close and object ownership appropriate to type | 2 | not started |

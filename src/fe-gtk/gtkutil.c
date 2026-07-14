@@ -42,6 +42,7 @@
 #include "../common/zoitechatc.h"
 #include "../common/typedef.h"
 #include "gtkutil.h"
+#include "gtk-compat.h"
 #include "icon-resolver.h"
 #include "pixmaps.h"
 #include "theme/theme-manager.h"
@@ -884,7 +885,7 @@ gtkutil_treeview_new (GtkWidget *box, GtkTreeModel *model,
 	view = gtk_tree_view_new_with_model (model);
 	/* the view now has a ref on the model, we can unref it */
 	g_object_unref (G_OBJECT (model));
-	gtk_container_add (GTK_CONTAINER (win), view);
+	fabulor_gtk_scrolled_window_set_child (GTK_SCROLLED_WINDOW (win), view);
 
 	va_start (args, mapper);
 	for (col_id = va_arg (args, int); col_id != -1; col_id = va_arg (args, int))
