@@ -131,11 +131,11 @@ buttons, overlays, and popovers. Ambiguous containers, packing, dialog content,
 menus, list rows, event boxes, viewport-dependent code, visibility, and generic
 destruction remain deferred.
 
-### PR: GTK4 Widget Ownership And Layout, Pass 2
+### PR: [#20 - GTK4 Widget Ownership And Layout, Pass 2](https://github.com/Fabulor/fabulor/pull/20)
 
 Date: 2026-07-14
 
-Commit: pending
+Commit: `273f7225`
 
 Migration stage: 2, start-ordered box layout
 
@@ -157,7 +157,7 @@ Automated checks:
 - [x] GTK4 validator unit tests: 8/8, plus repository root validation
 - [x] isolated GTK4 MSVC and Meson compile, link, and runtime probes
 - [x] production GTK3 MSVC x64 Release rebuild and native tests: 18/18
-- [ ] GitHub Actions required checks
+- [x] GitHub Actions required checks: 5/5
 
 Scope: start-only modules where GTK4 append order is identical to GTK3 packing
 order. Mixed start/end layouts, menus, operational list models, generic
