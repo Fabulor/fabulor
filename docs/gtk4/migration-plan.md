@@ -259,6 +259,14 @@ GTK3 submenu remains the displayed surface and preserves its callbacks,
 accelerators, and layout. Dynamic `/MENU`, plugin, and user-menu content is
 excluded from this pass pending a dedicated mutation and ownership boundary.
 
+Help menu-model pass 6 (2026-07-14): About now carries the seventeenth
+canonical command identity and activates through the shared stateless action
+path. The retained model builder now projects arbitrary contiguous canonical
+subtrees and is used for both the three-command Search submenu and complete
+two-command Help menu. The built-in shortcut vocabulary includes About, while
+the displayed GTK3 Help menu, Contents URL handling, and About dialog behaviour
+remain unchanged.
+
 Primary surfaces:
 
 - `menu.c`, context menus, tray menus, and user-defined menus

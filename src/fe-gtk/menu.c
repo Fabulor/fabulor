@@ -74,6 +74,7 @@ static GSList *submenu_list;
 #define FABULOR_MENU_ACTION_GROUP "fabulor-menu-action-group"
 #define FABULOR_MENU_ACTION_NAME "fabulor-menu-action-name"
 #define FABULOR_MENU_SEARCH_MODEL "fabulor-menu-search-model"
+#define FABULOR_MENU_HELP_MODEL "fabulor-menu-help-model"
 
 static gboolean menu_action_set_item_state (GtkWidget *item, gboolean state);
 
@@ -149,7 +150,8 @@ typedef enum
 	MENU_ACTION_SEARCH_TEXT,
 	MENU_ACTION_SEARCH_NEXT,
 	MENU_ACTION_SEARCH_PREVIOUS,
-	MENU_ACTION_CONTENTS
+	MENU_ACTION_CONTENTS,
+	MENU_ACTION_ABOUT
 } menu_action_id;
 
 struct mymenu
@@ -2062,10 +2064,13 @@ static struct mymenu mymenu[] = {
 			"search-previous", MENU_ACTION_SEARCH_PREVIOUS},
 		{0, 0, 0, M_END, 0, 0, 0},
 
-	{N_("_Help"), 0, 0, M_NEWMENU, 0, 0, 1},	/* 74 */
+#define HELP_OFFSET (74)
+#define HELP_ACTION_COUNT (2)
+	{N_("_Help"), 0, 0, M_NEWMENU, 0, 0, 1},
 	{N_("_Contents"), menu_docs, 0, M_MENUITEM, 0, 0, 1, 0,
 		"contents", MENU_ACTION_CONTENTS},
-	{N_("_About"), menu_about, 0, M_MENUITEM, 0, 0, 1},
+	{N_("_About"), menu_about, 0, M_MENUITEM, 0, 0, 1, 0,
+		"about", MENU_ACTION_ABOUT},
 
 	{0, 0, 0, M_END, 0, 0, 0},
 };
@@ -2232,6 +2237,9 @@ menu_key_action (const char *name, guint keyval, GdkModifierType state)
 	case MENU_ACTION_CONTENTS:
 		menu_docs (NULL, NULL);
 		break;
+	case MENU_ACTION_ABOUT:
+		menu_about (NULL, NULL);
+		break;
 	default:
 		return FALSE;
 	}
@@ -2256,6 +2264,7 @@ menu_action_is_stateless (menu_action_id id)
 	case MENU_ACTION_SEARCH_NEXT:
 	case MENU_ACTION_SEARCH_PREVIOUS:
 	case MENU_ACTION_CONTENTS:
+	case MENU_ACTION_ABOUT:
 		return TRUE;
 	default:
 		return FALSE;
@@ -2339,13 +2348,13 @@ menu_action_detailed_name (const struct mymenu *definition)
 }
 
 static GMenuModel *
-menu_action_search_model_new (void)
+menu_action_model_new (guint offset, guint action_count)
 {
 	GMenu *model;
 	guint i;
 
 	model = g_menu_new ();
-	for (i = SEARCH_OFFSET + 1; i <= SEARCH_OFFSET + SEARCH_ACTION_COUNT; i++)
+	for (i = offset + 1; i <= offset + action_count; i++)
 	{
 		char *detailed_name = menu_action_detailed_name (&mymenu[i]);
 
@@ -2907,6 +2916,7 @@ menu_create_main (void *accel_group, int bar, int away, int away_sensitive,
 	int i = 0;
 	gboolean action_bound;
 	GSimpleActionGroup *action_group;
+	GMenuModel *help_model;
 	GMenuModel *search_model;
 	GtkWidget *item;
 	GtkWidget *menu = 0;
@@ -3015,9 +3025,12 @@ menu_create_main (void *accel_group, int bar, int away, int away_sensitive,
 								G_ACTION_GROUP (action_group));
 	g_object_set_data_full (G_OBJECT (menu_bar), FABULOR_MENU_ACTION_GROUP,
 						 action_group, g_object_unref);
-	search_model = menu_action_search_model_new ();
+	search_model = menu_action_model_new (SEARCH_OFFSET, SEARCH_ACTION_COUNT);
 	g_object_set_data_full (G_OBJECT (menu_bar), FABULOR_MENU_SEARCH_MODEL,
 						 search_model, g_object_unref);
+	help_model = menu_action_model_new (HELP_OFFSET, HELP_ACTION_COUNT);
+	g_object_set_data_full (G_OBJECT (menu_bar), FABULOR_MENU_HELP_MODEL,
+						 help_model, g_object_unref);
 
 	while (1)
 	{
