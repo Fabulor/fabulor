@@ -224,6 +224,15 @@ existing callback, accelerator, and special Ctrl+Q preference check. GTK3 menu
 widgets, dynamic menu mutation, state, sensitivity, dialogs, and popup/event
 handling remain unchanged.
 
+Stateless action activation pass 2 (2026-07-14): 12 canonical commands now
+activate through a per-menu `GSimpleActionGroup`. Their GTK3 menu items use
+`GtkActionable` names, retain the shared group after construction, and no
+longer attach parallel widget callbacks; configurable shortcuts still dispatch
+through the same canonical command path. A focused GTK3 runtime probe verified
+one activation and production-equivalent group lifetime. Menu-bar, user-list,
+fullscreen, and away remain on existing callbacks until their state and
+sensitivity synchronization can be converted as one unit.
+
 Primary surfaces:
 
 - `menu.c`, context menus, tray menus, and user-defined menus

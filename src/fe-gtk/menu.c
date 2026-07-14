@@ -2227,6 +2227,81 @@ menu_key_action (const char *name, guint keyval, GdkModifierType state)
 	return TRUE;
 }
 
+static gboolean
+menu_action_is_stateless (menu_action_id id)
+{
+	switch (id)
+	{
+	case MENU_ACTION_NETWORK_LIST:
+	case MENU_ACTION_NEW_SERVER_TAB:
+	case MENU_ACTION_NEW_SERVER_WINDOW:
+	case MENU_ACTION_CLOSE:
+	case MENU_ACTION_QUIT:
+	case MENU_ACTION_RESET_MARKER:
+	case MENU_ACTION_MOVE_MARKER:
+	case MENU_ACTION_COPY_SELECTION:
+	case MENU_ACTION_SEARCH_TEXT:
+	case MENU_ACTION_SEARCH_NEXT:
+	case MENU_ACTION_SEARCH_PREVIOUS:
+	case MENU_ACTION_CONTENTS:
+		return TRUE;
+	default:
+		return FALSE;
+	}
+}
+
+static void
+menu_action_activate (GSimpleAction *action, GVariant *parameter,
+					  gpointer user_data)
+{
+	(void) parameter;
+	(void) user_data;
+
+	menu_key_action (g_action_get_name (G_ACTION (action)), 0, 0);
+}
+
+static GSimpleActionGroup *
+menu_action_group_new (void)
+{
+	GSimpleActionGroup *group;
+	GSimpleAction *action;
+	guint i;
+
+	group = g_simple_action_group_new ();
+	for (i = 0; i < G_N_ELEMENTS (mymenu); i++)
+	{
+		if (!mymenu[i].action_name ||
+			!menu_action_is_stateless (mymenu[i].action_id))
+			continue;
+
+		action = g_simple_action_new (mymenu[i].action_name, NULL);
+		g_signal_connect (action, "activate",
+						  G_CALLBACK (menu_action_activate), NULL);
+		g_action_map_add_action (G_ACTION_MAP (group), G_ACTION (action));
+		g_object_unref (action);
+	}
+
+	return group;
+}
+
+static gboolean
+menu_action_bind_item (GtkWidget *item, GSimpleActionGroup *group,
+					   const struct mymenu *definition)
+{
+	char *detailed_name;
+
+	if (!definition->action_name ||
+		!menu_action_is_stateless (definition->action_id))
+		return FALSE;
+
+	detailed_name = g_strconcat ("fabulor.", definition->action_name, NULL);
+	gtk_widget_insert_action_group (item, "fabulor", G_ACTION_GROUP (group));
+	gtk_actionable_set_action_name (GTK_ACTIONABLE (item), detailed_name);
+	g_free (detailed_name);
+
+	return TRUE;
+}
+
 void
 menu_set_away (session_gui *gui, int away)
 {
@@ -2688,6 +2763,8 @@ menu_create_main (void *accel_group, int bar, int away, int toplevel,
 						GtkWidget **menu_widgets)
 {
 	int i = 0;
+	gboolean action_bound;
+	GSimpleActionGroup *action_group;
 	GtkWidget *item;
 	GtkWidget *menu = 0;
 	GtkWidget *menu_item = 0;
@@ -2707,6 +2784,7 @@ menu_create_main (void *accel_group, int bar, int away, int toplevel,
 	}
 	else
 		menu_bar = menu_new ();
+	action_group = menu_action_group_new ();
 
 	/* /MENU needs to know this later */
 	g_object_set_data (G_OBJECT (menu_bar), "accel", accel_group);
@@ -2823,6 +2901,7 @@ menu_create_main (void *accel_group, int bar, int away, int toplevel,
 		case M_MENUITEM:
 			item = gtk_menu_item_new_with_mnemonic (_(mymenu[i].text));
 normalitem:
+			action_bound = menu_action_bind_item (item, action_group, &mymenu[i]);
 			g_object_set_data (G_OBJECT (item), "zc-key-action", (gpointer) menu_get_key_action_name (i));
 			menu_add_keybinding_accel (item, accel_group, menu_get_key_action_name (i));
 			if (mymenu[i].key != 0 && !(mymenu[i].id == MENU_ID_QUIT && !prefs.hex_gui_ctrlq_quit))
@@ -2840,7 +2919,7 @@ normalitem:
 				g_object_set_data (G_OBJECT (item), "zc-quit-accel-group", accel_group);
 				g_object_set_data (G_OBJECT (item), "zc-ctrlq-enabled", GINT_TO_POINTER (prefs.hex_gui_ctrlq_quit));
 			}
-			if (mymenu[i].callback)
+			if (mymenu[i].callback && !action_bound)
 				g_signal_connect (G_OBJECT (item), "activate",
 										G_CALLBACK (mymenu[i].callback), 0);
 			if (submenu)
@@ -2912,6 +2991,7 @@ togitem:
 				}
 				if (usermenu)
 					usermenu_create (usermenu);
+				g_object_unref (action_group);
 				return (menu_bar);
 			}
 			submenu = NULL;

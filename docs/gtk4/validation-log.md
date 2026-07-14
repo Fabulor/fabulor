@@ -479,6 +479,39 @@ Scope: command identity and dispatch only. GTK3 menu widgets, action binding,
 state, sensitivity, dynamic mutation, popup ownership, accelerators, dialogs,
 and pointer/key event handling remain unchanged for later Stage 3-4 passes.
 
+### PR: [#30 - GTK4 Stateless Menu Action Activation, Pass 2](https://github.com/Fabulor/fabulor/pull/30)
+
+Date: 2026-07-14
+
+Commit: `422bf0d2`
+
+Migration stage: 3, stateless canonical menu action activation
+
+Files/workflows converted: 12 stateless main-menu and middle-menu commands in
+`menu.c`; configurable keyboard shortcuts retain canonical direct dispatch
+
+GTK version: 4.22.4
+
+GLib version: 2.88.0
+
+Build configuration: MSVC x64 Release and Meson 1.11.2 Release with MSVC 19.44
+
+Automated checks:
+
+- [x] production GTK3 frontend compile and link with 0 warnings and 0 errors
+- [x] stateless canonical action bindings: 12 commands
+- [x] focused GTK3 activation probe: exactly one activation
+- [x] focused GTK3 lifetime probe: item retains group after builder release
+- [x] GTK4 validator unit tests: 8/8, plus repository root validation
+- [x] isolated GTK4 MSVC compile, link, and runtime probe with no warnings
+- [x] isolated GTK4 Meson configure, compile, link, and runtime test
+- [x] production GTK3 MSVC x64 Release rebuild and native tests: 18/18
+- [x] GitHub Actions required checks: 5/5
+
+Scope: stateless action activation only. Stateful menu-bar, user-list,
+fullscreen, and away identities; sensitivity; dynamic menus; popup ownership;
+dialogs; and pointer/key event handling remain unchanged for later passes.
+
 ## Per-PR Record Template
 
 Copy this section for each GTK4 PR:
