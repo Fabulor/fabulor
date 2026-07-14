@@ -130,6 +130,14 @@ radio items keep their proven callback path because GTK3 does not reliably
 dispatch radio targets through `GtkActionable`; existing layout changes also
 synchronize the retained action without re-entering the callback.
 
+The Network Meters submenu is the sixth complete model boundary and the second
+targeted selection action. One string-valued `network-meters` action uses
+canonical `off`, `graph`, `text`, and `both` targets, bringing the registry to
+25 distinct identities. Action and legacy GTK3 radio activation share the same
+preference, timer, and meter-refresh path, and selection state is synchronized
+across open menu roots without reactivating the command. Preferences continues
+to support independent lag and throttle values outside this submenu.
+
 ## Quantitative API Baseline
 
 | GTK3 family or type | Matching lines | Files | Migration direction | Stage | Status |
