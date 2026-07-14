@@ -512,11 +512,11 @@ Scope: stateless action activation only. Stateful menu-bar, user-list,
 fullscreen, and away identities; sensitivity; dynamic menus; popup ownership;
 dialogs; and pointer/key event handling remain unchanged for later passes.
 
-### PR: GTK4 Window-View Menu Action State, Pass 3
+### PR: [#31 - GTK4 Window-View Menu Action State, Pass 3](https://github.com/Fabulor/fabulor/pull/31)
 
 Date: 2026-07-14
 
-Commit: pending
+Commit: `29d593c8`
 
 Migration stage: 3, window-view menu action state synchronization
 
