@@ -650,11 +650,11 @@ Scope: static Help menu action and model projection only. The displayed GTK3
 menu, remaining static commands, dynamic menus, popup ownership, dialog
 lifecycle, and pointer/key event handling remain unchanged for later passes.
 
-### PR: GTK4 New Menu Model, Pass 7
+### PR: [#35 - GTK4 New Menu Model, Pass 7](https://github.com/Fabulor/fabulor/pull/35)
 
 Date: 2026-07-14
 
-Commit: pending
+Commit: `0804688c`
 
 Migration stage: 3, third canonical `GMenuModel` subtree projection
 
