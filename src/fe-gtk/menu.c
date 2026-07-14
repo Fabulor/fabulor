@@ -125,6 +125,27 @@ enum
 	M_MENUSUB
 };
 
+typedef enum
+{
+	MENU_ACTION_NONE,
+	MENU_ACTION_NETWORK_LIST,
+	MENU_ACTION_NEW_SERVER_TAB,
+	MENU_ACTION_NEW_SERVER_WINDOW,
+	MENU_ACTION_CLOSE,
+	MENU_ACTION_QUIT,
+	MENU_ACTION_MENU_TOGGLE,
+	MENU_ACTION_USER_LIST_TOGGLE,
+	MENU_ACTION_FULLSCREEN_TOGGLE,
+	MENU_ACTION_AWAY_TOGGLE,
+	MENU_ACTION_RESET_MARKER,
+	MENU_ACTION_MOVE_MARKER,
+	MENU_ACTION_COPY_SELECTION,
+	MENU_ACTION_SEARCH_TEXT,
+	MENU_ACTION_SEARCH_NEXT,
+	MENU_ACTION_SEARCH_PREVIOUS,
+	MENU_ACTION_CONTENTS
+} menu_action_id;
+
 struct mymenu
 {
 	char *text;
@@ -135,6 +156,8 @@ struct mymenu
 	unsigned char state;	/* ticked or not? */
 	unsigned char sensitive;	/* shaded out? */
 	guint key;				/* GDK_KEY_x */
+	const char *action_name;
+	menu_action_id action_id;
 };
 
 #define XCMENU_DOLIST 1
@@ -1923,13 +1946,16 @@ menu_about (GtkWidget *wid, gpointer sess)
 
 static struct mymenu mymenu[] = {
 	{N_("_Fabulor"), 0, 0, M_NEWMENU, MENU_ID_ZOITECHAT, 0, 1},
-	{N_("Network Li_st"), menu_open_server_list, 0, M_MENUITEM, 0, 0, 1},
+	{N_("Network Li_st"), menu_open_server_list, 0, M_MENUITEM, 0, 0, 1, 0,
+		"network-list", MENU_ACTION_NETWORK_LIST},
 	{0, 0, 0, M_SEP, 0, 0, 0},
 
 	{N_("_New"), 0, 0, M_MENUSUB, 0, 0, 1},
-		{N_("Server Tab"), menu_newserver_tab, 0, M_MENUITEM, 0, 0, 1},
+		{N_("Server Tab"), menu_newserver_tab, 0, M_MENUITEM, 0, 0, 1, 0,
+			"new-server-tab", MENU_ACTION_NEW_SERVER_TAB},
 		{N_("Channel Tab"), menu_newchannel_tab, 0, M_MENUITEM, 0, 0, 1},
-		{N_("Server Window"), menu_newserver_window, 0, M_MENUITEM, 0, 0, 1},
+		{N_("Server Window"), menu_newserver_window, 0, M_MENUITEM, 0, 0, 1, 0,
+			"new-server-window", MENU_ACTION_NEW_SERVER_WINDOW},
 		{N_("Channel Window"), menu_newchannel_window, 0, M_MENUITEM, 0, 0, 1},
 		{0, 0, 0, M_END, 0, 0, 0},
 	{0, 0, 0, M_SEP, 0, 0, 0},
@@ -1939,15 +1965,18 @@ static struct mymenu mymenu[] = {
 #define DETACH_OFFSET (12)
 	{0, menu_detach, 0, M_MENUITEM, 0, 0, 1},	/* 12 */
 #define CLOSE_OFFSET (13)
-	{0, menu_close, 0, M_MENUITEM, 0, 0, 1},
+	{0, menu_close, 0, M_MENUITEM, 0, 0, 1, 0, "close", MENU_ACTION_CLOSE},
 	{0, 0, 0, M_SEP, 0, 0, 0},
-	{N_("_Quit"), menu_quit, 0, M_MENUITEM, MENU_ID_QUIT, 0, 1},	/* 15 */
+	{N_("_Quit"), menu_quit, 0, M_MENUITEM, MENU_ID_QUIT, 0, 1, 0,
+		"quit", MENU_ACTION_QUIT},	/* 15 */
 
 	{N_("_View"), 0, 0, M_NEWMENU, 0, 0, 1},
 #define MENUBAR_OFFSET (17)
-	{N_("_Menu Bar"), menu_bar_toggle_cb, 0, M_MENUTOG, MENU_ID_MENUBAR, 0, 1},
+	{N_("_Menu Bar"), menu_bar_toggle_cb, 0, M_MENUTOG, MENU_ID_MENUBAR, 0, 1, 0,
+		"menu-toggle", MENU_ACTION_MENU_TOGGLE},
 	{N_("_Topic Bar"), menu_topicbar_toggle, 0, M_MENUTOG, MENU_ID_TOPICBAR, 0, 1},
-	{N_("_User List"), menu_userlist_toggle, 0, M_MENUTOG, MENU_ID_USERLIST, 0, 1},
+	{N_("_User List"), menu_userlist_toggle, 0, M_MENUTOG, MENU_ID_USERLIST, 0, 1, 0,
+		"user-list-toggle", MENU_ACTION_USER_LIST_TOGGLE},
 	{N_("U_ser List Buttons"), menu_ulbuttons_toggle, 0, M_MENUTOG, MENU_ID_ULBUTTONS, 0, 1},
 	{N_("M_ode Buttons"), menu_cmbuttons_toggle, 0, M_MENUTOG, MENU_ID_MODEBUTTONS, 0, 1},
 	{0, 0, 0, M_SEP, 0, 0, 0},
@@ -1964,7 +1993,8 @@ static struct mymenu mymenu[] = {
 		{N_("Both"), menu_metres_both, 0, M_MENURADIO, 0, 0, 1},
 		{0, 0, 0, M_END, 0, 0, 0},	/* 32 */
 	{ 0, 0, 0, M_SEP, 0, 0, 0 },
-	{N_ ("_Fullscreen"), menu_fullscreen_toggle, 0, M_MENUTOG, MENU_ID_FULLSCREEN, 0, 1},
+	{N_ ("_Fullscreen"), menu_fullscreen_toggle, 0, M_MENUTOG, MENU_ID_FULLSCREEN, 0, 1, 0,
+		"fullscreen-toggle", MENU_ACTION_FULLSCREEN_TOGGLE},
 
 	{N_("_Server"), 0, 0, M_NEWMENU, 0, 0, 1},
 	{N_("_Disconnect"), menu_disconnect, 0, M_MENUITEM, MENU_ID_DISCONNECT, 0, 1},
@@ -1973,7 +2003,8 @@ static struct mymenu mymenu[] = {
 	{N_("Channel _List"), menu_chanlist, 0, M_MENUITEM, 0, 0, 1},
 	{0, 0, 0, M_SEP, 0, 0, 0},
 #define AWAY_OFFSET (41)
-	{N_("Marked _Away"), menu_away_toggle, 0, M_MENUITEM, MENU_ID_AWAY, 0, 1},
+	{N_("Marked _Away"), menu_away_toggle, 0, M_MENUITEM, MENU_ID_AWAY, 0, 1, 0,
+		"away-toggle", MENU_ACTION_AWAY_TOGGLE},
 
 	{N_("_Usermenu"), 0, 0, M_NEWMENU, MENU_ID_USERMENU, 0, 1},	/* 40 */
 
@@ -2001,65 +2032,56 @@ static struct mymenu mymenu[] = {
 	{N_("_Raw Log"), menu_rawlog, 0, M_MENUITEM, 0, 0, 1},	/* 61 */
 	{N_("_URL Grabber"), url_opengui, 0, M_MENUITEM, 0, 0, 1},
 	{0, 0, 0, M_SEP, 0, 0, 0},
-	{N_("Reset Marker Line"), menu_resetmarker, 0, M_MENUITEM, 0, 0, 1},
-	{N_("Move to Marker Line"), menu_movetomarker, 0, M_MENUITEM, 0, 0, 1},
-	{N_("_Copy Selection"), menu_copy_selection, 0, M_MENUITEM, 0, 0, 1},
+	{N_("Reset Marker Line"), menu_resetmarker, 0, M_MENUITEM, 0, 0, 1, 0,
+		"reset-marker", MENU_ACTION_RESET_MARKER},
+	{N_("Move to Marker Line"), menu_movetomarker, 0, M_MENUITEM, 0, 0, 1, 0,
+		"move-marker", MENU_ACTION_MOVE_MARKER},
+	{N_("_Copy Selection"), menu_copy_selection, 0, M_MENUITEM, 0, 0, 1, 0,
+		"copy-selection", MENU_ACTION_COPY_SELECTION},
 	{N_("C_lear Text"), menu_flushbuffer, 0, M_MENUITEM, 0, 0, 1},
 	{N_("Save Text" ELLIPSIS), menu_savebuffer, 0, M_MENUITEM, 0, 0, 1},
 #define SEARCH_OFFSET (70)
 	{N_("Search"), 0, 0, M_MENUSUB, 0, 0, 1},
-		{N_("Search Text" ELLIPSIS), menu_search, 0, M_MENUITEM, 0, 0, 1},
-		{N_("Search Next"   ), menu_search_next, 0, M_MENUITEM, 0, 0, 1},
-		{N_("Search Previous"   ), menu_search_prev, 0, M_MENUITEM, 0, 0, 1},
+		{N_("Search Text" ELLIPSIS), menu_search, 0, M_MENUITEM, 0, 0, 1, 0,
+			"search-text", MENU_ACTION_SEARCH_TEXT},
+		{N_("Search Next"   ), menu_search_next, 0, M_MENUITEM, 0, 0, 1, 0,
+			"search-next", MENU_ACTION_SEARCH_NEXT},
+		{N_("Search Previous"   ), menu_search_prev, 0, M_MENUITEM, 0, 0, 1, 0,
+			"search-previous", MENU_ACTION_SEARCH_PREVIOUS},
 		{0, 0, 0, M_END, 0, 0, 0},
 
 	{N_("_Help"), 0, 0, M_NEWMENU, 0, 0, 1},	/* 74 */
-	{N_("_Contents"), menu_docs, 0, M_MENUITEM, 0, 0, 1},
+	{N_("_Contents"), menu_docs, 0, M_MENUITEM, 0, 0, 1, 0,
+		"contents", MENU_ACTION_CONTENTS},
 	{N_("_About"), menu_about, 0, M_MENUITEM, 0, 0, 1},
 
 	{0, 0, 0, M_END, 0, 0, 0},
 };
 
-static const char *
-menu_get_key_action_name (int index)
+static const struct mymenu *
+menu_action_find (const char *name)
 {
-	switch (index)
+	guint i;
+
+	if (!name)
+		return NULL;
+
+	for (i = 0; i < G_N_ELEMENTS (mymenu); i++)
 	{
-	case 1:
-		return "network-list";
-	case 4:
-		return "new-server-tab";
-	case 6:
-		return "new-server-window";
-	case CLOSE_OFFSET:
-		return "close";
-	case 15:
-		return "quit";
-	case MENUBAR_OFFSET:
-		return "menu-toggle";
-	case MENUBAR_OFFSET + 2:
-		return "user-list-toggle";
-	case 34:
-		return "fullscreen-toggle";
-	case AWAY_OFFSET:
-		return "away-toggle";
-	case 65:
-		return "reset-marker";
-	case 66:
-		return "move-marker";
-	case 67:
-		return "copy-selection";
-	case SEARCH_OFFSET + 1:
-		return "search-text";
-	case SEARCH_OFFSET + 2:
-		return "search-next";
-	case SEARCH_OFFSET + 3:
-		return "search-previous";
-	case 75:
-		return "contents";
+		if (mymenu[i].action_name && strcmp (name, mymenu[i].action_name) == 0)
+			return &mymenu[i];
 	}
 
 	return NULL;
+}
+
+static const char *
+menu_get_key_action_name (int index)
+{
+	if (index < 0 || index >= (int) G_N_ELEMENTS (mymenu))
+		return NULL;
+
+	return mymenu[index].action_name;
 }
 
 static void
@@ -2141,47 +2163,66 @@ menu_update_quit_accel (void)
 gboolean
 menu_key_action (const char *name, guint keyval, GdkModifierType state)
 {
-	if (!name)
+	const struct mymenu *action = menu_action_find (name);
+
+	if (!action)
 		return FALSE;
 
-	if (!strcmp (name, "network-list"))
-		menu_open_server_list (NULL, NULL);
-	else if (!strcmp (name, "new-server-tab"))
-		menu_newserver_tab (NULL, NULL);
-	else if (!strcmp (name, "new-server-window"))
-		menu_newserver_window (NULL, NULL);
-	else if (!strcmp (name, "close"))
-		menu_close (NULL, NULL);
-	else if (!strcmp (name, "quit"))
+	switch (action->action_id)
 	{
+	case MENU_ACTION_NETWORK_LIST:
+		menu_open_server_list (NULL, NULL);
+		break;
+	case MENU_ACTION_NEW_SERVER_TAB:
+		menu_newserver_tab (NULL, NULL);
+		break;
+	case MENU_ACTION_NEW_SERVER_WINDOW:
+		menu_newserver_window (NULL, NULL);
+		break;
+	case MENU_ACTION_CLOSE:
+		menu_close (NULL, NULL);
+		break;
+	case MENU_ACTION_QUIT:
 		if (!prefs.hex_gui_ctrlq_quit && keyval == GDK_KEY_q && (state & (GDK_SHIFT_MASK | GDK_CONTROL_MASK | GDK_MOD1_MASK)) == STATE_CTRL)
 			return FALSE;
 		menu_quit (NULL, NULL);
-	}
-	else if (!strcmp (name, "menu-toggle"))
+		break;
+	case MENU_ACTION_MENU_TOGGLE:
 		menu_bar_toggle_cb ();
-	else if (!strcmp (name, "user-list-toggle"))
+		break;
+	case MENU_ACTION_USER_LIST_TOGGLE:
 		menu_userlist_toggle (NULL, NULL);
-	else if (!strcmp (name, "fullscreen-toggle"))
+		break;
+	case MENU_ACTION_FULLSCREEN_TOGGLE:
 		menu_fullscreen_toggle (NULL, NULL);
-	else if (!strcmp (name, "away-toggle"))
+		break;
+	case MENU_ACTION_AWAY_TOGGLE:
 		menu_away_toggle (NULL, NULL);
-	else if (!strcmp (name, "reset-marker"))
+		break;
+	case MENU_ACTION_RESET_MARKER:
 		menu_resetmarker (NULL, NULL);
-	else if (!strcmp (name, "move-marker"))
+		break;
+	case MENU_ACTION_MOVE_MARKER:
 		menu_movetomarker (NULL, NULL);
-	else if (!strcmp (name, "copy-selection"))
+		break;
+	case MENU_ACTION_COPY_SELECTION:
 		menu_copy_selection (NULL, NULL);
-	else if (!strcmp (name, "search-text"))
+		break;
+	case MENU_ACTION_SEARCH_TEXT:
 		menu_search ();
-	else if (!strcmp (name, "search-next"))
+		break;
+	case MENU_ACTION_SEARCH_NEXT:
 		menu_search_next (NULL);
-	else if (!strcmp (name, "search-previous"))
+		break;
+	case MENU_ACTION_SEARCH_PREVIOUS:
 		menu_search_prev (NULL);
-	else if (!strcmp (name, "contents"))
+		break;
+	case MENU_ACTION_CONTENTS:
 		menu_docs (NULL, NULL);
-	else
+		break;
+	default:
 		return FALSE;
+	}
 
 	return TRUE;
 }
