@@ -1,0 +1,6 @@
+option(
+  'gtk4_root',
+  type: 'string',
+  value: '',
+  description: 'Absolute path to the pinned Fabulor GTK4 dependency root',
+)

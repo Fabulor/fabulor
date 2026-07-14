@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="Current" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{BBF08074-882E-42DF-BDE2-2F05E90F03C4}</ProjectGuid>
+    <Keyword>Win32Proj</Keyword>
+    <RootNamespace>fabulor_gtk4_probe</RootNamespace>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <PlatformToolset>v143</PlatformToolset>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <WholeProgramOptimization>false</WholeProgramOptimization>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup>
+    <FabulorGtk4Root Condition="'$(FabulorGtk4Root)'=='' and '$(FABULOR_GTK4_ROOT)'!=''">$(FABULOR_GTK4_ROOT)</FabulorGtk4Root>
+    <FabulorGtk4Root Condition="'$(FabulorGtk4Root)'==''">$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\..\Runtime\GTK4'))</FabulorGtk4Root>
+    <PythonExe Condition="'$(PythonExe)'==''">python</PythonExe>
+    <OutDir>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\..\build\gtk4-probe\msvc\'))</OutDir>
+    <IntDir>$(OutDir)obj\</IntDir>
+    <TargetName>fabulor-gtk4-probe</TargetName>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <ClCompile>
+      <WarningLevel>Level4</WarningLevel>
+      <TreatWarningAsError>true</TreatWarningAsError>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <PreprocessorDefinitions>WIN32;_WIN64;_AMD64_;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>$(FabulorGtk4Root)\include\gtk-4.0;$(FabulorGtk4Root)\include\glib-2.0;$(FabulorGtk4Root)\lib\glib-2.0\include;$(FabulorGtk4Root)\include\pango-1.0;$(FabulorGtk4Root)\include\harfbuzz;$(FabulorGtk4Root)\include\cairo;$(FabulorGtk4Root)\include\gdk-pixbuf-2.0;$(FabulorGtk4Root)\include\graphene-1.0;$(FabulorGtk4Root)\lib\graphene-1.0\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <ExternalWarningLevel>TurnOffAllWarnings</ExternalWarningLevel>
+      <AdditionalOptions>/external:anglebrackets %(AdditionalOptions)</AdditionalOptions>
+    </ClCompile>
+    <Link>
+      <AdditionalLibraryDirectories>$(FabulorGtk4Root)\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>gtk-4.lib;glib-2.0.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <SubSystem>Console</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+    </Link>
+    <PostBuildEvent>
+      <Command>set "PATH=$(FabulorGtk4Root)\bin;%PATH%"&#xD;&#xA;"$(TargetPath)"</Command>
+    </PostBuildEvent>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClCompile Include="probe.c" />
+  </ItemGroup>
+  <Target Name="ValidateFabulorGtk4Root" BeforeTargets="PrepareForBuild">
+    <Error Condition="'$(Platform)'!='x64'" Text="The initial Fabulor GTK4 dependency contract supports x64 only." />
+    <Exec Command="&quot;$(PythonExe)&quot; &quot;$(MSBuildThisFileDirectory)validate_root.py&quot; --root &quot;$(FabulorGtk4Root)&quot;" />
+  </Target>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+</Project>

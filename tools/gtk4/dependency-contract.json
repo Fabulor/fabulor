@@ -1,0 +1,31 @@
+{
+  "schema_version": 1,
+  "platform": "windows",
+  "architecture": "x64",
+  "gtk_version": "4.22.4",
+  "glib_version": "2.88.0",
+  "source": {
+    "file_name": "GTK4_Gvsbuild_zoitechat-2.18.1_x64.zip",
+    "url": "https://github.com/ZoiteChat/gvsbuild/releases/download/zoitechat-2.18.1/GTK4_Gvsbuild_zoitechat-2.18.1_x64.zip",
+    "size_bytes": 299109782,
+    "sha256": "3910a612083c2a155c5a4a2026990701841c0d7f7de28756b2f0865decb161be"
+  },
+  "required_files": [
+    "bin/glib-2.0-0.dll",
+    "bin/gtk-4-1.dll",
+    "include/cairo/cairo.h",
+    "include/gdk-pixbuf-2.0/gdk-pixbuf/gdk-pixbuf.h",
+    "include/glib-2.0/glib.h",
+    "include/graphene-1.0/graphene.h",
+    "include/gtk-4.0/gtk/gtk.h",
+    "include/gtk-4.0/gtk/gtkversion.h",
+    "include/harfbuzz/hb.h",
+    "include/pango-1.0/pango/pango.h",
+    "lib/glib-2.0.lib",
+    "lib/glib-2.0/include/glibconfig.h",
+    "lib/graphene-1.0/include/graphene-config.h",
+    "lib/gtk-4.lib",
+    "lib/pkgconfig/glib-2.0.pc",
+    "lib/pkgconfig/gtk4.pc"
+  ]
+}

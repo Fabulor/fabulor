@@ -60,6 +60,22 @@ root with MSYS2 hicolor and libarchive packages. The final GTK4 pipeline must:
 - fail CI on unexpected files or hashes
 - retain enough provenance to reproduce Enchant and other native integrations
 
+The first GTK4 build contract now pins the Windows x64 archive as:
+
+- file: `GTK4_Gvsbuild_zoitechat-2.18.1_x64.zip`
+- size: 299,109,782 bytes
+- SHA-256: `3910a612083c2a155c5a4a2026990701841c0d7f7de28756b2f0865decb161be`
+- GTK: 4.22.4
+- GLib: 2.88.0
+
+`tools/gtk4/validate_root.py` verifies the archive before extraction and the
+root after extraction. The root check includes exact header and pkg-config
+versions, x64 PE and pointer-size identity, required build files, path
+containment, and absence of known GTK3 build markers. The archive's pkg-config
+files retain their original build-machine prefix, so the isolated probes use
+validated root-relative include and library paths instead of ambient
+`PKG_CONFIG_PATH` resolution.
+
 The repository security audit already identifies the lack of a complete runtime
 bill of materials and download hash verification. GTK4 cutover must close that
 finding rather than carrying it forward.

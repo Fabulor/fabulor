@@ -31,6 +31,37 @@ before this documentation stage established:
 
 These results are a behavioural baseline, not GTK4 validation.
 
+### PR: GTK4 Build Foundation
+
+Date: 2026-07-14
+
+Commit: pending
+
+Migration stage: 1, dependency root and probe only
+
+Files/workflows converted: `tools/gtk4`, Windows installer-build workflow
+
+GTK version: 4.22.4
+
+GLib version: 2.88.0
+
+Build configuration: MSVC x64 Release and Meson 1.11.2 with MSVC 19.44
+
+Automated checks:
+
+- [x] GTK4 validator unit tests: 8/8
+- [x] repository `Runtime/GTK4` root validation
+- [x] isolated MSVC compile, link, and runtime probe with no warnings
+- [x] isolated Meson configure, compile, link, and runtime test
+- [ ] GitHub Actions Windows build
+- [ ] repository lint
+- [x] unchanged production MSVC x64 Release build, including native tests 18/18
+
+Observed probe identity: GTK 4.22.4 / GLib 2.88.0 / 64-bit.
+
+Production impact: none. The Fabulor solution and frontend remain linked to
+GTK3; no GTK4 widget or compatibility code is enabled.
+
 ## Per-PR Record Template
 
 Copy this section for each GTK4 PR:

@@ -200,6 +200,9 @@ Detailed planning and evidence live in:
 
 - [x] Establish the documentation baseline, source/API inventory, packaging inventory, and validation matrix.
 - [ ] Establish deterministic GTK4 build roots and compatibility helpers while keeping the GTK3 production build green.
+  - [x] Pin and validate the Windows x64 GTK4 archive, root identity, versions, architecture, and required build files.
+  - [x] Compile, link, and execute isolated MSVC and Meson probes against the same validated GTK4 root in CI.
+  - [ ] Introduce narrowly scoped compatibility helpers before converting production frontend modules.
 - [ ] Convert widget ownership, layout, visibility, and lifecycle APIs.
 - [ ] Convert actions, menus, dialogs, and file-selection flows.
 - [ ] Convert input events, shortcuts, clipboard, drag/drop, and pointer gestures.
