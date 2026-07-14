@@ -446,9 +446,11 @@ Scope: parent ownership and exact shell construction order only. Tree models,
 renderers, selection, sorting, context menus, drag/drop, and pointer/key events
 remain unchanged for their Stage 3-5 conversions.
 
-### Stage 3 Menu Action-Identity Foundation, Pass 1
+### PR: [#29 - GTK4 Menu Action-Identity Foundation, Pass 1](https://github.com/Fabulor/fabulor/pull/29)
 
 Date: 2026-07-14
+
+Commit: `7a19ec75`
 
 Migration stage: 3, canonical menu command identity and dispatch
 
