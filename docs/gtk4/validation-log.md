@@ -615,11 +615,11 @@ Scope: static Search submenu model projection only. The live GTK3 menu,
 remaining static commands, dynamic menus, popup ownership, dialogs, and
 pointer/key event handling remain unchanged for later passes.
 
-### PR: GTK4 Help Menu Model, Pass 6
+### PR: [#34 - GTK4 Help Menu Model, Pass 6](https://github.com/Fabulor/fabulor/pull/34)
 
 Date: 2026-07-14
 
-Commit: pending
+Commit: `b486f1cf`
 
 Migration stage: 3, second canonical `GMenuModel` subtree projection
 
