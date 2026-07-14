@@ -105,7 +105,7 @@ xit:
 	if (gtk_toggle_button_get_active (GTK_TOGGLE_BUTTON (serv->gui->joind_check)))
 		prefs.hex_gui_join_dialog = 1;
 
-	gtk_widget_destroy (serv->gui->joind_win);
+	fabulor_gtk_window_destroy (GTK_WINDOW (serv->gui->joind_win));
 	serv->gui->joind_win = NULL;
 }
 
@@ -258,7 +258,7 @@ joind_show_dialog (server *serv)
 		}
 
 	gtk_widget_grab_focus (okbutton1);
-	gtk_widget_show_all (dialog1);
+	fabulor_gtk_widget_reveal_tree (dialog1);
 }
 
 void
@@ -273,7 +273,7 @@ joind_close (server *serv)
 {
 	if (serv->gui->joind_win)
 	{
-		gtk_widget_destroy (serv->gui->joind_win);
+		fabulor_gtk_window_destroy (GTK_WINDOW (serv->gui->joind_win));
 		serv->gui->joind_win = NULL;
 	}
 }

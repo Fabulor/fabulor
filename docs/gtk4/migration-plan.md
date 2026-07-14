@@ -120,6 +120,16 @@ start/end visual order. Direct `gtk_box_pack_*` usage is now 92 lines in seven
 files, isolated to main-window dynamics, generic dialogs, menus, operational
 models, and the spell-entry menu for their dedicated stages.
 
+Visibility/lifecycle progress (2026-07-14): 12 completed utility-window and
+dialog trees now use a reviewed reveal boundary. Its GTK3 path retains
+recursive `show_all`; its GTK4 path reveals only the completed root because
+GTK4 children are visible by default. Twenty-four statically known windows and
+dialogs now use typed window destruction. Direct `gtk_widget_show_all` usage
+has fallen from 34 lines in 18 files to 22 lines in nine files, and direct
+`gtk_widget_destroy` usage from 81 lines in 23 files to 57 lines in 16 files.
+Menus, conditionally hidden main-window content, generic signal callbacks, and
+arbitrary child widgets remain explicit for their dedicated lifecycle passes.
+
 Primary API families:
 
 - `gtk_container_*`

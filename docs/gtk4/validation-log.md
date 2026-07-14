@@ -195,6 +195,41 @@ placement under ordered append, plus one explicitly reordered channel-family
 separator. Main-window dynamics, generic dialogs, menus, model surfaces,
 visibility, and destruction remain deferred.
 
+### PR: [#22 - GTK4 Widget Visibility And Lifecycle, Pass 1](https://github.com/Fabulor/fabulor/pull/22)
+
+Date: 2026-07-14
+
+Commit: `27d4e3e5`
+
+Migration stage: 2, completed-tree visibility and typed window destruction
+
+Files/workflows converted: DCC, ban, key-binding, add-on, raw-log, notify,
+event-text, join, server-list, preferences, theme-colour, and edit-list windows
+
+GTK version: 4.22.4
+
+GLib version: 2.88.0
+
+Build configuration: MSVC x64 Release and Meson 1.11.2 Release with MSVC 19.44
+
+Automated checks:
+
+- [x] production GTK3 frontend compile and link with 0 warnings and 0 errors
+- [x] compatibility usage inventory: 12 reviewed completed-tree reveals and 24
+  typed window/dialog destroys
+- [x] remaining direct `gtk_widget_show_all`: 22 lines in nine files
+- [x] remaining direct `gtk_widget_destroy`: 57 lines in 16 files
+- [x] GTK4 validator unit tests: 8/8, plus repository root validation
+- [x] isolated GTK4 MSVC compile, link, and runtime probe with no warnings
+- [x] isolated GTK4 Meson configure, compile, link, and runtime test
+- [x] production GTK3 MSVC x64 Release rebuild and native tests: 18/18
+- [x] GitHub Actions required checks: 5/5
+
+Scope: only completed roots without intentional hidden descendants and direct
+destruction of statically known `GtkWindow`/`GtkDialog` instances. Menus,
+conditionally hidden main-window content, generic signal callbacks, and
+non-window widgets remain explicit.
+
 ## Per-PR Record Template
 
 Copy this section for each GTK4 PR:

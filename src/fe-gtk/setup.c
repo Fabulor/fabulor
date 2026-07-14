@@ -1360,7 +1360,7 @@ setup_fontchooser_response (GtkDialog *dialog, gint response, GtkWidget *entry)
                 }
         }
 
-        gtk_widget_destroy (GTK_WIDGET (dialog));
+        fabulor_gtk_window_destroy (GTK_WINDOW (dialog));
         font_dialog = NULL;
 }
 
@@ -2431,7 +2431,7 @@ setup_confirm_manifest_plugins (GtkWidget *parent)
         gtk_dialog_set_default_response (GTK_DIALOG (dialog), GTK_RESPONSE_CANCEL);
 
         response = gtk_dialog_run (GTK_DIALOG (dialog));
-        gtk_widget_destroy (dialog);
+        fabulor_gtk_window_destroy (GTK_WINDOW (dialog));
         g_free (plugins_root);
 
         return response == GTK_RESPONSE_ACCEPT;
@@ -2458,7 +2458,7 @@ setup_ok_cb (GtkWidget *but, GtkWidget *win)
         if (save_result.success)
         {
                 theme_preferences_stage_commit ();
-                gtk_widget_destroy (win);
+                fabulor_gtk_window_destroy (GTK_WINDOW (win));
                 return;
         }
 
@@ -2510,7 +2510,7 @@ setup_window_open (void)
                                                         G_CALLBACK (setup_ok_cb), win);
         fabulor_gtk_box_append (GTK_BOX (hbbox), wid, FALSE, FALSE, 0);
 
-        gtk_widget_show_all (win);
+        fabulor_gtk_widget_reveal_tree (win);
 
         return win;
 }
@@ -2524,7 +2524,7 @@ setup_close_cb (GtkWidget *win, GtkWidget **swin)
 
         if (font_dialog)
         {
-                gtk_widget_destroy (font_dialog);
+                fabulor_gtk_window_destroy (GTK_WINDOW (font_dialog));
                 font_dialog = NULL;
         }
 }

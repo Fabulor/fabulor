@@ -363,7 +363,7 @@ pevent_load_cb (GtkWidget * wid, void *data)
 static void
 pevent_ok_cb (GtkWidget * wid, void *data)
 {
-	gtk_widget_destroy (pevent_dialog);
+	fabulor_gtk_window_destroy (GTK_WINDOW (pevent_dialog));
 }
 
 static void
@@ -539,6 +539,6 @@ pevent_dialog_show ()
 	gtkutil_button (hbox, ICON_TEXTEVENT_OK, NULL, pevent_ok_cb,
 						NULL, _("OK"));
 
-	gtk_widget_show_all (pevent_dialog);
+	fabulor_gtk_widget_reveal_tree (pevent_dialog);
 	pevent_dialog_theme_apply (pevent_dialog);
 }

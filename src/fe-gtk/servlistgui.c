@@ -350,12 +350,12 @@ servlist_import_client_cert_cb (GtkWidget *button, gpointer userdata)
 
 	if (gtk_dialog_run (GTK_DIALOG (dialog)) != GTK_RESPONSE_ACCEPT)
 	{
-		gtk_widget_destroy (dialog);
+		fabulor_gtk_window_destroy (GTK_WINDOW (dialog));
 		return;
 	}
 
 	source_file = gtk_file_chooser_get_filename (GTK_FILE_CHOOSER (dialog));
-	gtk_widget_destroy (dialog);
+	fabulor_gtk_window_destroy (GTK_WINDOW (dialog));
 	if (!source_file)
 		return;
 
@@ -1108,7 +1108,7 @@ servlist_deletenetwork (ircnet *net)
 static void
 servlist_deletenetdialog_cb (GtkDialog *dialog, gint arg1, ircnet *net)
 {
-	gtk_widget_destroy (GTK_WIDGET (dialog));
+	fabulor_gtk_window_destroy (GTK_WINDOW (dialog));
 	if (arg1 == GTK_RESPONSE_OK)
 		servlist_deletenetwork (net);
 }
@@ -1335,7 +1335,7 @@ servlist_edit_close_cb (GtkWidget *button, gpointer userdata)
 		edit_loaded_password = NULL;
 	}
 
-	gtk_widget_destroy (edit_win);
+	fabulor_gtk_window_destroy (GTK_WINDOW (edit_win));
 	edit_win = NULL;
 	edit_entry_pass = NULL;
 	edit_check_show_pass = NULL;
@@ -1813,7 +1813,7 @@ servlist_connect_cb (GtkWidget *button, gpointer userdata)
 
 	servlist_connect (servlist_sess, selected_net, TRUE);
 
-	gtk_widget_destroy (serverlist_win);
+	fabulor_gtk_window_destroy (GTK_WINDOW (serverlist_win));
 	serverlist_win = NULL;
 	selected_net = NULL;
 }
@@ -2000,7 +2000,7 @@ static void
 servlist_close_cb (GtkWidget *button, gpointer userdata)
 {
 	servlist_savegui ();
-	gtk_widget_destroy (serverlist_win);
+	fabulor_gtk_window_destroy (GTK_WINDOW (serverlist_win));
 	serverlist_win = NULL;
 	selected_net = NULL;
 
@@ -2731,7 +2731,7 @@ servlist_open_edit (GtkWidget *parent, ircnet *net)
 	gtk_widget_grab_focus (button10);
 	gtk_widget_grab_default (button10);
 
-	gtk_widget_show_all (editwindow);
+	fabulor_gtk_widget_reveal_tree (editwindow);
 	servlist_update_cert_buttons (net);
 
 	/* We can't set the active tab without child elements being shown, so this must be *after* gtk_widget_show()s! */

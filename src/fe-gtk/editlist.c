@@ -91,7 +91,7 @@ editlist_save (GtkWidget *igad, gchar *file)
 		}
 
 		close (fh);
-		gtk_widget_destroy (editlist_win);
+		fabulor_gtk_window_destroy (GTK_WINDOW (editlist_win));
 		if (editlist_list == replace_list)
 		{
 			list_free (&replace_list);
@@ -210,7 +210,7 @@ editlist_add (GtkWidget *wid, gpointer userdata)
 static void
 editlist_close (GtkWidget *wid, gpointer userdata)
 {
-	gtk_widget_destroy (editlist_win);
+	fabulor_gtk_window_destroy (GTK_WINDOW (editlist_win));
 	editlist_win = NULL;
 }
 

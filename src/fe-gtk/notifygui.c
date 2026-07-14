@@ -359,7 +359,7 @@ notifygui_add_cb (GtkDialog *dialog, gint response, gpointer entry)
 			notify_adduser (text, networks);
 	}
 
-	gtk_widget_destroy (GTK_WIDGET (dialog));
+	fabulor_gtk_window_destroy (GTK_WINDOW (dialog));
 }
 
 static void
@@ -421,7 +421,7 @@ fe_notify_ask (char *nick, char *networks)
 	gtk_label_set_markup (GTK_LABEL (label), buf);
 	gtkutil_grid_attach_defaults (table, label, 1, 2, 3, 4);
 
-	gtk_widget_show_all (dialog);
+	fabulor_gtk_widget_reveal_tree (dialog);
 }
 
 static void

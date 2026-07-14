@@ -467,7 +467,7 @@ theme_preferences_show_message (theme_preferences_ui *ui, GtkMessageType message
                                          primary);
 	theme_manager_attach_window (dialog);
         gtk_dialog_run (GTK_DIALOG (dialog));
-        gtk_widget_destroy (dialog);
+        fabulor_gtk_window_destroy (GTK_WINDOW (dialog));
 }
 
 static void
@@ -502,7 +502,7 @@ theme_preferences_color_response_cb (GtkDialog *dialog, gint response_id, gpoint
                 theme_preferences_manager_update_preview ((theme_color_manager_ui *) data->manager_ui);
         }
 
-        gtk_widget_destroy (GTK_WIDGET (dialog));
+        fabulor_gtk_window_destroy (GTK_WINDOW (dialog));
         g_free (data);
 }
 
@@ -651,7 +651,7 @@ theme_preferences_manager_picker_response_cb (GtkDialog *dialog, gint response_i
         if (data && data->row && data->has_original && response_id != GTK_RESPONSE_OK)
                 theme_preferences_manager_row_commit (data->row, &data->original);
 
-        gtk_widget_destroy (GTK_WIDGET (dialog));
+        fabulor_gtk_window_destroy (GTK_WINDOW (dialog));
         g_free (data);
 }
 
@@ -920,7 +920,7 @@ theme_preferences_create_color_manager_dialog (GtkWindow *parent, gboolean *colo
 
         theme_preferences_manager_update_preview (ui);
 
-        gtk_widget_show_all (dialog);
+        fabulor_gtk_widget_reveal_tree (dialog);
         return dialog;
 }
 
@@ -933,7 +933,7 @@ theme_preferences_manage_colors_cb (GtkWidget *button, gpointer user_data)
         dialog = theme_preferences_create_color_manager_dialog (GTK_WINDOW (gtk_widget_get_toplevel (button)),
                                                                 color_change_flag);
         gtk_dialog_run (GTK_DIALOG (dialog));
-        gtk_widget_destroy (dialog);
+        fabulor_gtk_window_destroy (GTK_WINDOW (dialog));
 
         if (color_change_flag)
                 *color_change_flag = theme_preferences_stage.active ? theme_preferences_stage.changed : *color_change_flag;
@@ -951,7 +951,7 @@ theme_preferences_show_import_error (GtkWidget *button, const char *message)
                                          "%s",
                                          message);
         gtk_dialog_run (GTK_DIALOG (dialog));
-        gtk_widget_destroy (dialog);
+        fabulor_gtk_window_destroy (GTK_WINDOW (dialog));
 }
 
 static void
@@ -966,7 +966,7 @@ theme_preferences_show_import_info (GtkWidget *button, const char *message)
                                          "%s",
                                          message);
         gtk_dialog_run (GTK_DIALOG (dialog));
-        gtk_widget_destroy (dialog);
+        fabulor_gtk_window_destroy (GTK_WINDOW (dialog));
 }
 
 static gboolean
