@@ -543,11 +543,11 @@ gtkutil_get_str_response (GtkDialog *dialog, gint arg1, gpointer entry)
 	{
 	case GTK_RESPONSE_REJECT:
 		callback (TRUE, text, user_data);
-		gtk_widget_destroy (GTK_WIDGET (dialog));
+		fabulor_gtk_window_destroy (GTK_WINDOW (dialog));
 		break;
 	case GTK_RESPONSE_ACCEPT:
 		callback (FALSE, text, user_data);
-		gtk_widget_destroy (GTK_WIDGET (dialog));
+		fabulor_gtk_window_destroy (GTK_WINDOW (dialog));
 		break;
 	}
 }
@@ -604,7 +604,7 @@ fe_get_str (char *msg, char *def, void *callback, void *userdata)
 
 	gtk_container_add (GTK_CONTAINER (gtk_dialog_get_content_area (GTK_DIALOG (dialog))), hbox);
 
-	gtk_widget_show_all (dialog);
+	fabulor_gtk_widget_reveal_tree (dialog);
 }
 
 static void
@@ -622,11 +622,11 @@ gtkutil_get_number_response (GtkDialog *dialog, gint arg1, gpointer spin)
 	{
 	case GTK_RESPONSE_REJECT:
 		callback (TRUE, num, user_data);
-		gtk_widget_destroy (GTK_WIDGET (dialog));
+		fabulor_gtk_window_destroy (GTK_WINDOW (dialog));
 		break;
 	case GTK_RESPONSE_ACCEPT:
 		callback (FALSE, num, user_data);
-		gtk_widget_destroy (GTK_WIDGET (dialog));
+		fabulor_gtk_window_destroy (GTK_WINDOW (dialog));
 		break;
 	}
 }
@@ -644,11 +644,11 @@ gtkutil_get_bool_response (GtkDialog *dialog, gint arg1, gpointer spin)
 	{
 	case GTK_RESPONSE_REJECT:
 		callback (0, user_data);
-		gtk_widget_destroy (GTK_WIDGET (dialog));
+		fabulor_gtk_window_destroy (GTK_WINDOW (dialog));
 		break;
 	case GTK_RESPONSE_ACCEPT:
 		callback (1, user_data);
-		gtk_widget_destroy (GTK_WIDGET (dialog));
+		fabulor_gtk_window_destroy (GTK_WINDOW (dialog));
 		break;
 	}
 }
@@ -693,7 +693,7 @@ fe_get_int (char *msg, int def, void *callback, void *userdata)
 
 	gtk_container_add (GTK_CONTAINER (gtk_dialog_get_content_area (GTK_DIALOG (dialog))), hbox);
 
-	gtk_widget_show_all (dialog);
+	fabulor_gtk_widget_reveal_tree (dialog);
 }
 
 void
@@ -723,7 +723,7 @@ fe_get_bool (char *title, char *prompt, void *callback, void *userdata)
 
 	gtk_container_add (GTK_CONTAINER (gtk_dialog_get_content_area (GTK_DIALOG (dialog))), prompt_label);
 
-	gtk_widget_show_all (dialog);
+	fabulor_gtk_widget_reveal_tree (dialog);
 }
 
 GtkWidget *

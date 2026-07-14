@@ -270,7 +270,7 @@ ignore_clear_cb (GtkDialog *dialog, gint response)
 	GtkTreeIter iter;
 	char *mask;
 
-	gtk_widget_destroy (GTK_WIDGET (dialog));
+	fabulor_gtk_window_destroy (GTK_WINDOW (dialog));
 
 	if (gtk_tree_model_get_iter_first (GTK_TREE_MODEL (store), &iter) && response == GTK_RESPONSE_OK)
 	{

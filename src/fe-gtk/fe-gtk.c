@@ -45,6 +45,7 @@
 #include "../common/server.h"
 #include "../common/url.h"
 #include "gtkutil.h"
+#include "gtk-compat.h"
 #include "maingui.h"
 #include "pixmaps.h"
 #include "chanlist.h"
@@ -183,7 +184,7 @@ create_msg_dialog (gchar *title, gchar *message)
 #endif
 
 	gtk_dialog_run (GTK_DIALOG (dialog));
-	gtk_widget_destroy (dialog);
+	fabulor_gtk_window_destroy (GTK_WINDOW (dialog));
 }
 
 static char *win32_argv0_dir;
@@ -1098,7 +1099,7 @@ fe_message (char *msg, int flags)
 	if (flags & FE_MSG_MARKUP)
 		gtk_message_dialog_set_markup (GTK_MESSAGE_DIALOG (dialog), msg);
 	g_signal_connect (G_OBJECT (dialog), "response",
-							G_CALLBACK (gtk_widget_destroy), 0);
+							G_CALLBACK (fabulor_gtk_dialog_destroy_on_response), NULL);
 	gtk_window_set_resizable (GTK_WINDOW (dialog), FALSE);
 	gtk_window_set_position (GTK_WINDOW (dialog), GTK_WIN_POS_MOUSE);
 	gtk_widget_show (dialog);
@@ -1245,7 +1246,7 @@ fe_close_window (struct session *sess)
 	if (sess->gui->is_tab)
 		mg_tab_close (sess);
 	else
-		gtk_widget_destroy (sess->gui->window);
+		fabulor_gtk_window_destroy (GTK_WINDOW (sess->gui->window));
 }
 
 void

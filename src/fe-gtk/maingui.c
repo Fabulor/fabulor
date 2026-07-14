@@ -1823,7 +1823,7 @@ mg_ircdestroy (session *sess)
                 list = list->next;
         }
 
-        gtk_widget_destroy (mg_gui->window);
+        fabulor_gtk_window_destroy (GTK_WINDOW (mg_gui->window));
         active_tab = NULL;
         mg_gui = NULL;
         parent_window = NULL;
@@ -1834,7 +1834,7 @@ mg_tab_close_cb (GtkWidget *dialog, gint arg1, session *sess)
 {
         GSList *list, *next;
 
-        gtk_widget_destroy (dialog);
+        fabulor_gtk_window_destroy (GTK_WINDOW (dialog));
         if (arg1 == GTK_RESPONSE_OK && is_session (sess))
         {
                 /* force it NOT to send individual PARTs */
@@ -2138,7 +2138,7 @@ mg_open_quit_dialog (gboolean minimize_button)
                 break;
         }
 
-        gtk_widget_destroy (dialog);
+        fabulor_gtk_window_destroy (GTK_WINDOW (dialog));
         dialog = NULL;
 }
 
@@ -2163,7 +2163,7 @@ mg_chan_remove (chan *ch)
         if (chanview_get_size (mg_gui->chanview) < 1)
         {
                 /* if not, destroy the main tab window */
-                gtk_widget_destroy (mg_gui->window);
+                fabulor_gtk_window_destroy (GTK_WINDOW (mg_gui->window));
                 current_tab = NULL;
                 active_tab = NULL;
                 mg_gui = NULL;
@@ -2920,7 +2920,7 @@ mg_link_irctab (session *sess, int focus)
                 mg_populate (sess);
                 zoitechat_is_quitting = FALSE;
                 if (win)
-                        gtk_widget_destroy (win);
+                        fabulor_gtk_window_destroy (GTK_WINDOW (win));
                 return;
         }
 
@@ -2933,7 +2933,7 @@ mg_link_irctab (session *sess, int focus)
         /* the buffer is now attached to a different widget */
         ((xtext_buffer *)sess->res->buffer)->xtext = (GtkXText *)sess->gui->xtext;
         if (win)
-                gtk_widget_destroy (win);
+                fabulor_gtk_window_destroy (GTK_WINDOW (win));
         g_free (old_gui);
 }
 
