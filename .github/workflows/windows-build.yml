@@ -42,6 +42,7 @@ jobs:
 
           python -m pip install --upgrade pip
           python -m pip install cffi
+          python -m pip install meson==1.11.2 ninja==1.13.0
           python -m pip install zstandard
 
           $ProgressPreference = 'SilentlyContinue'
@@ -69,11 +70,15 @@ jobs:
           Download-WithRetry -Url https://github.com/ZoiteChat/gvsbuild/releases/download/zoitechat-2.18.1/GTK3_Gvsbuild_zoitechat-2.18.1_x64.zip -OutFile deps\gtk-${{ matrix.arch }}.zip
           Expand-Archive -LiteralPath deps\gtk-${{ matrix.arch }}.zip -DestinationPath C:\gtk-build\gtk\x64\release -Force
 
-          Download-WithRetry -Url https://github.com/ZoiteChat/gvsbuild/releases/download/zoitechat-2.18.1/GTK4_Gvsbuild_zoitechat-2.18.1_x64.zip -OutFile deps\gtk4-${{ matrix.arch }}.zip
+          $gtk4Contract = Get-Content tools\gtk4\dependency-contract.json -Raw | ConvertFrom-Json
+          $gtk4Archive = Join-Path 'deps' $gtk4Contract.source.file_name
+          Download-WithRetry -Url $gtk4Contract.source.url -OutFile $gtk4Archive
+          python tools\gtk4\validate_root.py --archive $gtk4Archive
           $repoGtk4Root = Join-Path $env:GITHUB_WORKSPACE 'Runtime\GTK4'
           if (Test-Path $repoGtk4Root) { Remove-Item $repoGtk4Root -Recurse -Force }
           New-Item -Path $repoGtk4Root -ItemType Directory -Force | Out-Null
-          Expand-Archive -LiteralPath deps\gtk4-${{ matrix.arch }}.zip -DestinationPath $repoGtk4Root -Force
+          Expand-Archive -LiteralPath $gtk4Archive -DestinationPath $repoGtk4Root -Force
+          python tools\gtk4\validate_root.py --root $repoGtk4Root
 
           Download-WithRetry -Url https://repo.msys2.org/mingw/x86_64/mingw-w64-x86_64-hicolor-icon-theme-0.18-1-any.pkg.tar.zst -OutFile deps\hicolor-icon-theme.pkg.tar.zst
           python -c "import tarfile,zstandard,pathlib;archive=pathlib.Path(r'deps\\hicolor-icon-theme.pkg.tar.zst');target=pathlib.Path(r'C:\\gtk-build\\gtk\\x64\\release');dctx=zstandard.ZstdDecompressor();f=archive.open('rb');reader=dctx.stream_reader(f);tf=tarfile.open(fileobj=reader,mode='r|');[tf.extract(m,path=target) for m in tf if m.name.startswith('mingw64/share/icons/hicolor/')];tf.close();reader.close();f.close()"
@@ -160,7 +165,20 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          call "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\Common7\Tools\VsDevCmd.bat"
+          call "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\Common7\Tools\VsDevCmd.bat" -arch=${{ matrix.arch }} -host_arch=x64
+
+          python tools\gtk4\test_validate_root.py
+          if errorlevel 1 exit /b 1
+
+          msbuild tools\gtk4\gtk4-probe.vcxproj /m /verbosity:minimal /p:Configuration=Release /p:Platform=${{ matrix.platform }} /p:FabulorGtk4Root="%GITHUB_WORKSPACE%\Runtime\GTK4"
+          if errorlevel 1 exit /b 1
+
+          python -m mesonbuild.mesonmain setup build\gtk4-probe-meson tools\gtk4 "-Dgtk4_root=%GITHUB_WORKSPACE%\Runtime\GTK4"
+          if errorlevel 1 exit /b 1
+          python -m mesonbuild.mesonmain compile -C build\gtk4-probe-meson
+          if errorlevel 1 exit /b 1
+          python -m mesonbuild.mesonmain test -C build\gtk4-probe-meson --print-errorlogs
+          if errorlevel 1 exit /b 1
 
           set "PYTHON_DIR=C:\gtk-build\python-3.14.3\${{ matrix.platform }}"
           if not exist "%PYTHON_DIR%\libs\python314.lib" (

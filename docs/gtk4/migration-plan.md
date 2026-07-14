@@ -67,6 +67,12 @@ Exit criteria:
 
 ### Stage 1: Build And Compatibility Foundation
 
+Progress (2026-07-14): the Windows x64 GTK4 archive is pinned by URL, size, and
+SHA-256 in `tools/gtk4/dependency-contract.json`. The isolated MSVC and Meson
+probes validate GTK/GLib versions, x64 architecture, required files, and GTK3
+contamination before compiling, linking, and executing against the same root.
+Production targets remain on GTK3. Compatibility helpers have not started.
+
 Deliverables:
 
 - Define one authoritative GTK4 build root for MSVC and Meson.

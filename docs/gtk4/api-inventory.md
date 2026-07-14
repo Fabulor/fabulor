@@ -23,9 +23,9 @@ Update this file in every GTK4 conversion PR. Use these status values:
 
 | Area | Current state | GTK4 target | Status |
 |---|---|---|---|
-| Meson frontend dependency | `gtk+-3.0 >= 3.22` | explicit `gtk4` dependency with an agreed minimum | not started |
-| MSVC headers/libraries | GTK3 selected through `win32/zoitechat.props` | deterministic GTK4 root and import libraries | not started |
-| Windows CI build dependencies | GTK3 gvsbuild archive | pinned GTK4 build archive | not started |
+| Meson frontend dependency | legacy fragments use `gtk+-3.0 >= 3.22`; no top-level project exists | root-driven GTK4 probe established; production integration remains | in progress |
+| MSVC headers/libraries | production uses GTK3 through `win32/zoitechat.props`; isolated GTK4 project exists | validated GTK4 root and import libraries in converted targets | in progress |
+| Windows CI build dependencies | GTK3 production archive plus GTK4 probe archive | GTK4 URL, size, SHA-256, versions, and x64 identity pinned | in progress |
 | Windows runtime payload | separate GTK4 tree already downloaded and packaged | same audited runtime used by the executable | in progress |
 | Staged release root | GTK3 DLLs and data beside `fabulor.exe` | GTK4-only final layout | not started |
 
