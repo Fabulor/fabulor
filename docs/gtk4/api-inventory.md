@@ -51,10 +51,15 @@ branch is linked, not merely preprocessed. Production now uses 40 typed child
 assignments across 14 source files: 7 windows, 18 scrolled windows, 7 frames,
 6 buttons, 1 overlay, and 1 popover.
 
-Production now also uses 145 reviewed start-ordered box additions across 17
+Production now also uses 156 reviewed start-ordered box additions across 17
 files, two horizontal trailing children, two ordered insertions before a
 permanent trailing child, three trailing label/control pairs, and five
 box-owned dynamic child removals.
+
+The shared tree-view constructor now accepts only `GtkBox` parents for its
+nine operational-list scrollers. The main user-list constructor has the same
+typed parent contract. Their tree models, renderers, selection, and drag/drop
+paths remain outside this Stage 2 ownership conversion.
 
 The visibility helper is limited to 17 reviewed roots whose descendants have
 finished construction and have no intentional hidden state at reveal time.
@@ -70,8 +75,8 @@ existing directional margins, and is used only where append order is exact.
 
 | GTK3 family or type | Matching lines | Files | Migration direction | Stage | Status |
 |---|---:|---:|---|---:|---|
-| `gtk_container_*` | 110 | 23 | explicit widget-specific child APIs | 2 | in progress |
-| `gtk_box_pack_*` | 35 | 5 | `gtk_box_append/prepend` and reorder APIs | 2 | in progress |
+| `gtk_container_*` | 109 | 23 | explicit widget-specific child APIs | 2 | in progress |
+| `gtk_box_pack_*` | 25 | 4 | `gtk_box_append/prepend` and reorder APIs | 2 | in progress |
 | `gtk_widget_show_all` | 17 | 8 | explicit visibility; GTK4 children visible by default | 2 | in progress |
 | `gtk_widget_destroy` | 31 | 13 | window close and object ownership appropriate to type | 2 | in progress |
 | `GtkEventBox` / `gtk_event_box_*` | 8 | 2 | ordinary widgets plus controllers/gestures | 2/4 | not started |

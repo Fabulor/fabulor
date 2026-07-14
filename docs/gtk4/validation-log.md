@@ -409,6 +409,41 @@ Scope: the already response-driven Join Channel dialog and the shared button
 constructor's exact child/parent ownership. Menu items, actions, accelerators,
 models, file selection, and synchronous dialog flows remain unchanged.
 
+### Stage 2 Operational-List Shell Layout, Pass 1
+
+Date: 2026-07-14
+
+Migration stage: 2, typed operational-list scroller and channel-list shell
+ownership
+
+Files/workflows converted: shared tree-view scrollers for ban, channel, DCC,
+ignore, notify, plugin, and URL lists; main user-list scroller; channel-list
+status, range, filter, and search-option rows
+
+GTK version: 4.22.4
+
+GLib version: 2.88.0
+
+Build configuration: MSVC x64 Release and Meson 1.11.2 Release with MSVC 19.44
+
+Automated checks:
+
+- [x] production GTK3 frontend compile and link with 0 warnings and 0 errors
+- [x] compatibility usage inventory: 156 start-ordered additions in 17 files
+- [x] shared tree-view constructor: nine typed `GtkBox` callers
+- [x] main user-list constructor: one typed `GtkBox` caller
+- [x] remaining direct `gtk_box_pack_*`: 25 lines in four files
+- [x] remaining direct `gtk_container_*`: 109 lines in 23 files
+- [x] GTK4 validator unit tests: 8/8, plus repository root validation
+- [x] isolated GTK4 MSVC compile, link, and runtime probe with no warnings
+- [x] isolated GTK4 Meson configure, compile, link, and runtime test
+- [x] production GTK3 MSVC x64 Release rebuild and native tests: 18/18
+- [ ] GitHub Actions required checks: 5/5
+
+Scope: parent ownership and exact shell construction order only. Tree models,
+renderers, selection, sorting, context menus, drag/drop, and pointer/key events
+remain unchanged for their Stage 3-5 conversions.
+
 ## Per-PR Record Template
 
 Copy this section for each GTK4 PR:

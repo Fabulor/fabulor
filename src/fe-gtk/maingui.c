@@ -4164,7 +4164,7 @@ mg_create_userlist (session_gui *gui, GtkWidget *box)
         if (prefs.hex_gui_ulist_count)
                 fabulor_gtk_box_append (GTK_BOX (vbox), gui->namelistinfo, FALSE, FALSE, 0);
 
-        gui->user_tree = ulist = userlist_create (vbox);
+        gui->user_tree = ulist = userlist_create (GTK_BOX (vbox));
 
         if (!gui->theme_userlist_listener_id)
                 gui->theme_userlist_listener_id = theme_listener_register ("maingui.userlist", mg_theme_userlist_changed, gui);

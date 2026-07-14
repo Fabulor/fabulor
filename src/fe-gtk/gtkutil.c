@@ -861,7 +861,7 @@ gtkutil_copy_to_clipboard (GtkWidget *widget, GdkAtom selection,
 /* Treeview util functions */
 
 GtkWidget *
-gtkutil_treeview_new (GtkWidget *box, GtkTreeModel *model,
+gtkutil_treeview_new (GtkBox *box, GtkTreeModel *model,
                       GtkTreeCellDataFunc mapper, ...)
 {
 	GtkWidget *win, *view;
@@ -873,12 +873,7 @@ gtkutil_treeview_new (GtkWidget *box, GtkTreeModel *model,
 	char *title, *attr;
 
 	win = gtk_scrolled_window_new (0, 0);
-	gtk_container_add (GTK_CONTAINER (box), win);
-	if (GTK_IS_BOX (box))
-	{
-		gtk_box_set_child_packing (GTK_BOX (box), win, TRUE, TRUE, 0,
-		                           GTK_PACK_START);
-	}
+	fabulor_gtk_box_append (box, win, TRUE, TRUE, 0);
 	gtk_scrolled_window_set_policy (GTK_SCROLLED_WINDOW (win),
 									  GTK_POLICY_AUTOMATIC, GTK_POLICY_AUTOMATIC);
 	gtk_widget_set_vexpand (win, TRUE);

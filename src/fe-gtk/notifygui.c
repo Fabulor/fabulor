@@ -143,7 +143,7 @@ notify_treeview_new (GtkWidget *box)
 	                           );
 	g_return_val_if_fail (store != NULL, NULL);
 
-	view = gtkutil_treeview_new (box, GTK_TREE_MODEL (store),
+	view = gtkutil_treeview_new (GTK_BOX (box), GTK_TREE_MODEL (store),
 	                             notify_treecell_property_mapper,
 	                             USER_COLUMN, _("Name"),
 	                             STATUS_COLUMN, _("Status"),

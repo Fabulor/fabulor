@@ -50,7 +50,7 @@ void gtkutil_set_icon (GtkWidget *win);
 GtkWidget *gtkutil_window_new (char *title, char *role, int width, int height, int flags);
 void gtkutil_copy_to_clipboard (GtkWidget *widget, GdkAtom selection,
                                 const gchar *str);
-GtkWidget *gtkutil_treeview_new (GtkWidget *box, GtkTreeModel *model,
+GtkWidget *gtkutil_treeview_new (GtkBox *box, GtkTreeModel *model,
                                  GtkTreeCellDataFunc mapper, ...);
 gboolean gtkutil_treemodel_string_to_iter (GtkTreeModel *model, gchar *pathstr, GtkTreeIter *iter_ret);
 gboolean gtkutil_treeview_get_selected_iter (GtkTreeView *view, GtkTreeIter *iter_ret);

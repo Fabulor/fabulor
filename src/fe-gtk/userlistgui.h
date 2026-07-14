@@ -22,7 +22,7 @@
 
 void userlist_set_value (GtkWidget *treeview, gfloat val);
 gfloat userlist_get_value (GtkWidget *treeview);
-GtkWidget *userlist_create (GtkWidget *box);
+GtkWidget *userlist_create (GtkBox *box);
 GtkListStore *userlist_create_model (session *sess);
 void userlist_show (session *sess);
 void userlist_select (session *sess, char *name);

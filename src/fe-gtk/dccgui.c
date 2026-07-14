@@ -830,7 +830,7 @@ fe_dcc_open_recv_win (int passive)
 										 G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING,
 										 G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING,
 										 G_TYPE_STRING, G_TYPE_POINTER, THEME_GTK_COLOR_TYPE);
-	view = gtkutil_treeview_new (vbox, GTK_TREE_MODEL (store), NULL, -1);
+	view = gtkutil_treeview_new (GTK_BOX (vbox), GTK_TREE_MODEL (store), NULL, -1);
 	view_scrolled = gtk_widget_get_parent (view);
 	gtk_widget_set_hexpand (view_scrolled, TRUE);
 	gtk_widget_set_vexpand (view_scrolled, TRUE);
@@ -1102,9 +1102,8 @@ fe_dcc_open_chat_win (int passive)
 	store = gtk_list_store_new (CN_COLUMNS, G_TYPE_STRING, G_TYPE_STRING,
 									 G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING,
 									 G_TYPE_POINTER, THEME_GTK_COLOR_TYPE);
-	view = gtkutil_treeview_new (vbox, GTK_TREE_MODEL (store), NULL, -1);
+	view = gtkutil_treeview_new (GTK_BOX (vbox), GTK_TREE_MODEL (store), NULL, -1);
 	scroll = gtk_widget_get_parent (view);
-	gtk_box_set_child_packing (GTK_BOX (vbox), scroll, TRUE, TRUE, 0, GTK_PACK_START);
 
 	dcc_add_column (view, CCOL_STATUS, CCOL_COLOR, _("Status"), FALSE);
 	dcc_add_column (view, CCOL_NICK,   CCOL_COLOR, _("Nick"), FALSE);
