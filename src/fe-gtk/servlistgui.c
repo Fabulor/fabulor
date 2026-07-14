@@ -389,7 +389,8 @@ servlist_import_client_cert_cb (GtkWidget *button, gpointer userdata)
 	}
 
 	theme_manager_attach_window (message);
-	g_signal_connect_swapped (message, "response", G_CALLBACK (gtk_widget_destroy), message);
+	g_signal_connect (message, "response",
+		G_CALLBACK (fabulor_gtk_dialog_destroy_on_response), NULL);
 	gtk_widget_show (message);
 
 	g_free (contents);
@@ -512,7 +513,8 @@ servlist_generate_client_cert_cb (GtkWidget *button, gpointer userdata)
 			gtk_message_dialog_format_secondary_text (GTK_MESSAGE_DIALOG (dialog), "%s", stderr_data);
 	}
 	theme_manager_attach_window (dialog);
-	g_signal_connect_swapped (dialog, "response", G_CALLBACK (gtk_widget_destroy), dialog);
+	g_signal_connect (dialog, "response",
+		G_CALLBACK (fabulor_gtk_dialog_destroy_on_response), NULL);
 	gtk_widget_show (dialog);
 
 	g_free (stdout_data);
@@ -593,7 +595,8 @@ servlist_cert_info_cb (GtkWidget *button, gpointer userdata)
 	}
 
 	theme_manager_attach_window (dialog);
-	g_signal_connect_swapped (dialog, "response", G_CALLBACK (gtk_widget_destroy), dialog);
+	g_signal_connect (dialog, "response",
+		G_CALLBACK (fabulor_gtk_dialog_destroy_on_response), NULL);
 	gtk_widget_show (dialog);
 	g_free (stdout_data);
 	g_free (stderr_data);
@@ -636,7 +639,8 @@ servlist_delete_client_cert_cb (GtkWidget *button, gpointer userdata)
 	}
 
 	theme_manager_attach_window (dialog);
-	g_signal_connect_swapped (dialog, "response", G_CALLBACK (gtk_widget_destroy), dialog);
+	g_signal_connect (dialog, "response",
+		G_CALLBACK (fabulor_gtk_dialog_destroy_on_response), NULL);
 	gtk_widget_show (dialog);
 	g_free (cert_file);
 }

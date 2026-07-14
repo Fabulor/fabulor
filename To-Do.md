@@ -212,7 +212,8 @@ Detailed planning and evidence live in:
       - [ ] Convert remaining main-window, generic-dialog, menu, and model-surface ordering with their dedicated stages.
   - [ ] Replace recursive visibility and generic widget destruction with surface-specific GTK4 lifecycle handling.
     - [x] Convert completed utility-window/dialog trees and statically typed window destruction without changing menu or conditional-child behaviour.
-    - [ ] Convert remaining menu, dynamic main-window, generic callback, and non-window child lifecycles in their owning stages.
+    - [x] Convert shared prompt dialogs, exact response callbacks, frontend session windows, and concrete main-window/dialog lifetimes.
+    - [ ] Convert remaining menu, dynamic main-window, unparented-widget, GTK3-test, and non-window child lifecycles in their owning stages.
 - [ ] Convert actions, menus, dialogs, and file-selection flows.
 - [ ] Convert input events, shortcuts, clipboard, drag/drop, and pointer gestures.
 - [ ] Convert tree/list models, cell renderers, channel navigation, and operational lists.

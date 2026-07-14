@@ -32,6 +32,8 @@ check_compatibility_helper_signatures (void)
 	void (*volatile widget_reveal_tree) (GtkWidget *) =
 		fabulor_gtk_widget_reveal_tree;
 	void (*volatile window_destroy) (GtkWindow *) = fabulor_gtk_window_destroy;
+	void (*volatile dialog_destroy_on_response) (GtkDialog *, gint, gpointer) =
+		fabulor_gtk_dialog_destroy_on_response;
 
 	(void) box_append;
 	(void) window_set_child;
@@ -42,6 +44,7 @@ check_compatibility_helper_signatures (void)
 	(void) popover_set_child;
 	(void) widget_reveal_tree;
 	(void) window_destroy;
+	(void) dialog_destroy_on_response;
 }
 
 int

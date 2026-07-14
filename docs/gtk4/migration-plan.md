@@ -130,6 +130,16 @@ has fallen from 34 lines in 18 files to 22 lines in nine files, and direct
 Menus, conditionally hidden main-window content, generic signal callbacks, and
 arbitrary child widgets remain explicit for their dedicated lifecycle passes.
 
+Lifecycle pass 2 (2026-07-14): the three shared string/integer/boolean prompt
+dialogs now use the reviewed reveal boundary, and typed destruction now covers
+their six response paths, the ignore confirmation, frontend message/session
+windows, six concrete main-window/dialog paths, and five dialog-response signal
+connections through an exact callback adapter. Direct `gtk_widget_show_all`
+usage is now 19 lines in eight files and direct `gtk_widget_destroy` usage is
+37 lines in 13 files. Remaining calls own menus, notebook/channel-view
+children, dynamic main-window controls, unparented probes, spell-entry items,
+or GTK3-only test fixtures and require type-specific migration.
+
 Primary API families:
 
 - `gtk_container_*`

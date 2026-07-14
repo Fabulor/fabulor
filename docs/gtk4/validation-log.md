@@ -230,6 +230,43 @@ destruction of statically known `GtkWindow`/`GtkDialog` instances. Menus,
 conditionally hidden main-window content, generic signal callbacks, and
 non-window widgets remain explicit.
 
+### PR: [#23 - GTK4 Widget Lifecycle, Pass 2](https://github.com/Fabulor/fabulor/pull/23)
+
+Date: 2026-07-14
+
+Commit: `12161b00`
+
+Migration stage: 2, shared prompt and application-window lifecycle
+
+Files/workflows converted: shared string/integer/boolean prompts, frontend
+messages and session windows, server-list certificate responses, ignore
+confirmation, main tab windows, close confirmation, quit dialog, and
+attach/detach replacement windows
+
+GTK version: 4.22.4
+
+GLib version: 2.88.0
+
+Build configuration: MSVC x64 Release and Meson 1.11.2 Release with MSVC 19.44
+
+Automated checks:
+
+- [x] production GTK3 frontend compile and link with 0 warnings and 0 errors
+- [x] compatibility usage inventory: 15 reviewed completed-tree reveals, 39
+  direct typed window/dialog destroys, and five typed response adapters
+- [x] remaining direct `gtk_widget_show_all`: 19 lines in eight files
+- [x] remaining direct `gtk_widget_destroy`: 37 lines in 13 files
+- [x] GTK4 validator unit tests: 8/8, plus repository root validation
+- [x] isolated GTK4 MSVC compile, link, and runtime probe with no warnings
+- [x] isolated GTK4 Meson configure, compile, link, and runtime test
+- [x] production GTK3 MSVC x64 Release rebuild and native tests: 18/18
+- [x] GitHub Actions required checks: 5/5
+
+Scope: completed shared prompts, exact dialog response callbacks, and concrete
+application windows. Generic Escape/button destroy helpers, menu ownership,
+notebook/channel-view children, dynamic controls, unparented probes,
+spell-entry menu items, and GTK3-only tests remain explicit.
+
 ## Per-PR Record Template
 
 Copy this section for each GTK4 PR:

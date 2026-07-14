@@ -171,6 +171,16 @@ fabulor_gtk_window_destroy (GtkWindow *window)
 #endif
 }
 
+static inline void
+fabulor_gtk_dialog_destroy_on_response (GtkDialog *dialog, gint response_id,
+										gpointer user_data)
+{
+	(void) response_id;
+	(void) user_data;
+
+	fabulor_gtk_window_destroy (GTK_WINDOW (dialog));
+}
+
 G_END_DECLS
 
 #endif
