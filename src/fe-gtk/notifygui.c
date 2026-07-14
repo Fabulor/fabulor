@@ -33,6 +33,7 @@
 #include "../common/userlist.h"
 #include "../common/outbound.h"
 #include "gtkutil.h"
+#include "gtk-compat.h"
 #include "maingui.h"
 #include "theme/theme-gtk.h"
 #include "notifygui.h"
@@ -454,7 +455,7 @@ notify_opengui (void)
 	bbox = gtk_button_box_new (GTK_ORIENTATION_HORIZONTAL);
 	gtk_button_box_set_layout (GTK_BUTTON_BOX (bbox), GTK_BUTTONBOX_SPREAD);
 	gtk_container_set_border_width (GTK_CONTAINER (bbox), 5);
-	gtk_box_pack_end (GTK_BOX (vbox), bbox, 0, 0, 0);
+	fabulor_gtk_box_append (GTK_BOX (vbox), bbox, FALSE, FALSE, 0);
 	gtk_widget_show (bbox);
 
 	gtkutil_button (bbox, ICON_NOTIFY_NEW, 0, notify_add_clicked, 0,
