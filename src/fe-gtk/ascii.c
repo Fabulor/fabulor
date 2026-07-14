@@ -156,7 +156,7 @@ ascii_open (void)
 								G_CALLBACK (ascii_click), NULL);
 		g_signal_connect (G_OBJECT (but), "enter-notify-event",
 								G_CALLBACK (ascii_enter), label);
-		gtk_box_pack_start (GTK_BOX (hbox), but, 0, 0, 0);
+		fabulor_gtk_box_append (GTK_BOX (hbox), but, FALSE, FALSE, 0);
 		gtk_widget_show (but);
 
 		table_pos += len;

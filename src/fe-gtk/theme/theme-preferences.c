@@ -394,50 +394,50 @@ theme_preferences_manager_create_preview (theme_color_manager_ui *ui)
         ui->preview_window = gtk_event_box_new ();
         gtk_event_box_set_visible_window (GTK_EVENT_BOX (ui->preview_window), TRUE);
         gtk_container_set_border_width (GTK_CONTAINER (ui->preview_window), 8);
-        gtk_box_pack_start (GTK_BOX (vbox), ui->preview_window, TRUE, TRUE, 0);
+        fabulor_gtk_box_append (GTK_BOX (vbox), ui->preview_window, TRUE, TRUE, 0);
 
         chat_box = gtk_box_new (GTK_ORIENTATION_VERTICAL, 6);
         gtk_container_add (GTK_CONTAINER (ui->preview_window), chat_box);
 
         header = gtk_label_new (_("#zoitechat-preview"));
         gtk_widget_set_halign (header, GTK_ALIGN_START);
-        gtk_box_pack_start (GTK_BOX (chat_box), header, FALSE, FALSE, 0);
+        fabulor_gtk_box_append (GTK_BOX (chat_box), header, FALSE, FALSE, 0);
 
         ui->preview_chat = theme_preferences_manager_preview_item_new (_("<alice> Example chat message"));
-        gtk_box_pack_start (GTK_BOX (chat_box), ui->preview_chat, FALSE, FALSE, 0);
+        fabulor_gtk_box_append (GTK_BOX (chat_box), ui->preview_chat, FALSE, FALSE, 0);
 
         ui->preview_selected = theme_preferences_manager_preview_item_new (_("Selected text example"));
-        gtk_box_pack_start (GTK_BOX (chat_box), ui->preview_selected, FALSE, FALSE, 0);
+        fabulor_gtk_box_append (GTK_BOX (chat_box), ui->preview_selected, FALSE, FALSE, 0);
 
         ui->preview_marker = theme_preferences_manager_preview_item_new (_("Marker line"));
         gtk_widget_set_hexpand (ui->preview_marker, TRUE);
-        gtk_box_pack_start (GTK_BOX (chat_box), ui->preview_marker, FALSE, FALSE, 0);
+        fabulor_gtk_box_append (GTK_BOX (chat_box), ui->preview_marker, FALSE, FALSE, 0);
 
         ui->preview_spell = theme_preferences_manager_preview_item_new (_("mispelled wrd"));
-        gtk_box_pack_start (GTK_BOX (chat_box), ui->preview_spell, FALSE, FALSE, 0);
+        fabulor_gtk_box_append (GTK_BOX (chat_box), ui->preview_spell, FALSE, FALSE, 0);
 
         label = gtk_label_new (_("Tab states"));
         gtk_widget_set_halign (label, GTK_ALIGN_START);
-        gtk_box_pack_start (GTK_BOX (vbox), label, FALSE, FALSE, 0);
+        fabulor_gtk_box_append (GTK_BOX (vbox), label, FALSE, FALSE, 0);
 
         tabs_box = gtk_box_new (GTK_ORIENTATION_HORIZONTAL, 4);
-        gtk_box_pack_start (GTK_BOX (vbox), tabs_box, FALSE, FALSE, 0);
+        fabulor_gtk_box_append (GTK_BOX (vbox), tabs_box, FALSE, FALSE, 0);
 
         ui->preview_tab_new_data = theme_preferences_manager_preview_item_new (_("New data"));
         gtk_widget_set_hexpand (ui->preview_tab_new_data, TRUE);
-        gtk_box_pack_start (GTK_BOX (tabs_box), ui->preview_tab_new_data, TRUE, TRUE, 0);
+        fabulor_gtk_box_append (GTK_BOX (tabs_box), ui->preview_tab_new_data, TRUE, TRUE, 0);
 
         ui->preview_tab_new_message = theme_preferences_manager_preview_item_new (_("New message"));
         gtk_widget_set_hexpand (ui->preview_tab_new_message, TRUE);
-        gtk_box_pack_start (GTK_BOX (tabs_box), ui->preview_tab_new_message, TRUE, TRUE, 0);
+        fabulor_gtk_box_append (GTK_BOX (tabs_box), ui->preview_tab_new_message, TRUE, TRUE, 0);
 
         ui->preview_tab_highlight = theme_preferences_manager_preview_item_new (_("Highlight"));
         gtk_widget_set_hexpand (ui->preview_tab_highlight, TRUE);
-        gtk_box_pack_start (GTK_BOX (tabs_box), ui->preview_tab_highlight, TRUE, TRUE, 0);
+        fabulor_gtk_box_append (GTK_BOX (tabs_box), ui->preview_tab_highlight, TRUE, TRUE, 0);
 
         ui->preview_tab_away = theme_preferences_manager_preview_item_new (_("Away"));
         gtk_widget_set_hexpand (ui->preview_tab_away, TRUE);
-        gtk_box_pack_start (GTK_BOX (tabs_box), ui->preview_tab_away, TRUE, TRUE, 0);
+        fabulor_gtk_box_append (GTK_BOX (tabs_box), ui->preview_tab_away, TRUE, TRUE, 0);
 
         theme_preferences_manager_update_preview (ui);
 
@@ -810,28 +810,28 @@ theme_preferences_create_color_manager_dialog (GtkWindow *parent, gboolean *colo
         gtk_container_set_border_width (GTK_CONTAINER (vbox), 8);
         gtk_widget_set_hexpand (vbox, TRUE);
         gtk_widget_set_vexpand (vbox, TRUE);
-        gtk_box_pack_start (GTK_BOX (content), vbox, TRUE, TRUE, 0);
+        fabulor_gtk_box_append (GTK_BOX (content), vbox, TRUE, TRUE, 0);
 
         content_hbox = gtk_box_new (GTK_ORIENTATION_HORIZONTAL, 8);
         gtk_widget_set_hexpand (content_hbox, TRUE);
         gtk_widget_set_vexpand (content_hbox, TRUE);
-        gtk_box_pack_start (GTK_BOX (vbox), content_hbox, TRUE, TRUE, 0);
+        fabulor_gtk_box_append (GTK_BOX (vbox), content_hbox, TRUE, TRUE, 0);
 
         left_box = gtk_box_new (GTK_ORIENTATION_VERTICAL, 8);
         gtk_widget_set_hexpand (left_box, TRUE);
         gtk_widget_set_vexpand (left_box, TRUE);
-        gtk_box_pack_start (GTK_BOX (content_hbox), left_box, TRUE, TRUE, 0);
+        fabulor_gtk_box_append (GTK_BOX (content_hbox), left_box, TRUE, TRUE, 0);
 
         search = gtk_search_entry_new ();
         gtk_entry_set_placeholder_text (GTK_ENTRY (search), _("Search colors by name"));
-        gtk_box_pack_start (GTK_BOX (left_box), search, FALSE, FALSE, 0);
+        fabulor_gtk_box_append (GTK_BOX (left_box), search, FALSE, FALSE, 0);
         ui->search_entry = search;
 
         scroller = gtk_scrolled_window_new (NULL, NULL);
         gtk_widget_set_hexpand (scroller, TRUE);
         gtk_widget_set_vexpand (scroller, TRUE);
         gtk_scrolled_window_set_policy (GTK_SCROLLED_WINDOW (scroller), GTK_POLICY_NEVER, GTK_POLICY_AUTOMATIC);
-        gtk_box_pack_start (GTK_BOX (left_box), scroller, TRUE, TRUE, 0);
+        fabulor_gtk_box_append (GTK_BOX (left_box), scroller, TRUE, TRUE, 0);
 
         list = gtk_list_box_new ();
         gtk_widget_set_hexpand (list, TRUE);
@@ -843,7 +843,7 @@ theme_preferences_create_color_manager_dialog (GtkWindow *parent, gboolean *colo
         gtk_widget_set_size_request (preview_frame, 300, -1);
         gtk_widget_set_hexpand (preview_frame, FALSE);
         gtk_widget_set_vexpand (preview_frame, TRUE);
-        gtk_box_pack_start (GTK_BOX (content_hbox), preview_frame, FALSE, TRUE, 0);
+        fabulor_gtk_box_append (GTK_BOX (content_hbox), preview_frame, FALSE, TRUE, 0);
 
         for (token = THEME_TOKEN_MIRC_0; token < THEME_TOKEN_COUNT; token++)
         {
@@ -868,20 +868,20 @@ theme_preferences_create_color_manager_dialog (GtkWindow *parent, gboolean *colo
                 name = gtk_label_new (display);
                 gtk_widget_set_halign (name, GTK_ALIGN_START);
                 gtk_widget_set_hexpand (name, TRUE);
-                gtk_box_pack_start (GTK_BOX (hbox), name, TRUE, TRUE, 0);
+                fabulor_gtk_box_append (GTK_BOX (hbox), name, TRUE, TRUE, 0);
 
                 preview = gtk_label_new (_("Preview"));
                 gtk_widget_set_size_request (preview, 90, -1);
                 gtk_widget_set_halign (preview, GTK_ALIGN_CENTER);
-                gtk_box_pack_start (GTK_BOX (hbox), preview, FALSE, FALSE, 0);
+                fabulor_gtk_box_append (GTK_BOX (hbox), preview, FALSE, FALSE, 0);
 
                 button = gtk_button_new_with_label (_("Choose…"));
-                gtk_box_pack_start (GTK_BOX (hbox), button, FALSE, FALSE, 0);
+                fabulor_gtk_box_append (GTK_BOX (hbox), button, FALSE, FALSE, 0);
 
                 entry = gtk_entry_new ();
                 gtk_entry_set_width_chars (GTK_ENTRY (entry), 9);
                 gtk_entry_set_max_length (GTK_ENTRY (entry), 9);
-                gtk_box_pack_start (GTK_BOX (hbox), entry, FALSE, FALSE, 0);
+                fabulor_gtk_box_append (GTK_BOX (hbox), entry, FALSE, FALSE, 0);
 
                 row = g_new0 (theme_color_manager_row, 1);
                 row->row = list_row;
@@ -1399,7 +1399,7 @@ theme_preferences_create_color_page (GtkWindow *parent,
         gtk_widget_set_halign (manage_colors_button, GTK_ALIGN_START);
         gtk_widget_set_margin_start (manage_colors_button, LABEL_INDENT);
         gtk_widget_set_margin_top (manage_colors_button, 10);
-        gtk_box_pack_start (GTK_BOX (box), manage_colors_button, FALSE, FALSE, 0);
+        fabulor_gtk_box_append (GTK_BOX (box), manage_colors_button, FALSE, FALSE, 0);
         g_signal_connect (G_OBJECT (manage_colors_button), "clicked",
                           G_CALLBACK (theme_preferences_manage_colors_cb), color_change_flag);
 
@@ -1735,7 +1735,7 @@ theme_preferences_create_page (GtkWindow *parent,
         gtk_container_set_border_width (GTK_CONTAINER (box), 6);
 
         colors_frame = gtk_frame_new (_("Colors"));
-        gtk_box_pack_start (GTK_BOX (box), colors_frame, FALSE, FALSE, 0);
+        fabulor_gtk_box_append (GTK_BOX (box), colors_frame, FALSE, FALSE, 0);
         colors_box = gtk_box_new (GTK_ORIENTATION_VERTICAL, 6);
         gtk_container_set_border_width (GTK_CONTAINER (colors_box), 6);
         fabulor_gtk_frame_set_child (GTK_FRAME (colors_frame), colors_box);
@@ -1743,22 +1743,22 @@ theme_preferences_create_page (GtkWindow *parent,
         label = gtk_label_new (_("GTK3 theme colors are used by default. Open the color manager to set custom colors."));
         gtk_widget_set_halign (label, GTK_ALIGN_START);
         gtk_label_set_xalign (GTK_LABEL (label), 0.0f);
-        gtk_box_pack_start (GTK_BOX (colors_box), label, FALSE, FALSE, 0);
+        fabulor_gtk_box_append (GTK_BOX (colors_box), label, FALSE, FALSE, 0);
 
         manage_colors_button = gtk_button_new_with_label (_("Manage all client colors…"));
         gtk_widget_set_halign (manage_colors_button, GTK_ALIGN_START);
-        gtk_box_pack_start (GTK_BOX (colors_box), manage_colors_button, FALSE, FALSE, 0);
+        fabulor_gtk_box_append (GTK_BOX (colors_box), manage_colors_button, FALSE, FALSE, 0);
         g_signal_connect (G_OBJECT (manage_colors_button), "clicked",
                           G_CALLBACK (theme_preferences_manage_colors_cb), color_change_flag);
 
         import_colors_button = gtk_button_new_with_label (_("Import colors.conf colors…"));
         gtk_widget_set_halign (import_colors_button, GTK_ALIGN_START);
-        gtk_box_pack_start (GTK_BOX (colors_box), import_colors_button, FALSE, FALSE, 0);
+        fabulor_gtk_box_append (GTK_BOX (colors_box), import_colors_button, FALSE, FALSE, 0);
         g_signal_connect (G_OBJECT (import_colors_button), "clicked",
                           G_CALLBACK (theme_preferences_import_colors_conf_cb), color_change_flag);
 
         gtk3_frame = gtk_frame_new (_("GTK3 Theme"));
-        gtk_box_pack_start (GTK_BOX (box), gtk3_frame, FALSE, FALSE, 0);
+        fabulor_gtk_box_append (GTK_BOX (box), gtk3_frame, FALSE, FALSE, 0);
         gtk3_grid = gtk_grid_new ();
         gtk_container_set_border_width (GTK_CONTAINER (gtk3_grid), 6);
         gtk_grid_set_row_spacing (GTK_GRID (gtk3_grid), 6);
