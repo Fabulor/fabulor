@@ -29,6 +29,8 @@ check_compatibility_helper_signatures (void)
 		fabulor_gtk_overlay_set_child;
 	void (*volatile popover_set_child) (GtkPopover *, GtkWidget *) =
 		fabulor_gtk_popover_set_child;
+	void (*volatile widget_reveal_tree) (GtkWidget *) =
+		fabulor_gtk_widget_reveal_tree;
 	void (*volatile window_destroy) (GtkWindow *) = fabulor_gtk_window_destroy;
 
 	(void) box_append;
@@ -38,6 +40,7 @@ check_compatibility_helper_signatures (void)
 	(void) button_set_child;
 	(void) overlay_set_child;
 	(void) popover_set_child;
+	(void) widget_reveal_tree;
 	(void) window_destroy;
 }
 

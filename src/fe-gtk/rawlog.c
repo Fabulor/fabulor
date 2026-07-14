@@ -199,7 +199,7 @@ open_rawlog (struct server *serv)
 				   GUINT_TO_POINTER (theme_listener_register ("rawlog.window", rawlog_theme_changed, serv->gui->rawlog_window)));
 	g_signal_connect (G_OBJECT (serv->gui->rawlog_window), "destroy", G_CALLBACK (rawlog_theme_destroy_cb), NULL);
 
-	gtk_widget_show_all (serv->gui->rawlog_window);
+	fabulor_gtk_widget_reveal_tree (serv->gui->rawlog_window);
 	rawlog_theme_apply (serv->gui->rawlog_window);
 }
 

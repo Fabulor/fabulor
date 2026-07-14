@@ -510,5 +510,5 @@ plugingui_open (void)
 
 	fe_pluginlist_update ();
 
-	gtk_widget_show_all (plugin_window);
+	fabulor_gtk_widget_reveal_tree (plugin_window);
 }

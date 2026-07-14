@@ -546,7 +546,7 @@ banlist_clear_cb (GtkDialog *dialog, gint response, gpointer data)
 	banlist_info *banl = data;
 	GtkTreeSelection *sel;
 
-	gtk_widget_destroy (GTK_WIDGET (dialog));
+	fabulor_gtk_window_destroy (GTK_WINDOW (dialog));
 
 	if (response == GTK_RESPONSE_OK)
 	{
@@ -855,5 +855,5 @@ banlist_opengui (struct session *sess)
 
 	banlist_do_refresh (banl);
 
-	gtk_widget_show_all (banl->window);
+	fabulor_gtk_widget_reveal_tree (banl->window);
 }

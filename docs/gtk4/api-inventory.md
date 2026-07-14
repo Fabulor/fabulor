@@ -37,6 +37,7 @@ Update this file in every GTK4 conversion PR. Use these status values:
 
 - start-ordered box insertion with explicit expansion, fill, and padding
 - window, scrolled-window, frame, button, overlay, and popover child assignment
+- completed-tree reveal with distinct GTK3 recursive and GTK4 root semantics
 - window destruction
 
 The production GTK3 build and isolated GTK4 MSVC/Meson probes compile the same
@@ -45,12 +46,14 @@ branch is linked, not merely preprocessed. Production now uses 39 typed child
 assignments across 14 source files: 7 windows, 18 scrolled windows, 7 frames,
 5 buttons, 1 overlay, and 1 popover.
 
+The visibility helper is limited to 12 reviewed roots whose descendants have
+finished construction and have no intentional hidden state at reveal time.
 The boundary deliberately does not abstract generic widget destruction,
-mixed start/end box ordering, recursive visibility, menus, dialogs, events,
-clipboard ownership, or list/tree models. Those operations have GTK4 lifetime
-or behaviour changes that must remain visible at each caller. The box helper
-preserves explicit widget alignment/expansion, adds GTK3 packing padding to
-existing directional margins, and is used only where append order is exact.
+remaining mixed start/end box ordering, menu/item visibility, dynamic content,
+events, clipboard ownership, or list/tree models. Those operations have GTK4
+lifetime or behaviour changes that must remain visible at each caller. The box
+helper preserves explicit widget alignment/expansion, adds GTK3 packing padding
+to existing directional margins, and is used only where append order is exact.
 
 ## Quantitative API Baseline
 
@@ -58,8 +61,8 @@ existing directional margins, and is used only where append order is exact.
 |---|---:|---:|---|---:|---|
 | `gtk_container_*` | 117 | 23 | explicit widget-specific child APIs | 2 | in progress |
 | `gtk_box_pack_*` | 92 | 7 | `gtk_box_append/prepend` and reorder APIs | 2 | in progress |
-| `gtk_widget_show_all` | 34 | 18 | explicit visibility; GTK4 children visible by default | 2 | not started |
-| `gtk_widget_destroy` | 81 | 23 | window close and object ownership appropriate to type | 2 | not started |
+| `gtk_widget_show_all` | 22 | 9 | explicit visibility; GTK4 children visible by default | 2 | in progress |
+| `gtk_widget_destroy` | 57 | 16 | window close and object ownership appropriate to type | 2 | in progress |
 | `GtkEventBox` / `gtk_event_box_*` | 8 | 2 | ordinary widgets plus controllers/gestures | 2/4 | not started |
 | `GtkTable` / `gtk_table_*` | 2 | 1 | `GtkGrid` | 2 | not started |
 | `gtk_dialog_run` | 9 | 5 | response-driven/asynchronous dialog flow | 3 | not started |

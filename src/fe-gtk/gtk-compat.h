@@ -147,6 +147,19 @@ fabulor_gtk_popover_set_child (GtkPopover *popover, GtkWidget *child)
 }
 
 static inline void
+fabulor_gtk_widget_reveal_tree (GtkWidget *widget)
+{
+	g_return_if_fail (GTK_IS_WIDGET (widget));
+
+#if GTK_MAJOR_VERSION >= 4
+	/* GTK4 descendants are visible by default once the completed root is shown. */
+	gtk_widget_set_visible (widget, TRUE);
+#else
+	gtk_widget_show_all (widget);
+#endif
+}
+
+static inline void
 fabulor_gtk_window_destroy (GtkWindow *window)
 {
 	g_return_if_fail (GTK_IS_WINDOW (window));
