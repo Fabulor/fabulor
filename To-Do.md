@@ -199,7 +199,7 @@ Detailed planning and evidence live in:
 - [`docs/gtk4/validation-log.md`](docs/gtk4/validation-log.md)
 
 - [x] Establish the documentation baseline, source/API inventory, packaging inventory, and validation matrix.
-- [ ] Establish deterministic GTK4 build roots and compatibility helpers while keeping the GTK3 production build green.
+- [x] Establish deterministic GTK4 build roots and compatibility helpers while keeping the GTK3 production build green.
   - [x] Pin and validate the Windows x64 GTK4 archive, root identity, versions, architecture, and required build files.
   - [x] Compile, link, and execute isolated MSVC and Meson probes against the same validated GTK4 root in CI.
   - [x] Introduce narrowly scoped compatibility helpers before converting production frontend modules.

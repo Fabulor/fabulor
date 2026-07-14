@@ -66,11 +66,11 @@ target toolchain for Meson.
 Production impact: none. The Fabulor solution and frontend remain linked to
 GTK3; no GTK4 widget or compatibility code is enabled.
 
-### PR: GTK4 Compatibility Helpers, Pass 1
+### PR: [#18 - GTK4 Compatibility Helpers, Pass 1](https://github.com/Fabulor/fabulor/pull/18)
 
 Date: 2026-07-14
 
-Commit: pending
+Commit: `90915dd0`
 
 Migration stage: 1, compatibility helper boundary
 
@@ -81,7 +81,7 @@ GTK version: 4.22.4
 
 GLib version: 2.88.0
 
-Build configuration: MSVC x64 Release and Meson 1.11.2 with MSVC 19.44
+Build configuration: MSVC x64 Release and Meson 1.11.2 Release with MSVC 19.44
 
 Automated checks:
 
@@ -90,7 +90,7 @@ Automated checks:
 - [x] isolated GTK4 MSVC compile, link, and runtime probe with no warnings
 - [x] isolated GTK4 Meson configure, compile, link, and runtime test
 - [x] production GTK3 MSVC x64 Release rebuild, including native tests 18/18
-- [ ] GitHub Actions required checks
+- [x] GitHub Actions required checks: 5/5
 
 Observed probe identity: GTK 4.22.4 / GLib 2.88.0 / 64-bit.
 
