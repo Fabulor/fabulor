@@ -743,16 +743,15 @@ gtkutil_button (GtkWidget *box, char *stock, char *tip, void *callback,
 	{
 		gtk_button_set_label (GTK_BUTTON (wid), labeltext);
 		gtk_button_set_use_underline (GTK_BUTTON (wid), TRUE);
-		if (box)
-			gtk_container_add (GTK_CONTAINER (box), wid);
 	}
 	else
 	{
 		bbox = gtkutil_box_new (GTK_ORIENTATION_HORIZONTAL, FALSE, 0);
-		gtk_container_add (GTK_CONTAINER (wid), bbox);
+		fabulor_gtk_button_set_child (GTK_BUTTON (wid), bbox);
 		gtk_widget_show (bbox);
-		gtk_box_pack_start (GTK_BOX (box), wid, 0, 0, 0);
 	}
+	if (box)
+		fabulor_gtk_box_append (GTK_BOX (box), wid, FALSE, FALSE, 0);
 
 	g_signal_connect (G_OBJECT (wid), "clicked",
 							G_CALLBACK (callback), userdata);
