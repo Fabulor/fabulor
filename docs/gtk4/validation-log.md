@@ -756,11 +756,11 @@ Scope: Channel Switcher action, target, model, and synchronization only. The
 displayed GTK3 radio controls, remaining static commands, dynamic menus, popup
 ownership, dialogs, and pointer/key event handling remain unchanged.
 
-### PR: pending - GTK4 Network Meters Menu Model, Pass 10
+### PR: [#38 - GTK4 Network Meters Menu Model, Pass 10](https://github.com/Fabulor/fabulor/pull/38)
 
 Date: 2026-07-15
 
-Commit: pending
+Commit: `5a58b8da`
 
 Migration stage: 3, second targeted selection action and sixth canonical
 `GMenuModel` subtree projection
