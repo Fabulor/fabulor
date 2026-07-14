@@ -95,6 +95,13 @@ selected server. Activation continues through the canonical command dispatcher
 without optimistically changing server state, and the existing plain GTK3 menu
 presentation remains unchanged.
 
+The first complete model boundary now projects the static Search submenu into
+an immutable `GMenuModel` containing its three canonical action names. The
+model and shared action group are retained on the menu root while the live
+GTK3 submenu continues through its existing widget construction. Dynamic
+`/MENU`, plugin, and user-menu entries are intentionally excluded until their
+mutation and ownership contracts are converted.
+
 ## Quantitative API Baseline
 
 | GTK3 family or type | Matching lines | Files | Migration direction | Stage | Status |
