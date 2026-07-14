@@ -283,6 +283,14 @@ server and follows connection events through the shared action group, while
 the existing callbacks, dialogs, IRC commands, and displayed GTK3 menu remain
 unchanged.
 
+Channel Switcher menu-model pass 9 (2026-07-15): the Tabs and Tree radio items
+now share the twenty-fourth canonical action identity, a string-valued
+`channel-switcher` action with typed `tabs` and `tree` targets. The retained
+two-item model stores those targets for GTK4. The displayed GTK3 radio items
+retain their existing callback because GTK3 does not reliably dispatch a radio
+target through `GtkActionable`; both user and programmatic layout changes keep
+the action state synchronized without duplicate activation or layout work.
+
 Primary surfaces:
 
 - `menu.c`, context menus, tray menus, and user-defined menus

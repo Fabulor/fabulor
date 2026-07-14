@@ -73,6 +73,8 @@ static GSList *submenu_list;
 
 #define FABULOR_MENU_ACTION_GROUP "fabulor-menu-action-group"
 #define FABULOR_MENU_ACTION_NAME "fabulor-menu-action-name"
+#define FABULOR_MENU_ACTION_TARGET "fabulor-menu-action-target"
+#define FABULOR_MENU_CHANNEL_SWITCHER_MODEL "fabulor-menu-channel-switcher-model"
 #define FABULOR_MENU_NEW_MODEL "fabulor-menu-new-model"
 #define FABULOR_MENU_SERVER_MODEL "fabulor-menu-server-model"
 #define FABULOR_MENU_SEARCH_MODEL "fabulor-menu-search-model"
@@ -147,6 +149,7 @@ typedef enum
 	MENU_ACTION_MENU_TOGGLE,
 	MENU_ACTION_USER_LIST_TOGGLE,
 	MENU_ACTION_FULLSCREEN_TOGGLE,
+	MENU_ACTION_CHANNEL_SWITCHER,
 	MENU_ACTION_DISCONNECT,
 	MENU_ACTION_RECONNECT,
 	MENU_ACTION_JOIN_CHANNEL,
@@ -174,6 +177,7 @@ struct mymenu
 	guint key;				/* GDK_KEY_x */
 	const char *action_name;
 	menu_action_id action_id;
+	const char *action_target;
 };
 
 #define XCMENU_DOLIST 1
@@ -2006,10 +2010,14 @@ static struct mymenu mymenu[] = {
 	{N_("U_ser List Buttons"), menu_ulbuttons_toggle, 0, M_MENUTOG, MENU_ID_ULBUTTONS, 0, 1},
 	{N_("M_ode Buttons"), menu_cmbuttons_toggle, 0, M_MENUTOG, MENU_ID_MODEBUTTONS, 0, 1},
 	{0, 0, 0, M_SEP, 0, 0, 0},
+#define CHANNEL_SWITCHER_OFFSET (23)
+#define CHANNEL_SWITCHER_ACTION_COUNT (2)
 	{N_("_Channel Switcher"), 0, 0, M_MENUSUB, 0, 0, 1},	/* 23 */
 #define TABS_OFFSET (24)
-		{N_("_Tabs"), menu_layout_cb, 0, M_MENURADIO, MENU_ID_LAYOUT_TABS, 0, 1},
-		{N_("T_ree"), 0, 0, M_MENURADIO, MENU_ID_LAYOUT_TREE, 0, 1},
+		{N_("_Tabs"), menu_layout_cb, 0, M_MENURADIO, MENU_ID_LAYOUT_TABS, 0, 1, 0,
+			"channel-switcher", MENU_ACTION_CHANNEL_SWITCHER, "tabs"},
+		{N_("T_ree"), 0, 0, M_MENURADIO, MENU_ID_LAYOUT_TREE, 0, 1, 0,
+			"channel-switcher", MENU_ACTION_CHANNEL_SWITCHER, "tree"},
 		{0, 0, 0, M_END, 0, 0, 0},
 	{N_("_Network Meters"), 0, 0, M_MENUSUB, 0, 0, 1},	/* 27 */
 #define METRE_OFFSET (28)
@@ -2329,12 +2337,34 @@ menu_action_is_session_stateful (menu_action_id id)
 	return id == MENU_ACTION_AWAY_TOGGLE;
 }
 
+static gboolean
+menu_action_is_selection_stateful (menu_action_id id)
+{
+	return id == MENU_ACTION_CHANNEL_SWITCHER;
+}
+
 static void
 menu_action_activate (GSimpleAction *action, GVariant *parameter,
 					  gpointer user_data)
 {
 	const struct mymenu *definition = user_data;
+	const char *target;
 	GVariant *state;
+
+	if (menu_action_is_selection_stateful (definition->action_id))
+	{
+		if (!parameter || !g_variant_is_of_type (parameter, G_VARIANT_TYPE_STRING))
+			return;
+
+		target = g_variant_get_string (parameter, NULL);
+		if (g_strcmp0 (target, "tabs") != 0 && g_strcmp0 (target, "tree") != 0)
+			return;
+
+		g_simple_action_set_state (action, parameter);
+		prefs.hex_gui_tab_layout = g_strcmp0 (target, "tabs") == 0 ? 0 : 2;
+		menu_change_layout ();
+		return;
+	}
 
 	(void) parameter;
 
@@ -2364,9 +2394,16 @@ menu_action_group_new (void)
 	{
 		if (!mymenu[i].action_name)
 			continue;
+		if (g_action_map_lookup_action (G_ACTION_MAP (group), mymenu[i].action_name))
+			continue;
 
 		if (menu_action_is_stateless (mymenu[i].action_id))
 			action = g_simple_action_new (mymenu[i].action_name, NULL);
+		else if (menu_action_is_selection_stateful (mymenu[i].action_id))
+			action = g_simple_action_new_stateful (mymenu[i].action_name,
+											 G_VARIANT_TYPE_STRING,
+											 g_variant_new_string (mymenu[TABS_OFFSET].state ?
+																	   "tabs" : "tree"));
 		else if (menu_action_is_view_stateful (mymenu[i].action_id) ||
 				 menu_action_is_session_stateful (mymenu[i].action_id))
 			action = g_simple_action_new_stateful (mymenu[i].action_name, NULL,
@@ -2387,6 +2424,10 @@ menu_action_group_new (void)
 static char *
 menu_action_detailed_name (const struct mymenu *definition)
 {
+	if (definition->action_target)
+		return g_strdup_printf ("fabulor.%s::%s", definition->action_name,
+								 definition->action_target);
+
 	return g_strconcat ("fabulor.", definition->action_name, NULL);
 }
 
@@ -2444,15 +2485,25 @@ menu_action_bind_item (GtkWidget *item, GSimpleActionGroup *group,
 	if (!definition->action_name ||
 		(!menu_action_is_stateless (definition->action_id) &&
 		 !menu_action_is_view_stateful (definition->action_id) &&
-		 !menu_action_is_session_stateful (definition->action_id)))
+		 !menu_action_is_session_stateful (definition->action_id) &&
+		 !menu_action_is_selection_stateful (definition->action_id)))
 		return FALSE;
 
 	detailed_name = menu_action_detailed_name (definition);
 	gtk_widget_insert_action_group (item, "fabulor", G_ACTION_GROUP (group));
-	gtk_actionable_set_action_name (GTK_ACTIONABLE (item), detailed_name);
 	g_object_set_data (G_OBJECT (item), FABULOR_MENU_ACTION_GROUP, group);
 	g_object_set_data (G_OBJECT (item), FABULOR_MENU_ACTION_NAME,
 					   (gpointer) definition->action_name);
+	g_object_set_data (G_OBJECT (item), FABULOR_MENU_ACTION_TARGET,
+					   (gpointer) definition->action_target);
+	if (menu_action_is_selection_stateful (definition->action_id))
+	{
+		/* GTK3 radio items keep their callback; their GtkActionable target is unreliable. */
+		g_free (detailed_name);
+		return FALSE;
+	}
+
+	gtk_actionable_set_action_name (GTK_ACTIONABLE (item), detailed_name);
 	g_free (detailed_name);
 
 	return TRUE;
@@ -2481,6 +2532,7 @@ static gboolean
 menu_action_set_item_state (GtkWidget *item, gboolean state)
 {
 	GSimpleAction *action;
+	const char *target;
 	const GVariantType *state_type;
 
 	action = menu_action_get_item_action (item);
@@ -2488,7 +2540,16 @@ menu_action_set_item_state (GtkWidget *item, gboolean state)
 		return FALSE;
 
 	state_type = g_action_get_state_type (G_ACTION (action));
-	if (!state_type || !g_variant_type_equal (state_type, G_VARIANT_TYPE_BOOLEAN))
+	if (!state_type)
+		return FALSE;
+	if (g_variant_type_equal (state_type, G_VARIANT_TYPE_STRING))
+	{
+		target = g_object_get_data (G_OBJECT (item), FABULOR_MENU_ACTION_TARGET);
+		if (state && target)
+			g_simple_action_set_state (action, g_variant_new_string (target));
+		return FALSE;
+	}
+	if (!g_variant_type_equal (state_type, G_VARIANT_TYPE_BOOLEAN))
 		return FALSE;
 
 	g_simple_action_set_state (action, g_variant_new_boolean (state));
@@ -3007,6 +3068,7 @@ menu_create_main (void *accel_group, int bar, int away, int away_sensitive,
 	int i = 0;
 	gboolean action_bound;
 	GSimpleActionGroup *action_group;
+	GMenuModel *channel_switcher_model;
 	GMenuModel *help_model;
 	GMenuModel *new_model;
 	GMenuModel *search_model;
@@ -3120,6 +3182,10 @@ menu_create_main (void *accel_group, int bar, int away, int away_sensitive,
 								G_ACTION_GROUP (action_group));
 	g_object_set_data_full (G_OBJECT (menu_bar), FABULOR_MENU_ACTION_GROUP,
 						 action_group, g_object_unref);
+	channel_switcher_model = menu_action_model_new (CHANNEL_SWITCHER_OFFSET,
+														CHANNEL_SWITCHER_ACTION_COUNT);
+	g_object_set_data_full (G_OBJECT (menu_bar), FABULOR_MENU_CHANNEL_SWITCHER_MODEL,
+						 channel_switcher_model, g_object_unref);
 	new_model = menu_action_model_new (NEW_OFFSET, NEW_ACTION_COUNT);
 	g_object_set_data_full (G_OBJECT (menu_bar), FABULOR_MENU_NEW_MODEL,
 						 new_model, g_object_unref);

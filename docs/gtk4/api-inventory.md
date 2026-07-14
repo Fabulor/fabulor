@@ -122,6 +122,14 @@ track the selected server through the shared action group. Existing IRC
 commands, dialogs, connection handling, shortcuts, and GTK3 presentation
 remain unchanged.
 
+The Channel Switcher submenu is the fifth complete model boundary and the
+first targeted selection action. One string-valued `channel-switcher` action
+uses canonical `tabs` and `tree` targets, bringing the action registry to 24
+distinct identities. The retained model carries those targets directly. GTK3
+radio items keep their proven callback path because GTK3 does not reliably
+dispatch radio targets through `GtkActionable`; existing layout changes also
+synchronize the retained action without re-entering the callback.
+
 ## Quantitative API Baseline
 
 | GTK3 family or type | Matching lines | Files | Migration direction | Stage | Status |

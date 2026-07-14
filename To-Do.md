@@ -227,11 +227,13 @@ Detailed planning and evidence live in:
     - [x] Bind all 19 stateless canonical commands through per-menu `GSimpleActionGroup` ownership.
     - [x] Convert menu-bar, user-list, and fullscreen window-view state synchronization.
     - [x] Convert away state and connection sensitivity as a session/server action boundary.
+    - [x] Convert Channel Switcher radio state to one targeted string action while retaining the GTK3 callback bridge.
     - [ ] Project complete canonical menu subtrees into retained `GMenuModel` structures.
       - [x] Project the static three-command Search submenu without changing the live GTK3 menu.
       - [x] Add the About action and project the complete two-command Help menu.
       - [x] Add Channel Tab and Channel Window actions and project the complete four-command New submenu.
       - [x] Add the four Server commands and project the complete five-command Server menu with session sensitivity.
+      - [x] Project the two-choice Channel Switcher submenu with canonical `tabs` and `tree` targets.
       - [ ] Project remaining static subtrees after their non-canonical commands have action identities.
 - [ ] Convert input events, shortcuts, clipboard, drag/drop, and pointer gestures.
 - [ ] Convert tree/list models, cell renderers, channel navigation, and operational lists.
