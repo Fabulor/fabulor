@@ -81,9 +81,14 @@ sensitivity, or popup ownership.
 Twelve stateless canonical commands now activate through a per-menu
 `GSimpleActionGroup` and `GtkActionable` binding. The same group is retained by
 each bound item after construction, while configurable shortcuts continue to
-use the canonical dispatcher. The four stateful identities remain on their
-existing toggle callbacks until action state and menu sensitivity move
-together.
+use the canonical dispatcher.
+
+Menu-bar visibility, user-list visibility, and fullscreen now use boolean
+`GSimpleAction` state. Shared preference updates synchronize every window's
+corresponding action, and the window-state event remains authoritative for
+correcting fullscreen state after a platform transition. Away remains on its
+existing session callback until its server-specific state and connection
+sensitivity can move together.
 
 ## Quantitative API Baseline
 

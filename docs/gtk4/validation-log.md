@@ -512,6 +512,41 @@ Scope: stateless action activation only. Stateful menu-bar, user-list,
 fullscreen, and away identities; sensitivity; dynamic menus; popup ownership;
 dialogs; and pointer/key event handling remain unchanged for later passes.
 
+### PR: [#31 - GTK4 Window-View Menu Action State, Pass 3](https://github.com/Fabulor/fabulor/pull/31)
+
+Date: 2026-07-14
+
+Commit: `29d593c8`
+
+Migration stage: 3, window-view menu action state synchronization
+
+Files/workflows converted: menu-bar visibility, user-list visibility, and
+fullscreen state in `menu.c`; configurable keyboard shortcuts retain canonical
+direct dispatch
+
+GTK version: 4.22.4
+
+GLib version: 2.88.0
+
+Build configuration: MSVC x64 Release and Meson 1.11.2 Release with MSVC 19.44
+
+Automated checks:
+
+- [x] production GTK3 frontend compile and link with 0 warnings and 0 errors
+- [x] stateful canonical action bindings: 3 window-view commands
+- [x] focused GTK3 boolean action probe: activation and external state synchronization
+- [x] menu-bar and user-list preference updates synchronize shared action state
+- [x] fullscreen window-state correction synchronizes action state
+- [x] GTK4 validator unit tests: 8/8, plus repository root validation
+- [x] isolated GTK4 MSVC compile, link, and runtime probe with no warnings
+- [x] isolated GTK4 Meson configure, compile, link, and runtime test
+- [x] production GTK3 MSVC x64 Release rebuild and native tests: 18/18
+- [x] GitHub Actions required checks: 5/5
+
+Scope: window-view boolean state only. Away state and connection sensitivity,
+dynamic menus, popup ownership, dialogs, and pointer/key event handling remain
+unchanged for later passes.
+
 ## Per-PR Record Template
 
 Copy this section for each GTK4 PR:

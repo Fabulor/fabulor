@@ -225,7 +225,8 @@ Detailed planning and evidence live in:
   - [x] Establish one canonical action-identity registry for main-menu accelerators and configurable shortcut dispatch.
   - [ ] Bind canonical commands and state to GTK4 actions and menu models without changing IRC command behaviour.
     - [x] Bind the 12 stateless canonical commands through per-menu `GSimpleActionGroup` ownership.
-    - [ ] Convert menu-bar, user-list, fullscreen, and away state/sensitivity synchronization together.
+    - [x] Convert menu-bar, user-list, and fullscreen window-view state synchronization.
+    - [ ] Convert away state and connection sensitivity as a session/server action boundary.
 - [ ] Convert input events, shortcuts, clipboard, drag/drop, and pointer gestures.
 - [ ] Convert tree/list models, cell renderers, channel navigation, and operational lists.
 - [ ] Port the transcript and spell-check input widgets to GTK4 rendering and event semantics.

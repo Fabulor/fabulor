@@ -233,6 +233,15 @@ one activation and production-equivalent group lifetime. Menu-bar, user-list,
 fullscreen, and away remain on existing callbacks until their state and
 sensitivity synchronization can be converted as one unit.
 
+Window-view state pass 3 (2026-07-14): menu-bar visibility, user-list
+visibility, and fullscreen now bind their GTK3 check items to boolean
+`GSimpleAction` state. Menu-bar and user-list preference changes synchronize
+the corresponding action in every window; fullscreen activation updates the
+requested state immediately and the existing window-state event corrects it to
+the platform-observed result. Existing command names, accelerators, callbacks,
+and GTK3 behaviour are preserved. Away remains deferred because its state and
+sensitivity belong to the active server session rather than the window alone.
+
 Primary surfaces:
 
 - `menu.c`, context menus, tray menus, and user-defined menus
