@@ -473,7 +473,7 @@ Automated checks:
 - [x] isolated GTK4 MSVC compile, link, and runtime probe with no warnings
 - [x] isolated GTK4 Meson configure, compile, link, and runtime test
 - [x] production GTK3 MSVC x64 Release rebuild and native tests: 18/18
-- [ ] GitHub Actions required checks: 5/5
+- [x] GitHub Actions required checks: 5/5
 
 Scope: command identity and dispatch only. GTK3 menu widgets, action binding,
 state, sensitivity, dynamic mutation, popup ownership, accelerators, dialogs,
