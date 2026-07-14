@@ -373,9 +373,11 @@ Scope: dynamic children with exact box ownership and reviewed final order.
 Meter `GtkEventBox` wrappers, menus, model-heavy layouts, and generic widget
 destruction remain unchanged for their owning stages.
 
-### Stage 2 Menu-Dialog And Shared-Button Ownership
+### PR: [#27 - GTK4 Menu-Dialog And Shared-Button Ownership](https://github.com/Fabulor/fabulor/pull/27)
 
 Date: 2026-07-14
+
+Commit: `bbd7863d`
 
 Migration stage: 2, typed Join Channel dialog and shared button ownership
 
