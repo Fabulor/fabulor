@@ -720,6 +720,42 @@ Scope: static Server menu action, model, and sensitivity projection only. The
 displayed GTK3 menu, remaining static commands, dynamic menus, popup ownership,
 dialogs, and pointer/key event handling remain unchanged for later passes.
 
+### PR: [#37 - GTK4 Channel Switcher Menu Model, Pass 9](https://github.com/Fabulor/fabulor/pull/37)
+
+Date: 2026-07-15
+
+Commit: `21cec91b`
+
+Migration stage: 3, first targeted selection action and fifth canonical
+`GMenuModel` subtree projection
+
+Files/workflows converted: shared Channel Switcher action identity; canonical
+Tabs and Tree targets; retained two-item model; preference-to-action state
+synchronization; preserved GTK3 radio callback bridge
+
+GTK version: 4.22.4
+
+GLib version: 2.88.0
+
+Build configuration: MSVC x64 Release and Meson 1.11.2 Release with MSVC 19.44
+
+Automated checks:
+
+- [x] production GTK3 frontend compile and link with 0 warnings and 0 errors
+- [x] distinct action identities: 24, including Channel Switcher selection
+- [x] focused GTK3/GIO probe: exactly 2 canonical model targets
+- [x] focused GTK3/GIO probe: existing radio callback activates exactly once
+- [x] focused GTK3/GIO probe: typed action activates once and state sync does not reactivate
+- [x] GTK4 validator unit tests: 8/8, plus repository root validation
+- [x] isolated GTK4 MSVC compile, link, and runtime probe with no warnings
+- [x] isolated GTK4 Meson configure, compile, link, and runtime test
+- [x] production GTK3 MSVC x64 Release rebuild and native tests: 18/18
+- [x] GitHub Actions required checks: 5/5
+
+Scope: Channel Switcher action, target, model, and synchronization only. The
+displayed GTK3 radio controls, remaining static commands, dynamic menus, popup
+ownership, dialogs, and pointer/key event handling remain unchanged.
+
 ## Per-PR Record Template
 
 Copy this section for each GTK4 PR:
