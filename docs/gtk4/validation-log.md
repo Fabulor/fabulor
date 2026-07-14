@@ -195,9 +195,11 @@ placement under ordered append, plus one explicitly reordered channel-family
 separator. Main-window dynamics, generic dialogs, menus, model surfaces,
 visibility, and destruction remain deferred.
 
-### Stage 2 Visibility And Lifecycle, Pass 1
+### PR: [#22 - GTK4 Widget Visibility And Lifecycle, Pass 1](https://github.com/Fabulor/fabulor/pull/22)
 
 Date: 2026-07-14
+
+Commit: `27d4e3e5`
 
 Migration stage: 2, completed-tree visibility and typed window destruction
 
