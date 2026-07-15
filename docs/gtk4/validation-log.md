@@ -1259,9 +1259,11 @@ Scope: final nested-loop removal and Stage 3 closure. GTK message-dialog
 presentation remains available during the staged production cutover, but no
 converted path depends on a nested GTK event loop.
 
-### PR: GTK4 Stage 4 Shared Clipboard Boundary
+### PR: [#53 - GTK4 Stage 4 Shared Clipboard Boundary](https://github.com/Fabulor/fabulor/pull/53)
 
 Date: 2026-07-15
+
+Commit: `0ec70605`
 
 Migration stage: 4, shared explicit-copy pass 1
 
