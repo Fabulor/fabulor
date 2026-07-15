@@ -1310,9 +1310,11 @@ Scope: simple pointer-enter, focus, and button interactions only. Message
 entry, transcript, spell-check, emoji, menu, and drag/drop events remain
 unchanged.
 
-### PR: GTK4 Stage 4 Channel Scroll Controller
+### PR: [#55 - GTK4 Stage 4 Channel Scroll Controller](https://github.com/Fabulor/fabulor/pull/55)
 
 Date: 2026-07-15
+
+Commit: `5160d299`
 
 Migration stage: 4, channel switcher scroll pass 3
 
