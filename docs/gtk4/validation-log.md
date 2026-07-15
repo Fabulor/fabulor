@@ -1050,7 +1050,7 @@ Automated checks:
 - [x] isolated GTK4 MSVC compile, link, and runtime probe with no warnings
 - [x] isolated GTK4 Meson configure, compile, link, and runtime test
 - [x] production GTK3 MSVC x64 Release rebuild and native tests: 18/18
-- [ ] GitHub Actions required checks: 5/5
+- [x] GitHub Actions required checks: 5/5
 
 Scope: contextual plugin popup model and callback ownership only. Displayed
 GTK3 popup widgets, native Windows tray items, built-in popup contents, dialogs,
