@@ -1022,7 +1022,7 @@ event handling remain unchanged.
 
 Date: 2026-07-15
 
-Commit: pending
+Commit: `3fd205ea`
 
 Migration stage: 3, contextual plugin popup model ownership
 
