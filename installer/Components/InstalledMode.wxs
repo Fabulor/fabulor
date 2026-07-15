@@ -69,9 +69,6 @@
                        KeyPath="yes" />
       </Component>
       <Component Id="ThemeAssociationRegistration" Guid="C4B1CE84-9B3D-4A8F-A44A-FB0CEB45D3A6" Directory="INSTALLFOLDER" Condition="NOT FABULOR_PORTABLE">
-        <RegistryKey Root="HKLM" Key="Software\Classes\.zct">
-          <RegistryValue Type="string" Value="Fabulor.Theme" />
-        </RegistryKey>
         <RegistryKey Root="HKLM" Key="Software\Classes\.hct">
           <RegistryValue Type="string" Value="Fabulor.Theme" />
         </RegistryKey>

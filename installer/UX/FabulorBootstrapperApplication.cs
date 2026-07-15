@@ -1810,6 +1810,7 @@ public sealed class FabulorBootstrapperApplication : BootstrapperApplication
     private void RemoveThemeAssociationRegistryRoots()
     {
         this.DeleteRegistryTreeIfExists(Registry.LocalMachine, @"Software\Classes\Fabulor.Theme");
+        // Remove the retired ZoiteChat extension when cleaning older installs.
         this.DeleteRegistryTreeIfExists(Registry.LocalMachine, @"Software\Classes\.zct");
         this.DeleteRegistryTreeIfExists(Registry.LocalMachine, @"Software\Classes\.hct");
     }

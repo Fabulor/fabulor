@@ -492,8 +492,14 @@ Primary surfaces:
 
 Deliverables:
 
-- Add a GTK4 theme adapter and define the fate of imported GTK3 themes. Do not
-  claim direct compatibility for GTK3 CSS that GTK4 cannot safely consume.
+- Add a GTK4 theme adapter for system GTK4 desktop themes and imported themes
+  under `%APPDATA%\Fabulor\themes`.
+- Retain `.hct` and `colors.conf` palette/event imports. Retire `.zct`, GTK3
+  theme import/discovery, and `%APPDATA%\Fabulor\gtk3-themes` after the adapter
+  is ready; do not convert or claim direct compatibility for GTK3 CSS.
+- Do not package mock Windows GTK themes or an optional default Fabulor theme.
+  Follow Windows light/dark and high-contrast policy through the platform
+  adapter, using GTK4 runtime defaults when no custom GTK4 theme is selected.
 - Preserve Fabulor palette/custom-CSS behaviour and dark-mode selection.
 - Validate native Windows tray/notification paths independently from optional
   Unix tray backends.
@@ -548,8 +554,6 @@ PR. Each PR must keep the shipping build usable and identify its rollback point.
 
 - Minimum supported GTK4/GLib versions after evaluating the current 4.22.4 /
   2.88.0 Windows bundle against supported non-Windows distributions.
-- Whether imported GTK3 themes are retired, converted into a constrained Fabulor
-  palette format, or retained only for the final GTK3 release line.
 - GTK4 list widget choices for each large editable model.
 - Whether the spell-check entry remains a custom widget or becomes a composed
   input control.

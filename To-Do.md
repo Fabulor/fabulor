@@ -253,6 +253,10 @@ Detailed planning and evidence live in:
 - [ ] Convert tree/list models, cell renderers, channel navigation, and operational lists.
 - [ ] Port the transcript and spell-check input widgets to GTK4 rendering and event semantics.
 - [ ] Add the GTK4 theme adapter and validate tray, notifications, icons, fonts, and platform integration.
+  - [x] Retire `.zct` registration and mock Windows GTK theme staging, downloads, and installer choices.
+  - [ ] Discover system GTK4 desktop themes and imported themes under `%APPDATA%\Fabulor\themes`.
+  - [ ] Retain `.hct` and `colors.conf` without packaging an optional default Fabulor theme.
+  - [ ] Remove GTK3 theme discovery and `%APPDATA%\Fabulor\gtk3-themes` use only after the GTK4 adapter is ready.
 - [ ] Cut production builds, CI, staging, and WiX packaging over to an allowlisted GTK4 runtime.
 - [ ] Remove GTK3 code, build inputs, runtime files, installer components, and compatibility helpers.
 - [ ] Complete clean-install, upgrade, accessibility, visual, performance, plugin, and packaging validation.
