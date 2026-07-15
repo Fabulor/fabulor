@@ -1170,7 +1170,7 @@ messages, and synchronous `FE_MSG_WAIT` behavior remain unchanged.
 
 Date: 2026-07-15
 
-Commit: pending
+Commit: `3c5d65f1`
 
 Migration stage: 3, asynchronous native file selection
 
