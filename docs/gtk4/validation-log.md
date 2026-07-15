@@ -1418,6 +1418,32 @@ Scope: three simple independent key workflows only. Main configurable
 shortcuts, completion, history, topic editing, tree/list navigation,
 transcript input, spell-check, emoji, menus, and drag/drop remain unchanged.
 
+### PR: [#59 - GTK4 Stage 4 Semantic Key Actions](https://github.com/Fabulor/fabulor/pull/59)
+
+Date: 2026-07-15
+
+Commit: `b60ceb84`
+
+Migration stage: 4, semantic key actions pass 7
+
+Files/workflows converted: topic Return and keypad Enter submission; exact
+`Ctrl+A` selection in channel key and user-limit fields
+
+Automated checks:
+
+- [x] source assertions: converted callbacks expose no `GdkEventKey`
+- [x] source assertions: all three registrations use the typed key-controller boundary
+- [x] source assertions: handled topic submission and selection remain consuming
+- [x] source assertions: the main chat input shortcut connection remains unchanged
+- [x] source inventory: direct `GdkEvent` references reduced from 111 to 109 lines across 21 files
+- [x] production GTK3 frontend compiles and links with 0 warnings and 0 errors
+- [x] isolated GTK4 MSVC compile, link, and runtime probe with 0 warnings and 0 errors
+- [x] GTK4 validator unit tests: 8/8 under WSL
+
+Scope: topic submission and channel-mode entry selection only. Main
+configurable shortcuts, completion, history, tree/list navigation, transcript
+input, spell-check, emoji, menus, and drag/drop remain unchanged.
+
 ## Per-PR Record Template
 
 Copy this section for each GTK4 PR:
