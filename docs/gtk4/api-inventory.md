@@ -46,6 +46,7 @@ Update this file in every GTK4 conversion PR. Use these status values:
 - dialog-response destruction with an exact GTK signal callback signature
 - standard and primary text clipboard updates through the widget display
 - closure-owned pointer-enter and focus interactions using GTK4 event controllers
+- smooth/discrete scroll normalization through a capture-phase GTK4 controller
 
 The production GTK3 build and isolated GTK4 MSVC/Meson probes compile the same
 helper bodies. The GTK4 probes also take each helper's address so every GTK4
@@ -220,6 +221,13 @@ closure. The scroll-to-bottom button uses ordinary button activation instead
 of a raw pointer event. These conversions remove direct event types from three
 frontend files without changing input, transcript, or spell-check dispatch.
 
+Channel switcher scroll handling now has one delta-based contract across tree,
+viewport, tab, and close-button surfaces. GTK4 receives both-axis deltas from a
+capture-phase scroll controller and propagates unhandled movement; GTK3
+normalizes smooth and discrete wheel events inside the compatibility boundary.
+The channel workflow retains only vertical direction and configured step-count
+logic, with no direct scroll-event or event-mask dependency.
+
 ## Quantitative API Baseline
 
 | GTK3 family or type | Matching lines | Files | Migration direction | Stage | Status |
@@ -236,7 +244,7 @@ frontend files without changing input, transcript, or spell-check dispatch.
 | `gtk_file_chooser_dialog_new` | 0 | 0 | GTK4 file chooser/native dialog flow | 3 | complete |
 | `gtk_menu_*` | 109 | 7 | `GMenuModel`, popovers, and actions | 3 | not started |
 | `gtk_menu_item_*` | 45 | 7 | actions/menu models | 3 | not started |
-| `GdkEvent` | 118 | 23 | event controllers and gestures | 4 | in progress |
+| `GdkEvent` | 116 | 23 | event controllers and gestures | 4 | in progress |
 | `gtk_widget_get_window` | 37 | 7 | surface/native access only where unavoidable | 4/6 | not started |
 | `gdk_window_*` | 51 | 9 | `GdkSurface`, snapshots, controllers, or removal | 4/6 | not started |
 | `gtk_clipboard_*` | 1 | 1 | `GdkClipboard` and content providers | 4/6 | in progress |

@@ -1310,6 +1310,33 @@ Scope: simple pointer-enter, focus, and button interactions only. Message
 entry, transcript, spell-check, emoji, menu, and drag/drop events remain
 unchanged.
 
+### PR: [#55 - GTK4 Stage 4 Channel Scroll Controller](https://github.com/Fabulor/fabulor/pull/55)
+
+Date: 2026-07-15
+
+Commit: `5160d299`
+
+Migration stage: 4, channel switcher scroll pass 3
+
+Files/workflows converted: channel tree wheel; tab viewport wheel; channel tab
+wheel; tab close-button wheel; smooth/discrete GTK3 normalization; GTK4
+capture-phase scroll ownership
+
+Automated checks:
+
+- [x] source assertions: channel switcher workflow exposes no `GdkEventScroll`
+- [x] source assertions: all four scroll surfaces use the typed delta callback
+- [x] source assertions: GTK4 uses a both-axis capture-phase scroll controller
+- [x] source assertions: GTK3 preserves smooth and four-way discrete normalization
+- [x] source assertions: unhandled tree movement remains available to native scrolling
+- [x] source inventory: direct `GdkEvent` references reduced to 116 lines across 23 files
+- [x] production GTK3 frontend compiles and links with 0 warnings and 0 errors
+- [x] isolated GTK4 MSVC compile, link, and runtime probe with 0 warnings and 0 errors
+- [x] GTK4 validator unit tests: 8/8 under WSL
+
+Scope: channel switcher wheel input only. Transcript scrolling, message input,
+spell-check, emoji, menus, and drag/drop remain unchanged.
+
 ## Per-PR Record Template
 
 Copy this section for each GTK4 PR:

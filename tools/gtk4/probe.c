@@ -33,6 +33,8 @@ check_compatibility_helper_signatures (void)
 		fabulor_gtk_widget_on_focus_enter;
 	void (*volatile widget_on_focus_leave) (GtkWidget *, FabulorGtkWidgetInteractionFunc, gpointer) =
 		fabulor_gtk_widget_on_focus_leave;
+	void (*volatile widget_on_scroll) (GtkWidget *, FabulorGtkScrollFunc, gpointer) =
+		fabulor_gtk_widget_on_scroll;
 	void (*volatile window_set_child) (GtkWindow *, GtkWidget *) =
 		fabulor_gtk_window_set_child;
 	void (*volatile scrolled_window_set_child) (GtkScrolledWindow *, GtkWidget *) =
@@ -60,6 +62,7 @@ check_compatibility_helper_signatures (void)
 	(void) widget_on_pointer_enter;
 	(void) widget_on_focus_enter;
 	(void) widget_on_focus_leave;
+	(void) widget_on_scroll;
 	(void) window_set_child;
 	(void) scrolled_window_set_child;
 	(void) frame_set_child;

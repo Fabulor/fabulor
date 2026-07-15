@@ -449,6 +449,16 @@ button's normal keyboard activation. Callback data is released with the
 widget/controller signal closure. Message entry, transcript, spell-check,
 emoji, menu, and drag/drop event paths remain unchanged.
 
+Channel switcher scroll pass 3 (2026-07-15): tree, viewport, tab, and tab-close
+wheel input now shares a typed delta callback. GTK4 uses a capture-phase
+`GtkEventControllerScroll` on both axes and consumes the event only when the
+existing channel/tab logic handles vertical movement. GTK3 smooth and discrete
+wheel events are normalized behind the same boundary. Channel-switch speed,
+the preference choosing channel switching versus tab-strip scrolling, smooth
+direction, and native tree scrolling when switching is disabled remain
+unchanged. Redundant GTK3 event-mask setup and widget parameters in tab-strip
+animation helpers are removed.
+
 Primary API families:
 
 - direct `GdkEvent` handlers and event masks

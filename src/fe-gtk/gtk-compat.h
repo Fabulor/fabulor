@@ -317,6 +317,98 @@ fabulor_gtk_widget_on_focus_leave (GtkWidget *widget,
 	fabulor_gtk_widget_on_focus_change (widget, FALSE, callback, user_data);
 }
 
+typedef gboolean (*FabulorGtkScrollFunc) (GtkWidget *widget, gdouble dx,
+										  gdouble dy, gpointer user_data);
+
+typedef struct
+{
+	FabulorGtkScrollFunc callback;
+	gpointer user_data;
+} FabulorGtkScrollInteraction;
+
+static inline void
+fabulor_gtk_scroll_interaction_free (gpointer data, GClosure *closure)
+{
+	(void) closure;
+	g_free (data);
+}
+
+#if GTK_MAJOR_VERSION >= 4
+static inline gboolean
+fabulor_gtk_scroll_cb (GtkEventControllerScroll *controller, gdouble dx,
+					   gdouble dy, gpointer user_data)
+{
+	FabulorGtkScrollInteraction *interaction = user_data;
+
+	return interaction->callback (
+		gtk_event_controller_get_widget (GTK_EVENT_CONTROLLER (controller)),
+		dx, dy, interaction->user_data);
+}
+#else
+static inline gboolean
+fabulor_gtk_scroll_cb (GtkWidget *widget, GdkEventScroll *event,
+					   gpointer user_data)
+{
+	FabulorGtkScrollInteraction *interaction = user_data;
+	gdouble dx = 0.0;
+	gdouble dy = 0.0;
+
+	if (event->direction != GDK_SCROLL_SMOOTH ||
+		!gdk_event_get_scroll_deltas ((GdkEvent *) event, &dx, &dy))
+	{
+		switch (event->direction)
+		{
+		case GDK_SCROLL_UP:
+			dy = -1.0;
+			break;
+		case GDK_SCROLL_DOWN:
+			dy = 1.0;
+			break;
+		case GDK_SCROLL_LEFT:
+			dx = -1.0;
+			break;
+		case GDK_SCROLL_RIGHT:
+			dx = 1.0;
+			break;
+		default:
+			break;
+		}
+	}
+
+	return interaction->callback (widget, dx, dy, interaction->user_data);
+}
+#endif
+
+static inline void
+fabulor_gtk_widget_on_scroll (GtkWidget *widget,
+							  FabulorGtkScrollFunc callback,
+							  gpointer user_data)
+{
+	FabulorGtkScrollInteraction *interaction;
+
+	g_return_if_fail (GTK_IS_WIDGET (widget));
+	g_return_if_fail (callback != NULL);
+	interaction = g_new (FabulorGtkScrollInteraction, 1);
+	interaction->callback = callback;
+	interaction->user_data = user_data;
+
+#if GTK_MAJOR_VERSION >= 4
+	GtkEventController *controller = gtk_event_controller_scroll_new (
+		GTK_EVENT_CONTROLLER_SCROLL_BOTH_AXES);
+
+	gtk_event_controller_set_propagation_phase (controller, GTK_PHASE_CAPTURE);
+	g_signal_connect_data (controller, "scroll",
+		G_CALLBACK (fabulor_gtk_scroll_cb), interaction,
+		fabulor_gtk_scroll_interaction_free, 0);
+	gtk_widget_add_controller (widget, controller);
+#else
+	gtk_widget_add_events (widget, GDK_SCROLL_MASK | GDK_SMOOTH_SCROLL_MASK);
+	g_signal_connect_data (widget, "scroll-event",
+		G_CALLBACK (fabulor_gtk_scroll_cb), interaction,
+		fabulor_gtk_scroll_interaction_free, 0);
+#endif
+}
+
 static inline void
 fabulor_gtk_window_set_child (GtkWindow *window, GtkWidget *child)
 {
