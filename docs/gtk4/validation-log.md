@@ -1362,6 +1362,34 @@ Automated checks:
 Scope: focus entry only. Message activation, key handling, completion, history,
 spell-check, emoji, transcript, menus, and drag/drop remain unchanged.
 
+### PR: [#57 - GTK4 Stage 4 Channel Tab Close Hover](https://github.com/Fabulor/fabulor/pull/57)
+
+Date: 2026-07-15
+
+Commit: `f660b8f3`
+
+Migration stage: 4, channel-tab close hover pass 5
+
+Files/workflows converted: channel-tab close-button pointer motion and leave;
+close-area hit testing; close-button prelight and pointing-cursor cleanup
+
+Automated checks:
+
+- [x] source assertions: converted hover callbacks expose no `GdkEventMotion` or `GdkEventCrossing`
+- [x] source assertions: tab hover uses the typed motion/leave and widget-cursor boundaries
+- [x] source assertions: click, context-menu, scrolling, pressed/toggled, and outer-tab prelight handlers remain unchanged
+- [x] source inventory: direct `GdkEvent` references remain centralized at 113 lines across 23 files
+- [x] source inventory: `gtk_widget_get_window` reduced from 37 to 32 lines across 7 files
+- [x] source inventory: `gdk_window_*` reduced from 51 to 49 lines across 9 files
+- [x] production GTK3 frontend compiles and links with 0 warnings and 0 errors
+- [x] isolated GTK4 MSVC compile, link, and runtime probe with 0 warnings and 0 errors
+- [x] GTK4 validator unit tests: 8/8 under WSL
+
+Scope: close-button hover and leave cleanup only. Left-click close dispatch,
+right-click context menus, scrolling, tab activation, outer-tab prelight
+suppression, message input, transcript, spell-check, emoji, menus, and
+drag/drop remain unchanged.
+
 ## Per-PR Record Template
 
 Copy this section for each GTK4 PR:

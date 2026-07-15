@@ -618,8 +618,8 @@ tab_click_cb (GtkWidget *wid, GdkEventButton *event, chan *ch)
 	return ch->cv->cb_contextmenu (ch->cv, ch, ch->tag, ch->userdata, event);
 }
 
-static gboolean
-tab_close_motion_cb (GtkWidget *wid, GdkEventMotion *event, chan *ch)
+static void
+tab_close_motion_cb (GtkWidget *wid, gdouble x, gdouble y, gpointer user_data)
 {
 	GtkWidget *close_button;
 	gint close_x;
@@ -627,47 +627,41 @@ tab_close_motion_cb (GtkWidget *wid, GdkEventMotion *event, chan *ch)
 	GtkAllocation close_alloc;
 	gboolean hover = FALSE;
 
+	(void) user_data;
+
 	close_button = g_object_get_data (G_OBJECT (wid), "tab-close-button");
 	if (prefs.hex_gui_tab_closebuttons && close_button &&
 		gtk_widget_translate_coordinates (close_button, wid, 0, 0, &close_x, &close_y))
 	{
 		gtk_widget_get_allocation (close_button, &close_alloc);
-		hover = event->x >= close_x && event->x < close_x + close_alloc.width &&
-			event->y >= close_y && event->y < close_y + close_alloc.height;
+		hover = x >= close_x && x < close_x + close_alloc.width &&
+			y >= close_y && y < close_y + close_alloc.height;
 	}
 
 	if (hover)
 	{
-		GdkCursor *cursor;
 		gtk_widget_set_state_flags (close_button, GTK_STATE_FLAG_PRELIGHT, TRUE);
-		if (gtk_widget_get_window (wid))
-		{
-			cursor = gdk_cursor_new_for_display (gtk_widget_get_display (wid), GDK_HAND2);
-			gdk_window_set_cursor (gtk_widget_get_window (wid), cursor);
-			g_object_unref (cursor);
-		}
+		fabulor_gtk_widget_set_pointing_cursor (wid, TRUE);
 	}
 	else
 	{
-		gtk_widget_unset_state_flags (close_button, GTK_STATE_FLAG_PRELIGHT);
-		if (gtk_widget_get_window (wid))
-			gdk_window_set_cursor (gtk_widget_get_window (wid), NULL);
+		if (close_button)
+			gtk_widget_unset_state_flags (close_button, GTK_STATE_FLAG_PRELIGHT);
+		fabulor_gtk_widget_set_pointing_cursor (wid, FALSE);
 	}
-
-	return FALSE;
 }
 
-static gboolean
-tab_close_leave_cb (GtkWidget *wid, GdkEventCrossing *event, chan *ch)
+static void
+tab_close_leave_cb (GtkWidget *wid, gpointer user_data)
 {
 	GtkWidget *close_button;
+
+	(void) user_data;
 
 	close_button = g_object_get_data (G_OBJECT (wid), "tab-close-button");
 	if (prefs.hex_gui_tab_closebuttons && close_button)
 		gtk_widget_unset_state_flags (close_button, GTK_STATE_FLAG_PRELIGHT);
-	if (gtk_widget_get_window (wid))
-		gdk_window_set_cursor (gtk_widget_get_window (wid), NULL);
-	return FALSE;
+	fabulor_gtk_widget_set_pointing_cursor (wid, FALSE);
 }
 
 static GtkWidget *
@@ -694,7 +688,6 @@ cv_tabs_add (chanview *cv, chan *ch, char *name, GtkTreeIter *parent)
 	but = gtk_toggle_button_new ();
 	gtk_widget_set_name (but, "zoitechat-tab");
 	gtk_widget_set_size_request (but, -1, 14);
-	gtk_widget_add_events (but, GDK_POINTER_MOTION_MASK | GDK_LEAVE_NOTIFY_MASK);
 	hbox = gtk_box_new (GTK_ORIENTATION_HORIZONTAL, 2);
 	label = gtk_label_new (name);
 	close_button = gtk_button_new ();
@@ -715,10 +708,8 @@ cv_tabs_add (chanview *cv, chan *ch, char *name, GtkTreeIter *parent)
 						 	G_CALLBACK (tab_click_cb), ch);
 	fabulor_gtk_widget_on_scroll (but, tab_scroll_cb, cv);
 	fabulor_gtk_widget_on_scroll (close_button, tab_scroll_cb, cv);
-	g_signal_connect (G_OBJECT (but), "motion-notify-event",
-						 	G_CALLBACK (tab_close_motion_cb), ch);
-	g_signal_connect (G_OBJECT (but), "leave-notify-event",
-						 	G_CALLBACK (tab_close_leave_cb), ch);
+	fabulor_gtk_widget_on_pointer_motion (but, tab_close_motion_cb,
+									  tab_close_leave_cb, NULL);
 	/* avoid prelights */
 	g_signal_connect (G_OBJECT (but), "enter-notify-event",
 						 	G_CALLBACK (tab_ignore_cb), NULL);

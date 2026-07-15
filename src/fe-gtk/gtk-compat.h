@@ -311,10 +311,143 @@ fabulor_gtk_widget_on_focus_enter (GtkWidget *widget,
 
 static inline void
 fabulor_gtk_widget_on_focus_leave (GtkWidget *widget,
-							   FabulorGtkWidgetInteractionFunc callback,
-							   gpointer user_data)
+								   FabulorGtkWidgetInteractionFunc callback,
+								   gpointer user_data)
 {
 	fabulor_gtk_widget_on_focus_change (widget, FALSE, callback, user_data);
+}
+
+typedef void (*FabulorGtkPointerMotionFunc) (GtkWidget *widget, gdouble x,
+											 gdouble y, gpointer user_data);
+typedef void (*FabulorGtkPointerLeaveFunc) (GtkWidget *widget,
+											gpointer user_data);
+
+typedef struct
+{
+	FabulorGtkPointerMotionFunc motion_callback;
+	FabulorGtkPointerLeaveFunc leave_callback;
+	gpointer user_data;
+	guint references;
+} FabulorGtkPointerTracking;
+
+static inline void
+fabulor_gtk_pointer_tracking_free (gpointer data, GClosure *closure)
+{
+	FabulorGtkPointerTracking *tracking = data;
+
+	(void) closure;
+	tracking->references--;
+	if (tracking->references == 0)
+		g_free (tracking);
+}
+
+#if GTK_MAJOR_VERSION >= 4
+static inline void
+fabulor_gtk_pointer_motion_cb (GtkEventControllerMotion *controller,
+								   gdouble x, gdouble y, gpointer user_data)
+{
+	FabulorGtkPointerTracking *tracking = user_data;
+
+	tracking->motion_callback (
+		gtk_event_controller_get_widget (GTK_EVENT_CONTROLLER (controller)),
+		x, y, tracking->user_data);
+}
+
+static inline void
+fabulor_gtk_pointer_leave_cb (GtkEventControllerMotion *controller,
+								  gpointer user_data)
+{
+	FabulorGtkPointerTracking *tracking = user_data;
+
+	tracking->leave_callback (
+		gtk_event_controller_get_widget (GTK_EVENT_CONTROLLER (controller)),
+		tracking->user_data);
+}
+#else
+static inline gboolean
+fabulor_gtk_pointer_motion_cb (GtkWidget *widget, GdkEventMotion *event,
+								   gpointer user_data)
+{
+	FabulorGtkPointerTracking *tracking = user_data;
+
+	tracking->motion_callback (widget, event->x, event->y, tracking->user_data);
+	return FALSE;
+}
+
+static inline gboolean
+fabulor_gtk_pointer_leave_cb (GtkWidget *widget, GdkEventCrossing *event,
+								  gpointer user_data)
+{
+	FabulorGtkPointerTracking *tracking = user_data;
+
+	(void) event;
+	tracking->leave_callback (widget, tracking->user_data);
+	return FALSE;
+}
+#endif
+
+static inline void
+fabulor_gtk_widget_on_pointer_motion (GtkWidget *widget,
+								  FabulorGtkPointerMotionFunc motion_callback,
+								  FabulorGtkPointerLeaveFunc leave_callback,
+								  gpointer user_data)
+{
+	FabulorGtkPointerTracking *tracking;
+
+	g_return_if_fail (GTK_IS_WIDGET (widget));
+	g_return_if_fail (motion_callback != NULL);
+	g_return_if_fail (leave_callback != NULL);
+
+	tracking = g_new (FabulorGtkPointerTracking, 1);
+	tracking->motion_callback = motion_callback;
+	tracking->leave_callback = leave_callback;
+	tracking->user_data = user_data;
+	tracking->references = 2;
+
+#if GTK_MAJOR_VERSION >= 4
+	GtkEventController *controller = gtk_event_controller_motion_new ();
+
+	g_signal_connect_data (controller, "motion",
+		G_CALLBACK (fabulor_gtk_pointer_motion_cb), tracking,
+		fabulor_gtk_pointer_tracking_free, 0);
+	g_signal_connect_data (controller, "leave",
+		G_CALLBACK (fabulor_gtk_pointer_leave_cb), tracking,
+		fabulor_gtk_pointer_tracking_free, 0);
+	gtk_widget_add_controller (widget, controller);
+#else
+	gtk_widget_add_events (widget,
+		GDK_POINTER_MOTION_MASK | GDK_LEAVE_NOTIFY_MASK);
+	g_signal_connect_data (widget, "motion-notify-event",
+		G_CALLBACK (fabulor_gtk_pointer_motion_cb), tracking,
+		fabulor_gtk_pointer_tracking_free, 0);
+	g_signal_connect_data (widget, "leave-notify-event",
+		G_CALLBACK (fabulor_gtk_pointer_leave_cb), tracking,
+		fabulor_gtk_pointer_tracking_free, 0);
+#endif
+}
+
+static inline void
+fabulor_gtk_widget_set_pointing_cursor (GtkWidget *widget, gboolean pointing)
+{
+	g_return_if_fail (GTK_IS_WIDGET (widget));
+
+#if GTK_MAJOR_VERSION >= 4
+	gtk_widget_set_cursor_from_name (widget, pointing ? "pointer" : NULL);
+#else
+	GdkWindow *window = gtk_widget_get_window (widget);
+
+	if (window)
+	{
+		GdkCursor *cursor = NULL;
+
+		if (pointing)
+			cursor = gdk_cursor_new_for_display (
+				gtk_widget_get_display (widget), GDK_HAND2);
+		gdk_window_set_cursor (window, cursor);
+		if (cursor)
+			g_object_unref (cursor);
+	}
+#endif
 }
 
 typedef gboolean (*FabulorGtkScrollFunc) (GtkWidget *widget, gdouble dx,

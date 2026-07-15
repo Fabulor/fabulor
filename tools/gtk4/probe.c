@@ -29,6 +29,10 @@ check_compatibility_helper_signatures (void)
 		fabulor_gtk_copy_text_to_clipboards;
 	void (*volatile widget_on_pointer_enter) (GtkWidget *, FabulorGtkWidgetInteractionFunc, gpointer) =
 		fabulor_gtk_widget_on_pointer_enter;
+	void (*volatile widget_on_pointer_motion) (GtkWidget *, FabulorGtkPointerMotionFunc,
+		FabulorGtkPointerLeaveFunc, gpointer) = fabulor_gtk_widget_on_pointer_motion;
+	void (*volatile widget_set_pointing_cursor) (GtkWidget *, gboolean) =
+		fabulor_gtk_widget_set_pointing_cursor;
 	void (*volatile widget_on_focus_enter) (GtkWidget *, FabulorGtkWidgetInteractionFunc, gpointer) =
 		fabulor_gtk_widget_on_focus_enter;
 	void (*volatile widget_on_focus_leave) (GtkWidget *, FabulorGtkWidgetInteractionFunc, gpointer) =
@@ -60,6 +64,8 @@ check_compatibility_helper_signatures (void)
 	(void) box_remove_child;
 	(void) copy_text_to_clipboards;
 	(void) widget_on_pointer_enter;
+	(void) widget_on_pointer_motion;
+	(void) widget_set_pointing_cursor;
 	(void) widget_on_focus_enter;
 	(void) widget_on_focus_leave;
 	(void) widget_on_scroll;
