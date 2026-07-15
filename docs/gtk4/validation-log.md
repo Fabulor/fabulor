@@ -906,11 +906,11 @@ Scope: View action state and retained model composition only. Displayed GTK3
 check/radio controls, visibility behavior, meter timers, dynamic menus, dialogs,
 and input event handling remain unchanged.
 
-### PR: pending - GTK4 Fabulor Menu Model, Pass 14
+### PR: [#43 - GTK4 Fabulor Menu Model, Pass 14](https://github.com/Fabulor/fabulor/pull/43)
 
 Date: 2026-07-15
 
-Commit: pending
+Commit: `a6b2ddb6`
 
 Migration stage: 3, two new stateless actions, tenth canonical `GMenuModel`
 subtree projection, and static main-menu projection completion
