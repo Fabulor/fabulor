@@ -694,13 +694,11 @@ theme_preferences_manager_entry_activate_cb (GtkEntry *entry, gpointer user_data
         theme_preferences_manager_entry_commit ((theme_color_manager_row *) user_data);
 }
 
-static gboolean
-theme_preferences_manager_entry_focus_out_cb (GtkWidget *widget, GdkEvent *event, gpointer user_data)
+static void
+theme_preferences_manager_entry_focus_out_cb (GtkWidget *widget, gpointer user_data)
 {
         (void) widget;
-        (void) event;
         theme_preferences_manager_entry_commit ((theme_color_manager_row *) user_data);
-        return FALSE;
 }
 
 static void
@@ -989,8 +987,8 @@ theme_preferences_create_color_manager_dialog (GtkWindow *parent, gboolean *colo
                 g_object_set_data (G_OBJECT (button), "zoitechat-theme-color-manager-ui", ui);
                 g_signal_connect (G_OBJECT (entry), "activate",
                                   G_CALLBACK (theme_preferences_manager_entry_activate_cb), row);
-                g_signal_connect (G_OBJECT (entry), "focus-out-event",
-                                  G_CALLBACK (theme_preferences_manager_entry_focus_out_cb), row);
+                fabulor_gtk_widget_on_focus_leave (
+                        entry, theme_preferences_manager_entry_focus_out_cb, row);
 
                 gtk_container_add (GTK_CONTAINER (list), list_row);
                 g_ptr_array_add (ui->rows, row);

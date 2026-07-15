@@ -3866,14 +3866,11 @@ mg_scroll_to_bottom_activate (session_gui *gui)
 	mg_update_scroll_to_bottom_button (gui);
 }
 
-static gboolean
-mg_scroll_to_bottom_button_press (GtkWidget *widget, GdkEventButton *event, gpointer userdata)
+static void
+mg_scroll_to_bottom_clicked (GtkButton *button, gpointer user_data)
 {
-	if (event->button != 1)
-		return FALSE;
-
-	mg_scroll_to_bottom_activate (userdata);
-	return TRUE;
+	(void) button;
+	mg_scroll_to_bottom_activate (user_data);
 }
 
 static gboolean
@@ -3928,8 +3925,8 @@ mg_create_scroll_to_bottom_button (session_gui *gui, GtkOverlay *overlay)
         gtk_style_context_add_class (gtk_widget_get_style_context (gui->scroll_bottom_button), "zoitechat-scroll-bottom-button");
         gtk_overlay_add_overlay (overlay, gui->scroll_bottom_button);
 
-	g_signal_connect (G_OBJECT (gui->scroll_bottom_button), "button-press-event",
-	                  G_CALLBACK (mg_scroll_to_bottom_button_press), gui);
+	g_signal_connect (G_OBJECT (gui->scroll_bottom_button), "clicked",
+	                  G_CALLBACK (mg_scroll_to_bottom_clicked), gui);
 
         adj = gtk_range_get_adjustment (GTK_RANGE (gui->vscrollbar));
         g_signal_connect_object (G_OBJECT (adj), "value-changed",

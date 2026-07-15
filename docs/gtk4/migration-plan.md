@@ -437,6 +437,18 @@ Transcript selection ownership remains in `xtext.c` for its Stage 6 custom
 widget conversion. Paste, edit-box, spell-check, emoji, and drag/drop paths are
 unchanged.
 
+Simple controller foundation pass 2 (2026-07-15): the Character Chart hover
+label now uses a typed pointer-enter boundary backed by
+`GtkEventControllerMotion` on GTK4. Join-dialog entry selection and theme-colour
+commit-on-focus-loss use the same closure-owned pattern with
+`GtkEventControllerFocus`. Their GTK3 branches retain the existing event
+signals without exposing event objects to workflow callbacks. The
+scroll-to-bottom `GtkButton` now uses its semantic `clicked` signal instead of
+decoding a raw button event, preserving pointer activation while adding the
+button's normal keyboard activation. Callback data is released with the
+widget/controller signal closure. Message entry, transcript, spell-check,
+emoji, menu, and drag/drop event paths remain unchanged.
+
 Primary API families:
 
 - direct `GdkEvent` handlers and event masks

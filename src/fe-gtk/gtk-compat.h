@@ -173,6 +173,150 @@ fabulor_gtk_copy_text_to_clipboards (GtkWidget *widget, const gchar *text)
 #endif
 }
 
+typedef void (*FabulorGtkWidgetInteractionFunc) (GtkWidget *widget,
+													gpointer user_data);
+
+typedef struct
+{
+	FabulorGtkWidgetInteractionFunc callback;
+	gpointer user_data;
+} FabulorGtkWidgetInteraction;
+
+static inline FabulorGtkWidgetInteraction *
+fabulor_gtk_widget_interaction_new (FabulorGtkWidgetInteractionFunc callback,
+									gpointer user_data)
+{
+	FabulorGtkWidgetInteraction *interaction;
+
+	interaction = g_new (FabulorGtkWidgetInteraction, 1);
+	interaction->callback = callback;
+	interaction->user_data = user_data;
+	return interaction;
+}
+
+static inline void
+fabulor_gtk_widget_interaction_free (gpointer data, GClosure *closure)
+{
+	(void) closure;
+	g_free (data);
+}
+
+#if GTK_MAJOR_VERSION >= 4
+static inline void
+fabulor_gtk_pointer_enter_cb (GtkEventControllerMotion *controller,
+								gdouble x, gdouble y, gpointer user_data)
+{
+	FabulorGtkWidgetInteraction *interaction = user_data;
+
+	(void) x;
+	(void) y;
+	interaction->callback (gtk_event_controller_get_widget (GTK_EVENT_CONTROLLER (controller)),
+						   interaction->user_data);
+}
+
+static inline void
+fabulor_gtk_focus_change_cb (GtkEventControllerFocus *controller,
+							gpointer user_data)
+{
+	FabulorGtkWidgetInteraction *interaction = user_data;
+
+	interaction->callback (gtk_event_controller_get_widget (GTK_EVENT_CONTROLLER (controller)),
+						   interaction->user_data);
+}
+#else
+static inline gboolean
+fabulor_gtk_pointer_enter_cb (GtkWidget *widget, GdkEventCrossing *event,
+								gpointer user_data)
+{
+	FabulorGtkWidgetInteraction *interaction = user_data;
+
+	(void) event;
+	interaction->callback (widget, interaction->user_data);
+	return FALSE;
+}
+
+static inline gboolean
+fabulor_gtk_focus_change_cb (GtkWidget *widget, GdkEventFocus *event,
+							gpointer user_data)
+{
+	FabulorGtkWidgetInteraction *interaction = user_data;
+
+	(void) event;
+	interaction->callback (widget, interaction->user_data);
+	return FALSE;
+}
+#endif
+
+static inline void
+fabulor_gtk_widget_on_pointer_enter (GtkWidget *widget,
+								 FabulorGtkWidgetInteractionFunc callback,
+								 gpointer user_data)
+{
+	FabulorGtkWidgetInteraction *interaction;
+
+	g_return_if_fail (GTK_IS_WIDGET (widget));
+	g_return_if_fail (callback != NULL);
+	interaction = fabulor_gtk_widget_interaction_new (callback, user_data);
+
+#if GTK_MAJOR_VERSION >= 4
+	GtkEventController *controller = gtk_event_controller_motion_new ();
+
+	g_signal_connect_data (controller, "enter",
+		G_CALLBACK (fabulor_gtk_pointer_enter_cb), interaction,
+		fabulor_gtk_widget_interaction_free, 0);
+	gtk_widget_add_controller (widget, controller);
+#else
+	g_signal_connect_data (widget, "enter-notify-event",
+		G_CALLBACK (fabulor_gtk_pointer_enter_cb), interaction,
+		fabulor_gtk_widget_interaction_free, 0);
+#endif
+}
+
+static inline void
+fabulor_gtk_widget_on_focus_change (GtkWidget *widget, gboolean entering,
+								FabulorGtkWidgetInteractionFunc callback,
+								gpointer user_data)
+{
+	FabulorGtkWidgetInteraction *interaction;
+
+	g_return_if_fail (GTK_IS_WIDGET (widget));
+	g_return_if_fail (callback != NULL);
+	interaction = fabulor_gtk_widget_interaction_new (callback, user_data);
+
+#if GTK_MAJOR_VERSION >= 4
+	GtkEventController *controller = gtk_event_controller_focus_new ();
+
+	g_signal_connect_data (controller, entering ? "enter" : "leave",
+		G_CALLBACK (fabulor_gtk_focus_change_cb), interaction,
+		fabulor_gtk_widget_interaction_free, 0);
+	gtk_widget_add_controller (widget, controller);
+#else
+	const gchar *legacy_signal = entering
+		? "focus-in-event"
+		: "focus-out-event";
+
+	g_signal_connect_data (widget, legacy_signal,
+		G_CALLBACK (fabulor_gtk_focus_change_cb), interaction,
+		fabulor_gtk_widget_interaction_free, 0);
+#endif
+}
+
+static inline void
+fabulor_gtk_widget_on_focus_enter (GtkWidget *widget,
+							   FabulorGtkWidgetInteractionFunc callback,
+							   gpointer user_data)
+{
+	fabulor_gtk_widget_on_focus_change (widget, TRUE, callback, user_data);
+}
+
+static inline void
+fabulor_gtk_widget_on_focus_leave (GtkWidget *widget,
+							   FabulorGtkWidgetInteractionFunc callback,
+							   gpointer user_data)
+{
+	fabulor_gtk_widget_on_focus_change (widget, FALSE, callback, user_data);
+}
+
 static inline void
 fabulor_gtk_window_set_child (GtkWindow *window, GtkWidget *child)
 {
