@@ -82,6 +82,7 @@ static GSList *submenu_list;
 #define FABULOR_MENU_SEARCH_MODEL "fabulor-menu-search-model"
 #define FABULOR_MENU_HELP_MODEL "fabulor-menu-help-model"
 #define FABULOR_MENU_WINDOW_MODEL "fabulor-menu-window-model"
+#define FABULOR_MENU_VIEW_MODEL "fabulor-menu-view-model"
 
 static gboolean menu_action_set_item_state (GtkWidget *item, gboolean state);
 
@@ -150,7 +151,10 @@ typedef enum
 	MENU_ACTION_CLOSE,
 	MENU_ACTION_QUIT,
 	MENU_ACTION_MENU_TOGGLE,
+	MENU_ACTION_TOPIC_BAR_TOGGLE,
 	MENU_ACTION_USER_LIST_TOGGLE,
+	MENU_ACTION_USER_LIST_BUTTONS_TOGGLE,
+	MENU_ACTION_MODE_BUTTONS_TOGGLE,
 	MENU_ACTION_FULLSCREEN_TOGGLE,
 	MENU_ACTION_CHANNEL_SWITCHER,
 	MENU_ACTION_NETWORK_METERS,
@@ -2068,13 +2072,17 @@ static struct mymenu mymenu[] = {
 
 	{N_("_View"), 0, 0, M_NEWMENU, 0, 0, 1},
 #define MENUBAR_OFFSET (17)
+#define VIEW_TOGGLE_ACTION_COUNT (5)
 	{N_("_Menu Bar"), menu_bar_toggle_cb, 0, M_MENUTOG, MENU_ID_MENUBAR, 0, 1, 0,
 		"menu-toggle", MENU_ACTION_MENU_TOGGLE},
-	{N_("_Topic Bar"), menu_topicbar_toggle, 0, M_MENUTOG, MENU_ID_TOPICBAR, 0, 1},
+	{N_("_Topic Bar"), menu_topicbar_toggle, 0, M_MENUTOG, MENU_ID_TOPICBAR, 0, 1, 0,
+		"topic-bar-toggle", MENU_ACTION_TOPIC_BAR_TOGGLE},
 	{N_("_User List"), menu_userlist_toggle, 0, M_MENUTOG, MENU_ID_USERLIST, 0, 1, 0,
 		"user-list-toggle", MENU_ACTION_USER_LIST_TOGGLE},
-	{N_("U_ser List Buttons"), menu_ulbuttons_toggle, 0, M_MENUTOG, MENU_ID_ULBUTTONS, 0, 1},
-	{N_("M_ode Buttons"), menu_cmbuttons_toggle, 0, M_MENUTOG, MENU_ID_MODEBUTTONS, 0, 1},
+	{N_("U_ser List Buttons"), menu_ulbuttons_toggle, 0, M_MENUTOG, MENU_ID_ULBUTTONS, 0, 1, 0,
+		"user-list-buttons-toggle", MENU_ACTION_USER_LIST_BUTTONS_TOGGLE},
+	{N_("M_ode Buttons"), menu_cmbuttons_toggle, 0, M_MENUTOG, MENU_ID_MODEBUTTONS, 0, 1, 0,
+		"mode-buttons-toggle", MENU_ACTION_MODE_BUTTONS_TOGGLE},
 	{0, 0, 0, M_SEP, 0, 0, 0},
 #define CHANNEL_SWITCHER_OFFSET (23)
 #define CHANNEL_SWITCHER_ACTION_COUNT (2)
@@ -2343,8 +2351,17 @@ menu_key_action (const char *name, guint keyval, GdkModifierType state)
 	case MENU_ACTION_MENU_TOGGLE:
 		menu_bar_toggle_cb ();
 		break;
+	case MENU_ACTION_TOPIC_BAR_TOGGLE:
+		menu_topicbar_toggle (NULL, NULL);
+		break;
 	case MENU_ACTION_USER_LIST_TOGGLE:
 		menu_userlist_toggle (NULL, NULL);
+		break;
+	case MENU_ACTION_USER_LIST_BUTTONS_TOGGLE:
+		menu_ulbuttons_toggle (NULL, NULL);
+		break;
+	case MENU_ACTION_MODE_BUTTONS_TOGGLE:
+		menu_cmbuttons_toggle (NULL, NULL);
 		break;
 	case MENU_ACTION_FULLSCREEN_TOGGLE:
 		menu_fullscreen_toggle (NULL, NULL);
@@ -2513,7 +2530,10 @@ static gboolean
 menu_action_is_view_stateful (menu_action_id id)
 {
 	return id == MENU_ACTION_MENU_TOGGLE ||
+		   id == MENU_ACTION_TOPIC_BAR_TOGGLE ||
 		   id == MENU_ACTION_USER_LIST_TOGGLE ||
+		   id == MENU_ACTION_USER_LIST_BUTTONS_TOGGLE ||
+		   id == MENU_ACTION_MODE_BUTTONS_TOGGLE ||
 		   id == MENU_ACTION_FULLSCREEN_TOGGLE;
 }
 
@@ -2745,6 +2765,40 @@ menu_window_action_model_new (GMenuModel *search)
 	g_menu_append_section (model, NULL, G_MENU_MODEL (transcript));
 	g_object_unref (surfaces);
 	g_object_unref (transcript);
+	g_menu_freeze (model);
+
+	return G_MENU_MODEL (model);
+}
+
+static GMenuModel *
+menu_view_action_model_new (GMenuModel *channel_switcher,
+							GMenuModel *network_meters)
+{
+	GMenu *fullscreen;
+	GMenu *model;
+	GMenu *selection;
+	GMenu *toggles;
+
+	model = g_menu_new ();
+	toggles = g_menu_new ();
+	selection = g_menu_new ();
+	fullscreen = g_menu_new ();
+	menu_action_model_append_range (toggles, MENUBAR_OFFSET,
+									VIEW_TOGGLE_ACTION_COUNT);
+	g_menu_append_submenu (selection, _(mymenu[CHANNEL_SWITCHER_OFFSET].text),
+						 channel_switcher);
+	g_menu_append_submenu (selection, _(mymenu[NETWORK_METERS_OFFSET].text),
+						 network_meters);
+	menu_action_model_append_range (fullscreen, FULLSCREEN_OFFSET, 1);
+	g_menu_freeze (toggles);
+	g_menu_freeze (selection);
+	g_menu_freeze (fullscreen);
+	g_menu_append_section (model, NULL, G_MENU_MODEL (toggles));
+	g_menu_append_section (model, NULL, G_MENU_MODEL (selection));
+	g_menu_append_section (model, NULL, G_MENU_MODEL (fullscreen));
+	g_object_unref (toggles);
+	g_object_unref (selection);
+	g_object_unref (fullscreen);
 	g_menu_freeze (model);
 
 	return G_MENU_MODEL (model);
@@ -3350,6 +3404,7 @@ menu_create_main (void *accel_group, int bar, int away, int away_sensitive,
 	GMenuModel *server_model;
 	GMenuModel *settings_model;
 	GMenuModel *window_model;
+	GMenuModel *view_model;
 	GtkWidget *item;
 	GtkWidget *menu = 0;
 	GtkWidget *menu_item = 0;
@@ -3464,9 +3519,13 @@ menu_create_main (void *accel_group, int bar, int away, int away_sensitive,
 	g_object_set_data_full (G_OBJECT (menu_bar), FABULOR_MENU_CHANNEL_SWITCHER_MODEL,
 						 channel_switcher_model, g_object_unref);
 	network_meters_model = menu_action_model_new (NETWORK_METERS_OFFSET,
-												NETWORK_METERS_ACTION_COUNT);
+										NETWORK_METERS_ACTION_COUNT);
 	g_object_set_data_full (G_OBJECT (menu_bar), FABULOR_MENU_NETWORK_METERS_MODEL,
 						 network_meters_model, g_object_unref);
+	view_model = menu_view_action_model_new (channel_switcher_model,
+										 network_meters_model);
+	g_object_set_data_full (G_OBJECT (menu_bar), FABULOR_MENU_VIEW_MODEL,
+						 view_model, g_object_unref);
 	new_model = menu_action_model_new (NEW_OFFSET, NEW_ACTION_COUNT);
 	g_object_set_data_full (G_OBJECT (menu_bar), FABULOR_MENU_NEW_MODEL,
 						 new_model, g_object_unref);

@@ -314,6 +314,14 @@ correct stale Search and Help offsets introduced when the earlier New submenu
 grew by two entries. GTK3 presentation, transcript behavior, and the contained
 Save Text file-selection flow remain unchanged.
 
+View menu-model pass 13 (2026-07-15): Topic Bar, User List Buttons, and Mode
+Buttons now use synchronized boolean actions alongside the existing Menu Bar,
+User List, and Fullscreen actions. The retained View model has three sections
+and nests the existing Channel Switcher and Network Meters target models.
+Cross-window preference synchronization remains authoritative, while displayed
+GTK3 check/radio items and their layout, timer, and visibility behavior remain
+unchanged.
+
 Primary surfaces:
 
 - `menu.c`, context menus, tray menus, and user-defined menus
