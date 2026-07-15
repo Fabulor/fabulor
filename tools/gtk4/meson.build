@@ -47,6 +47,7 @@ glib_library = cc.find_library('glib-2.0', dirs: gtk4_library_dir, required: tru
 probe = executable(
   'fabulor-gtk4-probe',
   'probe.c',
+  '../../src/fe-gtk/gtk4-list-models.c',
   include_directories: gtk4_includes,
   dependencies: [gtk4_library, gio_library, gobject_library, glib_library],
 )

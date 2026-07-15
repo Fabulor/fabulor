@@ -196,6 +196,7 @@ Detailed planning and evidence live in:
 
 - [`docs/gtk4/migration-plan.md`](docs/gtk4/migration-plan.md)
 - [`docs/gtk4/api-inventory.md`](docs/gtk4/api-inventory.md)
+- [`docs/gtk4/list-model-architecture.md`](docs/gtk4/list-model-architecture.md)
 - [`docs/gtk4/runtime-packaging.md`](docs/gtk4/runtime-packaging.md)
 - [`docs/gtk4/validation-log.md`](docs/gtk4/validation-log.md)
 
@@ -263,6 +264,7 @@ Detailed planning and evidence live in:
   - [x] Convert private-dialog and user-list external file drops to a typed GTK4 `GdkFileList` boundary.
   - [x] Convert internal channel-view, user-list, scrollbar, and pane-position drag operations to typed GTK4 source/drop controllers.
 - [ ] Convert tree/list models, cell renderers, channel navigation, and operational lists.
+  - [x] Establish tested GTK4 flat and hierarchical model stacks with explicit sorting, selection, identity, and ownership contracts.
 - [ ] Port the transcript and spell-check input widgets to GTK4 rendering and event semantics.
 - [ ] Add the GTK4 theme adapter and validate tray, notifications, icons, fonts, and platform integration.
   - [x] Retire `.zct` registration and mock Windows GTK theme staging, downloads, and installer choices.

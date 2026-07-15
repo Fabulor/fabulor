@@ -64,6 +64,16 @@ nine operational-list scrollers. The main user-list constructor has the same
 typed parent contract. Their tree models, renderers, selection, and drag/drop
 paths remain outside this Stage 2 ownership conversion.
 
+Stage 5 model architecture pass 1 adds GTK4-only flat and hierarchical model
+stacks in `gtk4-list-models.c`. The flat stack owns a `GListStore`,
+`GtkSortListModel`, and `GtkMultiSelection`; the tree stack owns root
+`GListStore`, `GtkTreeListModel`, and `GtkSingleSelection` instances. The
+isolated probes execute ordering, identity, expansion, selection, and cleanup
+contracts. No production `GtkTreeView`, `GtkTreeStore`, `GtkListStore`, or cell
+renderer has been replaced yet, so quantitative production counts are
+unchanged by this pass. A fresh literal type recount records 80 `GtkTreeView`
+lines across 18 files.
+
 The visibility helper is limited to 17 reviewed roots whose descendants have
 finished construction and have no intentional hidden state at reveal time.
 The boundary deliberately does not abstract generic widget destruction,
@@ -310,7 +320,7 @@ clipboard ownership in `xtext.c`, not drag/drop, and remains assigned to Stage 6
 | `gtk_widget_get_window` | 31 | 6 | surface/native access only where unavoidable | 4/6 | in progress |
 | `gdk_window_*` | 48 | 8 | `GdkSurface`, snapshots, controllers, or removal | 4/6 | in progress |
 | `gtk_clipboard_*` | 1 | 1 | `GdkClipboard` and content providers | 4/6 | in progress |
-| `GtkTreeView` | 81 | 18 | choose GTK4 list/model widget per workflow | 5 | not started |
+| `GtkTreeView` | 80 | 18 | choose GTK4 list/model widget per workflow | 5 | in progress; model architecture established |
 | `GtkStatusIcon` | 6 | 1 | native Win32 tray or supported external backend | 7 | not started |
 | screen CSS provider installation | 4 | 3 | display-scoped provider installation | 7 | not started |
 
@@ -382,11 +392,11 @@ Status: `not started`
 
 | Cluster | Main files | GTK4 concern | Status |
 |---|---|---|---|
-| Main windows and tabs | `maingui.c`, `chanview*.c` | child ownership, gestures, DnD, focus | not started |
+| Main windows and tabs | `maingui.c`, `chanview*.c` | child ownership, gestures, DnD, focus | in progress |
 | Transcript | `xtext.c`, `xtext.h` | snapshot rendering and event model | not started |
 | Edit box and spell check | `maingui.c`, `sexy-spell-entry.c` | editable composition/subclass and controllers | not started |
 | Menus and commands | `menu.c`, `plugin-tray.c` | actions and menu models | not started |
-| Operational lists | `servlistgui.c`, `chanlist.c`, `userlistgui.c`, `dccgui.c`, `banlist.c`, `notifygui.c`, `ignoregui.c` | list models, factories, editing | not started |
+| Operational lists | `servlistgui.c`, `chanlist.c`, `userlistgui.c`, `dccgui.c`, `banlist.c`, `notifygui.c`, `ignoregui.c` | list models, factories, editing | in progress; model architecture established |
 | Preferences/editors | `setup.c`, `fkeys.c`, `textgui.c`, `editlist.c` | generated widgets, models, async dialogs | not started |
 | Themes | `theme/*.c`, `common/gtk3-theme-service.c` | GTK4 CSS compatibility and adapter policy | not started |
 | Platform integration | `fe-gtk.c`, `plugin-tray.c`, notifications | displays, surfaces, icons, native tray | not started |

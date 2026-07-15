@@ -566,6 +566,19 @@ Exit criteria:
 
 ### Stage 5: Lists, Trees, Models, And Channel Navigation
 
+Model architecture pass 1 (2026-07-15): reusable GTK4-only model stacks now
+define the first conversion boundary. Flat operational lists use an app-owned
+`GListStore`, optional `GtkSortListModel`, and `GtkMultiSelection` before a
+future `GtkListView` or `GtkColumnView`. Hierarchical channel navigation uses
+per-level `GListStore` ownership, `GtkTreeListModel`, and
+`GtkSingleSelection` before a future `GtkListView` with `GtkTreeExpander`.
+Executable MSVC and Meson probe contracts cover sorting, selection persistence
+across insertion, identity-based removal, hierarchy expansion, depth, and
+cleanup. Production GTK3 models and views are deliberately unchanged in this
+architecture pass; each following pass will replace one complete owning
+surface without parallel model writes. The detailed contract is in
+[`list-model-architecture.md`](list-model-architecture.md).
+
 Primary surfaces:
 
 - server list and editor
