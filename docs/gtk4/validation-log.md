@@ -1094,7 +1094,7 @@ startup messages, and synchronous `FE_MSG_WAIT` behavior remain unchanged.
 
 Date: 2026-07-15
 
-Commit: pending
+Commit: `8d8b6d56`
 
 Migration stage: 3, stateful theme-dialog lifecycle
 
