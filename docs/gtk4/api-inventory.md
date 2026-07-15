@@ -170,6 +170,14 @@ Detach label selected for that window before model construction. Dynamic
 Usermenu, `/MENU`, plugin top-level content, and popup mutation remain outside
 the static model milestone.
 
+The dynamic Usermenu is the first complete mutable model boundary. Every menu
+root retains a recursive model built from `usermenu.conf`, including nested
+submenus, section separators, copied command targets, boolean preference
+actions, icon-path hints, and the editor command. Refresh removes the previous
+Usermenu actions before publishing the replacement model, so reloaded list
+storage cannot remain reachable through an action callback. Plugin `/MENU`
+entries and contextual popup models remain outside this boundary.
+
 ## Quantitative API Baseline
 
 | GTK3 family or type | Matching lines | Files | Migration direction | Stage | Status |

@@ -241,6 +241,8 @@ Detailed planning and evidence live in:
       - [x] Add canonical actions for the remaining Window commands, project its complete nested model, and correct the retained Search/Help boundaries.
       - [x] Convert the remaining View toggles to synchronized boolean actions and project the complete three-section View model.
       - [x] Add canonical Load and Attach/Detach actions and project the complete five-section Fabulor menu.
+      - [x] Project the dynamic Usermenu into a retained nested model with command, toggle, separator, icon-hint, edit, and refresh ownership.
+      - [ ] Convert plugin `/MENU` mutation and contextual popup model ownership.
 - [ ] Convert input events, shortcuts, clipboard, drag/drop, and pointer gestures.
 - [ ] Convert tree/list models, cell renderers, channel navigation, and operational lists.
 - [ ] Port the transcript and spell-check input widgets to GTK4 rendering and event semantics.

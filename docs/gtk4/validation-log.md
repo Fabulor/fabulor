@@ -945,6 +945,41 @@ Displayed GTK3 menus, plugin chooser containment, Attach/Detach behavior,
 dynamic Usermenu and `/MENU` mutation, popup ownership, dialogs, and input event
 handling remain unchanged.
 
+### PR: GTK4 Dynamic Usermenu Model, Pass 15
+
+Date: 2026-07-15
+
+Commit: pending
+
+Migration stage: 3, first complete dynamic `GMenuModel` boundary
+
+Files/workflows converted: recursive Usermenu model projection; command and
+preference-toggle actions; section, submenu, icon-hint, and editor composition;
+per-window model refresh and retired-action cleanup
+
+GTK version: 4.22.4
+
+GLib version: 2.88.0
+
+Build configuration: MSVC x64 Release and Meson 1.11.2 Release with MSVC 19.44
+
+Automated checks:
+
+- [x] production GTK3 frontend compile and link with 0 warnings and 0 errors
+- [x] source assertions: model refresh runs at creation and after Usermenu edits
+- [x] focused GIO probe: nested submenu and separator sections retain structure
+- [x] focused GIO probe: command targets activate once and toggle state changes
+- [x] focused GIO probe: icon hints survive and retired actions are removed
+- [x] GTK4 validator unit tests: 8/8, plus repository root validation
+- [x] isolated GTK4 MSVC compile, link, and runtime probe with no warnings
+- [x] isolated GTK4 Meson configure, compile, link, and runtime test
+- [x] production GTK3 MSVC x64 Release rebuild and native tests: 18/18
+- [ ] GitHub Actions required checks
+
+Scope: dynamic Usermenu model and action ownership only. Displayed GTK3 menu
+widgets, command parsing and substitutions, plugin `/MENU` mutation, contextual
+popup ownership, dialogs, and input event handling remain unchanged.
+
 ## Per-PR Record Template
 
 Copy this section for each GTK4 PR:

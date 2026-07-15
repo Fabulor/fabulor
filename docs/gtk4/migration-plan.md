@@ -330,6 +330,15 @@ window's context is selected, and plugin loading continues through the existing
 contained chooser and no-plugin fallback. This completes static main-menu model
 projection; dynamic menu mutation and popup ownership remain separate work.
 
+Dynamic Usermenu model pass 15 (2026-07-15): each main-window menu root now
+retains a complete `GMenuModel` projection of `usermenu.conf`. The recursive
+builder preserves nested submenus, separator-defined sections, command targets,
+preference toggles, icon hints, and the trailing Edit This Menu command.
+Usermenu edits atomically replace the model and its action-owned toggle data for
+each distinct window, avoiding references to retired configuration entries.
+The displayed GTK3 Usermenu and its command parsing remain unchanged; plugin
+`/MENU` mutation and contextual popup ownership remain separate work.
+
 Primary surfaces:
 
 - `menu.c`, context menus, tray menus, and user-defined menus
