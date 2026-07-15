@@ -1560,7 +1560,7 @@ Scope: internal layout drag/drop and user-list hover lifecycle only. Channel and
 user tree/list model conversion, transcript clipboard/selection ownership,
 spell-check widget internals, emoji, menus, and other input remain unchanged.
 
-### PR: #64 - GTK4 Stage 5 List Model Architecture
+### PR: [#64 - GTK4 Stage 5 List Model Architecture](https://github.com/Fabulor/fabulor/pull/64)
 
 Date: 2026-07-15
 
