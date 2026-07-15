@@ -243,7 +243,7 @@ Detailed planning and evidence live in:
       - [x] Add canonical Load and Attach/Detach actions and project the complete five-section Fabulor menu.
       - [x] Project the dynamic Usermenu into a retained nested model with command, toggle, separator, icon-hint, edit, and refresh ownership.
       - [x] Project finalized main-menu `/MENU` mutation into a retained nested overlay with copied action ownership and recursive-delete cleanup.
-      - [ ] Convert contextual `$NICK`, `$URL`, `$CHAN`, `$TAB`, and `$TRAY` popup model ownership.
+      - [x] Convert contextual `$NICK`, `$URL`, `$CHAN`, `$TAB`, and `$TRAY` popup model ownership.
 - [ ] Convert input events, shortcuts, clipboard, drag/drop, and pointer gestures.
 - [ ] Convert tree/list models, cell renderers, channel navigation, and operational lists.
 - [ ] Port the transcript and spell-check input widgets to GTK4 rendering and event semantics.

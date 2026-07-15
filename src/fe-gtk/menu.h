@@ -40,6 +40,7 @@ GtkWidget *create_icon_menu (char *labeltext, void *stock_name, int is_stock);
 void menu_create (GtkWidget *menu, GSList *list, char *target, int check_path);
 void menu_bar_toggle (void);
 void menu_add_plugin_items (GtkWidget *menu, char *root, char *target);
+void menu_add_plugin_model (GObject *owner, const char *root, const char *target);
 void menu_change_layout (void);
 void menu_update_quit_accel (void);
 gboolean menu_key_action (const char *name, guint keyval, GdkModifierType state);

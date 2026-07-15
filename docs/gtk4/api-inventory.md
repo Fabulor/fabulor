@@ -184,7 +184,14 @@ or sensitivity updates are applied, or recursive child deletion has completed.
 Each GTK menu root then rebuilds nested paths and sections from live main-menu
 entries, publishes copied action lookup data, and removes every previous plugin
 action. Missing parent paths remain excluded as they are in GTK3. Contextual
-`$NICK`, `$URL`, `$CHAN`, `$TAB`, and `$TRAY` entries remain outside this model.
+`$NICK`, `$URL`, `$CHAN`, `$TAB`, and `$TRAY` entries now have a per-invocation
+model boundary. The allowlisted root selects the live plugin subtree, while
+each action owns copied root and target strings and only a weak reference to
+the popup owner. Replacing a stateful model retires its owner's previous action
+group atomically; destroying the owner releases the complete model and callback
+state. Targeted substitution and direct toggle/radio dispatch preserve GTK3
+behavior. The GTK3 popup widgets and native Windows tray presentation remain
+in place pending presentation conversion.
 
 ## Quantitative API Baseline
 

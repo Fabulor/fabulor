@@ -1018,6 +1018,44 @@ Scope: main-menu `/MENU` model and copied action ownership only. Displayed GTK3
 menus, plugin command semantics, contextual popup roots, dialogs, and input
 event handling remain unchanged.
 
+### PR: GTK4 Contextual Plugin Popup Model, Pass 17
+
+Date: 2026-07-15
+
+Commit: pending
+
+Migration stage: 3, contextual plugin popup model ownership
+
+Files/workflows converted: allowlisted `$NICK`, `$URL`, `$CHAN`, `$TAB`, and
+`$TRAY` projections; per-invocation action groups; copied root and target
+ownership; weak-owner state refresh; native Windows tray model lifetime
+
+GTK version: 4.22.4
+
+GLib version: 2.88.0
+
+Build configuration: MSVC x64 Release and Meson 1.11.2 Release with MSVC 19.44
+
+Automated checks:
+
+- [x] production GTK3 frontend compiles and links with 0 warnings and 0 errors
+- [x] source assertions: exactly five contextual roots are accepted
+- [x] source assertions: each GTK popup invocation retains its model and action group
+- [x] source assertions: native Windows tray invocation owns and retires its model
+- [x] source assertions: targeted substitution and direct toggle/radio dispatch are preserved
+- [x] focused GIO probe: copied targets survive caller-buffer release
+- [x] focused GIO probe: nested sections and namespaced actions retain structure
+- [x] focused GIO probe: replacement actions and old references have independent lifetimes
+- [x] GTK4 validator unit tests: 8/8, plus repository root validation
+- [x] isolated GTK4 MSVC compile, link, and runtime probe with no warnings
+- [x] isolated GTK4 Meson configure, compile, link, and runtime test
+- [x] production GTK3 MSVC x64 Release rebuild and native tests: 18/18
+- [ ] GitHub Actions required checks: 5/5
+
+Scope: contextual plugin popup model and callback ownership only. Displayed
+GTK3 popup widgets, native Windows tray items, built-in popup contents, dialogs,
+and input event handling remain unchanged.
+
 ## Per-PR Record Template
 
 Copy this section for each GTK4 PR:

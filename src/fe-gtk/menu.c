@@ -86,6 +86,8 @@ static GSList *submenu_list;
 #define FABULOR_MENU_ROOT_MODEL "fabulor-menu-root-model"
 #define FABULOR_MENU_USER_MODEL "fabulor-menu-user-model"
 #define FABULOR_MENU_PLUGIN_MODEL "fabulor-menu-plugin-model"
+#define FABULOR_MENU_CONTEXT_MODEL "fabulor-menu-context-model"
+#define FABULOR_MENU_CONTEXT_ACTION_GROUP "fabulor-menu-context-action-group"
 
 #define FABULOR_USER_COMMAND_ACTION "user-command"
 #define FABULOR_USER_EDIT_ACTION "edit-user-menu"
@@ -3643,9 +3645,24 @@ typedef struct
 {
 	char *path;
 	char *label;
+	char *root;
+	char *target;
+	gboolean is_main;
+	gboolean has_target;
+	GWeakRef owner;
 } menu_plugin_action_data;
 
+typedef struct
+{
+	GObject *owner;
+	const char *action_namespace;
+	const char *root;
+	const char *target;
+	gboolean is_main;
+} menu_plugin_projection;
+
 static void menu_plugin_models_refresh (void);
+void menu_add_plugin_model (GObject *owner, const char *root, const char *target);
 
 static void
 menu_plugin_node_free (gpointer data)
@@ -3764,13 +3781,13 @@ menu_plugin_tree_seed_path (menu_plugin_node *root, const char *path)
 }
 
 static void
-menu_plugin_tree_add (menu_plugin_node *root, menu_entry *me)
+menu_plugin_tree_add (menu_plugin_node *root, menu_entry *me, const char *path)
 {
 	menu_plugin_node *node;
 	menu_plugin_node *parent;
 	gboolean submenu;
 
-	parent = menu_plugin_tree_path (root, me->path);
+	parent = menu_plugin_tree_path (root, path);
 	if (!parent)
 		return;
 	submenu = me->label && !me->cmd && !me->ucmd && !me->group;
@@ -3802,7 +3819,26 @@ menu_plugin_tree_new (void)
 		menu_entry *me = list->data;
 
 		if (me->is_main)
-			menu_plugin_tree_add (root, me);
+			menu_plugin_tree_add (root, me, me->path);
+	}
+
+	return root;
+}
+
+static menu_plugin_node *
+menu_plugin_context_tree_new (const char *root_name)
+{
+	menu_plugin_node *root;
+	GSList *list;
+
+	root = menu_plugin_node_new (NULL, TRUE, FALSE, NULL);
+	for (list = menu_list; list; list = list->next)
+	{
+		menu_entry *me = list->data;
+
+		if (!me->is_main &&
+			!strncmp (me->path, root_name + 1, (guchar) root_name[0]))
+			menu_plugin_tree_add (root, me, me->path + me->root_offset);
 	}
 
 	return root;
@@ -3833,7 +3869,8 @@ menu_plugin_entry_find (const menu_plugin_action_data *data)
 	{
 		menu_entry *me = list->data;
 
-		if (me->is_main && !strcmp (me->path, data->path) &&
+		if ((me->is_main != 0) == data->is_main &&
+			!strcmp (me->path, data->path) &&
 			!menu_streq (me->label, data->label, 1))
 			return me;
 	}
@@ -3849,6 +3886,9 @@ menu_plugin_action_data_free (gpointer data, GClosure *closure)
 	(void) closure;
 	g_free (action_data->path);
 	g_free (action_data->label);
+	g_free (action_data->root);
+	g_free (action_data->target);
+	g_weak_ref_clear (&action_data->owner);
 	g_free (action_data);
 }
 
@@ -3859,12 +3899,26 @@ menu_plugin_action_activate (GSimpleAction *action, GVariant *parameter,
 	menu_plugin_action_data *data = user_data;
 	menu_entry *me;
 	const char *command = NULL;
+	GObject *owner = NULL;
+	char *root = NULL;
+	char *target = NULL;
+	gboolean has_target;
+	gboolean is_main;
 
 	(void) action;
 	(void) parameter;
 	me = menu_plugin_entry_find (data);
 	if (!me)
 		return;
+
+	has_target = data->has_target;
+	is_main = data->is_main;
+	if (!is_main)
+	{
+		owner = g_weak_ref_get (&data->owner);
+		root = g_strdup (data->root);
+		target = g_strdup (data->target);
+	}
 
 	if (me->group)
 	{
@@ -3874,7 +3928,7 @@ menu_plugin_action_activate (GSimpleAction *action, GVariant *parameter,
 		{
 			menu_entry *peer = list->data;
 
-			if (peer->is_main && peer->group &&
+			if ((peer->is_main != 0) == is_main && peer->group &&
 				!strcmp (peer->path, me->path) &&
 				!strcmp (peer->group, me->group))
 			{
@@ -3883,25 +3937,40 @@ menu_plugin_action_activate (GSimpleAction *action, GVariant *parameter,
 			}
 		}
 		command = me->cmd;
-		menu_plugin_models_refresh ();
+		if (is_main)
+			menu_plugin_models_refresh ();
 	}
 	else if (me->ucmd)
 	{
 		me->state = !me->state;
 		menu_foreach_gui (me, menu_update_cb);
 		command = me->state ? me->cmd : me->ucmd;
-		menu_plugin_models_refresh ();
+		if (is_main)
+			menu_plugin_models_refresh ();
 	}
 	else
 		command = me->cmd;
+
+	if (!is_main && owner)
+		menu_add_plugin_model (owner, root, has_target ? target : NULL);
 
 	if (command && current_sess)
 	{
 		if (me->group || me->ucmd)
 			handle_command (current_sess, (char *) command, FALSE);
+		else if (!is_main && has_target)
+			nick_command_parse (current_sess, (char *) command, target, target);
 		else
 			userlist_button_cb (NULL, (char *) command);
 	}
+	else if (command && !is_main && has_target && sess_list)
+	{
+		nick_command_parse (sess_list->data, (char *) command, target, target);
+	}
+
+	g_clear_object (&owner);
+	g_free (root);
+	g_free (target);
 }
 
 static void
@@ -3951,7 +4020,8 @@ menu_plugin_model_append_section (GMenu *model, GMenu **section)
 
 static GMenuModel *
 menu_plugin_node_model_new (menu_plugin_node *parent, GActionMap *action_map,
-							guint *action_index)
+							guint *action_index,
+							const menu_plugin_projection *projection)
 {
 	GMenu *model;
 	GMenu *section;
@@ -3975,7 +4045,8 @@ menu_plugin_node_model_new (menu_plugin_node *parent, GActionMap *action_map,
 			GMenuItem *item;
 			GMenuModel *submenu;
 
-			submenu = menu_plugin_node_model_new (node, action_map, action_index);
+			submenu = menu_plugin_node_model_new (node, action_map, action_index,
+											 projection);
 			item = g_menu_item_new_submenu (node->label, submenu);
 			menu_plugin_item_set_metadata (item, node,
 									  node->entry ? "submenu" : "path");
@@ -4002,12 +4073,18 @@ menu_plugin_node_model_new (menu_plugin_node *parent, GActionMap *action_map,
 			data = g_new0 (menu_plugin_action_data, 1);
 			data->path = g_strdup (node->entry->path);
 			data->label = g_strdup (node->entry->label);
+			data->root = g_strdup (projection->root);
+			data->target = g_strdup (projection->target);
+			data->is_main = projection->is_main;
+			data->has_target = projection->target != NULL;
+			g_weak_ref_init (&data->owner, projection->owner);
 			g_signal_connect_data (action, "activate",
 							   G_CALLBACK (menu_plugin_action_activate), data,
 							   menu_plugin_action_data_free, 0);
 			g_action_map_add_action (action_map, G_ACTION (action));
 			g_object_unref (action);
-			detailed_name = g_strconcat ("fabulor.", action_name, NULL);
+			detailed_name = g_strconcat (projection->action_namespace, ".",
+									  action_name, NULL);
 			item = g_menu_item_new (node->label, detailed_name);
 			menu_plugin_item_set_metadata (item, node,
 									  node->entry->group ? "radio" :
@@ -4031,6 +4108,7 @@ menu_plugin_model_refresh (GtkWidget *menu_bar)
 	GActionMap *action_map;
 	GMenuModel *model;
 	menu_plugin_node *root;
+	menu_plugin_projection projection;
 	guint action_index = 0;
 
 	if (!menu_bar)
@@ -4041,9 +4119,65 @@ menu_plugin_model_refresh (GtkWidget *menu_bar)
 
 	menu_plugin_remove_actions (action_map);
 	root = menu_plugin_tree_new ();
-	model = menu_plugin_node_model_new (root, action_map, &action_index);
+	projection.owner = NULL;
+	projection.action_namespace = "fabulor";
+	projection.root = NULL;
+	projection.target = NULL;
+	projection.is_main = TRUE;
+	model = menu_plugin_node_model_new (root, action_map, &action_index,
+									 &projection);
 	menu_plugin_node_free (root);
 	g_object_set_data_full (G_OBJECT (menu_bar), FABULOR_MENU_PLUGIN_MODEL,
+						 model, g_object_unref);
+}
+
+static gboolean
+menu_plugin_context_root_valid (const char *root_name)
+{
+	static const char *roots[] = {
+		"\x5$NICK", "\x4$URL", "\x5$CHAN", "\x4$TAB", "\x5$TRAY"
+	};
+	guint i;
+
+	if (!root_name)
+		return FALSE;
+	for (i = 0; i < G_N_ELEMENTS (roots); i++)
+	{
+		if (!strcmp (root_name, roots[i]))
+			return TRUE;
+	}
+
+	return FALSE;
+}
+
+void
+menu_add_plugin_model (GObject *owner, const char *root_name, const char *target)
+{
+	GSimpleActionGroup *action_group;
+	GMenuModel *model;
+	menu_plugin_node *root;
+	menu_plugin_projection projection;
+	guint action_index = 0;
+
+	if (!owner || !menu_plugin_context_root_valid (root_name))
+		return;
+
+	action_group = g_simple_action_group_new ();
+	root = menu_plugin_context_tree_new (root_name);
+	projection.owner = owner;
+	projection.action_namespace = "fabulor-context";
+	projection.root = root_name;
+	projection.target = target;
+	projection.is_main = FALSE;
+	model = menu_plugin_node_model_new (root, G_ACTION_MAP (action_group),
+									 &action_index, &projection);
+	menu_plugin_node_free (root);
+	if (GTK_IS_WIDGET (owner))
+		gtk_widget_insert_action_group (GTK_WIDGET (owner), "fabulor-context",
+									G_ACTION_GROUP (action_group));
+	g_object_set_data_full (owner, FABULOR_MENU_CONTEXT_ACTION_GROUP,
+						 action_group, g_object_unref);
+	g_object_set_data_full (owner, FABULOR_MENU_CONTEXT_MODEL,
 						 model, g_object_unref);
 }
 
@@ -4134,6 +4268,7 @@ menu_add_plugin_items (GtkWidget *menu, char *root, char *target)
 			menu_add_cb (menu, me, target);
 		list = list->next;
 	}
+	menu_add_plugin_model (G_OBJECT (menu), root, target);
 }
 
 /* === END STUFF FOR /MENU === */
