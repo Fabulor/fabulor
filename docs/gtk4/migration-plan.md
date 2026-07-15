@@ -499,6 +499,17 @@ are unchanged. The main chat input's configurable shortcut engine remains the
 only direct key-event registration in `maingui.c` and is deferred to its own
 behavior-preserving pass.
 
+Main shortcut engine pass 8 (2026-07-15): the chat input now feeds normalized
+key value and modifier state from the shared key-controller boundary into
+plugin notification, binding lookup, and all 17 configurable actions. GTK4
+callback consumption replaces the GTK3-specific signal-stop call while
+retaining the existing action return contract. Session resolution, plugin
+first refusal, plugin-triggered tab closure checks, exact modifier filtering,
+commands, menu actions, page and tab movement, scrolling, buffer insertion,
+history, completion, replacement, and completion reset on Space remain
+unchanged. The shortcut-editor tree's Shift+Up/Down row ordering remains a
+separate raw key workflow for its Stage 5 model conversion.
+
 Primary API families:
 
 - direct `GdkEvent` handlers and event masks

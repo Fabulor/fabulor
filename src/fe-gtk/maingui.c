@@ -5520,8 +5520,7 @@ mg_create_entry (session *sess, GtkWidget *box)
         fabulor_gtk_box_append (GTK_BOX (hbox), entry, TRUE, TRUE, 0);
 
         gtk_widget_set_name (entry, "zoitechat-inputbox");
-        g_signal_connect (G_OBJECT (entry), "key-press-event",
-                                                        G_CALLBACK (key_handle_key_press), NULL);
+        fabulor_gtk_widget_on_key_pressed (entry, key_handle_key_press, NULL);
         fabulor_gtk_widget_on_focus_enter (entry, mg_inputbox_focus, gui);
         g_signal_connect (G_OBJECT (entry), "populate-popup",
                                                         G_CALLBACK (mg_inputbox_rightclick), NULL);

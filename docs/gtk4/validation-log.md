@@ -1444,6 +1444,34 @@ Scope: topic submission and channel-mode entry selection only. Main
 configurable shortcuts, completion, history, tree/list navigation, transcript
 input, spell-check, emoji, menus, and drag/drop remain unchanged.
 
+### PR: [#60 - GTK4 Stage 4 Main Shortcut Engine](https://github.com/Fabulor/fabulor/pull/60)
+
+Date: 2026-07-15
+
+Commit: `73c71473`
+
+Migration stage: 4, main shortcut engine pass 8
+
+Files/workflows converted: main chat-input key dispatch; plugin keypress
+notification; configurable binding lookup; all 17 shortcut action contracts
+
+Automated checks:
+
+- [x] source assertions: main input and shortcut action table expose no `GdkEventKey`
+- [x] source assertions: main input uses the typed key-controller boundary
+- [x] source assertions: plugin notification retains key state, key value, and Unicode derivation
+- [x] source assertions: binding lookup retains exact filtered modifiers and action return behavior
+- [x] source assertions: shortcut-editor Shift+Up/Down remains isolated for Stage 5
+- [x] source inventory: direct `GdkEvent` references reduced from 109 lines across 21 files to 71 lines across 20 files
+- [x] production GTK3 frontend compiles and links with 0 warnings and 0 errors
+- [x] isolated GTK4 MSVC compile, link, and runtime probe with 0 warnings and 0 errors
+- [x] GTK4 validator unit tests: 8/8 under WSL
+
+Scope: main chat-input plugin and configurable shortcut dispatch only. The
+shortcut editor, other tree/list navigation, topic pointer actions, transcript
+selection, spell-check widget internals, emoji, menus, and drag/drop remain
+unchanged.
+
 ## Per-PR Record Template
 
 Copy this section for each GTK4 PR:
