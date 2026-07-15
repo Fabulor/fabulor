@@ -1166,7 +1166,7 @@ Scope: client-certificate file selection and editor-bound callback ownership.
 Two native theme-import runs, preference confirmation, quit dialog, startup
 messages, and synchronous `FE_MSG_WAIT` behavior remain unchanged.
 
-### PR: GTK4 Theme Import Choosers, Pass 21
+### PR: [#50 - GTK4 Theme Import Choosers, Pass 21](https://github.com/Fabulor/fabulor/pull/50)
 
 Date: 2026-07-15
 
