@@ -1127,7 +1127,7 @@ Scope: stateful theme colour-manager responses and nested picker ownership.
 The certificate chooser, preference confirmation, quit dialog, startup messages,
 and synchronous `FE_MSG_WAIT` behavior remain unchanged.
 
-### PR: GTK4 Client-Certificate Chooser, Pass 20
+### PR: [#49 - GTK4 Client-Certificate Chooser, Pass 20](https://github.com/Fabulor/fabulor/pull/49)
 
 Date: 2026-07-15
 
