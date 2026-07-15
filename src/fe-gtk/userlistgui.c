@@ -733,30 +733,51 @@ userlist_file_drop (GtkWidget *widget, gdouble x, gdouble y,
 }
 
 static gboolean
-userlist_dnd_motion (GtkTreeView *widget, GdkDragContext *context, gint x,
-							gint y, guint ttime, gpointer tree)
+userlist_file_drag_motion (GtkWidget *widget, gdouble x, gdouble y,
+						   gpointer user_data)
 {
 	GtkTreePath *path;
 	GtkTreeSelection *sel;
+	GtkTreeView *tree = GTK_TREE_VIEW (widget);
 
-	if (!tree)
-		return FALSE;
+	(void) user_data;
 
-	if (gtk_tree_view_get_path_at_pos (widget, x, y, &path, NULL, NULL, NULL))
+	if (gtk_tree_view_get_path_at_pos (tree, (gint) x, (gint) y,
+		&path, NULL, NULL, NULL))
 	{
-		sel = gtk_tree_view_get_selection (widget);
+		sel = gtk_tree_view_get_selection (tree);
 		gtk_tree_selection_unselect_all (sel);
 		gtk_tree_selection_select_path (sel, path);
+		gtk_tree_path_free (path);
 	}
 
-	return FALSE;
+	return TRUE;
+}
+
+static void
+userlist_drag_leave (GtkWidget *widget, gpointer user_data)
+{
+	(void) user_data;
+	gtk_tree_selection_unselect_all (
+		gtk_tree_view_get_selection (GTK_TREE_VIEW (widget)));
 }
 
 static gboolean
-userlist_dnd_leave (GtkTreeView *widget, GdkDragContext *context, guint ttime)
+userlist_internal_drag_motion (GtkWidget *widget,
+							   FabulorGtkInternalDragKind kind,
+							   gdouble x, gdouble y, gpointer user_data)
 {
-	gtk_tree_selection_unselect_all (gtk_tree_view_get_selection (widget));
-	return TRUE;
+	userlist_file_drag_motion (widget, x, y, user_data);
+	return mg_internal_drag_motion (widget, kind, x, y, NULL);
+}
+
+static void
+userlist_internal_drag_leave (GtkWidget *widget,
+							  FabulorGtkInternalDragKind kind,
+							  gpointer user_data)
+{
+	(void) kind;
+	userlist_drag_leave (widget, user_data);
 }
 
 static int
@@ -1009,14 +1030,6 @@ GtkWidget *
 userlist_create (GtkBox *box)
 {
 	GtkWidget *sw, *treeview;
-	static const GtkTargetEntry dnd_dest_targets[] =
-	{
-		{"ZOITECHAT_CHANVIEW", GTK_TARGET_SAME_APP, 75 }
-	};
-	static const GtkTargetEntry dnd_src_target[] =
-	{
-		{"ZOITECHAT_USERLIST", GTK_TARGET_SAME_APP, 75 }
-	};
 
 	sw = gtk_scrolled_window_new (NULL, NULL);
 	gtk_widget_set_hexpand (sw, TRUE);
@@ -1040,32 +1053,20 @@ userlist_create (GtkBox *box)
 										  GTK_SELECTION_MULTIPLE);
 
 	/* set up drops */
-	gtk_drag_dest_set (treeview, GTK_DEST_DEFAULT_ALL, dnd_dest_targets, 1,
-							 GDK_ACTION_MOVE | GDK_ACTION_COPY | GDK_ACTION_LINK);
-	gtk_drag_source_set (treeview, GDK_BUTTON1_MASK, dnd_src_target, 1, GDK_ACTION_MOVE);
-	fabulor_gtk_widget_on_file_drop (treeview,
+	fabulor_gtk_widget_enable_internal_drag_source (treeview,
+		FABULOR_GTK_INTERNAL_DRAG_USER_LIST, mg_internal_drag_icon, NULL);
+	fabulor_gtk_widget_enable_internal_drop_target (treeview,
+		FABULOR_GTK_INTERNAL_DRAG_ACCEPT (FABULOR_GTK_INTERNAL_DRAG_CHANNEL_VIEW),
+		userlist_internal_drag_motion, userlist_internal_drag_leave,
+		mg_internal_drag_drop, NULL);
+	fabulor_gtk_widget_on_file_drop_full (treeview,
 		GDK_ACTION_MOVE | GDK_ACTION_COPY | GDK_ACTION_LINK,
-		userlist_file_drop, NULL);
+		userlist_file_drop, userlist_file_drag_motion, userlist_drag_leave, NULL);
 
-	/* file DND (for DCC) */
-	g_signal_connect (G_OBJECT (treeview), "drag-motion",
-							G_CALLBACK (userlist_dnd_motion), treeview);
-	g_signal_connect (G_OBJECT (treeview), "drag-leave",
-							G_CALLBACK (userlist_dnd_leave), 0);
 	g_signal_connect (G_OBJECT (treeview), "button-press-event",
 							G_CALLBACK (userlist_click_cb), 0);
 	g_signal_connect (G_OBJECT (treeview), "key-press-event",
 							G_CALLBACK (userlist_key_cb), 0);
-
-	/* tree/chanview DND */
-	g_signal_connect (G_OBJECT (treeview), "drag-begin",
-							G_CALLBACK (mg_drag_begin_cb), NULL);
-	g_signal_connect (G_OBJECT (treeview), "drag-drop",
-							G_CALLBACK (mg_drag_drop_cb), NULL);
-	g_signal_connect (G_OBJECT (treeview), "drag-motion",
-							G_CALLBACK (mg_drag_motion_cb), NULL);
-	g_signal_connect (G_OBJECT (treeview), "drag-end",
-							G_CALLBACK (mg_drag_end_cb), NULL);
 
 	userlist_add_columns (GTK_TREE_VIEW (treeview));
 

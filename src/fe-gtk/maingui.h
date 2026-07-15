@@ -20,6 +20,8 @@
 #ifndef ZOITECHAT_MAINGUI_H
 #define ZOITECHAT_MAINGUI_H
 
+#include "gtk-compat.h"
+
 extern InputStyle *input_style;
 extern GtkWidget *parent_window;
 
@@ -53,10 +55,13 @@ void mg_reply_update (session *sess);
 void mg_create_icon_item (char *label, char *stock, GtkWidget *menu, void *callback, void *userdata);
 GtkWidget *mg_submenu (GtkWidget *menu, char *text);
 /* DND */
-gboolean mg_drag_begin_cb (GtkWidget *widget, GdkDragContext *context, gpointer userdata);
-void mg_drag_end_cb (GtkWidget *widget, GdkDragContext *context, gpointer userdata);
-gboolean mg_drag_drop_cb (GtkWidget *widget, GdkDragContext *context, int x, int y, guint time, gpointer user_data);
-gboolean mg_drag_motion_cb (GtkWidget *widget, GdkDragContext *context, int x, int y, guint time, gpointer user_data);
+GdkPixbuf *mg_internal_drag_icon (GtkWidget *widget, gpointer user_data);
+gboolean mg_internal_drag_drop (GtkWidget *widget,
+	FabulorGtkInternalDragKind kind, gdouble x, gdouble y,
+	gpointer user_data);
+gboolean mg_internal_drag_motion (GtkWidget *widget,
+	FabulorGtkInternalDragKind kind, gdouble x, gdouble y,
+	gpointer user_data);
 /* search */
 void mg_search_toggle(session *sess);
 void mg_search_handle_previous(GtkWidget *wid, session *sess);

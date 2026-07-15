@@ -39,6 +39,17 @@ check_compatibility_helper_signatures (void)
 		gpointer) = fabulor_gtk_widget_on_click_released;
 	void (*volatile widget_on_file_drop) (GtkWidget *, GdkDragAction,
 		FabulorGtkFileDropFunc, gpointer) = fabulor_gtk_widget_on_file_drop;
+	void (*volatile widget_on_file_drop_full) (GtkWidget *, GdkDragAction,
+		FabulorGtkFileDropFunc, FabulorGtkFileDropMotionFunc,
+		FabulorGtkFileDropLeaveFunc, gpointer) =
+		fabulor_gtk_widget_on_file_drop_full;
+	void (*volatile widget_enable_internal_drag_source) (GtkWidget *,
+		FabulorGtkInternalDragKind, FabulorGtkInternalDragIconFunc, gpointer) =
+		fabulor_gtk_widget_enable_internal_drag_source;
+	void (*volatile widget_enable_internal_drop_target) (GtkWidget *, guint,
+		FabulorGtkInternalDragMotionFunc, FabulorGtkInternalDragLeaveFunc,
+		FabulorGtkInternalDragDropFunc, gpointer) =
+		fabulor_gtk_widget_enable_internal_drop_target;
 	void (*volatile widget_on_key_pressed) (GtkWidget *, FabulorGtkKeyFunc, gpointer) =
 		fabulor_gtk_widget_on_key_pressed;
 	void (*volatile widget_on_focus_enter) (GtkWidget *, FabulorGtkWidgetInteractionFunc, gpointer) =
@@ -77,6 +88,9 @@ check_compatibility_helper_signatures (void)
 	(void) text_view_set_pointing_cursor;
 	(void) widget_on_click_released;
 	(void) widget_on_file_drop;
+	(void) widget_on_file_drop_full;
+	(void) widget_enable_internal_drag_source;
+	(void) widget_enable_internal_drop_target;
 	(void) widget_on_key_pressed;
 	(void) widget_on_focus_enter;
 	(void) widget_on_focus_leave;
@@ -92,10 +106,38 @@ check_compatibility_helper_signatures (void)
 	(void) dialog_destroy_on_response;
 }
 
+static gboolean
+check_internal_drag_payload (void)
+{
+	GdkContentProvider *provider = gdk_content_provider_new_typed (
+		G_TYPE_POINTER,
+		GUINT_TO_POINTER (FABULOR_GTK_INTERNAL_DRAG_CHANNEL_VIEW));
+	GdkContentFormats *formats = gdk_content_provider_ref_formats (provider);
+	GValue value = G_VALUE_INIT;
+	gboolean valid;
+
+	g_value_init (&value, G_TYPE_POINTER);
+	g_value_set_pointer (&value,
+		GUINT_TO_POINTER (FABULOR_GTK_INTERNAL_DRAG_CHANNEL_VIEW));
+	valid = gdk_content_formats_contain_gtype (formats, G_TYPE_POINTER) &&
+		fabulor_gtk_internal_drag_kind_from_value (&value) ==
+			FABULOR_GTK_INTERNAL_DRAG_CHANNEL_VIEW;
+
+	g_value_unset (&value);
+	gdk_content_formats_unref (formats);
+	g_object_unref (provider);
+	return valid;
+}
+
 int
 main (void)
 {
 	check_compatibility_helper_signatures ();
+	if (!check_internal_drag_payload ())
+	{
+		fprintf (stderr, "GTK4 internal drag payload format mismatch\n");
+		return 1;
+	}
 
 	if (gtk_get_major_version () != GTK_MAJOR_VERSION ||
 		gtk_get_minor_version () != GTK_MINOR_VERSION ||

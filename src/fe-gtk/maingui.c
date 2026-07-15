@@ -3938,11 +3938,6 @@ mg_create_textarea (session *sess, GtkWidget *box)
         GtkXText *xtext;
         XTextColor xtext_palette[XTEXT_COLS];
         session_gui *gui = sess->gui;
-        static const GtkTargetEntry dnd_dest_targets[] =
-        {
-                {"ZOITECHAT_CHANVIEW", GTK_TARGET_SAME_APP, 75 },
-                {"ZOITECHAT_USERLIST", GTK_TARGET_SAME_APP, 75 }
-        };
 
         vbox = mg_box_new (GTK_ORIENTATION_VERTICAL, FALSE, 0);
         fabulor_gtk_box_append (GTK_BOX (box), vbox, TRUE, TRUE, 0);
@@ -3980,16 +3975,11 @@ mg_create_textarea (session *sess, GtkWidget *box)
         gui->vscrollbar = gtk_scrolled_window_get_vscrollbar (GTK_SCROLLED_WINDOW (frame));
         mg_create_scroll_to_bottom_button (gui, GTK_OVERLAY (overlay));
 
-        gtk_drag_dest_set (gui->vscrollbar, 5, dnd_dest_targets, 2,
-                                                         GDK_ACTION_MOVE | GDK_ACTION_COPY | GDK_ACTION_LINK);
-        g_signal_connect (G_OBJECT (gui->vscrollbar), "drag-begin",
-                                                        G_CALLBACK (mg_drag_begin_cb), NULL);
-        g_signal_connect (G_OBJECT (gui->vscrollbar), "drag-drop",
-                                                        G_CALLBACK (mg_drag_drop_cb), NULL);
-        g_signal_connect (G_OBJECT (gui->vscrollbar), "drag-motion",
-                                                        G_CALLBACK (mg_drag_motion_cb), gui->vscrollbar);
-        g_signal_connect (G_OBJECT (gui->vscrollbar), "drag-end",
-                                                        G_CALLBACK (mg_drag_end_cb), NULL);
+        fabulor_gtk_widget_enable_internal_drop_target (gui->vscrollbar,
+                FABULOR_GTK_INTERNAL_DRAG_ACCEPT (FABULOR_GTK_INTERNAL_DRAG_CHANNEL_VIEW) |
+                FABULOR_GTK_INTERNAL_DRAG_ACCEPT (FABULOR_GTK_INTERNAL_DRAG_USER_LIST),
+                mg_internal_drag_motion, NULL, mg_internal_drag_drop,
+                gui->vscrollbar);
 
 #if GTK_MAJOR_VERSION < 4
         gtk_drag_dest_set (gui->xtext, GTK_DEST_DEFAULT_ALL, NULL, 0,
@@ -6328,14 +6318,11 @@ static void
 mg_handle_drop (GtkWidget *widget, int y, int *pos, int *other_pos)
 {
         int height;
-        GdkWindow *window;
         session_gui *gui = current_sess->gui;
 
-        window = gtk_widget_get_window (widget);
-        if (!window)
+        height = gtk_widget_get_allocated_height (widget);
+        if (height <= 0)
                 return;
-
-        height = gdk_window_get_height (window);
 
         if (y < height / 2)
         {
@@ -6375,90 +6362,53 @@ mg_handle_drop (GtkWidget *widget, int y, int *pos, int *other_pos)
         mg_place_userlist_and_chanview (gui);
 }
 
-static gboolean
-mg_is_gui_target (GdkDragContext *context)
+GdkPixbuf *
+mg_internal_drag_icon (GtkWidget *widget, gpointer user_data)
 {
-        char *target_name;
-
-        if (!context || !gdk_drag_context_list_targets (context) || !gdk_drag_context_list_targets (context)->data)
-                return FALSE;
-
-        target_name = gdk_atom_name (gdk_drag_context_list_targets (context)->data);
-        if (target_name)
-        {
-                /* if it's not ZOITECHAT_CHANVIEW or ZOITECHAT_USERLIST */
-                /* we should ignore it. */
-                if (target_name[0] != 'H')
-                {
-                        g_free (target_name);
-                        return FALSE;
-                }
-                g_free (target_name);
-        }
-
-        return TRUE;
-}
-
-/* this begin callback just creates an nice of the source */
-
-gboolean
-mg_drag_begin_cb (GtkWidget *widget, GdkDragContext *context, gpointer userdata)
-{
+#if GTK_MAJOR_VERSION < 4
         int width, height;
         GdkPixbuf *pix, *pix2;
         GdkWindow *window;
 
-        /* ignore file drops */
-        if (!mg_is_gui_target (context))
-                return FALSE;
+        (void) user_data;
 
         window = gtk_widget_get_window (widget);
         if (!window)
-                return FALSE;
+                return NULL;
 
         width = gdk_window_get_width (window);
         height = gdk_window_get_height (window);
 
         pix = mg_pixbuf_from_window (window, width, height);
         if (!pix)
-                return FALSE;
+                return NULL;
         pix2 = gdk_pixbuf_scale_simple (pix, width * 4 / 5, height / 2, GDK_INTERP_HYPER);
         g_object_unref (pix);
 
-        gtk_drag_set_icon_pixbuf (context, pix2, 0, 0);
-        g_object_set_data (G_OBJECT (widget), "ico", pix2);
-
-        return TRUE;
+        return pix2;
+#else
+        (void) widget;
+        (void) user_data;
+        return NULL;
+#endif
 }
-
-void
-mg_drag_end_cb (GtkWidget *widget, GdkDragContext *context, gpointer userdata)
-{
-        /* ignore file drops */
-        if (!mg_is_gui_target (context))
-                return;
-
-        g_object_unref (g_object_get_data (G_OBJECT (widget), "ico"));
-}
-
-/* drop complete */
 
 gboolean
-mg_drag_drop_cb (GtkWidget *widget, GdkDragContext *context, int x, int y, guint time, gpointer user_data)
+mg_internal_drag_drop (GtkWidget *widget, FabulorGtkInternalDragKind kind,
+                       gdouble x, gdouble y, gpointer user_data)
 {
-        /* ignore file drops */
-        if (!mg_is_gui_target (context))
-                return FALSE;
+        (void) x;
+        (void) user_data;
 
-        switch (gdk_drag_context_get_selected_action (context))
+        switch (kind)
         {
-        case GDK_ACTION_MOVE:
-                /* from userlist */
-                mg_handle_drop (widget, y, &prefs.hex_gui_ulist_pos, &prefs.hex_gui_tab_pos);
+        case FABULOR_GTK_INTERNAL_DRAG_USER_LIST:
+                mg_handle_drop (widget, (int) y, &prefs.hex_gui_ulist_pos,
+                                &prefs.hex_gui_tab_pos);
                 break;
-        case GDK_ACTION_COPY:
-                /* from tree - we use GDK_ACTION_COPY for the tree */
-                mg_handle_drop (widget, y, &prefs.hex_gui_tab_pos, &prefs.hex_gui_ulist_pos);
+        case FABULOR_GTK_INTERNAL_DRAG_CHANNEL_VIEW:
+                mg_handle_drop (widget, (int) y, &prefs.hex_gui_tab_pos,
+                                &prefs.hex_gui_ulist_pos);
                 break;
         default:
                 return FALSE;
@@ -6467,11 +6417,11 @@ mg_drag_drop_cb (GtkWidget *widget, GdkDragContext *context, int x, int y, guint
         return TRUE;
 }
 
-/* draw highlight rectangle in the destination */
-
 gboolean
-mg_drag_motion_cb (GtkWidget *widget, GdkDragContext *context, int x, int y, guint time, gpointer scbar)
+mg_internal_drag_motion (GtkWidget *widget, FabulorGtkInternalDragKind kind,
+                         gdouble x, gdouble y, gpointer scbar)
 {
+#if GTK_MAJOR_VERSION < 4
         XTextColor col;
         cairo_t *cr;
         GdkDrawingContext *draw_context;
@@ -6481,9 +6431,8 @@ mg_drag_motion_cb (GtkWidget *widget, GdkDragContext *context, int x, int y, gui
         GdkWindow *window;
         GtkAllocation allocation;
 
-        /* ignore file drops */
-        if (!mg_is_gui_target (context))
-                return FALSE;
+        (void) kind;
+        (void) x;
 
         if (scbar)      /* scrollbar */
         {
@@ -6558,6 +6507,12 @@ mg_drag_motion_cb (GtkWidget *widget, GdkDragContext *context, int x, int y, gui
         }
 
         gdk_window_end_draw_frame (window, draw_context);
-
+#else
+        (void) widget;
+        (void) kind;
+        (void) x;
+        (void) y;
+        (void) scbar;
+#endif
         return TRUE;
 }
