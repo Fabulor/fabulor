@@ -490,6 +490,15 @@ requires disabled auto-copy plus both Control and Shift. Main input shortcuts,
 completion, history, topic editing, tree/list navigation, transcript input,
 spell-check, and emoji handling remain unchanged.
 
+Semantic key actions pass 7 (2026-07-15): topic Return and keypad Enter
+submission plus exact `Ctrl+A` selection in the channel key and user-limit
+fields now use the typed key-controller boundary. Handled keys remain consumed;
+all other keys continue to propagate. Topic command dispatch and focus return,
+channel-mode activation, modifier exclusions, field limits, and entry styling
+are unchanged. The main chat input's configurable shortcut engine remains the
+only direct key-event registration in `maingui.c` and is deferred to its own
+behavior-preserving pass.
+
 Primary API families:
 
 - direct `GdkEvent` handlers and event masks
