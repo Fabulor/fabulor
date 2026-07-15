@@ -1560,6 +1560,37 @@ Scope: internal layout drag/drop and user-list hover lifecycle only. Channel and
 user tree/list model conversion, transcript clipboard/selection ownership,
 spell-check widget internals, emoji, menus, and other input remain unchanged.
 
+### PR: #64 - GTK4 Stage 5 List Model Architecture
+
+Date: 2026-07-15
+
+Implementation commit: `55e914f8`
+
+Migration stage: 5, model architecture pass 1
+
+Files/workflows converted: GTK4-only flat sorted multi-selection stack;
+hierarchical single-selection stack; isolated model contract probes
+
+GTK version: 4.22.4
+
+GLib version: 2.88.0
+
+Build configuration: MSVC x64 Release and Meson 1.11.2 Release with MSVC 19.44
+
+Automated checks:
+
+- [x] flat model contract: sorted insertion, identity removal, selection persistence, and cleanup
+- [x] tree model contract: expansion, child depth, identity, selection persistence, and cleanup
+- [x] isolated GTK4 MSVC compile, link, and runtime probe with 0 warnings and 0 errors
+- [x] isolated GTK4 Meson configure, compile, link, and runtime test
+- [x] GTK4 validator unit tests: 8/8
+- [x] production GTK3 frontend compiles and links with 0 warnings and 0 errors
+- [x] source inventory: 80 `GtkTreeView` type lines across 18 production files
+
+Scope: architecture and executable model contracts only. Production GTK3
+models, views, cell renderers, event handling, and visible workflows remain
+unchanged until each owning Stage 5 surface is converted as one unit.
+
 ## Per-PR Record Template
 
 Copy this section for each GTK4 PR:
