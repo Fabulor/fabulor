@@ -230,7 +230,7 @@ tab_scroll_animation_start (tab_scroll_animation **slot, GtkAdjustment *adj,
 }
 
 static void
-tab_scroll_left_up_clicked (GtkWidget *widget, chanview *cv)
+tab_scroll_left_up (chanview *cv)
 {
 	GtkAdjustment *adj;
 	gint viewport_size;
@@ -266,7 +266,7 @@ tab_scroll_left_up_clicked (GtkWidget *widget, chanview *cv)
 }
 
 static void
-tab_scroll_right_down_clicked (GtkWidget *widget, chanview *cv)
+tab_scroll_right_down (chanview *cv)
 {
 	GtkAdjustment *adj;
 	gint viewport_size;
@@ -302,10 +302,12 @@ tab_scroll_right_down_clicked (GtkWidget *widget, chanview *cv)
 }
 
 static gboolean
-tab_scroll_cb (GtkWidget *widget, GdkEventScroll *event, gpointer cv)
+tab_scroll_cb (GtkWidget *widget, gdouble dx, gdouble dy, gpointer cv)
 {
-	int direction = cv_scroll_direction (event);
+	int direction = cv_scroll_direction (dx, dy);
 	int i;
+
+	(void) widget;
 
 	if (prefs.hex_gui_tab_scrollchans)
 	{
@@ -321,13 +323,13 @@ tab_scroll_cb (GtkWidget *widget, GdkEventScroll *event, gpointer cv)
 		if (direction < 0)
 		{
 			for (i = 0; i < cv_scroll_step_count (); i++)
-				tab_scroll_left_up_clicked (widget, cv);
+				tab_scroll_left_up (cv);
 			return TRUE;
 		}
 		else if (direction > 0)
 		{
 			for (i = 0; i < cv_scroll_step_count (); i++)
-				tab_scroll_right_down_clicked (widget, cv);
+				tab_scroll_right_down (cv);
 			return TRUE;
 		}
 	}
@@ -368,9 +370,7 @@ cv_tabs_init (chanview *cv)
 	gtk_scrolled_window_set_min_content_height (GTK_SCROLLED_WINDOW (viewport), 1);
 	gtk_widget_set_hexpand (viewport, TRUE);
 	gtk_widget_set_vexpand (viewport, TRUE);
-	cv_add_scroll_events (viewport);
-	g_signal_connect (G_OBJECT (viewport), "scroll-event",
-							G_CALLBACK (tab_scroll_cb), cv);
+	fabulor_gtk_widget_on_scroll (viewport, tab_scroll_cb, cv);
 	fabulor_gtk_box_append (GTK_BOX (outer), viewport, TRUE, TRUE, 0);
 	gtk_widget_show (viewport);
 
@@ -695,11 +695,9 @@ cv_tabs_add (chanview *cv, chan *ch, char *name, GtkTreeIter *parent)
 	gtk_widget_set_name (but, "zoitechat-tab");
 	gtk_widget_set_size_request (but, -1, 14);
 	gtk_widget_add_events (but, GDK_POINTER_MOTION_MASK | GDK_LEAVE_NOTIFY_MASK);
-	cv_add_scroll_events (but);
 	hbox = gtk_box_new (GTK_ORIENTATION_HORIZONTAL, 2);
 	label = gtk_label_new (name);
 	close_button = gtk_button_new ();
-	cv_add_scroll_events (close_button);
 	gtk_style_context_add_class (gtk_widget_get_style_context (close_button), "flat");
 	close_icon = gtk_image_new_from_icon_name ("window-close-symbolic", GTK_ICON_SIZE_MENU);
 	gtk_image_set_pixel_size (GTK_IMAGE (close_icon), 8);
@@ -715,10 +713,8 @@ cv_tabs_add (chanview *cv, chan *ch, char *name, GtkTreeIter *parent)
 	/* used to trap right-clicks */
 	g_signal_connect (G_OBJECT (but), "button-press-event",
 						 	G_CALLBACK (tab_click_cb), ch);
-	g_signal_connect (G_OBJECT (but), "scroll-event",
-							G_CALLBACK (tab_scroll_cb), cv);
-	g_signal_connect (G_OBJECT (close_button), "scroll-event",
-							G_CALLBACK (tab_scroll_cb), cv);
+	fabulor_gtk_widget_on_scroll (but, tab_scroll_cb, cv);
+	fabulor_gtk_widget_on_scroll (close_button, tab_scroll_cb, cv);
 	g_signal_connect (G_OBJECT (but), "motion-notify-event",
 						 	G_CALLBACK (tab_close_motion_cb), ch);
 	g_signal_connect (G_OBJECT (but), "leave-notify-event",

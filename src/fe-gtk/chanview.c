@@ -96,35 +96,15 @@ static chan *cv_find_chan_by_number (chanview *cv, int num);
 static int cv_find_number_of_chan (chanview *cv, chan *find_ch);
 static void cv_find_neighbors_for_removal (chanview *cv, chan *find_ch, chan **left_ch, chan **first_ch);
 
-static void
-cv_add_scroll_events (GtkWidget *widget)
-{
-	gtk_widget_add_events (widget, GDK_SCROLL_MASK | GDK_SMOOTH_SCROLL_MASK);
-}
-
 static int
-cv_scroll_direction (GdkEventScroll *event)
+cv_scroll_direction (gdouble dx, gdouble dy)
 {
-	gdouble dx;
-	gdouble dy;
-
-	if (event->direction == GDK_SCROLL_SMOOTH && gdk_event_get_scroll_deltas ((GdkEvent *) event, &dx, &dy))
-	{
-		if (dy > 0)
-			return 1;
-		if (dy < 0)
-			return -1;
-	}
-
-	switch (event->direction)
-	{
-	case GDK_SCROLL_DOWN:
+	(void) dx;
+	if (dy > 0.0)
 		return 1;
-	case GDK_SCROLL_UP:
+	if (dy < 0.0)
 		return -1;
-	default:
-		return 0;
-	}
+	return 0;
 }
 
 static int

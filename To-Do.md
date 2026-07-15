@@ -253,6 +253,7 @@ Detailed planning and evidence live in:
 - [ ] Convert input events, shortcuts, clipboard, drag/drop, and pointer gestures.
   - [x] Convert shared explicit-copy commands to GTK4 display clipboards while retaining primary-selection updates where supported.
   - [x] Establish typed pointer-enter and focus-controller ownership for simple interactions, and use semantic button activation where available.
+  - [x] Convert channel tree, viewport, tab, and close-button scrolling to a shared delta-based GTK4 scroll-controller boundary.
 - [ ] Convert tree/list models, cell renderers, channel navigation, and operational lists.
 - [ ] Port the transcript and spell-check input widgets to GTK4 rendering and event semantics.
 - [ ] Add the GTK4 theme adapter and validate tray, notifications, icons, fonts, and platform integration.
