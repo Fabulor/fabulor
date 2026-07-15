@@ -2783,23 +2783,6 @@ mg_topic_get_word_at_pos (GtkWidget *entry, gdouble event_x, gdouble event_y, in
         return gtk_text_buffer_get_text (buffer, &start, &end, FALSE);
 }
 
-static void
-mg_topic_set_cursor (GtkWidget *entry, GdkCursorType cursor_type)
-{
-        GdkWindow *text_window;
-        GdkDisplay *display;
-        GdkCursor *cursor;
-
-        text_window = gtk_text_view_get_window (GTK_TEXT_VIEW (entry), GTK_TEXT_WINDOW_TEXT);
-        if (!text_window)
-                return;
-
-        display = gdk_window_get_display (text_window);
-        cursor = gdk_cursor_new_for_display (display, cursor_type);
-        gdk_window_set_cursor (text_window, cursor);
-        g_object_unref (cursor);
-}
-
 static gboolean
 mg_topic_word_is_clickable (const char *word, int word_pos)
 {
@@ -2821,49 +2804,52 @@ mg_topic_word_is_clickable (const char *word, int word_pos)
         return word_pos >= start && word_pos < end;
 }
 
-static gboolean
-mg_topic_motion_cb (GtkWidget *entry, GdkEventMotion *event, gpointer userdata)
+static void
+mg_topic_motion_cb (GtkWidget *entry, gdouble x, gdouble y,
+                    gpointer user_data)
 {
         char *word;
         int word_pos;
         gboolean word_is_clickable;
 
+        (void) user_data;
+
         word_pos = 0;
-        word = mg_topic_get_word_at_pos (entry, event->x, event->y, &word_pos);
+        word = mg_topic_get_word_at_pos (entry, x, y, &word_pos);
         word_is_clickable = mg_topic_word_is_clickable (word, word_pos);
-        if (word_is_clickable)
-                mg_topic_set_cursor (entry, GDK_HAND2);
-        else
-                mg_topic_set_cursor (entry, GDK_XTERM);
+        fabulor_gtk_text_view_set_pointing_cursor (GTK_TEXT_VIEW (entry),
+                                                   word_is_clickable);
         g_free (word);
-
-        return FALSE;
 }
 
-static gboolean
-mg_topic_leave_cb (GtkWidget *entry, GdkEventCrossing *event, gpointer userdata)
+static void
+mg_topic_leave_cb (GtkWidget *entry, gpointer user_data)
 {
-        mg_topic_set_cursor (entry, GDK_XTERM);
-        return FALSE;
+        (void) user_data;
+        fabulor_gtk_text_view_set_pointing_cursor (GTK_TEXT_VIEW (entry), FALSE);
 }
 
 static gboolean
-mg_topic_button_release_cb (GtkWidget *entry, GdkEventButton *event, gpointer userdata)
+mg_topic_button_release_cb (GtkWidget *entry, guint button, gdouble x,
+                            gdouble y, GdkModifierType state,
+                            gpointer user_data)
 {
         char *word;
         int word_pos;
         int start;
         int end;
 
-        if (event->button != 1)
+        (void) user_data;
+
+        if (button != 1)
                 return FALSE;
 
         word_pos = 0;
-        word = mg_topic_get_word_at_pos (entry, event->x, event->y, &word_pos);
+        word = mg_topic_get_word_at_pos (entry, x, y, &word_pos);
         if (!word)
                 return FALSE;
 
-        if ((event->state & 13) == prefs.hex_gui_url_mod &&
+        if ((state & 13) == prefs.hex_gui_url_mod &&
             mg_topic_word_is_clickable (word, word_pos))
         {
                 url_last (&start, &end);
@@ -3610,15 +3596,11 @@ mg_create_topicbar (session *sess, GtkWidget *box)
 	fabulor_gtk_scrolled_window_set_child (GTK_SCROLLED_WINDOW (topic_scroll), topic);
         mg_topicbar_update_height (topic);
 	fabulor_gtk_box_append (GTK_BOX (hbox), topic_scroll, TRUE, TRUE, 0);
-        gtk_widget_add_events (topic, GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK |
-                                      GDK_POINTER_MOTION_MASK | GDK_LEAVE_NOTIFY_MASK);
         fabulor_gtk_widget_on_key_pressed (topic, mg_topic_key_press_cb, NULL);
-        g_signal_connect (G_OBJECT (topic), "button-release-event",
-                                                        G_CALLBACK (mg_topic_button_release_cb), NULL);
-        g_signal_connect (G_OBJECT (topic), "motion-notify-event",
-                                                        G_CALLBACK (mg_topic_motion_cb), NULL);
-        g_signal_connect (G_OBJECT (topic), "leave-notify-event",
-                                                        G_CALLBACK (mg_topic_leave_cb), NULL);
+        fabulor_gtk_widget_on_click_released (topic,
+                                              mg_topic_button_release_cb, NULL);
+        fabulor_gtk_widget_on_pointer_motion (topic, mg_topic_motion_cb,
+                                              mg_topic_leave_cb, NULL);
 
 	gui->dialogbutton_box = bbox = mg_box_new (GTK_ORIENTATION_HORIZONTAL, FALSE, 0);
 	fabulor_gtk_box_append (GTK_BOX (hbox), bbox, FALSE, FALSE, 0);

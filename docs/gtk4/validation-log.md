@@ -1472,6 +1472,32 @@ shortcut editor, other tree/list navigation, topic pointer actions, transcript
 selection, spell-check widget internals, emoji, menus, and drag/drop remain
 unchanged.
 
+### PR: [#61 - GTK4 Stage 4 Topic Pointer Handling](https://github.com/Fabulor/fabulor/pull/61)
+
+Date: 2026-07-15
+
+Commit: `716e9fb6`
+
+Migration stage: 4, topic pointer pass 9
+
+Files/workflows converted: topic URL hover and leave; text-view pointer/text
+cursor; modified left-button release and URL activation
+
+Automated checks:
+
+- [x] source assertions: topic workflow exposes no `GdkEventMotion`, `GdkEventCrossing`, or `GdkEventButton`
+- [x] source assertions: topic widget has no direct motion, leave, button-release, or event-mask setup
+- [x] source assertions: GTK4 click delivery uses `GtkGestureClick` and claims only handled activation
+- [x] source assertions: URL hit testing retains text-view buffer-coordinate conversion and modifier matching
+- [x] source inventory: direct `GdkEvent` references reduced from 71 to 69 lines across 20 files
+- [x] production GTK3 frontend compiles and links with 0 warnings and 0 errors
+- [x] isolated GTK4 MSVC compile, link, and runtime probe with 0 warnings and 0 errors
+- [x] GTK4 validator unit tests: 8/8 under WSL
+
+Scope: topic URL pointer interaction only. Topic editing and Return submission,
+shortcut-editor navigation, other tree/list input, transcript selection,
+spell-check widget internals, emoji, menus, and drag/drop remain unchanged.
+
 ## Per-PR Record Template
 
 Copy this section for each GTK4 PR:

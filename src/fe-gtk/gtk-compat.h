@@ -450,6 +450,111 @@ fabulor_gtk_widget_set_pointing_cursor (GtkWidget *widget, gboolean pointing)
 #endif
 }
 
+static inline void
+fabulor_gtk_text_view_set_pointing_cursor (GtkTextView *text_view,
+										   gboolean pointing)
+{
+	g_return_if_fail (GTK_IS_TEXT_VIEW (text_view));
+
+#if GTK_MAJOR_VERSION >= 4
+	gtk_widget_set_cursor_from_name (GTK_WIDGET (text_view),
+		pointing ? "pointer" : "text");
+#else
+	GdkWindow *text_window = gtk_text_view_get_window (
+		text_view, GTK_TEXT_WINDOW_TEXT);
+
+	if (text_window)
+	{
+		GdkCursor *cursor = gdk_cursor_new_for_display (
+			gdk_window_get_display (text_window),
+			pointing ? GDK_HAND2 : GDK_XTERM);
+
+		gdk_window_set_cursor (text_window, cursor);
+		g_object_unref (cursor);
+	}
+#endif
+}
+
+typedef gboolean (*FabulorGtkClickFunc) (GtkWidget *widget, guint button,
+										 gdouble x, gdouble y,
+										 GdkModifierType state,
+										 gpointer user_data);
+
+typedef struct
+{
+	FabulorGtkClickFunc callback;
+	gpointer user_data;
+} FabulorGtkClickInteraction;
+
+static inline void
+fabulor_gtk_click_interaction_free (gpointer data, GClosure *closure)
+{
+	(void) closure;
+	g_free (data);
+}
+
+#if GTK_MAJOR_VERSION >= 4
+static inline void
+fabulor_gtk_click_released_cb (GtkGestureClick *gesture, gint n_press,
+								   gdouble x, gdouble y, gpointer user_data)
+{
+	FabulorGtkClickInteraction *interaction = user_data;
+	GtkEventController *controller = GTK_EVENT_CONTROLLER (gesture);
+
+	(void) n_press;
+	if (interaction->callback (
+			gtk_event_controller_get_widget (controller),
+			gtk_gesture_single_get_current_button (GTK_GESTURE_SINGLE (gesture)),
+			x, y, gtk_event_controller_get_current_event_state (controller),
+			interaction->user_data))
+	{
+		gtk_gesture_set_state (GTK_GESTURE (gesture),
+			GTK_EVENT_SEQUENCE_CLAIMED);
+	}
+}
+#else
+static inline gboolean
+fabulor_gtk_click_released_cb (GtkWidget *widget, GdkEventButton *event,
+								   gpointer user_data)
+{
+	FabulorGtkClickInteraction *interaction = user_data;
+
+	return interaction->callback (widget, event->button, event->x, event->y,
+		event->state, interaction->user_data);
+}
+#endif
+
+static inline void
+fabulor_gtk_widget_on_click_released (GtkWidget *widget,
+								  FabulorGtkClickFunc callback,
+								  gpointer user_data)
+{
+	FabulorGtkClickInteraction *interaction;
+
+	g_return_if_fail (GTK_IS_WIDGET (widget));
+	g_return_if_fail (callback != NULL);
+
+	interaction = g_new (FabulorGtkClickInteraction, 1);
+	interaction->callback = callback;
+	interaction->user_data = user_data;
+
+#if GTK_MAJOR_VERSION >= 4
+	GtkGesture *gesture = gtk_gesture_click_new ();
+
+	gtk_gesture_single_set_button (GTK_GESTURE_SINGLE (gesture), 0);
+	g_signal_connect_data (gesture, "released",
+		G_CALLBACK (fabulor_gtk_click_released_cb), interaction,
+		fabulor_gtk_click_interaction_free, 0);
+	gtk_widget_add_controller (widget, GTK_EVENT_CONTROLLER (gesture));
+#else
+	gtk_widget_add_events (widget,
+		GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK);
+	g_signal_connect_data (widget, "button-release-event",
+		G_CALLBACK (fabulor_gtk_click_released_cb), interaction,
+		fabulor_gtk_click_interaction_free, 0);
+#endif
+}
+
 typedef gboolean (*FabulorGtkKeyFunc) (GtkWidget *widget, guint keyval,
 									   GdkModifierType state,
 									   gpointer user_data);
