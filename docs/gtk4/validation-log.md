@@ -1337,9 +1337,11 @@ Automated checks:
 Scope: channel switcher wheel input only. Transcript scrolling, message input,
 spell-check, emoji, menus, and drag/drop remain unchanged.
 
-### PR: GTK4 Stage 4 Main Focus Controllers
+### PR: [#56 - GTK4 Stage 4 Main Focus Controllers](https://github.com/Fabulor/fabulor/pull/56)
 
 Date: 2026-07-15
+
+Commit: `c099ad84`
 
 Migration stage: 4, main focus pass 4
 
