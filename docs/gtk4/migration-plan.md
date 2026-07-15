@@ -349,6 +349,15 @@ fully retired before replacement, so freed plugin entries cannot remain
 reachable. The displayed GTK3 menu and plugin command behavior remain
 unchanged; contextual popup roots remain separate work.
 
+Contextual plugin popup model pass 17 (2026-07-15): each `$NICK`, `$URL`,
+`$CHAN`, `$TAB`, and `$TRAY` invocation now owns an allowlisted, nested
+`GMenuModel` projection and a distinct `fabulor-context` action group. Actions
+copy the popup root and target, use weak owner references for stateful refresh,
+and are retired with the popup owner. Targeted commands retain nickname and
+context substitution; untargeted, toggle, and radio commands retain their
+existing dispatch paths. The displayed GTK3 popups and native Windows tray
+menu remain unchanged until their later presentation conversion.
+
 Primary surfaces:
 
 - `menu.c`, context menus, tray menus, and user-defined menus

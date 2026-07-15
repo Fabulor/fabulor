@@ -1159,12 +1159,15 @@ tray_win32_menu_cb (void)
 	UINT command;
 	HWND hwnd;
 	int away_status;
+	GObject *plugin_model_owner;
 
 	zoitechat_set_context (ph, zoitechat_find_context (ph, NULL, NULL));
 
 	menu = CreatePopupMenu ();
 	if (!menu)
 		return;
+	plugin_model_owner = g_object_new (G_TYPE_OBJECT, NULL);
+	menu_add_plugin_model (plugin_model_owner, "\x5$TRAY", NULL);
 
 	away_status = tray_find_away_status ();
 	tray_win32_append_item (menu, TRAY_WIN32_HIDE,
@@ -1205,6 +1208,7 @@ tray_win32_menu_cb (void)
 	default:
 		break;
 	}
+	g_object_unref (plugin_model_owner);
 }
 #endif
 
