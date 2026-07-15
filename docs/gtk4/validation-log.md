@@ -1530,6 +1530,36 @@ not yet mirror the MSVC probe's `gio-2.0` import library. The Meson dependency
 list was corrected and the validator suite plus both Windows probe paths passed
 locally before the workflow was rerun.
 
+### PR: [#63 - GTK4 Stage 4 Internal Layout Drag And Drop](https://github.com/Fabulor/fabulor/pull/63)
+
+Date: 2026-07-15
+
+Commit: `8f07296c`
+
+Migration stage: 4, internal layout drag/drop pass 11
+
+Files/workflows converted: channel-view and user-list drag sources; reciprocal
+drop targets; transcript scrollbar target; user-list file/internal hover;
+four-position channel-view/user-list pane placement
+
+Automated checks:
+
+- [x] source assertions: consumers expose no `GdkDragContext` or drag `GtkSelectionData`
+- [x] source assertions: GTK4 sources and targets use typed controllers and a process-local pointer payload
+- [x] source assertions: GTK3 target-name decoding is exact and retains `GTK_TARGET_SAME_APP`
+- [x] source assertions: source identity is independent of selected MOVE/COPY action codes
+- [x] source assertions: user-list hover selection is released on leave and completed drop
+- [x] source inventory: raw context/selection references reduced from 14 lines across 5 files to 11 lines across 2 files
+- [x] source inventory: the sole consumer reference is transcript clipboard ownership in `xtext.c`
+- [x] production GTK3 frontend compiles and links with 0 warnings and 0 errors
+- [x] isolated GTK4 MSVC compile, link, payload-format assertion, and runtime probe with 0 warnings and 0 errors
+- [x] isolated GTK4 Meson compile, link, payload-format assertion, and runtime test
+- [x] GTK4 validator unit tests: 8/8
+
+Scope: internal layout drag/drop and user-list hover lifecycle only. Channel and
+user tree/list model conversion, transcript clipboard/selection ownership,
+spell-check widget internals, emoji, menus, and other input remain unchanged.
+
 ## Per-PR Record Template
 
 Copy this section for each GTK4 PR:
