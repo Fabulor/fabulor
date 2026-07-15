@@ -1518,11 +1518,17 @@ Automated checks:
 - [x] source assertions: private-dialog and pointer-resolved nickname targeting remain unchanged
 - [x] production GTK3 frontend compiles and links with 0 warnings and 0 errors
 - [x] isolated GTK4 MSVC compile, link, and runtime probe with 0 warnings and 0 errors
+- [x] isolated GTK4 Meson configure, compile, link, and runtime test with explicit GIO linkage
 - [x] GTK4 validator unit tests: 8/8 under WSL
 
 Scope: external file drops only. Internal channel-view, user-list, scrollbar,
 and pane-position drag operations, tree/list conversion, transcript selection,
 spell-check widget internals, emoji, menus, and other input remain unchanged.
+
+CI follow-up: the first Windows workflow run exposed that the Meson probe did
+not yet mirror the MSVC probe's `gio-2.0` import library. The Meson dependency
+list was corrected and the validator suite plus both Windows probe paths passed
+locally before the workflow was rerun.
 
 ## Per-PR Record Template
 
