@@ -919,6 +919,9 @@ char *fe_menu_add (menu_entry *me)
 void fe_menu_update (menu_entry *me)
 {
 }
+void fe_menu_sync (void)
+{
+}
 void fe_uselect (struct session *sess, char *word[], int do_clear, int scroll_to)
 {
 }

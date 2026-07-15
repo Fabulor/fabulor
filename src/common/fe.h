@@ -178,6 +178,7 @@ void fe_open_url (const char *url);
 void fe_menu_del (menu_entry *);
 char *fe_menu_add (menu_entry *);
 void fe_menu_update (menu_entry *);
+void fe_menu_sync (void);
 #define FE_SE_CONNECT 0
 #define FE_SE_LOGGEDIN 1
 #define FE_SE_DISCONNECT 2

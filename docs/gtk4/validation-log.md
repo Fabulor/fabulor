@@ -980,6 +980,44 @@ Scope: dynamic Usermenu model and action ownership only. Displayed GTK3 menu
 widgets, command parsing and substitutions, plugin `/MENU` mutation, contextual
 popup ownership, dialogs, and input event handling remain unchanged.
 
+### PR: [#45 - GTK4 Plugin Main-Menu Model, Pass 16](https://github.com/Fabulor/fabulor/pull/45)
+
+Date: 2026-07-15
+
+Commit: `e8a98200`
+
+Migration stage: 3, finalized main-menu `/MENU` mutation overlay
+
+Files/workflows converted: common finalized-mutation sync contract; retained
+per-window plugin menu overlay; built-in and custom parent-path validation;
+command, toggle, and radio actions; metadata projection; recursive-delete and
+retired-action cleanup
+
+GTK version: 4.22.4
+
+GLib version: 2.88.0
+
+Build configuration: MSVC x64 Release and Meson 1.11.2 Release with MSVC 19.44
+
+Automated checks:
+
+- [x] common, GTK3 GUI, and text frontend compile/link with 0 warnings and 0 errors
+- [x] source assertions: finalized add, update, and recursive-delete sync points
+- [x] source assertions: only real built-in or prior custom parent paths are accepted
+- [x] source assertions: ordinary commands retain nickname/context substitution while toggles and radios remain direct
+- [x] focused GIO probe: nested mount paths and separator sections retain structure
+- [x] focused GIO probe: command metadata and disabled-action suppression
+- [x] focused GIO probe: toggle/radio state and complete action retirement
+- [x] GTK4 validator unit tests: 8/8, plus repository root validation
+- [x] isolated GTK4 MSVC compile, link, and runtime probe with no warnings
+- [x] isolated GTK4 Meson configure, compile, link, and runtime test
+- [x] production GTK3 MSVC x64 Release rebuild and native tests: 18/18
+- [x] GitHub Actions required checks: 5/5
+
+Scope: main-menu `/MENU` model and copied action ownership only. Displayed GTK3
+menus, plugin command semantics, contextual popup roots, dialogs, and input
+event handling remain unchanged.
+
 ## Per-PR Record Template
 
 Copy this section for each GTK4 PR:

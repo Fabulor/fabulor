@@ -178,6 +178,14 @@ Usermenu actions before publishing the replacement model, so reloaded list
 storage cannot remain reachable through an action callback. Plugin `/MENU`
 entries and contextual popup models remain outside this boundary.
 
+Main-menu `/MENU` entries now have a retained dynamic overlay boundary. The
+common command layer synchronizes only after markup labels are finalized, state
+or sensitivity updates are applied, or recursive child deletion has completed.
+Each GTK menu root then rebuilds nested paths and sections from live main-menu
+entries, publishes copied action lookup data, and removes every previous plugin
+action. Missing parent paths remain excluded as they are in GTK3. Contextual
+`$NICK`, `$URL`, `$CHAN`, `$TAB`, and `$TRAY` entries remain outside this model.
+
 ## Quantitative API Baseline
 
 | GTK3 family or type | Matching lines | Files | Migration direction | Stage | Status |

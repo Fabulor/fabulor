@@ -85,10 +85,12 @@ static GSList *submenu_list;
 #define FABULOR_MENU_VIEW_MODEL "fabulor-menu-view-model"
 #define FABULOR_MENU_ROOT_MODEL "fabulor-menu-root-model"
 #define FABULOR_MENU_USER_MODEL "fabulor-menu-user-model"
+#define FABULOR_MENU_PLUGIN_MODEL "fabulor-menu-plugin-model"
 
 #define FABULOR_USER_COMMAND_ACTION "user-command"
 #define FABULOR_USER_EDIT_ACTION "edit-user-menu"
 #define FABULOR_USER_TOGGLE_ACTION_PREFIX "user-toggle-"
+#define FABULOR_PLUGIN_ACTION_PREFIX "plugin-menu-"
 
 static gboolean menu_action_set_item_state (GtkWidget *item, gboolean state);
 static void menu_usermenu_model_refresh (GtkWidget *menu_bar);
@@ -3628,6 +3630,443 @@ menu_add_cb (GtkWidget *menu, menu_entry *me, char *target)
 	}
 }
 
+typedef struct menu_plugin_node
+{
+	char *label;
+	menu_entry *entry;
+	GPtrArray *children;
+	gboolean submenu;
+	gboolean separator;
+} menu_plugin_node;
+
+typedef struct
+{
+	char *path;
+	char *label;
+} menu_plugin_action_data;
+
+static void menu_plugin_models_refresh (void);
+
+static void
+menu_plugin_node_free (gpointer data)
+{
+	menu_plugin_node *node = data;
+
+	if (!node)
+		return;
+	g_free (node->label);
+	if (node->children)
+		g_ptr_array_free (node->children, TRUE);
+	g_free (node);
+}
+
+static menu_plugin_node *
+menu_plugin_node_new (const char *label, gboolean submenu,
+					  gboolean separator, menu_entry *entry)
+{
+	menu_plugin_node *node = g_new0 (menu_plugin_node, 1);
+
+	node->label = g_strdup (label);
+	node->entry = entry;
+	node->submenu = submenu;
+	node->separator = separator;
+	if (submenu)
+		node->children = g_ptr_array_new_with_free_func (menu_plugin_node_free);
+
+	return node;
+}
+
+static menu_plugin_node *
+menu_plugin_node_find_submenu (menu_plugin_node *parent, const char *label)
+{
+	guint i;
+
+	for (i = 0; i < parent->children->len; i++)
+	{
+		menu_plugin_node *child = g_ptr_array_index (parent->children, i);
+
+		if (child->submenu && !menu_streq (child->label, label, 1))
+			return child;
+	}
+
+	return NULL;
+}
+
+static guint
+menu_plugin_node_position (menu_plugin_node *parent, const menu_entry *me)
+{
+	gint position;
+	guint length = parent->children->len;
+
+	if (me->pos == 0xffff)
+		return length;
+	position = me->pos < 0 ? (gint) length + me->pos : me->pos;
+	if (position < 0)
+		return 0;
+	if ((guint) position > length)
+		return length;
+
+	return (guint) position;
+}
+
+static menu_plugin_node *
+menu_plugin_tree_path (menu_plugin_node *root, const char *path)
+{
+	menu_plugin_node *parent = root;
+	char **parts;
+	guint i;
+
+	parts = g_strsplit (path ? path : "", "/", -1);
+	for (i = 0; parts[i]; i++)
+	{
+		menu_plugin_node *child;
+
+		if (!parts[i][0])
+			continue;
+		child = menu_plugin_node_find_submenu (parent, parts[i]);
+		if (!child)
+		{
+			parent = NULL;
+			break;
+		}
+		parent = child;
+	}
+	g_strfreev (parts);
+
+	return parent;
+}
+
+static menu_plugin_node *
+menu_plugin_tree_seed_path (menu_plugin_node *root, const char *path)
+{
+	menu_plugin_node *parent = root;
+	char **parts;
+	guint i;
+
+	parts = g_strsplit (path, "/", -1);
+	for (i = 0; parts[i]; i++)
+	{
+		menu_plugin_node *child;
+
+		if (!parts[i][0])
+			continue;
+		child = menu_plugin_node_find_submenu (parent, parts[i]);
+		if (!child)
+		{
+			child = menu_plugin_node_new (parts[i], TRUE, FALSE, NULL);
+			g_ptr_array_add (parent->children, child);
+		}
+		parent = child;
+	}
+	g_strfreev (parts);
+
+	return parent;
+}
+
+static void
+menu_plugin_tree_add (menu_plugin_node *root, menu_entry *me)
+{
+	menu_plugin_node *node;
+	menu_plugin_node *parent;
+	gboolean submenu;
+
+	parent = menu_plugin_tree_path (root, me->path);
+	if (!parent)
+		return;
+	submenu = me->label && !me->cmd && !me->ucmd && !me->group;
+	node = menu_plugin_node_new (me->label, submenu, !me->label, me);
+	g_ptr_array_insert (parent->children, menu_plugin_node_position (parent, me), node);
+}
+
+static menu_plugin_node *
+menu_plugin_tree_new (void)
+{
+	menu_plugin_node *root;
+	GSList *list;
+
+	root = menu_plugin_node_new (NULL, TRUE, FALSE, NULL);
+	menu_plugin_tree_seed_path (root, mymenu[0].text);
+	menu_plugin_tree_seed_path (root, "Fabulor/New");
+	menu_plugin_tree_seed_path (root, mymenu[MENUBAR_OFFSET - 1].text);
+	menu_plugin_tree_seed_path (root, "View/Channel Switcher");
+	menu_plugin_tree_seed_path (root, "View/Network Meters");
+	menu_plugin_tree_seed_path (root, mymenu[SERVER_OFFSET].text);
+	if (prefs.hex_gui_usermenu)
+		menu_plugin_tree_seed_path (root, mymenu[AWAY_OFFSET + 1].text);
+	menu_plugin_tree_seed_path (root, mymenu[SETTINGS_OFFSET].text);
+	menu_plugin_tree_seed_path (root, mymenu[WINDOW_OFFSET].text);
+	menu_plugin_tree_seed_path (root, "Window/Search");
+	menu_plugin_tree_seed_path (root, mymenu[HELP_OFFSET].text);
+	for (list = menu_list; list; list = list->next)
+	{
+		menu_entry *me = list->data;
+
+		if (me->is_main)
+			menu_plugin_tree_add (root, me);
+	}
+
+	return root;
+}
+
+static gboolean
+menu_plugin_node_has_content (const menu_plugin_node *node)
+{
+	guint i;
+
+	if (node->entry)
+		return TRUE;
+	for (i = 0; node->children && i < node->children->len; i++)
+	{
+		if (menu_plugin_node_has_content (g_ptr_array_index (node->children, i)))
+			return TRUE;
+	}
+
+	return FALSE;
+}
+
+static menu_entry *
+menu_plugin_entry_find (const menu_plugin_action_data *data)
+{
+	GSList *list;
+
+	for (list = menu_list; list; list = list->next)
+	{
+		menu_entry *me = list->data;
+
+		if (me->is_main && !strcmp (me->path, data->path) &&
+			!menu_streq (me->label, data->label, 1))
+			return me;
+	}
+
+	return NULL;
+}
+
+static void
+menu_plugin_action_data_free (gpointer data, GClosure *closure)
+{
+	menu_plugin_action_data *action_data = data;
+
+	(void) closure;
+	g_free (action_data->path);
+	g_free (action_data->label);
+	g_free (action_data);
+}
+
+static void
+menu_plugin_action_activate (GSimpleAction *action, GVariant *parameter,
+						  gpointer user_data)
+{
+	menu_plugin_action_data *data = user_data;
+	menu_entry *me;
+	const char *command = NULL;
+
+	(void) action;
+	(void) parameter;
+	me = menu_plugin_entry_find (data);
+	if (!me)
+		return;
+
+	if (me->group)
+	{
+		GSList *list;
+
+		for (list = menu_list; list; list = list->next)
+		{
+			menu_entry *peer = list->data;
+
+			if (peer->is_main && peer->group &&
+				!strcmp (peer->path, me->path) &&
+				!strcmp (peer->group, me->group))
+			{
+				peer->state = peer == me;
+				menu_foreach_gui (peer, menu_update_cb);
+			}
+		}
+		command = me->cmd;
+		menu_plugin_models_refresh ();
+	}
+	else if (me->ucmd)
+	{
+		me->state = !me->state;
+		menu_foreach_gui (me, menu_update_cb);
+		command = me->state ? me->cmd : me->ucmd;
+		menu_plugin_models_refresh ();
+	}
+	else
+		command = me->cmd;
+
+	if (command && current_sess)
+	{
+		if (me->group || me->ucmd)
+			handle_command (current_sess, (char *) command, FALSE);
+		else
+			userlist_button_cb (NULL, (char *) command);
+	}
+}
+
+static void
+menu_plugin_remove_actions (GActionMap *action_map)
+{
+	char **actions;
+	guint i;
+
+	actions = g_action_group_list_actions (G_ACTION_GROUP (action_map));
+	for (i = 0; actions[i]; i++)
+	{
+		if (g_str_has_prefix (actions[i], FABULOR_PLUGIN_ACTION_PREFIX))
+			g_action_map_remove_action (action_map, actions[i]);
+	}
+	g_strfreev (actions);
+}
+
+static void
+menu_plugin_item_set_metadata (GMenuItem *item, const menu_plugin_node *node,
+							   const char *kind)
+{
+	menu_entry *me = node->entry;
+
+	g_menu_item_set_attribute (item, "fabulor-menu-kind", "s", kind);
+	if (!me)
+		return;
+	g_menu_item_set_attribute (item, "fabulor-menu-path", "s", me->path);
+	g_menu_item_set_attribute (item, "fabulor-menu-position", "i", me->pos);
+	g_menu_item_set_attribute (item, "fabulor-menu-markup", "b", me->markup != 0);
+	g_menu_item_set_attribute (item, "fabulor-menu-enabled", "b", me->enable != 0);
+	g_menu_item_set_attribute (item, "fabulor-menu-key", "i", me->key);
+	g_menu_item_set_attribute (item, "fabulor-menu-modifier", "i", me->modifier);
+	if (me->group)
+		g_menu_item_set_attribute (item, "fabulor-menu-group", "s", me->group);
+	if (me->icon)
+		g_menu_item_set_attribute (item, "fabulor-icon", "s", me->icon);
+}
+
+static void
+menu_plugin_model_append_section (GMenu *model, GMenu **section)
+{
+	if (g_menu_model_get_n_items (G_MENU_MODEL (*section)) > 0)
+		g_menu_append_section (model, NULL, G_MENU_MODEL (*section));
+	g_object_unref (*section);
+	*section = g_menu_new ();
+}
+
+static GMenuModel *
+menu_plugin_node_model_new (menu_plugin_node *parent, GActionMap *action_map,
+							guint *action_index)
+{
+	GMenu *model;
+	GMenu *section;
+	guint i;
+
+	model = g_menu_new ();
+	section = g_menu_new ();
+	for (i = 0; i < parent->children->len; i++)
+	{
+		menu_plugin_node *node = g_ptr_array_index (parent->children, i);
+
+		if (!menu_plugin_node_has_content (node))
+			continue;
+		if (node->separator)
+		{
+			menu_plugin_model_append_section (model, &section);
+			continue;
+		}
+		if (node->submenu)
+		{
+			GMenuItem *item;
+			GMenuModel *submenu;
+
+			submenu = menu_plugin_node_model_new (node, action_map, action_index);
+			item = g_menu_item_new_submenu (node->label, submenu);
+			menu_plugin_item_set_metadata (item, node,
+									  node->entry ? "submenu" : "path");
+			g_menu_append_item (section, item);
+			g_object_unref (item);
+			g_object_unref (submenu);
+		}
+		else
+		{
+			GMenuItem *item;
+			GSimpleAction *action;
+			menu_plugin_action_data *data;
+			char *action_name;
+			char *detailed_name;
+
+			action_name = g_strdup_printf (FABULOR_PLUGIN_ACTION_PREFIX "%u",
+									   (*action_index)++);
+			if (node->entry->ucmd || node->entry->group)
+				action = g_simple_action_new_stateful (action_name, NULL,
+										 g_variant_new_boolean (node->entry->state != 0));
+			else
+				action = g_simple_action_new (action_name, NULL);
+			g_simple_action_set_enabled (action, node->entry->enable != 0);
+			data = g_new0 (menu_plugin_action_data, 1);
+			data->path = g_strdup (node->entry->path);
+			data->label = g_strdup (node->entry->label);
+			g_signal_connect_data (action, "activate",
+							   G_CALLBACK (menu_plugin_action_activate), data,
+							   menu_plugin_action_data_free, 0);
+			g_action_map_add_action (action_map, G_ACTION (action));
+			g_object_unref (action);
+			detailed_name = g_strconcat ("fabulor.", action_name, NULL);
+			item = g_menu_item_new (node->label, detailed_name);
+			menu_plugin_item_set_metadata (item, node,
+									  node->entry->group ? "radio" :
+									  node->entry->ucmd ? "toggle" : "command");
+			g_menu_append_item (section, item);
+			g_object_unref (item);
+			g_free (detailed_name);
+			g_free (action_name);
+		}
+	}
+	menu_plugin_model_append_section (model, &section);
+	g_object_unref (section);
+	g_menu_freeze (model);
+
+	return G_MENU_MODEL (model);
+}
+
+static void
+menu_plugin_model_refresh (GtkWidget *menu_bar)
+{
+	GActionMap *action_map;
+	GMenuModel *model;
+	menu_plugin_node *root;
+	guint action_index = 0;
+
+	if (!menu_bar)
+		return;
+	action_map = g_object_get_data (G_OBJECT (menu_bar), FABULOR_MENU_ACTION_GROUP);
+	if (!action_map)
+		return;
+
+	menu_plugin_remove_actions (action_map);
+	root = menu_plugin_tree_new ();
+	model = menu_plugin_node_model_new (root, action_map, &action_index);
+	menu_plugin_node_free (root);
+	g_object_set_data_full (G_OBJECT (menu_bar), FABULOR_MENU_PLUGIN_MODEL,
+						 model, g_object_unref);
+}
+
+static void
+menu_plugin_models_refresh (void)
+{
+	GHashTable *seen;
+	GSList *list;
+
+	seen = g_hash_table_new (g_direct_hash, g_direct_equal);
+	for (list = sess_list; list; list = list->next)
+	{
+		session *sess = list->data;
+
+		if (!sess || !sess->gui || !sess->gui->menu ||
+			g_hash_table_contains (seen, sess->gui->menu))
+			continue;
+		g_hash_table_add (seen, sess->gui->menu);
+		menu_plugin_model_refresh (sess->gui->menu);
+	}
+	g_hash_table_destroy (seen);
+}
+
 char *
 fe_menu_add (menu_entry *me)
 {
@@ -3655,6 +4094,12 @@ void
 fe_menu_update (menu_entry *me)
 {
 	menu_foreach_gui (me, menu_update_cb);
+}
+
+void
+fe_menu_sync (void)
+{
+	menu_plugin_models_refresh ();
 }
 
 /* used to add custom menus to the right-click menu */
@@ -3821,6 +4266,7 @@ menu_create_main (void *accel_group, int bar, int away, int away_sensitive,
 	g_object_set_data_full (G_OBJECT (menu_bar), FABULOR_MENU_ACTION_GROUP,
 						 action_group, g_object_unref);
 	menu_usermenu_model_refresh (menu_bar);
+	menu_plugin_model_refresh (menu_bar);
 	channel_switcher_model = menu_action_model_new (CHANNEL_SWITCHER_OFFSET,
 														CHANNEL_SWITCHER_ACTION_COUNT);
 	g_object_set_data_full (G_OBJECT (menu_bar), FABULOR_MENU_CHANNEL_SWITCHER_MODEL,
