@@ -224,7 +224,7 @@ Detailed planning and evidence live in:
     - [ ] Convert remaining menu, unparented-widget, GTK3-test, and non-window child lifecycles in their owning stages.
 - [ ] Convert actions, menus, dialogs, and file-selection flows.
   - [x] Establish one canonical action-identity registry for main-menu accelerators and configurable shortcut dispatch.
-  - [ ] Bind canonical commands and state to GTK4 actions and menu models without changing IRC command behaviour.
+  - [x] Bind canonical commands and state to GTK4 actions and menu models without changing IRC command behaviour.
     - [x] Bind all 19 stateless canonical commands through per-menu `GSimpleActionGroup` ownership.
     - [x] Convert menu-bar, user-list, and fullscreen window-view state synchronization.
     - [x] Convert away state and connection sensitivity as a session/server action boundary.
@@ -244,6 +244,8 @@ Detailed planning and evidence live in:
       - [x] Project the dynamic Usermenu into a retained nested model with command, toggle, separator, icon-hint, edit, and refresh ownership.
       - [x] Project finalized main-menu `/MENU` mutation into a retained nested overlay with copied action ownership and recursive-delete cleanup.
       - [x] Convert contextual `$NICK`, `$URL`, `$CHAN`, `$TAB`, and `$TRAY` popup model ownership.
+  - [ ] Replace blocking dialog runs with response-driven lifecycle handling.
+    - [x] Convert theme-preference acknowledgement and import-result dialogs without changing message content or modality.
 - [ ] Convert input events, shortcuts, clipboard, drag/drop, and pointer gestures.
 - [ ] Convert tree/list models, cell renderers, channel navigation, and operational lists.
 - [ ] Port the transcript and spell-check input widgets to GTK4 rendering and event semantics.

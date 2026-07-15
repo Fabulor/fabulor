@@ -358,6 +358,14 @@ context substitution; untargeted, toggle, and radio commands retain their
 existing dispatch paths. The displayed GTK3 popups and native Windows tray
 menu remain unchanged until their later presentation conversion.
 
+Response-driven acknowledgement dialogs pass 18 (2026-07-15): theme-manager
+apply errors and colors.conf import result messages no longer enter nested
+`gtk_dialog_run()` loops. Each modal dialog now connects the shared exact-signature
+response destroy callback, is shown normally, and is destroyed with its parent.
+Message text, severity, and buttons remain unchanged, and none of these call
+sites consumes a response result. The color manager and every decision-returning
+dialog remain separate work.
+
 Primary surfaces:
 
 - `menu.c`, context menus, tray menus, and user-defined menus

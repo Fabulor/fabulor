@@ -203,7 +203,7 @@ in place pending presentation conversion.
 | `gtk_widget_destroy` | 31 | 13 | window close and object ownership appropriate to type | 2 | in progress |
 | `GtkEventBox` / `gtk_event_box_*` | 8 | 2 | ordinary widgets plus controllers/gestures | 2/4 | not started |
 | `GtkTable` / `gtk_table_*` | 2 | 1 | `GtkGrid` | 2 | not started |
-| `gtk_dialog_run` | 9 | 5 | response-driven/asynchronous dialog flow | 3 | not started |
+| `gtk_dialog_run` | 6 | 5 | response-driven/asynchronous dialog flow | 3 | in progress |
 | `gtk_message_dialog_new` | 18 | 7 | GTK4 dialog or alert abstraction | 3 | not started |
 | `gtk_file_chooser_dialog_new` | 1 | 1 | GTK4 file chooser/native dialog flow | 3 | not started |
 | `gtk_menu_*` | 109 | 7 | `GMenuModel`, popovers, and actions | 3 | not started |
@@ -230,7 +230,7 @@ The line counts below identify review size, not priority by themselves.
 | `src/fe-gtk/fkeys.c` | 2,386 | 282 | accelerators and editable cell renderers | 4/5 |
 | `src/fe-gtk/fe-gtk.c` | 1,928 | 110 | startup, runtime paths, display/icon setup | 1/7/8 |
 | `src/fe-gtk/sexy-spell-entry.c` | 1,878 | 156 | `GtkEntry` subclass, drawing, pointer events | 6 |
-| `src/fe-gtk/theme/theme-preferences.c` | 1,809 | 537 | theme UI, models, blocking dialogs | 3/5/7 |
+| `src/fe-gtk/theme/theme-preferences.c` | 1,813 | 537 | theme UI, models, response-driven acknowledgements | 3/5/7 |
 | `src/fe-gtk/plugin-tray.c` | 1,620 | 147 | GTK3 status icon/AppIndicator and Win32 tray | 7 |
 | `src/fe-gtk/dccgui.c` | 1,209 | 245 | transfer models, progress, dialogs | 3/5 |
 | `src/fe-gtk/chanlist.c` | 1,182 | 234 | large sortable channel model | 5 |
