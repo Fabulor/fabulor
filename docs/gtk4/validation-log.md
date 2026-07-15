@@ -831,11 +831,11 @@ displayed GTK3 menu, preference and editor window implementations, dialog
 lifecycles, dynamic menus, popup ownership, and input event handling remain
 unchanged.
 
-### PR: pending - GTK4 Window Menu Model, Pass 12
+### PR: [#41 - GTK4 Window Menu Model, Pass 12](https://github.com/Fabulor/fabulor/pull/41)
 
 Date: 2026-07-15
 
-Commit: pending
+Commit: `fa9baa48`
 
 Migration stage: 3, eleven new stateless actions, eighth canonical
 `GMenuModel` subtree projection, and retained-model boundary correction
