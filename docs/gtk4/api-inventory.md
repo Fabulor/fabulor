@@ -272,6 +272,14 @@ GTK3 event objects and text-window cursor ownership remain inside the
 compatibility layer. Existing buffer-coordinate conversion, word parsing,
 modifier matching, and editable text behavior remain unchanged.
 
+External file drops now use one URI-list contract across private-dialog
+transcripts and user-list nickname targets. GTK4 receives `GdkFileList` from a
+drop target and converts each `GFile` to a URI; GTK3 validates the
+`text/uri-list` target and copies selection bytes before dispatch. The existing
+DCC filename conversion and send loop now reports whether at least one file was
+accepted. Internal Fabulor drag sources, layout drops, and tree-row hover remain
+on the legacy path for the next pass.
+
 ## Quantitative API Baseline
 
 | GTK3 family or type | Matching lines | Files | Migration direction | Stage | Status |
@@ -289,6 +297,7 @@ modifier matching, and editable text behavior remain unchanged.
 | `gtk_menu_*` | 109 | 7 | `GMenuModel`, popovers, and actions | 3 | not started |
 | `gtk_menu_item_*` | 45 | 7 | actions/menu models | 3 | not started |
 | `GdkEvent` | 69 | 20 | event controllers and gestures | 4 | in progress |
+| `GdkDragContext` / `GtkSelectionData` | 14 | 5 | `GtkDragSource`, `GtkDropTarget`, and typed content | 4 | in progress |
 | `gtk_widget_get_window` | 31 | 6 | surface/native access only where unavoidable | 4/6 | in progress |
 | `gdk_window_*` | 48 | 8 | `GdkSurface`, snapshots, controllers, or removal | 4/6 | in progress |
 | `gtk_clipboard_*` | 1 | 1 | `GdkClipboard` and content providers | 4/6 | in progress |

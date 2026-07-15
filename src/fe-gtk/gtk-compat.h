@@ -555,6 +555,121 @@ fabulor_gtk_widget_on_click_released (GtkWidget *widget,
 #endif
 }
 
+typedef gboolean (*FabulorGtkFileDropFunc) (GtkWidget *widget, gdouble x,
+											gdouble y, const gchar *uri_list,
+											gpointer user_data);
+
+typedef struct
+{
+	FabulorGtkFileDropFunc callback;
+	gpointer user_data;
+} FabulorGtkFileDropInteraction;
+
+static inline void
+fabulor_gtk_file_drop_interaction_free (gpointer data, GClosure *closure)
+{
+	(void) closure;
+	g_free (data);
+}
+
+#if GTK_MAJOR_VERSION >= 4
+static inline gboolean
+fabulor_gtk_file_drop_cb (GtkDropTarget *target, const GValue *value,
+						  gdouble x, gdouble y, gpointer user_data)
+{
+	FabulorGtkFileDropInteraction *interaction = user_data;
+	GdkFileList *file_list = g_value_get_boxed (value);
+	GString *uris;
+	GSList *files;
+
+	if (!file_list)
+		return FALSE;
+
+	uris = g_string_new (NULL);
+	for (files = gdk_file_list_get_files (file_list); files; files = files->next)
+	{
+		gchar *uri = g_file_get_uri (G_FILE (files->data));
+
+		if (uri)
+		{
+			g_string_append (uris, uri);
+			g_string_append (uris, "\r\n");
+			g_free (uri);
+		}
+	}
+
+	if (uris->len > 0)
+	{
+		gboolean handled = interaction->callback (
+			gtk_event_controller_get_widget (GTK_EVENT_CONTROLLER (target)),
+			x, y, uris->str, interaction->user_data);
+
+		g_string_free (uris, TRUE);
+		return handled;
+	}
+
+	g_string_free (uris, TRUE);
+	return FALSE;
+}
+#else
+static inline void
+fabulor_gtk_file_drop_cb (GtkWidget *widget, GdkDragContext *context,
+						  gint x, gint y, GtkSelectionData *selection_data,
+						  guint info, guint32 time, gpointer user_data)
+{
+	FabulorGtkFileDropInteraction *interaction = user_data;
+	gint length = gtk_selection_data_get_length (selection_data);
+	gchar *target_name;
+	gchar *uri_list;
+
+	(void) context;
+	(void) info;
+	(void) time;
+
+	target_name = gdk_atom_name (gtk_selection_data_get_target (selection_data));
+	if (!target_name || strcmp (target_name, "text/uri-list") != 0 || length <= 0)
+	{
+		g_free (target_name);
+		return;
+	}
+	g_free (target_name);
+
+	uri_list = g_strndup ((const gchar *) gtk_selection_data_get_data (selection_data),
+		length);
+	interaction->callback (widget, x, y, uri_list, interaction->user_data);
+	g_free (uri_list);
+}
+#endif
+
+static inline void
+fabulor_gtk_widget_on_file_drop (GtkWidget *widget, GdkDragAction actions,
+								 FabulorGtkFileDropFunc callback,
+								 gpointer user_data)
+{
+	FabulorGtkFileDropInteraction *interaction;
+
+	g_return_if_fail (GTK_IS_WIDGET (widget));
+	g_return_if_fail (callback != NULL);
+
+	interaction = g_new (FabulorGtkFileDropInteraction, 1);
+	interaction->callback = callback;
+	interaction->user_data = user_data;
+
+#if GTK_MAJOR_VERSION >= 4
+	GtkDropTarget *target = gtk_drop_target_new (GDK_TYPE_FILE_LIST, actions);
+
+	g_signal_connect_data (target, "drop",
+		G_CALLBACK (fabulor_gtk_file_drop_cb), interaction,
+		fabulor_gtk_file_drop_interaction_free, 0);
+	gtk_widget_add_controller (widget, GTK_EVENT_CONTROLLER (target));
+#else
+	gtk_drag_dest_add_uri_targets (widget);
+	g_signal_connect_data (widget, "drag-data-received",
+		G_CALLBACK (fabulor_gtk_file_drop_cb), interaction,
+		fabulor_gtk_file_drop_interaction_free, 0);
+#endif
+}
+
 typedef gboolean (*FabulorGtkKeyFunc) (GtkWidget *widget, guint keyval,
 									   GdkModifierType state,
 									   gpointer user_data);

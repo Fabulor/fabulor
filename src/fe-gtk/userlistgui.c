@@ -704,29 +704,32 @@ fe_userlist_clear (session *sess)
 	gtk_list_store_clear (sess->res->user_model);
 }
 
-static void
-userlist_dnd_drop (GtkTreeView *widget, GdkDragContext *context,
-						 gint x, gint y, GtkSelectionData *selection_data,
-						 guint info, guint ttime, gpointer userdata)
+static gboolean
+userlist_file_drop (GtkWidget *widget, gdouble x, gdouble y,
+					const gchar *uri_list, gpointer user_data)
 {
 	struct User *user;
-	gchar *data;
 	GtkTreePath *path;
 	GtkTreeModel *model;
 	GtkTreeIter iter;
+	GtkTreeView *tree = GTK_TREE_VIEW (widget);
 
-	if (!gtk_tree_view_get_path_at_pos (widget, x, y, &path, NULL, NULL, NULL))
-		return;
+	(void) user_data;
 
-	model = gtk_tree_view_get_model (widget);
+	if (!gtk_tree_view_get_path_at_pos (tree, (gint) x, (gint) y,
+		&path, NULL, NULL, NULL))
+		return FALSE;
+
+	model = gtk_tree_view_get_model (tree);
 	if (!gtk_tree_model_get_iter (model, &iter, path))
-		return;
+	{
+		gtk_tree_path_free (path);
+		return FALSE;
+	}
+	gtk_tree_path_free (path);
 	gtk_tree_model_get (model, &iter, COL_USER, &user, -1);
 
-	data = (char *)gtk_selection_data_get_data (selection_data);
-
-	if (data)
-		mg_dnd_drop_file (current_sess, user->nick, data);
+	return user && mg_dnd_drop_file (current_sess, user->nick, uri_list);
 }
 
 static gboolean
@@ -1008,7 +1011,6 @@ userlist_create (GtkBox *box)
 	GtkWidget *sw, *treeview;
 	static const GtkTargetEntry dnd_dest_targets[] =
 	{
-		{"text/uri-list", 0, 1},
 		{"ZOITECHAT_CHANVIEW", GTK_TARGET_SAME_APP, 75 }
 	};
 	static const GtkTargetEntry dnd_src_target[] =
@@ -1038,18 +1040,18 @@ userlist_create (GtkBox *box)
 										  GTK_SELECTION_MULTIPLE);
 
 	/* set up drops */
-	gtk_drag_dest_set (treeview, GTK_DEST_DEFAULT_ALL, dnd_dest_targets, 2,
+	gtk_drag_dest_set (treeview, GTK_DEST_DEFAULT_ALL, dnd_dest_targets, 1,
 							 GDK_ACTION_MOVE | GDK_ACTION_COPY | GDK_ACTION_LINK);
 	gtk_drag_source_set (treeview, GDK_BUTTON1_MASK, dnd_src_target, 1, GDK_ACTION_MOVE);
+	fabulor_gtk_widget_on_file_drop (treeview,
+		GDK_ACTION_MOVE | GDK_ACTION_COPY | GDK_ACTION_LINK,
+		userlist_file_drop, NULL);
 
 	/* file DND (for DCC) */
 	g_signal_connect (G_OBJECT (treeview), "drag-motion",
 							G_CALLBACK (userlist_dnd_motion), treeview);
 	g_signal_connect (G_OBJECT (treeview), "drag-leave",
 							G_CALLBACK (userlist_dnd_leave), 0);
-	g_signal_connect (G_OBJECT (treeview), "drag-data-received",
-							G_CALLBACK (userlist_dnd_drop), treeview);
-
 	g_signal_connect (G_OBJECT (treeview), "button-press-event",
 							G_CALLBACK (userlist_click_cb), 0);
 	g_signal_connect (G_OBJECT (treeview), "key-press-event",

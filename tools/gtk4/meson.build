@@ -40,6 +40,7 @@ gtk4_includes = include_directories(
 
 gtk4_library_dir = join_paths(gtk4_root, 'lib')
 gtk4_library = cc.find_library('gtk-4', dirs: gtk4_library_dir, required: true)
+gio_library = cc.find_library('gio-2.0', dirs: gtk4_library_dir, required: true)
 gobject_library = cc.find_library('gobject-2.0', dirs: gtk4_library_dir, required: true)
 glib_library = cc.find_library('glib-2.0', dirs: gtk4_library_dir, required: true)
 
@@ -47,7 +48,7 @@ probe = executable(
   'fabulor-gtk4-probe',
   'probe.c',
   include_directories: gtk4_includes,
-  dependencies: [gtk4_library, gobject_library, glib_library],
+  dependencies: [gtk4_library, gio_library, gobject_library, glib_library],
 )
 
 probe_environment = environment()
