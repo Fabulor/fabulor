@@ -1233,9 +1233,11 @@ Scope: policy, registration, legacy installer rules, and staging output. The
 shipping GTK3 theme importer remains until the GTK4 adapter can replace it;
 existing user `gtk3-themes` content is not deleted during upgrade.
 
-### PR: GTK4 Stage 3 Dialog Lifecycle Closure
+### PR: [#52 - GTK4 Stage 3 Dialog Lifecycle Closure](https://github.com/Fabulor/fabulor/pull/52)
 
 Date: 2026-07-15
+
+Commit: `2c4a727f`
 
 Migration stage: 3, final blocking-dialog closure
 
