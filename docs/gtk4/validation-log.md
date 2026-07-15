@@ -869,11 +869,11 @@ the Search/Help model boundaries. Displayed GTK3 menus, operational windows,
 transcript behavior, Save Text containment, dynamic menus, dialogs, and input
 event handling remain unchanged.
 
-### PR: pending - GTK4 View Menu Model, Pass 13
+### PR: [#42 - GTK4 View Menu Model, Pass 13](https://github.com/Fabulor/fabulor/pull/42)
 
 Date: 2026-07-15
 
-Commit: pending
+Commit: `d2e33901`
 
 Migration stage: 3, three new boolean actions and ninth canonical `GMenuModel`
 subtree projection
