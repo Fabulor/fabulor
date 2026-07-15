@@ -1060,7 +1060,7 @@ and input event handling remain unchanged.
 
 Date: 2026-07-15
 
-Commit: pending
+Commit: `d4a78140`
 
 Migration stage: 3, acknowledgement-dialog lifecycle
 
