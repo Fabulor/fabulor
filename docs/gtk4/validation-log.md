@@ -1056,6 +1056,40 @@ Scope: contextual plugin popup model and callback ownership only. Displayed
 GTK3 popup widgets, native Windows tray items, built-in popup contents, dialogs,
 and input event handling remain unchanged.
 
+### PR: [#47 - GTK4 Response-Driven Acknowledgement Dialogs, Pass 18](https://github.com/Fabulor/fabulor/pull/47)
+
+Date: 2026-07-15
+
+Commit: `d4a78140`
+
+Migration stage: 3, acknowledgement-dialog lifecycle
+
+Files/workflows converted: theme-manager apply errors; colors.conf import
+errors and success messages; modal parent ownership; response-driven cleanup
+
+GTK version: 4.22.4
+
+GLib version: 2.88.0
+
+Build configuration: MSVC x64 Release and Meson 1.11.2 Release with MSVC 19.44
+
+Automated checks:
+
+- [x] source assertions: three acknowledgement helpers contain no nested dialog run
+- [x] source assertions: each dialog uses the exact-signature response destroy callback
+- [x] source assertions: each asynchronous modal dialog is destroyed with its parent
+- [x] source inventory: blocking dialog runs reduced from 9 to 6
+- [x] production GTK3 frontend compiles and links with 0 warnings and 0 errors
+- [x] GTK4 validator unit tests: 8/8, plus repository root validation
+- [x] isolated GTK4 MSVC compile, link, and runtime probe with no warnings
+- [x] isolated GTK4 Meson configure, compile, link, and runtime test
+- [x] production GTK3 MSVC x64 Release rebuild and native tests: 18/18
+- [x] GitHub Actions required checks: 5/5
+
+Scope: acknowledgement-only theme dialogs and parent-bound response cleanup.
+The color manager, certificate chooser, preference confirmation, quit dialog,
+startup messages, and synchronous `FE_MSG_WAIT` behavior remain unchanged.
+
 ## Per-PR Record Template
 
 Copy this section for each GTK4 PR:

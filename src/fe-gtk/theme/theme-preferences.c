@@ -460,14 +460,15 @@ theme_preferences_show_message (theme_preferences_ui *ui, GtkMessageType message
         GtkWidget *dialog;
 
         dialog = gtk_message_dialog_new (ui->parent,
-                                         GTK_DIALOG_MODAL,
+                                         GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT,
                                          message_type,
                                          GTK_BUTTONS_OK,
                                          "%s",
                                          primary);
 	theme_manager_attach_window (dialog);
-        gtk_dialog_run (GTK_DIALOG (dialog));
-        fabulor_gtk_window_destroy (GTK_WINDOW (dialog));
+        g_signal_connect (dialog, "response",
+                          G_CALLBACK (fabulor_gtk_dialog_destroy_on_response), NULL);
+        gtk_widget_show (dialog);
 }
 
 static void
@@ -945,13 +946,14 @@ theme_preferences_show_import_error (GtkWidget *button, const char *message)
         GtkWidget *dialog;
 
         dialog = gtk_message_dialog_new (GTK_WINDOW (gtk_widget_get_toplevel (button)),
-                                         GTK_DIALOG_MODAL,
+                                         GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT,
                                          GTK_MESSAGE_ERROR,
                                          GTK_BUTTONS_CLOSE,
                                          "%s",
                                          message);
-        gtk_dialog_run (GTK_DIALOG (dialog));
-        fabulor_gtk_window_destroy (GTK_WINDOW (dialog));
+        g_signal_connect (dialog, "response",
+                          G_CALLBACK (fabulor_gtk_dialog_destroy_on_response), NULL);
+        gtk_widget_show (dialog);
 }
 
 static void
@@ -960,13 +962,14 @@ theme_preferences_show_import_info (GtkWidget *button, const char *message)
         GtkWidget *dialog;
 
         dialog = gtk_message_dialog_new (GTK_WINDOW (gtk_widget_get_toplevel (button)),
-                                         GTK_DIALOG_MODAL,
+                                         GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT,
                                          GTK_MESSAGE_INFO,
                                          GTK_BUTTONS_CLOSE,
                                          "%s",
                                          message);
-        gtk_dialog_run (GTK_DIALOG (dialog));
-        fabulor_gtk_window_destroy (GTK_WINDOW (dialog));
+        g_signal_connect (dialog, "response",
+                          G_CALLBACK (fabulor_gtk_dialog_destroy_on_response), NULL);
+        gtk_widget_show (dialog);
 }
 
 static gboolean
