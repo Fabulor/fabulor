@@ -171,20 +171,17 @@ static const GOptionEntry gopt_entries[] =
 static void
 create_msg_dialog (gchar *title, gchar *message)
 {
-	GtkWidget *dialog;
+	gunichar2 *wide_title;
+	gunichar2 *wide_message;
 
-	dialog = gtk_message_dialog_new (NULL, GTK_DIALOG_MODAL, GTK_MESSAGE_INFO, GTK_BUTTONS_CLOSE, "%s", message);
-	theme_manager_attach_window (dialog);
-	gtk_window_set_title (GTK_WINDOW (dialog), title);
-
-/* On Win32 we automatically have the icon. If we try to load it explicitly, it will look ugly for some reason. */
-#ifndef WIN32
-	pixmaps_init ();
-	gtk_window_set_icon (GTK_WINDOW (dialog), pix_zoitechat);
-#endif
-
-	gtk_dialog_run (GTK_DIALOG (dialog));
-	fabulor_gtk_window_destroy (GTK_WINDOW (dialog));
+	wide_title = g_utf8_to_utf16 (title, -1, NULL, NULL, NULL);
+	wide_message = g_utf8_to_utf16 (message, -1, NULL, NULL, NULL);
+	MessageBoxW (NULL,
+	             wide_message ? (LPCWSTR)wide_message : L"Unable to display message.",
+	             wide_title ? (LPCWSTR)wide_title : L"Fabulor",
+	             MB_OK | MB_ICONINFORMATION | MB_TASKMODAL);
+	g_free (wide_message);
+	g_free (wide_title);
 }
 
 static char *win32_argv0_dir;
@@ -716,7 +713,6 @@ fe_args (int argc, char *argv[])
 			if (strstr (error->message, "--help-all") != NULL)
 			{
 				buffer = g_option_context_get_help (context, FALSE, NULL);
-				gtk_init (&argc, &argv);
 				create_msg_dialog ("Long Help", buffer);
 				g_free (buffer);
 				return 0;
@@ -724,7 +720,6 @@ fe_args (int argc, char *argv[])
 			else if (strstr (error->message, "--help") != NULL || strstr (error->message, "-?") != NULL)
 			{
 				buffer = g_option_context_get_help (context, TRUE, NULL);
-				gtk_init (&argc, &argv);
 				create_msg_dialog ("Help", buffer);
 				g_free (buffer);
 				return 0;
@@ -732,7 +727,6 @@ fe_args (int argc, char *argv[])
 			else 
 			{
 				buffer = g_strdup_printf ("%s\n", error->message);
-				gtk_init (&argc, &argv);
 				create_msg_dialog ("Error", buffer);
 				g_free (buffer);
 				return 1;
@@ -754,7 +748,6 @@ fe_args (int argc, char *argv[])
 	{
 		buffer = g_strdup_printf ("%s %s", PACKAGE_NAME, PACKAGE_VERSION);
 #ifdef WIN32
-		gtk_init (&argc, &argv);
 		create_msg_dialog ("Version Information", buffer);
 #else
 		puts (buffer);
@@ -768,7 +761,6 @@ fe_args (int argc, char *argv[])
 	{
 		buffer = g_strdup_printf ("%s%caddons%c", get_xdir(), G_DIR_SEPARATOR, G_DIR_SEPARATOR);
 #ifdef WIN32
-		gtk_init (&argc, &argv);
 		create_msg_dialog ("Plugin/Script Auto-load Directory", buffer);
 #else
 		puts (buffer);
@@ -782,7 +774,6 @@ fe_args (int argc, char *argv[])
 	{
 		buffer = g_strdup_printf ("%s%c", get_xdir(), G_DIR_SEPARATOR);
 #ifdef WIN32
-		gtk_init (&argc, &argv);
 		create_msg_dialog ("User Config Directory", buffer);
 #else
 		puts (buffer);
@@ -1102,10 +1093,8 @@ fe_message (char *msg, int flags)
 							G_CALLBACK (fabulor_gtk_dialog_destroy_on_response), NULL);
 	gtk_window_set_resizable (GTK_WINDOW (dialog), FALSE);
 	gtk_window_set_position (GTK_WINDOW (dialog), GTK_WIN_POS_MOUSE);
+	gtk_window_set_modal (GTK_WINDOW (dialog), (flags & FE_MSG_MODAL) != 0);
 	gtk_widget_show (dialog);
-
-	if (flags & FE_MSG_WAIT)
-		gtk_dialog_run (GTK_DIALOG (dialog));
 }
 
 void

@@ -193,6 +193,15 @@ state. Targeted substitution and direct toggle/radio dispatch preserve GTK3
 behavior. The GTK3 popup widgets and native Windows tray presentation remain
 in place pending presentation conversion.
 
+Stage 3 dialog lifecycle work is complete. Manifest-plugin enablement and the
+quit/minimize decision now resume from explicit response callbacks with bounded
+parent or singleton ownership. Fatal font failure prevents further transcript
+rendering while its response-owned shutdown dialog is active. Frontend warning
+messages are asynchronous, with an explicit modal flag where acknowledgement
+must gate interaction. Pre-event-loop Windows command-line information uses a
+native UTF-16 message box. The frontend contains no blocking GTK dialog or
+native chooser run call.
+
 ## Quantitative API Baseline
 
 | GTK3 family or type | Matching lines | Files | Migration direction | Stage | Status |
@@ -203,7 +212,7 @@ in place pending presentation conversion.
 | `gtk_widget_destroy` | 31 | 13 | window close and object ownership appropriate to type | 2 | in progress |
 | `GtkEventBox` / `gtk_event_box_*` | 8 | 2 | ordinary widgets plus controllers/gestures | 2/4 | not started |
 | `GtkTable` / `gtk_table_*` | 2 | 1 | `GtkGrid` | 2 | not started |
-| `gtk_dialog_run` | 4 | 3 | response-driven/asynchronous dialog flow | 3 | in progress |
+| `gtk_dialog_run` | 0 | 0 | response-driven/asynchronous dialog flow | 3 | complete |
 | `gtk_native_dialog_run` | 0 | 0 | response-driven native dialog flow | 3 | complete |
 | `gtk_message_dialog_new` | 18 | 7 | GTK4 dialog or alert abstraction | 3 | not started |
 | `gtk_file_chooser_dialog_new` | 0 | 0 | GTK4 file chooser/native dialog flow | 3 | complete |

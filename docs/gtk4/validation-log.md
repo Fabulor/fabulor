@@ -1233,6 +1233,30 @@ Scope: policy, registration, legacy installer rules, and staging output. The
 shipping GTK3 theme importer remains until the GTK4 adapter can replace it;
 existing user `gtk3-themes` content is not deleted during upgrade.
 
+### PR: GTK4 Stage 3 Dialog Lifecycle Closure
+
+Date: 2026-07-15
+
+Migration stage: 3, final blocking-dialog closure
+
+Files/workflows converted: manifest-plugin enable confirmation; quit and
+minimize-to-tray confirmation; fatal font error; frontend modal-message
+semantics; pre-event-loop Windows command-line information dialogs
+
+Automated checks:
+
+- [x] source inventory: 0 ordinary and 0 native blocking dialog runs remain
+- [x] source assertions: accepted manifest confirmation alone resumes preference persistence
+- [x] source assertions: quit, minimize, cancellation, and singleton cleanup remain response-owned
+- [x] source assertions: fatal font failure suppresses unusable transcript rendering before acknowledgement
+- [x] source assertions: Windows command-line information preserves synchronous pre-event-loop display through UTF-16 native UI
+- [x] common MSVC x64 Release build with 0 warnings and 0 errors
+- [x] production GTK3 frontend compiles and links with 0 warnings and 0 errors
+
+Scope: final nested-loop removal and Stage 3 closure. GTK message-dialog
+presentation remains available during the staged production cutover, but no
+converted path depends on a nested GTK event loop.
+
 ## Per-PR Record Template
 
 Copy this section for each GTK4 PR:

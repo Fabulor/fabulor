@@ -1271,7 +1271,7 @@ main (int argc, char *argv[])
 	/* OS/2 uses UID 0 all the time */
 	if (getuid () == 0)
 		fe_message (_("* Running IRC as root is stupid! You should\n"
-			      "  create a User Account and use that to login.\n"), FE_MSG_WARN|FE_MSG_WAIT);
+			      "  create a User Account and use that to login.\n"), FE_MSG_WARN|FE_MSG_MODAL);
 #endif
 #endif /* !WIN32 */
 
