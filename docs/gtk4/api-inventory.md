@@ -161,6 +161,15 @@ Channel Switcher and Network Meters selection models, and keeps Fullscreen in
 its trailing section. Preference changes synchronize each action across open
 windows without re-entering GTK3 callbacks.
 
+The static Fabulor menu is the tenth complete model boundary. Load Plugin or
+Script and Attach/Detach now have canonical stateless identities, bringing the
+registry to 51. Its retained five-section model nests the existing New model
+and preserves all separators around Network List, plugin loading, window
+attachment controls, Close, and Quit. Each menu root copies the Attach or
+Detach label selected for that window before model construction. Dynamic
+Usermenu, `/MENU`, plugin top-level content, and popup mutation remain outside
+the static model milestone.
+
 ## Quantitative API Baseline
 
 | GTK3 family or type | Matching lines | Files | Migration direction | Stage | Status |

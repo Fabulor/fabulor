@@ -322,6 +322,14 @@ Cross-window preference synchronization remains authoritative, while displayed
 GTK3 check/radio items and their layout, timer, and visibility behavior remain
 unchanged.
 
+Fabulor menu-model pass 14 (2026-07-15): Load Plugin or Script and the
+context-sensitive Attach/Detach command now have canonical stateless action
+identities. The retained five-section Fabulor model nests New and preserves the
+live menu's separator structure. Attach/Detach labels are copied after each
+window's context is selected, and plugin loading continues through the existing
+contained chooser and no-plugin fallback. This completes static main-menu model
+projection; dynamic menu mutation and popup ownership remain separate work.
+
 Primary surfaces:
 
 - `menu.c`, context menus, tray menus, and user-defined menus

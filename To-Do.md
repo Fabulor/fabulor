@@ -230,7 +230,7 @@ Detailed planning and evidence live in:
     - [x] Convert away state and connection sensitivity as a session/server action boundary.
     - [x] Convert Channel Switcher radio state to one targeted string action while retaining the GTK3 callback bridge.
     - [x] Convert Network Meters radio state to one targeted string action while retaining meter timer and UI updates.
-    - [ ] Project complete canonical menu subtrees into retained `GMenuModel` structures.
+    - [x] Project complete canonical menu subtrees into retained `GMenuModel` structures.
       - [x] Project the static three-command Search submenu without changing the live GTK3 menu.
       - [x] Add the About action and project the complete two-command Help menu.
       - [x] Add Channel Tab and Channel Window actions and project the complete four-command New submenu.
@@ -240,7 +240,7 @@ Detailed planning and evidence live in:
       - [x] Add canonical actions for all ten Settings commands and project the complete two-section Settings menu.
       - [x] Add canonical actions for the remaining Window commands, project its complete nested model, and correct the retained Search/Help boundaries.
       - [x] Convert the remaining View toggles to synchronized boolean actions and project the complete three-section View model.
-      - [ ] Project remaining static subtrees after their non-canonical commands have action identities.
+      - [x] Add canonical Load and Attach/Detach actions and project the complete five-section Fabulor menu.
 - [ ] Convert input events, shortcuts, clipboard, drag/drop, and pointer gestures.
 - [ ] Convert tree/list models, cell renderers, channel navigation, and operational lists.
 - [ ] Port the transcript and spell-check input widgets to GTK4 rendering and event semantics.

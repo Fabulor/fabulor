@@ -906,6 +906,45 @@ Scope: View action state and retained model composition only. Displayed GTK3
 check/radio controls, visibility behavior, meter timers, dynamic menus, dialogs,
 and input event handling remain unchanged.
 
+### PR: [#43 - GTK4 Fabulor Menu Model, Pass 14](https://github.com/Fabulor/fabulor/pull/43)
+
+Date: 2026-07-15
+
+Commit: `a6b2ddb6`
+
+Migration stage: 3, two new stateless actions, tenth canonical `GMenuModel`
+subtree projection, and static main-menu projection completion
+
+Files/workflows converted: Load Plugin or Script and Attach/Detach identities;
+complete five-section Fabulor model; retained New submenu; per-window
+Attach/Detach label capture; static model milestone closeout
+
+GTK version: 4.22.4
+
+GLib version: 2.88.0
+
+Build configuration: MSVC x64 Release and Meson 1.11.2 Release with MSVC 19.44
+
+Automated checks:
+
+- [x] production GTK3 frontend compile and link with 0 warnings and 0 errors
+- [x] distinct action identities: 51, including Load Plugin or Script and Attach/Detach
+- [x] source assertions: both new commands use the stateless dispatcher and labels are selected before model construction
+- [x] focused GTK3/GIO probe: Fabulor has five sections with 1, 1, 1, 2, and 1 items
+- [x] focused GTK3/GIO probe: retained New submenu contains all four commands
+- [x] focused GTK3/GIO probe: Attach and Detach labels are copied per model root
+- [x] focused GTK3/GIO probe: each new action activates exactly once
+- [x] GTK4 validator unit tests: 8/8, plus repository root validation
+- [x] isolated GTK4 MSVC compile, link, and runtime probe with no warnings
+- [x] isolated GTK4 Meson configure, compile, link, and runtime test
+- [x] production GTK3 MSVC x64 Release rebuild and native tests: 18/18
+- [x] GitHub Actions required checks: 5/5
+
+Scope: static Fabulor command identities and retained model composition only.
+Displayed GTK3 menus, plugin chooser containment, Attach/Detach behavior,
+dynamic Usermenu and `/MENU` mutation, popup ownership, dialogs, and input event
+handling remain unchanged.
+
 ## Per-PR Record Template
 
 Copy this section for each GTK4 PR:

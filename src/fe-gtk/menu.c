@@ -83,6 +83,7 @@ static GSList *submenu_list;
 #define FABULOR_MENU_HELP_MODEL "fabulor-menu-help-model"
 #define FABULOR_MENU_WINDOW_MODEL "fabulor-menu-window-model"
 #define FABULOR_MENU_VIEW_MODEL "fabulor-menu-view-model"
+#define FABULOR_MENU_ROOT_MODEL "fabulor-menu-root-model"
 
 static gboolean menu_action_set_item_state (GtkWidget *item, gboolean state);
 
@@ -144,6 +145,8 @@ typedef enum
 {
 	MENU_ACTION_NONE,
 	MENU_ACTION_NETWORK_LIST,
+	MENU_ACTION_LOAD_PLUGIN_SCRIPT,
+	MENU_ACTION_DETACH_ATTACH,
 	MENU_ACTION_NEW_SERVER_TAB,
 	MENU_ACTION_NEW_CHANNEL_TAB,
 	MENU_ACTION_NEW_SERVER_WINDOW,
@@ -2042,6 +2045,7 @@ menu_about (GtkWidget *wid, gpointer sess)
 
 static struct mymenu mymenu[] = {
 	{N_("_Fabulor"), 0, 0, M_NEWMENU, MENU_ID_ZOITECHAT, 0, 1},
+#define NETWORK_LIST_OFFSET (1)
 	{N_("Network Li_st"), menu_open_server_list, 0, M_MENUITEM, 0, 0, 1, 0,
 		"network-list", MENU_ACTION_NETWORK_LIST},
 	{0, 0, 0, M_SEP, 0, 0, 0},
@@ -2060,10 +2064,13 @@ static struct mymenu mymenu[] = {
 		{0, 0, 0, M_END, 0, 0, 0},
 	{0, 0, 0, M_SEP, 0, 0, 0},
 
-	{N_("_Load Plugin or Script" ELLIPSIS), menu_loadplugin, 0, M_MENUITEM, 0, 0, 1},
+#define LOAD_PLUGIN_OFFSET (10)
+	{N_("_Load Plugin or Script" ELLIPSIS), menu_loadplugin, 0, M_MENUITEM, 0, 0, 1, 0,
+		"load-plugin-script", MENU_ACTION_LOAD_PLUGIN_SCRIPT},
 	{0, 0, 0, M_SEP, 0, 0, 0},	/* 11 */
 #define DETACH_OFFSET (12)
-	{0, menu_detach, 0, M_MENUITEM, 0, 0, 1},	/* 12 */
+	{0, menu_detach, 0, M_MENUITEM, 0, 0, 1, 0,
+		"detach-attach", MENU_ACTION_DETACH_ATTACH},	/* 12 */
 #define CLOSE_OFFSET (13)
 	{0, menu_close, 0, M_MENUITEM, 0, 0, 1, 0, "close", MENU_ACTION_CLOSE},
 	{0, 0, 0, M_SEP, 0, 0, 0},
@@ -2328,6 +2335,12 @@ menu_key_action (const char *name, guint keyval, GdkModifierType state)
 	case MENU_ACTION_NETWORK_LIST:
 		menu_open_server_list (NULL, NULL);
 		break;
+	case MENU_ACTION_LOAD_PLUGIN_SCRIPT:
+		menu_loadplugin ();
+		break;
+	case MENU_ACTION_DETACH_ATTACH:
+		menu_detach (NULL, NULL);
+		break;
 	case MENU_ACTION_NEW_SERVER_TAB:
 		menu_newserver_tab (NULL, NULL);
 		break;
@@ -2481,6 +2494,8 @@ menu_action_is_stateless (menu_action_id id)
 	switch (id)
 	{
 	case MENU_ACTION_NETWORK_LIST:
+	case MENU_ACTION_LOAD_PLUGIN_SCRIPT:
+	case MENU_ACTION_DETACH_ATTACH:
 	case MENU_ACTION_NEW_SERVER_TAB:
 	case MENU_ACTION_NEW_CHANNEL_TAB:
 	case MENU_ACTION_NEW_SERVER_WINDOW:
@@ -2799,6 +2814,47 @@ menu_view_action_model_new (GMenuModel *channel_switcher,
 	g_object_unref (toggles);
 	g_object_unref (selection);
 	g_object_unref (fullscreen);
+	g_menu_freeze (model);
+
+	return G_MENU_MODEL (model);
+}
+
+static GMenuModel *
+menu_fabulor_action_model_new (GMenuModel *new_model)
+{
+	GMenu *detach;
+	GMenu *load;
+	GMenu *model;
+	GMenu *network_list;
+	GMenu *new_section;
+	GMenu *quit;
+
+	model = g_menu_new ();
+	network_list = g_menu_new ();
+	new_section = g_menu_new ();
+	load = g_menu_new ();
+	detach = g_menu_new ();
+	quit = g_menu_new ();
+	menu_action_model_append_range (network_list, NETWORK_LIST_OFFSET, 1);
+	g_menu_append_submenu (new_section, _(mymenu[NEW_OFFSET].text), new_model);
+	menu_action_model_append_range (load, LOAD_PLUGIN_OFFSET, 1);
+	menu_action_model_append_range (detach, DETACH_OFFSET, 2);
+	menu_action_model_append_range (quit, CLOSE_OFFSET + 2, 1);
+	g_menu_freeze (network_list);
+	g_menu_freeze (new_section);
+	g_menu_freeze (load);
+	g_menu_freeze (detach);
+	g_menu_freeze (quit);
+	g_menu_append_section (model, NULL, G_MENU_MODEL (network_list));
+	g_menu_append_section (model, NULL, G_MENU_MODEL (new_section));
+	g_menu_append_section (model, NULL, G_MENU_MODEL (load));
+	g_menu_append_section (model, NULL, G_MENU_MODEL (detach));
+	g_menu_append_section (model, NULL, G_MENU_MODEL (quit));
+	g_object_unref (network_list);
+	g_object_unref (new_section);
+	g_object_unref (load);
+	g_object_unref (detach);
+	g_object_unref (quit);
 	g_menu_freeze (model);
 
 	return G_MENU_MODEL (model);
@@ -3405,6 +3461,7 @@ menu_create_main (void *accel_group, int bar, int away, int away_sensitive,
 	GMenuModel *settings_model;
 	GMenuModel *window_model;
 	GMenuModel *view_model;
+	GMenuModel *fabulor_model;
 	GtkWidget *item;
 	GtkWidget *menu = 0;
 	GtkWidget *menu_item = 0;
@@ -3529,6 +3586,9 @@ menu_create_main (void *accel_group, int bar, int away, int away_sensitive,
 	new_model = menu_action_model_new (NEW_OFFSET, NEW_ACTION_COUNT);
 	g_object_set_data_full (G_OBJECT (menu_bar), FABULOR_MENU_NEW_MODEL,
 						 new_model, g_object_unref);
+	fabulor_model = menu_fabulor_action_model_new (new_model);
+	g_object_set_data_full (G_OBJECT (menu_bar), FABULOR_MENU_ROOT_MODEL,
+						 fabulor_model, g_object_unref);
 	server_model = menu_server_action_model_new ();
 	g_object_set_data_full (G_OBJECT (menu_bar), FABULOR_MENU_SERVER_MODEL,
 						 server_model, g_object_unref);
