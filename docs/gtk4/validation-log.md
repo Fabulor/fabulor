@@ -1205,7 +1205,7 @@ Scope: native theme file selection and preferences-bound callback ownership.
 Preference confirmation, quit dialog, startup messages, and synchronous
 `FE_MSG_WAIT` behavior remain unchanged.
 
-### PR: GTK4 Theme Policy And Legacy Packaging Cleanup
+### PR: [#51 - GTK4 Theme Policy And Legacy Packaging Cleanup](https://github.com/Fabulor/fabulor/pull/51)
 
 Date: 2026-07-15
 
