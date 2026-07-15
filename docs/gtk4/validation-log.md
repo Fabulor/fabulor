@@ -945,7 +945,7 @@ Displayed GTK3 menus, plugin chooser containment, Attach/Detach behavior,
 dynamic Usermenu and `/MENU` mutation, popup ownership, dialogs, and input event
 handling remain unchanged.
 
-### PR: GTK4 Dynamic Usermenu Model, Pass 15
+### PR: [#44 - GTK4 Dynamic Usermenu Model, Pass 15](https://github.com/Fabulor/fabulor/pull/44)
 
 Date: 2026-07-15
 
