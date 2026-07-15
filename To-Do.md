@@ -237,6 +237,7 @@ Detailed planning and evidence live in:
       - [x] Add the four Server commands and project the complete five-command Server menu with session sensitivity.
       - [x] Project the two-choice Channel Switcher submenu with canonical `tabs` and `tree` targets.
       - [x] Project the four-choice Network Meters submenu with canonical `off`, `graph`, `text`, and `both` targets.
+      - [x] Add canonical actions for all ten Settings commands and project the complete two-section Settings menu.
       - [ ] Project remaining static subtrees after their non-canonical commands have action identities.
 - [ ] Convert input events, shortcuts, clipboard, drag/drop, and pointer gestures.
 - [ ] Convert tree/list models, cell renderers, channel navigation, and operational lists.

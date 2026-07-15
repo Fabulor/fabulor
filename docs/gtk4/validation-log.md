@@ -795,6 +795,42 @@ displayed GTK3 radio controls, independent Preferences meter values, remaining
 static commands, dynamic menus, popup ownership, dialogs, and pointer/key event
 handling remain unchanged.
 
+### PR: pending - GTK4 Settings Menu Model, Pass 11
+
+Date: 2026-07-15
+
+Commit: pending
+
+Migration stage: 3, ten new stateless actions and seventh canonical
+`GMenuModel` subtree projection
+
+Files/workflows converted: ten Settings command identities and dispatcher
+entries; retained two-section Settings model; preserved GTK3 preference and
+configuration-editor behavior
+
+GTK version: 4.22.4
+
+GLib version: 2.88.0
+
+Build configuration: MSVC x64 Release and Meson 1.11.2 Release with MSVC 19.44
+
+Automated checks:
+
+- [x] production GTK3 frontend compile and link with 0 warnings and 0 errors
+- [x] distinct action identities: 35, including all ten Settings commands
+- [x] focused GTK3/GIO probe: exactly two model sections and ten command items
+- [x] focused GTK3/GIO probe: every Settings action activates exactly once
+- [x] GTK4 validator unit tests: 8/8, plus repository root validation
+- [x] isolated GTK4 MSVC compile, link, and runtime probe with no warnings
+- [x] isolated GTK4 Meson configure, compile, link, and runtime test
+- [x] production GTK3 MSVC x64 Release rebuild and native tests: 18/18
+- [ ] GitHub Actions required checks: 0/5 pending
+
+Scope: Settings command identities, activation, and retained model only. The
+displayed GTK3 menu, preference and editor window implementations, dialog
+lifecycles, dynamic menus, popup ownership, and input event handling remain
+unchanged.
+
 ## Per-PR Record Template
 
 Copy this section for each GTK4 PR:

@@ -138,6 +138,13 @@ preference, timer, and meter-refresh path, and selection state is synchronized
 across open menu roots without reactivating the command. Preferences continues
 to support independent lag and throttle values outside this submenu.
 
+The static Settings menu is the seventh complete model boundary. Preferences
+and its nine configuration editors now have canonical stateless action
+identities, bringing the registry to 35 distinct identities. A retained
+two-section model preserves the separator after Preferences, while the live
+GTK3 menu activates the same dispatcher and continues to open the existing
+preference and editor surfaces without changing their ownership or lifecycle.
+
 ## Quantitative API Baseline
 
 | GTK3 family or type | Matching lines | Files | Migration direction | Stage | Status |

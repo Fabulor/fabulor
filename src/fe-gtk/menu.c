@@ -78,6 +78,7 @@ static GSList *submenu_list;
 #define FABULOR_MENU_NETWORK_METERS_MODEL "fabulor-menu-network-meters-model"
 #define FABULOR_MENU_NEW_MODEL "fabulor-menu-new-model"
 #define FABULOR_MENU_SERVER_MODEL "fabulor-menu-server-model"
+#define FABULOR_MENU_SETTINGS_MODEL "fabulor-menu-settings-model"
 #define FABULOR_MENU_SEARCH_MODEL "fabulor-menu-search-model"
 #define FABULOR_MENU_HELP_MODEL "fabulor-menu-help-model"
 
@@ -164,7 +165,17 @@ typedef enum
 	MENU_ACTION_SEARCH_NEXT,
 	MENU_ACTION_SEARCH_PREVIOUS,
 	MENU_ACTION_CONTENTS,
-	MENU_ACTION_ABOUT
+	MENU_ACTION_ABOUT,
+	MENU_ACTION_PREFERENCES,
+	MENU_ACTION_AUTO_REPLACE,
+	MENU_ACTION_CTCP_REPLIES,
+	MENU_ACTION_DIALOG_BUTTONS,
+	MENU_ACTION_KEYBOARD_SHORTCUTS,
+	MENU_ACTION_TEXT_EVENTS,
+	MENU_ACTION_URL_HANDLERS,
+	MENU_ACTION_USER_COMMANDS,
+	MENU_ACTION_USER_LIST_BUTTONS,
+	MENU_ACTION_USER_LIST_POPUP
 } menu_action_id;
 
 struct mymenu
@@ -2096,20 +2107,34 @@ static struct mymenu mymenu[] = {
 	{N_("Marked _Away"), menu_away_toggle, 0, M_MENUITEM, MENU_ID_AWAY, 0, 1, 0,
 		"away-toggle", MENU_ACTION_AWAY_TOGGLE},
 
-	{N_("_Usermenu"), 0, 0, M_NEWMENU, MENU_ID_USERMENU, 0, 1},	/* 40 */
+	{N_("_Usermenu"), 0, 0, M_NEWMENU, MENU_ID_USERMENU, 0, 1},	/* 42 */
 
+#define SETTINGS_OFFSET (43)
+#define SETTINGS_PREFERENCES_ACTION_COUNT (1)
 	{N_("S_ettings"), 0, 0, M_NEWMENU, 0, 0, 1},
-	{N_("_Preferences"), menu_settings, 0, M_MENUITEM, 0, 0, 1},
+	{N_("_Preferences"), menu_settings, 0, M_MENUITEM, 0, 0, 1, 0,
+		"preferences", MENU_ACTION_PREFERENCES},
 	{0, 0, 0, M_SEP, 0, 0, 0},
-	{N_("Auto Replace"), menu_rpopup, 0, M_MENUITEM, 0, 0, 1},
-	{N_("CTCP Replies"), menu_ctcpguiopen, 0, M_MENUITEM, 0, 0, 1},
-	{N_("Dialog Buttons"), menu_dlgbuttons, 0, M_MENUITEM, 0, 0, 1},
-	{N_("Keyboard Shortcuts"), menu_keypopup, 0, M_MENUITEM, 0, 0, 1},
-	{N_("Text Events"), menu_evtpopup, 0, M_MENUITEM, 0, 0, 1},
-	{N_("URL Handlers"), menu_urlhandlers, 0, M_MENUITEM, 0, 0, 1},
-	{N_("User Commands"), menu_usercommands, 0, M_MENUITEM, 0, 0, 1},
-	{N_("User List Buttons"), menu_ulbuttons, 0, M_MENUITEM, 0, 0, 1},
-	{N_("User List Popup"), menu_ulpopup, 0, M_MENUITEM, 0, 0, 1},	/* 52 */
+#define SETTINGS_EDITOR_OFFSET (46)
+#define SETTINGS_EDITOR_ACTION_COUNT (9)
+	{N_("Auto Replace"), menu_rpopup, 0, M_MENUITEM, 0, 0, 1, 0,
+		"auto-replace", MENU_ACTION_AUTO_REPLACE},
+	{N_("CTCP Replies"), menu_ctcpguiopen, 0, M_MENUITEM, 0, 0, 1, 0,
+		"ctcp-replies", MENU_ACTION_CTCP_REPLIES},
+	{N_("Dialog Buttons"), menu_dlgbuttons, 0, M_MENUITEM, 0, 0, 1, 0,
+		"dialog-buttons", MENU_ACTION_DIALOG_BUTTONS},
+	{N_("Keyboard Shortcuts"), menu_keypopup, 0, M_MENUITEM, 0, 0, 1, 0,
+		"keyboard-shortcuts", MENU_ACTION_KEYBOARD_SHORTCUTS},
+	{N_("Text Events"), menu_evtpopup, 0, M_MENUITEM, 0, 0, 1, 0,
+		"text-events", MENU_ACTION_TEXT_EVENTS},
+	{N_("URL Handlers"), menu_urlhandlers, 0, M_MENUITEM, 0, 0, 1, 0,
+		"url-handlers", MENU_ACTION_URL_HANDLERS},
+	{N_("User Commands"), menu_usercommands, 0, M_MENUITEM, 0, 0, 1, 0,
+		"user-commands", MENU_ACTION_USER_COMMANDS},
+	{N_("User List Buttons"), menu_ulbuttons, 0, M_MENUITEM, 0, 0, 1, 0,
+		"user-list-buttons", MENU_ACTION_USER_LIST_BUTTONS},
+	{N_("User List Popup"), menu_ulpopup, 0, M_MENUITEM, 0, 0, 1, 0,
+		"user-list-popup", MENU_ACTION_USER_LIST_POPUP},	/* 54 */
 
 	{N_("_Window"), 0, 0, M_NEWMENU, 0, 0, 1},
 	{N_("_Ban List"), menu_banlist, 0, M_MENUITEM, 0, 0, 1},
@@ -2335,6 +2360,36 @@ menu_key_action (const char *name, guint keyval, GdkModifierType state)
 	case MENU_ACTION_ABOUT:
 		menu_about (NULL, NULL);
 		break;
+	case MENU_ACTION_PREFERENCES:
+		menu_settings (NULL, NULL);
+		break;
+	case MENU_ACTION_AUTO_REPLACE:
+		menu_rpopup ();
+		break;
+	case MENU_ACTION_CTCP_REPLIES:
+		menu_ctcpguiopen ();
+		break;
+	case MENU_ACTION_DIALOG_BUTTONS:
+		menu_dlgbuttons ();
+		break;
+	case MENU_ACTION_KEYBOARD_SHORTCUTS:
+		menu_keypopup ();
+		break;
+	case MENU_ACTION_TEXT_EVENTS:
+		menu_evtpopup ();
+		break;
+	case MENU_ACTION_URL_HANDLERS:
+		menu_urlhandlers ();
+		break;
+	case MENU_ACTION_USER_COMMANDS:
+		menu_usercommands ();
+		break;
+	case MENU_ACTION_USER_LIST_BUTTONS:
+		menu_ulbuttons ();
+		break;
+	case MENU_ACTION_USER_LIST_POPUP:
+		menu_ulpopup ();
+		break;
 	default:
 		return FALSE;
 	}
@@ -2366,6 +2421,16 @@ menu_action_is_stateless (menu_action_id id)
 	case MENU_ACTION_SEARCH_PREVIOUS:
 	case MENU_ACTION_CONTENTS:
 	case MENU_ACTION_ABOUT:
+	case MENU_ACTION_PREFERENCES:
+	case MENU_ACTION_AUTO_REPLACE:
+	case MENU_ACTION_CTCP_REPLIES:
+	case MENU_ACTION_DIALOG_BUTTONS:
+	case MENU_ACTION_KEYBOARD_SHORTCUTS:
+	case MENU_ACTION_TEXT_EVENTS:
+	case MENU_ACTION_URL_HANDLERS:
+	case MENU_ACTION_USER_COMMANDS:
+	case MENU_ACTION_USER_LIST_BUTTONS:
+	case MENU_ACTION_USER_LIST_POPUP:
 		return TRUE;
 	default:
 		return FALSE;
@@ -2554,6 +2619,27 @@ menu_server_action_model_new (void)
 	g_menu_append_section (model, NULL, away);
 	g_object_unref (commands);
 	g_object_unref (away);
+	g_menu_freeze (model);
+
+	return G_MENU_MODEL (model);
+}
+
+static GMenuModel *
+menu_settings_action_model_new (void)
+{
+	GMenu *model;
+	GMenuModel *editors;
+	GMenuModel *preferences;
+
+	model = g_menu_new ();
+	preferences = menu_action_model_range_new (SETTINGS_OFFSET + 1,
+										SETTINGS_PREFERENCES_ACTION_COUNT);
+	editors = menu_action_model_range_new (SETTINGS_EDITOR_OFFSET,
+									SETTINGS_EDITOR_ACTION_COUNT);
+	g_menu_append_section (model, NULL, preferences);
+	g_menu_append_section (model, NULL, editors);
+	g_object_unref (preferences);
+	g_object_unref (editors);
 	g_menu_freeze (model);
 
 	return G_MENU_MODEL (model);
@@ -3157,6 +3243,7 @@ menu_create_main (void *accel_group, int bar, int away, int away_sensitive,
 	GMenuModel *network_meters_model;
 	GMenuModel *search_model;
 	GMenuModel *server_model;
+	GMenuModel *settings_model;
 	GtkWidget *item;
 	GtkWidget *menu = 0;
 	GtkWidget *menu_item = 0;
@@ -3280,6 +3367,9 @@ menu_create_main (void *accel_group, int bar, int away, int away_sensitive,
 	server_model = menu_server_action_model_new ();
 	g_object_set_data_full (G_OBJECT (menu_bar), FABULOR_MENU_SERVER_MODEL,
 						 server_model, g_object_unref);
+	settings_model = menu_settings_action_model_new ();
+	g_object_set_data_full (G_OBJECT (menu_bar), FABULOR_MENU_SETTINGS_MODEL,
+						 settings_model, g_object_unref);
 	search_model = menu_action_model_new (SEARCH_OFFSET, SEARCH_ACTION_COUNT);
 	g_object_set_data_full (G_OBJECT (menu_bar), FABULOR_MENU_SEARCH_MODEL,
 						 search_model, g_object_unref);
