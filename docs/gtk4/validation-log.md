@@ -900,7 +900,7 @@ Automated checks:
 - [x] isolated GTK4 MSVC compile, link, and runtime probe with no warnings
 - [x] isolated GTK4 Meson configure, compile, link, and runtime test
 - [x] production GTK3 MSVC x64 Release rebuild and native tests: 18/18
-- [ ] GitHub Actions required checks: 0/5 pending
+- [x] GitHub Actions required checks: 5/5
 
 Scope: View action state and retained model composition only. Displayed GTK3
 check/radio controls, visibility behavior, meter timers, dynamic menus, dialogs,
