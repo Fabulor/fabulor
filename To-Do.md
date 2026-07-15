@@ -238,6 +238,7 @@ Detailed planning and evidence live in:
       - [x] Project the two-choice Channel Switcher submenu with canonical `tabs` and `tree` targets.
       - [x] Project the four-choice Network Meters submenu with canonical `off`, `graph`, `text`, and `both` targets.
       - [x] Add canonical actions for all ten Settings commands and project the complete two-section Settings menu.
+      - [x] Add canonical actions for the remaining Window commands, project its complete nested model, and correct the retained Search/Help boundaries.
       - [ ] Project remaining static subtrees after their non-canonical commands have action identities.
 - [ ] Convert input events, shortcuts, clipboard, drag/drop, and pointer gestures.
 - [ ] Convert tree/list models, cell renderers, channel navigation, and operational lists.

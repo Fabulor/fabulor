@@ -81,6 +81,7 @@ static GSList *submenu_list;
 #define FABULOR_MENU_SETTINGS_MODEL "fabulor-menu-settings-model"
 #define FABULOR_MENU_SEARCH_MODEL "fabulor-menu-search-model"
 #define FABULOR_MENU_HELP_MODEL "fabulor-menu-help-model"
+#define FABULOR_MENU_WINDOW_MODEL "fabulor-menu-window-model"
 
 static gboolean menu_action_set_item_state (GtkWidget *item, gboolean state);
 
@@ -175,7 +176,18 @@ typedef enum
 	MENU_ACTION_URL_HANDLERS,
 	MENU_ACTION_USER_COMMANDS,
 	MENU_ACTION_USER_LIST_BUTTONS,
-	MENU_ACTION_USER_LIST_POPUP
+	MENU_ACTION_USER_LIST_POPUP,
+	MENU_ACTION_BAN_LIST,
+	MENU_ACTION_CHARACTER_CHART,
+	MENU_ACTION_DIRECT_CHAT,
+	MENU_ACTION_FILE_TRANSFERS,
+	MENU_ACTION_FRIENDS_LIST,
+	MENU_ACTION_IGNORE_LIST,
+	MENU_ACTION_PLUGINS_AND_SCRIPTS,
+	MENU_ACTION_RAW_LOG,
+	MENU_ACTION_URL_GRABBER,
+	MENU_ACTION_CLEAR_TEXT,
+	MENU_ACTION_SAVE_TEXT
 } menu_action_id;
 
 struct mymenu
@@ -2136,26 +2148,42 @@ static struct mymenu mymenu[] = {
 	{N_("User List Popup"), menu_ulpopup, 0, M_MENUITEM, 0, 0, 1, 0,
 		"user-list-popup", MENU_ACTION_USER_LIST_POPUP},	/* 54 */
 
+#define WINDOW_OFFSET (SETTINGS_EDITOR_OFFSET + SETTINGS_EDITOR_ACTION_COUNT)
+#define WINDOW_SURFACE_OFFSET (WINDOW_OFFSET + 1)
+#define WINDOW_SURFACE_ACTION_COUNT (9)
 	{N_("_Window"), 0, 0, M_NEWMENU, 0, 0, 1},
-	{N_("_Ban List"), menu_banlist, 0, M_MENUITEM, 0, 0, 1},
-	{N_("Character Chart"), ascii_open, 0, M_MENUITEM, 0, 0, 1},
-	{N_("Direct Chat"), menu_dcc_chat_win, 0, M_MENUITEM, 0, 0, 1},
-	{N_("File _Transfers"), menu_dcc_win, 0, M_MENUITEM, 0, 0, 1},
-	{N_("Friends List"), notify_opengui, 0, M_MENUITEM, 0, 0, 1},
-	{N_("Ignore List"), ignore_gui_open, 0, M_MENUITEM, 0, 0, 1},
-	{N_("_Plugins and Scripts"), menu_pluginlist, 0, M_MENUITEM, 0, 0, 1},
-	{N_("_Raw Log"), menu_rawlog, 0, M_MENUITEM, 0, 0, 1},	/* 61 */
-	{N_("_URL Grabber"), url_opengui, 0, M_MENUITEM, 0, 0, 1},
+	{N_("_Ban List"), menu_banlist, 0, M_MENUITEM, 0, 0, 1, 0,
+		"ban-list", MENU_ACTION_BAN_LIST},
+	{N_("Character Chart"), ascii_open, 0, M_MENUITEM, 0, 0, 1, 0,
+		"character-chart", MENU_ACTION_CHARACTER_CHART},
+	{N_("Direct Chat"), menu_dcc_chat_win, 0, M_MENUITEM, 0, 0, 1, 0,
+		"direct-chat", MENU_ACTION_DIRECT_CHAT},
+	{N_("File _Transfers"), menu_dcc_win, 0, M_MENUITEM, 0, 0, 1, 0,
+		"file-transfers", MENU_ACTION_FILE_TRANSFERS},
+	{N_("Friends List"), notify_opengui, 0, M_MENUITEM, 0, 0, 1, 0,
+		"friends-list", MENU_ACTION_FRIENDS_LIST},
+	{N_("Ignore List"), ignore_gui_open, 0, M_MENUITEM, 0, 0, 1, 0,
+		"ignore-list", MENU_ACTION_IGNORE_LIST},
+	{N_("_Plugins and Scripts"), menu_pluginlist, 0, M_MENUITEM, 0, 0, 1, 0,
+		"plugins-and-scripts", MENU_ACTION_PLUGINS_AND_SCRIPTS},
+	{N_("_Raw Log"), menu_rawlog, 0, M_MENUITEM, 0, 0, 1, 0,
+		"raw-log", MENU_ACTION_RAW_LOG},
+	{N_("_URL Grabber"), url_opengui, 0, M_MENUITEM, 0, 0, 1, 0,
+		"url-grabber", MENU_ACTION_URL_GRABBER},
 	{0, 0, 0, M_SEP, 0, 0, 0},
+#define WINDOW_TRANSCRIPT_OFFSET (WINDOW_SURFACE_OFFSET + WINDOW_SURFACE_ACTION_COUNT + 1)
+#define WINDOW_TRANSCRIPT_ACTION_COUNT (5)
 	{N_("Reset Marker Line"), menu_resetmarker, 0, M_MENUITEM, 0, 0, 1, 0,
 		"reset-marker", MENU_ACTION_RESET_MARKER},
 	{N_("Move to Marker Line"), menu_movetomarker, 0, M_MENUITEM, 0, 0, 1, 0,
 		"move-marker", MENU_ACTION_MOVE_MARKER},
 	{N_("_Copy Selection"), menu_copy_selection, 0, M_MENUITEM, 0, 0, 1, 0,
 		"copy-selection", MENU_ACTION_COPY_SELECTION},
-	{N_("C_lear Text"), menu_flushbuffer, 0, M_MENUITEM, 0, 0, 1},
-	{N_("Save Text" ELLIPSIS), menu_savebuffer, 0, M_MENUITEM, 0, 0, 1},
-#define SEARCH_OFFSET (70)
+	{N_("C_lear Text"), menu_flushbuffer, 0, M_MENUITEM, 0, 0, 1, 0,
+		"clear-text", MENU_ACTION_CLEAR_TEXT},
+	{N_("Save Text" ELLIPSIS), menu_savebuffer, 0, M_MENUITEM, 0, 0, 1, 0,
+		"save-text", MENU_ACTION_SAVE_TEXT},
+#define SEARCH_OFFSET (WINDOW_TRANSCRIPT_OFFSET + WINDOW_TRANSCRIPT_ACTION_COUNT)
 #define SEARCH_ACTION_COUNT (3)
 	{N_("Search"), 0, 0, M_MENUSUB, 0, 0, 1},
 		{N_("Search Text" ELLIPSIS), menu_search, 0, M_MENUITEM, 0, 0, 1, 0,
@@ -2166,7 +2194,7 @@ static struct mymenu mymenu[] = {
 			"search-previous", MENU_ACTION_SEARCH_PREVIOUS},
 		{0, 0, 0, M_END, 0, 0, 0},
 
-#define HELP_OFFSET (74)
+#define HELP_OFFSET (SEARCH_OFFSET + SEARCH_ACTION_COUNT + 2)
 #define HELP_ACTION_COUNT (2)
 	{N_("_Help"), 0, 0, M_NEWMENU, 0, 0, 1},
 	{N_("_Contents"), menu_docs, 0, M_MENUITEM, 0, 0, 1, 0,
@@ -2390,6 +2418,39 @@ menu_key_action (const char *name, guint keyval, GdkModifierType state)
 	case MENU_ACTION_USER_LIST_POPUP:
 		menu_ulpopup ();
 		break;
+	case MENU_ACTION_BAN_LIST:
+		menu_banlist (NULL, NULL);
+		break;
+	case MENU_ACTION_CHARACTER_CHART:
+		ascii_open ();
+		break;
+	case MENU_ACTION_DIRECT_CHAT:
+		menu_dcc_chat_win (NULL, NULL);
+		break;
+	case MENU_ACTION_FILE_TRANSFERS:
+		menu_dcc_win (NULL, NULL);
+		break;
+	case MENU_ACTION_FRIENDS_LIST:
+		notify_opengui ();
+		break;
+	case MENU_ACTION_IGNORE_LIST:
+		ignore_gui_open ();
+		break;
+	case MENU_ACTION_PLUGINS_AND_SCRIPTS:
+		menu_pluginlist ();
+		break;
+	case MENU_ACTION_RAW_LOG:
+		menu_rawlog (NULL, NULL);
+		break;
+	case MENU_ACTION_URL_GRABBER:
+		url_opengui ();
+		break;
+	case MENU_ACTION_CLEAR_TEXT:
+		menu_flushbuffer (NULL, NULL);
+		break;
+	case MENU_ACTION_SAVE_TEXT:
+		menu_savebuffer (NULL, NULL);
+		break;
 	default:
 		return FALSE;
 	}
@@ -2431,6 +2492,17 @@ menu_action_is_stateless (menu_action_id id)
 	case MENU_ACTION_USER_COMMANDS:
 	case MENU_ACTION_USER_LIST_BUTTONS:
 	case MENU_ACTION_USER_LIST_POPUP:
+	case MENU_ACTION_BAN_LIST:
+	case MENU_ACTION_CHARACTER_CHART:
+	case MENU_ACTION_DIRECT_CHAT:
+	case MENU_ACTION_FILE_TRANSFERS:
+	case MENU_ACTION_FRIENDS_LIST:
+	case MENU_ACTION_IGNORE_LIST:
+	case MENU_ACTION_PLUGINS_AND_SCRIPTS:
+	case MENU_ACTION_RAW_LOG:
+	case MENU_ACTION_URL_GRABBER:
+	case MENU_ACTION_CLEAR_TEXT:
+	case MENU_ACTION_SAVE_TEXT:
 		return TRUE;
 	default:
 		return FALSE;
@@ -2579,13 +2651,11 @@ menu_action_detailed_name (const struct mymenu *definition)
 	return g_strconcat ("fabulor.", definition->action_name, NULL);
 }
 
-static GMenuModel *
-menu_action_model_range_new (guint first, guint action_count)
+static void
+menu_action_model_append_range (GMenu *model, guint first, guint action_count)
 {
-	GMenu *model;
 	guint i;
 
-	model = g_menu_new ();
 	for (i = first; i < first + action_count; i++)
 	{
 		char *detailed_name = menu_action_detailed_name (&mymenu[i]);
@@ -2593,6 +2663,15 @@ menu_action_model_range_new (guint first, guint action_count)
 		g_menu_append (model, _(mymenu[i].text), detailed_name);
 		g_free (detailed_name);
 	}
+}
+
+static GMenuModel *
+menu_action_model_range_new (guint first, guint action_count)
+{
+	GMenu *model;
+
+	model = g_menu_new ();
+	menu_action_model_append_range (model, first, action_count);
 	g_menu_freeze (model);
 
 	return G_MENU_MODEL (model);
@@ -2640,6 +2719,32 @@ menu_settings_action_model_new (void)
 	g_menu_append_section (model, NULL, editors);
 	g_object_unref (preferences);
 	g_object_unref (editors);
+	g_menu_freeze (model);
+
+	return G_MENU_MODEL (model);
+}
+
+static GMenuModel *
+menu_window_action_model_new (GMenuModel *search)
+{
+	GMenu *model;
+	GMenu *surfaces;
+	GMenu *transcript;
+
+	model = g_menu_new ();
+	surfaces = g_menu_new ();
+	transcript = g_menu_new ();
+	menu_action_model_append_range (surfaces, WINDOW_SURFACE_OFFSET,
+									WINDOW_SURFACE_ACTION_COUNT);
+	menu_action_model_append_range (transcript, WINDOW_TRANSCRIPT_OFFSET,
+									WINDOW_TRANSCRIPT_ACTION_COUNT);
+	g_menu_append_submenu (transcript, _(mymenu[SEARCH_OFFSET].text), search);
+	g_menu_freeze (surfaces);
+	g_menu_freeze (transcript);
+	g_menu_append_section (model, NULL, G_MENU_MODEL (surfaces));
+	g_menu_append_section (model, NULL, G_MENU_MODEL (transcript));
+	g_object_unref (surfaces);
+	g_object_unref (transcript);
 	g_menu_freeze (model);
 
 	return G_MENU_MODEL (model);
@@ -3244,6 +3349,7 @@ menu_create_main (void *accel_group, int bar, int away, int away_sensitive,
 	GMenuModel *search_model;
 	GMenuModel *server_model;
 	GMenuModel *settings_model;
+	GMenuModel *window_model;
 	GtkWidget *item;
 	GtkWidget *menu = 0;
 	GtkWidget *menu_item = 0;
@@ -3373,6 +3479,9 @@ menu_create_main (void *accel_group, int bar, int away, int away_sensitive,
 	search_model = menu_action_model_new (SEARCH_OFFSET, SEARCH_ACTION_COUNT);
 	g_object_set_data_full (G_OBJECT (menu_bar), FABULOR_MENU_SEARCH_MODEL,
 						 search_model, g_object_unref);
+	window_model = menu_window_action_model_new (search_model);
+	g_object_set_data_full (G_OBJECT (menu_bar), FABULOR_MENU_WINDOW_MODEL,
+						 window_model, g_object_unref);
 	help_model = menu_action_model_new (HELP_OFFSET, HELP_ACTION_COUNT);
 	g_object_set_data_full (G_OBJECT (menu_bar), FABULOR_MENU_HELP_MODEL,
 						 help_model, g_object_unref);
