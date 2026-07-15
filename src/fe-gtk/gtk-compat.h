@@ -558,21 +558,73 @@ fabulor_gtk_widget_on_click_released (GtkWidget *widget,
 typedef gboolean (*FabulorGtkFileDropFunc) (GtkWidget *widget, gdouble x,
 											gdouble y, const gchar *uri_list,
 											gpointer user_data);
+typedef gboolean (*FabulorGtkFileDropMotionFunc) (GtkWidget *widget,
+												  gdouble x, gdouble y,
+												  gpointer user_data);
+typedef void (*FabulorGtkFileDropLeaveFunc) (GtkWidget *widget,
+											gpointer user_data);
 
 typedef struct
 {
 	FabulorGtkFileDropFunc callback;
+	FabulorGtkFileDropMotionFunc motion_callback;
+	FabulorGtkFileDropLeaveFunc leave_callback;
 	gpointer user_data;
+	gboolean active;
 } FabulorGtkFileDropInteraction;
 
 static inline void
-fabulor_gtk_file_drop_interaction_free (gpointer data, GClosure *closure)
+fabulor_gtk_file_drop_finish (FabulorGtkFileDropInteraction *interaction,
+							  GtkWidget *widget)
 {
-	(void) closure;
-	g_free (data);
+	if (interaction->active && interaction->leave_callback)
+		interaction->leave_callback (widget, interaction->user_data);
+	interaction->active = FALSE;
 }
 
 #if GTK_MAJOR_VERSION >= 4
+static inline GdkDragAction
+fabulor_gtk_file_drag_motion_cb (GtkDropTarget *target, gdouble x,
+								 gdouble y, gpointer user_data)
+{
+	FabulorGtkFileDropInteraction *interaction = user_data;
+	const GValue *value = gtk_drop_target_get_value (target);
+	GtkWidget *widget = gtk_event_controller_get_widget (GTK_EVENT_CONTROLLER (target));
+
+	if (!value || !G_VALUE_HOLDS (value, GDK_TYPE_FILE_LIST) ||
+		!interaction->motion_callback ||
+		!interaction->motion_callback (widget, x, y, interaction->user_data))
+	{
+		interaction->active = FALSE;
+		return 0;
+	}
+
+	interaction->active = TRUE;
+	{
+		GdkDragAction actions = gtk_drop_target_get_actions (target);
+
+		if (actions & GDK_ACTION_COPY)
+			return GDK_ACTION_COPY;
+		if (actions & GDK_ACTION_MOVE)
+			return GDK_ACTION_MOVE;
+		if (actions & GDK_ACTION_LINK)
+			return GDK_ACTION_LINK;
+	}
+	return 0;
+}
+
+static inline void
+fabulor_gtk_file_drag_leave_cb (GtkDropTarget *target, gpointer user_data)
+{
+	FabulorGtkFileDropInteraction *interaction = user_data;
+
+	if (interaction->active && interaction->leave_callback)
+		interaction->leave_callback (
+			gtk_event_controller_get_widget (GTK_EVENT_CONTROLLER (target)),
+			interaction->user_data);
+	interaction->active = FALSE;
+}
+
 static inline gboolean
 fabulor_gtk_file_drop_cb (GtkDropTarget *target, const GValue *value,
 						  gdouble x, gdouble y, gpointer user_data)
@@ -604,14 +656,76 @@ fabulor_gtk_file_drop_cb (GtkDropTarget *target, const GValue *value,
 			gtk_event_controller_get_widget (GTK_EVENT_CONTROLLER (target)),
 			x, y, uris->str, interaction->user_data);
 
+		fabulor_gtk_file_drop_finish (interaction,
+			gtk_event_controller_get_widget (GTK_EVENT_CONTROLLER (target)));
 		g_string_free (uris, TRUE);
 		return handled;
 	}
 
+	fabulor_gtk_file_drop_finish (interaction,
+		gtk_event_controller_get_widget (GTK_EVENT_CONTROLLER (target)));
 	g_string_free (uris, TRUE);
 	return FALSE;
 }
 #else
+static inline gboolean
+fabulor_gtk_drag_context_has_target (GdkDragContext *context,
+									 const gchar *expected_name)
+{
+	GList *target;
+
+	if (!context || !expected_name)
+		return FALSE;
+
+	for (target = gdk_drag_context_list_targets (context); target;
+		 target = target->next)
+	{
+		gchar *target_name = gdk_atom_name (GDK_POINTER_TO_ATOM (target->data));
+		gboolean matches = g_strcmp0 (target_name, expected_name) == 0;
+
+		g_free (target_name);
+		if (matches)
+			return TRUE;
+	}
+
+	return FALSE;
+}
+
+static inline gboolean
+fabulor_gtk_file_drag_motion_cb (GtkWidget *widget, GdkDragContext *context,
+								 gint x, gint y, guint32 time,
+								 gpointer user_data)
+{
+	FabulorGtkFileDropInteraction *interaction = user_data;
+	GdkDragAction action;
+
+	if (!fabulor_gtk_drag_context_has_target (context, "text/uri-list") ||
+		!interaction->motion_callback ||
+		!interaction->motion_callback (widget, x, y, interaction->user_data))
+	{
+		interaction->active = FALSE;
+		return FALSE;
+	}
+
+	interaction->active = TRUE;
+	action = gdk_drag_context_get_suggested_action (context);
+	gdk_drag_status (context, action, time);
+	return TRUE;
+}
+
+static inline void
+fabulor_gtk_file_drag_leave_cb (GtkWidget *widget, GdkDragContext *context,
+								guint32 time, gpointer user_data)
+{
+	FabulorGtkFileDropInteraction *interaction = user_data;
+
+	(void) context;
+	(void) time;
+	if (interaction->active && interaction->leave_callback)
+		interaction->leave_callback (widget, interaction->user_data);
+	interaction->active = FALSE;
+}
+
 static inline void
 fabulor_gtk_file_drop_cb (GtkWidget *widget, GdkDragContext *context,
 						  gint x, gint y, GtkSelectionData *selection_data,
@@ -637,14 +751,18 @@ fabulor_gtk_file_drop_cb (GtkWidget *widget, GdkDragContext *context,
 	uri_list = g_strndup ((const gchar *) gtk_selection_data_get_data (selection_data),
 		length);
 	interaction->callback (widget, x, y, uri_list, interaction->user_data);
+	fabulor_gtk_file_drop_finish (interaction, widget);
 	g_free (uri_list);
 }
 #endif
 
 static inline void
-fabulor_gtk_widget_on_file_drop (GtkWidget *widget, GdkDragAction actions,
-								 FabulorGtkFileDropFunc callback,
-								 gpointer user_data)
+fabulor_gtk_widget_on_file_drop_full (GtkWidget *widget,
+								  GdkDragAction actions,
+								  FabulorGtkFileDropFunc callback,
+								  FabulorGtkFileDropMotionFunc motion_callback,
+								  FabulorGtkFileDropLeaveFunc leave_callback,
+								  gpointer user_data)
 {
 	FabulorGtkFileDropInteraction *interaction;
 
@@ -653,20 +771,414 @@ fabulor_gtk_widget_on_file_drop (GtkWidget *widget, GdkDragAction actions,
 
 	interaction = g_new (FabulorGtkFileDropInteraction, 1);
 	interaction->callback = callback;
+	interaction->motion_callback = motion_callback;
+	interaction->leave_callback = leave_callback;
 	interaction->user_data = user_data;
+	interaction->active = FALSE;
 
 #if GTK_MAJOR_VERSION >= 4
 	GtkDropTarget *target = gtk_drop_target_new (GDK_TYPE_FILE_LIST, actions);
 
-	g_signal_connect_data (target, "drop",
-		G_CALLBACK (fabulor_gtk_file_drop_cb), interaction,
-		fabulor_gtk_file_drop_interaction_free, 0);
+	gtk_drop_target_set_preload (target, motion_callback != NULL);
+	g_object_set_data_full (G_OBJECT (target),
+		"fabulor-file-drop-interaction", interaction, g_free);
+	if (motion_callback)
+		g_signal_connect (target, "motion",
+			G_CALLBACK (fabulor_gtk_file_drag_motion_cb), interaction);
+	if (leave_callback)
+		g_signal_connect (target, "leave",
+			G_CALLBACK (fabulor_gtk_file_drag_leave_cb), interaction);
+	g_signal_connect (target, "drop",
+		G_CALLBACK (fabulor_gtk_file_drop_cb), interaction);
 	gtk_widget_add_controller (widget, GTK_EVENT_CONTROLLER (target));
 #else
 	gtk_drag_dest_add_uri_targets (widget);
-	g_signal_connect_data (widget, "drag-data-received",
-		G_CALLBACK (fabulor_gtk_file_drop_cb), interaction,
-		fabulor_gtk_file_drop_interaction_free, 0);
+	g_object_set_data_full (G_OBJECT (widget),
+		"fabulor-file-drop-interaction", interaction, g_free);
+	if (motion_callback)
+		g_signal_connect (widget, "drag-motion",
+			G_CALLBACK (fabulor_gtk_file_drag_motion_cb), interaction);
+	if (leave_callback)
+		g_signal_connect (widget, "drag-leave",
+			G_CALLBACK (fabulor_gtk_file_drag_leave_cb), interaction);
+	g_signal_connect (widget, "drag-data-received",
+		G_CALLBACK (fabulor_gtk_file_drop_cb), interaction);
+#endif
+}
+
+static inline void
+fabulor_gtk_widget_on_file_drop (GtkWidget *widget, GdkDragAction actions,
+								 FabulorGtkFileDropFunc callback,
+								 gpointer user_data)
+{
+	fabulor_gtk_widget_on_file_drop_full (widget, actions, callback,
+		NULL, NULL, user_data);
+}
+
+typedef enum
+{
+	FABULOR_GTK_INTERNAL_DRAG_NONE = 0,
+	FABULOR_GTK_INTERNAL_DRAG_CHANNEL_VIEW = 1,
+	FABULOR_GTK_INTERNAL_DRAG_USER_LIST = 2
+} FabulorGtkInternalDragKind;
+
+#define FABULOR_GTK_INTERNAL_DRAG_ACCEPT(kind) (1u << (guint) (kind))
+
+typedef GdkPixbuf *(*FabulorGtkInternalDragIconFunc) (GtkWidget *widget,
+													 gpointer user_data);
+typedef gboolean (*FabulorGtkInternalDragMotionFunc) (GtkWidget *widget,
+													  FabulorGtkInternalDragKind kind,
+													  gdouble x, gdouble y,
+													  gpointer user_data);
+typedef void (*FabulorGtkInternalDragLeaveFunc) (GtkWidget *widget,
+												 FabulorGtkInternalDragKind kind,
+												 gpointer user_data);
+typedef gboolean (*FabulorGtkInternalDragDropFunc) (GtkWidget *widget,
+													FabulorGtkInternalDragKind kind,
+													gdouble x, gdouble y,
+													gpointer user_data);
+
+typedef struct
+{
+	FabulorGtkInternalDragKind kind;
+	FabulorGtkInternalDragIconFunc icon_callback;
+	gpointer user_data;
+} FabulorGtkInternalDragSource;
+
+typedef struct
+{
+	guint accepted_kinds;
+	FabulorGtkInternalDragMotionFunc motion_callback;
+	FabulorGtkInternalDragLeaveFunc leave_callback;
+	FabulorGtkInternalDragDropFunc drop_callback;
+	gpointer user_data;
+	FabulorGtkInternalDragKind active_kind;
+} FabulorGtkInternalDropTarget;
+
+static inline void
+fabulor_gtk_internal_drag_finish (FabulorGtkInternalDropTarget *target,
+								  GtkWidget *widget)
+{
+	if (target->active_kind != FABULOR_GTK_INTERNAL_DRAG_NONE &&
+		target->leave_callback)
+		target->leave_callback (widget, target->active_kind, target->user_data);
+	target->active_kind = FABULOR_GTK_INTERNAL_DRAG_NONE;
+}
+
+static inline GdkDragAction
+fabulor_gtk_internal_drag_action (FabulorGtkInternalDragKind kind)
+{
+	return kind == FABULOR_GTK_INTERNAL_DRAG_USER_LIST ?
+		GDK_ACTION_MOVE : GDK_ACTION_COPY;
+}
+
+static inline gboolean
+fabulor_gtk_internal_drag_kind_is_accepted (FabulorGtkInternalDragKind kind,
+											guint accepted_kinds)
+{
+	return kind != FABULOR_GTK_INTERNAL_DRAG_NONE &&
+		(accepted_kinds & FABULOR_GTK_INTERNAL_DRAG_ACCEPT (kind)) != 0;
+}
+
+#if GTK_MAJOR_VERSION >= 4
+static inline FabulorGtkInternalDragKind
+fabulor_gtk_internal_drag_kind_from_value (const GValue *value)
+{
+	gpointer payload;
+
+	if (!value || !G_VALUE_HOLDS (value, G_TYPE_POINTER))
+		return FABULOR_GTK_INTERNAL_DRAG_NONE;
+
+	payload = g_value_get_pointer (value);
+	if (payload == GUINT_TO_POINTER (FABULOR_GTK_INTERNAL_DRAG_CHANNEL_VIEW))
+		return FABULOR_GTK_INTERNAL_DRAG_CHANNEL_VIEW;
+	if (payload == GUINT_TO_POINTER (FABULOR_GTK_INTERNAL_DRAG_USER_LIST))
+		return FABULOR_GTK_INTERNAL_DRAG_USER_LIST;
+	return FABULOR_GTK_INTERNAL_DRAG_NONE;
+}
+
+static inline GdkContentProvider *
+fabulor_gtk_internal_drag_prepare_cb (GtkDragSource *controller,
+									  gdouble x, gdouble y,
+									  gpointer user_data)
+{
+	FabulorGtkInternalDragSource *source = user_data;
+
+	(void) controller;
+	(void) x;
+	(void) y;
+	return gdk_content_provider_new_typed (G_TYPE_POINTER,
+		GUINT_TO_POINTER (source->kind));
+}
+
+static inline void
+fabulor_gtk_internal_drag_begin_cb (GtkDragSource *controller, GdkDrag *drag,
+									gpointer user_data)
+{
+	GtkWidget *widget = gtk_event_controller_get_widget (GTK_EVENT_CONTROLLER (controller));
+	GdkPaintable *paintable = gtk_widget_paintable_new (widget);
+
+	(void) drag;
+	(void) user_data;
+	gtk_drag_source_set_icon (controller, paintable, 0, 0);
+	g_object_unref (paintable);
+}
+
+static inline GdkDragAction
+fabulor_gtk_internal_drag_motion_cb (GtkDropTarget *controller,
+									gdouble x, gdouble y,
+									gpointer user_data)
+{
+	FabulorGtkInternalDropTarget *target = user_data;
+	FabulorGtkInternalDragKind kind = fabulor_gtk_internal_drag_kind_from_value (
+		gtk_drop_target_get_value (controller));
+	GtkWidget *widget = gtk_event_controller_get_widget (GTK_EVENT_CONTROLLER (controller));
+
+	if (!fabulor_gtk_internal_drag_kind_is_accepted (kind, target->accepted_kinds) ||
+		!target->motion_callback ||
+		!target->motion_callback (widget, kind, x, y, target->user_data))
+	{
+		target->active_kind = FABULOR_GTK_INTERNAL_DRAG_NONE;
+		return 0;
+	}
+
+	target->active_kind = kind;
+	return fabulor_gtk_internal_drag_action (kind);
+}
+
+static inline void
+fabulor_gtk_internal_drag_leave_cb (GtkDropTarget *controller,
+									gpointer user_data)
+{
+	FabulorGtkInternalDropTarget *target = user_data;
+
+	if (target->active_kind != FABULOR_GTK_INTERNAL_DRAG_NONE &&
+		target->leave_callback)
+	{
+		target->leave_callback (
+			gtk_event_controller_get_widget (GTK_EVENT_CONTROLLER (controller)),
+			target->active_kind, target->user_data);
+	}
+	target->active_kind = FABULOR_GTK_INTERNAL_DRAG_NONE;
+}
+
+static inline gboolean
+fabulor_gtk_internal_drag_drop_cb (GtkDropTarget *controller,
+								  const GValue *value, gdouble x,
+								  gdouble y, gpointer user_data)
+{
+	FabulorGtkInternalDropTarget *target = user_data;
+	FabulorGtkInternalDragKind kind = fabulor_gtk_internal_drag_kind_from_value (value);
+	GtkWidget *widget = gtk_event_controller_get_widget (GTK_EVENT_CONTROLLER (controller));
+	gboolean handled;
+
+	handled = fabulor_gtk_internal_drag_kind_is_accepted (kind, target->accepted_kinds) &&
+		target->drop_callback (widget, kind, x, y, target->user_data);
+	fabulor_gtk_internal_drag_finish (target, widget);
+	return handled;
+}
+#else
+static inline const gchar *
+fabulor_gtk_internal_drag_target_name (FabulorGtkInternalDragKind kind)
+{
+	if (kind == FABULOR_GTK_INTERNAL_DRAG_CHANNEL_VIEW)
+		return "ZOITECHAT_CHANVIEW";
+	if (kind == FABULOR_GTK_INTERNAL_DRAG_USER_LIST)
+		return "ZOITECHAT_USERLIST";
+	return NULL;
+}
+
+static inline FabulorGtkInternalDragKind
+fabulor_gtk_internal_drag_kind_from_context (GdkDragContext *context)
+{
+	if (fabulor_gtk_drag_context_has_target (context, "ZOITECHAT_CHANVIEW"))
+		return FABULOR_GTK_INTERNAL_DRAG_CHANNEL_VIEW;
+	if (fabulor_gtk_drag_context_has_target (context, "ZOITECHAT_USERLIST"))
+		return FABULOR_GTK_INTERNAL_DRAG_USER_LIST;
+	return FABULOR_GTK_INTERNAL_DRAG_NONE;
+}
+
+static inline void
+fabulor_gtk_internal_drag_begin_cb (GtkWidget *widget,
+									GdkDragContext *context,
+									gpointer user_data)
+{
+	FabulorGtkInternalDragSource *source = user_data;
+	GdkPixbuf *icon;
+
+	if (!source->icon_callback)
+		return;
+	icon = source->icon_callback (widget, source->user_data);
+	if (!icon)
+		return;
+	gtk_drag_set_icon_pixbuf (context, icon, 0, 0);
+	g_object_unref (icon);
+}
+
+static inline gboolean
+fabulor_gtk_internal_drag_motion_cb (GtkWidget *widget,
+									GdkDragContext *context,
+									gint x, gint y, guint32 time,
+									gpointer user_data)
+{
+	FabulorGtkInternalDropTarget *target = user_data;
+	FabulorGtkInternalDragKind kind = fabulor_gtk_internal_drag_kind_from_context (context);
+
+	if (!fabulor_gtk_internal_drag_kind_is_accepted (kind, target->accepted_kinds) ||
+		!target->motion_callback ||
+		!target->motion_callback (widget, kind, x, y, target->user_data))
+	{
+		target->active_kind = FABULOR_GTK_INTERNAL_DRAG_NONE;
+		return FALSE;
+	}
+
+	target->active_kind = kind;
+	gdk_drag_status (context, fabulor_gtk_internal_drag_action (kind), time);
+	return TRUE;
+}
+
+static inline void
+fabulor_gtk_internal_drag_leave_cb (GtkWidget *widget,
+									GdkDragContext *context, guint32 time,
+									gpointer user_data)
+{
+	FabulorGtkInternalDropTarget *target = user_data;
+
+	(void) context;
+	(void) time;
+	if (target->active_kind != FABULOR_GTK_INTERNAL_DRAG_NONE &&
+		target->leave_callback)
+		target->leave_callback (widget, target->active_kind, target->user_data);
+	target->active_kind = FABULOR_GTK_INTERNAL_DRAG_NONE;
+}
+
+static inline gboolean
+fabulor_gtk_internal_drag_drop_cb (GtkWidget *widget,
+								  GdkDragContext *context, gint x,
+								  gint y, guint32 time, gpointer user_data)
+{
+	FabulorGtkInternalDropTarget *target = user_data;
+	FabulorGtkInternalDragKind kind = fabulor_gtk_internal_drag_kind_from_context (context);
+	gboolean handled;
+
+	(void) time;
+	handled = fabulor_gtk_internal_drag_kind_is_accepted (kind, target->accepted_kinds) &&
+		target->drop_callback (widget, kind, x, y, target->user_data);
+	fabulor_gtk_internal_drag_finish (target, widget);
+	return handled;
+}
+#endif
+
+static inline void
+fabulor_gtk_widget_enable_internal_drag_source (
+	GtkWidget *widget, FabulorGtkInternalDragKind kind,
+	FabulorGtkInternalDragIconFunc icon_callback, gpointer user_data)
+{
+	FabulorGtkInternalDragSource *source;
+
+	g_return_if_fail (GTK_IS_WIDGET (widget));
+	g_return_if_fail (kind == FABULOR_GTK_INTERNAL_DRAG_CHANNEL_VIEW ||
+		kind == FABULOR_GTK_INTERNAL_DRAG_USER_LIST);
+
+	source = g_new (FabulorGtkInternalDragSource, 1);
+	source->kind = kind;
+	source->icon_callback = icon_callback;
+	source->user_data = user_data;
+
+#if GTK_MAJOR_VERSION >= 4
+	GtkDragSource *controller = gtk_drag_source_new ();
+
+	gtk_drag_source_set_actions (controller, fabulor_gtk_internal_drag_action (kind));
+	g_object_set_data_full (G_OBJECT (controller),
+		"fabulor-internal-drag-source", source, g_free);
+	g_signal_connect (controller, "prepare",
+		G_CALLBACK (fabulor_gtk_internal_drag_prepare_cb), source);
+	g_signal_connect (controller, "drag-begin",
+		G_CALLBACK (fabulor_gtk_internal_drag_begin_cb), source);
+	gtk_widget_add_controller (widget, GTK_EVENT_CONTROLLER (controller));
+#else
+	GtkTargetEntry entry = {
+		(gchar *) fabulor_gtk_internal_drag_target_name (kind),
+		GTK_TARGET_SAME_APP,
+		(guint) kind
+	};
+
+	gtk_drag_source_set (widget, GDK_BUTTON1_MASK, &entry, 1,
+		fabulor_gtk_internal_drag_action (kind));
+	g_object_set_data_full (G_OBJECT (widget),
+		"fabulor-internal-drag-source", source, g_free);
+	g_signal_connect (widget, "drag-begin",
+		G_CALLBACK (fabulor_gtk_internal_drag_begin_cb), source);
+#endif
+}
+
+static inline void
+fabulor_gtk_widget_enable_internal_drop_target (
+	GtkWidget *widget, guint accepted_kinds,
+	FabulorGtkInternalDragMotionFunc motion_callback,
+	FabulorGtkInternalDragLeaveFunc leave_callback,
+	FabulorGtkInternalDragDropFunc drop_callback, gpointer user_data)
+{
+	FabulorGtkInternalDropTarget *target;
+
+	g_return_if_fail (GTK_IS_WIDGET (widget));
+	g_return_if_fail (accepted_kinds != 0);
+	g_return_if_fail (drop_callback != NULL);
+
+	target = g_new0 (FabulorGtkInternalDropTarget, 1);
+	target->accepted_kinds = accepted_kinds;
+	target->motion_callback = motion_callback;
+	target->leave_callback = leave_callback;
+	target->drop_callback = drop_callback;
+	target->user_data = user_data;
+
+#if GTK_MAJOR_VERSION >= 4
+	GtkDropTarget *controller = gtk_drop_target_new (G_TYPE_POINTER,
+		GDK_ACTION_MOVE | GDK_ACTION_COPY);
+
+	gtk_drop_target_set_preload (controller, TRUE);
+	g_object_set_data_full (G_OBJECT (controller),
+		"fabulor-internal-drop-target", target, g_free);
+	if (motion_callback)
+		g_signal_connect (controller, "motion",
+			G_CALLBACK (fabulor_gtk_internal_drag_motion_cb), target);
+	if (leave_callback)
+		g_signal_connect (controller, "leave",
+			G_CALLBACK (fabulor_gtk_internal_drag_leave_cb), target);
+	g_signal_connect (controller, "drop",
+		G_CALLBACK (fabulor_gtk_internal_drag_drop_cb), target);
+	gtk_widget_add_controller (widget, GTK_EVENT_CONTROLLER (controller));
+#else
+	GtkTargetEntry entries[2];
+	guint entry_count = 0;
+
+	if (fabulor_gtk_internal_drag_kind_is_accepted (
+			FABULOR_GTK_INTERNAL_DRAG_CHANNEL_VIEW, accepted_kinds))
+	{
+		entries[entry_count].target = "ZOITECHAT_CHANVIEW";
+		entries[entry_count].flags = GTK_TARGET_SAME_APP;
+		entries[entry_count++].info = FABULOR_GTK_INTERNAL_DRAG_CHANNEL_VIEW;
+	}
+	if (fabulor_gtk_internal_drag_kind_is_accepted (
+			FABULOR_GTK_INTERNAL_DRAG_USER_LIST, accepted_kinds))
+	{
+		entries[entry_count].target = "ZOITECHAT_USERLIST";
+		entries[entry_count].flags = GTK_TARGET_SAME_APP;
+		entries[entry_count++].info = FABULOR_GTK_INTERNAL_DRAG_USER_LIST;
+	}
+
+	gtk_drag_dest_set (widget, GTK_DEST_DEFAULT_ALL, entries, entry_count,
+		GDK_ACTION_MOVE | GDK_ACTION_COPY);
+	g_object_set_data_full (G_OBJECT (widget),
+		"fabulor-internal-drop-target", target, g_free);
+	if (motion_callback)
+		g_signal_connect (widget, "drag-motion",
+			G_CALLBACK (fabulor_gtk_internal_drag_motion_cb), target);
+	if (leave_callback)
+		g_signal_connect (widget, "drag-leave",
+			G_CALLBACK (fabulor_gtk_internal_drag_leave_cb), target);
+	g_signal_connect (widget, "drag-drop",
+		G_CALLBACK (fabulor_gtk_internal_drag_drop_cb), target);
 #endif
 }
 

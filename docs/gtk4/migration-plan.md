@@ -529,6 +529,20 @@ targets, filename conversion, transfer speed preferences, and one DCC send per
 file remain unchanged. Internal channel-view, user-list, and pane-position drag
 operations remain isolated for pass 11.
 
+Internal layout-drag pass 11 (2026-07-15): channel-view and user-list sources,
+their reciprocal targets, the transcript scrollbar target, and four-position
+pane placement now share a typed source identity and coordinate callback.
+GTK4 uses `GtkDragSource`, preloaded `GtkDropTarget` controllers, and a
+process-local pointer payload that cannot be serialized as an external file or
+text drop. GTK3 retains exact `ZOITECHAT_CHANVIEW` and `ZOITECHAT_USERLIST`
+targets with `GTK_TARGET_SAME_APP` inside the compatibility layer. Source
+identity no longer depends on MOVE/COPY action codes or a leading-character
+target check; that legacy check still expected the pre-ZoiteChat HexChat prefix
+and rejected the current targets. User-list row hover and completion cleanup,
+source icons, top/bottom targeting, collision adjustment, and immediate pane
+replacement are preserved. Transcript selection remains with the custom-widget
+stage.
+
 Primary API families:
 
 - direct `GdkEvent` handlers and event masks

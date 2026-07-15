@@ -134,14 +134,6 @@ cv_tree_init (chanview *cv)
 	GtkCellRenderer *renderer;
 	GtkTreeViewColumn *col;
 	int wid1, wid2;
-	static const GtkTargetEntry dnd_src_target[] =
-	{
-		{"ZOITECHAT_CHANVIEW", GTK_TARGET_SAME_APP, 75 }
-	};
-	static const GtkTargetEntry dnd_dest_target[] =
-	{
-		{"ZOITECHAT_USERLIST", GTK_TARGET_SAME_APP, 75 }
-	};
 
 	win = gtk_scrolled_window_new (0, 0);
 	gtk_widget_set_hexpand (win, TRUE);
@@ -222,18 +214,11 @@ cv_tree_init (chanview *cv)
 							G_CALLBACK (cv_tree_activated_cb), NULL);
 	fabulor_gtk_widget_on_scroll (view, cv_tree_scroll_cb, NULL);
 
-	gtk_drag_dest_set (view, GTK_DEST_DEFAULT_ALL, dnd_dest_target, 1,
-							 GDK_ACTION_MOVE | GDK_ACTION_COPY | GDK_ACTION_LINK);
-	gtk_drag_source_set (view, GDK_BUTTON1_MASK, dnd_src_target, 1, GDK_ACTION_COPY);
-
-	g_signal_connect (G_OBJECT (view), "drag-begin",
-							G_CALLBACK (mg_drag_begin_cb), NULL);
-	g_signal_connect (G_OBJECT (view), "drag-drop",
-							G_CALLBACK (mg_drag_drop_cb), NULL);
-	g_signal_connect (G_OBJECT (view), "drag-motion",
-							G_CALLBACK (mg_drag_motion_cb), NULL);
-	g_signal_connect (G_OBJECT (view), "drag-end",
-							G_CALLBACK (mg_drag_end_cb), NULL);
+	fabulor_gtk_widget_enable_internal_drag_source (view,
+		FABULOR_GTK_INTERNAL_DRAG_CHANNEL_VIEW, mg_internal_drag_icon, NULL);
+	fabulor_gtk_widget_enable_internal_drop_target (view,
+		FABULOR_GTK_INTERNAL_DRAG_ACCEPT (FABULOR_GTK_INTERNAL_DRAG_USER_LIST),
+		mg_internal_drag_motion, NULL, mg_internal_drag_drop, NULL);
 
 	((treeview *)cv)->tree = GTK_TREE_VIEW (view);
 	((treeview *)cv)->scrollw = win;
