@@ -469,6 +469,16 @@ Session selection, server-session initialization, marker visibility, plugin
 production frontend. Key handling, activation/send, completion, history,
 spell-check, and emoji insertion are unchanged.
 
+Channel-tab close hover pass 5 (2026-07-15): tab close-button hit testing now
+receives typed pointer coordinates and leave notifications through one shared
+motion-controller boundary. GTK4 uses `GtkEventControllerMotion`; GTK3 retains
+motion and leave event signals behind the compatibility layer. Pointer cursor
+selection is likewise widget-scoped on GTK4 and hides native `GdkWindow`
+cursor ownership from the tab workflow. Close-button prelight, preference
+visibility, left-click close dispatch, right-click context menus, scrolling,
+pressed/toggled handling, and the retained outer-tab prelight suppression are
+unchanged.
+
 Primary API families:
 
 - direct `GdkEvent` handlers and event masks
