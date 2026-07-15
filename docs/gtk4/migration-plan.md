@@ -375,6 +375,16 @@ their callback data through destruction, so closing the parent cannot leave a
 dangling manager-row pointer. Preview, reset, cancel, and staged commit/discard
 semantics remain unchanged.
 
+Client-certificate chooser pass 20 (2026-07-15): the server-list editor now
+uses a modal `GtkFileChooserNative` response flow instead of the repository's
+last `GtkFileChooserDialog` and its nested run. The request owns copied network,
+certificate-root, and destination strings and only a weak parent reference.
+Parent destruction hides and releases the chooser; accepted local files retain
+the existing private-directory creation, byte copy, file permissions, guarded
+button refresh, and parent-bound success/error message. Cancel and missing-file
+responses remain silent. Two pre-existing blocking native theme-import flows
+are now explicitly tracked for later conversion.
+
 Primary surfaces:
 
 - `menu.c`, context menus, tray menus, and user-defined menus
