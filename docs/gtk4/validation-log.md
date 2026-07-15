@@ -949,7 +949,7 @@ handling remain unchanged.
 
 Date: 2026-07-15
 
-Commit: pending
+Commit: `b3c5a097`
 
 Migration stage: 3, first complete dynamic `GMenuModel` boundary
 
