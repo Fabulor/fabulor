@@ -1283,9 +1283,11 @@ Automated checks:
 Scope: explicit copy commands only. Transcript selection, paste, input,
 spell-check, emoji, drag/drop, and direct event handling remain unchanged.
 
-### PR: GTK4 Stage 4 Simple Controller Foundation
+### PR: [#54 - GTK4 Stage 4 Simple Controller Foundation](https://github.com/Fabulor/fabulor/pull/54)
 
 Date: 2026-07-15
+
+Commit: `db4699ed`
 
 Migration stage: 4, simple controller pass 2
 
