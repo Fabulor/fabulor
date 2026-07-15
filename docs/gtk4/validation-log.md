@@ -1056,7 +1056,7 @@ Scope: contextual plugin popup model and callback ownership only. Displayed
 GTK3 popup widgets, native Windows tray items, built-in popup contents, dialogs,
 and input event handling remain unchanged.
 
-### PR: GTK4 Response-Driven Acknowledgement Dialogs, Pass 18
+### PR: [#47 - GTK4 Response-Driven Acknowledgement Dialogs, Pass 18](https://github.com/Fabulor/fabulor/pull/47)
 
 Date: 2026-07-15
 
