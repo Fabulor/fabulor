@@ -795,11 +795,11 @@ displayed GTK3 radio controls, independent Preferences meter values, remaining
 static commands, dynamic menus, popup ownership, dialogs, and pointer/key event
 handling remain unchanged.
 
-### PR: pending - GTK4 Settings Menu Model, Pass 11
+### PR: [#40 - GTK4 Settings Menu Model, Pass 11](https://github.com/Fabulor/fabulor/pull/40)
 
 Date: 2026-07-15
 
-Commit: pending
+Commit: `eb7942cf`
 
 Migration stage: 3, ten new stateless actions and seventh canonical
 `GMenuModel` subtree projection
