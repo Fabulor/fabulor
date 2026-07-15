@@ -306,6 +306,14 @@ displayed GTK3 items activate through the shared action dispatcher. Existing
 preference and editor windows, configuration files, labels, and behavior are
 unchanged; their dialog lifecycle conversion remains separately scoped.
 
+Window menu-model pass 12 (2026-07-15): the nine operational-window commands,
+Clear Text, and Save Text now carry canonical stateless identities. The
+retained Window model preserves its separator and nests the existing Search
+model after the five transcript commands. Relative downstream boundaries also
+correct stale Search and Help offsets introduced when the earlier New submenu
+grew by two entries. GTK3 presentation, transcript behavior, and the contained
+Save Text file-selection flow remain unchanged.
+
 Primary surfaces:
 
 - `menu.c`, context menus, tray menus, and user-defined menus

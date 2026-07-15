@@ -145,6 +145,14 @@ two-section model preserves the separator after Preferences, while the live
 GTK3 menu activates the same dispatcher and continues to open the existing
 preference and editor surfaces without changing their ownership or lifecycle.
 
+The static Window menu is the eighth complete model boundary. Eleven remaining
+commands now have canonical stateless identities, bringing the registry to 46.
+Its retained model has two sections: nine operational windows, then five
+transcript commands and the existing three-command Search submenu. Search,
+Window, and Help boundaries are derived from their preceding ranges, correcting
+two stale numeric offsets that had malformed the retained Search and Help
+models without affecting the displayed GTK3 menus.
+
 ## Quantitative API Baseline
 
 | GTK3 family or type | Matching lines | Files | Migration direction | Stage | Status |

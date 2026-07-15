@@ -831,6 +831,44 @@ displayed GTK3 menu, preference and editor window implementations, dialog
 lifecycles, dynamic menus, popup ownership, and input event handling remain
 unchanged.
 
+### PR: [#41 - GTK4 Window Menu Model, Pass 12](https://github.com/Fabulor/fabulor/pull/41)
+
+Date: 2026-07-15
+
+Commit: `fa9baa48`
+
+Migration stage: 3, eleven new stateless actions, eighth canonical
+`GMenuModel` subtree projection, and retained-model boundary correction
+
+Files/workflows converted: eleven Window command identities and dispatcher
+entries; complete two-section Window model with nested Search submenu; relative
+Window, Search, and Help boundaries replacing stale downstream offsets
+
+GTK version: 4.22.4
+
+GLib version: 2.88.0
+
+Build configuration: MSVC x64 Release and Meson 1.11.2 Release with MSVC 19.44
+
+Automated checks:
+
+- [x] production GTK3 frontend compile and link with 0 warnings and 0 errors
+- [x] distinct action identities: 46, including all Window commands
+- [x] source boundary assertions: Window, Search, and Help ranges resolve to their exact table entries
+- [x] focused GTK3/GIO probe: Window has two sections, 15 top-level items, and a three-item Search submenu
+- [x] focused GTK3/GIO probe: every newly canonical Window action activates exactly once
+- [x] focused GTK3/GIO probe: corrected Help model contains Contents and About
+- [x] GTK4 validator unit tests: 8/8, plus repository root validation
+- [x] isolated GTK4 MSVC compile, link, and runtime probe with no warnings
+- [x] isolated GTK4 Meson configure, compile, link, and runtime test
+- [x] production GTK3 MSVC x64 Release rebuild and native tests: 18/18
+- [x] GitHub Actions required checks: 5/5
+
+Scope: Window command identities, retained model composition, and correction of
+the Search/Help model boundaries. Displayed GTK3 menus, operational windows,
+transcript behavior, Save Text containment, dynamic menus, dialogs, and input
+event handling remain unchanged.
+
 ## Per-PR Record Template
 
 Copy this section for each GTK4 PR:
