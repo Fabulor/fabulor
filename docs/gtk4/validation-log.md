@@ -1018,7 +1018,7 @@ Scope: main-menu `/MENU` model and copied action ownership only. Displayed GTK3
 menus, plugin command semantics, contextual popup roots, dialogs, and input
 event handling remain unchanged.
 
-### PR: GTK4 Contextual Plugin Popup Model, Pass 17
+### PR: [#46 - GTK4 Contextual Plugin Popup Model, Pass 17](https://github.com/Fabulor/fabulor/pull/46)
 
 Date: 2026-07-15
 
