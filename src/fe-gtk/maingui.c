@@ -710,14 +710,17 @@ mg_set_access_icon (session_gui *gui, GdkPixbuf *pix, gboolean away)
         mg_set_myself_away (gui, away);
 }
 
-static gboolean
-mg_inputbox_focus (GtkWidget *widget, GdkEventFocus *event, session_gui *gui)
+static void
+mg_inputbox_focus (GtkWidget *widget, gpointer user_data)
 {
         GSList *list;
         session *sess;
+        session_gui *gui = user_data;
+
+        (void) widget;
 
         if (gui->is_tab)
-                return FALSE;
+                return;
 
         list = sess_list;
         while (list)
@@ -732,8 +735,6 @@ mg_inputbox_focus (GtkWidget *widget, GdkEventFocus *event, session_gui *gui)
                 }
                 list = list->next;
         }
-
-        return FALSE;
 }
 
 
@@ -5509,8 +5510,7 @@ mg_create_entry (session *sess, GtkWidget *box)
         gtk_widget_set_name (entry, "zoitechat-inputbox");
         g_signal_connect (G_OBJECT (entry), "key-press-event",
                                                         G_CALLBACK (key_handle_key_press), NULL);
-        g_signal_connect (G_OBJECT (entry), "focus-in-event",
-                                                        G_CALLBACK (mg_inputbox_focus), gui);
+        fabulor_gtk_widget_on_focus_enter (entry, mg_inputbox_focus, gui);
         g_signal_connect (G_OBJECT (entry), "populate-popup",
                                                         G_CALLBACK (mg_inputbox_rightclick), NULL);
         g_signal_connect (G_OBJECT (entry), "insert-emoji",
@@ -5600,29 +5600,30 @@ mg_create_tabs (session_gui *gui)
         mg_place_userlist_and_chanview (gui);
 }
 
-static gboolean
-mg_tabwin_focus_cb (GtkWindow * win, GdkEventFocus *event, gpointer userdata)
+static void
+mg_tabwin_focus_cb (GtkWidget *win, gpointer user_data)
 {
+        (void) user_data;
         current_sess = current_tab;
         if (current_sess)
         {
                 gtk_xtext_check_marker_visibility (GTK_XTEXT (current_sess->gui->xtext));
                 plugin_emit_dummy_print (current_sess, "Focus Window");
         }
-        unflash_window (GTK_WIDGET (win));
-        return FALSE;
+        unflash_window (win);
 }
 
-static gboolean
-mg_topwin_focus_cb (GtkWindow * win, GdkEventFocus *event, session *sess)
+static void
+mg_topwin_focus_cb (GtkWidget *win, gpointer user_data)
 {
+        session *sess = user_data;
+
         current_sess = sess;
         if (!sess->server->server_session)
                 sess->server->server_session = sess;
         gtk_xtext_check_marker_visibility(GTK_XTEXT (current_sess->gui->xtext));
-        unflash_window (GTK_WIDGET (win));
+        unflash_window (win);
         plugin_emit_dummy_print (sess, "Focus Window");
-        return FALSE;
 }
 
 static void
@@ -5684,8 +5685,7 @@ mg_create_topwindow (session *sess)
         gtk_container_set_border_width (GTK_CONTAINER (win), GUI_BORDER);
         gtk_widget_set_opacity (win, (prefs.hex_gui_transparency / 255.));
 
-        g_signal_connect (G_OBJECT (win), "focus-in-event",
-                                                        G_CALLBACK (mg_topwin_focus_cb), sess);
+        fabulor_gtk_widget_on_focus_enter (win, mg_topwin_focus_cb, sess);
         g_signal_connect (G_OBJECT (win), "destroy",
                                                         G_CALLBACK (mg_topdestroy_cb), sess);
         g_signal_connect (G_OBJECT (win), "configure-event",
@@ -5885,8 +5885,7 @@ mg_create_tabwindow (session *sess)
                                                    G_CALLBACK (mg_tabwindow_de_cb), 0);
         g_signal_connect (G_OBJECT (win), "destroy",
                                                    G_CALLBACK (mg_tabwindow_kill_cb), 0);
-        g_signal_connect (G_OBJECT (win), "focus-in-event",
-                                                        G_CALLBACK (mg_tabwin_focus_cb), NULL);
+        fabulor_gtk_widget_on_focus_enter (win, mg_tabwin_focus_cb, NULL);
         g_signal_connect (G_OBJECT (win), "configure-event",
                                                         G_CALLBACK (mg_configure_cb), NULL);
         g_signal_connect (G_OBJECT (win), "window-state-event",
