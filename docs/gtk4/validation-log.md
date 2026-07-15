@@ -1227,7 +1227,7 @@ Automated checks:
 - [x] MSVC x64 Release staging build with 0 warnings and 0 errors
 - [x] staged `share\themes\MS-Windows` output is absent after an incremental build
 - [x] WiX x64 Release MSI/bootstrapper build with 0 errors
-- [ ] GitHub Actions required checks: 5/5
+- [x] GitHub Actions required checks: 5/5
 
 Scope: policy, registration, legacy installer rules, and staging output. The
 shipping GTK3 theme importer remains until the GTK4 adapter can replace it;
