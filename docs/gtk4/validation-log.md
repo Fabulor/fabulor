@@ -980,7 +980,7 @@ Scope: dynamic Usermenu model and action ownership only. Displayed GTK3 menu
 widgets, command parsing and substitutions, plugin `/MENU` mutation, contextual
 popup ownership, dialogs, and input event handling remain unchanged.
 
-### PR: GTK4 Plugin Main-Menu Model, Pass 16
+### PR: [#45 - GTK4 Plugin Main-Menu Model, Pass 16](https://github.com/Fabulor/fabulor/pull/45)
 
 Date: 2026-07-15
 
