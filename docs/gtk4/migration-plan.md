@@ -510,6 +510,15 @@ history, completion, replacement, and completion reset on Space remain
 unchanged. The shortcut-editor tree's Shift+Up/Down row ordering remains a
 separate raw key workflow for its Stage 5 model conversion.
 
+Topic pointer pass 9 (2026-07-15): topic URL hover and leave now use the shared
+motion-controller boundary and a text-view cursor helper. Modified left-button
+release uses a typed click boundary backed by `GtkGestureClick` on GTK4; only a
+successfully activated URL claims the gesture sequence. GTK3 retains motion,
+leave, and button-release events behind the compatibility layer. Text-view
+window-to-buffer coordinate conversion, URL/host detection, URL range trimming,
+the configured modifier comparison, topic selection/editing, Return submission,
+and focus restoration remain unchanged.
+
 Primary API families:
 
 - direct `GdkEvent` handlers and event masks

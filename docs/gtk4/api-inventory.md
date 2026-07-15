@@ -265,6 +265,13 @@ return through the controller callback without naming a GTK3 signal. The only
 remaining raw key workflow in `fkeys.c` is shortcut-editor Shift+Up/Down row
 ordering, which stays with that tree/model conversion.
 
+Topic URL pointer handling now receives typed coordinates, leave notification,
+button identity, and modifier state. GTK4 uses motion and click controllers,
+sets the text-view cursor by name, and claims only successful URL activation;
+GTK3 event objects and text-window cursor ownership remain inside the
+compatibility layer. Existing buffer-coordinate conversion, word parsing,
+modifier matching, and editable text behavior remain unchanged.
+
 ## Quantitative API Baseline
 
 | GTK3 family or type | Matching lines | Files | Migration direction | Stage | Status |
@@ -281,7 +288,7 @@ ordering, which stays with that tree/model conversion.
 | `gtk_file_chooser_dialog_new` | 0 | 0 | GTK4 file chooser/native dialog flow | 3 | complete |
 | `gtk_menu_*` | 109 | 7 | `GMenuModel`, popovers, and actions | 3 | not started |
 | `gtk_menu_item_*` | 45 | 7 | actions/menu models | 3 | not started |
-| `GdkEvent` | 71 | 20 | event controllers and gestures | 4 | in progress |
+| `GdkEvent` | 69 | 20 | event controllers and gestures | 4 | in progress |
 | `gtk_widget_get_window` | 31 | 6 | surface/native access only where unavoidable | 4/6 | in progress |
 | `gdk_window_*` | 48 | 8 | `GdkSurface`, snapshots, controllers, or removal | 4/6 | in progress |
 | `gtk_clipboard_*` | 1 | 1 | `GdkClipboard` and content providers | 4/6 | in progress |
