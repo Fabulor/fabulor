@@ -242,6 +242,14 @@ layer. The tab workflow retains its existing close-area hit test and prelight
 state, while click/context-menu dispatch and outer-tab prelight suppression
 remain separate for later event and presentation passes.
 
+The first typed key boundary covers three independent, non-consuming
+workflows: detached utility-window Escape, search-bar Escape, and raw-log
+`Ctrl+Shift+C`. GTK4 uses a bubble-phase key controller so window-owned
+shortcuts retain descendant propagation, while GTK3 key events remain inside
+the compatibility layer. Embedded utility tabs do not close on Escape, and
+the raw-log auto-copy guard remains unchanged. The main configurable shortcut
+engine and widget-specific input paths remain deferred to their owning passes.
+
 ## Quantitative API Baseline
 
 | GTK3 family or type | Matching lines | Files | Migration direction | Stage | Status |
@@ -258,9 +266,9 @@ remain separate for later event and presentation passes.
 | `gtk_file_chooser_dialog_new` | 0 | 0 | GTK4 file chooser/native dialog flow | 3 | complete |
 | `gtk_menu_*` | 109 | 7 | `GMenuModel`, popovers, and actions | 3 | not started |
 | `gtk_menu_item_*` | 45 | 7 | actions/menu models | 3 | not started |
-| `GdkEvent` | 113 | 23 | event controllers and gestures | 4 | in progress |
-| `gtk_widget_get_window` | 32 | 7 | surface/native access only where unavoidable | 4/6 | in progress |
-| `gdk_window_*` | 49 | 9 | `GdkSurface`, snapshots, controllers, or removal | 4/6 | in progress |
+| `GdkEvent` | 111 | 21 | event controllers and gestures | 4 | in progress |
+| `gtk_widget_get_window` | 31 | 6 | surface/native access only where unavoidable | 4/6 | in progress |
+| `gdk_window_*` | 48 | 8 | `GdkSurface`, snapshots, controllers, or removal | 4/6 | in progress |
 | `gtk_clipboard_*` | 1 | 1 | `GdkClipboard` and content providers | 4/6 | in progress |
 | `GtkTreeView` | 81 | 18 | choose GTK4 list/model widget per workflow | 5 | not started |
 | `GtkStatusIcon` | 6 | 1 | native Win32 tray or supported external backend | 7 | not started |

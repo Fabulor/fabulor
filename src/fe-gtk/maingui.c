@@ -5370,9 +5370,15 @@ mg_search_toggle(session *sess)
 }
 
 static gboolean
-search_handle_esc (GtkWidget *win, GdkEventKey *key, session *sess)
+search_handle_esc (GtkWidget *widget, guint keyval, GdkModifierType state,
+                   gpointer user_data)
 {
-        if (key->keyval == GDK_KEY_Escape)
+        session *sess = user_data;
+
+        (void) widget;
+        (void) state;
+
+        if (keyval == GDK_KEY_Escape)
                 mg_search_toggle(sess);
 
         return FALSE;
@@ -5403,7 +5409,7 @@ mg_create_search(session *sess, GtkWidget *box)
         mg_apply_emoji_fallback_widget (entry);
         mg_apply_entry_scroll_artifact_fix (entry);
         gui->search_changed_signal = g_signal_connect(G_OBJECT(entry), "changed", G_CALLBACK(search_handle_change), sess);
-        g_signal_connect (G_OBJECT (entry), "key-press-event", G_CALLBACK (search_handle_esc), sess);
+        fabulor_gtk_widget_on_key_pressed (entry, search_handle_esc, sess);
         g_signal_connect(G_OBJECT(entry), "activate", G_CALLBACK(mg_search_handle_next), sess);
         gtk_entry_set_icon_activatable (GTK_ENTRY (entry), GTK_ENTRY_ICON_SECONDARY, FALSE);
         gtk_entry_set_icon_tooltip_text (GTK_ENTRY (sess->gui->shentry), GTK_ENTRY_ICON_SECONDARY, _("Search hit end or not found."));

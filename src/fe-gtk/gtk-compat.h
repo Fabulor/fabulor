@@ -450,6 +450,77 @@ fabulor_gtk_widget_set_pointing_cursor (GtkWidget *widget, gboolean pointing)
 #endif
 }
 
+typedef gboolean (*FabulorGtkKeyFunc) (GtkWidget *widget, guint keyval,
+									   GdkModifierType state,
+									   gpointer user_data);
+
+typedef struct
+{
+	FabulorGtkKeyFunc callback;
+	gpointer user_data;
+} FabulorGtkKeyInteraction;
+
+static inline void
+fabulor_gtk_key_interaction_free (gpointer data, GClosure *closure)
+{
+	(void) closure;
+	g_free (data);
+}
+
+#if GTK_MAJOR_VERSION >= 4
+static inline gboolean
+fabulor_gtk_key_pressed_cb (GtkEventControllerKey *controller, guint keyval,
+							guint keycode, GdkModifierType state,
+							gpointer user_data)
+{
+	FabulorGtkKeyInteraction *interaction = user_data;
+
+	(void) keycode;
+	return interaction->callback (
+		gtk_event_controller_get_widget (GTK_EVENT_CONTROLLER (controller)),
+		keyval, state, interaction->user_data);
+}
+#else
+static inline gboolean
+fabulor_gtk_key_pressed_cb (GtkWidget *widget, GdkEventKey *event,
+							gpointer user_data)
+{
+	FabulorGtkKeyInteraction *interaction = user_data;
+
+	return interaction->callback (widget, event->keyval, event->state,
+		interaction->user_data);
+}
+#endif
+
+static inline void
+fabulor_gtk_widget_on_key_pressed (GtkWidget *widget,
+								FabulorGtkKeyFunc callback,
+								gpointer user_data)
+{
+	FabulorGtkKeyInteraction *interaction;
+
+	g_return_if_fail (GTK_IS_WIDGET (widget));
+	g_return_if_fail (callback != NULL);
+
+	interaction = g_new (FabulorGtkKeyInteraction, 1);
+	interaction->callback = callback;
+	interaction->user_data = user_data;
+
+#if GTK_MAJOR_VERSION >= 4
+	GtkEventController *controller = gtk_event_controller_key_new ();
+
+	gtk_event_controller_set_propagation_phase (controller, GTK_PHASE_BUBBLE);
+	g_signal_connect_data (controller, "key-pressed",
+		G_CALLBACK (fabulor_gtk_key_pressed_cb), interaction,
+		fabulor_gtk_key_interaction_free, 0);
+	gtk_widget_add_controller (widget, controller);
+#else
+	g_signal_connect_data (widget, "key-press-event",
+		G_CALLBACK (fabulor_gtk_key_pressed_cb), interaction,
+		fabulor_gtk_key_interaction_free, 0);
+#endif
+}
+
 typedef gboolean (*FabulorGtkScrollFunc) (GtkWidget *widget, gdouble dx,
 										  gdouble dy, gpointer user_data);
 

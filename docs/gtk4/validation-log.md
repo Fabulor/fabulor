@@ -1390,6 +1390,34 @@ right-click context menus, scrolling, tab activation, outer-tab prelight
 suppression, message input, transcript, spell-check, emoji, menus, and
 drag/drop remain unchanged.
 
+### PR: [#58 - GTK4 Stage 4 Simple Key Handlers](https://github.com/Fabulor/fabulor/pull/58)
+
+Date: 2026-07-15
+
+Commit: `0e80e2ac`
+
+Migration stage: 4, simple keyboard controller pass 6
+
+Files/workflows converted: detached utility-window Escape; search-bar Escape;
+raw-log `Ctrl+Shift+C`; shared typed key-value and modifier-state boundary
+
+Automated checks:
+
+- [x] source assertions: converted callbacks expose no `GdkEventKey`
+- [x] source assertions: all three workflows use the typed key-controller boundary
+- [x] source assertions: GTK4 uses a bubble-phase `GtkEventControllerKey`
+- [x] source assertions: converted callbacks retain non-consuming propagation
+- [x] source inventory: direct `GdkEvent` references reduced from 113 lines across 23 files to 111 lines across 21 files
+- [x] source inventory: `gtk_widget_get_window` reduced from 32 lines across 7 files to 31 lines across 6 files
+- [x] source inventory: `gdk_window_*` reduced from 49 lines across 9 files to 48 lines across 8 files
+- [x] production GTK3 frontend compiles and links with 0 warnings and 0 errors
+- [x] isolated GTK4 MSVC compile, link, and runtime probe with 0 warnings and 0 errors
+- [x] GTK4 validator unit tests: 8/8 under WSL
+
+Scope: three simple independent key workflows only. Main configurable
+shortcuts, completion, history, topic editing, tree/list navigation,
+transcript input, spell-check, emoji, menus, and drag/drop remain unchanged.
+
 ## Per-PR Record Template
 
 Copy this section for each GTK4 PR:
