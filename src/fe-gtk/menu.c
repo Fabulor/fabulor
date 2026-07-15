@@ -739,7 +739,7 @@ menu_nickinfo_cb (GtkWidget *menu, session *sess)
 static void
 copy_to_clipboard_cb (GtkWidget *item, char *url)
 {
-	gtkutil_copy_to_clipboard (item, NULL, url);
+	gtkutil_copy_to_clipboard (item, url);
 }
 
 /* returns boolean: Some data is missing */

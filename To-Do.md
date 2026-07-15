@@ -251,6 +251,7 @@ Detailed planning and evidence live in:
     - [x] Convert colors.conf and GTK3 theme import selection with owner-resolved state and parent-bound asynchronous cleanup.
     - [x] Convert manifest-plugin confirmation, quit/minimize confirmation, fatal-font handling, and modal frontend messages without nested GTK event loops.
 - [ ] Convert input events, shortcuts, clipboard, drag/drop, and pointer gestures.
+  - [x] Convert shared explicit-copy commands to GTK4 display clipboards while retaining primary-selection updates where supported.
 - [ ] Convert tree/list models, cell renderers, channel navigation, and operational lists.
 - [ ] Port the transcript and spell-check input widgets to GTK4 rendering and event semantics.
 - [ ] Add the GTK4 theme adapter and validate tray, notifications, icons, fonts, and platform integration.

@@ -830,32 +830,10 @@ gtkutil_window_new (char *title, char *role, int width, int height, int flags)
 	return win;
 }
 
-/* pass NULL as selection to paste to both clipboard & X11 text */
 void
-gtkutil_copy_to_clipboard (GtkWidget *widget, GdkAtom selection,
-                           const gchar *str)
+gtkutil_copy_to_clipboard (GtkWidget *widget, const gchar *str)
 {
-	GtkWidget *win;
-	GtkClipboard *clip, *clip2;
-
-	win = gtk_widget_get_toplevel (GTK_WIDGET (widget));
-	if (gtk_widget_is_toplevel (win))
-	{
-		gint len = (gint) strlen (str);
-
-		if (selection)
-		{
-			clip = gtk_widget_get_clipboard (win, selection);
-			gtk_clipboard_set_text (clip, str, len);
-		} else
-		{
-			/* copy to both primary X selection and clipboard */
-			clip = gtk_widget_get_clipboard (win, GDK_SELECTION_PRIMARY);
-			clip2 = gtk_widget_get_clipboard (win, GDK_SELECTION_CLIPBOARD);
-			gtk_clipboard_set_text (clip, str, len);
-			gtk_clipboard_set_text (clip2, str, len);
-		}
-	}
+	fabulor_gtk_copy_text_to_clipboards (widget, str);
 }
 
 /* Treeview util functions */

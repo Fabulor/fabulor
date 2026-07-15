@@ -139,6 +139,41 @@ fabulor_gtk_box_remove_child (GtkBox *box, GtkWidget *child)
 }
 
 static inline void
+fabulor_gtk_copy_text_to_clipboards (GtkWidget *widget, const gchar *text)
+{
+	g_return_if_fail (GTK_IS_WIDGET (widget));
+	g_return_if_fail (text != NULL);
+
+#if GTK_MAJOR_VERSION >= 4
+	GdkDisplay *display = gtk_widget_get_display (widget);
+	GdkClipboard *clipboard;
+	GdkClipboard *primary;
+
+	if (!display)
+		return;
+
+	clipboard = gdk_display_get_clipboard (display);
+	primary = gdk_display_get_primary_clipboard (display);
+	gdk_clipboard_set_text (clipboard, text);
+	if (primary && primary != clipboard)
+		gdk_clipboard_set_text (primary, text);
+#else
+	GtkWidget *window = gtk_widget_get_toplevel (widget);
+	GtkClipboard *clipboard;
+	GtkClipboard *primary;
+
+	if (!gtk_widget_is_toplevel (window))
+		return;
+
+	clipboard = gtk_widget_get_clipboard (window, GDK_SELECTION_CLIPBOARD);
+	primary = gtk_widget_get_clipboard (window, GDK_SELECTION_PRIMARY);
+	gtk_clipboard_set_text (clipboard, text, -1);
+	if (primary != clipboard)
+		gtk_clipboard_set_text (primary, text, -1);
+#endif
+}
+
+static inline void
 fabulor_gtk_window_set_child (GtkWindow *window, GtkWidget *child)
 {
 	g_return_if_fail (GTK_IS_WINDOW (window));

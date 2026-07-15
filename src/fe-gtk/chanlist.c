@@ -719,7 +719,7 @@ chanlist_copychannel (GtkWidget *item, server *serv)
 		g_string_append (text, (char *)cur->data);
 	}
 
-	gtkutil_copy_to_clipboard (item, NULL, text->str);
+	gtkutil_copy_to_clipboard (item, text->str);
 	g_string_free (text, TRUE);
 	g_slist_free_full (selection, g_free);
 }
@@ -742,7 +742,7 @@ chanlist_copytopic (GtkWidget *item, server *serv)
 		g_string_append (text, (char *)cur->data);
 	}
 
-	gtkutil_copy_to_clipboard (item, NULL, text->str);
+	gtkutil_copy_to_clipboard (item, text->str);
 	g_string_free (text, TRUE);
 	g_slist_free_full (selection, g_free);
 }

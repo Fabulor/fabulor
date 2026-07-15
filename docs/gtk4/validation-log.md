@@ -1259,6 +1259,30 @@ Scope: final nested-loop removal and Stage 3 closure. GTK message-dialog
 presentation remains available during the staged production cutover, but no
 converted path depends on a nested GTK event loop.
 
+### PR: [#53 - GTK4 Stage 4 Shared Clipboard Boundary](https://github.com/Fabulor/fabulor/pull/53)
+
+Date: 2026-07-15
+
+Commit: `0ec70605`
+
+Migration stage: 4, shared explicit-copy pass 1
+
+Files/workflows converted: ban-list copy; channel name/topic copy; URL context
+copy; URL-history copy; GTK3/GTK4 standard and primary clipboard helper
+
+Automated checks:
+
+- [x] source assertions: all five shared-copy callers use the typed two-argument API
+- [x] source assertions: direct GTK3 clipboard calls remain only in transcript selection ownership
+- [x] source assertions: GTK4 standard and primary clipboards are resolved from the widget display
+- [x] production GTK3 frontend compiles and links with 0 warnings and 0 errors
+- [x] isolated GTK4 MSVC compile, link, and runtime probe with 0 warnings and 0 errors
+- [x] GTK4 validator unit tests: 8/8 under WSL
+- [ ] Meson probe: local run blocked by stale administrator-owned build output and unavailable Ninja; clean CI pending
+
+Scope: explicit copy commands only. Transcript selection, paste, input,
+spell-check, emoji, drag/drop, and direct event handling remain unchanged.
+
 ## Per-PR Record Template
 
 Copy this section for each GTK4 PR:

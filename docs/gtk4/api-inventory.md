@@ -44,6 +44,7 @@ Update this file in every GTK4 conversion PR. Use these status values:
 - completed-tree reveal with distinct GTK3 recursive and GTK4 root semantics
 - window destruction
 - dialog-response destruction with an exact GTK signal callback signature
+- standard and primary text clipboard updates through the widget display
 
 The production GTK3 build and isolated GTK4 MSVC/Meson probes compile the same
 helper bodies. The GTK4 probes also take each helper's address so every GTK4
@@ -202,6 +203,14 @@ must gate interaction. Pre-event-loop Windows command-line information uses a
 native UTF-16 message box. The frontend contains no blocking GTK dialog or
 native chooser run call.
 
+Stage 4 begins with the shared explicit-copy boundary. Five callers across ban
+lists, channel lists, URL actions, and URL history now request one stable
+standard-plus-primary copy operation without exposing GTK3 `GdkAtom` values.
+The GTK4 branch resolves `GdkClipboard` objects from the widget display and
+avoids duplicate writes when the backend aliases primary and standard
+clipboards. Transcript-owned selection and clipboard code remains isolated in
+`xtext.c` for the custom-widget stage.
+
 ## Quantitative API Baseline
 
 | GTK3 family or type | Matching lines | Files | Migration direction | Stage | Status |
@@ -221,7 +230,7 @@ native chooser run call.
 | `GdkEvent` | 120 | 25 | event controllers and gestures | 4 | not started |
 | `gtk_widget_get_window` | 37 | 7 | surface/native access only where unavoidable | 4/6 | not started |
 | `gdk_window_*` | 51 | 9 | `GdkSurface`, snapshots, controllers, or removal | 4/6 | not started |
-| `gtk_clipboard_*` | 4 | 2 | `GdkClipboard` and content providers | 4 | not started |
+| `gtk_clipboard_*` | 1 | 1 | `GdkClipboard` and content providers | 4/6 | in progress |
 | `GtkTreeView` | 81 | 18 | choose GTK4 list/model widget per workflow | 5 | not started |
 | `GtkStatusIcon` | 6 | 1 | native Win32 tray or supported external backend | 7 | not started |
 | screen CSS provider installation | 4 | 3 | display-scoped provider installation | 7 | not started |

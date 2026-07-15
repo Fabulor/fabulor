@@ -133,7 +133,7 @@ url_button_copy (GtkWidget *widget, gpointer data)
 
 	if (gtkutil_treeview_get_selected (view, &iter, URL_COLUMN, &url, -1))
 	{
-		gtkutil_copy_to_clipboard (GTK_WIDGET (view), NULL, url);
+		gtkutil_copy_to_clipboard (GTK_WIDGET (view), url);
 		g_free (url);
 	}
 }

@@ -427,6 +427,16 @@ Exit criteria:
 
 ### Stage 4: Input, Events, Clipboard, Drag/Drop, And Shortcuts (In Progress)
 
+Shared explicit-copy pass 1 (2026-07-15): ban-list masks, channel-list names
+and topics, URL context actions, and URL-history rows now use one typed
+GTK3/GTK4 clipboard boundary. The obsolete caller-supplied `GdkAtom` parameter
+is removed because all five callers requested the same behavior. GTK3 retains
+standard clipboard and X11 primary-selection updates; GTK4 obtains both from
+the widget display and avoids writing twice when a backend aliases them.
+Transcript selection ownership remains in `xtext.c` for its Stage 6 custom
+widget conversion. Paste, edit-box, spell-check, emoji, and drag/drop paths are
+unchanged.
+
 Primary API families:
 
 - direct `GdkEvent` handlers and event masks
