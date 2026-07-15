@@ -519,6 +519,16 @@ window-to-buffer coordinate conversion, URL/host detection, URL range trimming,
 the configured modifier comparison, topic selection/editing, Return submission,
 and focus restoration remain unchanged.
 
+External file-drop pass 10 (2026-07-15): private-dialog transcript drops and
+user-list nickname drops now share a typed URI-list callback. GTK4 accepts
+`GdkFileList` through `GtkDropTarget` and serializes file URIs into the existing
+DCC-send boundary. GTK3 retains `text/uri-list` selection delivery behind the
+compatibility layer and copies the payload using its explicit byte length.
+Private-dialog-only transcript behavior, pointer-resolved user rows, nickname
+targets, filename conversion, transfer speed preferences, and one DCC send per
+file remain unchanged. Internal channel-view, user-list, and pane-position drag
+operations remain isolated for pass 11.
+
 Primary API families:
 
 - direct `GdkEvent` handlers and event masks

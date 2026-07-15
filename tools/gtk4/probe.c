@@ -37,6 +37,8 @@ check_compatibility_helper_signatures (void)
 		fabulor_gtk_text_view_set_pointing_cursor;
 	void (*volatile widget_on_click_released) (GtkWidget *, FabulorGtkClickFunc,
 		gpointer) = fabulor_gtk_widget_on_click_released;
+	void (*volatile widget_on_file_drop) (GtkWidget *, GdkDragAction,
+		FabulorGtkFileDropFunc, gpointer) = fabulor_gtk_widget_on_file_drop;
 	void (*volatile widget_on_key_pressed) (GtkWidget *, FabulorGtkKeyFunc, gpointer) =
 		fabulor_gtk_widget_on_key_pressed;
 	void (*volatile widget_on_focus_enter) (GtkWidget *, FabulorGtkWidgetInteractionFunc, gpointer) =
@@ -74,6 +76,7 @@ check_compatibility_helper_signatures (void)
 	(void) widget_set_pointing_cursor;
 	(void) text_view_set_pointing_cursor;
 	(void) widget_on_click_released;
+	(void) widget_on_file_drop;
 	(void) widget_on_key_pressed;
 	(void) widget_on_focus_enter;
 	(void) widget_on_focus_leave;

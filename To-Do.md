@@ -260,6 +260,7 @@ Detailed planning and evidence live in:
   - [x] Convert topic submission and channel key/limit `Ctrl+A` selection to the shared GTK4 key-controller boundary.
   - [x] Convert the main chat-input plugin and configurable shortcut engine to normalized GTK4 key-controller input.
   - [x] Convert topic URL hover, cursor leave, and modified left-click activation to GTK4 motion and click controllers.
+  - [x] Convert private-dialog and user-list external file drops to a typed GTK4 `GdkFileList` boundary.
 - [ ] Convert tree/list models, cell renderers, channel navigation, and operational lists.
 - [ ] Port the transcript and spell-check input widgets to GTK4 rendering and event semantics.
 - [ ] Add the GTK4 theme adapter and validate tray, notifications, icons, fonts, and platform integration.

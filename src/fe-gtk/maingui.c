@@ -2549,50 +2549,54 @@ mg_tab_contextmenu_cb (chanview *cv, chan *ch, int tag, gpointer ud, GdkEventBut
         return TRUE;
 }
 
-void
-mg_dnd_drop_file (session *sess, char *target, char *uri)
+gboolean
+mg_dnd_drop_file (session *sess, char *target, const char *uri_list)
 {
-        char *p, *data, *next, *fname;
+        gchar **uris;
+        gchar **uri;
+        gboolean handled = FALSE;
 
-        p = data = g_strdup (uri);
-        while (*p)
+        uris = g_uri_list_extract_uris (uri_list);
+        for (uri = uris; uri && *uri; uri++)
         {
-                next = strchr (p, '\r');
-                if (g_ascii_strncasecmp ("file:", p, 5) == 0)
+                if (g_ascii_strncasecmp ("file:", *uri, 5) == 0)
                 {
-                        if (next)
-                                *next = 0;
-                        fname = g_filename_from_uri (p, NULL, NULL);
+                        char *fname = g_filename_from_uri (*uri, NULL, NULL);
+
                         if (fname)
                         {
+                                char *utf8_name;
+
                                 /* dcc_send() expects utf-8 */
-                                p = g_filename_from_utf8 (fname, -1, 0, 0, 0);
-                                if (p)
+                                utf8_name = g_filename_from_utf8 (fname, -1, 0, 0, 0);
+                                if (utf8_name)
                                 {
-                                        dcc_send (sess, target, p, prefs.hex_dcc_max_send_cps, 0);
-                                        g_free (p);
+                                        dcc_send (sess, target, utf8_name, prefs.hex_dcc_max_send_cps, 0);
+                                        g_free (utf8_name);
+                                        handled = TRUE;
                                 }
                                 g_free (fname);
                         }
                 }
-                if (!next)
-                        break;
-                p = next + 1;
-                if (*p == '\n')
-                        p++;
         }
-        g_free (data);
-
+        g_strfreev (uris);
+        return handled;
 }
 
-static void
-mg_dialog_dnd_drop (GtkWidget * widget, GdkDragContext * context, gint x,
-                                                  gint y, GtkSelectionData * selection_data, guint info,
-                                                  guint32 time, gpointer ud)
+static gboolean
+mg_dialog_file_drop (GtkWidget *widget, gdouble x, gdouble y,
+                     const gchar *uri_list, gpointer user_data)
 {
+        (void) widget;
+        (void) x;
+        (void) y;
+        (void) user_data;
+
         if (current_sess->type == SESS_DIALOG)
                 /* sess->channel is really the nickname of dialogs */
-                mg_dnd_drop_file (current_sess, current_sess->channel, (char *)gtk_selection_data_get_data (selection_data));
+                return mg_dnd_drop_file (current_sess, current_sess->channel, uri_list);
+
+        return FALSE;
 }
 
 /* add a tabbed channel */
@@ -3934,10 +3938,6 @@ mg_create_textarea (session *sess, GtkWidget *box)
         GtkXText *xtext;
         XTextColor xtext_palette[XTEXT_COLS];
         session_gui *gui = sess->gui;
-        static const GtkTargetEntry dnd_targets[] =
-        {
-                {"text/uri-list", 0, 1}
-        };
         static const GtkTargetEntry dnd_dest_targets[] =
         {
                 {"ZOITECHAT_CHANVIEW", GTK_TARGET_SAME_APP, 75 },
@@ -3991,10 +3991,13 @@ mg_create_textarea (session *sess, GtkWidget *box)
         g_signal_connect (G_OBJECT (gui->vscrollbar), "drag-end",
                                                         G_CALLBACK (mg_drag_end_cb), NULL);
 
-        gtk_drag_dest_set (gui->xtext, GTK_DEST_DEFAULT_ALL, dnd_targets, 1,
-                                                         GDK_ACTION_MOVE | GDK_ACTION_COPY | GDK_ACTION_LINK);
-        g_signal_connect (G_OBJECT (gui->xtext), "drag-data-received",
-                                                        G_CALLBACK (mg_dialog_dnd_drop), NULL);
+#if GTK_MAJOR_VERSION < 4
+        gtk_drag_dest_set (gui->xtext, GTK_DEST_DEFAULT_ALL, NULL, 0,
+                           GDK_ACTION_MOVE | GDK_ACTION_COPY | GDK_ACTION_LINK);
+#endif
+        fabulor_gtk_widget_on_file_drop (gui->xtext,
+                                         GDK_ACTION_MOVE | GDK_ACTION_COPY | GDK_ACTION_LINK,
+                                         mg_dialog_file_drop, NULL);
 }
 
 static GtkWidget *
