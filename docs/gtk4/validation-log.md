@@ -1205,6 +1205,34 @@ Scope: native theme file selection and preferences-bound callback ownership.
 Preference confirmation, quit dialog, startup messages, and synchronous
 `FE_MSG_WAIT` behavior remain unchanged.
 
+### PR: GTK4 Theme Policy And Legacy Packaging Cleanup
+
+Date: 2026-07-15
+
+Commit: pending
+
+Migration stage: 7 planning and legacy packaging cleanup
+
+Files/workflows converted: active WiX `.hct`-only association; retired `.zct`
+association; legacy Inno mock-theme choices/downloads/extraction; MS-Windows
+staging; incremental stale-output cleanup; final GTK4 theme policy
+
+Automated checks:
+
+- [x] source assertions: active installers register `.hct` and do not register `.zct`
+- [x] source assertions: `.zct` remains only in explicit stale-install cleanup
+- [x] source assertions: no mock Windows theme component, download, extraction, or payload rule remains
+- [x] source assertions: GTK runtime and icon assets remain separate from optional theme payloads
+- [x] WiX and MSBuild project XML parsing
+- [x] MSVC x64 Release staging build with 0 warnings and 0 errors
+- [x] staged `share\themes\MS-Windows` output is absent after an incremental build
+- [x] WiX x64 Release MSI/bootstrapper build with 0 errors
+- [ ] GitHub Actions required checks: 5/5
+
+Scope: policy, registration, legacy installer rules, and staging output. The
+shipping GTK3 theme importer remains until the GTK4 adapter can replace it;
+existing user `gtk3-themes` content is not deleted during upgrade.
+
 ## Per-PR Record Template
 
 Copy this section for each GTK4 PR:

@@ -105,6 +105,21 @@ If GTK DLLs remain outside the executable directory, startup must load them by
 trusted absolute path or establish a constrained DLL directory before any GTK
 dependent module is loaded.
 
+## Theme Payload Policy
+
+The final package does not include the legacy `MS-Windows` GTK theme, optional
+Windows 10 GTK theme downloads, or another optional default Fabulor theme.
+Fabulor follows Windows light/dark and high-contrast policy and otherwise uses
+the GTK4 runtime defaults when no custom theme is selected.
+
+Supported user-facing formats are `.hct`, `colors.conf`, system GTK4 desktop
+themes, and imported GTK4 desktop themes under `%APPDATA%\Fabulor\themes`.
+The `.zct` association is retired. Existing `%APPDATA%\Fabulor\gtk3-themes`
+content is not deleted during upgrade, but it stops being discovered after the
+GTK4 adapter replaces the shipping GTK3 theme service. Required GTK runtime
+data and icon assets remain allowlisted runtime dependencies, not optional
+default themes.
+
 ## Required Runtime Categories
 
 The final allowlist should be derived from clean-machine execution and explicit
