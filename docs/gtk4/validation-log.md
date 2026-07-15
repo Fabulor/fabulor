@@ -1127,6 +1127,45 @@ Scope: stateful theme colour-manager responses and nested picker ownership.
 The certificate chooser, preference confirmation, quit dialog, startup messages,
 and synchronous `FE_MSG_WAIT` behavior remain unchanged.
 
+### PR: GTK4 Client-Certificate Chooser, Pass 20
+
+Date: 2026-07-15
+
+Commit: pending
+
+Migration stage: 3, asynchronous file selection
+
+Files/workflows converted: server-list client-certificate import chooser;
+copied network and destination state; weak editor ownership; parent-destroy
+cleanup; guarded button refresh; response-driven import result messages
+
+GTK version: 4.22.4
+
+GLib version: 2.88.0
+
+Build configuration: MSVC x64 Release and Meson 1.11.2 Release with MSVC 19.44
+
+Automated checks:
+
+- [x] source assertions: certificate import contains no nested dialog run
+- [x] source assertions: local single-file selection and certificate filters are preserved
+- [x] source assertions: network name, certificate root, and destination are copied before display
+- [x] source assertions: editor destruction hides and releases the chooser
+- [x] source assertions: accepted response retains private directory, copy, permissions, and result message
+- [x] source assertions: cancel, missing filename, and retired parent remain silent
+- [x] source inventory: legacy `GtkFileChooserDialog` reduced from 1 to 0
+- [x] source inventory: 4 ordinary and 2 native blocking dialog runs remain
+- [x] production GTK3 frontend compiles and links with 0 warnings and 0 errors
+- [x] GTK4 validator unit tests: 8/8, plus repository root validation
+- [x] isolated GTK4 MSVC compile, link, and runtime probe with no warnings
+- [x] isolated GTK4 Meson configure, compile, link, and runtime test
+- [x] production GTK3 MSVC x64 Release rebuild and native tests: 18/18
+- [ ] GitHub Actions required checks: 5/5
+
+Scope: client-certificate file selection and editor-bound callback ownership.
+Two native theme-import runs, preference confirmation, quit dialog, startup
+messages, and synchronous `FE_MSG_WAIT` behavior remain unchanged.
+
 ## Per-PR Record Template
 
 Copy this section for each GTK4 PR:

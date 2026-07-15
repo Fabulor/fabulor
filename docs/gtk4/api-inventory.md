@@ -203,9 +203,10 @@ in place pending presentation conversion.
 | `gtk_widget_destroy` | 31 | 13 | window close and object ownership appropriate to type | 2 | in progress |
 | `GtkEventBox` / `gtk_event_box_*` | 8 | 2 | ordinary widgets plus controllers/gestures | 2/4 | not started |
 | `GtkTable` / `gtk_table_*` | 2 | 1 | `GtkGrid` | 2 | not started |
-| `gtk_dialog_run` | 5 | 4 | response-driven/asynchronous dialog flow | 3 | in progress |
+| `gtk_dialog_run` | 4 | 3 | response-driven/asynchronous dialog flow | 3 | in progress |
+| `gtk_native_dialog_run` | 2 | 1 | response-driven native dialog flow | 3 | in progress |
 | `gtk_message_dialog_new` | 18 | 7 | GTK4 dialog or alert abstraction | 3 | not started |
-| `gtk_file_chooser_dialog_new` | 1 | 1 | GTK4 file chooser/native dialog flow | 3 | not started |
+| `gtk_file_chooser_dialog_new` | 0 | 0 | GTK4 file chooser/native dialog flow | 3 | complete |
 | `gtk_menu_*` | 109 | 7 | `GMenuModel`, popovers, and actions | 3 | not started |
 | `gtk_menu_item_*` | 45 | 7 | actions/menu models | 3 | not started |
 | `GdkEvent` | 120 | 25 | event controllers and gestures | 4 | not started |
@@ -224,7 +225,7 @@ The line counts below identify review size, not priority by themselves.
 |---|---:|---:|---|---:|
 | `src/fe-gtk/maingui.c` | 6,505 | 1,197 | window/tab ownership, input, topic bar, layout | 2-5 |
 | `src/fe-gtk/xtext.c` | 6,183 | 713 | custom rendering, selection, events, scrolling | 6 |
-| `src/fe-gtk/servlistgui.c` | 3,076 | 824 | editable tree models and dialogs | 3/5 |
+| `src/fe-gtk/servlistgui.c` | 3,145 | 824 | editable tree models and response-driven dialogs | 3/5 |
 | `src/fe-gtk/menu.c` | 2,887 | 399 | legacy menus, context, sensitivity, commands | 3 |
 | `src/fe-gtk/setup.c` | 2,548 | 491 | preferences tree, generated controls, dialogs | 2/3/5 |
 | `src/fe-gtk/fkeys.c` | 2,386 | 282 | accelerators and editable cell renderers | 4/5 |
