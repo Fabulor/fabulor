@@ -84,8 +84,14 @@ static GSList *submenu_list;
 #define FABULOR_MENU_WINDOW_MODEL "fabulor-menu-window-model"
 #define FABULOR_MENU_VIEW_MODEL "fabulor-menu-view-model"
 #define FABULOR_MENU_ROOT_MODEL "fabulor-menu-root-model"
+#define FABULOR_MENU_USER_MODEL "fabulor-menu-user-model"
+
+#define FABULOR_USER_COMMAND_ACTION "user-command"
+#define FABULOR_USER_EDIT_ACTION "edit-user-menu"
+#define FABULOR_USER_TOGGLE_ACTION_PREFIX "user-toggle-"
 
 static gboolean menu_action_set_item_state (GtkWidget *item, gboolean state);
+static void menu_usermenu_model_refresh (GtkWidget *menu_bar);
 
 static GtkWidget *
 menu_icon_widget_new (const char *icon)
@@ -1399,16 +1405,24 @@ usermenu_update (void)
 		menu = sess->gui->menu_item[MENU_ID_USERMENU];
 		if (sess->gui->is_tab)
 		{
-			if (!done_main && menu)
+			if (!done_main)
+			{
+				if (menu)
+				{
+					usermenu_destroy (menu);
+					usermenu_create (menu);
+				}
+				menu_usermenu_model_refresh (sess->gui->menu);
+				done_main = TRUE;
+			}
+		} else
+		{
+			if (menu)
 			{
 				usermenu_destroy (menu);
 				usermenu_create (menu);
-				done_main = TRUE;
 			}
-		} else if (menu)
-		{
-			usermenu_destroy (menu);
-			usermenu_create (menu);
+			menu_usermenu_model_refresh (sess->gui->menu);
 		}
 		list = list->next;
 	}
@@ -2860,6 +2874,241 @@ menu_fabulor_action_model_new (GMenuModel *new_model)
 	return G_MENU_MODEL (model);
 }
 
+static session *
+menu_usermenu_session (void)
+{
+	if (current_sess)
+		return current_sess;
+	if (sess_list)
+		return sess_list->data;
+
+	return NULL;
+}
+
+static void
+menu_usermenu_command_activate (GSimpleAction *action, GVariant *parameter,
+							 gpointer user_data)
+{
+	const char *cmd;
+	session *sess;
+
+	(void) action;
+	(void) user_data;
+	if (!parameter || !g_variant_is_of_type (parameter, G_VARIANT_TYPE_STRING))
+		return;
+
+	sess = menu_usermenu_session ();
+	if (!sess)
+		return;
+
+	cmd = g_variant_get_string (parameter, NULL);
+	nick_command_parse (sess, (char *) cmd, "", "");
+}
+
+static void
+menu_usermenu_edit_activate (GSimpleAction *action, GVariant *parameter,
+						  gpointer user_data)
+{
+	(void) action;
+	(void) parameter;
+	(void) user_data;
+	menu_usermenu ();
+}
+
+static void
+menu_usermenu_toggle_activate (GSimpleAction *action, GVariant *parameter,
+							gpointer user_data)
+{
+	GVariant *state;
+	gboolean enabled;
+	char command[256];
+	session *sess;
+
+	(void) parameter;
+	state = g_action_get_state (G_ACTION (action));
+	if (!state)
+		return;
+
+	enabled = !g_variant_get_boolean (state);
+	g_variant_unref (state);
+	g_simple_action_set_state (action, g_variant_new_boolean (enabled));
+	g_snprintf (command, sizeof (command), "set %s %d",
+				(char *) user_data, enabled ? 1 : 0);
+	sess = menu_usermenu_session ();
+	if (sess)
+		handle_command (sess, command, FALSE);
+}
+
+static void
+menu_usermenu_toggle_data_free (gpointer data, GClosure *closure)
+{
+	(void) closure;
+	g_free (data);
+}
+
+static void
+menu_usermenu_remove_actions (GActionMap *action_map)
+{
+	char **actions;
+	guint i;
+
+	actions = g_action_group_list_actions (G_ACTION_GROUP (action_map));
+	for (i = 0; actions[i]; i++)
+	{
+		if (!strcmp (actions[i], FABULOR_USER_COMMAND_ACTION) ||
+			!strcmp (actions[i], FABULOR_USER_EDIT_ACTION) ||
+			g_str_has_prefix (actions[i], FABULOR_USER_TOGGLE_ACTION_PREFIX))
+			g_action_map_remove_action (action_map, actions[i]);
+	}
+	g_strfreev (actions);
+}
+
+static void
+menu_usermenu_append_section (GMenu *model, GMenu **section)
+{
+	if (g_menu_model_get_n_items (G_MENU_MODEL (*section)) > 0)
+		g_menu_append_section (model, NULL, G_MENU_MODEL (*section));
+	g_object_unref (*section);
+	*section = g_menu_new ();
+}
+
+static GMenuModel *
+menu_usermenu_model_build (GSList **cursor, GActionMap *action_map,
+						 guint *toggle_index)
+{
+	GMenu *model;
+	GMenu *section;
+
+	model = g_menu_new ();
+	section = g_menu_new ();
+	while (*cursor)
+	{
+		struct popup *pop = (*cursor)->data;
+
+		if (!g_ascii_strncasecmp (pop->name, "ENDSUB", 6))
+		{
+			*cursor = (*cursor)->next;
+			break;
+		}
+		if (!g_ascii_strncasecmp (pop->name, "SUB", 3))
+		{
+			GMenuModel *submenu;
+
+			*cursor = (*cursor)->next;
+			submenu = menu_usermenu_model_build (cursor, action_map, toggle_index);
+			g_menu_append_submenu (section, pop->cmd, submenu);
+			g_object_unref (submenu);
+			continue;
+		}
+		if (!g_ascii_strncasecmp (pop->name, "SEP", 3))
+		{
+			menu_usermenu_append_section (model, &section);
+			*cursor = (*cursor)->next;
+			continue;
+		}
+		if (!g_ascii_strncasecmp (pop->name, "TOGGLE", 6))
+		{
+			GSimpleAction *action;
+			char *action_name;
+			char *detailed_name;
+
+			action_name = g_strdup_printf (FABULOR_USER_TOGGLE_ACTION_PREFIX "%u",
+									   (*toggle_index)++);
+			action = g_simple_action_new_stateful (action_name, NULL,
+										 g_variant_new_boolean (cfg_get_bool (pop->cmd)));
+			g_signal_connect_data (action, "activate",
+							   G_CALLBACK (menu_usermenu_toggle_activate),
+							   g_strdup (pop->cmd),
+							   menu_usermenu_toggle_data_free, 0);
+			g_action_map_add_action (action_map, G_ACTION (action));
+			g_object_unref (action);
+			detailed_name = g_strconcat ("fabulor.", action_name, NULL);
+			g_menu_append (section, pop->name + 7, detailed_name);
+			g_free (detailed_name);
+			g_free (action_name);
+		}
+		else
+		{
+			GMenuItem *item;
+			char *icon;
+			char *label;
+
+			menu_extract_icon (pop->name, &label, &icon);
+			item = g_menu_item_new (label, NULL);
+			if (pop->cmd && pop->cmd[0])
+				g_menu_item_set_action_and_target (item,
+										   "fabulor." FABULOR_USER_COMMAND_ACTION,
+										   "s", pop->cmd);
+			if (icon)
+				g_menu_item_set_attribute (item, "fabulor-icon", "s", icon);
+			g_menu_append_item (section, item);
+			g_object_unref (item);
+			g_free (label);
+			g_free (icon);
+		}
+		*cursor = (*cursor)->next;
+	}
+
+	menu_usermenu_append_section (model, &section);
+	g_object_unref (section);
+	g_menu_freeze (model);
+
+	return G_MENU_MODEL (model);
+}
+
+static void
+menu_usermenu_model_refresh (GtkWidget *menu_bar)
+{
+	GActionMap *action_map;
+	GMenuModel *content;
+	GMenu *edit;
+	GMenu *model;
+	GSimpleAction *action;
+	GSList *cursor;
+	guint toggle_index = 0;
+	gint i;
+
+	if (!menu_bar)
+		return;
+	action_map = g_object_get_data (G_OBJECT (menu_bar), FABULOR_MENU_ACTION_GROUP);
+	if (!action_map)
+		return;
+
+	menu_usermenu_remove_actions (action_map);
+	action = g_simple_action_new (FABULOR_USER_COMMAND_ACTION,
+								  G_VARIANT_TYPE_STRING);
+	g_signal_connect (action, "activate",
+					  G_CALLBACK (menu_usermenu_command_activate), NULL);
+	g_action_map_add_action (action_map, G_ACTION (action));
+	g_object_unref (action);
+	action = g_simple_action_new (FABULOR_USER_EDIT_ACTION, NULL);
+	g_signal_connect (action, "activate",
+					  G_CALLBACK (menu_usermenu_edit_activate), NULL);
+	g_action_map_add_action (action_map, G_ACTION (action));
+	g_object_unref (action);
+
+	cursor = usermenu_list;
+	content = menu_usermenu_model_build (&cursor, action_map, &toggle_index);
+	edit = g_menu_new ();
+	g_menu_append (edit, _("Edit This Menu" ELLIPSIS),
+				   "fabulor." FABULOR_USER_EDIT_ACTION);
+	g_menu_freeze (edit);
+	model = g_menu_new ();
+	for (i = 0; i < g_menu_model_get_n_items (content); i++)
+	{
+		GMenuItem *item = g_menu_item_new_from_model (content, i);
+
+		g_menu_append_item (model, item);
+		g_object_unref (item);
+	}
+	g_menu_append_section (model, NULL, G_MENU_MODEL (edit));
+	g_object_unref (content);
+	g_object_unref (edit);
+	g_menu_freeze (model);
+	g_object_set_data_full (G_OBJECT (menu_bar), FABULOR_MENU_USER_MODEL,
+						 G_MENU_MODEL (model), g_object_unref);
+}
+
 static gboolean
 menu_action_bind_item (GtkWidget *item, GSimpleActionGroup *group,
 					   const struct mymenu *definition)
@@ -3571,6 +3820,7 @@ menu_create_main (void *accel_group, int bar, int away, int away_sensitive,
 								G_ACTION_GROUP (action_group));
 	g_object_set_data_full (G_OBJECT (menu_bar), FABULOR_MENU_ACTION_GROUP,
 						 action_group, g_object_unref);
+	menu_usermenu_model_refresh (menu_bar);
 	channel_switcher_model = menu_action_model_new (CHANNEL_SWITCHER_OFFSET,
 														CHANNEL_SWITCHER_ACTION_COUNT);
 	g_object_set_data_full (G_OBJECT (menu_bar), FABULOR_MENU_CHANNEL_SWITCHER_MODEL,
