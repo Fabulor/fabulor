@@ -53,6 +53,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="probe.c" />
+    <ClCompile Include="..\..\src\fe-gtk\gtk4-list-models.c" />
   </ItemGroup>
   <Target Name="ValidateFabulorGtk4Root" BeforeTargets="PrepareForBuild">
     <Error Condition="'$(Platform)'!='x64'" Text="The initial Fabulor GTK4 dependency contract supports x64 only." />
