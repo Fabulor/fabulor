@@ -1283,6 +1283,31 @@ Automated checks:
 Scope: explicit copy commands only. Transcript selection, paste, input,
 spell-check, emoji, drag/drop, and direct event handling remain unchanged.
 
+### PR: GTK4 Stage 4 Simple Controller Foundation
+
+Date: 2026-07-15
+
+Migration stage: 4, simple controller pass 2
+
+Files/workflows converted: Character Chart pointer hover; Join dialog entry
+focus; theme-colour entry focus-loss commit; scroll-to-bottom button activation;
+typed GTK3/GTK4 pointer and focus interaction ownership
+
+Automated checks:
+
+- [x] source assertions: converted workflow callbacks expose no `GdkEvent` parameters
+- [x] source assertions: GTK4 pointer and focus paths use motion/focus controllers
+- [x] source assertions: GTK3 branches retain enter/focus event behavior behind the typed boundary
+- [x] source assertions: scroll-to-bottom uses semantic button activation
+- [x] source inventory: direct `GdkEvent` references reduced to 118 lines across 23 files
+- [x] production GTK3 frontend compiles and links with 0 warnings and 0 errors
+- [x] isolated GTK4 MSVC compile, link, and runtime probe with 0 warnings and 0 errors
+- [x] GTK4 validator unit tests: 8/8 under WSL
+
+Scope: simple pointer-enter, focus, and button interactions only. Message
+entry, transcript, spell-check, emoji, menu, and drag/drop events remain
+unchanged.
+
 ## Per-PR Record Template
 
 Copy this section for each GTK4 PR:

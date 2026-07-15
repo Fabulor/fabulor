@@ -62,8 +62,11 @@ joind_entryenter_cb (GtkWidget *entry, GtkWidget *ok)
 }
 
 static void
-joind_entryfocus_cb (GtkWidget *entry, GdkEventFocus *event, server *serv)
+joind_entryfocus_cb (GtkWidget *entry, gpointer user_data)
 {
+	server *serv = user_data;
+
+	(void) entry;
 	gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (serv->gui->joind_radio2), TRUE);
 }
 
@@ -242,8 +245,7 @@ joind_show_dialog (server *serv)
 
 	g_signal_connect (G_OBJECT (dialog1), "destroy",
 							G_CALLBACK (joind_destroy_cb), serv);
-	g_signal_connect (G_OBJECT (entry1), "focus-in-event",
-							G_CALLBACK (joind_entryfocus_cb), serv);
+	fabulor_gtk_widget_on_focus_enter (entry1, joind_entryfocus_cb, serv);
 	g_signal_connect (G_OBJECT (entry1), "activate",
 							G_CALLBACK (joind_entryenter_cb), okbutton1);
 	g_signal_connect (G_OBJECT (radiobutton2), "toggled",

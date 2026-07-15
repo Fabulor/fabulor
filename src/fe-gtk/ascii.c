@@ -85,19 +85,18 @@ static const unsigned char table[]=
 0xd1,0x89,0xd1,0x8a,0xd1,0x8b,0xd1,0x8c,0xd1,0x8d,0xd1,0x8e,0xd1,0x8f,0
 };
 
-static gboolean
-ascii_enter (GtkWidget * wid, GdkEventCrossing *event, GtkWidget *label)
+static void
+ascii_enter (GtkWidget *wid, gpointer user_data)
 {
 	char buf[64];
 	const char *text;
 	gunichar u;
+	GtkWidget *label = user_data;
 
 	text = gtk_button_get_label (GTK_BUTTON (wid));
 	u = g_utf8_get_char (text);
 	sprintf (buf, "%s U+%04X", text, u);
 	gtk_label_set_text (GTK_LABEL (label), buf);
-
-	return FALSE;
 }
 
 static void
@@ -154,8 +153,7 @@ ascii_open (void)
 		gtk_widget_set_size_request (but, 28, -1);
 		g_signal_connect (G_OBJECT (but), "clicked",
 								G_CALLBACK (ascii_click), NULL);
-		g_signal_connect (G_OBJECT (but), "enter-notify-event",
-								G_CALLBACK (ascii_enter), label);
+		fabulor_gtk_widget_on_pointer_enter (but, ascii_enter, label);
 		fabulor_gtk_box_append (GTK_BOX (hbox), but, FALSE, FALSE, 0);
 		gtk_widget_show (but);
 
