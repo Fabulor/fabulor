@@ -299,6 +299,13 @@ existing callbacks. Both activation paths use one meter update routine, keep
 open menu action groups synchronized, reinitialize lag timers, and refresh the
 meter UI exactly as before.
 
+Settings menu-model pass 11 (2026-07-15): Preferences and all nine static
+configuration editors now carry canonical stateless action identities. The
+retained Settings model preserves the existing two-section structure, and the
+displayed GTK3 items activate through the shared action dispatcher. Existing
+preference and editor windows, configuration files, labels, and behavior are
+unchanged; their dialog lifecycle conversion remains separately scoped.
+
 Primary surfaces:
 
 - `menu.c`, context menus, tray menus, and user-defined menus
