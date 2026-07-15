@@ -1337,6 +1337,29 @@ Automated checks:
 Scope: channel switcher wheel input only. Transcript scrolling, message input,
 spell-check, emoji, menus, and drag/drop remain unchanged.
 
+### PR: GTK4 Stage 4 Main Focus Controllers
+
+Date: 2026-07-15
+
+Migration stage: 4, main focus pass 4
+
+Files/workflows converted: detached message-entry focus; standalone session
+window focus; shared tab-window focus; session selection; marker/plugin and
+taskbar-flash focus effects
+
+Automated checks:
+
+- [x] source assertions: production source contains no direct `focus-in-event` connection
+- [x] source assertions: converted focus callbacks expose no `GdkEventFocus`
+- [x] source assertions: all three workflows use the typed focus-enter boundary
+- [x] source inventory: direct `GdkEvent` references reduced to 113 lines across 23 files
+- [x] production GTK3 frontend compiles and links with 0 warnings and 0 errors
+- [x] isolated GTK4 MSVC compile, link, and runtime probe with 0 warnings and 0 errors
+- [x] GTK4 validator unit tests: 8/8 under WSL
+
+Scope: focus entry only. Message activation, key handling, completion, history,
+spell-check, emoji, transcript, menus, and drag/drop remain unchanged.
+
 ## Per-PR Record Template
 
 Copy this section for each GTK4 PR:

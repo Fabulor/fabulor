@@ -228,6 +228,12 @@ normalizes smooth and discrete wheel events inside the compatibility boundary.
 The channel workflow retains only vertical direction and configured step-count
 logic, with no direct scroll-event or event-mask dependency.
 
+All remaining production focus-enter workflows now use the controller
+boundary. Detached message-entry focus still selects its owning session, while
+standalone and shared windows retain marker, plugin notification, server
+session, and taskbar-flash behavior. Their callbacks no longer expose
+`GdkEventFocus`, and no production source connects `focus-in-event` directly.
+
 ## Quantitative API Baseline
 
 | GTK3 family or type | Matching lines | Files | Migration direction | Stage | Status |
@@ -244,7 +250,7 @@ logic, with no direct scroll-event or event-mask dependency.
 | `gtk_file_chooser_dialog_new` | 0 | 0 | GTK4 file chooser/native dialog flow | 3 | complete |
 | `gtk_menu_*` | 109 | 7 | `GMenuModel`, popovers, and actions | 3 | not started |
 | `gtk_menu_item_*` | 45 | 7 | actions/menu models | 3 | not started |
-| `GdkEvent` | 116 | 23 | event controllers and gestures | 4 | in progress |
+| `GdkEvent` | 113 | 23 | event controllers and gestures | 4 | in progress |
 | `gtk_widget_get_window` | 37 | 7 | surface/native access only where unavoidable | 4/6 | not started |
 | `gdk_window_*` | 51 | 9 | `GdkSurface`, snapshots, controllers, or removal | 4/6 | not started |
 | `gtk_clipboard_*` | 1 | 1 | `GdkClipboard` and content providers | 4/6 | in progress |

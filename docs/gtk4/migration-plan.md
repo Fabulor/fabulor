@@ -459,6 +459,16 @@ direction, and native tree scrolling when switching is disabled remain
 unchanged. Redundant GTK3 event-mask setup and widget parameters in tab-strip
 animation helpers are removed.
 
+Main focus pass 4 (2026-07-15): detached message entries, standalone session
+windows, and the shared tab window now use the typed focus-enter boundary.
+GTK4 focus controllers preserve the window-level contains-focus transition, so
+moving focus among descendants does not repeat the window-focus notification.
+Session selection, server-session initialization, marker visibility, plugin
+`Focus Window` events, and taskbar flashing cleanup remain unchanged. No direct
+`focus-in-event` connection or `GdkEventFocus` workflow callback remains in the
+production frontend. Key handling, activation/send, completion, history,
+spell-check, and emoji insertion are unchanged.
+
 Primary API families:
 
 - direct `GdkEvent` handlers and event masks
