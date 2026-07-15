@@ -213,7 +213,7 @@ Exit criteria:
 - Window creation/destruction and repeated open/close tests are leak- and
   crash-free.
 
-### Stage 3: Actions, Menus, Dialogs, And File Selection
+### Stage 3: Actions, Menus, Dialogs, And File Selection (Complete)
 
 Action-identity foundation pass 1 (2026-07-14): the 16 commands shared by
 main-menu accelerators and configurable keyboard shortcuts now carry their
@@ -395,6 +395,19 @@ extension filters, archive containment, staged colour updates, pevents import,
 theme discovery refresh, result messages, and silent cancellation remain
 unchanged. No blocking native-dialog run remains in the frontend inventory.
 
+Dialog lifecycle closure pass 22 (2026-07-15): the manifest-plugin security
+confirmation now resumes preference persistence only from an accepted response,
+with the preferences window retained for the callback lifetime. The singleton
+quit/minimize confirmation is explicitly modal and handles preference changes,
+tray activation, cancellation, and shutdown from its response callback. Fatal
+font failure hides the unusable transcript widget and exits only after its
+owned error dialog is acknowledged. Ordinary frontend messages no longer
+enter nested loops; the root-account warning uses an asynchronous modal flag,
+while logging errors remain non-modal. Windows command-line help, version, and
+directory requests use the native UTF-16 message box because they complete
+before the GTK event loop exists. No `gtk_dialog_run()` or
+`gtk_native_dialog_run()` call remains in the frontend.
+
 Primary surfaces:
 
 - `menu.c`, context menus, tray menus, and user-defined menus
@@ -412,7 +425,7 @@ Exit criteria:
 - No GTK4 path depends on removed menu widgets or nested dialog event loops.
 - File/add-on/theme selection retains the existing containment checks.
 
-### Stage 4: Input, Events, Clipboard, Drag/Drop, And Shortcuts
+### Stage 4: Input, Events, Clipboard, Drag/Drop, And Shortcuts (In Progress)
 
 Primary API families:
 

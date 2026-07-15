@@ -2406,50 +2406,12 @@ setup_apply (struct zoitechatprefs *pr)
 #endif
 }
 
-static gboolean
-setup_confirm_manifest_plugins (GtkWidget *parent)
-{
-        GtkWidget *dialog;
-        char *plugins_root;
-        int response;
-
-        plugins_root = g_build_filename (get_xdir (), "plugins", NULL);
-        dialog = gtk_message_dialog_new (GTK_WINDOW (parent),
-                                         GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT,
-                                         GTK_MESSAGE_WARNING,
-                                         GTK_BUTTONS_NONE,
-                                         "%s",
-                                         _("Enable manifest plugins?"));
-        gtk_message_dialog_format_secondary_text (
-                GTK_MESSAGE_DIALOG (dialog),
-                _("Manifest plugins are trusted code and run with your user account's operating-system privileges. Only place plugins you trust in:\n%s\n\nThe change takes effect after restarting Fabulor."),
-                plugins_root);
-        gtk_dialog_add_buttons (GTK_DIALOG (dialog),
-                                _("_Cancel"), GTK_RESPONSE_CANCEL,
-                                _("_Enable"), GTK_RESPONSE_ACCEPT,
-                                NULL);
-        gtk_dialog_set_default_response (GTK_DIALOG (dialog), GTK_RESPONSE_CANCEL);
-
-        response = gtk_dialog_run (GTK_DIALOG (dialog));
-        fabulor_gtk_window_destroy (GTK_WINDOW (dialog));
-        g_free (plugins_root);
-
-        return response == GTK_RESPONSE_ACCEPT;
-}
-
 static void
-setup_ok_cb (GtkWidget *but, GtkWidget *win)
+setup_save_and_close (GtkWidget *win)
 {
         PreferencesPersistenceResult save_result;
         struct zoitechatprefs old_prefs;
         char buffer[192];
-
-        if (setup_prefs.hex_gui_manifest_plugins
-                && !prefs.hex_gui_manifest_plugins
-                && !setup_confirm_manifest_plugins (win))
-        {
-                return;
-        }
 
         memcpy (&old_prefs, &prefs, sizeof (prefs));
         setup_apply (&setup_prefs);
@@ -2473,6 +2435,67 @@ setup_ok_cb (GtkWidget *but, GtkWidget *win)
 
         g_snprintf (buffer, sizeof (buffer), _("Could not save preferences (%s). Retry is possible."), save_result.failed_file ? save_result.failed_file : _("unknown file"));
         fe_message (buffer, FE_MSG_ERROR);
+}
+
+static void
+setup_parent_unref (gpointer data, GClosure *closure)
+{
+        (void)closure;
+        g_object_unref (data);
+}
+
+static void
+setup_manifest_plugins_response (GtkDialog *dialog, gint response_id,
+                                 gpointer user_data)
+{
+        GtkWidget *parent = g_object_ref (user_data);
+
+        fabulor_gtk_window_destroy (GTK_WINDOW (dialog));
+        if (response_id == GTK_RESPONSE_ACCEPT)
+                setup_save_and_close (parent);
+        g_object_unref (parent);
+}
+
+static void
+setup_confirm_manifest_plugins (GtkWidget *parent)
+{
+        GtkWidget *dialog;
+        char *plugins_root;
+
+        plugins_root = g_build_filename (get_xdir (), "plugins", NULL);
+        dialog = gtk_message_dialog_new (GTK_WINDOW (parent),
+                                         GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT,
+                                         GTK_MESSAGE_WARNING,
+                                         GTK_BUTTONS_NONE,
+                                         "%s",
+                                         _("Enable manifest plugins?"));
+        gtk_message_dialog_format_secondary_text (
+                GTK_MESSAGE_DIALOG (dialog),
+                _("Manifest plugins are trusted code and run with your user account's operating-system privileges. Only place plugins you trust in:\n%s\n\nThe change takes effect after restarting Fabulor."),
+                plugins_root);
+        gtk_dialog_add_buttons (GTK_DIALOG (dialog),
+                                _("_Cancel"), GTK_RESPONSE_CANCEL,
+                                _("_Enable"), GTK_RESPONSE_ACCEPT,
+                                NULL);
+        gtk_dialog_set_default_response (GTK_DIALOG (dialog), GTK_RESPONSE_CANCEL);
+        g_signal_connect_data (G_OBJECT (dialog), "response",
+                               G_CALLBACK (setup_manifest_plugins_response),
+                               g_object_ref (parent), setup_parent_unref, 0);
+        gtk_widget_show (dialog);
+        g_free (plugins_root);
+}
+
+static void
+setup_ok_cb (GtkWidget *but, GtkWidget *win)
+{
+        if (setup_prefs.hex_gui_manifest_plugins
+                && !prefs.hex_gui_manifest_plugins)
+        {
+                setup_confirm_manifest_plugins (win);
+                return;
+        }
+
+        setup_save_and_close (win);
 }
 
 static GtkWidget *

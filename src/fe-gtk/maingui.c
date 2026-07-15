@@ -484,6 +484,8 @@ static GSList *mg_closed_channel_tabs;
 
 static chan *active_tab = NULL; /* active tab */
 GtkWidget *parent_window = NULL;                        /* the master window */
+static GtkWidget *quit_dialog = NULL;
+static GtkWidget *font_error_dialog = NULL;
 
 InputStyle *input_style;
 
@@ -2016,10 +2018,51 @@ mg_count_dccs (void)
         return dccs;
 }
 
+static void
+mg_quit_dialog_destroy (GtkWidget *widget, gpointer user_data)
+{
+        (void)user_data;
+        if (quit_dialog == widget)
+                quit_dialog = NULL;
+}
+
+static void
+mg_quit_dialog_response (GtkDialog *dialog, gint response_id,
+                         gpointer user_data)
+{
+        GtkToggleButton *checkbutton = GTK_TOGGLE_BUTTON (user_data);
+        gboolean dont_ask = gtk_toggle_button_get_active (checkbutton);
+        gboolean should_quit = response_id == 0;
+        gboolean should_minimize = response_id == 1;
+
+        if (should_quit && dont_ask)
+                prefs.hex_gui_quit_dialog = 0;
+        else if (should_minimize && dont_ask)
+                prefs.hex_gui_tray_close = 1;
+
+        fabulor_gtk_window_destroy (GTK_WINDOW (dialog));
+
+        if (should_quit)
+        {
+                zoitechat_exit ();
+                return;
+        }
+
+        if (!should_minimize)
+                return;
+
+        if (!prefs.hex_gui_tray)
+        {
+                prefs.hex_gui_tray = 1;
+                tray_apply_setup ();
+        }
+        tray_toggle_visibility (TRUE);
+}
+
 void
 mg_open_quit_dialog (gboolean minimize_button)
 {
-        static GtkWidget *dialog = NULL;
+	GtkWidget *dialog;
 	GtkWidget *dialog_vbox1;
 	GtkWidget *table1;
 	GtkWidget *image;
@@ -2030,9 +2073,9 @@ mg_open_quit_dialog (gboolean minimize_button)
 	int cons;
 	int dccs;
 
-        if (dialog)
+        if (quit_dialog)
         {
-                gtk_window_present (GTK_WINDOW (dialog));
+                gtk_window_present (GTK_WINDOW (quit_dialog));
                 return;
         }
 
@@ -2045,11 +2088,13 @@ mg_open_quit_dialog (gboolean minimize_button)
         }
 
         dialog = gtk_dialog_new ();
+	quit_dialog = dialog;
 	theme_manager_attach_window (dialog);
         gtk_container_set_border_width (GTK_CONTAINER (dialog), 6);
         gtk_window_set_title (GTK_WINDOW (dialog), _("Quit " DISPLAY_NAME "?"));
         gtk_window_set_transient_for (GTK_WINDOW (dialog), GTK_WINDOW (parent_window));
         gtk_window_set_resizable (GTK_WINDOW (dialog), FALSE);
+        gtk_window_set_modal (GTK_WINDOW (dialog), TRUE);
 
         dialog_vbox1 = gtk_dialog_get_content_area (GTK_DIALOG (dialog));
         gtk_widget_show (dialog_vbox1);
@@ -2115,33 +2160,11 @@ mg_open_quit_dialog (gboolean minimize_button)
         gtk_widget_show (button);
         gtk_dialog_add_action_widget (GTK_DIALOG (dialog), button, 0);
 
+        g_signal_connect (G_OBJECT (dialog), "response",
+                          G_CALLBACK (mg_quit_dialog_response), checkbutton1);
+        g_signal_connect (G_OBJECT (dialog), "destroy",
+                          G_CALLBACK (mg_quit_dialog_destroy), NULL);
         gtk_widget_show (dialog);
-
-        switch (gtk_dialog_run (GTK_DIALOG (dialog)))
-        {
-        case 0:
-                if (gtk_toggle_button_get_active (GTK_TOGGLE_BUTTON (checkbutton1)))
-                        prefs.hex_gui_quit_dialog = 0;
-                zoitechat_exit ();
-                break;
-        case 1: /* minimize to tray */
-                if (gtk_toggle_button_get_active (GTK_TOGGLE_BUTTON (checkbutton1)))
-                {
-                        prefs.hex_gui_tray_close = 1;
-                        /*prefs.hex_gui_quit_dialog = 0;*/
-                }
-                /* force tray icon ON, if not already */
-                if (!prefs.hex_gui_tray)
-                {
-                        prefs.hex_gui_tray = 1;
-                        tray_apply_setup ();
-                }
-                tray_toggle_visibility (TRUE);
-                break;
-        }
-
-        fabulor_gtk_window_destroy (GTK_WINDOW (dialog));
-        dialog = NULL;
 }
 
 void
@@ -3705,6 +3728,50 @@ mg_word_clicked (GtkWidget *xtext, char *word, GdkEventButton *even)
         }
 }
 
+static void
+mg_font_error_dialog_destroy (GtkWidget *widget, gpointer user_data)
+{
+        (void)user_data;
+        if (font_error_dialog == widget)
+                font_error_dialog = NULL;
+}
+
+static void
+mg_font_error_dialog_response (GtkDialog *dialog, gint response_id,
+                               gpointer user_data)
+{
+        (void)response_id;
+        (void)user_data;
+        fabulor_gtk_window_destroy (GTK_WINDOW (dialog));
+        exit (1);
+}
+
+static void
+mg_show_font_error (GtkWidget *xtext)
+{
+        if (font_error_dialog)
+        {
+                gtk_window_present (GTK_WINDOW (font_error_dialog));
+                return;
+        }
+
+        gtk_widget_hide (xtext);
+        font_error_dialog = gtk_message_dialog_new (
+                parent_window ? GTK_WINDOW (parent_window) : NULL,
+                GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT,
+                GTK_MESSAGE_ERROR,
+                GTK_BUTTONS_OK,
+                "%s",
+                _("Failed to open any font. I'm out of here!"));
+        theme_manager_attach_window (font_error_dialog);
+        gtk_window_set_resizable (GTK_WINDOW (font_error_dialog), FALSE);
+        g_signal_connect (G_OBJECT (font_error_dialog), "response",
+                          G_CALLBACK (mg_font_error_dialog_response), NULL);
+        g_signal_connect (G_OBJECT (font_error_dialog), "destroy",
+                          G_CALLBACK (mg_font_error_dialog_destroy), NULL);
+        gtk_widget_show (font_error_dialog);
+}
+
 void
 mg_update_xtext (GtkWidget *wid)
 {
@@ -3726,8 +3793,8 @@ mg_update_xtext (GtkWidget *wid)
                 : "Sans 10";
         if (!gtk_xtext_set_font (xtext, (char *)font_name))
         {
-                fe_message ("Failed to open any font. I'm out of here!", FE_MSG_WAIT | FE_MSG_ERROR);
-                exit (1);
+                mg_show_font_error (wid);
+                return;
         }
 
         gtk_xtext_refresh (xtext);

@@ -713,7 +713,7 @@ log_open (session *sess)
 
 		g_free (filename);
 
-		fe_message (message, FE_MSG_WAIT | FE_MSG_ERROR);
+		fe_message (message, FE_MSG_ERROR);
 
 		g_free (message);
 
