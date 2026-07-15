@@ -984,7 +984,7 @@ popup ownership, dialogs, and input event handling remain unchanged.
 
 Date: 2026-07-15
 
-Commit: pending
+Commit: `e8a98200`
 
 Migration stage: 3, finalized main-menu `/MENU` mutation overlay
 
