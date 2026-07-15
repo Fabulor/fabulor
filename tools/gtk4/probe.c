@@ -33,6 +33,8 @@ check_compatibility_helper_signatures (void)
 		FabulorGtkPointerLeaveFunc, gpointer) = fabulor_gtk_widget_on_pointer_motion;
 	void (*volatile widget_set_pointing_cursor) (GtkWidget *, gboolean) =
 		fabulor_gtk_widget_set_pointing_cursor;
+	void (*volatile widget_on_key_pressed) (GtkWidget *, FabulorGtkKeyFunc, gpointer) =
+		fabulor_gtk_widget_on_key_pressed;
 	void (*volatile widget_on_focus_enter) (GtkWidget *, FabulorGtkWidgetInteractionFunc, gpointer) =
 		fabulor_gtk_widget_on_focus_enter;
 	void (*volatile widget_on_focus_leave) (GtkWidget *, FabulorGtkWidgetInteractionFunc, gpointer) =
@@ -66,6 +68,7 @@ check_compatibility_helper_signatures (void)
 	(void) widget_on_pointer_enter;
 	(void) widget_on_pointer_motion;
 	(void) widget_set_pointing_cursor;
+	(void) widget_on_key_pressed;
 	(void) widget_on_focus_enter;
 	(void) widget_on_focus_leave;
 	(void) widget_on_scroll;

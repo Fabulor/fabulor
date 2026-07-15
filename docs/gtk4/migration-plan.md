@@ -479,6 +479,17 @@ visibility, left-click close dispatch, right-click context menus, scrolling,
 pressed/toggled handling, and the retained outer-tab prelight suppression are
 unchanged.
 
+Simple keyboard controller pass 6 (2026-07-15): detached utility-window
+Escape, search-bar Escape, and raw-log `Ctrl+Shift+C` now receive only key
+values and modifier state through one typed boundary. GTK4 uses a bubble-phase
+`GtkEventControllerKey`, allowing window controllers to observe descendant key
+input; GTK3 retains `key-press-event` behind the compatibility layer. All three
+callbacks remain non-consuming. Embedded utility tabs still ignore Escape,
+search toggling and focus restoration are unchanged, and raw-log copying still
+requires disabled auto-copy plus both Control and Shift. Main input shortcuts,
+completion, history, topic editing, tree/list navigation, transcript input,
+spell-check, and emoji handling remain unchanged.
+
 Primary API families:
 
 - direct `GdkEvent` handlers and event masks

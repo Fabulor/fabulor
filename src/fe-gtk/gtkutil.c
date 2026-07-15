@@ -495,31 +495,23 @@ gtkutil_file_req (GtkWindow *parent, const char *title, void *callback, void *us
 }
 
 static gboolean
-gtkutil_esc_destroy (GtkWidget * win, GdkEventKey * key, gpointer userdata)
+gtkutil_esc_destroy (GtkWidget *win, guint keyval, GdkModifierType state,
+					 gpointer user_data)
 {
-	GtkWidget *wid;
+	(void) state;
+	(void) user_data;
 
-	/* Destroy the window of detached utils */
-	if (!gtk_widget_is_toplevel (win))
-	{
-		if (gdk_window_get_type_hint (gtk_widget_get_window (win)) == GDK_WINDOW_TYPE_HINT_DIALOG)
-			wid = gtk_widget_get_parent (win);
-		else
-			return FALSE;
-	}
-	else
-		wid = win;
+	/* Embedded utility tabs deliberately ignore Escape. */
+	if (keyval == GDK_KEY_Escape && GTK_IS_WINDOW (win))
+		fabulor_gtk_window_destroy (GTK_WINDOW (win));
 
-	if (key->keyval == GDK_KEY_Escape)
-		gtk_widget_destroy (wid);
-			
 	return FALSE;
 }
 
 void
 gtkutil_destroy_on_esc (GtkWidget *win)
 {
-	g_signal_connect (G_OBJECT (win), "key-press-event", G_CALLBACK (gtkutil_esc_destroy), win);
+	fabulor_gtk_widget_on_key_pressed (win, gtkutil_esc_destroy, NULL);
 }
 
 void
