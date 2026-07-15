@@ -1090,7 +1090,7 @@ Scope: acknowledgement-only theme dialogs and parent-bound response cleanup.
 The color manager, certificate chooser, preference confirmation, quit dialog,
 startup messages, and synchronous `FE_MSG_WAIT` behavior remain unchanged.
 
-### PR: GTK4 Theme Colour-Manager Lifecycle, Pass 19
+### PR: [#48 - GTK4 Theme Colour-Manager Lifecycle, Pass 19](https://github.com/Fabulor/fabulor/pull/48)
 
 Date: 2026-07-15
 
