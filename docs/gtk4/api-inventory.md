@@ -250,6 +250,13 @@ the compatibility layer. Embedded utility tabs do not close on Escape, and
 the raw-log auto-copy guard remains unchanged. The main configurable shortcut
 engine and widget-specific input paths remain deferred to their owning passes.
 
+The same typed key boundary now covers the small consuming actions in the main
+window outside the chat input: Return or keypad Enter submits the topic, while
+exact `Ctrl+A` selects the channel key or user-limit field. Their previous
+consume/propagate decisions and modifier exclusions are unchanged. The sole
+remaining direct key-event registration in `maingui.c` belongs to the main
+configurable shortcut engine.
+
 ## Quantitative API Baseline
 
 | GTK3 family or type | Matching lines | Files | Migration direction | Stage | Status |
@@ -266,7 +273,7 @@ engine and widget-specific input paths remain deferred to their owning passes.
 | `gtk_file_chooser_dialog_new` | 0 | 0 | GTK4 file chooser/native dialog flow | 3 | complete |
 | `gtk_menu_*` | 109 | 7 | `GMenuModel`, popovers, and actions | 3 | not started |
 | `gtk_menu_item_*` | 45 | 7 | actions/menu models | 3 | not started |
-| `GdkEvent` | 111 | 21 | event controllers and gestures | 4 | in progress |
+| `GdkEvent` | 109 | 21 | event controllers and gestures | 4 | in progress |
 | `gtk_widget_get_window` | 31 | 6 | surface/native access only where unavoidable | 4/6 | in progress |
 | `gdk_window_*` | 48 | 8 | `GdkSurface`, snapshots, controllers, or removal | 4/6 | in progress |
 | `gtk_clipboard_*` | 1 | 1 | `GdkClipboard` and content providers | 4/6 | in progress |

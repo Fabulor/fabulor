@@ -2709,9 +2709,13 @@ likely be */
 }
 
 static gboolean
-mg_topic_key_press_cb (GtkWidget *entry, GdkEventKey *event, gpointer userdata)
+mg_topic_key_press_cb (GtkWidget *entry, guint keyval, GdkModifierType state,
+                       gpointer user_data)
 {
-        if (event->keyval == GDK_KEY_Return || event->keyval == GDK_KEY_KP_Enter)
+        (void) state;
+        (void) user_data;
+
+        if (keyval == GDK_KEY_Return || keyval == GDK_KEY_KP_Enter)
         {
                 mg_topic_cb (entry);
                 return TRUE;
@@ -3201,11 +3205,14 @@ mg_apply_entry_scroll_artifact_fix (GtkWidget *entry)
 }
 
 static gboolean
-mg_entry_select_all (GtkWidget *entry, GdkEventKey *event, gpointer userdata)
+mg_entry_select_all (GtkWidget *entry, guint keyval, GdkModifierType state,
+					 gpointer user_data)
 {
-	if ((event->state & GDK_CONTROL_MASK) &&
-		!(event->state & (GDK_SHIFT_MASK | GDK_MOD1_MASK | GDK_META_MASK)) &&
-		(event->keyval == GDK_KEY_a || event->keyval == GDK_KEY_A))
+	(void) user_data;
+
+	if ((state & GDK_CONTROL_MASK) &&
+		!(state & (GDK_SHIFT_MASK | GDK_MOD1_MASK | GDK_META_MASK)) &&
+		(keyval == GDK_KEY_a || keyval == GDK_KEY_A))
 	{
 		gtk_editable_select_region (GTK_EDITABLE (entry), 0, -1);
 		return TRUE;
@@ -3234,8 +3241,8 @@ mg_create_chanmodebuttons (session_gui *gui, GtkWidget *box)
         mg_apply_compact_mode_css (gui->key_entry);
         g_signal_connect (G_OBJECT (gui->key_entry), "activate",
                                                         G_CALLBACK (mg_key_entry_cb), NULL);
-        g_signal_connect (G_OBJECT (gui->key_entry), "key-press-event",
-                                                        G_CALLBACK (mg_entry_select_all), NULL);
+        fabulor_gtk_widget_on_key_pressed (gui->key_entry,
+                                          mg_entry_select_all, NULL);
 
         if (prefs.hex_gui_input_style)
                 mg_apply_entry_style (gui->key_entry);
@@ -3252,8 +3259,8 @@ mg_create_chanmodebuttons (session_gui *gui, GtkWidget *box)
         mg_apply_compact_mode_css (gui->limit_entry);
         g_signal_connect (G_OBJECT (gui->limit_entry), "activate",
                                                         G_CALLBACK (mg_limit_entry_cb), NULL);
-        g_signal_connect (G_OBJECT (gui->limit_entry), "key-press-event",
-                                                        G_CALLBACK (mg_entry_select_all), NULL);
+        fabulor_gtk_widget_on_key_pressed (gui->limit_entry,
+                                          mg_entry_select_all, NULL);
 
         if (prefs.hex_gui_input_style)
                 mg_apply_entry_style (gui->limit_entry);
@@ -3605,8 +3612,7 @@ mg_create_topicbar (session *sess, GtkWidget *box)
 	fabulor_gtk_box_append (GTK_BOX (hbox), topic_scroll, TRUE, TRUE, 0);
         gtk_widget_add_events (topic, GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK |
                                       GDK_POINTER_MOTION_MASK | GDK_LEAVE_NOTIFY_MASK);
-        g_signal_connect (G_OBJECT (topic), "key-press-event",
-                                                        G_CALLBACK (mg_topic_key_press_cb), NULL);
+        fabulor_gtk_widget_on_key_pressed (topic, mg_topic_key_press_cb, NULL);
         g_signal_connect (G_OBJECT (topic), "button-release-event",
                                                         G_CALLBACK (mg_topic_button_release_cb), NULL);
         g_signal_connect (G_OBJECT (topic), "motion-notify-event",
