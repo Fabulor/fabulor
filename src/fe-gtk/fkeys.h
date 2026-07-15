@@ -25,10 +25,18 @@
 #define STATE_ALT		GDK_MOD1_MASK
 #define STATE_CTRL		GDK_CONTROL_MASK
 
+typedef struct
+{
+	guint keyval;
+	GdkModifierType state;
+} FabulorKeyInput;
+
 void key_init (void);
 void key_dialog_show (void);
-int key_handle_key_press (GtkWidget * wid, GdkEventKey * evt, session *sess);
-int key_action_insert (GtkWidget * wid, GdkEventKey * evt, char *d1, char *d2,
+gboolean key_handle_key_press (GtkWidget *wid, guint keyval,
+								GdkModifierType state, gpointer user_data);
+int key_action_insert (GtkWidget *wid, const FabulorKeyInput *key,
+					   char *d1, char *d2,
 						 session *sess);
 void key_check_replace_on_change (GtkEditable *editable, gpointer data);
 gboolean key_get_menu_accel (const char *name, guint *keyval, GdkModifierType *mod);

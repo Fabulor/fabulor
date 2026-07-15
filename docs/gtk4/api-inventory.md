@@ -254,8 +254,16 @@ The same typed key boundary now covers the small consuming actions in the main
 window outside the chat input: Return or keypad Enter submits the topic, while
 exact `Ctrl+A` selects the channel key or user-limit field. Their previous
 consume/propagate decisions and modifier exclusions are unchanged. The sole
-remaining direct key-event registration in `maingui.c` belongs to the main
-configurable shortcut engine.
+direct key-event registration then remaining in `maingui.c` belonged to the
+main configurable shortcut engine.
+
+The main chat input and its configurable shortcut engine now share a small
+immutable key-value/modifier input instead of passing `GdkEventKey` through the
+17-action table. Plugin notification retains first refusal and the same Unicode
+derivation; binding lookup retains exact filtered modifiers; consumed actions
+return through the controller callback without naming a GTK3 signal. The only
+remaining raw key workflow in `fkeys.c` is shortcut-editor Shift+Up/Down row
+ordering, which stays with that tree/model conversion.
 
 ## Quantitative API Baseline
 
@@ -273,7 +281,7 @@ configurable shortcut engine.
 | `gtk_file_chooser_dialog_new` | 0 | 0 | GTK4 file chooser/native dialog flow | 3 | complete |
 | `gtk_menu_*` | 109 | 7 | `GMenuModel`, popovers, and actions | 3 | not started |
 | `gtk_menu_item_*` | 45 | 7 | actions/menu models | 3 | not started |
-| `GdkEvent` | 109 | 21 | event controllers and gestures | 4 | in progress |
+| `GdkEvent` | 71 | 20 | event controllers and gestures | 4 | in progress |
 | `gtk_widget_get_window` | 31 | 6 | surface/native access only where unavoidable | 4/6 | in progress |
 | `gdk_window_*` | 48 | 8 | `GdkSurface`, snapshots, controllers, or removal | 4/6 | in progress |
 | `gtk_clipboard_*` | 1 | 1 | `GdkClipboard` and content providers | 4/6 | in progress |
