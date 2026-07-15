@@ -51,6 +51,13 @@ typedef struct
 
 typedef struct
 {
+        GWeakRef owner;
+        GWeakRef parent;
+        gulong parent_destroy_handler;
+} theme_preferences_native_import_data;
+
+typedef struct
+{
         GtkWidget *button;
         ThemeSemanticToken token;
         gboolean *color_change_flag;
@@ -260,6 +267,72 @@ theme_preferences_stage_discard (void)
 
 static void
 theme_preferences_show_import_error (GtkWidget *button, const char *message);
+
+static void
+theme_preferences_native_import_data_free (gpointer user_data)
+{
+        theme_preferences_native_import_data *data = user_data;
+
+        if (!data)
+                return;
+
+        g_weak_ref_clear (&data->owner);
+        g_weak_ref_clear (&data->parent);
+        g_free (data);
+}
+
+static void
+theme_preferences_native_import_parent_destroy_cb (GtkWidget *parent,
+                                                   gpointer user_data)
+{
+        GtkNativeDialog *dialog = GTK_NATIVE_DIALOG (user_data);
+        theme_preferences_native_import_data *data;
+
+        (void) parent;
+        data = g_object_get_data (G_OBJECT (dialog), "fabulor-theme-native-import-data");
+        if (data)
+                data->parent_destroy_handler = 0;
+        gtk_native_dialog_hide (dialog);
+        g_object_unref (dialog);
+}
+
+static theme_preferences_native_import_data *
+theme_preferences_native_import_data_new (GtkNativeDialog *dialog,
+                                          GtkWidget *owner,
+                                          GtkWindow *parent)
+{
+        theme_preferences_native_import_data *data;
+
+        data = g_new0 (theme_preferences_native_import_data, 1);
+        g_weak_ref_init (&data->owner, owner);
+        g_weak_ref_init (&data->parent, parent);
+        g_object_set_data_full (G_OBJECT (dialog), "fabulor-theme-native-import-data",
+                                data, theme_preferences_native_import_data_free);
+        data->parent_destroy_handler = g_signal_connect (
+                parent, "destroy",
+                G_CALLBACK (theme_preferences_native_import_parent_destroy_cb), dialog);
+        return data;
+}
+
+static GtkWidget *
+theme_preferences_native_import_acquire_owner (theme_preferences_native_import_data *data)
+{
+        GtkWindow *parent;
+        GtkWidget *owner = NULL;
+
+        parent = g_weak_ref_get (&data->parent);
+        if (parent)
+        {
+                if (data->parent_destroy_handler)
+                {
+                        g_signal_handler_disconnect (parent, data->parent_destroy_handler);
+                        data->parent_destroy_handler = 0;
+                }
+                owner = g_weak_ref_get (&data->owner);
+        }
+        g_clear_object (&parent);
+        return owner;
+}
 
 static void
 theme_preferences_manager_row_free (gpointer data)
@@ -1091,11 +1164,10 @@ theme_preferences_read_import_color (const char *cfg,
 }
 
 static void
-theme_preferences_import_colors_conf_cb (GtkWidget *button, gpointer user_data)
+theme_preferences_import_colors_conf_path (GtkWidget *button,
+                                           gboolean *color_change_flag,
+                                           char *path)
 {
-        gboolean *color_change_flag = user_data;
-        GtkFileChooserNative *dialog;
-        char *path;
         char *lower_path;
         char *cfg;
         char *pevents_cfg = NULL;
@@ -1105,31 +1177,6 @@ theme_preferences_import_colors_conf_cb (GtkWidget *button, gpointer user_data)
         gboolean imported_pevents = FALSE;
         unsigned int import_mode;
         ThemeSemanticToken token;
-        GtkFileFilter *filter;
-
-        dialog = gtk_file_chooser_native_new (_("Import colors.conf colors"),
-                                              GTK_WINDOW (gtk_widget_get_toplevel (button)),
-                                              GTK_FILE_CHOOSER_ACTION_OPEN,
-                                              _("_Import"),
-                                              _("_Cancel"));
-        gtk_file_chooser_set_select_multiple (GTK_FILE_CHOOSER (dialog), FALSE);
-        filter = gtk_file_filter_new ();
-        gtk_file_filter_set_name (filter, _("Theme colors (*.conf, *.hct)"));
-        gtk_file_filter_add_pattern (filter, "*.conf");
-        gtk_file_filter_add_pattern (filter, "*.hct");
-        gtk_file_filter_add_pattern (filter, "*.HCT");
-        gtk_file_chooser_add_filter (GTK_FILE_CHOOSER (dialog), filter);
-
-        if (gtk_native_dialog_run (GTK_NATIVE_DIALOG (dialog)) != GTK_RESPONSE_ACCEPT)
-        {
-                g_object_unref (dialog);
-                return;
-        }
-
-        path = gtk_file_chooser_get_filename (GTK_FILE_CHOOSER (dialog));
-        g_object_unref (dialog);
-        if (!path)
-                return;
 
         lower_path = g_ascii_strdown (path, -1);
         if (g_str_has_suffix (lower_path, ".hct"))
@@ -1199,6 +1246,65 @@ theme_preferences_import_colors_conf_cb (GtkWidget *button, gpointer user_data)
         g_free (pevents_cfg);
         g_free (cfg);
         g_free (path);
+}
+
+static void
+theme_preferences_import_colors_conf_response_cb (GtkNativeDialog *dialog,
+                                                  gint response_id,
+                                                  gpointer user_data)
+{
+        theme_preferences_native_import_data *data = user_data;
+        GtkWidget *button;
+        gboolean *color_change_flag;
+        char *path = NULL;
+
+        button = theme_preferences_native_import_acquire_owner (data);
+        if (button && response_id == GTK_RESPONSE_ACCEPT)
+        {
+                path = gtk_file_chooser_get_filename (GTK_FILE_CHOOSER (dialog));
+                color_change_flag = g_object_get_data (
+                        G_OBJECT (button), "fabulor-theme-colors-import-context");
+                if (path)
+                        theme_preferences_import_colors_conf_path (button, color_change_flag, path);
+        }
+
+        g_clear_object (&button);
+        g_object_unref (dialog);
+}
+
+static void
+theme_preferences_import_colors_conf_cb (GtkWidget *button, gpointer user_data)
+{
+        GtkFileChooserNative *dialog;
+        GtkFileFilter *filter;
+        GtkWindow *parent;
+        theme_preferences_native_import_data *data;
+
+        parent = GTK_WINDOW (gtk_widget_get_toplevel (button));
+        if (!GTK_IS_WINDOW (parent))
+                return;
+
+        g_object_set_data (G_OBJECT (button), "fabulor-theme-colors-import-context", user_data);
+        dialog = gtk_file_chooser_native_new (_("Import colors.conf colors"),
+                                              parent,
+                                              GTK_FILE_CHOOSER_ACTION_OPEN,
+                                              _("_Import"),
+                                              _("_Cancel"));
+        gtk_native_dialog_set_modal (GTK_NATIVE_DIALOG (dialog), TRUE);
+        gtk_file_chooser_set_local_only (GTK_FILE_CHOOSER (dialog), TRUE);
+        gtk_file_chooser_set_select_multiple (GTK_FILE_CHOOSER (dialog), FALSE);
+        filter = gtk_file_filter_new ();
+        gtk_file_filter_set_name (filter, _("Theme colors (*.conf, *.hct)"));
+        gtk_file_filter_add_pattern (filter, "*.conf");
+        gtk_file_filter_add_pattern (filter, "*.hct");
+        gtk_file_filter_add_pattern (filter, "*.HCT");
+        gtk_file_chooser_add_filter (GTK_FILE_CHOOSER (dialog), filter);
+
+        data = theme_preferences_native_import_data_new (
+                GTK_NATIVE_DIALOG (dialog), button, parent);
+        g_signal_connect (dialog, "response",
+                          G_CALLBACK (theme_preferences_import_colors_conf_response_cb), data);
+        gtk_native_dialog_show (GTK_NATIVE_DIALOG (dialog));
 }
 
 static void
@@ -1657,18 +1763,47 @@ theme_preferences_gtk3_import_path (theme_preferences_ui *ui, char *path)
 }
 
 static void
+theme_preferences_gtk3_import_response_cb (GtkNativeDialog *dialog,
+                                          gint response_id,
+                                          gpointer user_data)
+{
+        theme_preferences_native_import_data *data = user_data;
+        theme_preferences_ui *ui;
+        GtkWidget *button;
+        char *path = NULL;
+
+        button = theme_preferences_native_import_acquire_owner (data);
+        if (button && response_id == GTK_RESPONSE_ACCEPT)
+        {
+                path = gtk_file_chooser_get_filename (GTK_FILE_CHOOSER (dialog));
+                ui = g_object_get_data (G_OBJECT (button), "fabulor-theme-gtk3-import-context");
+                if (path && ui)
+                        theme_preferences_gtk3_import_path (ui, path);
+                else
+                        g_free (path);
+        }
+
+        g_clear_object (&button);
+        g_object_unref (dialog);
+}
+
+static void
 theme_preferences_gtk3_import_cb (GtkWidget *button, gpointer user_data)
 {
         theme_preferences_ui *ui = user_data;
         GtkFileChooserNative *dialog;
         GtkFileFilter *filter;
-        char *path;
+        theme_preferences_native_import_data *data;
 
-        (void)button;
+        if (!ui || !GTK_IS_WINDOW (ui->parent))
+                return;
+
+        g_object_set_data (G_OBJECT (button), "fabulor-theme-gtk3-import-context", ui);
         dialog = gtk_file_chooser_native_new (_("Import GTK3 Theme"), ui->parent,
                                               GTK_FILE_CHOOSER_ACTION_OPEN,
                                               _("_Import"),
                                               _("_Cancel"));
+        gtk_native_dialog_set_modal (GTK_NATIVE_DIALOG (dialog), TRUE);
         gtk_file_chooser_set_local_only (GTK_FILE_CHOOSER (dialog), TRUE);
         gtk_file_chooser_set_select_multiple (GTK_FILE_CHOOSER (dialog), FALSE);
         filter = gtk_file_filter_new ();
@@ -1683,15 +1818,11 @@ theme_preferences_gtk3_import_cb (GtkWidget *button, gpointer user_data)
         gtk_file_filter_add_pattern (filter, "*.tbz");
         gtk_file_chooser_add_filter (GTK_FILE_CHOOSER (dialog), filter);
 
-        if (gtk_native_dialog_run (GTK_NATIVE_DIALOG (dialog)) != GTK_RESPONSE_ACCEPT)
-        {
-                g_object_unref (dialog);
-                return;
-        }
-
-        path = gtk_file_chooser_get_filename (GTK_FILE_CHOOSER (dialog));
-        g_object_unref (dialog);
-        theme_preferences_gtk3_import_path (ui, path);
+        data = theme_preferences_native_import_data_new (
+                GTK_NATIVE_DIALOG (dialog), button, ui->parent);
+        g_signal_connect (dialog, "response",
+                          G_CALLBACK (theme_preferences_gtk3_import_response_cb), data);
+        gtk_native_dialog_show (GTK_NATIVE_DIALOG (dialog));
 }
 
 static void

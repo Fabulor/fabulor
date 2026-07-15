@@ -248,6 +248,7 @@ Detailed planning and evidence live in:
     - [x] Convert theme-preference acknowledgement and import-result dialogs without changing message content or modality.
     - [x] Convert the theme colour-manager lifecycle while preserving reset, live preview, staged changes, and nested picker cleanup.
     - [x] Convert client-certificate file selection with copied import state and editor-bound asynchronous cleanup.
+    - [x] Convert colors.conf and GTK3 theme import selection with owner-resolved state and parent-bound asynchronous cleanup.
 - [ ] Convert input events, shortcuts, clipboard, drag/drop, and pointer gestures.
 - [ ] Convert tree/list models, cell renderers, channel navigation, and operational lists.
 - [ ] Port the transcript and spell-check input widgets to GTK4 rendering and event semantics.

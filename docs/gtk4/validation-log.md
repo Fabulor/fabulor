@@ -1166,6 +1166,45 @@ Scope: client-certificate file selection and editor-bound callback ownership.
 Two native theme-import runs, preference confirmation, quit dialog, startup
 messages, and synchronous `FE_MSG_WAIT` behavior remain unchanged.
 
+### PR: GTK4 Theme Import Choosers, Pass 21
+
+Date: 2026-07-15
+
+Commit: pending
+
+Migration stage: 3, asynchronous native file selection
+
+Files/workflows converted: colors.conf/HCT chooser; GTK3 theme archive chooser;
+weak button and preferences-parent ownership; parent-destroy cleanup; live
+callback-context resolution; response-driven import dispatch
+
+GTK version: 4.22.4
+
+GLib version: 2.88.0
+
+Build configuration: MSVC x64 Release and Meson 1.11.2 Release with MSVC 19.44
+
+Automated checks:
+
+- [x] source assertions: frontend contains no blocking native-dialog run
+- [x] source assertions: both choosers retain local single-file selection and existing filters
+- [x] source assertions: chooser requests weakly own launch button and preferences parent
+- [x] source assertions: preferences destruction hides and releases each chooser
+- [x] source assertions: accepted responses resolve live callback context before importing
+- [x] source assertions: archive containment, staged colours, pevents, refresh, and messages are preserved
+- [x] source assertions: cancel, missing filename, and retired owner remain silent
+- [x] source inventory: 4 ordinary and 0 native blocking dialog runs remain
+- [x] production GTK3 frontend compiles and links with 0 warnings and 0 errors
+- [x] GTK4 validator unit tests: 8/8, plus repository root validation
+- [x] isolated GTK4 MSVC compile, link, and runtime probe with no warnings
+- [x] isolated GTK4 Meson configure, compile, link, and runtime test
+- [x] production GTK3 MSVC x64 Release rebuild and native tests: 18/18
+- [ ] GitHub Actions required checks: 5/5
+
+Scope: native theme file selection and preferences-bound callback ownership.
+Preference confirmation, quit dialog, startup messages, and synchronous
+`FE_MSG_WAIT` behavior remain unchanged.
+
 ## Per-PR Record Template
 
 Copy this section for each GTK4 PR:

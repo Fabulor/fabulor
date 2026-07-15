@@ -385,6 +385,16 @@ button refresh, and parent-bound success/error message. Cancel and missing-file
 responses remain silent. Two pre-existing blocking native theme-import flows
 are now explicitly tracked for later conversion.
 
+Theme import chooser pass 21 (2026-07-15): colors.conf/HCT and GTK3 theme
+archive selection now use modal `GtkFileChooserNative` response flows without
+nested native-dialog runs. Each request weakly owns its launching button and
+preferences parent, disconnects parent cleanup before accepted dispatch, and
+resolves live colour-change or theme-page state only after selection. Parent
+destruction hides and releases the chooser. Local single-file selection,
+extension filters, archive containment, staged colour updates, pevents import,
+theme discovery refresh, result messages, and silent cancellation remain
+unchanged. No blocking native-dialog run remains in the frontend inventory.
+
 Primary surfaces:
 
 - `menu.c`, context menus, tray menus, and user-defined menus
