@@ -1090,6 +1090,43 @@ Scope: acknowledgement-only theme dialogs and parent-bound response cleanup.
 The color manager, certificate chooser, preference confirmation, quit dialog,
 startup messages, and synchronous `FE_MSG_WAIT` behavior remain unchanged.
 
+### PR: GTK4 Theme Colour-Manager Lifecycle, Pass 19
+
+Date: 2026-07-15
+
+Commit: pending
+
+Migration stage: 3, stateful theme-dialog lifecycle
+
+Files/workflows converted: colour-manager Close and window dismissal; in-place
+Reset response; staged-change finalization; parent destruction; nested live
+picker data ownership and cleanup
+
+GTK version: 4.22.4
+
+GLib version: 2.88.0
+
+Build configuration: MSVC x64 Release and Meson 1.11.2 Release with MSVC 19.44
+
+Automated checks:
+
+- [x] source assertions: colour manager contains no nested dialog run
+- [x] source assertions: Reset refreshes state and stops response emission
+- [x] source assertions: all other responses finalize state and destroy the manager
+- [x] source assertions: manager and nested picker are destroyed with their parent
+- [x] source assertions: nested picker callback data is object-owned
+- [x] source inventory: blocking dialog runs reduced from 6 to 5
+- [x] production GTK3 frontend compiles and links with 0 warnings and 0 errors
+- [x] GTK4 validator unit tests: 8/8, plus repository root validation
+- [x] isolated GTK4 MSVC compile, link, and runtime probe with no warnings
+- [x] isolated GTK4 Meson configure, compile, link, and runtime test
+- [x] production GTK3 MSVC x64 Release rebuild and native tests: 18/18
+- [ ] GitHub Actions required checks: 5/5
+
+Scope: stateful theme colour-manager responses and nested picker ownership.
+The certificate chooser, preference confirmation, quit dialog, startup messages,
+and synchronous `FE_MSG_WAIT` behavior remain unchanged.
+
 ## Per-PR Record Template
 
 Copy this section for each GTK4 PR:

@@ -246,6 +246,7 @@ Detailed planning and evidence live in:
       - [x] Convert contextual `$NICK`, `$URL`, `$CHAN`, `$TAB`, and `$TRAY` popup model ownership.
   - [ ] Replace blocking dialog runs with response-driven lifecycle handling.
     - [x] Convert theme-preference acknowledgement and import-result dialogs without changing message content or modality.
+    - [x] Convert the theme colour-manager lifecycle while preserving reset, live preview, staged changes, and nested picker cleanup.
 - [ ] Convert input events, shortcuts, clipboard, drag/drop, and pointer gestures.
 - [ ] Convert tree/list models, cell renderers, channel navigation, and operational lists.
 - [ ] Port the transcript and spell-check input widgets to GTK4 rendering and event semantics.

@@ -653,7 +653,6 @@ theme_preferences_manager_picker_response_cb (GtkDialog *dialog, gint response_i
                 theme_preferences_manager_row_commit (data->row, &data->original);
 
         fabulor_gtk_window_destroy (GTK_WINDOW (dialog));
-        g_free (data);
 }
 
 static void
@@ -671,11 +670,15 @@ theme_preferences_manager_pick_cb (GtkWidget *button, gpointer user_data)
         theme_manager_attach_window (dialog);
         gtk_color_chooser_set_rgba (GTK_COLOR_CHOOSER (dialog), &rgba);
         gtk_window_set_modal (GTK_WINDOW (dialog), TRUE);
+        gtk_window_set_destroy_with_parent (GTK_WINDOW (dialog), TRUE);
 
         data = g_new0 (theme_manager_live_picker_data, 1);
         data->row = row;
         data->original = rgba;
         data->has_original = TRUE;
+        g_object_set_data_full (G_OBJECT (dialog),
+                                "zoitechat-theme-manager-live-picker",
+                                data, g_free);
 
         g_signal_connect (G_OBJECT (dialog), "notify::rgba",
                           G_CALLBACK (theme_preferences_manager_picker_notify_rgba_cb), data);
@@ -736,7 +739,12 @@ theme_preferences_manager_dialog_response_cb (GtkDialog *dialog, gint response_i
         theme_color_manager_ui *ui = user_data;
 
         if (response_id != COLOR_MANAGER_RESPONSE_RESET)
+        {
+                if (ui->color_change_flag && theme_preferences_stage.active)
+                        *ui->color_change_flag = theme_preferences_stage.changed;
+                fabulor_gtk_window_destroy (GTK_WINDOW (dialog));
                 return;
+        }
 
         {
                 gboolean changed = FALSE;
@@ -791,7 +799,7 @@ theme_preferences_create_color_manager_dialog (GtkWindow *parent, gboolean *colo
 
         dialog = gtk_dialog_new_with_buttons (_("Manage client colors"),
                                               parent,
-                                              GTK_DIALOG_MODAL,
+                                              GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT,
                                               _("_Reset to GTK3 defaults"),
                                               COLOR_MANAGER_RESPONSE_RESET,
                                               _("_Close"),
@@ -929,15 +937,9 @@ static void
 theme_preferences_manage_colors_cb (GtkWidget *button, gpointer user_data)
 {
         gboolean *color_change_flag = user_data;
-        GtkWidget *dialog;
 
-        dialog = theme_preferences_create_color_manager_dialog (GTK_WINDOW (gtk_widget_get_toplevel (button)),
-                                                                color_change_flag);
-        gtk_dialog_run (GTK_DIALOG (dialog));
-        fabulor_gtk_window_destroy (GTK_WINDOW (dialog));
-
-        if (color_change_flag)
-                *color_change_flag = theme_preferences_stage.active ? theme_preferences_stage.changed : *color_change_flag;
+        theme_preferences_create_color_manager_dialog (
+                GTK_WINDOW (gtk_widget_get_toplevel (button)), color_change_flag);
 }
 
 static void

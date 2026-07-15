@@ -366,6 +366,15 @@ Message text, severity, and buttons remain unchanged, and none of these call
 sites consumes a response result. The color manager and every decision-returning
 dialog remain separate work.
 
+Theme colour-manager lifecycle pass 19 (2026-07-15): the manager no longer
+enters a nested dialog loop. Its response handler keeps Reset in place while
+refreshing staged colours and rows, and finalizes the staged-change flag before
+destroying on Close or window dismissal. The manager is destroyed with its
+preferences parent. Nested live colour pickers are also parent-bound and own
+their callback data through destruction, so closing the parent cannot leave a
+dangling manager-row pointer. Preview, reset, cancel, and staged commit/discard
+semantics remain unchanged.
+
 Primary surfaces:
 
 - `menu.c`, context menus, tray menus, and user-defined menus
