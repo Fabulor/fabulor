@@ -869,6 +869,43 @@ the Search/Help model boundaries. Displayed GTK3 menus, operational windows,
 transcript behavior, Save Text containment, dynamic menus, dialogs, and input
 event handling remain unchanged.
 
+### PR: pending - GTK4 View Menu Model, Pass 13
+
+Date: 2026-07-15
+
+Commit: pending
+
+Migration stage: 3, three new boolean actions and ninth canonical `GMenuModel`
+subtree projection
+
+Files/workflows converted: Topic Bar, User List Buttons, and Mode Buttons
+action state; complete three-section View model; retained Channel Switcher and
+Network Meters submodels; cross-window state synchronization
+
+GTK version: 4.22.4
+
+GLib version: 2.88.0
+
+Build configuration: MSVC x64 Release and Meson 1.11.2 Release with MSVC 19.44
+
+Automated checks:
+
+- [x] production GTK3 frontend compile and link with 0 warnings and 0 errors
+- [x] distinct action identities: 49, including all View controls
+- [x] source assertions: all six View boolean controls use the stateful action path
+- [x] focused GTK3/GIO probe: View has three sections with 5, 2, and 1 items
+- [x] focused GTK3/GIO probe: Channel Switcher and Network Meters retain 2 and 4 targets
+- [x] focused GTK3/GIO probe: each new boolean action activates once and state synchronization does not reactivate
+- [x] GTK4 validator unit tests: 8/8, plus repository root validation
+- [x] isolated GTK4 MSVC compile, link, and runtime probe with no warnings
+- [x] isolated GTK4 Meson configure, compile, link, and runtime test
+- [x] production GTK3 MSVC x64 Release rebuild and native tests: 18/18
+- [ ] GitHub Actions required checks: 0/5 pending
+
+Scope: View action state and retained model composition only. Displayed GTK3
+check/radio controls, visibility behavior, meter timers, dynamic menus, dialogs,
+and input event handling remain unchanged.
+
 ## Per-PR Record Template
 
 Copy this section for each GTK4 PR:

@@ -153,6 +153,14 @@ Window, and Help boundaries are derived from their preceding ranges, correcting
 two stale numeric offsets that had malformed the retained Search and Help
 models without affecting the displayed GTK3 menus.
 
+The static View menu is the ninth complete model boundary. Topic Bar, User List
+Buttons, and Mode Buttons now join Menu Bar, User List, and Fullscreen as
+boolean actions, bringing the registry to 49 distinct identities. The retained
+three-section model preserves the five visibility toggles, nests the existing
+Channel Switcher and Network Meters selection models, and keeps Fullscreen in
+its trailing section. Preference changes synchronize each action across open
+windows without re-entering GTK3 callbacks.
+
 ## Quantitative API Baseline
 
 | GTK3 family or type | Matching lines | Files | Migration direction | Stage | Status |
