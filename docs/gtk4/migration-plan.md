@@ -339,6 +339,16 @@ each distinct window, avoiding references to retired configuration entries.
 The displayed GTK3 Usermenu and its command parsing remain unchanged; plugin
 `/MENU` mutation and contextual popup ownership remain separate work.
 
+Plugin main-menu model pass 16 (2026-07-15): finalized main-menu `/MENU`
+entries now rebuild a retained per-window overlay after adds, state/sensitivity
+updates, and recursive deletion. The overlay accepts only built-in or previously
+created parent paths, preserves nested custom submenus and separator sections,
+and records requested position, accelerator, markup, icon, group, and enabled
+metadata. Stateless, toggle, and radio actions own copied lookup keys and are
+fully retired before replacement, so freed plugin entries cannot remain
+reachable. The displayed GTK3 menu and plugin command behavior remain
+unchanged; contextual popup roots remain separate work.
+
 Primary surfaces:
 
 - `menu.c`, context menus, tray menus, and user-defined menus

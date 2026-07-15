@@ -1140,6 +1140,7 @@ menu_del (char *path, char *label)
 			menu_free (me);
 			/* delete this item's children, if any */
 			menu_del_children (path, label);
+			fe_menu_sync ();
 			return 1;
 		}
 		list = list->next;
@@ -1182,6 +1183,7 @@ menu_add (char *path, char *label, char *cmd, char *ucmd, int pos, int state, in
 		me->state = state;
 		me->enable = enable;
 		fe_menu_update (me);
+		fe_menu_sync ();
 		return;
 	}
 
@@ -1215,6 +1217,7 @@ menu_add (char *path, char *label, char *cmd, char *ucmd, int pos, int state, in
 		me->label = g_strdup (label);
 		g_free (label); /* this is from pango */
 	}
+	fe_menu_sync ();
 }
 
 static int
