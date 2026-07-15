@@ -1209,7 +1209,7 @@ Preference confirmation, quit dialog, startup messages, and synchronous
 
 Date: 2026-07-15
 
-Commit: pending
+Commit: `cfffaca4`
 
 Migration stage: 7 planning and legacy packaging cleanup
 
