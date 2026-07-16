@@ -1580,6 +1580,36 @@ fabulor_gtk_scrolled_window_set_child (GtkScrolledWindow *window,
 }
 
 static inline void
+fabulor_gtk_paned_set_start_child (GtkPaned *paned, GtkWidget *child,
+								  gboolean resize, gboolean shrink)
+{
+	g_return_if_fail (GTK_IS_PANED (paned));
+
+#if GTK_MAJOR_VERSION >= 4
+	(void) resize;
+	(void) shrink;
+	gtk_paned_set_start_child (paned, child);
+#else
+	gtk_paned_pack1 (paned, child, resize, shrink);
+#endif
+}
+
+static inline void
+fabulor_gtk_paned_set_end_child (GtkPaned *paned, GtkWidget *child,
+								gboolean resize, gboolean shrink)
+{
+	g_return_if_fail (GTK_IS_PANED (paned));
+
+#if GTK_MAJOR_VERSION >= 4
+	(void) resize;
+	(void) shrink;
+	gtk_paned_set_end_child (paned, child);
+#else
+	gtk_paned_pack2 (paned, child, resize, shrink);
+#endif
+}
+
+static inline void
 fabulor_gtk_frame_set_child (GtkFrame *frame, GtkWidget *child)
 {
 	g_return_if_fail (GTK_IS_FRAME (frame));

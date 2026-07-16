@@ -11,6 +11,7 @@
 #include "../../src/fe-gtk/dcc-chat-list.h"
 #include "../../src/fe-gtk/dcc-transfer-list.h"
 #include "../../src/fe-gtk/editable-list.h"
+#include "../../src/fe-gtk/print-event-list.h"
 #include "../../src/fe-gtk/addon-list.h"
 #include "../../src/fe-gtk/channel-model.h"
 #include "../../src/fe-gtk/channel-tree-view.h"
@@ -87,6 +88,10 @@ check_compatibility_helper_signatures (void)
 		fabulor_gtk_window_set_child;
 	void (*volatile scrolled_window_set_child) (GtkScrolledWindow *, GtkWidget *) =
 		fabulor_gtk_scrolled_window_set_child;
+	void (*volatile paned_set_start_child) (GtkPaned *, GtkWidget *, gboolean,
+		gboolean) = fabulor_gtk_paned_set_start_child;
+	void (*volatile paned_set_end_child) (GtkPaned *, GtkWidget *, gboolean,
+		gboolean) = fabulor_gtk_paned_set_end_child;
 	void (*volatile frame_set_child) (GtkFrame *, GtkWidget *) =
 		fabulor_gtk_frame_set_child;
 	void (*volatile button_set_child) (GtkButton *, GtkWidget *) =
@@ -127,6 +132,8 @@ check_compatibility_helper_signatures (void)
 	(void) widget_on_scroll;
 	(void) window_set_child;
 	(void) scrolled_window_set_child;
+	(void) paned_set_start_child;
+	(void) paned_set_end_child;
 	(void) frame_set_child;
 	(void) button_set_child;
 	(void) overlay_set_child;
@@ -1118,6 +1125,77 @@ check_editable_list_model (void)
 	return valid;
 }
 
+typedef struct
+{
+	gint selected;
+	gint edited;
+	guint selections;
+	guint edits;
+} ProbePrintEventCallbacks;
+
+static gboolean
+probe_print_event_edit (gint signal_index, const gchar *new_text,
+	gpointer user_data)
+{
+	ProbePrintEventCallbacks *callbacks = user_data;
+	callbacks->edited = signal_index;
+	callbacks->edits++;
+	return g_strcmp0 (new_text, "reject") != 0;
+}
+
+static void
+probe_print_event_selection (gint signal_index, gpointer user_data)
+{
+	ProbePrintEventCallbacks *callbacks = user_data;
+	callbacks->selected = signal_index;
+	callbacks->selections++;
+}
+
+static gboolean
+check_print_event_list_model (void)
+{
+	ProbePrintEventCallbacks callbacks = { -1, -1, 0, 0 };
+	FabulorPrintEventList *list = fabulor_print_event_list_new (
+		probe_print_event_edit, probe_print_event_selection, &callbacks);
+	gchar *text = NULL;
+	gboolean valid = list != NULL;
+
+	if (valid)
+	{
+		fabulor_print_event_list_append_event (list, "Connected", "old", 7);
+		fabulor_print_event_list_append_event (list, "Message", "message", 12);
+		fabulor_print_event_list_append_help (list, 1, "Nick");
+		fabulor_print_event_list_append_help (list, 2, "Message");
+		valid = fabulor_print_event_list_get_n_events (list) == 2 &&
+			fabulor_print_event_list_get_n_help (list) == 2 &&
+			fabulor_print_event_list_get_signal_at (list, 1) == 12 &&
+			fabulor_print_event_list_select_at (list, 1) &&
+			callbacks.selections >= 1 && callbacks.selected == 12;
+	}
+	if (valid)
+	{
+		valid = fabulor_print_event_list_edit_at (list, 0, "updated") &&
+			callbacks.edits == 1 && callbacks.edited == 7 &&
+			!fabulor_print_event_list_edit_at (list, 1, "reject") &&
+			callbacks.edits == 2 && callbacks.edited == 12;
+		text = fabulor_print_event_list_dup_text_at (list, 0);
+		valid = valid && g_strcmp0 (text, "updated") == 0;
+		g_clear_pointer (&text, g_free);
+		text = fabulor_print_event_list_dup_text_at (list, 1);
+		valid = valid && g_strcmp0 (text, "message") == 0;
+		g_clear_pointer (&text, g_free);
+	}
+	if (valid)
+	{
+		fabulor_print_event_list_clear_help (list);
+		fabulor_print_event_list_clear_events (list);
+		valid = fabulor_print_event_list_get_n_help (list) == 0 &&
+			fabulor_print_event_list_get_n_events (list) == 0;
+	}
+	fabulor_print_event_list_free (list);
+	return valid;
+}
+
 int
 main (void)
 {
@@ -1200,6 +1278,11 @@ main (void)
 	if (!check_editable_list_model ())
 	{
 		fprintf (stderr, "GTK4 editable list model contract mismatch\n");
+		return 1;
+	}
+	if (!check_print_event_list_model ())
+	{
+		fprintf (stderr, "GTK4 Print Events list contract mismatch\n");
 		return 1;
 	}
 

@@ -59,6 +59,7 @@
     <ClCompile Include="..\..\src\fe-gtk\dcc-chat-list.c" />
     <ClCompile Include="..\..\src\fe-gtk\dcc-transfer-list.c" />
 	<ClCompile Include="..\..\src\fe-gtk\editable-list.c" />
+	<ClCompile Include="..\..\src\fe-gtk\print-event-list.c" />
     <ClCompile Include="..\..\src\fe-gtk\gtk4-list-models.c" />
     <ClCompile Include="..\..\src\fe-gtk\ignore-list.c" />
     <ClCompile Include="..\..\src\fe-gtk\channel-model.c" />

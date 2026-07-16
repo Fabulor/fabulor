@@ -1,6 +1,6 @@
 # GTK4 List Model Architecture
 
-Status: Stage 5 pass 22 conversion contract
+Status: Stage 5 pass 23 conversion contract
 
 Date: 2026-07-17
 
@@ -341,6 +341,16 @@ Buttons, and CTCP Replies workflows retain their existing file serialization
 and post-save reload side effects in `editlist.c`, which no longer handles
 toolkit rows or raw key events. The strict probe verifies edits, boundary-safe
 movement, ordered snapshots, deletion, empty-row population, and cleanup.
+
+The Print Events editor now owns event names, editable text, stable signal
+indices, selection, and the selected event's numbered argument-help rows.
+GTK4 uses typed mutable event rows, typed help rows, `GtkSingleSelection`, two
+`GtkColumnView` instances, and a `GtkEditableLabel` text factory. GTK3 keeps
+its two list stores, tree views, renderers, and selection private. Each edit is
+validated through the frontend callback against the row's own signal index
+before the owner accepts it, so a selected-row mismatch cannot update the
+wrong event. The strict probe verifies signal identity, accepted and rejected
+edits, selection callbacks, help population, clearing, and cleanup.
 
 ## Executable Contract
 

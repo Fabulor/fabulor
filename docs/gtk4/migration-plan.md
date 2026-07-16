@@ -839,6 +839,16 @@ post-save reload, button refresh, and user-menu refresh remain in the workflow
 wrapper. The strict probe covers editing, movement, snapshots, deletion,
 empty-row initialization, and cleanup.
 
+Print Events pass 23 (2026-07-17): the event-text editor and selected-event
+argument help now share one cross-version owner for copied row values, stable
+signal identity, single selection, callback-gated inline edits, and help-row
+population. GTK4 uses typed event and help rows, `GtkSingleSelection`, two
+`GtkColumnView` instances, and `GtkEditableLabel`; GTK3 keeps its list stores,
+renderers, tree views, and selection inside the owner. Parsing, argument-count
+validation, transcript preview, load/save, and theme behavior remain in
+`textgui.c`. The strict probe covers accepted and rejected edits, row identity,
+selection callbacks, help rows, clearing, and cleanup.
+
 Primary surfaces:
 
 - server list and editor

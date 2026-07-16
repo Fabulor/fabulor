@@ -2385,6 +2385,44 @@ Scope: generic editor model/view ownership and row interaction. Configuration
 file syntax, list parsing, menu/button construction, command dispatch, and
 post-save workflow refresh behavior are unchanged.
 
+### PR: #86 - GTK4 Stage 5 Print Events Editor
+
+Date: 2026-07-17
+
+Migration stage: 5, Print Events pass 23
+
+Files/workflows converted: editable Print Events table; stable event signal
+identity; selected-event argument-help table; selection and edit callbacks
+
+GTK version: 4.22.4
+
+GLib version: 2.88.0
+
+Build configuration: MSVC x64 Release and strict GTK4 probe boundary
+
+Automated checks:
+
+- [x] production GTK3 frontend compiles and links with 0 warnings and 0 errors
+- [x] strict GTK4 probe compiles and executes the Print Events owner with 0 warnings and 0 errors
+- [x] accepted and rejected edits preserve row-local signal identity
+- [x] selection callbacks, help rows, clearing, and cleanup pass
+- [x] `textgui.c` contains no direct tree-model, iterator, path, cell-renderer, list-store, or tree-selection dependency
+- [x] production and strict build definitions include the new owner
+- [x] GTK4 dependency validator tests remain 8/8
+- [x] repository diff whitespace validation passes
+
+Manual checks:
+
+- [ ] shipping GTK3 editor opens, selects each event, and displays the correct numbered argument help
+- [ ] valid edits update the preview and persist after restart
+- [ ] malformed text and out-of-range argument references remain unchanged and show the expected warning
+- [ ] Load From, Save As, Test All, theme updates, and OK/close behavior remain unchanged
+- [ ] GTK4 inline editing, selection, focus, accessibility, column sizing, and scale await frontend cutover
+
+Scope: Print Events list/model/view ownership and row interaction. Event
+parsing, argument validation, compiled event storage, transcript preview,
+theme handling, and file import/export remain unchanged.
+
 ## Per-PR Record Template
 
 Copy this section for each GTK4 PR:
