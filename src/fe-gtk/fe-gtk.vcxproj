@@ -144,6 +144,7 @@ FOR %%I IN ("$(ZoiteChatLib)fabulor.rc") DO IF %%~zI EQU 0 (
     <ClCompile Include="textgui.c" />
     <ClCompile Include="urlgrab.c" />
     <ClCompile Include="userlistgui.c" />
+    <ClCompile Include="user-list-model.c" />
     <ClCompile Include="xtext.c" />
     <ClCompile Include="theme\theme-manager.c" />
     <ClCompile Include="theme\theme-palette.c" />

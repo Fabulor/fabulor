@@ -5,6 +5,7 @@
 #include "../../src/fe-gtk/gtk-compat.h"
 #include "../../src/fe-gtk/gtk4-list-models.h"
 #include "../../src/fe-gtk/notify-list.h"
+#include "../../src/fe-gtk/user-list-model.h"
 
 #if GTK_MAJOR_VERSION != 4
 #error The GTK4 probe must compile against GTK 4 headers.
@@ -338,6 +339,93 @@ check_notify_list_model (void)
 	return valid;
 }
 
+typedef struct
+{
+	gint rank;
+} ProbeUser;
+
+static gint
+compare_probe_users (gconstpointer left, gconstpointer right,
+					 gpointer user_data)
+{
+	const ProbeUser *left_user = left;
+	const ProbeUser *right_user = right;
+
+	(void) user_data;
+	return left_user->rank < right_user->rank ? -1 :
+		left_user->rank > right_user->rank ? 1 : 0;
+}
+
+static gboolean
+check_user_list_model (void)
+{
+	ProbeUser first = { 1 };
+	ProbeUser second = { 2 };
+	ProbeUser missing = { 3 };
+	FabulorUserListRow first_row = {
+		&first, NULL, "@", "First", "first.example", NULL
+	};
+	FabulorUserListRow second_row = {
+		&second, NULL, "+", "Second", "second.example", NULL
+	};
+	FabulorUserListRow missing_row = {
+		&missing, NULL, "", "Missing", "missing.example", NULL
+	};
+	FabulorUserListModel *model = fabulor_user_list_model_new (
+		compare_probe_users, NULL, FALSE);
+	gboolean valid = model != NULL;
+
+	if (valid)
+	{
+		valid = fabulor_user_list_model_insert (model, &second_row) &&
+			fabulor_user_list_model_insert (model, &first_row) &&
+			!fabulor_user_list_model_insert (model, &first_row) &&
+			GTK_IS_MULTI_SELECTION (
+				fabulor_user_list_model_get_selection (model)) &&
+			g_list_model_get_n_items (
+				fabulor_user_list_model_get_list_model (model)) == 2 &&
+			fabulor_user_list_model_get_n_rows (model) == 2 &&
+			fabulor_user_list_model_get_user_at (model, 0) == &first;
+	}
+	if (valid)
+	{
+		second.rank = 0;
+		second_row.nick_markup = "Second updated";
+		valid = fabulor_user_list_model_update (model, &second_row, TRUE) &&
+			!fabulor_user_list_model_update (model, &missing_row, TRUE) &&
+			fabulor_user_list_model_get_user_at (model, 0) == &second &&
+			fabulor_user_list_model_remove (model, &first) &&
+			!fabulor_user_list_model_remove (model, &first) &&
+			fabulor_user_list_model_get_n_rows (model) == 1;
+	}
+	if (valid)
+	{
+		fabulor_user_list_model_clear (model);
+		valid = fabulor_user_list_model_get_n_rows (model) == 0;
+	}
+
+	fabulor_user_list_model_free (model);
+	if (valid)
+	{
+		model = fabulor_user_list_model_new (compare_probe_users, NULL, TRUE);
+		valid = model != NULL &&
+			fabulor_user_list_model_insert (model, &second_row) &&
+			fabulor_user_list_model_insert (model, &first_row) &&
+			fabulor_user_list_model_get_user_at (model, 0) == &first;
+		fabulor_user_list_model_free (model);
+	}
+	if (valid)
+	{
+		model = fabulor_user_list_model_new (NULL, NULL, FALSE);
+		valid = model != NULL &&
+			fabulor_user_list_model_insert (model, &first_row) &&
+			fabulor_user_list_model_insert (model, &second_row) &&
+			fabulor_user_list_model_get_user_at (model, 0) == &second;
+		fabulor_user_list_model_free (model);
+	}
+	return valid;
+}
+
 int
 main (void)
 {
@@ -360,6 +448,11 @@ main (void)
 	if (!check_notify_list_model ())
 	{
 		fprintf (stderr, "GTK4 notify list model contract mismatch\n");
+		return 1;
+	}
+	if (!check_user_list_model ())
+	{
+		fprintf (stderr, "GTK4 user list model contract mismatch\n");
 		return 1;
 	}
 

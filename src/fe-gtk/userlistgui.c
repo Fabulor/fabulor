@@ -40,20 +40,16 @@
 #include "menu.h"
 #include "pixmaps.h"
 #include "theme/theme-access.h"
+#include "user-list-model.h"
 #include "userlistgui.h"
 #include "fkeys.h"
 
-enum
-{
-	COL_PIX=0,		/* GdkPixbuf * */
-	COL_PREFIX=1,	/* char * */
-	COL_NICK=2,		/* char * */
-	COL_HOST=3,		/* char * */
-	COL_USER=4,		/* struct User * */
-	COL_GDKCOLOR=5	/* GdkRGBA */
-};
-
-static void userlist_store_color (GtkListStore *store, GtkTreeIter *iter, ThemeSemanticToken token, gboolean has_token);
+#define COL_PIX FABULOR_USER_LIST_COLUMN_ICON
+#define COL_PREFIX FABULOR_USER_LIST_COLUMN_PREFIX
+#define COL_NICK FABULOR_USER_LIST_COLUMN_NICK
+#define COL_HOST FABULOR_USER_LIST_COLUMN_HOST
+#define COL_USER FABULOR_USER_LIST_COLUMN_USER
+#define COL_GDKCOLOR FABULOR_USER_LIST_COLUMN_FOREGROUND
 
 static const char *
 userlist_typing_suffix (session *sess, struct User *user)
@@ -181,6 +177,75 @@ get_user_icon (server *serv, struct User *user)
 	return NULL;
 }
 
+typedef struct
+{
+	FabulorUserListRow row;
+	gchar *prefix_markup;
+	gchar *nick_markup;
+	GdkRGBA foreground;
+} FabulorBuiltUserRow;
+
+static void
+userlist_build_row (session *sess, struct User *user,
+	FabulorBuiltUserRow *built)
+{
+	char prefix_text[2];
+	const char *prefix_color;
+	ThemeSemanticToken nick_token = THEME_TOKEN_TEXT_FOREGROUND;
+	gboolean have_nick_token = FALSE;
+
+	memset (built, 0, sizeof (*built));
+	built->row.user = user;
+	built->row.icon = get_user_icon (sess->server, user);
+	built->nick_markup = userlist_nick_markup (sess, user);
+	built->row.nick_markup = built->nick_markup;
+	built->row.hostname = user->hostname;
+
+	if (!prefs.hex_gui_ulist_icons)
+	{
+		if (user->prefix[0] != '\0' && user->prefix[0] != ' ')
+		{
+			gchar *escaped;
+
+			prefix_text[0] = user->prefix[0];
+			prefix_text[1] = '\0';
+			escaped = g_markup_escape_text (prefix_text, -1);
+			prefix_color = userlist_prefix_color (user->prefix[0]);
+			built->prefix_markup = prefix_color ?
+				g_strdup_printf ("<span foreground=\"%s\">%s</span>",
+					prefix_color, escaped) : g_strdup (escaped);
+			g_free (escaped);
+		}
+		built->row.icon = NULL;
+	}
+	built->row.prefix_markup = built->prefix_markup;
+
+	if (prefs.hex_away_track && user->away)
+	{
+		nick_token = THEME_TOKEN_TAB_AWAY;
+		have_nick_token = TRUE;
+	}
+	else if (prefs.hex_gui_ulist_color || prefs.hex_text_color_nicks)
+	{
+		int mirc_index = text_color_of (user->nick);
+
+		if (mirc_index >= 0 && mirc_index < 32)
+		{
+			nick_token = (ThemeSemanticToken) (THEME_TOKEN_MIRC_0 + mirc_index);
+			have_nick_token = TRUE;
+		}
+	}
+	if (have_nick_token && theme_get_color (nick_token, &built->foreground))
+		built->row.foreground = &built->foreground;
+}
+
+static void
+userlist_built_row_clear (FabulorBuiltUserRow *built)
+{
+	g_free (built->prefix_markup);
+	g_free (built->nick_markup);
+}
+
 void
 fe_userlist_numbers (session *sess)
 {
@@ -216,81 +281,6 @@ scroll_to_iter (GtkTreeIter *iter, GtkTreeView *treeview, GtkTreeModel *model)
 	}
 }
 
-static GHashTable *
-userlist_row_map_ensure (session *sess)
-{
-	if (!sess->res->user_row_refs)
-		sess->res->user_row_refs = g_hash_table_new_full (g_direct_hash, g_direct_equal, NULL, (GDestroyNotify) gtk_tree_row_reference_free);
-
-	return sess->res->user_row_refs;
-}
-
-static void
-userlist_row_map_remove (session *sess, struct User *user)
-{
-	if (!sess->res->user_row_refs)
-		return;
-
-	g_hash_table_remove (sess->res->user_row_refs, user);
-}
-
-static void
-userlist_row_map_set (session *sess, GtkTreeModel *model, struct User *user, GtkTreeIter *iter)
-{
-	GtkTreePath *path;
-	GtkTreeRowReference *ref;
-
-	path = gtk_tree_model_get_path (model, iter);
-	if (!path)
-		return;
-
-	ref = gtk_tree_row_reference_new (model, path);
-	gtk_tree_path_free (path);
-	if (!ref)
-		return;
-
-	g_hash_table_replace (userlist_row_map_ensure (sess), user, ref);
-}
-
-static gboolean
-userlist_row_map_get_iter (session *sess, GtkTreeModel *model, struct User *user, GtkTreeIter *iter)
-{
-	GtkTreeRowReference *ref;
-	GtkTreePath *path;
-	struct User *row_user;
-
-	if (!sess->res->user_row_refs)
-		return FALSE;
-
-	ref = g_hash_table_lookup (sess->res->user_row_refs, user);
-	if (!ref)
-		return FALSE;
-
-	path = gtk_tree_row_reference_get_path (ref);
-	if (!path)
-	{
-		g_hash_table_remove (sess->res->user_row_refs, user);
-		return FALSE;
-	}
-
-	if (!gtk_tree_model_get_iter (model, iter, path))
-	{
-		gtk_tree_path_free (path);
-		g_hash_table_remove (sess->res->user_row_refs, user);
-		return FALSE;
-	}
-	gtk_tree_path_free (path);
-
-	gtk_tree_model_get (model, iter, COL_USER, &row_user, -1);
-	if (row_user != user)
-	{
-		g_hash_table_remove (sess->res->user_row_refs, user);
-		return FALSE;
-	}
-
-	return TRUE;
-}
-
 /* select a row in the userlist by nick-name */
 
 void
@@ -298,12 +288,16 @@ userlist_select (session *sess, char *name)
 {
 	GtkTreeIter iter;
 	GtkTreeView *treeview = GTK_TREE_VIEW (sess->gui->user_tree);
-	GtkTreeModel *model = gtk_tree_view_get_model (treeview);
+	GtkTreeModel *model = fabulor_user_list_model_get_tree_model (
+		sess->res->user_model);
 	GtkTreeSelection *selection = gtk_tree_view_get_selection (treeview);
 	struct User *user = userlist_find (sess, name);
-	struct User *row_user;
 
-	if (user && userlist_row_map_get_iter (sess, model, user, &iter))
+	if (gtk_tree_view_get_model (treeview) != model)
+		return;
+
+	if (user && fabulor_user_list_model_get_iter (
+		sess->res->user_model, user, &iter))
 	{
 		if (gtk_tree_selection_iter_is_selected (selection, &iter))
 			gtk_tree_selection_unselect_iter (selection, &iter);
@@ -312,27 +306,6 @@ userlist_select (session *sess, char *name)
 
 		scroll_to_iter (&iter, treeview, model);
 		return;
-	}
-
-	if (gtk_tree_model_get_iter_first (model, &iter))
-	{
-		do
-		{
-			gtk_tree_model_get (model, &iter, COL_USER, &row_user, -1);
-			if (sess->server->p_cmp (row_user->nick, name) == 0)
-			{
-				userlist_row_map_set (sess, model, row_user, &iter);
-				if (gtk_tree_selection_iter_is_selected (selection, &iter))
-					gtk_tree_selection_unselect_iter (selection, &iter);
-				else
-					gtk_tree_selection_select_iter (selection, &iter);
-
-				/* and make sure it's visible */
-				scroll_to_iter (&iter, treeview, model);
-				return;
-			}
-		}
-		while (gtk_tree_model_iter_next (model, &iter));
 	}
 }
 
@@ -386,68 +359,29 @@ userlist_selection_list (GtkWidget *widget, int *num_ret)
 void
 fe_userlist_set_selected (struct session *sess)
 {
-	GtkListStore *store = sess->res->user_model;
+	GtkTreeModel *store = fabulor_user_list_model_get_tree_model (
+		sess->res->user_model);
 	GtkTreeSelection *selection = gtk_tree_view_get_selection (GTK_TREE_VIEW (sess->gui->user_tree));
 	GtkTreeIter iter;
 	struct User *user;
 
 	/* if it's not front-most tab it doesn't own the GtkTreeView! */
-	if (store != (GtkListStore*) gtk_tree_view_get_model (GTK_TREE_VIEW (sess->gui->user_tree)))
+	if (store != gtk_tree_view_get_model (GTK_TREE_VIEW (sess->gui->user_tree)))
 		return;
 
-	if (gtk_tree_model_get_iter_first (GTK_TREE_MODEL (store), &iter))
+	if (gtk_tree_model_get_iter_first (store, &iter))
 	{
 		do
 		{
-			gtk_tree_model_get (GTK_TREE_MODEL (store), &iter, COL_USER, &user, -1);
+			gtk_tree_model_get (store, &iter, COL_USER, &user, -1);
 
 			if (gtk_tree_selection_iter_is_selected (selection, &iter))
 				user->selected = 1;
 			else
 				user->selected = 0;
 				
-		} while (gtk_tree_model_iter_next (GTK_TREE_MODEL (store), &iter));
+		} while (gtk_tree_model_iter_next (store, &iter));
 	}
-}
-
-static GtkTreeIter *
-find_row (session *sess, GtkTreeView *treeview, GtkTreeModel *model, struct User *user,
-			 int *selected)
-{
-	static GtkTreeIter iter;
-	struct User *row_user;
-
-	*selected = FALSE;
-	if (userlist_row_map_get_iter (sess, model, user, &iter))
-	{
-		if (gtk_tree_view_get_model (treeview) == model)
-		{
-			if (gtk_tree_selection_iter_is_selected (gtk_tree_view_get_selection (treeview), &iter))
-				*selected = TRUE;
-		}
-		return &iter;
-	}
-
-	if (gtk_tree_model_get_iter_first (model, &iter))
-	{
-		do
-		{
-			gtk_tree_model_get (model, &iter, COL_USER, &row_user, -1);
-			if (row_user == user)
-			{
-				userlist_row_map_set (sess, model, row_user, &iter);
-				if (gtk_tree_view_get_model (treeview) == model)
-				{
-					if (gtk_tree_selection_iter_is_selected (gtk_tree_view_get_selection (treeview), &iter))
-						*selected = TRUE;
-				}
-				return &iter;
-			}
-		}
-		while (gtk_tree_model_iter_next (model, &iter));
-	}
-
-	return NULL;
 }
 
 void
@@ -466,21 +400,25 @@ userlist_get_value (GtkWidget *treeview)
 int
 fe_userlist_remove (session *sess, struct User *user)
 {
-	GtkTreeIter *iter;
+	GtkTreeIter iter;
 /*	GtkAdjustment *adj;
 	gfloat val, end;*/
-	int sel;
+	int sel = FALSE;
+	GtkTreeView *treeview = GTK_TREE_VIEW (sess->gui->user_tree);
+	GtkTreeModel *model = fabulor_user_list_model_get_tree_model (
+		sess->res->user_model);
 
-	iter = find_row (sess, GTK_TREE_VIEW (sess->gui->user_tree),
-					  GTK_TREE_MODEL(sess->res->user_model), user, &sel);
-	if (!iter)
+	if (!fabulor_user_list_model_get_iter (
+		sess->res->user_model, user, &iter))
 		return 0;
-	userlist_row_map_remove (sess, user);
-
+	if (gtk_tree_view_get_model (treeview) == model &&
+		gtk_tree_selection_iter_is_selected (
+			gtk_tree_view_get_selection (treeview), &iter))
+		sel = TRUE;
 /*	adj = gtk_tree_view_get_vadjustment (GTK_TREE_VIEW (sess->gui->user_tree));
 	val = adj->value;*/
 
-	gtk_list_store_remove (sess->res->user_model, iter);
+	fabulor_user_list_model_remove (sess->res->user_model, user);
 
 	/* is it the front-most tab? */
 /*	if (gtk_tree_view_get_model (GTK_TREE_VIEW (sess->gui->user_tree))
@@ -499,9 +437,9 @@ fe_userlist_remove (session *sess, struct User *user)
 static gboolean
 userlist_typing_tick (session *sess)
 {
-	GtkTreeModel *model;
-	GtkTreeIter iter;
-	gboolean valid;
+	GPtrArray *users;
+	guint count;
+	guint i;
 	gboolean keep = FALSE;
 	time_t now = time (NULL);
 
@@ -509,29 +447,32 @@ userlist_typing_tick (session *sess)
 		return FALSE;
 
 	sess->typing_animation_frame++;
-	model = GTK_TREE_MODEL (sess->res->user_model);
-	valid = gtk_tree_model_get_iter_first (model, &iter);
+	count = fabulor_user_list_model_get_n_rows (sess->res->user_model);
+	users = g_ptr_array_sized_new (count);
+	for (i = 0; i < count; i++)
+		g_ptr_array_add (users, fabulor_user_list_model_get_user_at (
+			sess->res->user_model, i));
 
-	while (valid)
+	for (i = 0; i < users->len; i++)
 	{
-		struct User *user = NULL;
+		struct User *user = g_ptr_array_index (users, i);
 
-		gtk_tree_model_get (model, &iter, COL_USER, &user, -1);
 		if (user && user->typing)
 		{
-			char *nick;
+			FabulorBuiltUserRow built;
 
 			if ((user->typing == 1 && now - user->typing_time >= 6) || (user->typing == 2 && now - user->typing_time >= 30))
 				user->typing = 0;
 
-			nick = userlist_nick_markup (sess, user);
-			gtk_list_store_set (sess->res->user_model, &iter, COL_NICK, nick, -1);
-			g_free (nick);
+			userlist_build_row (sess, user, &built);
+			g_warn_if_fail (fabulor_user_list_model_update (
+				sess->res->user_model, &built.row, FALSE));
+			userlist_built_row_clear (&built);
 			if (user->typing)
 				keep = TRUE;
 		}
-		valid = gtk_tree_model_iter_next (model, &iter);
 	}
+	g_ptr_array_unref (users);
 
 	if (!keep)
 	{
@@ -546,8 +487,7 @@ void
 fe_userlist_set_typing (session *sess, const char *nick, const char *state)
 {
 	struct User *user;
-	GtkTreeIter *iter;
-	int sel;
+	FabulorBuiltUserRow built;
 
 	if (!sess || !nick || !sess->res || !sess->res->user_model)
 		return;
@@ -564,13 +504,10 @@ fe_userlist_set_typing (session *sess, const char *nick, const char *state)
 		user->typing = 0;
 	user->typing_time = time (NULL);
 
-	iter = find_row (sess, GTK_TREE_VIEW (sess->gui->user_tree), GTK_TREE_MODEL (sess->res->user_model), user, &sel);
-	if (iter)
-	{
-		char *nick = userlist_nick_markup (sess, user);
-		gtk_list_store_set (sess->res->user_model, iter, COL_NICK, nick, -1);
-		g_free (nick);
-	}
+	userlist_build_row (sess, user, &built);
+	g_warn_if_fail (fabulor_user_list_model_update (
+		sess->res->user_model, &built.row, FALSE));
+	userlist_built_row_clear (&built);
 
 	if (user->typing && !sess->typing_animation_tag)
 		sess->typing_animation_tag = fe_timeout_add (350, userlist_typing_tick, sess);
@@ -579,129 +516,50 @@ fe_userlist_set_typing (session *sess, const char *nick, const char *state)
 void
 fe_userlist_rehash (session *sess, struct User *user)
 {
-	GtkTreeIter *iter;
-	int sel;
-	ThemeSemanticToken nick_token = THEME_TOKEN_TEXT_FOREGROUND;
-	gboolean have_nick_token = FALSE;
+	FabulorBuiltUserRow built;
 
-	iter = find_row (sess, GTK_TREE_VIEW (sess->gui->user_tree),
-					  GTK_TREE_MODEL(sess->res->user_model), user, &sel);
-	if (!iter)
-		return;
-	userlist_row_map_set (sess, GTK_TREE_MODEL (sess->res->user_model), user, iter);
-
-	if (prefs.hex_away_track && user->away)
-	{
-		nick_token = THEME_TOKEN_TAB_AWAY;
-		have_nick_token = TRUE;
-	}
-	else if (prefs.hex_gui_ulist_color || prefs.hex_text_color_nicks)
-	{
-		int mirc_index = text_color_of (user->nick);
-
-		if (mirc_index >= 0 && mirc_index < 32)
-		{
-			nick_token = (ThemeSemanticToken) (THEME_TOKEN_MIRC_0 + mirc_index);
-			have_nick_token = TRUE;
-		}
-	}
-
-	{
-		char *nick = userlist_nick_markup (sess, user);
-		gtk_list_store_set (GTK_LIST_STORE (sess->res->user_model), iter,
-							  COL_NICK, nick,
-							  COL_HOST, user->hostname,
-							  -1);
-		g_free (nick);
-	}
-	userlist_store_color (GTK_LIST_STORE (sess->res->user_model), iter, nick_token, have_nick_token);
+	userlist_build_row (sess, user, &built);
+	g_warn_if_fail (fabulor_user_list_model_update (
+		sess->res->user_model, &built.row, TRUE));
+	userlist_built_row_clear (&built);
 }
 
 void
 fe_userlist_insert (session *sess, struct User *newuser, gboolean sel)
 {
-	GtkTreeModel *model = GTK_TREE_MODEL(sess->res->user_model);
-	GdkPixbuf *pix = get_user_icon (sess->server, newuser);
+	GtkTreeModel *model = fabulor_user_list_model_get_tree_model (
+		sess->res->user_model);
 	GtkTreeIter iter;
-	char *nick;
-	char *prefix = NULL;
-	char *prefix_escaped;
-	char prefix_text[2];
-	const char *prefix_color;
-	ThemeSemanticToken nick_token = THEME_TOKEN_TEXT_FOREGROUND;
-	gboolean have_nick_token = FALSE;
+	FabulorBuiltUserRow built;
 
-	if (prefs.hex_away_track && newuser->away)
-	{
-		nick_token = THEME_TOKEN_TAB_AWAY;
-		have_nick_token = TRUE;
-	}
-	else if (prefs.hex_gui_ulist_color || prefs.hex_text_color_nicks)
-	{
-		int mirc_index = text_color_of (newuser->nick);
-
-		if (mirc_index >= 0 && mirc_index < 32)
-		{
-			nick_token = (ThemeSemanticToken) (THEME_TOKEN_MIRC_0 + mirc_index);
-			have_nick_token = TRUE;
-		}
-	}
-
-	nick = userlist_nick_markup (sess, newuser);
-	if (!prefs.hex_gui_ulist_icons)
-	{
-		if (newuser->prefix[0] != '\0' && newuser->prefix[0] != ' ')
-		{
-			prefix_text[0] = newuser->prefix[0];
-			prefix_text[1] = '\0';
-			prefix_escaped = g_markup_escape_text (prefix_text, -1);
-			prefix_color = userlist_prefix_color (newuser->prefix[0]);
-			if (prefix_color)
-				prefix = g_strdup_printf ("<span foreground=\"%s\">%s</span>", prefix_color, prefix_escaped);
-			else
-				prefix = g_strdup (prefix_escaped);
-			g_free (prefix_escaped);
-		}
-		pix = NULL;
-	}
-
-	gtk_list_store_insert_with_values (GTK_LIST_STORE (model), &iter, 0,
-									COL_PIX, pix,
-									COL_PREFIX, prefix,
-									COL_NICK, nick,
-									COL_HOST, newuser->hostname,
-									COL_USER, newuser,
-								  -1);
-	userlist_store_color (GTK_LIST_STORE (model), &iter, nick_token, have_nick_token);
-
-	g_free (prefix);
-	g_free (nick);
-
-	userlist_row_map_set (sess, model, newuser, &iter);
+	userlist_build_row (sess, newuser, &built);
+	g_warn_if_fail (fabulor_user_list_model_insert (
+		sess->res->user_model, &built.row));
 
 	/* is it me? */
 	if (newuser->me && sess->gui->nick_box)
 	{
 		if (!sess->gui->is_tab || sess == current_tab)
-			mg_set_access_icon (sess->gui, pix, sess->server->is_away);
+			mg_set_access_icon (sess->gui, built.row.icon,
+				sess->server->is_away);
 	}
 
 	/* is it the front-most tab? */
 	if (gtk_tree_view_get_model (GTK_TREE_VIEW (sess->gui->user_tree))
 		 == model)
 	{
-		if (sel)
+		if (sel && fabulor_user_list_model_get_iter (
+			sess->res->user_model, newuser, &iter))
 			gtk_tree_selection_select_iter (gtk_tree_view_get_selection
 										(GTK_TREE_VIEW (sess->gui->user_tree)), &iter);
 	}
+	userlist_built_row_clear (&built);
 }
 
 void
 fe_userlist_clear (session *sess)
 {
-	if (sess->res->user_row_refs)
-		g_hash_table_remove_all (sess->res->user_row_refs);
-	gtk_list_store_clear (sess->res->user_model);
+	fabulor_user_list_model_clear (sess->res->user_model);
 }
 
 static gboolean
@@ -780,86 +638,49 @@ userlist_internal_drag_leave (GtkWidget *widget,
 	userlist_drag_leave (widget, user_data);
 }
 
-static int
-userlist_alpha_cmp (GtkTreeModel *model, GtkTreeIter *iter_a, GtkTreeIter *iter_b, gpointer userdata)
+static gint
+userlist_alpha_cmp (gconstpointer left_user, gconstpointer right_user,
+					gpointer user_data)
 {
-	struct User *user_a, *user_b;
-
-	gtk_tree_model_get (model, iter_a, COL_USER, &user_a, -1);
-	gtk_tree_model_get (model, iter_b, COL_USER, &user_b, -1);
-
-	return nick_cmp_alpha (user_a, user_b, ((session*)userdata)->server);
+	return nick_cmp_alpha ((struct User *) left_user,
+		(struct User *) right_user, ((session *) user_data)->server);
 }
 
-static int
-userlist_ops_cmp (GtkTreeModel *model, GtkTreeIter *iter_a, GtkTreeIter *iter_b, gpointer userdata)
+static gint
+userlist_ops_cmp (gconstpointer left_user, gconstpointer right_user,
+				  gpointer user_data)
 {
-	struct User *user_a, *user_b;
-
-	gtk_tree_model_get (model, iter_a, COL_USER, &user_a, -1);
-	gtk_tree_model_get (model, iter_b, COL_USER, &user_b, -1);
-
-	return nick_cmp_az_ops (((session*)userdata)->server, user_a, user_b);
+	return nick_cmp_az_ops (((session *) user_data)->server,
+		(struct User *) left_user, (struct User *) right_user);
 }
 
-static void
-userlist_store_color (GtkListStore *store, GtkTreeIter *iter, ThemeSemanticToken token, gboolean has_token)
-{
-	GdkRGBA rgba;
-	const GdkRGBA *color = NULL;
-
-	if (has_token && theme_get_color (token, &rgba))
-		color = &rgba;
-
-	if (color)
-	{
-		gtk_list_store_set (store, iter, COL_GDKCOLOR, color, -1);
-	}
-	else
-	{
-		gtk_list_store_set (store, iter, COL_GDKCOLOR, NULL, -1);
-	}
-}
-
-GtkListStore *
+FabulorUserListModel *
 userlist_create_model (session *sess)
 {
-	GtkListStore *store;
-	GtkTreeIterCompareFunc cmp_func;
-	GtkSortType sort_type;
-
-	store = gtk_list_store_new (6, GDK_TYPE_PIXBUF, G_TYPE_STRING, G_TYPE_STRING,
-										G_TYPE_STRING, G_TYPE_POINTER, THEME_GTK_COLOR_TYPE);
+	FabulorUserListCompareFunc compare = NULL;
+	gboolean descending = FALSE;
 
 	switch (prefs.hex_gui_ulist_sort)
 	{
 	case 0:
-		cmp_func = userlist_ops_cmp;
-		sort_type = GTK_SORT_ASCENDING;
+		compare = userlist_ops_cmp;
 		break;
 	case 1:
-		cmp_func = userlist_alpha_cmp;
-		sort_type = GTK_SORT_ASCENDING;
+		compare = userlist_alpha_cmp;
 		break;
 	case 2:
-		cmp_func = userlist_ops_cmp;
-		sort_type = GTK_SORT_DESCENDING;
+		compare = userlist_ops_cmp;
+		descending = TRUE;
 		break;
 	case 3:
-		cmp_func = userlist_alpha_cmp;
-		sort_type = GTK_SORT_DESCENDING;
+		compare = userlist_alpha_cmp;
+		descending = TRUE;
 		break;
 	default:
-		/* No sorting */
-		gtk_tree_sortable_set_default_sort_func (GTK_TREE_SORTABLE(store), NULL, NULL, NULL);
-		return store;
+		break;
 	}
 
-	gtk_tree_sortable_set_default_sort_func (GTK_TREE_SORTABLE(store), cmp_func, sess, NULL);
-	gtk_tree_sortable_set_sort_column_id (GTK_TREE_SORTABLE(store),
-						GTK_TREE_SORTABLE_DEFAULT_SORT_COLUMN_ID, sort_type);
-
-	return store;
+	return fabulor_user_list_model_new (compare, sess, descending);
 }
 
 static void
@@ -1080,7 +901,7 @@ void
 userlist_show (session *sess)
 {
 	gtk_tree_view_set_model (GTK_TREE_VIEW (sess->gui->user_tree),
-									 GTK_TREE_MODEL(sess->res->user_model));
+		fabulor_user_list_model_get_tree_model (sess->res->user_model));
 }
 
 void
@@ -1090,10 +911,13 @@ fe_uselect (session *sess, char *word[], int do_clear, int scroll_to)
 	int thisname;
 	GtkTreeIter iter;
 	GtkTreeView *treeview = GTK_TREE_VIEW (sess->gui->user_tree);
-	GtkTreeModel *model = gtk_tree_view_get_model (treeview);
+	GtkTreeModel *model = fabulor_user_list_model_get_tree_model (
+		sess->res->user_model);
 	GtkTreeSelection *selection = gtk_tree_view_get_selection (treeview);
 	struct User *user;
-	struct User *row_user;
+
+	if (gtk_tree_view_get_model (treeview) != model)
+		return;
 
 	if (do_clear)
 		gtk_tree_selection_unselect_all (selection);
@@ -1105,29 +929,13 @@ fe_uselect (session *sess, char *word[], int do_clear, int scroll_to)
 		if (!user)
 			continue;
 
-		if (userlist_row_map_get_iter (sess, model, user, &iter))
+		if (fabulor_user_list_model_get_iter (
+			sess->res->user_model, user, &iter))
 		{
 			gtk_tree_selection_select_iter (selection, &iter);
 			if (scroll_to)
 				scroll_to_iter (&iter, treeview, model);
 			continue;
-		}
-
-		if (gtk_tree_model_get_iter_first (model, &iter))
-		{
-			do
-			{
-				gtk_tree_model_get (model, &iter, COL_USER, &row_user, -1);
-				if (row_user == user)
-				{
-					userlist_row_map_set (sess, model, row_user, &iter);
-					gtk_tree_selection_select_iter (selection, &iter);
-					if (scroll_to)
-						scroll_to_iter (&iter, treeview, model);
-					break;
-				}
-			}
-			while (gtk_tree_model_iter_next (model, &iter));
 		}
 	}
 }

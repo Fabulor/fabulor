@@ -43,7 +43,7 @@
     </ClCompile>
     <Link>
       <AdditionalLibraryDirectories>$(FabulorGtk4Root)\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>gtk-4.lib;pango-1.0.lib;gio-2.0.lib;gobject-2.0.lib;glib-2.0.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>gtk-4.lib;pango-1.0.lib;gdk_pixbuf-2.0.lib;gio-2.0.lib;gobject-2.0.lib;glib-2.0.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
@@ -55,6 +55,7 @@
     <ClCompile Include="probe.c" />
     <ClCompile Include="..\..\src\fe-gtk\gtk4-list-models.c" />
     <ClCompile Include="..\..\src\fe-gtk\notify-list.c" />
+    <ClCompile Include="..\..\src\fe-gtk\user-list-model.c" />
   </ItemGroup>
   <Target Name="ValidateFabulorGtk4Root" BeforeTargets="PrepareForBuild">
     <Error Condition="'$(Platform)'!='x64'" Text="The initial Fabulor GTK4 dependency contract supports x64 only." />
