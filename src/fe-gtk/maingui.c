@@ -2474,9 +2474,10 @@ mg_create_alertmenu (session *sess, GtkWidget *menu)
 }
 
 static void
-mg_create_tabmenu (session *sess, GdkEventButton *event, chan *ch)
+mg_create_tabmenu (session *sess, GtkWidget *source, chan *ch)
 {
         GtkWidget *menu, *item;
+        GdkEvent *event;
         char buf[256];
 
         menu = gtk_menu_new ();
@@ -2519,34 +2520,47 @@ mg_create_tabmenu (session *sess, GdkEventButton *event, chan *ch)
         if (sess)
                 menu_add_plugin_items (menu, "\x4$TAB", sess->channel);
 
-        if (event->window)
-                gtk_menu_set_screen (GTK_MENU (menu), gdk_window_get_screen (event->window));
+        gtk_menu_set_screen (GTK_MENU (menu), gtk_widget_get_screen (source));
         g_object_ref (menu);
         g_object_ref_sink (menu);
         g_object_unref (menu);
         g_signal_connect (G_OBJECT (menu), "selection-done",
                                                         G_CALLBACK (mg_menu_destroy), NULL);
-        gtk_menu_popup_at_pointer (GTK_MENU (menu), (GdkEvent *)event);
+        event = gtk_get_current_event ();
+        if (event)
+        {
+                gtk_menu_popup_at_pointer (GTK_MENU (menu), event);
+                gdk_event_free (event);
+        }
+        else
+        {
+                gtk_menu_popup_at_widget (GTK_MENU (menu), source,
+                        GDK_GRAVITY_SOUTH_WEST, GDK_GRAVITY_NORTH_WEST, NULL);
+        }
 }
 
 static gboolean
-mg_tab_contextmenu_cb (chanview *cv, chan *ch, int tag, gpointer ud, GdkEventButton *event)
+mg_tab_contextmenu_cb (chanview *cv, chan *ch, int tag, gpointer ud,
+        GtkWidget *source, guint button, gdouble x, gdouble y,
+        GdkModifierType state)
 {
+        (void) x;
+        (void) y;
+        (void) state;
         /* middle-click to close a tab */
-        if (((prefs.hex_gui_tab_middleclose && event->button == 2))
-                && event->type == GDK_BUTTON_PRESS)
+        if (prefs.hex_gui_tab_middleclose && button == 2)
         {
                 mg_xbutton_cb (cv, ch, tag, ud);
                 return TRUE;
         }
 
-        if (event->button != 3)
+        if (button != 3)
                 return FALSE;
 
         if (tag == TAG_IRC)
-                mg_create_tabmenu (ud, event, ch);
+                mg_create_tabmenu (ud, source, ch);
         else
-                mg_create_tabmenu (NULL, event, ch);
+                mg_create_tabmenu (NULL, source, ch);
 
         return TRUE;
 }

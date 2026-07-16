@@ -270,7 +270,8 @@ Detailed planning and evidence live in:
   - [x] Convert the shared user-list view, factories, multi-selection, hit-testing, menus, keyboard handling, and drag/drop.
   - [x] Replace shared channel-navigation tree storage and persistent row iterators with an identity-indexed cross-version hierarchy owner.
   - [x] Convert the visible hierarchical channel tree to a cross-version view owner with GTK4 factories, expansion, selection, hit-testing, and scrolling.
-  - [ ] Convert the grouped channel tab strip, close controls, animated scrolling, context actions, and family reordering.
+  - [x] Convert channel-tree and tab-strip close/context input to a widget, button, coordinates, and modifier boundary without raw GTK3 events.
+  - [ ] Convert the grouped channel tab-strip owner, family boxes, close presentation, animated scrolling, and reordering.
 - [ ] Port the transcript and spell-check input widgets to GTK4 rendering and event semantics.
 - [ ] Add the GTK4 theme adapter and validate tray, notifications, icons, fonts, and platform integration.
   - [x] Retire `.zct` registration and mock Windows GTK theme staging, downloads, and installer choices.

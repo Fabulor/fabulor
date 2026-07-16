@@ -586,22 +586,25 @@ tab_toggled_cb (GtkToggleButton *tab, chan *ch)
 }
 
 static gboolean
-tab_click_cb (GtkWidget *wid, GdkEventButton *event, chan *ch)
+tab_click_cb (GtkWidget *wid, guint button, guint n_press, gdouble x,
+	gdouble y, GdkModifierType state, gpointer user_data)
 {
+	chan *ch = user_data;
 	GtkWidget *close_button;
 	gint close_x;
 	gint close_y;
 	GtkAllocation close_alloc;
 
-	if (event->button == 1 && event->type == GDK_BUTTON_PRESS)
+	(void) n_press;
+	if (button == 1)
 	{
 		close_button = g_object_get_data (G_OBJECT (wid), "tab-close-button");
 		if (prefs.hex_gui_tab_closebuttons && close_button &&
 			gtk_widget_translate_coordinates (close_button, wid, 0, 0, &close_x, &close_y))
 		{
 			gtk_widget_get_allocation (close_button, &close_alloc);
-			if (event->x >= close_x && event->x < close_x + close_alloc.width &&
-				event->y >= close_y && event->y < close_y + close_alloc.height)
+			if (x >= close_x && x < close_x + close_alloc.width &&
+				y >= close_y && y < close_y + close_alloc.height)
 			{
 				ch->cv->cb_xbutton (ch->cv, ch, ch->tag, ch->userdata);
 				return TRUE;
@@ -609,7 +612,8 @@ tab_click_cb (GtkWidget *wid, GdkEventButton *event, chan *ch)
 		}
 	}
 
-	return ch->cv->cb_contextmenu (ch->cv, ch, ch->tag, ch->userdata, event);
+	return ch->cv->cb_contextmenu (ch->cv, ch, ch->tag, ch->userdata, wid,
+		button, x, y, state);
 }
 
 static void
@@ -699,9 +703,8 @@ cv_tabs_add (chanview *cv, chan *ch, char *name, chan *parent)
 	g_object_set_data (G_OBJECT (but), "tab-label", label);
 	g_object_set_data (G_OBJECT (but), "tab-close-button", close_button);
 	g_object_set_data (G_OBJECT (but), "c", ch);
-	/* used to trap right-clicks */
-	g_signal_connect (G_OBJECT (but), "button-press-event",
-						 	G_CALLBACK (tab_click_cb), ch);
+	/* used for close-button hit testing and context actions */
+	fabulor_gtk_widget_on_multi_click (but, tab_click_cb, ch);
 	fabulor_gtk_widget_on_scroll (but, tab_scroll_cb, cv);
 	fabulor_gtk_widget_on_scroll (close_button, tab_scroll_cb, cv);
 	fabulor_gtk_widget_on_pointer_motion (but, tab_close_motion_cb,

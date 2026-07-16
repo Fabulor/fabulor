@@ -1,6 +1,6 @@
 # GTK4 List Model Architecture
 
-Status: Stage 5 pass 6 conversion contract
+Status: Stage 5 pass 7 conversion contract
 
 Date: 2026-07-16
 
@@ -72,8 +72,10 @@ navigation order.
      identity-indexed cross-version hierarchy owner.
    - [x] Convert the visible hierarchical tree, factories, expansion,
      identity selection, hit-testing, and scrolling.
-   - [ ] Convert the grouped tab strip, close controls, animated scrolling,
-     context actions, keyboard handling, drag/drop, and family reordering.
+   - [x] Convert tree and tab close/context input to a neutral widget, button,
+     coordinate, and modifier boundary.
+   - [ ] Convert the grouped tab-strip owner, family boxes, close presentation,
+     animated scrolling, keyboard handling, drag/drop, and family reordering.
 4. [ ] Convert remaining tabular editors and operational lists according to their
    editing and multi-selection requirements.
 5. [ ] Remove the final GTK3 tree-model, cell-renderer, iterator, and row-reference
@@ -163,6 +165,15 @@ off-screen-only focus scrolling, double-click expansion, context hit-testing,
 channel switching, and internal drag/drop. The grouped tab strip remains the
 next channel-navigation pass because its family boxes, close controls, and
 scroll animation have a separate lifecycle.
+
+Tree and tab pointer actions now share the cross-version multi-click controller.
+The channel callback receives the source widget, button, coordinates, and
+modifier state instead of a `GdkEventButton`. Tree hit-testing stays inside its
+view owner; tab close-button hit-testing remains local to the tab presentation.
+The GTK3 menu adapter obtains the current event only while placing its retained
+popup and has a widget-anchored fallback. Middle-click close and right-click
+context behavior remain unchanged while the future tab owner no longer needs a
+GTK3 event type in its public contract.
 
 ## Executable Contract
 
