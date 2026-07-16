@@ -272,7 +272,8 @@ Detailed planning and evidence live in:
   - [x] Convert the visible hierarchical channel tree to a cross-version view owner with GTK4 factories, expansion, selection, hit-testing, and scrolling.
   - [x] Convert channel-tree and tab-strip close/context input to a widget, button, coordinates, and modifier boundary without raw GTK3 events.
   - [x] Move grouped-tab animation and toggle suppression into each channel view and resolve focus movement through the channel model.
-  - [ ] Convert the grouped channel tab-strip owner, family boxes, close presentation, animated scrolling, and reordering.
+  - [x] Mirror grouped-tab and family reorder operations from authoritative channel-model positions without GTK child enumeration.
+  - [ ] Convert the grouped channel tab-strip owner, family boxes, close presentation, animated scrolling presentation, keyboard handling, and drag/drop.
 - [ ] Port the transcript and spell-check input widgets to GTK4 rendering and event semantics.
 - [ ] Add the GTK4 theme adapter and validate tray, notifications, icons, fonts, and platform integration.
   - [x] Retire `.zct` registration and mock Windows GTK theme staging, downloads, and installer choices.

@@ -737,59 +737,51 @@ cv_tabs_remove (chan *ch)
 	cv_tabs_prune (ch->cv);
 }
 
+static void cv_tabs_move_family (chan *ch, int delta);
+
 static void
 cv_tabs_move (chan *ch, int delta)
 {
-	int i = 0;
-	int pos = 0;
-	GList *list;
-	GtkWidget *parent = gtk_widget_get_parent(GTK_WIDGET (ch->impl));
+	chan *parent = fabulor_channel_model_get_parent (ch->cv->model, ch);
+	guint count;
+	guint position;
 
-	for (list = gtk_container_get_children (GTK_CONTAINER (parent)); list; list = list->next)
+	if (!parent)
 	{
-		GtkWidget *child_entry;
-
-		child_entry = list->data;
-		if (child_entry == ch->impl)
-			pos = i;
-
-		/* keep separator at end to not throw off our count */
-		if (GTK_IS_SEPARATOR (child_entry))
-			gtk_box_reorder_child (GTK_BOX (parent), child_entry, -1);
-		else
-			i++;
+		cv_tabs_move_family (ch, delta);
+		return;
 	}
-
-	pos = (pos - delta) % i;
-	gtk_box_reorder_child (GTK_BOX (parent), ch->impl, pos);
+	count = fabulor_channel_model_get_child_count (ch->cv->model, parent);
+	for (position = 0; position < count; position++)
+		if (fabulor_channel_model_get_child_at (ch->cv->model, parent,
+			position) == ch)
+		{
+			/* The server tab occupies position zero in each family box. */
+			gtk_box_reorder_child (GTK_BOX (gtk_widget_get_parent (ch->impl)),
+				ch->impl, (gint) position + 1);
+			return;
+		}
 }
 
 static void
 cv_tabs_move_family (chan *ch, int delta)
 {
-	int i, pos = 0;
-	GList *list;
-	GtkWidget *box = NULL;
+	chan *root = fabulor_channel_model_get_parent (ch->cv->model, ch);
+	guint count = fabulor_channel_model_get_root_count (ch->cv->model);
+	guint position;
+	GtkWidget *box;
 
-	/* find position of tab's family */
-	i = 0;
-	for (list = gtk_container_get_children (GTK_CONTAINER (((tabview *)ch->cv)->inner)); list; list = list->next)
-	{
-		GtkWidget *child_entry;
-		void *fam;
-
-		child_entry = list->data;
-		fam = g_object_get_data (G_OBJECT (child_entry), "f");
-		if (fam == ch->family)
+	(void) delta;
+	if (!root)
+		root = ch;
+	box = gtk_widget_get_parent (root->impl);
+	for (position = 0; position < count; position++)
+		if (fabulor_channel_model_get_root_at (ch->cv->model, position) == root)
 		{
-			box = child_entry;
-			pos = i;
+			gtk_box_reorder_child (GTK_BOX (((tabview *) ch->cv)->inner), box,
+				(gint) position);
+			return;
 		}
-		i++;
-	}
-
-	pos = (pos - delta) % i;
-	gtk_box_reorder_child (GTK_BOX (gtk_widget_get_parent(box)), box, pos);
 }
 
 static void

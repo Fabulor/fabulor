@@ -1855,6 +1855,40 @@ Scope: grouped-tab transient state, focus lookup, and animation lifetime only.
 Family-box construction, close presentation, updates, and widget reordering
 remain in the legacy tab implementation for the next contained pass.
 
+### PR: [#72 - GTK4 Stage 5 Grouped Tab Reordering](https://github.com/Fabulor/fabulor/pull/72)
+
+Date: 2026-07-16
+
+Migration stage: 5, grouped-tab reorder pass 9
+
+Files/workflows converted: child-tab reorder lookup; server/root family reorder
+lookup; authoritative model-to-widget position mirroring
+
+GTK version: 4.22.4
+
+GLib version: 2.88.0
+
+Build configuration: MSVC x64 Release and strict GTK4 probe boundary
+
+Automated checks:
+
+- [x] production GTK3 frontend compiles and links with 0 warnings and 0 errors
+- [x] child-tab movement resolves sibling order from the channel model and preserves the leading server-tab offset
+- [x] server/root movement repositions the complete family from the model root order
+- [x] reorder paths do not enumerate GTK children or rediscover family identity through widget data
+- [x] strict GTK4 probe and channel-model validator remain green
+- [x] repository diff whitespace validation passes
+
+Manual checks:
+
+- [ ] shipping GTK3 child-tab and server-family movement in horizontal and vertical tab layouts
+- [ ] cyclic first/last movement with multiple servers and channels
+- [ ] GTK4 grouped-tab presentation awaits the remaining owner conversion
+
+Scope: grouped-tab reorder lookup and dispatch only. Family-box construction,
+close presentation, animated scrolling presentation, keyboard handling, and
+drag/drop remain in the legacy tab implementation for the next contained pass.
+
 ## Per-PR Record Template
 
 Copy this section for each GTK4 PR:
