@@ -665,6 +665,17 @@ hit areas, tree row targeting, and event consumption are preserved. The grouped
 tab-strip owner, family boxes, animated scrolling, and reordering remain for
 pass 8.
 
+Grouped-tab state pass 8 (2026-07-16): scroll animations, their movement flags,
+and toggle-signal suppression now belong to each `chanview` instead of static
+process-wide variables. Cleanup cancels both possible timeout sources before
+destroying the tab tree, preventing callbacks from retaining a removed view and
+allowing detached windows to animate independently. Absolute and relative tab
+focus now resolve through the authoritative flattened channel model, removing
+the family-box and toggle-child traversal previously used to find the active or
+requested tab. The unused scroll-button visibility allocation callback and its
+never-populated widget fields are removed. Family-box creation, tab presentation
+updates, and widget reordering remain for the next contained pass.
+
 Primary surfaces:
 
 - server list and editor

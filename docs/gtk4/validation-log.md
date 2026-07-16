@@ -1820,6 +1820,41 @@ Scope: pointer input and callback type containment only. Grouped tab family
 layout, close presentation, animated scrolling, focus, and reordering remain
 for Stage 5 pass 8.
 
+### PR: [#71 - GTK4 Stage 5 Grouped Tab State Ownership](https://github.com/Fabulor/fabulor/pull/71)
+
+Date: 2026-07-16
+
+Migration stage: 5, grouped-tab state pass 8
+
+Files/workflows converted: per-view forward/backward animation slots and flags;
+per-view toggle suppression; timeout cancellation during cleanup; model-based
+absolute and relative focus movement; removal of unused scroll-button sizing
+state
+
+GTK version: 4.22.4
+
+GLib version: 2.88.0
+
+Build configuration: MSVC x64 Release
+
+Automated checks:
+
+- [x] production GTK3 frontend compiles and links with 0 warnings and 0 errors
+- [x] source boundary: no process-global tab animation pointer, movement flag, or toggle guard remains
+- [x] source boundary: tab focus movement no longer enumerates GTK family-box or toggle-button children
+- [x] cleanup cancels both per-view animations before destroying the tab widget tree
+- [x] repository diff whitespace validation passes
+
+Manual checks:
+
+- [ ] shipping GTK3 relative/absolute tab switching and horizontal/vertical wheel animation
+- [ ] simultaneous detached-window scrolling and cleanup during animation
+- [ ] GTK4 grouped-tab presentation awaits the remaining owner pass
+
+Scope: grouped-tab transient state, focus lookup, and animation lifetime only.
+Family-box construction, close presentation, updates, and widget reordering
+remain in the legacy tab implementation for the next contained pass.
+
 ## Per-PR Record Template
 
 Copy this section for each GTK4 PR:

@@ -19,22 +19,22 @@
 
 /* file included in chanview.c */
 
+typedef struct _tab_scroll_animation tab_scroll_animation;
+
 typedef struct
 {
 	GtkWidget *outer;	/* outer box */
 	GtkWidget *inner;	/* inner box */
-	GtkWidget *b1;		/* button1 */
-	GtkWidget *b2;		/* button2 */
+	tab_scroll_animation *backward_animation;
+	tab_scroll_animation *forward_animation;
+	int backward_is_moving;
+	int forward_is_moving;
+	int ignore_toggle;
 } tabview;
 
 static void chanview_populate (chanview *cv);
 
-/* ignore "toggled" signal? */
-static int ignore_toggle = FALSE;
-static int tab_left_is_moving = 0;
-static int tab_right_is_moving = 0;
-
-typedef struct
+struct _tab_scroll_animation
 {
 	GtkAdjustment *adj;
 	gdouble current_value;
@@ -43,11 +43,8 @@ typedef struct
 	gdouble step_size;
 	guint source_id;
 	int *moving_flag;
-	gboolean is_left;
-} tab_scroll_animation;
-
-static tab_scroll_animation *tab_left_animation;
-static tab_scroll_animation *tab_right_animation;
+	tab_scroll_animation **slot;
+};
 
 /* userdata for gobjects used here:
  *
@@ -64,40 +61,6 @@ static inline gint
 cv_tabs_get_viewport_size (GtkAdjustment *adj)
 {
 	return (gint) gtk_adjustment_get_page_size (adj);
-}
-
-static void
-cv_tabs_sizealloc (GtkWidget *widget, GtkAllocation *allocation, chanview *cv)
-{
-	GtkAdjustment *adj;
-	GtkWidget *inner;
-	gint viewport_size;
-
-	inner = ((tabview *)cv)->inner;
-
-	if (cv->vertical)
-	{
-		adj = gtk_scrollable_get_vadjustment (GTK_SCROLLABLE (gtk_widget_get_parent (inner)));
-	} else
-	{
-		adj = gtk_scrollable_get_hadjustment (GTK_SCROLLABLE (gtk_widget_get_parent (inner)));
-	}
-
-	viewport_size = cv_tabs_get_viewport_size (adj);
-
-	if (gtk_adjustment_get_upper (adj) <= viewport_size)
-	{
-		if (((tabview *)cv)->b1)
-			gtk_widget_hide (((tabview *)cv)->b1);
-		if (((tabview *)cv)->b2)
-			gtk_widget_hide (((tabview *)cv)->b2);
-	} else
-	{
-		if (((tabview *)cv)->b1)
-			gtk_widget_show (((tabview *)cv)->b1);
-		if (((tabview *)cv)->b2)
-			gtk_widget_show (((tabview *)cv)->b2);
-	}
 }
 
 static gint
@@ -167,10 +130,7 @@ tab_scroll_animation_tick (gpointer userdata)
 	*animation->moving_flag = 0;
 	animation->source_id = 0;
 
-	if (animation->is_left)
-		tab_left_animation = NULL;
-	else
-		tab_right_animation = NULL;
+	*animation->slot = NULL;
 
 	g_object_unref (animation->adj);
 	g_free (animation);
@@ -196,8 +156,7 @@ tab_scroll_animation_cancel (tab_scroll_animation **animation)
 static void
 tab_scroll_animation_start (tab_scroll_animation **slot, GtkAdjustment *adj,
 							gdouble current_value, gdouble target_value,
-							gint direction, int *moving_flag,
-							gboolean is_left)
+							gint direction, int *moving_flag)
 {
 	tab_scroll_animation *animation;
 	gdouble distance;
@@ -222,7 +181,7 @@ tab_scroll_animation_start (tab_scroll_animation **slot, GtkAdjustment *adj,
 	frames = 12.0;
 	animation->step_size = distance / MAX (1.0, frames);
 	animation->moving_flag = moving_flag;
-	animation->is_left = is_left;
+	animation->slot = slot;
 
 	*moving_flag = 1;
 	animation->source_id = g_timeout_add (16, tab_scroll_animation_tick, animation);
@@ -232,6 +191,7 @@ tab_scroll_animation_start (tab_scroll_animation **slot, GtkAdjustment *adj,
 static void
 tab_scroll_left_up (chanview *cv)
 {
+	tabview *tabs = (tabview *) cv;
 	GtkAdjustment *adj;
 	gint viewport_size;
 	gfloat new_value;
@@ -254,20 +214,21 @@ tab_scroll_left_up (chanview *cv)
 	if (new_value + viewport_size > gtk_adjustment_get_upper (adj))
 		new_value = gtk_adjustment_get_upper (adj) - viewport_size;
 
-	if (tab_left_is_moving)
+	if (tabs->backward_is_moving)
 	{
-		tab_scroll_animation_cancel (&tab_left_animation);
+		tab_scroll_animation_cancel (&tabs->backward_animation);
 		return;
 	}
 
-	tab_scroll_animation_start (&tab_left_animation, adj,
+	tab_scroll_animation_start (&tabs->backward_animation, adj,
 							gtk_adjustment_get_value (adj), new_value,
-							-1, &tab_left_is_moving, TRUE);
+							-1, &tabs->backward_is_moving);
 }
 
 static void
 tab_scroll_right_down (chanview *cv)
 {
+	tabview *tabs = (tabview *) cv;
 	GtkAdjustment *adj;
 	gint viewport_size;
 	gfloat new_value;
@@ -290,15 +251,15 @@ tab_scroll_right_down (chanview *cv)
 	if (new_value == 0 || new_value + viewport_size > gtk_adjustment_get_upper (adj))
 		new_value = gtk_adjustment_get_upper (adj) - viewport_size;
 
-	if (tab_right_is_moving)
+	if (tabs->forward_is_moving)
 	{
-		tab_scroll_animation_cancel (&tab_right_animation);
+		tab_scroll_animation_cancel (&tabs->forward_animation);
 		return;
 	}
 
-	tab_scroll_animation_start (&tab_right_animation, adj,
+	tab_scroll_animation_start (&tabs->forward_animation, adj,
 							gtk_adjustment_get_value (adj), new_value,
-							1, &tab_right_is_moving, FALSE);
+							1, &tabs->forward_is_moving);
 }
 
 static gboolean
@@ -353,8 +314,6 @@ cv_tabs_init (chanview *cv)
 		outer = gtkutil_box_new (GTK_ORIENTATION_HORIZONTAL, FALSE, 0);
 	}
 	((tabview *)cv)->outer = outer;
-	g_signal_connect (G_OBJECT (outer), "size-allocate",
-							G_CALLBACK (cv_tabs_sizealloc), cv);
 	gtk_widget_show (outer);
 
 	viewport = gtk_scrolled_window_new (0, 0);
@@ -555,8 +514,9 @@ tab_pressed_cb (GtkToggleButton *tab, chan *ch)
 	chan *old_tab;
 	int is_switching = TRUE;
 	chanview *cv = ch->cv;
+	tabview *tabs = (tabview *) cv;
 
-	ignore_toggle = TRUE;
+	tabs->ignore_toggle = TRUE;
 	/* de-activate the old tab */
 	old_tab = cv->focused;
 	if (old_tab && old_tab->impl)
@@ -566,7 +526,7 @@ tab_pressed_cb (GtkToggleButton *tab, chan *ch)
 			is_switching = FALSE;
 	}
 	gtk_toggle_button_set_active (tab, TRUE);
-	ignore_toggle = FALSE;
+	tabs->ignore_toggle = FALSE;
 	cv->focused = ch;
 
 	if (is_switching)
@@ -578,7 +538,7 @@ tab_pressed_cb (GtkToggleButton *tab, chan *ch)
 static void
 tab_toggled_cb (GtkToggleButton *tab, chan *ch)
 {
-	if (ignore_toggle)
+	if (((tabview *) ch->cv)->ignore_toggle)
 		return;
 
 	/* activated a tab via keyboard */
@@ -729,97 +689,12 @@ cv_tabs_add (chanview *cv, chan *ch, char *name, chan *parent)
 	return but;
 }
 
-/* traverse all the family boxes of tabs 
- *
- * A "group" is basically:
- * GtkV/HBox
- * `-GtkViewPort
- *   `-GtkV/HBox (inner box)
- *     `- GtkBox (family box)
- *        `- GtkToggleButton
- *        `- GtkToggleButton
- *        `- ...
- *     `- GtkBox
- *        `- GtkToggleButton
- *        `- GtkToggleButton
- *        `- ...
- *     `- ...
- *
- * */
-
-static int
-tab_group_for_each_tab (chanview *cv,
-								int (*callback) (GtkWidget *tab, int num, int usernum),
-								int usernum)
-{
-	GList *tabs;
-	GList *boxes;
-	GtkWidget *child;
-	GtkBox *innerbox;
-	int i;
-
-	innerbox = (GtkBox *) ((tabview *)cv)->inner;
-	boxes = gtk_container_get_children (GTK_CONTAINER (innerbox));
-	i = 0;
-	while (boxes)
-	{
-		child = boxes->data;
-		tabs = gtk_container_get_children (GTK_CONTAINER (child));
-
-		while (tabs)
-		{
-			child = tabs->data;
-
-			if (!GTK_IS_SEPARATOR (child))
-			{
-				if (callback (child, i, usernum) != -1)
-					return i;
-				i++;
-			}
-			tabs = tabs->next;
-		}
-
-		boxes = boxes->next;
-	}
-
-	return i;
-}
-
-static int
-tab_check_focus_cb (GtkWidget *tab, int num, int unused)
-{
-	if (gtk_toggle_button_get_active (GTK_TOGGLE_BUTTON (tab)))
-		return num;
-
-	return -1;
-}
-
-/* returns the currently focused tab number */
-
-static int
-tab_group_get_cur_page (chanview *cv)
-{
-	return tab_group_for_each_tab (cv, tab_check_focus_cb, 0);
-}
-
 static void
 cv_tabs_focus (chan *ch)
 {
 	if (ch->impl)
 	/* focus the new one (tab_pressed_cb defocuses the old one) */
 		tab_pressed_cb (GTK_TOGGLE_BUTTON (ch->impl), ch);
-}
-
-static int
-tab_focus_num_cb (GtkWidget *tab, int num, int want)
-{
-	if (num == want)
-	{
-		cv_tabs_focus (g_object_get_data (G_OBJECT (tab), "c"));
-		return 1;
-	}
-
-	return -1;
 }
 
 static void
@@ -839,22 +714,18 @@ cv_tabs_change_orientation (chanview *cv)
 static void
 cv_tabs_move_focus (chanview *cv, gboolean relative, int num)
 {
-	int i, max;
+	chan *ch;
 
 	if (relative)
 	{
-		max = cv->size;
-		i = tab_group_get_cur_page (cv) + num;
-		/* make it wrap around at both ends */
-		if (i < 0)
-			i = max - 1;
-		if (i >= max)
-			i = 0;
-		tab_group_for_each_tab (cv, tab_focus_num_cb, i);
-		return;
+		num += cv_find_number_of_chan (cv, cv->focused);
+		num %= cv->size;
+		if (num < 0)
+			num = cv->size - 1;
 	}
-
-	tab_group_for_each_tab (cv, tab_focus_num_cb, num);
+	ch = cv_find_chan_by_number (cv, num);
+	if (ch)
+		cv_tabs_focus (ch);
 }
 
 static void
@@ -924,8 +795,12 @@ cv_tabs_move_family (chan *ch, int delta)
 static void
 cv_tabs_cleanup (chanview *cv)
 {
+	tabview *tabs = (tabview *) cv;
+
+	tab_scroll_animation_cancel (&tabs->backward_animation);
+	tab_scroll_animation_cancel (&tabs->forward_animation);
 	if (cv->box)
-		gtk_widget_destroy (((tabview *)cv)->outer);
+		gtk_widget_destroy (tabs->outer);
 }
 
 static void
