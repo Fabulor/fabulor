@@ -1,6 +1,6 @@
 # GTK4 List Model Architecture
 
-Status: Stage 5 pass 9 conversion contract
+Status: Stage 5 pass 10 conversion contract
 
 Date: 2026-07-16
 
@@ -78,8 +78,10 @@ navigation order.
      view and resolve keyboard focus movement through stable model identity.
    - [x] Mirror grouped-tab and family reorder operations from authoritative
      channel-model positions without enumerating GTK children.
-   - [ ] Convert the grouped tab-strip owner, family boxes, close presentation,
-     animated scrolling presentation, keyboard handling, and drag/drop.
+   - [x] Own grouped-tab family boxes by model-root identity with deterministic
+     creation, insertion, removal, and cleanup.
+   - [ ] Convert grouped-tab close presentation, animated scrolling
+     presentation, keyboard handling, and drag/drop.
 4. [ ] Convert remaining tabular editors and operational lists according to their
    editing and multi-selection requirements.
 5. [ ] Remove the final GTK3 tree-model, cell-renderer, iterator, and row-reference
@@ -185,8 +187,8 @@ guard; cleanup cancels outstanding timeout sources before destroying the tab
 widgets. Multiple windows can therefore animate or change focus independently.
 Relative and absolute focus movement use the authoritative flattened channel
 model rather than enumerating family boxes and toggle-button children. Family
-construction and presentation updates remain in the legacy tab implementation
-for the next owner pass.
+button construction and presentation updates remain in the legacy tab
+implementation for later presentation passes.
 
 Grouped-tab reordering now mirrors the hierarchy owner rather than deriving a
 new order from widget children. Child tabs use their current model sibling
@@ -194,6 +196,14 @@ position plus the leading server tab, while moving a server/root repositions
 its complete family box at the current model root position. The shared move
 workflow therefore mutates one authoritative order and the retained GTK3 tab
 presentation follows it without enumerating tabs or comparing family pointers.
+
+Each grouped-tab view now owns an explicit root-identity-to-family map. A root
+creates one family box and separator; children resolve that record from their
+model parent and insert at their model sibling position. Removing a child
+leaves its root family intact, while removing a root destroys and unregisters
+the now-empty family after child reparenting. Orientation changes, view-mode
+changes, and teardown release the complete map. Family discovery and pruning
+therefore no longer inspect GTK children or store family identity on widgets.
 
 ## Executable Contract
 

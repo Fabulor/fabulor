@@ -1889,6 +1889,43 @@ Scope: grouped-tab reorder lookup and dispatch only. Family-box construction,
 close presentation, animated scrolling presentation, keyboard handling, and
 drag/drop remain in the legacy tab implementation for the next contained pass.
 
+### PR: [#73 - GTK4 Stage 5 Grouped Tab Family Ownership](https://github.com/Fabulor/fabulor/pull/73)
+
+Date: 2026-07-16
+
+Migration stage: 5, grouped-tab family-owner pass 10
+
+Files/workflows converted: per-view root-to-family ownership; model-position
+child insertion; deterministic root-family creation and removal; family-map
+cleanup during orientation, implementation, and view teardown
+
+GTK version: 4.22.4
+
+GLib version: 2.88.0
+
+Build configuration: MSVC x64 Release and strict GTK4 probe boundary
+
+Automated checks:
+
+- [x] production GTK3 frontend compiles and links with 0 warnings and 0 errors
+- [x] family discovery and empty-box pruning no longer enumerate GTK children
+- [x] family identity is not stored on GTK widgets
+- [x] child insertion resolves authoritative model parent and sibling position
+- [x] a compile-time assertion protects the channel-view implementation scratch boundary
+- [x] strict GTK4 probe and dependency validator remain green
+- [x] repository diff whitespace validation passes
+
+Manual checks:
+
+- [ ] shipping GTK3 server/channel add, remove, reconnect, and root-child reparent workflows
+- [ ] tabs/tree switching and horizontal/vertical orientation changes with several families
+- [ ] sorted dialog tabs retain their expected order
+- [ ] GTK4 grouped-tab presentation awaits the remaining presentation passes
+
+Scope: grouped-tab family identity and lifetime only. Close presentation,
+scroll geometry and animation presentation, keyboard handling, and drag/drop
+remain in the legacy tab implementation for later contained passes.
+
 ## Per-PR Record Template
 
 Copy this section for each GTK4 PR:
