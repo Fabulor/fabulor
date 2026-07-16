@@ -83,6 +83,14 @@ and explicit binding cleanup. The `GtkTreeView` type inventory is now 76 lines
 across 18 files; the retained Notify GTK3 implementation is isolated inside the
 owner until production cutover.
 
+Stage 5 Ban List pass 18 moves the four-mode operational table into a
+cross-version owner. GTK4 uses typed mode rows, `GtkMultiSelection`, sortable
+`GtkColumnView` factories, and coordinate-based row selection; GTK3 retains its
+list store and tree selection privately. `banlist.c` now consumes mode-indexed
+mask snapshots for remove, crop, and clear, so translated type labels are no
+longer part of command dispatch. Its direct tree-model, iterator, path,
+selection, and cell-renderer count is zero.
+
 Stage 5 user-list model pass 3 replaces the per-session `GtkListStore` and
 frontend-owned row-reference hash with `FabulorUserListModel`. The GTK4 branch
 owns typed rows, sorted list and multi-selection models, identity-indexed
@@ -414,7 +422,7 @@ Status: `not started`
 | Transcript | `xtext.c`, `xtext.h` | snapshot rendering and event model | not started |
 | Edit box and spell check | `maingui.c`, `sexy-spell-entry.c` | editable composition/subclass and controllers | not started |
 | Menus and commands | `menu.c`, `plugin-tray.c` | actions and menu models | not started |
-| Operational lists | `servlistgui.c`, `chanlist.c`, `userlistgui.c`, `dccgui.c`, `banlist.c`, `notifygui.c`, `ignoregui.c`, `plugingui.c`, `urlgrab.c` | list models, factories, editing | in progress; notify, user, channel-navigation, loaded add-on, URL History, and Ignore List owners established |
+| Operational lists | `servlistgui.c`, `chanlist.c`, `userlistgui.c`, `dccgui.c`, `banlist.c`, `notifygui.c`, `ignoregui.c`, `plugingui.c`, `urlgrab.c` | list models, factories, editing | in progress; notify, user, channel-navigation, loaded add-on, URL History, Ignore List, and Ban List owners established |
 | Preferences/editors | `setup.c`, `fkeys.c`, `textgui.c`, `editlist.c` | generated widgets, models, async dialogs | not started |
 | Themes | `theme/*.c`, `common/gtk3-theme-service.c` | GTK4 CSS compatibility and adapter policy | not started |
 | Platform integration | `fe-gtk.c`, `plugin-tray.c`, notifications | displays, surfaces, icons, native tray | not started |

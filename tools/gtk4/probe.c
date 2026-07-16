@@ -5,6 +5,7 @@
 #include "../../src/fe-gtk/gtk-compat.h"
 #include "../../src/fe-gtk/gtk4-list-models.h"
 #include "../../src/fe-gtk/ignore-list.h"
+#include "../../src/fe-gtk/ban-list.h"
 #include "../../src/fe-gtk/addon-list.h"
 #include "../../src/fe-gtk/channel-model.h"
 #include "../../src/fe-gtk/channel-tree-view.h"
@@ -773,6 +774,77 @@ check_ignore_list_model (void)
 	return valid;
 }
 
+typedef struct
+{
+	guint selected;
+	guint calls;
+} ProbeBanSelection;
+
+static void
+probe_ban_selection (guint selected, gpointer user_data)
+{
+	ProbeBanSelection *selection = user_data;
+	selection->selected = selected;
+	selection->calls++;
+}
+
+static gboolean
+check_ban_list_model (void)
+{
+	ProbeBanSelection selection = { 0 };
+	FabulorBanList *list = fabulor_ban_list_new (probe_ban_selection,
+		&selection);
+	GPtrArray *selected_bans = NULL;
+	GPtrArray *cropped_quiets = NULL;
+	gboolean valid = list != NULL;
+	guint stage = 0;
+
+	if (valid)
+	{
+		stage = 1;
+		fabulor_ban_list_append (list, 0, "Ban", "alpha!*@*", "setter",
+			"Sat Mar 16 21:24:27 2013");
+		fabulor_ban_list_append (list, 0, "Ban", "beta!*@*", "setter",
+			"Sun Mar 17 21:24:27 2013");
+		fabulor_ban_list_append (list, 3, "Quiet", "quiet!*@*", "setter",
+			"Mon Mar 18 21:24:27 2013");
+		valid = fabulor_ban_list_get_n_rows (list) == 3 &&
+			fabulor_ban_list_set_selected (list, 0, TRUE) &&
+			fabulor_ban_list_set_selected (list, 2, TRUE) &&
+			fabulor_ban_list_get_n_selected (list) == 2 &&
+			selection.selected == 2 && selection.calls >= 2;
+	}
+	if (valid)
+	{
+		stage = 2;
+		selected_bans = fabulor_ban_list_dup_masks (list, 0, TRUE);
+		cropped_quiets = fabulor_ban_list_dup_masks (list, 3, FALSE);
+		valid = selected_bans->len == 1 &&
+			g_strcmp0 (g_ptr_array_index (selected_bans, 0), "alpha!*@*") == 0 &&
+			cropped_quiets->len == 0;
+		g_ptr_array_unref (selected_bans);
+		g_ptr_array_unref (cropped_quiets);
+	}
+	if (valid)
+	{
+		stage = 3;
+		fabulor_ban_list_invert_selection (list);
+		valid = fabulor_ban_list_get_n_selected (list) == 1;
+		fabulor_ban_list_select_all (list);
+		valid = valid && fabulor_ban_list_get_n_selected (list) == 3;
+		fabulor_ban_list_clear (list);
+		valid = valid && fabulor_ban_list_get_n_rows (list) == 0 &&
+			fabulor_ban_list_get_n_selected (list) == 0;
+	}
+	if (!valid)
+		fprintf (stderr, "Ban list probe failed at stage %u: rows=%u selected=%u callback=%u calls=%u\n",
+			stage, list ? fabulor_ban_list_get_n_rows (list) : 0,
+			list ? fabulor_ban_list_get_n_selected (list) : 0,
+			selection.selected, selection.calls);
+	fabulor_ban_list_free (list);
+	return valid;
+}
+
 int
 main (void)
 {
@@ -830,6 +902,11 @@ main (void)
 	if (!check_ignore_list_model ())
 	{
 		fprintf (stderr, "GTK4 ignore list model contract mismatch\n");
+		return 1;
+	}
+	if (!check_ban_list_model ())
+	{
+		fprintf (stderr, "GTK4 ban list model contract mismatch\n");
 		return 1;
 	}
 

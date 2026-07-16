@@ -13,6 +13,7 @@ zoitechat_theme_sources = [
 zoitechat_gtk_sources = [
   'addon-list.c',
   'ascii.c',
+  'ban-list.c',
   'banlist.c',
   'chanlist.c',
   'chanview.c',

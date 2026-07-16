@@ -43,6 +43,8 @@ typedef enum banlist_modes_e {
 	MODE_CT
 } banlist_modes;
 
+typedef struct _FabulorBanList FabulorBanList;
+
 typedef struct banlist_info_s {
 	session *sess;
 	int capable;	/* MODE bitmask */
@@ -54,7 +56,7 @@ typedef struct banlist_info_s {
 	int line_ct;	/* count of presented lines */
 	int select_ct;	/* count of selected lines */
 	GtkWidget *window;
-	GtkWidget *treeview;
+	FabulorBanList *list;
 	GtkWidget *checkboxes[MODE_CT];
 	GtkWidget *but_remove;
 	GtkWidget *but_crop;
