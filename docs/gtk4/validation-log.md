@@ -2543,6 +2543,46 @@ Scope: Preferences category navigation model/view ownership and page
 selection. Page registration, lazy page construction, notebook switching, and
 preference save/cancel policy remain in `setup.c`.
 
+### PR: #90 - GTK4 Stage 5 Server Network List
+
+Date: 2026-07-17
+
+Migration stage: 5, Server List network-table pass 27
+
+Files/workflows converted: main network chooser; stable `ircnet` identity;
+favorite presentation; inline rename; favorites-only refresh; remembered
+selection; add/remove/sort; Shift+Up/Down ordering; window teardown
+
+GTK version: 4.22.4
+
+GLib version: 2.88.0
+
+Build configuration: MSVC x64 Release and strict GTK4 probe boundary
+
+Automated checks:
+
+- [x] production GTK3 frontend compiles and links with 0 warnings and 0 errors
+- [x] strict GTK4 probe compiles and executes the server-network owner with 0 warnings and 0 errors
+- [x] prepend/append order, duplicate rejection, identity selection, movement boundaries, favorite/name updates, removal, clear, and cleanup pass
+- [x] the main chooser path no longer accesses tree models, iterators, paths, renderers, or selections
+- [x] production and strict build definitions include the new owner
+- [x] GTK4 dependency validator tests remain 8/8
+- [x] repository diff whitespace validation passes
+
+Manual checks:
+
+- [ ] shipping GTK3 Network List restores the remembered network and favorite emphasis
+- [ ] Add selects the new row and immediately starts inline rename
+- [ ] empty rename removes the new network and non-empty rename persists
+- [ ] favorite toggling and favorites-only refresh preserve a valid selection
+- [ ] Sort and Shift+Up/Down keep the visible and saved network order synchronized
+- [ ] Connect, Edit, Remove, Close, and repeated reopen preserve prior behavior
+- [ ] GTK4 inline editing, focus, accessibility, long names, and scale await frontend cutover
+
+Scope: main Server List network chooser model/view ownership and interaction.
+The detailed Servers, Autojoin channels, and Connect commands editor tables,
+network connection workflow, and configuration persistence remain unchanged.
+
 ## Per-PR Record Template
 
 Copy this section for each GTK4 PR:

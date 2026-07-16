@@ -1,6 +1,6 @@
 # GTK4 List Model Architecture
 
-Status: Stage 5 pass 26 conversion contract
+Status: Stage 5 pass 27 conversion contract
 
 Date: 2026-07-17
 
@@ -382,6 +382,18 @@ callback used by pointer and keyboard selection. The strict probe verifies
 category/page counts, page identity, callback de-duplication, missing-page
 rejection, remembered selection, and cleanup.
 
+The main Server List network table now owns copied display names, stable
+`ircnet` identity, favorite emphasis, single selection, inline rename state,
+filtered refresh order, and boundary-safe movement. GTK4 uses typed mutable
+rows, the shared flat model stack, `GtkSingleSelection`, `GtkListView`, and an
+editable-label factory; GTK3 retains its list store, renderer, tree view, and
+selection privately. Add, remove, sort, favorite toggling, favorites-only
+refresh, remembered network selection, and Shift+Up/Down now cross identity
+methods. The strict probe verifies prepend/append order, duplicate rejection,
+selection callbacks, movement boundaries, favorite and name updates, removal,
+clear, and cleanup. The detailed Servers, Autojoin channels, and Connect
+commands editor tables remain a separate pass.
+
 ## Executable Contract
 
 `src/fe-gtk/gtk4-list-models.c` implements the GTK4-only ownership stacks.
@@ -401,6 +413,8 @@ The isolated GTK4 MSVC and Meson probes verify:
   destruction, listener cleanup, and post-destruction model reuse.
 - Preferences category hierarchy counts, stable page selection, callback
   dispatch, missing-page rejection, and cleanup.
+- Server-network prepend/append order, duplicate rejection, identity selection,
+  movement, favorite/name updates, removal, clear, and cleanup.
 
 These probes establish architecture and ownership only. Production workflow,
 visual, keyboard, accessibility, and load validation remains mandatory for
