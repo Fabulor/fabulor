@@ -2503,6 +2503,46 @@ Scope: Preferences sound-event list/model/view ownership and row interaction.
 Sound playback, file selection, path normalization, core sound-file ownership,
 and preference save/cancel policy remain unchanged.
 
+### PR: #89 - GTK4 Stage 5 Preferences Category Navigation
+
+Date: 2026-07-17
+
+Migration stage: 5, Preferences category-navigation pass 26
+
+Files/workflows converted: Preferences category/page hierarchy; stable page
+identity; non-selectable headings; expansion; remembered startup selection;
+lazy page-switch callback; Preferences teardown
+
+GTK version: 4.22.4
+
+GLib version: 2.88.0
+
+Build configuration: MSVC x64 Release and strict GTK4 probe boundary
+
+Automated checks:
+
+- [x] production GTK3 frontend compiles and links with 0 warnings and 0 errors
+- [x] strict GTK4 probe compiles and executes the category owner with 0 warnings and 0 errors
+- [x] hierarchy counts, stable page selection, callback de-duplication, missing-page rejection, and cleanup pass
+- [x] category headings are excluded from the page-selection contract
+- [x] `setup.c` contains no direct tree-model, iterator, path, cell-renderer, list-store, tree-selection, or child-reordering dependency
+- [x] production and strict build definitions include the new owner
+- [x] GTK4 dependency validator tests remain 8/8
+- [x] repository diff whitespace validation passes
+
+Manual checks:
+
+- [ ] shipping GTK3 Preferences opens with all three categories expanded and Appearance selected on first use
+- [ ] category headings expand and collapse but cannot replace the active page
+- [ ] pointer and keyboard page selection lazily creates and displays the correct page
+- [ ] closing and reopening Preferences restores the last selected page
+- [ ] repeated open/close cycles leave no stale callbacks or navigation state
+- [ ] GTK4 focus, accessibility, hierarchy styling, long translations, and scale await frontend cutover
+
+Scope: Preferences category navigation model/view ownership and page
+selection. Page registration, lazy page construction, notebook switching, and
+preference save/cancel policy remain in `setup.c`.
+
 ## Per-PR Record Template
 
 Copy this section for each GTK4 PR:

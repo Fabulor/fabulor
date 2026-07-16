@@ -38,6 +38,7 @@
 #include "theme/theme-preferences.h"
 #include "gtkutil.h"
 #include "gtk-compat.h"
+#include "preferences-category-list.h"
 #include "sound-event-list.h"
 #include "maingui.h"
 #include "pixmaps.h"
@@ -56,6 +57,7 @@
 static GtkWidget *setup_window = NULL;
 static int last_selected_page = 0;
 static int last_selected_row = 0; /* sound row */
+static FabulorPreferencesCategoryList *preferences_category_list = NULL;
 static gboolean color_change;
 static struct zoitechatprefs setup_prefs;
 static GtkWidget *cancel_button;
@@ -1963,13 +1965,12 @@ static const char *const cata_network[] =
 };
 
 static GtkWidget *
-setup_create_pages (GtkWidget *box)
+setup_create_pages (void)
 {
         GtkWidget *book;
         GtkWindow *win = GTK_WINDOW (setup_window);
         int i;
 
-        (void)box;
         book = gtk_notebook_new ();
 
         for (i = 0; i < SETUP_MAX_PAGES; i++)
@@ -2014,116 +2015,53 @@ setup_create_pages (GtkWidget *box)
 
         gtk_notebook_set_show_tabs (GTK_NOTEBOOK (book), FALSE);
         gtk_notebook_set_show_border (GTK_NOTEBOOK (book), FALSE);
-        fabulor_gtk_box_append (GTK_BOX (box), book, TRUE, TRUE, 0);
-
         return book;
 }
 
 static void
-setup_tree_cb (GtkTreeView *treeview, GtkWidget *book)
+setup_category_selected (gint page, gpointer user_data)
 {
-        GtkTreeSelection *selection = gtk_tree_view_get_selection (treeview);
-        GtkTreeIter iter;
-        GtkTreeModel *model;
-        int page;
+        GtkWidget *book = user_data;
 
-        if (gtk_tree_selection_get_selected (selection, &model, &iter))
-        {
-                gtk_tree_model_get (model, &iter, 1, &page, -1);
-                if (page != -1)
-                {
-                        setup_ensure_page_created (page);
-                        gtk_notebook_set_current_page (GTK_NOTEBOOK (book), page);
-                        last_selected_page = page;
-                }
-        }
-}
-
-static gboolean
-setup_tree_select_filter (GtkTreeSelection *selection, GtkTreeModel *model,
-                                                                  GtkTreePath *path, gboolean path_selected,
-                                                                  gpointer data)
-{
-        if (gtk_tree_path_get_depth (path) > 1)
-                return TRUE;
-        return FALSE;
+        setup_ensure_page_created (page);
+        gtk_notebook_set_current_page (GTK_NOTEBOOK (book), page);
+        last_selected_page = page;
 }
 
 static void
 setup_create_tree (GtkWidget *box, GtkWidget *book)
 {
-        GtkWidget *tree;
-        GtkWidget *frame;
-        GtkTreeStore *model;
-        GtkTreeIter iter;
-        GtkTreeIter child_iter;
-        GtkTreeIter *sel_iter = NULL;
-        GtkCellRenderer *renderer;
-        GtkTreeSelection *sel;
-        int i, page;
+        guint category;
+        int i;
+        int page = 0;
 
-        model = gtk_tree_store_new (2, G_TYPE_STRING, G_TYPE_INT);
-
-        page = 0;
-
-        gtk_tree_store_append (model, &iter, NULL);
-        gtk_tree_store_set (model, &iter, 0, _("Interface"), 1, -1, -1);
+        preferences_category_list = fabulor_preferences_category_list_new (
+                setup_category_selected, book);
+        category = fabulor_preferences_category_list_append_category (
+                preferences_category_list, _("Interface"));
         for (i = 0; cata_interface[i]; i++)
-        {
-                gtk_tree_store_append (model, &child_iter, &iter);
-                gtk_tree_store_set (model, &child_iter, 0, _(cata_interface[i]), 1, page, -1);
-                if (page == last_selected_page)
-                        sel_iter = gtk_tree_iter_copy (&child_iter);
-                page++;
-        }
+                fabulor_preferences_category_list_append_page (
+                        preferences_category_list, category,
+                        _(cata_interface[i]), page++);
 
-        gtk_tree_store_append (model, &iter, NULL);
-        gtk_tree_store_set (model, &iter, 0, _("Chatting"), 1, -1, -1);
+        category = fabulor_preferences_category_list_append_category (
+                preferences_category_list, _("Chatting"));
         for (i = 0; cata_chatting[i]; i++)
-        {
-                gtk_tree_store_append (model, &child_iter, &iter);
-                gtk_tree_store_set (model, &child_iter, 0, _(cata_chatting[i]), 1, page, -1);
-                if (page == last_selected_page)
-                        sel_iter = gtk_tree_iter_copy (&child_iter);
-                page++;
-        }
+                fabulor_preferences_category_list_append_page (
+                        preferences_category_list, category,
+                        _(cata_chatting[i]), page++);
 
-        gtk_tree_store_append (model, &iter, NULL);
-        gtk_tree_store_set (model, &iter, 0, _("Network"), 1, -1, -1);
+        category = fabulor_preferences_category_list_append_category (
+                preferences_category_list, _("Network"));
         for (i = 0; cata_network[i]; i++)
-        {
-                gtk_tree_store_append (model, &child_iter, &iter);
-                gtk_tree_store_set (model, &child_iter, 0, _(cata_network[i]), 1, page, -1);
-                if (page == last_selected_page)
-                        sel_iter = gtk_tree_iter_copy (&child_iter);
-                page++;
-        }
+                fabulor_preferences_category_list_append_page (
+                        preferences_category_list, category,
+                        _(cata_network[i]), page++);
 
-        tree = gtk_tree_view_new_with_model (GTK_TREE_MODEL (model));
-        g_object_unref (G_OBJECT (model));
-        sel = gtk_tree_view_get_selection (GTK_TREE_VIEW (tree));
-        gtk_tree_selection_set_mode (sel, GTK_SELECTION_BROWSE);
-        gtk_tree_selection_set_select_function (sel, setup_tree_select_filter,
-                                                                                                                 NULL, NULL);
-        g_signal_connect (G_OBJECT (tree), "cursor-changed",
-                                                        G_CALLBACK (setup_tree_cb), book);
-
-        renderer = gtk_cell_renderer_text_new ();
-        gtk_tree_view_insert_column_with_attributes (GTK_TREE_VIEW (tree),
-                                                            -1, _("Categories"), renderer, "text", 0, NULL);
-        gtk_tree_view_expand_all (GTK_TREE_VIEW (tree));
-
-        frame = gtk_frame_new (NULL);
-        fabulor_gtk_frame_set_child (GTK_FRAME (frame), tree);
-        fabulor_gtk_box_append (GTK_BOX (box), frame, FALSE, FALSE, 0);
-        gtk_box_reorder_child (GTK_BOX (box), frame, 0);
-
-        if (sel_iter)
-        {
-                gtk_tree_selection_select_iter (sel, sel_iter);
-                gtk_tree_iter_free (sel_iter);
-                setup_tree_cb (GTK_TREE_VIEW (tree), book);
-        }
+        fabulor_preferences_category_list_create_view (
+                preferences_category_list, GTK_BOX (box), _("Categories"));
+        fabulor_preferences_category_list_select_page (
+                preferences_category_list, last_selected_page);
 }
 
 static void
@@ -2434,7 +2372,7 @@ setup_ok_cb (GtkWidget *but, GtkWidget *win)
 static GtkWidget *
 setup_window_open (void)
 {
-        GtkWidget *wid, *win, *vbox, *hbox, *hbbox;
+        GtkWidget *wid, *win, *vbox, *hbox, *hbbox, *book;
         char buf[128];
 
         g_snprintf(buf, sizeof(buf), _("Preferences - %s"), _(DISPLAY_NAME));
@@ -2448,7 +2386,9 @@ setup_window_open (void)
         hbox = gtkutil_box_new (GTK_ORIENTATION_HORIZONTAL, FALSE, 4);
         fabulor_gtk_box_append (GTK_BOX (vbox), hbox, TRUE, TRUE, 0);
 
-        setup_create_tree (hbox, setup_create_pages (hbox));
+        book = setup_create_pages ();
+        setup_create_tree (hbox, book);
+        fabulor_gtk_box_append (GTK_BOX (hbox), book, TRUE, TRUE, 0);
 
         /* prepare the button box */
         hbbox = gtk_button_box_new (GTK_ORIENTATION_HORIZONTAL);
@@ -2479,6 +2419,9 @@ setup_close_cb (GtkWidget *win, GtkWidget **swin)
         fabulor_sound_event_list_free (sound_event_list);
         sound_event_list = NULL;
         sndfile_entry = NULL;
+
+        fabulor_preferences_category_list_free (preferences_category_list);
+        preferences_category_list = NULL;
 
         theme_preferences_stage_discard ();
 

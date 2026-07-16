@@ -1,6 +1,6 @@
 # GTK4 List Model Architecture
 
-Status: Stage 5 pass 25 conversion contract
+Status: Stage 5 pass 26 conversion contract
 
 Date: 2026-07-17
 
@@ -371,6 +371,17 @@ and selection callbacks expose the same identity to browse/play and staged
 sound-file state. The strict probe verifies explicit selection, callbacks,
 live filename updates, missing-event rejection, clear, and cleanup.
 
+The Preferences category navigation now owns copied category and page labels,
+stable page indices, expanded hierarchy state, and explicit single selection.
+GTK4 uses typed category/page rows, child `GListStore` instances,
+`GtkTreeListModel`, `GtkSingleSelection`, `GtkListView`, and a tree-expander
+factory; GTK3 retains its tree store, renderer, tree view, and heading-selection
+filter privately. Category headings cannot replace the selected page, and
+programmatic startup selection restores the last page through the same typed
+callback used by pointer and keyboard selection. The strict probe verifies
+category/page counts, page identity, callback de-duplication, missing-page
+rejection, remembered selection, and cleanup.
+
 ## Executable Contract
 
 `src/fe-gtk/gtk4-list-models.c` implements the GTK4-only ownership stacks.
@@ -388,6 +399,8 @@ The isolated GTK4 MSVC and Meson probes verify:
   reparenting, removal, typed tree access, and selection persistence.
 - channel tree construction, expansion, identity selection, callback dispatch,
   destruction, listener cleanup, and post-destruction model reuse.
+- Preferences category hierarchy counts, stable page selection, callback
+  dispatch, missing-page rejection, and cleanup.
 
 These probes establish architecture and ownership only. Production workflow,
 visual, keyboard, accessibility, and load validation remains mandatory for

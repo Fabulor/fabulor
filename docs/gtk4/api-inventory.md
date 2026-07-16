@@ -152,6 +152,16 @@ stable event indices, while browse/play and sound configuration ownership stay
 in `setup.c`. The sound-page workflow contains no direct tree-model, iterator,
 path, cell-renderer, list-store, or tree-selection dependency.
 
+Stage 5 Preferences category-navigation pass 26 moves the three-group page
+hierarchy into a cross-version owner. GTK4 uses typed category/page rows,
+per-category child stores, `GtkTreeListModel`, `GtkSingleSelection`,
+`GtkListView`, and a tree-expander factory; GTK3 keeps its tree store,
+renderer, tree view, and root-selection filter private. Page switching crosses
+stable numeric identity, category headings remain non-selectable, groups start
+expanded, and startup restores the remembered page. `setup.c` now contains no
+direct tree-model, iterator, path, cell-renderer, list-store, tree-selection,
+or child-reordering dependency.
+
 Stage 5 user-list model pass 3 replaces the per-session `GtkListStore` and
 frontend-owned row-reference hash with `FabulorUserListModel`. The GTK4 branch
 owns typed rows, sorted list and multi-selection models, identity-indexed
@@ -484,7 +494,7 @@ Status: `not started`
 | Edit box and spell check | `maingui.c`, `sexy-spell-entry.c` | editable composition/subclass and controllers | not started |
 | Menus and commands | `menu.c`, `plugin-tray.c` | actions and menu models | not started |
 | Operational lists | `servlistgui.c`, `chanlist.c`, `userlistgui.c`, `dccgui.c`, `banlist.c`, `notifygui.c`, `ignoregui.c`, `plugingui.c`, `urlgrab.c` | list models, factories, editing | in progress; notify, user, channel-navigation, loaded add-on, URL History, Ignore List, Ban List, and both DCC owners established |
-| Preferences/editors | `setup.c`, `fkeys.c`, `textgui.c`, `editlist.c` | generic edit list, Print Events, key bindings, and sound events converted; preference navigation remains | in progress |
+| Preferences/editors | `setup.c`, `fkeys.c`, `textgui.c`, `editlist.c` | generic edit list, Print Events, key bindings, sound events, and preference navigation converted | converted |
 | Themes | `theme/*.c`, `common/gtk3-theme-service.c` | GTK4 CSS compatibility and adapter policy | not started |
 | Platform integration | `fe-gtk.c`, `plugin-tray.c`, notifications | displays, surfaces, icons, native tray | not started |
 
