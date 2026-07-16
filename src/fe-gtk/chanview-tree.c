@@ -54,13 +54,16 @@ cv_tree_selection_changed (GtkWidget *view, gpointer identity,
 }
 
 static gboolean
-cv_tree_click_cb (GtkWidget *tree, GdkEventButton *event, chanview *cv)
+cv_tree_click_cb (GtkWidget *tree, guint button, guint n_press, gdouble x,
+	gdouble y, GdkModifierType state, gpointer user_data)
 {
+	chanview *cv = user_data;
 	chan *ch = fabulor_channel_tree_view_get_identity_at_position (tree,
-		event->x, event->y);
+		x, y);
 
-	return ch ? cv->cb_contextmenu (cv, ch, ch->tag, ch->userdata, event) :
-		FALSE;
+	(void) n_press;
+	return ch ? cv->cb_contextmenu (cv, ch, ch->tag, ch->userdata, tree,
+		button, x, y, state) : FALSE;
 }
 
 static gboolean
@@ -110,8 +113,7 @@ cv_tree_init (chanview *cv)
 	fabulor_channel_tree_view_set_selection_callback (view,
 		cv_tree_selection_changed, cv);
 	fabulor_gtk_scrolled_window_set_child (GTK_SCROLLED_WINDOW (win), view);
-	g_signal_connect (view, "button-press-event",
-		G_CALLBACK (cv_tree_click_cb), cv);
+	fabulor_gtk_widget_on_multi_click (view, cv_tree_click_cb, cv);
 	fabulor_gtk_widget_on_scroll (view, cv_tree_scroll_cb, NULL);
 	fabulor_gtk_widget_enable_internal_drag_source (view,
 		FABULOR_GTK_INTERNAL_DRAG_CHANNEL_VIEW, mg_internal_drag_icon, NULL);

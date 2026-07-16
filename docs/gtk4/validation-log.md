@@ -1787,6 +1787,39 @@ Scope: the hierarchical channel-tree presentation. The grouped tab strip,
 close controls, animated scrolling, context actions, and family reordering are
 the next contained Stage 5 pass.
 
+### PR: [#70 - GTK4 Stage 5 Channel Context Input Boundary](https://github.com/Fabulor/fabulor/pull/70)
+
+Date: 2026-07-16
+
+Migration stage: 5, channel close/context input pass 7
+
+Files/workflows converted: shared channel context callback; tree and tab
+multi-click controllers; tree identity hit-testing; tab close-button hit area;
+middle-click close; right-click tab menu placement and widget fallback
+
+GTK version: 4.22.4
+
+GLib version: 2.88.0
+
+Build configuration: MSVC x64 Release and strict GTK4 probe boundary
+
+Automated checks:
+
+- [x] production GTK3 frontend compiles and links with 0 warnings and 0 errors
+- [x] strict GTK4 compatibility probe covers the shared multi-click controller signature
+- [x] source boundary: no `GdkEventButton` or `button-press-event` remains in shared channel view, tree, or tab code
+- [x] source boundary: the channel callback API carries only widget, button, coordinates, and modifier state
+- [x] retained GTK3 popup has pointer-event placement and widget-anchored fallback paths
+
+Manual checks:
+
+- [ ] shipping GTK3 tab close button, optional middle-click close, right-click tab/tree menu, and empty-area clicks
+- [ ] GTK4 gesture claiming, popup placement, and close/context behavior await frontend cutover
+
+Scope: pointer input and callback type containment only. Grouped tab family
+layout, close presentation, animated scrolling, focus, and reordering remain
+for Stage 5 pass 8.
+
 ## Per-PR Record Template
 
 Copy this section for each GTK4 PR:

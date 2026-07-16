@@ -649,8 +649,21 @@ retains exact tree lines, indentation, compact rows, double-click expansion,
 off-screen-only scrolling, context hit-testing, channel switching, and internal
 drag/drop behind the same owner. `chanview-tree.c` no longer contains direct
 tree-view, renderer, iterator, or path operations. The grouped tab strip is
-reserved for pass 7 because its family boxes, close controls, animated
+reserved for the following passes because its family boxes, close controls, animated
 scrolling, and reordering form an independent presentation lifecycle.
+
+Channel close/context input pass 7 (2026-07-16): channel-tree and grouped-tab
+pointer actions now use the shared cross-version multi-click controller. The
+channel callback contract carries the source widget, button, coordinates, and
+modifier state rather than `GdkEventButton`; no raw button-event type or
+`button-press-event` connection remains in `chanview.c`, `chanview-tree.c`, or
+`chanview-tabs.c`. Tree identity resolution remains in the tree owner, while
+tab close-button hit-testing remains presentation-local. The retained GTK3 tab
+menu adapter uses the current event only for native pointer placement and falls
+back to widget anchoring. Middle-click close, right-click menus, close-button
+hit areas, tree row targeting, and event consumption are preserved. The grouped
+tab-strip owner, family boxes, animated scrolling, and reordering remain for
+pass 8.
 
 Primary surfaces:
 
