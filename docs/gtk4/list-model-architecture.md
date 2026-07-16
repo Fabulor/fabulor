@@ -1,6 +1,6 @@
 # GTK4 List Model Architecture
 
-Status: Stage 5 pass 8 conversion contract
+Status: Stage 5 pass 9 conversion contract
 
 Date: 2026-07-16
 
@@ -76,8 +76,10 @@ navigation order.
      coordinate, and modifier boundary.
    - [x] Move toggle suppression and scroll-animation lifetime into each channel
      view and resolve keyboard focus movement through stable model identity.
+   - [x] Mirror grouped-tab and family reorder operations from authoritative
+     channel-model positions without enumerating GTK children.
    - [ ] Convert the grouped tab-strip owner, family boxes, close presentation,
-     animated scrolling, keyboard handling, drag/drop, and family reordering.
+     animated scrolling presentation, keyboard handling, and drag/drop.
 4. [ ] Convert remaining tabular editors and operational lists according to their
    editing and multi-selection requirements.
 5. [ ] Remove the final GTK3 tree-model, cell-renderer, iterator, and row-reference
@@ -183,8 +185,15 @@ guard; cleanup cancels outstanding timeout sources before destroying the tab
 widgets. Multiple windows can therefore animate or change focus independently.
 Relative and absolute focus movement use the authoritative flattened channel
 model rather than enumerating family boxes and toggle-button children. Family
-construction, presentation updates, and widget reordering remain in the legacy
-tab implementation for the next owner pass.
+construction and presentation updates remain in the legacy tab implementation
+for the next owner pass.
+
+Grouped-tab reordering now mirrors the hierarchy owner rather than deriving a
+new order from widget children. Child tabs use their current model sibling
+position plus the leading server tab, while moving a server/root repositions
+its complete family box at the current model root position. The shared move
+workflow therefore mutates one authoritative order and the retained GTK3 tab
+presentation follows it without enumerating tabs or comparing family pointers.
 
 ## Executable Contract
 

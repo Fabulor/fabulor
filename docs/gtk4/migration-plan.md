@@ -676,6 +676,15 @@ requested tab. The unused scroll-button visibility allocation callback and its
 never-populated widget fields are removed. Family-box creation, tab presentation
 updates, and widget reordering remain for the next contained pass.
 
+Grouped-tab reorder pass 9 (2026-07-16): tab and family movement now follows
+the authoritative channel hierarchy after the shared move workflow updates it.
+A child tab resolves its current sibling position from the model and accounts
+for the leading server tab in its family box; moving a server/root repositions
+the complete family box at its current model root position. The reorder paths
+no longer enumerate GTK children or rediscover families through widget data.
+Family-box construction, close presentation, animated scrolling presentation,
+keyboard handling, and drag/drop remain for the grouped-tab owner conversion.
+
 Primary surfaces:
 
 - server list and editor
