@@ -41,6 +41,8 @@ check_compatibility_helper_signatures (void)
 		fabulor_gtk_widget_set_prelight;
 	void (*volatile widget_suppress_pointer_prelight) (GtkWidget *) =
 		fabulor_gtk_widget_suppress_pointer_prelight;
+	gboolean (*volatile widget_get_descendant_origin) (GtkWidget *, GtkWidget *,
+		gdouble *, gdouble *) = fabulor_gtk_widget_get_descendant_origin;
 	gboolean (*volatile widget_contains_descendant_point) (GtkWidget *, GtkWidget *,
 		gdouble, gdouble) = fabulor_gtk_widget_contains_descendant_point;
 	void (*volatile widget_set_pointing_cursor) (GtkWidget *, gboolean) =
@@ -100,6 +102,7 @@ check_compatibility_helper_signatures (void)
 	(void) widget_on_pointer_motion;
 	(void) widget_set_prelight;
 	(void) widget_suppress_pointer_prelight;
+	(void) widget_get_descendant_origin;
 	(void) widget_contains_descendant_point;
 	(void) widget_set_pointing_cursor;
 	(void) text_view_set_pointing_cursor;

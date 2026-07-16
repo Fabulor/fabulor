@@ -53,6 +53,7 @@ struct _tab_item
 
 struct _tabview_state
 {
+	GtkWidget *viewport;
 	GHashTable *families;	/* root chan * -> tab_family */
 	GHashTable *items;	/* chan * -> tab_item */
 };
@@ -77,44 +78,30 @@ cv_tabs_get_viewport_size (GtkAdjustment *adj)
 	return (gint) gtk_adjustment_get_page_size (adj);
 }
 
-static gint
-tab_search_offset (GtkWidget *inner, gint start_offset,
+static gdouble
+tab_search_offset (chanview *cv, gdouble start_offset,
 				   gboolean forward, gboolean vertical)
 {
-	GList *boxes;
-	GList *tabs;
-	GtkWidget *box;
-	GtkWidget *button;
-	GtkAllocation allocation;
-	gint found;
+	tabview *tabs = (tabview *) cv;
+	guint count = fabulor_channel_model_get_flat_count (cv->model);
+	guint offset;
 
-	boxes = gtk_container_get_children (GTK_CONTAINER (inner));
-	if (!forward && boxes)
-		boxes = g_list_last (boxes);
-
-	while (boxes)
+	for (offset = 0; offset < count; offset++)
 	{
-		box = (GtkWidget *)boxes->data;
-		boxes = (forward ? boxes->next : boxes->prev);
+		guint position = forward ? offset : count - offset - 1;
+		chan *ch = fabulor_channel_model_get_flat_at (cv->model, position);
+		tab_item *item = g_hash_table_lookup (tabs->state->items, ch);
+		gdouble x;
+		gdouble y;
+		gdouble found;
 
-		tabs = gtk_container_get_children (GTK_CONTAINER (box));
-		if (!forward && tabs)
-			tabs = g_list_last (tabs);
-
-		while (tabs)
-		{
-			button = (GtkWidget *)tabs->data;
-			tabs = (forward ? tabs->next : tabs->prev);
-
-			if (!GTK_IS_TOGGLE_BUTTON (button))
-				continue;
-
-			gtk_widget_get_allocation (button, &allocation);
-			found = (vertical ? allocation.y : allocation.x);
-			if ((forward && found > start_offset) ||
-				(!forward && found < start_offset))
-				return found;
-		}
+		if (!item || !fabulor_gtk_widget_get_descendant_origin (tabs->inner,
+			item->tab, &x, &y))
+			continue;
+		found = vertical ? y : x;
+		if ((forward && found > start_offset) ||
+			(!forward && found < start_offset))
+			return found;
 	}
 
 	return 0;
@@ -208,22 +195,19 @@ tab_scroll_left_up (chanview *cv)
 	tabview *tabs = (tabview *) cv;
 	GtkAdjustment *adj;
 	gint viewport_size;
-	gfloat new_value;
-	GtkWidget *inner;
-
-	inner = ((tabview *)cv)->inner;
+	gdouble new_value;
 
 	if (cv->vertical)
-	{
-		adj = gtk_scrollable_get_vadjustment (GTK_SCROLLABLE (gtk_widget_get_parent(inner)));
-	} else
-	{
-		adj = gtk_scrollable_get_hadjustment (GTK_SCROLLABLE (gtk_widget_get_parent(inner)));
-	}
+		adj = gtk_scrolled_window_get_vadjustment (
+			GTK_SCROLLED_WINDOW (tabs->state->viewport));
+	else
+		adj = gtk_scrolled_window_get_hadjustment (
+			GTK_SCROLLED_WINDOW (tabs->state->viewport));
 
 	viewport_size = cv_tabs_get_viewport_size (adj);
 
-	new_value = tab_search_offset (inner, gtk_adjustment_get_value (adj), 0, cv->vertical);
+	new_value = tab_search_offset (cv, gtk_adjustment_get_value (adj),
+		FALSE, cv->vertical);
 
 	if (new_value + viewport_size > gtk_adjustment_get_upper (adj))
 		new_value = gtk_adjustment_get_upper (adj) - viewport_size;
@@ -245,22 +229,19 @@ tab_scroll_right_down (chanview *cv)
 	tabview *tabs = (tabview *) cv;
 	GtkAdjustment *adj;
 	gint viewport_size;
-	gfloat new_value;
-	GtkWidget *inner;
-
-	inner = ((tabview *)cv)->inner;
+	gdouble new_value;
 
 	if (cv->vertical)
-	{
-		adj = gtk_scrollable_get_vadjustment (GTK_SCROLLABLE (gtk_widget_get_parent(inner)));
-	} else
-	{
-		adj = gtk_scrollable_get_hadjustment (GTK_SCROLLABLE (gtk_widget_get_parent(inner)));
-	}
+		adj = gtk_scrolled_window_get_vadjustment (
+			GTK_SCROLLED_WINDOW (tabs->state->viewport));
+	else
+		adj = gtk_scrolled_window_get_hadjustment (
+			GTK_SCROLLED_WINDOW (tabs->state->viewport));
 
 	viewport_size = cv_tabs_get_viewport_size (adj);
 
-	new_value = tab_search_offset (inner, gtk_adjustment_get_value (adj), 1, cv->vertical);
+	new_value = tab_search_offset (cv, gtk_adjustment_get_value (adj),
+		TRUE, cv->vertical);
 
 	if (new_value == 0 || new_value + viewport_size > gtk_adjustment_get_upper (adj))
 		new_value = gtk_adjustment_get_upper (adj) - viewport_size;
@@ -357,6 +338,7 @@ cv_tabs_init (chanview *cv)
 	}
 	tabs->inner = box;
 	tabs->state = g_new0 (tabview_state, 1);
+	tabs->state->viewport = viewport;
 	tabs->state->families = g_hash_table_new_full (g_direct_hash, g_direct_equal,
 		NULL, g_free);
 	tabs->state->items = g_hash_table_new_full (g_direct_hash, g_direct_equal,

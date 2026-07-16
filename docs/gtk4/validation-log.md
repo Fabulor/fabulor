@@ -1999,6 +1999,43 @@ Scope: grouped-tab close geometry and hover presentation only. Animated
 scrolling presentation, keyboard handling, and drag/drop remain for later
 contained passes.
 
+### PR: [#76 - GTK4 Stage 5 Grouped Tab Scroll Presentation](https://github.com/Fabulor/fabulor/pull/76)
+
+Date: 2026-07-16
+
+Migration stage: 5, grouped-tab scroll-presentation pass 13
+
+Files/workflows converted: model-driven forward/backward target discovery;
+cross-version descendant-origin geometry; explicit scrolled-window ownership;
+horizontal/vertical adjustment lookup
+
+GTK version: 4.22.4
+
+GLib version: 2.88.0
+
+Build configuration: MSVC x64 Release and strict GTK4 probe boundary
+
+Automated checks:
+
+- [x] production GTK3 frontend compiles and links with 0 warnings and 0 errors
+- [x] strict GTK4 probe compiles descendant-origin geometry and passes its runtime identity check
+- [x] grouped-tab code contains no GTK child enumeration
+- [x] scroll target discovery follows authoritative flattened model order and item identity
+- [x] grouped-tab code contains no direct allocation read or coordinate translation
+- [x] adjustment lookup uses the explicitly retained scrolled-window owner
+- [x] GTK4 dependency validator tests remain 8/8
+- [x] repository diff whitespace validation passes
+
+Manual checks:
+
+- [ ] shipping GTK3 horizontal and vertical wheel scrolling with channel switching enabled and disabled
+- [ ] forward/backward animation across several server families and partial viewport positions
+- [ ] rapid direction changes, orientation changes, detached windows, and teardown during animation
+- [ ] GTK4 tab offset transforms and animation await frontend cutover
+
+Scope: grouped-tab scroll target geometry and adjustment ownership. Keyboard
+handling and drag/drop remain for later contained passes.
+
 ## Per-PR Record Template
 
 Copy this section for each GTK4 PR:

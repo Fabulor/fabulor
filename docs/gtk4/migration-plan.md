@@ -718,6 +718,19 @@ signals, allocation reads, or coordinate translation in `chanview-tabs.c`.
 The strict GTK4 probe compiles all three new helper signatures and branches.
 Animated scrolling presentation, keyboard handling, and drag/drop remain.
 
+Grouped-tab scroll-presentation pass 13 (2026-07-16): animated scroll target
+discovery now iterates the authoritative flattened channel model and resolves
+each tab through the per-view item owner. A cross-version descendant-origin
+helper measures every tab in the shared inner-strip coordinate space; GTK4
+uses `gtk_widget_compute_point()` while GTK3 coordinate translation is contained
+inside the helper. This removes the final GTK child enumeration and local child
+allocation read from `chanview-tabs.c`, and fixes target positions across
+multiple nested family boxes. The view state retains its scrolled window
+explicitly and obtains horizontal or vertical adjustments from that owner rather
+than casting the inner strip's parent. Frame timing, cancellation, speed,
+direction, wheel preference, and endpoint behavior remain unchanged. Grouped-tab
+keyboard handling and drag/drop remain.
+
 Primary surfaces:
 
 - server list and editor
