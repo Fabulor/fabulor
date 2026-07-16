@@ -76,6 +76,7 @@ FOR %%I IN ("$(ZoiteChatLib)fabulor.rc") DO IF %%~zI EQU 0 (
     <ClInclude Include="banlist.h" />
     <ClInclude Include="chanlist.h" />
     <ClInclude Include="chanview.h" />
+	<ClInclude Include="channel-list.h" />
     <ClInclude Include="custom-list.h" />
     <ClInclude Include="dcc-chat-list.h" />
     <ClInclude Include="dcc-transfer-list.h" />
@@ -124,6 +125,7 @@ FOR %%I IN ("$(ZoiteChatLib)fabulor.rc") DO IF %%~zI EQU 0 (
     <ClCompile Include="banlist.c" />
     <ClCompile Include="chanlist.c" />
     <ClCompile Include="chanview.c" />
+	<ClCompile Include="channel-list.c" />
     <ClCompile Include="channel-model.c" />
     <ClCompile Include="channel-tree-view.c" />
     <ClCompile Include="custom-list.c" />

@@ -2306,6 +2306,45 @@ Scope: DCC Chat model/view ownership and row interaction. DCC protocol,
 socket lifecycle, command dispatch, and the separately converted file-transfer
 workflow are unchanged.
 
+### PR: #84 - GTK4 Stage 5 Channel List
+
+Date: 2026-07-17
+
+Migration stage: 5, Channel List pass 21
+
+Files/workflows converted: Channel List sorted rows; batched population;
+multi-selection; Join, Copy Channel, Copy Topic, context selection, export,
+refresh, teardown, and saved column widths
+
+GTK version: 4.22.4
+
+GLib version: 2.88.0
+
+Build configuration: MSVC x64 Release and strict GTK4 probe boundary
+
+Automated checks:
+
+- [x] production GTK3 frontend compiles and links with 0 warnings and 0 errors
+- [x] strict GTK4 probe compiles and executes the Channel List owner with 0 warnings and 0 errors
+- [x] collation ordering, duplicate rejection, and row counts pass
+- [x] ordered multi-selection, selected channel/topic copies, sorted export records, clear, and cleanup pass
+- [x] `chanlist.c` contains no direct tree-model, path, iterator, cell-renderer, list-store, tree-selection, or custom-list dependency
+- [x] production and strict build definitions include the new owner
+- [x] GTK4 dependency validator tests remain 8/8
+- [x] repository diff whitespace validation passes
+
+Manual checks:
+
+- [ ] shipping GTK3 `/LIST` download, first-row display, 250 ms batching, completion, refresh, and close/reopen
+- [ ] simple, wildcard, and regular-expression filtering with channel/topic toggles and min/max users
+- [ ] channel/users/topic sorting, saved widths, multi-select Join, Copy Channel, Copy Topic, and favourite context submenu
+- [ ] sorted file export and large-network list responsiveness
+- [ ] GTK4 keyboard multi-selection, column sizing, sorting, context placement, focus, accessibility, and scale await frontend cutover
+
+Scope: Channel List model/view ownership and row interaction. IRC `/LIST`
+protocol handling, server-side list arguments, filtering semantics, command
+dispatch, and authoritative downloaded-row storage are unchanged.
+
 ## Per-PR Record Template
 
 Copy this section for each GTK4 PR:

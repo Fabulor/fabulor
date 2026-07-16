@@ -1,6 +1,6 @@
 # GTK4 List Model Architecture
 
-Status: Stage 5 pass 20 conversion contract
+Status: Stage 5 pass 21 conversion contract
 
 Date: 2026-07-17
 
@@ -102,6 +102,9 @@ navigation order.
      multi-selection owner with in-place progress updates and identity actions.
    - [x] Convert the distinct DCC Chat list without conflating its schema or
      accept/abort lifecycle with file transfers.
+   - [x] Convert the high-volume Channel List with sorted export,
+     multi-selection actions, batched population, and retained GTK3 fast-path
+     storage behind the owner boundary.
 5. [ ] Remove the final GTK3 tree-model, cell-renderer, iterator, and row-reference
    assumptions only after all owning surfaces have moved.
 
@@ -311,6 +314,18 @@ Accept, Abort, and activation consume identity snapshots. The strict probe
 verifies duplicate rejection, mutable updates, selection order and callbacks,
 identity removal, clear, and cleanup. With both DCC schemas converted,
 `dccgui.c` no longer owns toolkit models, iterators, renderers, or selections.
+
+The Channel List now owns channel, user-count, topic, collation-key, stable
+identity, sorting, multi-selection, hit-testing, export snapshots, and saved
+column widths. GTK4 uses typed immutable rows, the shared flat model stack,
+`GtkMultiSelection`, three sortable `GtkColumnView` factories, and incremental
+sorting once the view exists. GTK3 retains the specialized `CustomList`
+append-and-final-resort path privately so large `/LIST` downloads do not lose
+their shipping performance characteristics. Immediate first rows, 250 ms
+pending-row batches, local filtering, and core row ownership remain in
+`chanlist.c`; that workflow now crosses snapshots and copied records instead of
+tree models. The strict probe verifies collation order, duplicate rejection,
+multi-selection, selected text, sorted export records, clear, and cleanup.
 
 ## Executable Contract
 

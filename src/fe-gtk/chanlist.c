@@ -44,21 +44,13 @@
 #include "maingui.h"
 #include "menu.h"
 
-#include "custom-list.h"
+#include "channel-list.h"
 
 #define ICON_CHANLIST_JOIN "zc-menu-join"
 #define ICON_CHANLIST_COPY "zc-menu-copy"
 #define ICON_CHANLIST_FIND "zc-menu-find"
 #define ICON_CHANLIST_REFRESH "zc-menu-refresh"
 #define ICON_CHANLIST_SAVE "zc-menu-save"
-
-enum
-{
-	COL_CHANNEL,
-	COL_USERS,
-	COL_TOPIC,
-	N_COLUMNS
-};
 
 #ifndef CUSTOM_LIST
 typedef struct	/* this is now in custom-list.h */
@@ -73,7 +65,19 @@ typedef struct	/* this is now in custom-list.h */
 chanlistrow;
 #endif
 
-#define GET_MODEL(xserv) (gtk_tree_view_get_model(GTK_TREE_VIEW(xserv->gui->chanlist_list)))
+static gboolean
+chanlist_append_row (server *serv, chanlistrow *row)
+{
+	FabulorChannelListSnapshot snapshot = {
+		row,
+		GET_CHAN (row),
+		row->users,
+		row->topic,
+		row->collation_key
+	};
+
+	return fabulor_channel_list_append (serv->gui->chanlist_model, &snapshot);
+}
 
 static int
 chanlist_normalize_width (int width)
@@ -251,7 +255,6 @@ static void
 chanlist_flush_pending (server *serv)
 {
 	GSList *list = serv->gui->chanlist_pending_rows;
-	GtkTreeModel *model;
 	chanlistrow *row;
 
 	if (!list)
@@ -260,12 +263,10 @@ chanlist_flush_pending (server *serv)
 			chanlist_update_caption (serv);
 		return;
 	}
-	model = GET_MODEL (serv);
-
 	while (list)
 	{
 		row = list->data;
-		custom_list_append (CUSTOM_LIST (model), row);
+		chanlist_append_row (serv, row);
 		list = list->next;
 	}
 
@@ -282,14 +283,12 @@ chanlist_timeout (server *serv)
 }
 
 /**
- * Places a data row into the gui GtkTreeView, if and only if the row matches
+ * Places a data row into the GUI list if and only if the row matches
  * the user and regex/search requirements.
  */
 static void
 chanlist_place_row_in_gui (server *serv, chanlistrow *next_row, gboolean force)
 {
-	GtkTreeModel *model;
-
 	/* First, update the 'found' counter values */
 	serv->gui->chanlist_users_found_count += next_row->users;
 	serv->gui->chanlist_channels_found_count++;
@@ -348,9 +347,8 @@ chanlist_place_row_in_gui (server *serv, chanlistrow *next_row, gboolean force)
 
 	if (force || serv->gui->chanlist_channels_shown_count < 20)
 	{
-		model = GET_MODEL (serv);
 		/* makes it appear fast :) */
-		custom_list_append (CUSTOM_LIST (model), next_row);
+		chanlist_append_row (serv, next_row);
 		chanlist_update_caption (serv);
 	}
 	else
@@ -379,7 +377,7 @@ chanlist_do_refresh (server *serv)
 		return;
 	}
 
-	custom_list_clear ((CustomList *)GET_MODEL (serv));
+	fabulor_channel_list_clear (serv->gui->chanlist_model);
 	gtk_widget_set_sensitive (serv->gui->chanlist_refresh, FALSE);
 
 	chanlist_data_free (serv);
@@ -411,7 +409,7 @@ chanlist_refresh (GtkWidget * wid, server *serv)
 }
 
 /**
- * Fills the gui GtkTreeView with stored items from the GSList.
+ * Fills the GUI list with stored items from the GSList.
  */
 static void
 chanlist_build_gui_list (server *serv)
@@ -426,7 +424,7 @@ chanlist_build_gui_list (server *serv)
 		return;
 	}
 
-	custom_list_clear ((CustomList *)GET_MODEL (serv));
+	fabulor_channel_list_clear (serv->gui->chanlist_model);
 
 	/* discard pending rows FIXME: free the structs? */
 	g_slist_free (serv->gui->chanlist_pending_rows);
@@ -442,7 +440,7 @@ chanlist_build_gui_list (server *serv)
 		chanlist_place_row_in_gui (serv, rows->data, TRUE);
 	}
 
-	custom_list_resort ((CustomList *)GET_MODEL (serv));
+	fabulor_channel_list_resort (serv->gui->chanlist_model);
 }
 
 /**
@@ -478,7 +476,7 @@ fe_chan_list_end (server *serv)
 	/* download complete */
 	chanlist_flush_pending (serv);
 	gtk_widget_set_sensitive (serv->gui->chanlist_refresh, TRUE);
-	custom_list_resort ((CustomList *)GET_MODEL (serv));
+	fabulor_channel_list_resort (serv->gui->chanlist_model);
 }
 
 static void
@@ -518,59 +516,19 @@ chanlist_match_topic_button_toggled (GtkWidget * wid, server *serv)
 	serv->gui->chanlist_match_wants_topic = gtk_toggle_button_get_active (GTK_TOGGLE_BUTTON (wid));
 }
 
-static GSList *
-chanlist_get_selection (server *serv, int column)
-{
-	GtkTreeSelection *sel = gtk_tree_view_get_selection (GTK_TREE_VIEW (serv->gui->chanlist_list));
-	GtkTreeModel *model = GET_MODEL (serv);
-	GList *rows;
-	GList *cur;
-	GSList *result = NULL;
-
-	rows = gtk_tree_selection_get_selected_rows (sel, &model);
-	for (cur = rows; cur != NULL; cur = cur->next)
-	{
-		GtkTreeIter iter;
-		char *value;
-
-		if (gtk_tree_model_get_iter (model, &iter, (GtkTreePath *)cur->data))
-		{
-			gtk_tree_model_get (model, &iter, column, &value, -1);
-			result = g_slist_prepend (result, value);
-		}
-	}
-
-	g_list_free_full (rows, (GDestroyNotify) gtk_tree_path_free);
-	return g_slist_reverse (result);
-}
-
-static char *
-chanlist_get_selected (server *serv, gboolean get_topic)
-{
-	GSList *selection = chanlist_get_selection (serv, get_topic ? COL_TOPIC : COL_CHANNEL);
-	char *value;
-
-	if (!selection)
-		return NULL;
-
-	value = selection->data;
-	selection->data = NULL;
-	g_slist_free_full (selection, g_free);
-	return value;
-}
-
 static void
 chanlist_join (GtkWidget * wid, server *serv)
 {
 	char tbuf[CHANLEN + 6];
-	GSList *selection;
-	GSList *item;
+	GPtrArray *selection;
+	guint i;
 	gboolean joined = FALSE;
 
-	selection = chanlist_get_selection (serv, COL_CHANNEL);
-	for (item = selection; item != NULL; item = item->next)
+	selection = fabulor_channel_list_dup_selected_text (
+		serv->gui->chanlist_model, FABULOR_CHANNEL_LIST_CHANNEL);
+	for (i = 0; i < selection->len; i++)
 	{
-		char *chan = item->data;
+		char *chan = g_ptr_array_index (selection, i);
 
 		if (serv->connected && strcmp (chan, "*") != 0)
 		{
@@ -580,21 +538,26 @@ chanlist_join (GtkWidget * wid, server *serv)
 		}
 	}
 
-	if (!joined && selection)
+	if (!joined && selection->len)
 		gdk_display_beep (gdk_display_get_default ());
 
-	g_slist_free_full (selection, g_free);
+	g_ptr_array_unref (selection);
+}
+
+static void
+chanlist_activate (gpointer data)
+{
+	chanlist_join (NULL, data);
 }
 
 static void
 chanlist_filereq_done (server *serv, char *file)
 {
 	time_t t = time (0);
-	int fh, users;
-	char *chan, *topic;
+	int fh;
 	char buf[1024];
-	GtkTreeModel *model = GET_MODEL (serv);
-	GtkTreeIter iter;
+	GPtrArray *rows;
+	guint i;
 
 	if (!file)
 		return;
@@ -608,21 +571,15 @@ chanlist_filereq_done (server *serv, char *file)
 				 serv->servername, ctime (&t));
 	write (fh, buf, strlen (buf));
 
-	if (gtk_tree_model_get_iter_first (model, &iter))
+	rows = fabulor_channel_list_dup_all (serv->gui->chanlist_model);
+	for (i = 0; i < rows->len; i++)
 	{
-		do
-		{
-			gtk_tree_model_get (model, &iter,
-									  COL_CHANNEL, &chan,
-									  COL_USERS, &users,
-									  COL_TOPIC, &topic, -1);
-			g_snprintf (buf, sizeof buf, "%-16s %-5d%s\n", chan, users, topic);
-			g_free (chan);
-			g_free (topic);
-			write (fh, buf, strlen (buf));
-		}
-		while (gtk_tree_model_iter_next (model, &iter));
+		FabulorChannelListRecord *row = g_ptr_array_index (rows, i);
+		g_snprintf (buf, sizeof buf, "%-16s %-5u%s\n", row->channel,
+			row->users, row->topic);
+		write (fh, buf, strlen (buf));
 	}
+	g_ptr_array_unref (rows);
 
 	close (fh);
 }
@@ -630,10 +587,7 @@ chanlist_filereq_done (server *serv, char *file)
 static void
 chanlist_save (GtkWidget * wid, server *serv)
 {
-	GtkTreeIter iter;
-	GtkTreeModel *model = GET_MODEL (serv);
-
-	if (gtk_tree_model_get_iter_first (model, &iter))
+	if (fabulor_channel_list_get_n_rows (serv->gui->chanlist_model) > 0)
 		gtkutil_file_req (NULL, _("Select an output filename"), chanlist_filereq_done,
 								serv, NULL, NULL, FRF_WRITE);
 }
@@ -688,13 +642,6 @@ chanlist_maxusers (GtkSpinButton *wid, server *serv)
 }
 
 static void
-chanlist_dclick_cb (GtkTreeView *view, GtkTreePath *path,
-						  GtkTreeViewColumn *column, gpointer data)
-{
-	chanlist_join (0, (server *) data);	/* double clicked a row */
-}
-
-static void
 chanlist_menu_destroy (GtkWidget *menu, gpointer userdata)
 {
 	gtk_widget_destroy (menu);
@@ -704,74 +651,73 @@ chanlist_menu_destroy (GtkWidget *menu, gpointer userdata)
 static void
 chanlist_copychannel (GtkWidget *item, server *serv)
 {
-	GSList *selection = chanlist_get_selection (serv, COL_CHANNEL);
-	GSList *cur;
+	GPtrArray *selection = fabulor_channel_list_dup_selected_text (
+		serv->gui->chanlist_model, FABULOR_CHANNEL_LIST_CHANNEL);
 	GString *text;
+	guint i;
 
-	if (!selection)
+	if (!selection->len)
+	{
+		g_ptr_array_unref (selection);
 		return;
+	}
 
 	text = g_string_new ("");
-	for (cur = selection; cur != NULL; cur = cur->next)
+	for (i = 0; i < selection->len; i++)
 	{
 		if (text->len)
 			g_string_append_c (text, '\n');
-		g_string_append (text, (char *)cur->data);
+		g_string_append (text, g_ptr_array_index (selection, i));
 	}
 
 	gtkutil_copy_to_clipboard (item, text->str);
 	g_string_free (text, TRUE);
-	g_slist_free_full (selection, g_free);
+	g_ptr_array_unref (selection);
 }
 
 static void
 chanlist_copytopic (GtkWidget *item, server *serv)
 {
-	GSList *selection = chanlist_get_selection (serv, COL_TOPIC);
-	GSList *cur;
+	GPtrArray *selection = fabulor_channel_list_dup_selected_text (
+		serv->gui->chanlist_model, FABULOR_CHANNEL_LIST_TOPIC);
 	GString *text;
+	guint i;
 
-	if (!selection)
+	if (!selection->len)
+	{
+		g_ptr_array_unref (selection);
 		return;
+	}
 
 	text = g_string_new ("");
-	for (cur = selection; cur != NULL; cur = cur->next)
+	for (i = 0; i < selection->len; i++)
 	{
 		if (text->len)
 			g_string_append_c (text, '\n');
-		g_string_append (text, (char *)cur->data);
+		g_string_append (text, g_ptr_array_index (selection, i));
 	}
 
 	gtkutil_copy_to_clipboard (item, text->str);
 	g_string_free (text, TRUE);
-	g_slist_free_full (selection, g_free);
+	g_ptr_array_unref (selection);
 }
 
 static gboolean
-chanlist_button_cb (GtkTreeView *tree, GdkEventButton *event, server *serv)
+chanlist_button_cb (GtkWidget *view, guint button, guint n_press,
+	gdouble x, gdouble y, GdkModifierType state, gpointer data)
 {
+	server *serv = data;
 	GtkWidget *menu;
-	GtkTreeSelection *sel;
-	GtkTreePath *path;
 	char *chan;
 
-	if (event->button != 3)
+	(void) view;
+	(void) n_press;
+	(void) state;
+	if (button != 3 || !fabulor_channel_list_select_at_point (
+		serv->gui->chanlist_model, x, y))
 		return FALSE;
-
-	if (!gtk_tree_view_get_path_at_pos (tree, event->x, event->y, &path, 0, 0, 0))
-		return FALSE;
-
-	sel = gtk_tree_view_get_selection (tree);
-	if (!gtk_tree_selection_path_is_selected (sel, path))
-	{
-		gtk_tree_selection_unselect_all (sel);
-		gtk_tree_selection_select_path (sel, path);
-	}
-	gtk_tree_path_free (path);
 
 	menu = gtk_menu_new ();
-	if (event->window)
-		gtk_menu_set_screen (GTK_MENU (menu), gdk_window_get_screen (event->window));
 	g_object_ref (menu);
 	g_object_ref_sink (menu);
 	g_object_unref (menu);
@@ -793,21 +739,12 @@ chanlist_button_cb (GtkTreeView *tree, GdkEventButton *event, server *serv)
 		gtk_menu_shell_append (GTK_MENU_SHELL (menu), item);
 	}
 
-	chan = chanlist_get_selected (serv, FALSE);
+	chan = fabulor_channel_list_dup_first_selected_channel (
+		serv->gui->chanlist_model);
 	menu_addfavoritemenu (serv, menu, chan, FALSE);
 	g_free (chan);
 
-	if (event)
-	{
-		gtk_menu_popup_at_pointer (GTK_MENU (menu), (GdkEvent *)event);
-	}
-	else
-	{
-		gtk_menu_popup_at_widget (GTK_MENU (menu), GTK_WIDGET (tree),
-										  GDK_GRAVITY_SOUTH_WEST,
-										  GDK_GRAVITY_NORTH_WEST,
-										  NULL);
-	}
+	gtk_menu_popup_at_pointer (GTK_MENU (menu), NULL);
 
 	return TRUE;
 }
@@ -815,28 +752,23 @@ chanlist_button_cb (GtkTreeView *tree, GdkEventButton *event, server *serv)
 static void
 chanlist_destroy_widget (GtkWidget *wid, server *serv)
 {
-	GtkTreeViewColumn *column;
+	int channel_width, users_width, topic_width;
 
-	column = gtk_tree_view_get_column (GTK_TREE_VIEW (serv->gui->chanlist_list), COL_CHANNEL);
-	if (column)
-		prefs.hex_gui_chanlist_width_channel =
-			chanlist_normalize_width (gtk_tree_view_column_get_width (column));
-
-	column = gtk_tree_view_get_column (GTK_TREE_VIEW (serv->gui->chanlist_list), COL_USERS);
-	if (column)
-		prefs.hex_gui_chanlist_width_users =
-			chanlist_normalize_width (gtk_tree_view_column_get_width (column));
-
-	column = gtk_tree_view_get_column (GTK_TREE_VIEW (serv->gui->chanlist_list), COL_TOPIC);
-	if (column)
-		prefs.hex_gui_chanlist_width_topic =
-			chanlist_normalize_width (gtk_tree_view_column_get_width (column));
+	fabulor_channel_list_get_column_widths (serv->gui->chanlist_model,
+		&channel_width, &users_width, &topic_width);
+	prefs.hex_gui_chanlist_width_channel =
+		chanlist_normalize_width (channel_width);
+	prefs.hex_gui_chanlist_width_users = chanlist_normalize_width (users_width);
+	prefs.hex_gui_chanlist_width_topic = chanlist_normalize_width (topic_width);
 
 	if (!save_config ())
 		fe_message (_("Could not save fabulor.conf."), FE_MSG_WARN);
 
-	custom_list_clear ((CustomList *)GET_MODEL (serv));
+	fabulor_channel_list_clear (serv->gui->chanlist_model);
 	chanlist_data_free (serv);
+	fabulor_channel_list_free (serv->gui->chanlist_model);
+	serv->gui->chanlist_model = NULL;
+	serv->gui->chanlist_list = NULL;
 
 	if (serv->gui->chanlist_flash_tag)
 	{
@@ -865,35 +797,6 @@ chanlist_closegui (GtkWidget *wid, server *serv)
 }
 
 static void
-chanlist_add_column (GtkWidget *tree, int textcol, int size, char *title, gboolean right_justified)
-{
-	GtkCellRenderer *renderer;
-	GtkTreeViewColumn *col;
-
-	renderer = gtk_cell_renderer_text_new ();
-	if (right_justified)
-		g_object_set (G_OBJECT (renderer), "xalign", (gfloat) 1.0, NULL);
-	g_object_set (G_OBJECT (renderer), "ypad", (gint) 0, NULL);
-	gtk_tree_view_insert_column_with_attributes (GTK_TREE_VIEW (tree), -1, title,
-																renderer, "text", textcol, NULL);
-	gtk_cell_renderer_text_set_fixed_height_from_font (GTK_CELL_RENDERER_TEXT (renderer), 1);
-
-	col = gtk_tree_view_get_column (GTK_TREE_VIEW (tree), textcol);
-	gtk_tree_view_column_set_sort_column_id (col, textcol);
-	gtk_tree_view_column_set_resizable (col, TRUE);
-	if (textcol == COL_CHANNEL)
-	{
-		gtk_tree_view_column_set_sizing (col, GTK_TREE_VIEW_COLUMN_FIXED);
-		gtk_tree_view_column_set_fixed_width (col, size);
-	}
-	else if (textcol == COL_USERS)
-	{
-		gtk_tree_view_column_set_sizing (col, GTK_TREE_VIEW_COLUMN_AUTOSIZE);
-		gtk_tree_view_column_set_resizable (col, FALSE);
-	}
-}
-
-static void
 chanlist_combo_cb (GtkWidget *combo, server *serv)
 {
 	serv->gui->chanlist_search_type = gtk_combo_box_get_active (GTK_COMBO_BOX (combo));
@@ -904,7 +807,6 @@ chanlist_opengui (server *serv, int do_refresh)
 {
 	GtkWidget *vbox, *hbox, *table, *wid, *view;
 	char tbuf[256];
-	GtkListStore *store;
 
 	if (serv->gui->chanlist_window)
 	{
@@ -960,56 +862,30 @@ chanlist_opengui (server *serv, int do_refresh)
 
 	/* ============================================================= */
 
-	store = (GtkListStore *) custom_list_new();
-	view = gtkutil_treeview_new (GTK_BOX (vbox), GTK_TREE_MODEL (store), NULL, -1);
-	gtk_scrolled_window_set_shadow_type (GTK_SCROLLED_WINDOW (gtk_widget_get_parent (view)),
-													 GTK_SHADOW_IN);
+	serv->gui->chanlist_model = fabulor_channel_list_new (
+		chanlist_activate, serv);
+	if (!serv->gui->chanlist_model)
+	{
+		gtk_widget_destroy (serv->gui->chanlist_window);
+		return;
+	}
+	view = fabulor_channel_list_create_view (serv->gui->chanlist_model,
+		GTK_BOX (vbox), _("Channel"), _("Users"), _("Topic"),
+		prefs.hex_gui_chanlist_width_channel > 0 ?
+			chanlist_normalize_width (prefs.hex_gui_chanlist_width_channel) : 0,
+		prefs.hex_gui_chanlist_width_users > 0 ?
+			chanlist_normalize_width (prefs.hex_gui_chanlist_width_users) : 0,
+		prefs.hex_gui_chanlist_width_topic > 0 ?
+			chanlist_normalize_width (prefs.hex_gui_chanlist_width_topic) : 0);
+	if (!view)
+	{
+		fabulor_channel_list_free (serv->gui->chanlist_model);
+		serv->gui->chanlist_model = NULL;
+		gtk_widget_destroy (serv->gui->chanlist_window);
+		return;
+	}
 	serv->gui->chanlist_list = view;
-
-	g_signal_connect (G_OBJECT (view), "row-activated",
-							G_CALLBACK (chanlist_dclick_cb), serv);
-	g_signal_connect (G_OBJECT (view), "button-press-event",
-							G_CALLBACK (chanlist_button_cb), serv);
-
-	chanlist_add_column (view, COL_CHANNEL, 96, _("Channel"), FALSE);
-	chanlist_add_column (view, COL_USERS,   50, _("Users"),   TRUE);
-	chanlist_add_column (view, COL_TOPIC,   50, _("Topic"),   FALSE);
-
-	if (prefs.hex_gui_chanlist_width_channel > 0)
-	{
-		GtkTreeViewColumn *column = gtk_tree_view_get_column (GTK_TREE_VIEW (view), COL_CHANNEL);
-		if (column)
-			gtk_tree_view_column_set_fixed_width (column,
-				chanlist_normalize_width (prefs.hex_gui_chanlist_width_channel));
-	}
-
-	if (prefs.hex_gui_chanlist_width_users > 0)
-	{
-		GtkTreeViewColumn *column = gtk_tree_view_get_column (GTK_TREE_VIEW (view), COL_USERS);
-		if (column)
-		{
-			gtk_tree_view_column_set_sizing (column, GTK_TREE_VIEW_COLUMN_FIXED);
-			gtk_tree_view_column_set_fixed_width (column,
-				chanlist_normalize_width (prefs.hex_gui_chanlist_width_users));
-			gtk_tree_view_column_set_resizable (column, FALSE);
-		}
-	}
-
-	if (prefs.hex_gui_chanlist_width_topic > 0)
-	{
-		GtkTreeViewColumn *column = gtk_tree_view_get_column (GTK_TREE_VIEW (view), COL_TOPIC);
-		if (column)
-		{
-			gtk_tree_view_column_set_sizing (column, GTK_TREE_VIEW_COLUMN_FIXED);
-			gtk_tree_view_column_set_fixed_width (column,
-				chanlist_normalize_width (prefs.hex_gui_chanlist_width_topic));
-		}
-	}
-	gtk_tree_view_set_grid_lines (GTK_TREE_VIEW (view), GTK_TREE_VIEW_GRID_LINES_HORIZONTAL);
-	gtk_tree_selection_set_mode (gtk_tree_view_get_selection (GTK_TREE_VIEW (view)), GTK_SELECTION_MULTIPLE);
-	/* this is a speed up, but no horizontal scrollbar :( */
-	/*gtk_tree_view_set_fixed_height_mode (GTK_TREE_VIEW (view), TRUE);*/
-	gtk_widget_show (view);
+	fabulor_gtk_widget_on_multi_click (view, chanlist_button_cb, serv);
 
 	/* ============================================================= */
 

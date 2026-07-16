@@ -65,6 +65,7 @@ struct server_gui
 	GtkWidget *chanlist_wild;		/* GtkEntry */
 	GtkWidget *chanlist_window;
 	GtkWidget *chanlist_list;
+	struct _FabulorChannelList *chanlist_model;
 	GtkWidget *chanlist_label;
 	GtkWidget *chanlist_min_spin;	/* minusers GtkSpinButton */
 	GtkWidget *chanlist_refresh;	/* buttons */

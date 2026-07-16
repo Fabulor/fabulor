@@ -51,6 +51,7 @@ probe = executable(
   'probe.c',
   '../../src/fe-gtk/addon-list.c',
   '../../src/fe-gtk/ban-list.c',
+  '../../src/fe-gtk/channel-list.c',
   '../../src/fe-gtk/dcc-chat-list.c',
   '../../src/fe-gtk/dcc-transfer-list.c',
   '../../src/fe-gtk/gtk4-list-models.c',
