@@ -1,6 +1,6 @@
 # GTK4 List Model Architecture
 
-Status: Stage 5 pass 16 conversion contract
+Status: Stage 5 pass 17 conversion contract
 
 Date: 2026-07-16
 
@@ -94,6 +94,8 @@ navigation order.
      GTK4 column factories and single-selection unload/reload lookup.
    - [x] Convert URL History to a typed cross-version owner with newest-first
      limit enforcement, single selection, and coordinate-based activation.
+   - [x] Convert the Ignore List to a typed cross-version editable owner with
+     mask sorting, flag toggles, and selection-safe add/delete/clear mutations.
 5. [ ] Remove the final GTK3 tree-model, cell-renderer, iterator, and row-reference
    assumptions only after all owning surfaces have moved.
 
@@ -262,6 +264,16 @@ double-click activation, context actions, copying, and clearing no longer expose
 tree paths or iterators to `urlgrab.c`. The workflow receives typed button,
 press-count, coordinate, and modifier values, while a GTK3 menu adapter preserves
 context-menu placement at the selected row.
+
+The Ignore List is the first editable Stage 5 table. Its owner stores each mask
+and complete engine flag word, including non-visual flags, while projecting the
+seven visible ignore categories. GTK4 uses typed row objects, a sortable
+`GtkColumnView`, editable-label mask cells, check-button factories, and single
+selection. GTK3 retains editable text and toggle renderers inside the owner.
+Rename validation, flag synchronization, add/delete/clear, next-row selection,
+and mask snapshots cross typed callbacks and values; `ignoregui.c` no longer
+handles toolkit rows. The strict probe verifies historical flag values, hidden
+flag preservation, accepted/rejected renames, callbacks, snapshots, and cleanup.
 
 ## Executable Contract
 

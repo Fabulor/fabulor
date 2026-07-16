@@ -82,6 +82,7 @@ FOR %%I IN ("$(ZoiteChatLib)fabulor.rc") DO IF %%~zI EQU 0 (
     <ClInclude Include="gtk-compat.h" />
     <ClInclude Include="gtkutil.h" />
     <ClInclude Include="icon-resolver.h" />
+    <ClInclude Include="ignore-list.h" />
     <ClInclude Include="joind.h" />
     <ClInclude Include="maingui.h" />
     <ClInclude Include="preferences-persistence.h" />
@@ -128,6 +129,7 @@ FOR %%I IN ("$(ZoiteChatLib)fabulor.rc") DO IF %%~zI EQU 0 (
     <ClCompile Include="fkeys.c" />
     <ClCompile Include="gtkutil.c" />
     <ClCompile Include="icon-resolver.c" />
+    <ClCompile Include="ignore-list.c" />
     <ClCompile Include="ignoregui.c" />
     <ClCompile Include="joind.c" />
     <ClCompile Include="maingui.c" />

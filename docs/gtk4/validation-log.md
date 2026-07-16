@@ -2147,6 +2147,45 @@ Scope: URL History model/view ownership and row interaction only. URL capture,
 logging, browser dispatch, save-file behavior, and URL menu contents are
 unchanged.
 
+### PR: [#80 - GTK4 Stage 5 Ignore List](https://github.com/Fabulor/fabulor/pull/80)
+
+Date: 2026-07-16
+
+Migration stage: 5, Ignore List pass 17
+
+Files/workflows converted: editable mask rows; seven flag columns; sorting;
+add, delete, confirmed clear, snapshots, and common-engine synchronization
+
+GTK version: 4.22.4
+
+GLib version: 2.88.0
+
+Build configuration: MSVC x64 Release and strict GTK4 probe boundary
+
+Automated checks:
+
+- [x] production GTK3 frontend compiles and links with 0 warnings and 0 errors
+- [x] strict GTK4 probe compiles and executes the Ignore List owner
+- [x] accepted/rejected renames and rename/flag callbacks pass
+- [x] historical DCC bit 128 and hidden `IG_NOSAVE` bit 64 survive visible edits
+- [x] mask snapshots, row counts, clear, and cleanup checks pass
+- [x] `ignoregui.c` contains no direct tree-model, path, iterator, cell-renderer, list-store, or tree-selection dependency
+- [x] production and strict build definitions include the new owner
+- [x] GTK4 dependency validator tests remain 8/8
+- [x] repository diff whitespace validation passes
+
+Manual checks:
+
+- [ ] shipping GTK3 initial masks, Mask-column sorting, and all seven toggle columns
+- [ ] accepted rename, duplicate rejection, unchanged rename, and empty-edit behavior
+- [ ] Add, Delete with next-row selection, confirmed/cancelled Clear, and close/reopen persistence
+- [ ] ignore statistics continue updating while the window is open
+- [ ] GTK4 editable labels, check buttons, keyboard navigation, sorting, and focus await frontend cutover
+
+Scope: Ignore List model/view ownership and editing workflows. Common ignore
+matching, counters, command behavior, persistence format, and confirmation text
+are unchanged.
+
 ## Per-PR Record Template
 
 Copy this section for each GTK4 PR:
