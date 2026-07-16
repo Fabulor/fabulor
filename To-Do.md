@@ -265,6 +265,7 @@ Detailed planning and evidence live in:
   - [x] Convert internal channel-view, user-list, scrollbar, and pane-position drag operations to typed GTK4 source/drop controllers.
 - [ ] Convert tree/list models, cell renderers, channel navigation, and operational lists.
   - [x] Establish tested GTK4 flat and hierarchical model stacks with explicit sorting, selection, identity, and ownership contracts.
+  - [x] Convert the Notify List to a cross-version owner with GTK4 column factories, identity-based refresh, and single-selection actions.
 - [ ] Port the transcript and spell-check input widgets to GTK4 rendering and event semantics.
 - [ ] Add the GTK4 theme adapter and validate tray, notifications, icons, fonts, and platform integration.
   - [x] Retire `.zct` registration and mock Windows GTK theme staging, downloads, and installer choices.

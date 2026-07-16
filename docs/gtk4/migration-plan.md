@@ -579,6 +579,20 @@ architecture pass; each following pass will replace one complete owning
 surface without parallel model writes. The detailed contract is in
 [`list-model-architecture.md`](list-model-architecture.md).
 
+Notify List pass 2 (2026-07-16): the first flat operational list now has one
+cross-version owner. `notifygui.c` supplies immutable row snapshots and consumes
+selected notify/server identity without `GtkTreeIter`, `GtkTreePath`, hidden
+column traversal, cell renderers, or direct tree-model calls. The GTK4 owner
+uses typed row objects, `GListStore`, `GtkSortListModel`,
+`GtkSingleSelection`, `GtkColumnView`, and four signal-list-item factories;
+the production GTK3 branch retains the visible tree while compiling the same
+snapshot, selection, and lifecycle contract. Refreshes reuse rows, notify only
+changed fields, avoid unchanged-order splices, preserve exact selection, and
+fall back to the same notify owner across offline/online row transitions.
+Executable probes cover duplicate rejection, refresh ordering, identity
+fallback, selected action data, and cleanup. Manual GTK4 visual, keyboard, and
+accessibility validation remains for the production frontend cutover.
+
 Primary surfaces:
 
 - server list and editor

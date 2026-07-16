@@ -1591,6 +1591,47 @@ Scope: architecture and executable model contracts only. Production GTK3
 models, views, cell renderers, event handling, and visible workflows remain
 unchanged until each owning Stage 5 surface is converted as one unit.
 
+### PR: #65 - GTK4 Stage 5 Notify List
+
+Date: 2026-07-16
+
+Implementation commit: `93088543`
+
+Migration stage: 5, Notify List pass 2
+
+Files/workflows converted: Notify row snapshots; refresh reconciliation;
+single selection; Open Dialog and Remove identity; row colours; GTK4
+`GtkColumnView` factories; model and factory cleanup
+
+GTK version: 4.22.4
+
+GLib version: 2.88.0
+
+Build configuration: MSVC x64 Release and Meson 1.11.2 Release with MSVC 19.44
+
+Automated checks:
+
+- [x] Notify model contract: duplicate identity rejection and copied snapshots
+- [x] Notify refresh contract: reorder, row reuse, and unchanged-order fast path
+- [x] selection contract: exact persistence and notify-owner fallback across offline/online transitions
+- [x] action contract: selected owner name and per-server data resolve without backward row traversal
+- [x] GTK4 factories: four columns compile and link with explicit Pango colour dependency and binding cleanup
+- [x] isolated GTK4 MSVC compile, link, and runtime probe with 0 warnings and 0 errors
+- [x] isolated GTK4 Meson compile, link, and runtime test
+- [x] GTK4 validator unit tests: 8/8
+- [x] production GTK3 frontend compiles and links with 0 warnings and 0 errors
+- [x] source boundary: zero direct legacy tree/list APIs remain in `notifygui.c`
+- [x] source inventory: `GtkTreeView` type references reduced from 80 to 76 lines across 18 files
+
+Manual checks:
+
+- [ ] production GTK4 Notify List visual, keyboard, activation, and accessibility checks await frontend cutover
+
+Scope: the Notify List owner, refresh, selection, actions, and GTK4 factories.
+The production executable continues to render the owner's GTK3 branch until
+the frontend build target changes to GTK4; other operational lists are
+unchanged.
+
 ## Per-PR Record Template
 
 Copy this section for each GTK4 PR:
