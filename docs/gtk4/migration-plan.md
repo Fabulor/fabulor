@@ -633,9 +633,24 @@ rows move or change parent. The shipping GTK3 branch mirrors the same neutral
 hierarchy into a contained tree store and resolves its internal row references
 only on demand. Executable probes cover duplicate rejection, hierarchy order,
 rename, cyclic movement, reparenting, removal, and selection persistence. The
-visible channel tree/tab switcher, expansion policy, factories, context menus,
-keyboard switching, drag/drop, and accessibility remain together for the next
-contained pass.
+visible channel tree and grouped tab switcher remain as separate presentation
+passes because their row factories and family-button lifecycles are distinct.
+
+Channel-tree view pass 6 (2026-07-16): the visible hierarchical switcher now
+uses one cross-version view owner. The GTK4 branch combines the existing typed
+hierarchy and single-selection model with `GtkListView`, `GtkTreeExpander`, and
+a signal factory for optional icons, ellipsized names, row attributes, and
+focus underlines. Selection, parent expansion, pointer hit-testing, focus
+scrolling, and expansion queries resolve stable channel identity. Factory row
+notifications and the model-owned selection listener are disconnected at their
+respective lifetimes; the runtime probe destroys the view and then reuses the
+model with fatal GLib critical diagnostics enabled. The shipping GTK3 branch
+retains exact tree lines, indentation, compact rows, double-click expansion,
+off-screen-only scrolling, context hit-testing, channel switching, and internal
+drag/drop behind the same owner. `chanview-tree.c` no longer contains direct
+tree-view, renderer, iterator, or path operations. The grouped tab strip is
+reserved for pass 7 because its family boxes, close controls, animated
+scrolling, and reordering form an independent presentation lifecycle.
 
 Primary surfaces:
 

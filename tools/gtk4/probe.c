@@ -5,6 +5,7 @@
 #include "../../src/fe-gtk/gtk-compat.h"
 #include "../../src/fe-gtk/gtk4-list-models.h"
 #include "../../src/fe-gtk/channel-model.h"
+#include "../../src/fe-gtk/channel-tree-view.h"
 #include "../../src/fe-gtk/notify-list.h"
 #include "../../src/fe-gtk/user-list-model.h"
 #include "../../src/fe-gtk/user-list-view.h"
@@ -374,6 +375,88 @@ check_channel_model (void)
 	return valid;
 }
 
+static void
+check_channel_tree_view_signatures (void)
+{
+	GtkWidget *(*new_view) (FabulorChannelModel *, gboolean, gboolean,
+		gboolean, gboolean) = fabulor_channel_tree_view_new;
+	gpointer (*identity_at_position) (GtkWidget *, gdouble, gdouble) =
+		fabulor_channel_tree_view_get_identity_at_position;
+	gboolean (*focus_identity) (GtkWidget *, gpointer) =
+		fabulor_channel_tree_view_focus_identity;
+	gboolean (*expand_parent) (GtkWidget *, gpointer) =
+		fabulor_channel_tree_view_expand_parent;
+	gboolean (*is_expanded) (GtkWidget *, gpointer) =
+		fabulor_channel_tree_view_is_expanded;
+
+	(void) new_view;
+	(void) identity_at_position;
+	(void) focus_identity;
+	(void) expand_parent;
+	(void) is_expanded;
+}
+
+typedef struct
+{
+	gpointer identity;
+	guint changes;
+} ProbeChannelSelection;
+
+static void
+probe_channel_selection_changed (GtkWidget *view, gpointer identity,
+	gpointer user_data)
+{
+	ProbeChannelSelection *selection = user_data;
+
+	(void) view;
+	selection->identity = identity;
+	selection->changes++;
+}
+
+static gboolean
+check_channel_tree_view (void)
+{
+	gint server;
+	gint alpha;
+	gint beta;
+	FabulorChannelModel *model = fabulor_channel_model_new ();
+	FabulorChannelModelRow server_row = {
+		&server, "Server", NULL, NULL, PANGO_UNDERLINE_NONE
+	};
+	FabulorChannelModelRow alpha_row = {
+		&alpha, "#alpha", NULL, NULL, PANGO_UNDERLINE_NONE
+	};
+	FabulorChannelModelRow beta_row = {
+		&beta, "#beta", NULL, NULL, PANGO_UNDERLINE_NONE
+	};
+	ProbeChannelSelection selection = { NULL, 0 };
+	GtkWidget *view;
+	gboolean valid = model != NULL;
+
+	if (valid)
+		valid = fabulor_channel_model_insert (model, &server_row, NULL, 0) &&
+			fabulor_channel_model_insert (model, &alpha_row, &server, 0) &&
+			fabulor_channel_model_insert (model, &beta_row, &server, 1);
+	view = valid ? fabulor_channel_tree_view_new (model, TRUE, FALSE, TRUE,
+		FALSE) : NULL;
+	if (valid)
+	{
+		valid = GTK_IS_LIST_VIEW (view);
+		g_object_ref_sink (view);
+		fabulor_channel_tree_view_set_selection_callback (view,
+			probe_channel_selection_changed, &selection);
+		fabulor_channel_tree_view_expand_all (view);
+		valid = valid && fabulor_channel_tree_view_is_expanded (view, &server) &&
+			fabulor_channel_tree_view_focus_identity (view, &alpha) &&
+			fabulor_channel_model_get_selected_identity (model) == &alpha &&
+			selection.identity == &alpha && selection.changes == 1;
+		g_object_unref (view);
+		valid = valid && fabulor_channel_model_select_identity (model, &beta);
+	}
+	fabulor_channel_model_free (model);
+	return valid;
+}
+
 static gboolean
 check_notify_list_model (void)
 {
@@ -524,8 +607,12 @@ check_user_list_model (void)
 int
 main (void)
 {
+	gboolean gtk_ready = gtk_init_check ();
+	g_log_set_always_fatal (G_LOG_LEVEL_ERROR | G_LOG_LEVEL_CRITICAL);
+
 	check_compatibility_helper_signatures ();
 	check_user_list_view_signatures ();
+	check_channel_tree_view_signatures ();
 	if (!check_internal_drag_payload ())
 	{
 		fprintf (stderr, "GTK4 internal drag payload format mismatch\n");
@@ -544,6 +631,11 @@ main (void)
 	if (!check_channel_model ())
 	{
 		fprintf (stderr, "GTK4 channel hierarchy model contract mismatch\n");
+		return 1;
+	}
+	if (gtk_ready && !check_channel_tree_view ())
+	{
+		fprintf (stderr, "GTK4 channel tree view contract mismatch\n");
 		return 1;
 	}
 	if (!check_notify_list_model ())

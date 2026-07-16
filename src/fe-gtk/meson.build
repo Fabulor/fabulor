@@ -16,6 +16,7 @@ zoitechat_gtk_sources = [
   'chanlist.c',
   'chanview.c',
   'channel-model.c',
+  'channel-tree-view.c',
   'custom-list.c',
   'dccgui.c',
   'editlist.c',

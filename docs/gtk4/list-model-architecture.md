@@ -1,6 +1,6 @@
 # GTK4 List Model Architecture
 
-Status: Stage 5 pass 5 conversion contract
+Status: Stage 5 pass 6 conversion contract
 
 Date: 2026-07-16
 
@@ -70,8 +70,10 @@ navigation order.
    and channel-family reordering.
    - [x] Replace the shared tree store and persistent channel iterators with an
      identity-indexed cross-version hierarchy owner.
-   - [ ] Convert the visible tree/tab switcher, factories, expansion, selection,
-     menus, keyboard handling, drag/drop, and family reordering.
+   - [x] Convert the visible hierarchical tree, factories, expansion,
+     identity selection, hit-testing, and scrolling.
+   - [ ] Convert the grouped tab strip, close controls, animated scrolling,
+     context actions, keyboard handling, drag/drop, and family reordering.
 4. [ ] Convert remaining tabular editors and operational lists according to their
    editing and multi-selection requirements.
 5. [ ] Remove the final GTK3 tree-model, cell-renderer, iterator, and row-reference
@@ -142,6 +144,26 @@ record so the shipping tree remains functional until its visible view moves.
 The tab implementation no longer creates a hidden tree view solely to share
 model storage.
 
+## Channel Tree View Owner
+
+`channel-tree-view.c` owns the visible hierarchical presentation. Its GTK4
+branch uses `GtkListView`, `GtkTreeExpander`, and a signal list-item factory
+that composes optional icons, ellipsized names, row attributes, and focus
+underlines. Factory unbind disconnects row notifications, and view teardown
+disconnects the longer-lived selection model before releasing callback state.
+Identity selection expands the required parent and scrolls the selected row
+into view; expansion state and pointer hit-testing are likewise exposed without
+toolkit row handles.
+
+The GTK3 branch contains the retained tree view, cell renderers, paths, and
+iterators. `chanview-tree.c` now applies only channel workflow policy and has no
+direct `GtkTreeView`, renderer, iterator, or path operations. Shipping behavior
+retains icons, compact rows, tree lines, serverless indentation, selection,
+off-screen-only focus scrolling, double-click expansion, context hit-testing,
+channel switching, and internal drag/drop. The grouped tab strip remains the
+next channel-navigation pass because its family boxes, close controls, and
+scroll animation have a separate lifecycle.
+
 ## Executable Contract
 
 `src/fe-gtk/gtk4-list-models.c` implements the GTK4-only ownership stacks.
@@ -157,6 +179,8 @@ The isolated GTK4 MSVC and Meson probes verify:
 - user-list view and multi-click helper signatures under the strict GTK4 build.
 - channel hierarchy duplicate rejection, traversal order, rename, cyclic move,
   reparenting, removal, typed tree access, and selection persistence.
+- channel tree construction, expansion, identity selection, callback dispatch,
+  destruction, listener cleanup, and post-destruction model reuse.
 
 These probes establish architecture and ownership only. Production workflow,
 visual, keyboard, accessibility, and load validation remains mandatory for
