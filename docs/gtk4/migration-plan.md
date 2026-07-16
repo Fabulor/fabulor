@@ -849,6 +849,17 @@ validation, transcript preview, load/save, and theme behavior remain in
 `textgui.c`. The strict probe covers accepted and rejected edits, row identity,
 selection callbacks, help rows, clearing, and cleanup.
 
+Key-bindings pass 24 (2026-07-17): the shortcut editor now has one
+cross-version owner for copied accelerator/action/data rows, custom identity,
+single selection, mutation rules, ordering, reset preservation, and save
+snapshots. GTK4 uses typed rows, `GtkSingleSelection`, key-capture buttons,
+`GtkShortcutLabel`, `GtkDropDown`, editable labels, and a key controller;
+GTK3 retains its accelerator/combo/text renderers and list store privately.
+Configuration parsing, built-in matching, action dispatch/help, serialization,
+and menu accelerator refresh remain in `fkeys.c`. The strict probe covers
+normalization, protected built-ins, custom edits, movement, deletion,
+snapshots, selection callbacks, clear, and cleanup.
+
 Primary surfaces:
 
 - server list and editor

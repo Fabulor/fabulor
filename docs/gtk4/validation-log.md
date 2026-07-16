@@ -2423,6 +2423,47 @@ Scope: Print Events list/model/view ownership and row interaction. Event
 parsing, argument validation, compiled event storage, transcript preview,
 theme handling, and file import/export remain unchanged.
 
+### PR: #87 - GTK4 Stage 5 Key Bindings Editor
+
+Date: 2026-07-17
+
+Migration stage: 5, key-bindings pass 24
+
+Files/workflows converted: shortcut key capture; action/data editing;
+built-in/custom mutation rules; selection help; add/delete; Shift+Up/Down;
+reset preservation; ordered save snapshots
+
+GTK version: 4.22.4
+
+GLib version: 2.88.0
+
+Build configuration: MSVC x64 Release and strict GTK4 probe boundary
+
+Automated checks:
+
+- [x] production GTK3 frontend compiles and links with 0 warnings and 0 errors
+- [x] strict GTK4 probe compiles and executes the key-binding owner with 0 warnings and 0 errors
+- [x] accelerator normalization and copied ordered snapshots pass
+- [x] built-in mutation protection and custom edit/move/delete rules pass
+- [x] selection callbacks, clear, and cleanup pass
+- [x] `fkeys.c` contains no direct tree-model, iterator, path, cell-renderer, list-store, tree-selection, or raw key-event dependency
+- [x] production and strict build definitions include the new owner
+- [x] GTK4 dependency validator tests remain 8/8
+- [x] repository diff whitespace validation passes
+
+Manual checks:
+
+- [ ] shipping GTK3 editor opens and displays every current shortcut and action help
+- [ ] accelerator editing, custom Add, action selection, Data1/Data2 editing, Delete, and Shift+Up/Down work
+- [ ] built-in rows reject action/data editing, deletion, and movement while accepting accelerator changes
+- [ ] Reset restores defaults while retaining custom and excess duplicate rows
+- [ ] Save updates `keybindings.conf`, runtime shortcuts, and the Quit menu accelerator; Cancel remains non-persistent
+- [ ] GTK4 capture focus, dropdown/editing, keyboard ordering, accessibility, column sizing, and scale await frontend cutover
+
+Scope: key-binding list/model/view ownership and row interaction. Shortcut
+configuration parsing, built-in signature matching, action dispatch/help,
+serialization, and menu accelerator refresh remain unchanged.
+
 ## Per-PR Record Template
 
 Copy this section for each GTK4 PR:

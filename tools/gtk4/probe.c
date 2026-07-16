@@ -12,6 +12,7 @@
 #include "../../src/fe-gtk/dcc-transfer-list.h"
 #include "../../src/fe-gtk/editable-list.h"
 #include "../../src/fe-gtk/print-event-list.h"
+#include "../../src/fe-gtk/key-binding-list.h"
 #include "../../src/fe-gtk/addon-list.h"
 #include "../../src/fe-gtk/channel-model.h"
 #include "../../src/fe-gtk/channel-tree-view.h"
@@ -1196,6 +1197,90 @@ check_print_event_list_model (void)
 	return valid;
 }
 
+typedef struct
+{
+	gchar *action;
+	gboolean custom;
+	guint calls;
+} ProbeKeyBindingSelection;
+
+static void
+probe_key_binding_selection (const gchar *action, gboolean custom,
+	gpointer user_data)
+{
+	ProbeKeyBindingSelection *selection = user_data;
+	g_free (selection->action);
+	selection->action = g_strdup (action);
+	selection->custom = custom;
+	selection->calls++;
+}
+
+static GdkModifierType
+probe_key_binding_normalize (GdkModifierType modifiers, gpointer user_data)
+{
+	(void) user_data;
+	return modifiers & (GDK_SHIFT_MASK | GDK_CONTROL_MASK | GDK_ALT_MASK);
+}
+
+static gboolean
+check_key_binding_list_model (void)
+{
+	ProbeKeyBindingSelection selection = { 0 };
+	FabulorKeyBindingRecord builtin = {
+		"Ctrl+B", "<Primary>b", "Built in", "one", "two", FALSE
+	};
+	FabulorKeyBindingRecord custom = {
+		"Ctrl+C", "<Primary>c", "Custom", "three", "four", TRUE
+	};
+	FabulorKeyBindingList *list = fabulor_key_binding_list_new (
+		probe_key_binding_selection, probe_key_binding_normalize, &selection);
+	GPtrArray *rows = NULL;
+	gboolean valid = list != NULL;
+
+	if (valid)
+	{
+		fabulor_key_binding_list_append (list, &builtin);
+		fabulor_key_binding_list_append (list, &custom);
+		fabulor_key_binding_list_add_custom (list);
+		valid = fabulor_key_binding_list_get_n_rows (list) == 3 &&
+			selection.calls >= 1 && selection.custom &&
+			!fabulor_key_binding_list_set_text_at (list, 0,
+				FABULOR_KEY_BINDING_DATA1, "blocked") &&
+			fabulor_key_binding_list_set_text_at (list, 1,
+				FABULOR_KEY_BINDING_ACTION, "Updated") &&
+			fabulor_key_binding_list_set_text_at (list, 1,
+				FABULOR_KEY_BINDING_DATA1, "changed") &&
+			fabulor_key_binding_list_set_accelerator_at (list, 1,
+				GDK_KEY_x, GDK_CONTROL_MASK | GDK_LOCK_MASK);
+	}
+	if (valid)
+	{
+		valid = fabulor_key_binding_list_set_selected (list, 1) &&
+			!fabulor_key_binding_list_move_selected (list, -1) &&
+			fabulor_key_binding_list_move_selected (list, 1);
+		rows = fabulor_key_binding_list_dup_all (list);
+		valid = valid && rows->len == 3 &&
+			g_strcmp0 (((FabulorKeyBindingRecord *) g_ptr_array_index (
+				rows, 2))->action, "Updated") == 0 &&
+			g_strcmp0 (((FabulorKeyBindingRecord *) g_ptr_array_index (
+				rows, 2))->data1, "changed") == 0 &&
+			((FabulorKeyBindingRecord *) g_ptr_array_index (rows, 2))->custom;
+		g_ptr_array_unref (rows);
+	}
+	if (valid)
+	{
+		valid = fabulor_key_binding_list_remove_selected (list) &&
+			fabulor_key_binding_list_get_n_rows (list) == 2 &&
+			fabulor_key_binding_list_set_selected (list, 0) &&
+			!fabulor_key_binding_list_remove_selected (list);
+		fabulor_key_binding_list_clear (list);
+		valid = valid && fabulor_key_binding_list_get_n_rows (list) == 0;
+	}
+	fabulor_key_binding_list_free (list);
+	g_free (selection.action);
+	return valid;
+}
+
 int
 main (void)
 {
@@ -1283,6 +1368,11 @@ main (void)
 	if (!check_print_event_list_model ())
 	{
 		fprintf (stderr, "GTK4 Print Events list contract mismatch\n");
+		return 1;
+	}
+	if (!check_key_binding_list_model ())
+	{
+		fprintf (stderr, "GTK4 key-binding list contract mismatch\n");
 		return 1;
 	}
 

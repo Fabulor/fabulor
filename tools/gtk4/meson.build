@@ -56,6 +56,7 @@ probe = executable(
   '../../src/fe-gtk/dcc-transfer-list.c',
   '../../src/fe-gtk/editable-list.c',
   '../../src/fe-gtk/print-event-list.c',
+  '../../src/fe-gtk/key-binding-list.c',
   '../../src/fe-gtk/gtk4-list-models.c',
   '../../src/fe-gtk/ignore-list.c',
   '../../src/fe-gtk/channel-model.c',
