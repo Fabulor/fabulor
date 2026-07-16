@@ -1,6 +1,6 @@
 # GTK4 List Model Architecture
 
-Status: Stage 5 pass 13 conversion contract
+Status: Stage 5 pass 14 conversion contract
 
 Date: 2026-07-16
 
@@ -66,7 +66,7 @@ navigation order.
      identity-indexed cross-version model owner.
    - [x] Convert the shared view, factories, selection workflows, pointer
      hit-testing, context menus, keyboard forwarding, and drag/drop.
-3. [ ] Convert channel navigation, expansion state, badges, keyboard switching,
+3. [x] Convert channel navigation, expansion state, badges, keyboard switching,
    and channel-family reordering.
    - [x] Replace the shared tree store and persistent channel iterators with an
      identity-indexed cross-version hierarchy owner.
@@ -86,7 +86,8 @@ navigation order.
      prelight suppression to cross-version helpers.
    - [x] Convert scroll target discovery and adjustment ownership to
      model-driven cross-version geometry.
-   - [ ] Convert grouped-tab keyboard handling and drag/drop.
+   - [x] Convert grouped-tab mouse and keyboard activation and confirm
+     channel-view drag/drop already uses the typed Stage 4 boundary.
 4. [ ] Convert remaining tabular editors and operational lists according to their
    editing and multi-selection requirements.
 5. [ ] Remove the final GTK3 tree-model, cell-renderer, iterator, and row-reference
@@ -192,8 +193,8 @@ guard; cleanup cancels outstanding timeout sources before destroying the tab
 widgets. Multiple windows can therefore animate or change focus independently.
 Relative and absolute focus movement use the authoritative flattened channel
 model rather than enumerating family boxes and toggle-button children. Family
-button construction and presentation updates remain in the legacy tab
-implementation for later presentation passes.
+and item construction, presentation updates, and activation now resolve through
+the explicit per-view owners described below.
 
 Grouped-tab reordering now mirrors the hierarchy owner rather than deriving a
 new order from widget children. Child tabs use their current model sibling
@@ -231,6 +232,15 @@ boxes without enumerating GTK children or reading local child allocations. The
 view state also retains its scrolled window explicitly, so adjustment lookup no
 longer assumes the inner strip's parent type. Existing frame timing,
 cancellation, wheel preference, speed, and horizontal/vertical behavior remain.
+
+Grouped-tab mouse activation now runs from the shared cross-version multi-click
+press controller after close-button dispatch has had priority. Keyboard
+activation continues through the `GtkToggleButton` `toggled` signal available
+in GTK3 and GTK4, while the GTK3-only `pressed` signal dependency is removed.
+The final drag/drop audit found no tab-local drag/drop implementation: moving
+the complete channel view already uses the typed Stage 4 source/drop-controller
+boundary. This completes the grouped-tab conversion contract; shipping GTK3
+and eventual GTK4 cutover behavior still require the manual validation matrix.
 
 ## Executable Contract
 

@@ -2036,6 +2036,44 @@ Manual checks:
 Scope: grouped-tab scroll target geometry and adjustment ownership. Keyboard
 handling and drag/drop remain for later contained passes.
 
+### PR: [#77 - GTK4 Stage 5 Grouped Tab Activation](https://github.com/Fabulor/fabulor/pull/77)
+
+Date: 2026-07-16
+
+Migration stage: 5, grouped-tab activation pass 14
+
+Files/workflows converted: mouse press activation; keyboard toggle activation;
+close-button dispatch priority; final grouped-tab drag/drop boundary audit
+
+GTK version: 4.22.4
+
+GLib version: 2.88.0
+
+Build configuration: MSVC x64 Release and strict GTK4 probe boundary
+
+Automated checks:
+
+- [x] production GTK3 frontend compiles and links with 0 warnings and 0 errors
+- [x] strict GTK4 probe compiles the shared input boundary and passes its runtime identity check
+- [x] grouped-tab code contains no direct GTK3-only `pressed` signal dependency
+- [x] left-click activation uses the shared multi-click press controller after close-button dispatch
+- [x] keyboard activation remains on the cross-version `GtkToggleButton` `toggled` signal
+- [x] source audit finds no tab-local drag/drop implementation; complete channel-view placement uses the typed Stage 4 boundary
+- [x] GTK4 dependency validator tests remain 8/8
+- [x] repository diff whitespace validation passes
+
+Manual checks:
+
+- [ ] shipping GTK3 left-click focus timing and Space-key activation
+- [ ] close-button, middle-click close, and right-click context behavior
+- [ ] horizontal/vertical layouts, detached windows, and tree/tab switching
+- [ ] internal channel-view placement drag/drop
+- [ ] GTK4 activation and placement behavior await frontend cutover
+
+Scope: grouped-tab activation and final drag/drop audit. The grouped-tab owner
+conversion is complete; remaining Stage 5 work covers operational lists and
+editors.
+
 ## Per-PR Record Template
 
 Copy this section for each GTK4 PR:

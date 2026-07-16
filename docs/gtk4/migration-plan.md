@@ -731,6 +731,17 @@ than casting the inner strip's parent. Frame timing, cancellation, speed,
 direction, wheel preference, and endpoint behavior remain unchanged. Grouped-tab
 keyboard handling and drag/drop remain.
 
+Grouped-tab activation pass 14 (2026-07-16): left-click activation now runs
+through the shared cross-version multi-click press controller after visible
+close-button dispatch has had priority. Keyboard activation remains on the
+cross-version `GtkToggleButton` `toggled` signal, and the GTK3-only `pressed`
+signal dependency has been removed. The closing drag/drop audit found no
+tab-local drag/drop implementation; moving the complete channel view already
+uses the typed Stage 4 source/drop-controller boundary. This completes the
+grouped-tab owner conversion. Remaining Stage 5 work is the contained
+conversion of operational lists and editors, with manual GTK3 and GTK4 cutover
+validation retained in the validation log.
+
 Primary surfaces:
 
 - server list and editor
