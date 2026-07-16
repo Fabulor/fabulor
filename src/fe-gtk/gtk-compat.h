@@ -493,6 +493,38 @@ fabulor_gtk_widget_suppress_pointer_prelight (GtkWidget *widget)
 }
 
 static inline gboolean
+fabulor_gtk_widget_get_descendant_origin (GtkWidget *widget,
+									  GtkWidget *descendant,
+									  gdouble *x, gdouble *y)
+{
+	g_return_val_if_fail (GTK_IS_WIDGET (widget), FALSE);
+	g_return_val_if_fail (GTK_IS_WIDGET (descendant), FALSE);
+	g_return_val_if_fail (gtk_widget_is_ancestor (descendant, widget), FALSE);
+	g_return_val_if_fail (x != NULL, FALSE);
+	g_return_val_if_fail (y != NULL, FALSE);
+
+#if GTK_MAJOR_VERSION >= 4
+	graphene_point_t source = GRAPHENE_POINT_INIT (0.0f, 0.0f);
+	graphene_point_t target;
+
+	if (!gtk_widget_compute_point (descendant, widget, &source, &target))
+		return FALSE;
+	*x = target.x;
+	*y = target.y;
+#else
+	gint descendant_x;
+	gint descendant_y;
+
+	if (!gtk_widget_translate_coordinates (descendant, widget, 0, 0,
+		&descendant_x, &descendant_y))
+		return FALSE;
+	*x = descendant_x;
+	*y = descendant_y;
+#endif
+	return TRUE;
+}
+
+static inline gboolean
 fabulor_gtk_widget_contains_descendant_point (GtkWidget *widget,
 										  GtkWidget *descendant,
 										  gdouble x, gdouble y)

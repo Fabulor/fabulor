@@ -1,6 +1,6 @@
 # GTK4 List Model Architecture
 
-Status: Stage 5 pass 12 conversion contract
+Status: Stage 5 pass 13 conversion contract
 
 Date: 2026-07-16
 
@@ -84,8 +84,9 @@ navigation order.
      channel identity without GTK widget metadata.
    - [x] Convert close hit-testing, hover state, cursor feedback, and whole-tab
      prelight suppression to cross-version helpers.
-   - [ ] Convert grouped-tab animated scrolling presentation, keyboard
-     handling, and drag/drop.
+   - [x] Convert scroll target discovery and adjustment ownership to
+     model-driven cross-version geometry.
+   - [ ] Convert grouped-tab keyboard handling and drag/drop.
 4. [ ] Convert remaining tabular editors and operational lists according to their
    editing and multi-selection requirements.
 5. [ ] Remove the final GTK3 tree-model, cell-renderer, iterator, and row-reference
@@ -220,6 +221,16 @@ descendant close button with `gtk_widget_compute_point()` and tests native
 widget containment, while GTK3 retains allocation-based geometry internally.
 Both branches share explicit prelight state, pointer cursor feedback, and
 whole-tab prelight suppression without raw crossing events in tab code.
+
+Animated tab-strip scrolling now discovers targets in authoritative flattened
+channel order and resolves each tab through the per-view item map. A shared
+descendant-origin helper measures the tab relative to the common inner strip;
+GTK4 uses `gtk_widget_compute_point()` and GTK3 contains coordinate translation
+inside the helper. This provides correct offsets across multiple nested family
+boxes without enumerating GTK children or reading local child allocations. The
+view state also retains its scrolled window explicitly, so adjustment lookup no
+longer assumes the inner strip's parent type. Existing frame timing,
+cancellation, wheel preference, speed, and horizontal/vertical behavior remain.
 
 ## Executable Contract
 
