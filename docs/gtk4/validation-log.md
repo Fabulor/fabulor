@@ -1674,6 +1674,44 @@ Scope: per-session user-list model data, sorting, identity, and lifetime only.
 The shared GTK3 view and its visible interaction paths remain unchanged for the
 next user-list pass.
 
+### PR: [#67 - GTK4 Stage 5 User List View Ownership](https://github.com/Fabulor/fabulor/pull/67)
+
+Date: 2026-07-16
+
+Migration stage: 5, user-list view pass 4
+
+Files/workflows converted: shared view ownership; GTK4 list-item factory;
+active model attachment; multi-selection snapshots; select/toggle/clear;
+scrolling; live-position hit-testing; double-click and keyboard controllers;
+nick-menu positioning; internal and external drag/drop row targeting
+
+GTK version: 4.22.4
+
+GLib version: 2.88.0
+
+Build configuration: MSVC x64 Release and Meson 1.11.2 Release with MSVC 19.44
+
+Automated checks:
+
+- [x] strict GTK4 MSVC compile, link, and runtime probe with 0 warnings and 0 errors
+- [x] isolated GTK4 Meson configure, compile, link, and runtime test
+- [x] GTK4 dependency validator unit tests: 8/8
+- [x] production GTK3 frontend compiles and links with 0 warnings and 0 errors
+- [x] GTK4 factory uses current list-item positions and disconnects row notifications on unbind
+- [x] GTK4 icon path uses owned, non-deprecated `GdkMemoryTexture` data
+- [x] source boundary: `userlistgui.c` has no live tree-model, iterator, path, column, or selection operations
+- [x] source inventory: five GTK3 row-reference lines remain contained in the model owner
+- [x] source inventory: `GtkTreeView` references reduced from 75 to 65 lines across 17 files
+
+Manual checks:
+
+- [ ] shipping GTK3 user-list selection, nick menu, double-click command, keyboard forwarding, file drop, and tab switching
+- [ ] GTK4 row layout, selection, menus, keyboard, drag/drop, accessibility, and large-channel load await frontend cutover
+
+Scope: the shared user-list view and interaction boundary. The shipping GTK3
+frontend uses the retained branch; production GTK4 visual and behavioural
+validation remains a cutover requirement.
+
 ## Per-PR Record Template
 
 Copy this section for each GTK4 PR:

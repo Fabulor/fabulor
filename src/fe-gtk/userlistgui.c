@@ -41,15 +41,9 @@
 #include "pixmaps.h"
 #include "theme/theme-access.h"
 #include "user-list-model.h"
+#include "user-list-view.h"
 #include "userlistgui.h"
 #include "fkeys.h"
-
-#define COL_PIX FABULOR_USER_LIST_COLUMN_ICON
-#define COL_PREFIX FABULOR_USER_LIST_COLUMN_PREFIX
-#define COL_NICK FABULOR_USER_LIST_COLUMN_NICK
-#define COL_HOST FABULOR_USER_LIST_COLUMN_HOST
-#define COL_USER FABULOR_USER_LIST_COLUMN_USER
-#define COL_GDKCOLOR FABULOR_USER_LIST_COLUMN_FOREGROUND
 
 static const char *
 userlist_typing_suffix (session *sess, struct User *user)
@@ -93,29 +87,6 @@ userlist_prefix_color (char prefix)
 		case '+': return "#d2bf6a";
 		default: return NULL;
 	}
-}
-
-static void
-userlist_column_width_notify_cb (GtkTreeViewColumn *column, GParamSpec *pspec, gpointer userdata)
-{
-	(void)pspec;
-
-	int width = gtk_tree_view_column_get_width (column);
-	int *target = (int *)userdata;
-
-	if (!target || width < 1 || *target == width)
-		return;
-
-	*target = width;
-}
-
-static void
-userlist_apply_saved_column_width (GtkTreeViewColumn *column, int width)
-{
-	if (!column || width < 1)
-		return;
-
-	gtk_tree_view_column_set_fixed_width (column, width);
 }
 
 static void
@@ -270,165 +241,85 @@ fe_userlist_numbers (session *sess)
 	}
 }
 
-static void
-scroll_to_iter (GtkTreeIter *iter, GtkTreeView *treeview, GtkTreeModel *model)
-{
-	GtkTreePath *path = gtk_tree_model_get_path (model, iter);
-	if (path)
-	{
-		gtk_tree_view_scroll_to_cell (treeview, path, NULL, TRUE, 0.5, 0.5);
-		gtk_tree_path_free (path);
-	}
-}
-
 /* select a row in the userlist by nick-name */
 
 void
 userlist_select (session *sess, char *name)
 {
-	GtkTreeIter iter;
-	GtkTreeView *treeview = GTK_TREE_VIEW (sess->gui->user_tree);
-	GtkTreeModel *model = fabulor_user_list_model_get_tree_model (
-		sess->res->user_model);
-	GtkTreeSelection *selection = gtk_tree_view_get_selection (treeview);
 	struct User *user = userlist_find (sess, name);
 
-	if (gtk_tree_view_get_model (treeview) != model)
+	if (fabulor_user_list_view_get_model (sess->gui->user_tree) !=
+		sess->res->user_model)
 		return;
-
-	if (user && fabulor_user_list_model_get_iter (
-		sess->res->user_model, user, &iter))
-	{
-		if (gtk_tree_selection_iter_is_selected (selection, &iter))
-			gtk_tree_selection_unselect_iter (selection, &iter);
-		else
-			gtk_tree_selection_select_iter (selection, &iter);
-
-		scroll_to_iter (&iter, treeview, model);
-		return;
-	}
+	if (user)
+		fabulor_user_list_view_select_user (sess->gui->user_tree, user,
+			TRUE, FALSE, TRUE);
 }
 
 char **
 userlist_selection_list (GtkWidget *widget, int *num_ret)
 {
-	GtkTreeIter iter;
-	GtkTreeView *treeview = (GtkTreeView *) widget;
-	GtkTreeSelection *selection = gtk_tree_view_get_selection (treeview);
-	GtkTreeModel *model = gtk_tree_view_get_model (treeview);
-	struct User *user;
-	int i, num_sel;
+	GPtrArray *users = fabulor_user_list_view_dup_selected_users (widget);
+	int i;
 	char **nicks;
 
 	*num_ret = 0;
-	/* first, count the number of selections */
-	num_sel = 0;
-	if (gtk_tree_model_get_iter_first (model, &iter))
+	if (users->len < 1)
 	{
-		do
-		{
-			if (gtk_tree_selection_iter_is_selected (selection, &iter))
-				num_sel++;
-		}
-		while (gtk_tree_model_iter_next (model, &iter));
-	}
-
-	if (num_sel < 1)
+		g_ptr_array_unref (users);
 		return NULL;
-
-	nicks = g_new (char *, num_sel + 1);
-
-	i = 0;
-	gtk_tree_model_get_iter_first (model, &iter);
-	do
-	{
-		if (gtk_tree_selection_iter_is_selected (selection, &iter))
-		{
-			gtk_tree_model_get (model, &iter, COL_USER, &user, -1);
-			nicks[i] = g_strdup (user->nick);
-			i++;
-			nicks[i] = NULL;
-		}
 	}
-	while (gtk_tree_model_iter_next (model, &iter));
-
-	*num_ret = i;
+	nicks = g_new (char *, users->len + 1);
+	for (i = 0; i < (int) users->len; i++)
+		nicks[i] = g_strdup (((struct User *) g_ptr_array_index (users, i))->nick);
+	nicks[users->len] = NULL;
+	*num_ret = (int) users->len;
+	g_ptr_array_unref (users);
 	return nicks;
 }
 
 void
 fe_userlist_set_selected (struct session *sess)
 {
-	GtkTreeModel *store = fabulor_user_list_model_get_tree_model (
-		sess->res->user_model);
-	GtkTreeSelection *selection = gtk_tree_view_get_selection (GTK_TREE_VIEW (sess->gui->user_tree));
-	GtkTreeIter iter;
-	struct User *user;
+	GPtrArray *selected;
+	guint count;
+	guint i;
 
-	/* if it's not front-most tab it doesn't own the GtkTreeView! */
-	if (store != gtk_tree_view_get_model (GTK_TREE_VIEW (sess->gui->user_tree)))
+	if (fabulor_user_list_view_get_model (sess->gui->user_tree) !=
+		sess->res->user_model)
 		return;
-
-	if (gtk_tree_model_get_iter_first (store, &iter))
-	{
-		do
-		{
-			gtk_tree_model_get (store, &iter, COL_USER, &user, -1);
-
-			if (gtk_tree_selection_iter_is_selected (selection, &iter))
-				user->selected = 1;
-			else
-				user->selected = 0;
-				
-		} while (gtk_tree_model_iter_next (store, &iter));
-	}
+	count = fabulor_user_list_model_get_n_rows (sess->res->user_model);
+	for (i = 0; i < count; i++)
+		((struct User *) fabulor_user_list_model_get_user_at (
+			sess->res->user_model, i))->selected = 0;
+	selected = fabulor_user_list_view_dup_selected_users (sess->gui->user_tree);
+	for (i = 0; i < selected->len; i++)
+		((struct User *) g_ptr_array_index (selected, i))->selected = 1;
+	g_ptr_array_unref (selected);
 }
 
 void
 userlist_set_value (GtkWidget *treeview, gfloat val)
 {
-	gtk_adjustment_set_value (
-			gtk_scrollable_get_vadjustment (GTK_SCROLLABLE (treeview)), val);
+	fabulor_user_list_view_set_scroll_value (treeview, val);
 }
 
 gfloat
 userlist_get_value (GtkWidget *treeview)
 {
-	return gtk_adjustment_get_value (gtk_scrollable_get_vadjustment (GTK_SCROLLABLE (treeview)));
+	return fabulor_user_list_view_get_scroll_value (treeview);
 }
 
 int
 fe_userlist_remove (session *sess, struct User *user)
 {
-	GtkTreeIter iter;
-/*	GtkAdjustment *adj;
-	gfloat val, end;*/
 	int sel = FALSE;
-	GtkTreeView *treeview = GTK_TREE_VIEW (sess->gui->user_tree);
-	GtkTreeModel *model = fabulor_user_list_model_get_tree_model (
-		sess->res->user_model);
-
-	if (!fabulor_user_list_model_get_iter (
-		sess->res->user_model, user, &iter))
-		return 0;
-	if (gtk_tree_view_get_model (treeview) == model &&
-		gtk_tree_selection_iter_is_selected (
-			gtk_tree_view_get_selection (treeview), &iter))
-		sel = TRUE;
-/*	adj = gtk_tree_view_get_vadjustment (GTK_TREE_VIEW (sess->gui->user_tree));
-	val = adj->value;*/
+	if (fabulor_user_list_view_get_model (sess->gui->user_tree) ==
+		sess->res->user_model)
+		sel = fabulor_user_list_view_is_user_selected (
+			sess->gui->user_tree, user);
 
 	fabulor_user_list_model_remove (sess->res->user_model, user);
-
-	/* is it the front-most tab? */
-/*	if (gtk_tree_view_get_model (GTK_TREE_VIEW (sess->gui->user_tree))
-		 == sess->res->user_model)
-	{
-		end = adj->upper - adj->lower - adj->page_size;
-		if (val > end)
-			val = end;
-		gtk_adjustment_set_value (adj, val);
-	}*/
 
 	return sel;
 }
@@ -527,9 +418,6 @@ fe_userlist_rehash (session *sess, struct User *user)
 void
 fe_userlist_insert (session *sess, struct User *newuser, gboolean sel)
 {
-	GtkTreeModel *model = fabulor_user_list_model_get_tree_model (
-		sess->res->user_model);
-	GtkTreeIter iter;
 	FabulorBuiltUserRow built;
 
 	userlist_build_row (sess, newuser, &built);
@@ -545,14 +433,10 @@ fe_userlist_insert (session *sess, struct User *newuser, gboolean sel)
 	}
 
 	/* is it the front-most tab? */
-	if (gtk_tree_view_get_model (GTK_TREE_VIEW (sess->gui->user_tree))
-		 == model)
-	{
-		if (sel && fabulor_user_list_model_get_iter (
-			sess->res->user_model, newuser, &iter))
-			gtk_tree_selection_select_iter (gtk_tree_view_get_selection
-										(GTK_TREE_VIEW (sess->gui->user_tree)), &iter);
-	}
+	if (sel && fabulor_user_list_view_get_model (sess->gui->user_tree) ==
+		sess->res->user_model)
+		fabulor_user_list_view_select_user (sess->gui->user_tree, newuser,
+			FALSE, FALSE, FALSE);
 	userlist_built_row_clear (&built);
 }
 
@@ -567,25 +451,8 @@ userlist_file_drop (GtkWidget *widget, gdouble x, gdouble y,
 					const gchar *uri_list, gpointer user_data)
 {
 	struct User *user;
-	GtkTreePath *path;
-	GtkTreeModel *model;
-	GtkTreeIter iter;
-	GtkTreeView *tree = GTK_TREE_VIEW (widget);
-
 	(void) user_data;
-
-	if (!gtk_tree_view_get_path_at_pos (tree, (gint) x, (gint) y,
-		&path, NULL, NULL, NULL))
-		return FALSE;
-
-	model = gtk_tree_view_get_model (tree);
-	if (!gtk_tree_model_get_iter (model, &iter, path))
-	{
-		gtk_tree_path_free (path);
-		return FALSE;
-	}
-	gtk_tree_path_free (path);
-	gtk_tree_model_get (model, &iter, COL_USER, &user, -1);
+	user = fabulor_user_list_view_get_user_at_position (widget, x, y);
 
 	return user && mg_dnd_drop_file (current_sess, user->nick, uri_list);
 }
@@ -594,20 +461,8 @@ static gboolean
 userlist_file_drag_motion (GtkWidget *widget, gdouble x, gdouble y,
 						   gpointer user_data)
 {
-	GtkTreePath *path;
-	GtkTreeSelection *sel;
-	GtkTreeView *tree = GTK_TREE_VIEW (widget);
-
 	(void) user_data;
-
-	if (gtk_tree_view_get_path_at_pos (tree, (gint) x, (gint) y,
-		&path, NULL, NULL, NULL))
-	{
-		sel = gtk_tree_view_get_selection (tree);
-		gtk_tree_selection_unselect_all (sel);
-		gtk_tree_selection_select_path (sel, path);
-		gtk_tree_path_free (path);
-	}
+	fabulor_user_list_view_select_at_position (widget, x, y, TRUE);
 
 	return TRUE;
 }
@@ -616,8 +471,7 @@ static void
 userlist_drag_leave (GtkWidget *widget, gpointer user_data)
 {
 	(void) user_data;
-	gtk_tree_selection_unselect_all (
-		gtk_tree_view_get_selection (GTK_TREE_VIEW (widget)));
+	fabulor_user_list_view_unselect_all (widget);
 }
 
 static gboolean
@@ -683,88 +537,16 @@ userlist_create_model (session *sess)
 	return fabulor_user_list_model_new (compare, sess, descending);
 }
 
-static void
-userlist_add_columns (GtkTreeView * treeview)
-{
-	GtkCellRenderer *renderer;
-	GtkTreeViewColumn *column;
-
-	/* icon column */
-	renderer = gtk_cell_renderer_pixbuf_new ();
-	if (prefs.hex_gui_compact)
-		g_object_set (G_OBJECT (renderer), "ypad", 0, NULL);
-	gtk_tree_view_insert_column_with_attributes (GTK_TREE_VIEW (treeview),
-																-1, NULL, renderer,
-																"pixbuf", COL_PIX, NULL);
-	column = gtk_tree_view_get_column (GTK_TREE_VIEW (treeview), 0);
-	gtk_tree_view_column_set_sizing (column, GTK_TREE_VIEW_COLUMN_FIXED);
-
-	/* nick column */
-	column = gtk_tree_view_column_new ();
-	gtk_tree_view_append_column (GTK_TREE_VIEW (treeview), column);
-
-	renderer = gtk_cell_renderer_text_new ();
-	if (prefs.hex_gui_compact)
-		g_object_set (G_OBJECT (renderer), "ypad", 0, NULL);
-	gtk_cell_renderer_text_set_fixed_height_from_font (GTK_CELL_RENDERER_TEXT (renderer), 1);
-	gtk_tree_view_column_pack_start (column, renderer, FALSE);
-	gtk_tree_view_column_add_attribute (column, renderer, "markup", COL_PREFIX);
-
-	renderer = gtk_cell_renderer_text_new ();
-	if (prefs.hex_gui_compact)
-		g_object_set (G_OBJECT (renderer), "ypad", 0, NULL);
-	g_object_set (G_OBJECT (renderer), "ellipsize", PANGO_ELLIPSIZE_END, NULL);
-	gtk_cell_renderer_text_set_fixed_height_from_font (GTK_CELL_RENDERER_TEXT (renderer), 1);
-	gtk_tree_view_column_pack_start (column, renderer, TRUE);
-	gtk_tree_view_column_add_attribute (column, renderer, "markup", COL_NICK);
-	gtk_tree_view_column_add_attribute (column, renderer, THEME_GTK_FOREGROUND_PROPERTY, COL_GDKCOLOR);
-
-	column = gtk_tree_view_get_column (GTK_TREE_VIEW (treeview), 1);
-	gtk_tree_view_column_set_sizing (column, GTK_TREE_VIEW_COLUMN_FIXED);
-	gtk_tree_view_column_set_expand (column, TRUE);
-	gtk_tree_view_column_set_min_width (column, 1);
-	gtk_tree_view_column_set_resizable (column, TRUE);
-	userlist_apply_saved_column_width (column, prefs.hex_gui_ulist_nick_width);
-	g_signal_connect (G_OBJECT (column), "notify::width",
-							G_CALLBACK (userlist_column_width_notify_cb),
-							&prefs.hex_gui_ulist_nick_width);
-
-	if (prefs.hex_gui_ulist_show_hosts)
-	{
-		/* hostname column */
-		renderer = gtk_cell_renderer_text_new ();
-		if (prefs.hex_gui_compact)
-			g_object_set (G_OBJECT (renderer), "ypad", 0, NULL);
-		g_object_set (G_OBJECT (renderer), "ellipsize", PANGO_ELLIPSIZE_END, NULL);
-		gtk_cell_renderer_text_set_fixed_height_from_font (GTK_CELL_RENDERER_TEXT (renderer), 1);
-		gtk_tree_view_insert_column_with_attributes (GTK_TREE_VIEW (treeview),
-																	-1, NULL, renderer,
-																	"text", COL_HOST, NULL);
-		column = gtk_tree_view_get_column (GTK_TREE_VIEW (treeview), 2);
-		gtk_tree_view_column_set_sizing (column, GTK_TREE_VIEW_COLUMN_FIXED);
-		gtk_tree_view_column_set_expand (column, TRUE);
-		gtk_tree_view_column_set_min_width (column, 1);
-		gtk_tree_view_column_set_resizable (column, TRUE);
-		userlist_apply_saved_column_width (column, prefs.hex_gui_ulist_host_width);
-		g_signal_connect (G_OBJECT (column), "notify::width",
-								G_CALLBACK (userlist_column_width_notify_cb),
-								&prefs.hex_gui_ulist_host_width);
-	}
-}
-
-static gint
-userlist_click_cb (GtkWidget *widget, GdkEventButton *event, gpointer userdata)
+static gboolean
+userlist_click_cb (GtkWidget *widget, guint button, guint n_press,
+	gdouble x, gdouble y, GdkModifierType state, gpointer user_data)
 {
 	char **nicks;
 	int i;
-	GtkTreeSelection *sel;
-	GtkTreePath *path;
 
-	if (!event)
-		return FALSE;
-
-	if (!(event->state & STATE_CTRL) &&
-		event->type == GDK_2BUTTON_PRESS && prefs.hex_gui_ulist_doubleclick[0])
+	(void) user_data;
+	if (!(state & STATE_CTRL) && n_press == 2 &&
+		prefs.hex_gui_ulist_doubleclick[0])
 	{
 		nicks = userlist_selection_list (widget, &i);
 		if (nicks)
@@ -781,13 +563,13 @@ userlist_click_cb (GtkWidget *widget, GdkEventButton *event, gpointer userdata)
 		return TRUE;
 	}
 
-	if (event->button == 3)
+	if (button == 3)
 	{
 		/* do we have a multi-selection? */
 		nicks = userlist_selection_list (widget, &i);
 		if (nicks && i > 1)
 		{
-			menu_nickmenu (current_sess, event, nicks[0], i);
+			menu_nickmenu_at (current_sess, widget, x, y, state, nicks[0], i);
 			while (i)
 			{
 				i--;
@@ -802,17 +584,12 @@ userlist_click_cb (GtkWidget *widget, GdkEventButton *event, gpointer userdata)
 			g_free (nicks);
 		}
 
-		sel = gtk_tree_view_get_selection (GTK_TREE_VIEW (widget));
-		if (gtk_tree_view_get_path_at_pos (GTK_TREE_VIEW (widget),
-			 event->x, event->y, &path, 0, 0, 0))
+		if (fabulor_user_list_view_select_at_position (widget, x, y, TRUE))
 		{
-			gtk_tree_selection_unselect_all (sel);
-			gtk_tree_selection_select_path (sel, path);
-			gtk_tree_path_free (path);
 			nicks = userlist_selection_list (widget, &i);
 			if (nicks)
 			{
-				menu_nickmenu (current_sess, event, nicks[0], i);
+				menu_nickmenu_at (current_sess, widget, x, y, state, nicks[0], i);
 				while (i)
 				{
 					i--;
@@ -822,7 +599,7 @@ userlist_click_cb (GtkWidget *widget, GdkEventButton *event, gpointer userdata)
 			}
 		} else
 		{
-			gtk_tree_selection_unselect_all (sel);
+			fabulor_user_list_view_unselect_all (widget);
 		}
 
 		return TRUE;
@@ -832,15 +609,41 @@ userlist_click_cb (GtkWidget *widget, GdkEventButton *event, gpointer userdata)
 }
 
 static gboolean
-userlist_key_cb (GtkWidget *wid, GdkEventKey *evt, gpointer userdata)
+userlist_key_cb (GtkWidget *widget, guint keyval, GdkModifierType state,
+	gpointer user_data)
 {
-	if (evt->keyval >= GDK_KEY_asterisk && evt->keyval <= GDK_KEY_z)
+	gunichar character;
+	gchar text[7];
+	gint length;
+	gint position;
+	gint selection_start;
+	gint selection_end;
+
+	(void) widget;
+	(void) user_data;
+	if ((state & (GDK_CONTROL_MASK | GDK_MOD1_MASK)) == 0 &&
+		keyval >= GDK_KEY_asterisk && keyval <= GDK_KEY_z &&
+		(character = gdk_keyval_to_unicode (keyval)) != 0)
 	{
-		/* dirty trick to avoid auto-selection */
 		SPELL_ENTRY_SET_EDITABLE (current_sess->gui->input_box, FALSE);
 		gtk_widget_grab_focus (current_sess->gui->input_box);
 		SPELL_ENTRY_SET_EDITABLE (current_sess->gui->input_box, TRUE);
-		gtk_widget_event (current_sess->gui->input_box, (GdkEvent *)evt);
+		length = g_unichar_to_utf8 (character, text);
+		text[length] = '\0';
+		if (gtk_editable_get_selection_bounds (GTK_EDITABLE (
+			current_sess->gui->input_box), &selection_start, &selection_end))
+		{
+			gtk_editable_delete_text (GTK_EDITABLE (
+				current_sess->gui->input_box), selection_start, selection_end);
+			position = selection_start;
+		}
+		else
+		{
+			position = SPELL_ENTRY_GET_POS (current_sess->gui->input_box);
+		}
+		SPELL_ENTRY_INSERT (current_sess->gui->input_box, text, length,
+			&position);
+		SPELL_ENTRY_SET_POS (current_sess->gui->input_box, position);
 		return TRUE;
 	}
 
@@ -863,15 +666,9 @@ userlist_create (GtkBox *box)
 	fabulor_gtk_box_append (box, sw, TRUE, TRUE, 0);
 	gtk_widget_show (sw);
 
-	treeview = gtk_tree_view_new ();
-	gtk_widget_set_hexpand (treeview, TRUE);
-	gtk_widget_set_vexpand (treeview, TRUE);
-	gtk_widget_set_name (treeview, "zoitechat-userlist");
-	gtk_widget_set_can_focus (treeview, TRUE);
-	gtk_tree_view_set_headers_visible (GTK_TREE_VIEW (treeview), FALSE);
-	gtk_tree_selection_set_mode (gtk_tree_view_get_selection
-										  (GTK_TREE_VIEW (treeview)),
-										  GTK_SELECTION_MULTIPLE);
+	treeview = fabulor_user_list_view_new (prefs.hex_gui_compact,
+		prefs.hex_gui_ulist_show_hosts, &prefs.hex_gui_ulist_nick_width,
+		&prefs.hex_gui_ulist_host_width);
 
 	/* set up drops */
 	fabulor_gtk_widget_enable_internal_drag_source (treeview,
@@ -884,12 +681,8 @@ userlist_create (GtkBox *box)
 		GDK_ACTION_MOVE | GDK_ACTION_COPY | GDK_ACTION_LINK,
 		userlist_file_drop, userlist_file_drag_motion, userlist_drag_leave, NULL);
 
-	g_signal_connect (G_OBJECT (treeview), "button-press-event",
-							G_CALLBACK (userlist_click_cb), 0);
-	g_signal_connect (G_OBJECT (treeview), "key-press-event",
-							G_CALLBACK (userlist_key_cb), 0);
-
-	userlist_add_columns (GTK_TREE_VIEW (treeview));
+	fabulor_gtk_widget_on_multi_click (treeview, userlist_click_cb, NULL);
+	fabulor_gtk_widget_on_key_pressed (treeview, userlist_key_cb, NULL);
 
 	fabulor_gtk_scrolled_window_set_child (GTK_SCROLLED_WINDOW (sw), treeview);
 	gtk_widget_show (treeview);
@@ -900,8 +693,8 @@ userlist_create (GtkBox *box)
 void
 userlist_show (session *sess)
 {
-	gtk_tree_view_set_model (GTK_TREE_VIEW (sess->gui->user_tree),
-		fabulor_user_list_model_get_tree_model (sess->res->user_model));
+	fabulor_user_list_view_set_model (sess->gui->user_tree,
+		sess->res->user_model);
 }
 
 void
@@ -909,18 +702,14 @@ fe_uselect (session *sess, char *word[], int do_clear, int scroll_to)
 {
 	char *name;
 	int thisname;
-	GtkTreeIter iter;
-	GtkTreeView *treeview = GTK_TREE_VIEW (sess->gui->user_tree);
-	GtkTreeModel *model = fabulor_user_list_model_get_tree_model (
-		sess->res->user_model);
-	GtkTreeSelection *selection = gtk_tree_view_get_selection (treeview);
 	struct User *user;
 
-	if (gtk_tree_view_get_model (treeview) != model)
+	if (fabulor_user_list_view_get_model (sess->gui->user_tree) !=
+		sess->res->user_model)
 		return;
 
 	if (do_clear)
-		gtk_tree_selection_unselect_all (selection);
+		fabulor_user_list_view_unselect_all (sess->gui->user_tree);
 
 	thisname = 0;
 	while (*(name = word[thisname++]))
@@ -929,13 +718,7 @@ fe_uselect (session *sess, char *word[], int do_clear, int scroll_to)
 		if (!user)
 			continue;
 
-		if (fabulor_user_list_model_get_iter (
-			sess->res->user_model, user, &iter))
-		{
-			gtk_tree_selection_select_iter (selection, &iter);
-			if (scroll_to)
-				scroll_to_iter (&iter, treeview, model);
-			continue;
-		}
+		fabulor_user_list_view_select_user (sess->gui->user_tree, user,
+			FALSE, FALSE, scroll_to);
 	}
 }

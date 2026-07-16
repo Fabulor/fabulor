@@ -52,6 +52,7 @@ probe = executable(
   '../../src/fe-gtk/gtk4-list-models.c',
   '../../src/fe-gtk/notify-list.c',
   '../../src/fe-gtk/user-list-model.c',
+  '../../src/fe-gtk/user-list-view.c',
   include_directories: gtk4_includes,
   dependencies: [gtk4_library, pango_library, gdk_pixbuf_library, gio_library, gobject_library, glib_library],
 )

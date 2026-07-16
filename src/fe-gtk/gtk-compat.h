@@ -555,6 +555,85 @@ fabulor_gtk_widget_on_click_released (GtkWidget *widget,
 #endif
 }
 
+typedef gboolean (*FabulorGtkMultiClickFunc) (GtkWidget *widget,
+											  guint button, guint n_press,
+											  gdouble x, gdouble y,
+											  GdkModifierType state,
+											  gpointer user_data);
+
+typedef struct
+{
+	FabulorGtkMultiClickFunc callback;
+	gpointer user_data;
+} FabulorGtkMultiClickInteraction;
+
+static inline void
+fabulor_gtk_multi_click_interaction_free (gpointer data, GClosure *closure)
+{
+	(void) closure;
+	g_free (data);
+}
+
+#if GTK_MAJOR_VERSION >= 4
+static inline void
+fabulor_gtk_multi_click_pressed_cb (GtkGestureClick *gesture, gint n_press,
+	gdouble x, gdouble y, gpointer user_data)
+{
+	FabulorGtkMultiClickInteraction *interaction = user_data;
+	GtkEventController *controller = GTK_EVENT_CONTROLLER (gesture);
+
+	if (interaction->callback (gtk_event_controller_get_widget (controller),
+		gtk_gesture_single_get_current_button (GTK_GESTURE_SINGLE (gesture)),
+		(guint) n_press, x, y,
+		gtk_event_controller_get_current_event_state (controller),
+		interaction->user_data))
+	{
+		gtk_gesture_set_state (GTK_GESTURE (gesture),
+			GTK_EVENT_SEQUENCE_CLAIMED);
+	}
+}
+#else
+static inline gboolean
+fabulor_gtk_multi_click_pressed_cb (GtkWidget *widget,
+	GdkEventButton *event, gpointer user_data)
+{
+	FabulorGtkMultiClickInteraction *interaction = user_data;
+	guint n_press = event->type == GDK_2BUTTON_PRESS ? 2 :
+		event->type == GDK_3BUTTON_PRESS ? 3 : 1;
+
+	return interaction->callback (widget, event->button, n_press,
+		event->x, event->y, event->state, interaction->user_data);
+}
+#endif
+
+static inline void
+fabulor_gtk_widget_on_multi_click (GtkWidget *widget,
+	FabulorGtkMultiClickFunc callback, gpointer user_data)
+{
+	FabulorGtkMultiClickInteraction *interaction;
+
+	g_return_if_fail (GTK_IS_WIDGET (widget));
+	g_return_if_fail (callback != NULL);
+	interaction = g_new (FabulorGtkMultiClickInteraction, 1);
+	interaction->callback = callback;
+	interaction->user_data = user_data;
+#if GTK_MAJOR_VERSION >= 4
+	{
+		GtkGesture *gesture = gtk_gesture_click_new ();
+		gtk_gesture_single_set_button (GTK_GESTURE_SINGLE (gesture), 0);
+		g_signal_connect_data (gesture, "pressed",
+			G_CALLBACK (fabulor_gtk_multi_click_pressed_cb), interaction,
+			fabulor_gtk_multi_click_interaction_free, 0);
+		gtk_widget_add_controller (widget, GTK_EVENT_CONTROLLER (gesture));
+	}
+#else
+	gtk_widget_add_events (widget, GDK_BUTTON_PRESS_MASK);
+	g_signal_connect_data (widget, "button-press-event",
+		G_CALLBACK (fabulor_gtk_multi_click_pressed_cb), interaction,
+		fabulor_gtk_multi_click_interaction_free, 0);
+#endif
+}
+
 typedef gboolean (*FabulorGtkFileDropFunc) (GtkWidget *widget, gdouble x,
 											gdouble y, const gchar *uri_list,
 											gpointer user_data);

@@ -267,7 +267,7 @@ Detailed planning and evidence live in:
   - [x] Establish tested GTK4 flat and hierarchical model stacks with explicit sorting, selection, identity, and ownership contracts.
   - [x] Convert the Notify List to a cross-version owner with GTK4 column factories, identity-based refresh, and single-selection actions.
   - [x] Replace per-session user-list stores and external row references with an opaque cross-version typed-row model owner.
-  - [ ] Convert the shared user-list view, factories, multi-selection, hit-testing, menus, keyboard handling, and drag/drop.
+  - [x] Convert the shared user-list view, factories, multi-selection, hit-testing, menus, keyboard handling, and drag/drop.
 - [ ] Port the transcript and spell-check input widgets to GTK4 rendering and event semantics.
 - [ ] Add the GTK4 theme adapter and validate tray, notifications, icons, fonts, and platform integration.
   - [x] Retire `.zct` registration and mock Windows GTK theme staging, downloads, and installer choices.

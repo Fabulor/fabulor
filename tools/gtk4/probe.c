@@ -6,6 +6,7 @@
 #include "../../src/fe-gtk/gtk4-list-models.h"
 #include "../../src/fe-gtk/notify-list.h"
 #include "../../src/fe-gtk/user-list-model.h"
+#include "../../src/fe-gtk/user-list-view.h"
 
 #if GTK_MAJOR_VERSION != 4
 #error The GTK4 probe must compile against GTK 4 headers.
@@ -40,6 +41,8 @@ check_compatibility_helper_signatures (void)
 		fabulor_gtk_text_view_set_pointing_cursor;
 	void (*volatile widget_on_click_released) (GtkWidget *, FabulorGtkClickFunc,
 		gpointer) = fabulor_gtk_widget_on_click_released;
+	void (*volatile widget_on_multi_click) (GtkWidget *, FabulorGtkMultiClickFunc,
+		gpointer) = fabulor_gtk_widget_on_multi_click;
 	void (*volatile widget_on_file_drop) (GtkWidget *, GdkDragAction,
 		FabulorGtkFileDropFunc, gpointer) = fabulor_gtk_widget_on_file_drop;
 	void (*volatile widget_on_file_drop_full) (GtkWidget *, GdkDragAction,
@@ -90,6 +93,7 @@ check_compatibility_helper_signatures (void)
 	(void) widget_set_pointing_cursor;
 	(void) text_view_set_pointing_cursor;
 	(void) widget_on_click_released;
+	(void) widget_on_multi_click;
 	(void) widget_on_file_drop;
 	(void) widget_on_file_drop_full;
 	(void) widget_enable_internal_drag_source;
@@ -107,6 +111,27 @@ check_compatibility_helper_signatures (void)
 	(void) widget_reveal_tree;
 	(void) window_destroy;
 	(void) dialog_destroy_on_response;
+}
+
+static void
+check_user_list_view_signatures (void)
+{
+	GtkWidget *(*volatile create_view) (gboolean, gboolean, gint *, gint *) =
+		fabulor_user_list_view_new;
+	void (*volatile set_model) (GtkWidget *, FabulorUserListModel *) =
+		fabulor_user_list_view_set_model;
+	GPtrArray *(*volatile selected_users) (GtkWidget *) =
+		fabulor_user_list_view_dup_selected_users;
+	gboolean (*volatile select_user) (GtkWidget *, gpointer, gboolean,
+		gboolean, gboolean) = fabulor_user_list_view_select_user;
+	gpointer (*volatile user_at_position) (GtkWidget *, gdouble, gdouble) =
+		fabulor_user_list_view_get_user_at_position;
+
+	(void) create_view;
+	(void) set_model;
+	(void) selected_users;
+	(void) select_user;
+	(void) user_at_position;
 }
 
 static gboolean
@@ -430,6 +455,7 @@ int
 main (void)
 {
 	check_compatibility_helper_signatures ();
+	check_user_list_view_signatures ();
 	if (!check_internal_drag_payload ())
 	{
 		fprintf (stderr, "GTK4 internal drag payload format mismatch\n");

@@ -517,6 +517,49 @@ fabulor_user_list_model_get_item_user (gpointer item)
 	return FABULOR_USER_LIST_ROW_OBJECT (item)->user;
 }
 
+GdkPixbuf *
+fabulor_user_list_model_get_item_icon (gpointer item)
+{
+	g_return_val_if_fail (G_TYPE_CHECK_INSTANCE_TYPE ((GTypeInstance *) item,
+		FABULOR_TYPE_USER_LIST_ROW_OBJECT), NULL);
+	return FABULOR_USER_LIST_ROW_OBJECT (item)->icon;
+}
+
+const gchar *
+fabulor_user_list_model_get_item_prefix (gpointer item)
+{
+	g_return_val_if_fail (G_TYPE_CHECK_INSTANCE_TYPE ((GTypeInstance *) item,
+		FABULOR_TYPE_USER_LIST_ROW_OBJECT), NULL);
+	return FABULOR_USER_LIST_ROW_OBJECT (item)->prefix_markup;
+}
+
+const gchar *
+fabulor_user_list_model_get_item_nick (gpointer item)
+{
+	g_return_val_if_fail (G_TYPE_CHECK_INSTANCE_TYPE ((GTypeInstance *) item,
+		FABULOR_TYPE_USER_LIST_ROW_OBJECT), NULL);
+	return FABULOR_USER_LIST_ROW_OBJECT (item)->nick_markup;
+}
+
+const gchar *
+fabulor_user_list_model_get_item_host (gpointer item)
+{
+	g_return_val_if_fail (G_TYPE_CHECK_INSTANCE_TYPE ((GTypeInstance *) item,
+		FABULOR_TYPE_USER_LIST_ROW_OBJECT), NULL);
+	return FABULOR_USER_LIST_ROW_OBJECT (item)->hostname;
+}
+
+const GdkRGBA *
+fabulor_user_list_model_get_item_foreground (gpointer item)
+{
+	FabulorUserListRowObject *row;
+
+	g_return_val_if_fail (G_TYPE_CHECK_INSTANCE_TYPE ((GTypeInstance *) item,
+		FABULOR_TYPE_USER_LIST_ROW_OBJECT), NULL);
+	row = FABULOR_USER_LIST_ROW_OBJECT (item);
+	return row->has_foreground ? &row->foreground : NULL;
+}
+
 #else
 
 GtkTreeModel *

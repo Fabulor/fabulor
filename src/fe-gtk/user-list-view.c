@@ -1,0 +1,601 @@
+/*
+ * Copyright (C) 2026 Fabulor contributors
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ */
+
+#include "user-list-view.h"
+
+#if GTK_MAJOR_VERSION < 4
+#include "theme/theme-gtk.h"
+#endif
+
+#define FABULOR_USER_LIST_VIEW_DATA "fabulor-user-list-view-data"
+
+typedef struct
+{
+	GtkWidget *view;
+	FabulorUserListModel *model;
+	gboolean compact;
+	gboolean show_hosts;
+	gint *nick_width;
+	gint *host_width;
+} FabulorUserListView;
+
+static FabulorUserListView *
+user_list_view_data (GtkWidget *view)
+{
+	g_return_val_if_fail (GTK_IS_WIDGET (view), NULL);
+	return g_object_get_data (G_OBJECT (view), FABULOR_USER_LIST_VIEW_DATA);
+}
+
+#if GTK_MAJOR_VERSION >= 4
+
+typedef struct
+{
+	GtkWidget *box;
+	GtkWidget *icon;
+	GtkWidget *prefix;
+	GtkWidget *nick;
+	GtkWidget *host;
+	gpointer item;
+	GdkPixbuf *icon_source;
+	gulong notify_id;
+} FabulorUserListItemBinding;
+
+static GQuark
+user_list_item_quark (void)
+{
+	return g_quark_from_static_string ("fabulor-user-list-item");
+}
+
+static void
+user_list_item_set_icon (FabulorUserListItemBinding *binding,
+	GdkPixbuf *pixbuf)
+{
+	GdkTexture *texture = NULL;
+
+	if (binding->icon_source == pixbuf)
+		return;
+	binding->icon_source = pixbuf;
+	if (pixbuf)
+	{
+		GBytes *bytes = g_bytes_new_with_free_func (
+			gdk_pixbuf_get_pixels (pixbuf), gdk_pixbuf_get_byte_length (pixbuf),
+			(GDestroyNotify) g_object_unref, g_object_ref (pixbuf));
+		GdkMemoryFormat format = gdk_pixbuf_get_has_alpha (pixbuf) ?
+			GDK_MEMORY_R8G8B8A8 : GDK_MEMORY_R8G8B8;
+
+		texture = gdk_memory_texture_new (gdk_pixbuf_get_width (pixbuf),
+			gdk_pixbuf_get_height (pixbuf), format, bytes,
+			(gsize) gdk_pixbuf_get_rowstride (pixbuf));
+		g_bytes_unref (bytes);
+	}
+	gtk_image_set_from_paintable (GTK_IMAGE (binding->icon),
+		texture ? GDK_PAINTABLE (texture) : NULL);
+	g_clear_object (&texture);
+}
+
+static void
+user_list_item_update (FabulorUserListItemBinding *binding)
+{
+	GdkPixbuf *pixbuf = fabulor_user_list_model_get_item_icon (binding->item);
+	const GdkRGBA *color = fabulor_user_list_model_get_item_foreground (
+		binding->item);
+	PangoAttrList *attributes = NULL;
+
+	user_list_item_set_icon (binding, pixbuf);
+	gtk_label_set_markup (GTK_LABEL (binding->prefix),
+		fabulor_user_list_model_get_item_prefix (binding->item) ?
+		fabulor_user_list_model_get_item_prefix (binding->item) : "");
+	gtk_label_set_markup (GTK_LABEL (binding->nick),
+		fabulor_user_list_model_get_item_nick (binding->item) ?
+		fabulor_user_list_model_get_item_nick (binding->item) : "");
+	if (binding->host)
+		gtk_label_set_text (GTK_LABEL (binding->host),
+			fabulor_user_list_model_get_item_host (binding->item) ?
+			fabulor_user_list_model_get_item_host (binding->item) : "");
+	if (color)
+	{
+		attributes = pango_attr_list_new ();
+		pango_attr_list_insert (attributes, pango_attr_foreground_new (
+			(guint16) (color->red * 65535.0),
+			(guint16) (color->green * 65535.0),
+			(guint16) (color->blue * 65535.0)));
+	}
+	gtk_label_set_attributes (GTK_LABEL (binding->nick), attributes);
+	if (attributes)
+		pango_attr_list_unref (attributes);
+}
+
+static void
+user_list_item_notify (GObject *item, GParamSpec *pspec, gpointer user_data)
+{
+	(void) item;
+	(void) pspec;
+	user_list_item_update (user_data);
+}
+
+static void
+user_list_factory_setup (GtkSignalListItemFactory *factory,
+	GtkListItem *list_item, gpointer user_data)
+{
+	FabulorUserListView *owner = user_data;
+	FabulorUserListItemBinding *binding = g_new0 (
+		FabulorUserListItemBinding, 1);
+	gint spacing = owner->compact ? 1 : 3;
+
+	(void) factory;
+	binding->box = gtk_box_new (GTK_ORIENTATION_HORIZONTAL, spacing);
+	binding->icon = gtk_image_new ();
+	binding->prefix = gtk_label_new (NULL);
+	binding->nick = gtk_label_new (NULL);
+	gtk_label_set_xalign (GTK_LABEL (binding->prefix), 0.0f);
+	gtk_label_set_xalign (GTK_LABEL (binding->nick), 0.0f);
+	gtk_label_set_ellipsize (GTK_LABEL (binding->nick), PANGO_ELLIPSIZE_END);
+	gtk_widget_set_hexpand (binding->nick, TRUE);
+	if (owner->nick_width && *owner->nick_width > 0)
+		gtk_widget_set_size_request (binding->nick, *owner->nick_width, -1);
+	gtk_box_append (GTK_BOX (binding->box), binding->icon);
+	gtk_box_append (GTK_BOX (binding->box), binding->prefix);
+	gtk_box_append (GTK_BOX (binding->box), binding->nick);
+	if (owner->show_hosts)
+	{
+		binding->host = gtk_label_new (NULL);
+		gtk_label_set_xalign (GTK_LABEL (binding->host), 0.0f);
+		gtk_label_set_ellipsize (GTK_LABEL (binding->host),
+			PANGO_ELLIPSIZE_END);
+		gtk_widget_set_hexpand (binding->host, TRUE);
+		if (owner->host_width && *owner->host_width > 0)
+			gtk_widget_set_size_request (binding->host, *owner->host_width, -1);
+		gtk_box_append (GTK_BOX (binding->box), binding->host);
+	}
+	gtk_list_item_set_child (list_item, binding->box);
+	g_object_set_data_full (G_OBJECT (list_item),
+		"fabulor-user-list-item-binding", binding, g_free);
+}
+
+static void
+user_list_factory_bind (GtkSignalListItemFactory *factory,
+	GtkListItem *list_item, gpointer user_data)
+{
+	FabulorUserListItemBinding *binding = g_object_get_data (
+		G_OBJECT (list_item), "fabulor-user-list-item-binding");
+
+	(void) factory;
+	(void) user_data;
+	binding->item = gtk_list_item_get_item (list_item);
+	binding->notify_id = g_signal_connect (binding->item, "notify",
+		G_CALLBACK (user_list_item_notify), binding);
+	g_object_set_qdata (G_OBJECT (binding->box), user_list_item_quark (),
+		list_item);
+	user_list_item_update (binding);
+}
+
+static void
+user_list_factory_unbind (GtkSignalListItemFactory *factory,
+	GtkListItem *list_item, gpointer user_data)
+{
+	FabulorUserListItemBinding *binding = g_object_get_data (
+		G_OBJECT (list_item), "fabulor-user-list-item-binding");
+
+	(void) factory;
+	(void) user_data;
+	if (binding->item && binding->notify_id)
+		g_signal_handler_disconnect (binding->item, binding->notify_id);
+	binding->item = NULL;
+	binding->icon_source = NULL;
+	binding->notify_id = 0;
+	g_object_set_qdata (G_OBJECT (binding->box), user_list_item_quark (), NULL);
+}
+
+static gboolean
+user_list_position_for_user (FabulorUserListView *owner, gpointer user,
+	guint *position)
+{
+	guint count;
+	guint i;
+
+	if (!owner->model)
+		return FALSE;
+	count = fabulor_user_list_model_get_n_rows (owner->model);
+	for (i = 0; i < count; i++)
+	{
+		if (fabulor_user_list_model_get_user_at (owner->model, i) == user)
+		{
+			*position = i;
+			return TRUE;
+		}
+	}
+	return FALSE;
+}
+
+static gboolean
+user_list_position_at_point (FabulorUserListView *owner, gdouble x,
+	gdouble y, guint *position)
+{
+	GtkWidget *picked = gtk_widget_pick (owner->view, x, y, GTK_PICK_DEFAULT);
+
+	while (picked && picked != owner->view)
+	{
+		GtkListItem *item = g_object_get_qdata (G_OBJECT (picked),
+			user_list_item_quark ());
+		if (item)
+		{
+			*position = gtk_list_item_get_position (item);
+			return TRUE;
+		}
+		picked = gtk_widget_get_parent (picked);
+	}
+	return FALSE;
+}
+
+#else
+
+static void
+user_list_column_width_notify (GtkTreeViewColumn *column, GParamSpec *pspec,
+	gpointer user_data)
+{
+	gint width = gtk_tree_view_column_get_width (column);
+	gint *target = user_data;
+
+	(void) pspec;
+	if (target && width > 0 && *target != width)
+		*target = width;
+}
+
+static void
+user_list_add_columns (FabulorUserListView *owner)
+{
+	GtkTreeView *tree = GTK_TREE_VIEW (owner->view);
+	GtkCellRenderer *renderer;
+	GtkTreeViewColumn *column;
+
+	renderer = gtk_cell_renderer_pixbuf_new ();
+	if (owner->compact)
+		g_object_set (renderer, "ypad", 0, NULL);
+	gtk_tree_view_insert_column_with_attributes (tree, -1, NULL, renderer,
+		"pixbuf", FABULOR_USER_LIST_COLUMN_ICON, NULL);
+	column = gtk_tree_view_get_column (tree, 0);
+	gtk_tree_view_column_set_sizing (column, GTK_TREE_VIEW_COLUMN_FIXED);
+
+	column = gtk_tree_view_column_new ();
+	gtk_tree_view_append_column (tree, column);
+	renderer = gtk_cell_renderer_text_new ();
+	if (owner->compact)
+		g_object_set (renderer, "ypad", 0, NULL);
+	gtk_cell_renderer_text_set_fixed_height_from_font (
+		GTK_CELL_RENDERER_TEXT (renderer), 1);
+	gtk_tree_view_column_pack_start (column, renderer, FALSE);
+	gtk_tree_view_column_add_attribute (column, renderer, "markup",
+		FABULOR_USER_LIST_COLUMN_PREFIX);
+	renderer = gtk_cell_renderer_text_new ();
+	if (owner->compact)
+		g_object_set (renderer, "ypad", 0, NULL);
+	g_object_set (renderer, "ellipsize", PANGO_ELLIPSIZE_END, NULL);
+	gtk_cell_renderer_text_set_fixed_height_from_font (
+		GTK_CELL_RENDERER_TEXT (renderer), 1);
+	gtk_tree_view_column_pack_start (column, renderer, TRUE);
+	gtk_tree_view_column_add_attribute (column, renderer, "markup",
+		FABULOR_USER_LIST_COLUMN_NICK);
+	gtk_tree_view_column_add_attribute (column, renderer,
+		THEME_GTK_FOREGROUND_PROPERTY, FABULOR_USER_LIST_COLUMN_FOREGROUND);
+	gtk_tree_view_column_set_sizing (column, GTK_TREE_VIEW_COLUMN_FIXED);
+	gtk_tree_view_column_set_expand (column, TRUE);
+	gtk_tree_view_column_set_min_width (column, 1);
+	gtk_tree_view_column_set_resizable (column, TRUE);
+	if (owner->nick_width && *owner->nick_width > 0)
+		gtk_tree_view_column_set_fixed_width (column, *owner->nick_width);
+	g_signal_connect (column, "notify::width",
+		G_CALLBACK (user_list_column_width_notify), owner->nick_width);
+
+	if (owner->show_hosts)
+	{
+		renderer = gtk_cell_renderer_text_new ();
+		if (owner->compact)
+			g_object_set (renderer, "ypad", 0, NULL);
+		g_object_set (renderer, "ellipsize", PANGO_ELLIPSIZE_END, NULL);
+		gtk_cell_renderer_text_set_fixed_height_from_font (
+			GTK_CELL_RENDERER_TEXT (renderer), 1);
+		gtk_tree_view_insert_column_with_attributes (tree, -1, NULL, renderer,
+			"text", FABULOR_USER_LIST_COLUMN_HOST, NULL);
+		column = gtk_tree_view_get_column (tree, 2);
+		gtk_tree_view_column_set_sizing (column, GTK_TREE_VIEW_COLUMN_FIXED);
+		gtk_tree_view_column_set_expand (column, TRUE);
+		gtk_tree_view_column_set_min_width (column, 1);
+		gtk_tree_view_column_set_resizable (column, TRUE);
+		if (owner->host_width && *owner->host_width > 0)
+			gtk_tree_view_column_set_fixed_width (column, *owner->host_width);
+		g_signal_connect (column, "notify::width",
+			G_CALLBACK (user_list_column_width_notify), owner->host_width);
+	}
+}
+
+static gboolean
+user_list_iter_for_user (FabulorUserListView *owner, gpointer user,
+	GtkTreeIter *iter)
+{
+	return owner->model && fabulor_user_list_model_get_iter (
+		owner->model, user, iter);
+}
+
+#endif
+
+GtkWidget *
+fabulor_user_list_view_new (gboolean compact, gboolean show_hosts,
+	gint *nick_width, gint *host_width)
+{
+	FabulorUserListView *owner = g_new0 (FabulorUserListView, 1);
+
+	owner->compact = compact;
+	owner->show_hosts = show_hosts;
+	owner->nick_width = nick_width;
+	owner->host_width = host_width;
+#if GTK_MAJOR_VERSION >= 4
+	{
+		GtkListItemFactory *factory = gtk_signal_list_item_factory_new ();
+		owner->view = gtk_list_view_new (NULL, factory);
+		g_signal_connect (factory, "setup", G_CALLBACK (user_list_factory_setup),
+			owner);
+		g_signal_connect (factory, "bind", G_CALLBACK (user_list_factory_bind),
+			owner);
+		g_signal_connect (factory, "unbind", G_CALLBACK (user_list_factory_unbind),
+			owner);
+		gtk_list_view_set_single_click_activate (GTK_LIST_VIEW (owner->view),
+			FALSE);
+	}
+#else
+	owner->view = gtk_tree_view_new ();
+	gtk_tree_view_set_headers_visible (GTK_TREE_VIEW (owner->view), FALSE);
+	gtk_tree_selection_set_mode (gtk_tree_view_get_selection (
+		GTK_TREE_VIEW (owner->view)), GTK_SELECTION_MULTIPLE);
+	user_list_add_columns (owner);
+#endif
+	gtk_widget_set_hexpand (owner->view, TRUE);
+	gtk_widget_set_vexpand (owner->view, TRUE);
+	gtk_widget_set_name (owner->view, "zoitechat-userlist");
+	gtk_widget_set_can_focus (owner->view, TRUE);
+	g_object_set_data_full (G_OBJECT (owner->view), FABULOR_USER_LIST_VIEW_DATA,
+		owner, g_free);
+	return owner->view;
+}
+
+void
+fabulor_user_list_view_set_model (GtkWidget *view,
+	FabulorUserListModel *model)
+{
+	FabulorUserListView *owner = user_list_view_data (view);
+
+	if (!owner)
+		return;
+	owner->model = model;
+#if GTK_MAJOR_VERSION >= 4
+	gtk_list_view_set_model (GTK_LIST_VIEW (view), model ?
+		fabulor_user_list_model_get_selection (model) : NULL);
+#else
+	gtk_tree_view_set_model (GTK_TREE_VIEW (view), model ?
+		fabulor_user_list_model_get_tree_model (model) : NULL);
+#endif
+}
+
+FabulorUserListModel *
+fabulor_user_list_view_get_model (GtkWidget *view)
+{
+	FabulorUserListView *owner = user_list_view_data (view);
+	return owner ? owner->model : NULL;
+}
+
+gfloat
+fabulor_user_list_view_get_scroll_value (GtkWidget *view)
+{
+	GtkAdjustment *adjustment = gtk_scrollable_get_vadjustment (
+		GTK_SCROLLABLE (view));
+	return adjustment ? (gfloat) gtk_adjustment_get_value (adjustment) : 0.0f;
+}
+
+void
+fabulor_user_list_view_set_scroll_value (GtkWidget *view, gfloat value)
+{
+	GtkAdjustment *adjustment = gtk_scrollable_get_vadjustment (
+		GTK_SCROLLABLE (view));
+	if (adjustment)
+		gtk_adjustment_set_value (adjustment, value);
+}
+
+GPtrArray *
+fabulor_user_list_view_dup_selected_users (GtkWidget *view)
+{
+	FabulorUserListView *owner = user_list_view_data (view);
+	GPtrArray *users = g_ptr_array_new ();
+
+	if (!owner || !owner->model)
+		return users;
+#if GTK_MAJOR_VERSION >= 4
+	{
+		GtkSelectionModel *selection = fabulor_user_list_model_get_selection (
+			owner->model);
+		GtkBitset *selected = gtk_selection_model_get_selection (selection);
+		GtkBitsetIter iter;
+		guint position;
+		if (gtk_bitset_iter_init_first (&iter, selected, &position))
+		{
+			do
+			{
+				gpointer item = g_list_model_get_item (
+					fabulor_user_list_model_get_list_model (owner->model), position);
+				if (item)
+				{
+					g_ptr_array_add (users,
+						fabulor_user_list_model_get_item_user (item));
+					g_object_unref (item);
+				}
+			} while (gtk_bitset_iter_next (&iter, &position));
+		}
+		gtk_bitset_unref (selected);
+	}
+#else
+	{
+		GtkTreeModel *model = fabulor_user_list_model_get_tree_model (
+			owner->model);
+		GtkTreeSelection *selection = gtk_tree_view_get_selection (
+			GTK_TREE_VIEW (view));
+		GtkTreeIter iter;
+		if (gtk_tree_model_get_iter_first (model, &iter))
+		{
+			do
+			{
+				if (gtk_tree_selection_iter_is_selected (selection, &iter))
+				{
+					gpointer user = NULL;
+					gtk_tree_model_get (model, &iter,
+						FABULOR_USER_LIST_COLUMN_USER, &user, -1);
+					g_ptr_array_add (users, user);
+				}
+			} while (gtk_tree_model_iter_next (model, &iter));
+		}
+	}
+#endif
+	return users;
+}
+
+gboolean
+fabulor_user_list_view_is_user_selected (GtkWidget *view, gpointer user)
+{
+	FabulorUserListView *owner = user_list_view_data (view);
+
+	if (!owner || !owner->model || !user)
+		return FALSE;
+#if GTK_MAJOR_VERSION >= 4
+	{
+		guint position;
+		return user_list_position_for_user (owner, user, &position) &&
+			gtk_selection_model_is_selected (
+				fabulor_user_list_model_get_selection (owner->model), position);
+	}
+#else
+	{
+		GtkTreeIter iter;
+		return user_list_iter_for_user (owner, user, &iter) &&
+			gtk_tree_selection_iter_is_selected (gtk_tree_view_get_selection (
+				GTK_TREE_VIEW (view)), &iter);
+	}
+#endif
+}
+
+gboolean
+fabulor_user_list_view_select_user (GtkWidget *view, gpointer user,
+	gboolean toggle, gboolean clear_others, gboolean scroll_to)
+{
+	FabulorUserListView *owner = user_list_view_data (view);
+
+	if (!owner || !owner->model || !user)
+		return FALSE;
+#if GTK_MAJOR_VERSION >= 4
+	{
+		GtkSelectionModel *selection = fabulor_user_list_model_get_selection (
+			owner->model);
+		guint position;
+		gboolean selected;
+		if (!user_list_position_for_user (owner, user, &position))
+			return FALSE;
+		selected = gtk_selection_model_is_selected (selection, position);
+		if (toggle && selected)
+			gtk_selection_model_unselect_item (selection, position);
+		else
+			gtk_selection_model_select_item (selection, position, clear_others);
+		if (scroll_to)
+			gtk_list_view_scroll_to (GTK_LIST_VIEW (view), position,
+				GTK_LIST_SCROLL_FOCUS, NULL);
+		return TRUE;
+	}
+#else
+	{
+		GtkTreeModel *model = fabulor_user_list_model_get_tree_model (
+			owner->model);
+		GtkTreeSelection *selection = gtk_tree_view_get_selection (
+			GTK_TREE_VIEW (view));
+		GtkTreeIter iter;
+		GtkTreePath *path;
+		if (!user_list_iter_for_user (owner, user, &iter))
+			return FALSE;
+		if (clear_others)
+			gtk_tree_selection_unselect_all (selection);
+		if (toggle && gtk_tree_selection_iter_is_selected (selection, &iter))
+			gtk_tree_selection_unselect_iter (selection, &iter);
+		else
+			gtk_tree_selection_select_iter (selection, &iter);
+		if (scroll_to)
+		{
+			path = gtk_tree_model_get_path (model, &iter);
+			if (path)
+			{
+				gtk_tree_view_scroll_to_cell (GTK_TREE_VIEW (view), path, NULL,
+					TRUE, 0.5f, 0.5f);
+				gtk_tree_path_free (path);
+			}
+		}
+		return TRUE;
+	}
+#endif
+}
+
+gpointer
+fabulor_user_list_view_get_user_at_position (GtkWidget *view, gdouble x,
+	gdouble y)
+{
+	FabulorUserListView *owner = user_list_view_data (view);
+
+	if (!owner || !owner->model)
+		return NULL;
+#if GTK_MAJOR_VERSION >= 4
+	{
+		guint position;
+		return user_list_position_at_point (owner, x, y, &position) ?
+			fabulor_user_list_model_get_user_at (owner->model, position) : NULL;
+	}
+#else
+	{
+		GtkTreePath *path;
+		GtkTreeIter iter;
+		gpointer user = NULL;
+		GtkTreeModel *model = fabulor_user_list_model_get_tree_model (
+			owner->model);
+		if (!gtk_tree_view_get_path_at_pos (GTK_TREE_VIEW (view), (gint) x,
+			(gint) y, &path, NULL, NULL, NULL))
+			return NULL;
+		if (gtk_tree_model_get_iter (model, &iter, path))
+			gtk_tree_model_get (model, &iter,
+				FABULOR_USER_LIST_COLUMN_USER, &user, -1);
+		gtk_tree_path_free (path);
+		return user;
+	}
+#endif
+}
+
+gboolean
+fabulor_user_list_view_select_at_position (GtkWidget *view, gdouble x,
+	gdouble y, gboolean clear_others)
+{
+	gpointer user = fabulor_user_list_view_get_user_at_position (view, x, y);
+	return user && fabulor_user_list_view_select_user (view, user, FALSE,
+		clear_others, FALSE);
+}
+
+void
+fabulor_user_list_view_unselect_all (GtkWidget *view)
+{
+	FabulorUserListView *owner = user_list_view_data (view);
+
+	if (!owner || !owner->model)
+		return;
+#if GTK_MAJOR_VERSION >= 4
+	gtk_selection_model_unselect_all (
+		fabulor_user_list_model_get_selection (owner->model));
+#else
+	gtk_tree_selection_unselect_all (gtk_tree_view_get_selection (
+		GTK_TREE_VIEW (view)));
+#endif
+}

@@ -608,6 +608,20 @@ sort-key change, update/remove misses, identity removal, and cleanup. The shared
 user-list view, factories, pointer hit-testing, menus, keyboard forwarding, and
 drag/drop remain in the next contained pass.
 
+User-list view pass 4 (2026-07-16): one cross-version view owner now attaches
+the active per-session model, exposes selected `struct User` identities, and
+contains scrolling, selection, row hit-testing, and model switching. The GTK4
+branch uses `GtkListView`, `GtkMultiSelection`, signal-list-item factories, and
+composed icon/prefix/nickname/optional-host rows; factory bind/unbind owns row
+notification lifetimes and uses current list-item positions after sorting. The
+GTK3 branch retains the shipping columns, width persistence, and pointer menu
+placement inside the same owner contract. `userlistgui.c` no longer performs
+tree-model traversal or direct tree selection for commands, file drops, pane
+drag highlighting, `/USELECT`, tab switching, or selected-user snapshots.
+Multi-click and key handling now use shared controllers, while nick-menu popup
+coordinates cross a neutral menu boundary. Manual GTK4 visual, keyboard,
+accessibility, and large-channel checks remain for the production cutover.
+
 Primary surfaces:
 
 - server list and editor
