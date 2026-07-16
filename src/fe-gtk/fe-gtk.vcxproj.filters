@@ -224,6 +224,9 @@
     <ClCompile Include="user-list-model.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="user-list-view.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
     <ClCompile Include="xtext.c">
       <Filter>Source Files</Filter>
     </ClCompile>

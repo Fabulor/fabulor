@@ -571,8 +571,8 @@ fabulor_notify_list_new (
 		fabulor_notify_list_free (list);
 		return NULL;
 	}
-	list->selection_source = g_object_ref (
-		fabulor_gtk4_flat_model_stack_get_selection (list->models));
+	list->selection_source = G_OBJECT (g_object_ref (
+		fabulor_gtk4_flat_model_stack_get_selection (list->models)));
 	list->selection_handler = g_signal_connect (list->selection_source,
 		"selection-changed", G_CALLBACK (notify_gtk4_selection_changed), list);
 #else

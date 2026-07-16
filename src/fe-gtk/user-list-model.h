@@ -63,6 +63,11 @@ GListModel *fabulor_user_list_model_get_list_model (
 GtkSelectionModel *fabulor_user_list_model_get_selection (
 	FabulorUserListModel *model);
 gpointer fabulor_user_list_model_get_item_user (gpointer item);
+GdkPixbuf *fabulor_user_list_model_get_item_icon (gpointer item);
+const gchar *fabulor_user_list_model_get_item_prefix (gpointer item);
+const gchar *fabulor_user_list_model_get_item_nick (gpointer item);
+const gchar *fabulor_user_list_model_get_item_host (gpointer item);
+const GdkRGBA *fabulor_user_list_model_get_item_foreground (gpointer item);
 #else
 GtkTreeModel *fabulor_user_list_model_get_tree_model (
 	FabulorUserListModel *model);

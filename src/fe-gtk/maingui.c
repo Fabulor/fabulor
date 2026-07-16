@@ -57,6 +57,7 @@
 #include "fkeys.h"
 #include "userlistgui.h"
 #include "user-list-model.h"
+#include "user-list-view.h"
 #include "chanview.h"
 #include "pixmaps.h"
 #include "plugin-tray.h"
@@ -1285,7 +1286,7 @@ mg_show_generic_tab (GtkWidget *box)
 
         num = gtk_notebook_page_num (GTK_NOTEBOOK (mg_gui->note_book), box);
         gtk_notebook_set_current_page (GTK_NOTEBOOK (mg_gui->note_book), num);
-        gtk_tree_view_set_model (GTK_TREE_VIEW (mg_gui->user_tree), NULL);
+        fabulor_user_list_view_set_model (mg_gui->user_tree, NULL);
         gtk_window_set_title (GTK_WINDOW (mg_gui->window),
                                                                  g_object_get_data (G_OBJECT (box), "title"));
         gtk_widget_set_sensitive (mg_gui->menu, FALSE);

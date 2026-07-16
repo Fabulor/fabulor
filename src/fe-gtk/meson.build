@@ -40,6 +40,7 @@ zoitechat_gtk_sources = [
   'urlgrab.c',
   'userlistgui.c',
   'user-list-model.c',
+  'user-list-view.c',
   'xtext.c'
 ]
 

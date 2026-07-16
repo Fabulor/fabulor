@@ -1,6 +1,6 @@
 # GTK4 List Model Architecture
 
-Status: Stage 5 pass 2 conversion contract
+Status: Stage 5 pass 4 conversion contract
 
 Date: 2026-07-15
 
@@ -60,11 +60,11 @@ navigation order.
 
 1. [x] Convert a contained flat operational list and validate the shared stack
    and factory lifecycle. The Notify List is the reference implementation.
-2. [ ] Convert the user list, including frequent updates, sorting, selection, and
+2. [x] Convert the user list, including frequent updates, sorting, selection, and
    internal/external drag/drop integration.
    - [x] Replace per-session stores and external row references with a typed,
      identity-indexed cross-version model owner.
-   - [ ] Convert the shared view, factories, selection workflows, pointer
+   - [x] Convert the shared view, factories, selection workflows, pointer
      hit-testing, context menus, keyboard forwarding, and drag/drop.
 3. [ ] Convert channel navigation, expansion state, badges, keyboard switching,
    and channel-family reordering.
@@ -106,9 +106,21 @@ to Fabulor's existing IRC-aware alphabetic or privilege ordering and safely
 normalizes descending results. Presentation-only typing updates do not announce
 sort-key changes; identity or privilege/name changes can request re-sorting.
 
-The next pass will attach this model and selection owner to one shared
-`GtkColumnView`, replace cell renderers with factories, and move all visible
-selection and pointer workflows off the retained GTK3 view.
+`user-list-view.c` attaches the active session model to one shared view owner.
+Its GTK4 branch uses `GtkListView` because the user list is a headerless
+composed row rather than a tabular editor. A signal factory binds icon, coloured
+prefix markup, escaped nickname/typing markup, optional hostname, and nickname
+foreground colour. Every row notification handler is disconnected on unbind;
+hit-testing resolves the live `GtkListItem` position rather than retaining a
+sorted index. Multi-selection snapshots expose stable core user identity.
+
+The GTK3 branch retains the shipping tree columns and saved width behaviour
+inside the same owner. Frontend commands no longer traverse either toolkit's
+model: selection toggles, `/USELECT`, selected nick lists, model switching,
+scroll values, file-drop targets, and drag highlighting all use neutral view
+operations. Multi-click and key controllers preserve double-click commands and
+input forwarding, and the menu module owns GTK3 pointer-event translation for
+the neutral coordinate-based nick-menu call.
 
 ## Executable Contract
 
@@ -122,6 +134,7 @@ The isolated GTK4 MSVC and Meson probes verify:
 - complete model and selection cleanup.
 - user-list duplicate rejection, ascending/descending/unsorted ordering,
   external sort-key updates, typed row identity, removal, and cleanup.
+- user-list view and multi-click helper signatures under the strict GTK4 build.
 
 These probes establish architecture and ownership only. Production workflow,
 visual, keyboard, accessibility, and load validation remains mandatory for
