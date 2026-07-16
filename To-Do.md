@@ -274,7 +274,8 @@ Detailed planning and evidence live in:
   - [x] Move grouped-tab animation and toggle suppression into each channel view and resolve focus movement through the channel model.
   - [x] Mirror grouped-tab and family reorder operations from authoritative channel-model positions without GTK child enumeration.
   - [x] Own grouped-tab family boxes by model-root identity with deterministic creation, insertion, removal, and cleanup.
-  - [ ] Convert grouped-tab close presentation, animated scrolling presentation, keyboard handling, and drag/drop.
+  - [x] Own grouped-tab tab, label, and close-button presentation records by channel identity without GTK widget metadata.
+  - [ ] Convert grouped-tab close geometry and hover presentation, animated scrolling presentation, keyboard handling, and drag/drop.
 - [ ] Port the transcript and spell-check input widgets to GTK4 rendering and event semantics.
 - [ ] Add the GTK4 theme adapter and validate tray, notifications, icons, fonts, and platform integration.
   - [x] Retire `.zct` registration and mock Windows GTK theme staging, downloads, and installer choices.

@@ -696,6 +696,17 @@ empty-box pruning, and sorted insertion no longer enumerate GTK children or
 store family identity on GTK widgets. Close presentation, scroll geometry,
 keyboard handling, and drag/drop remain for later grouped-tab passes.
 
+Grouped-tab item-owner pass 11 (2026-07-16): each tab view now owns one
+channel-identity-indexed presentation record containing the tab button, label,
+and close button. Rename and colour updates, close hit-testing, hover cleanup,
+tab removal, and view teardown resolve those records rather than the former
+`tab-label`, `tab-close-button`, and channel GTK object data. Family and item
+maps share one private state owner so the implementation remains within the
+compile-time-checked channel-view scratch boundary on both pointer widths.
+Widgets are destroyed before item records during whole-view cleanup, while an
+individual record remains live through its tab destruction callback window.
+Cross-version close geometry and hover presentation remain for the next pass.
+
 Primary surfaces:
 
 - server list and editor
