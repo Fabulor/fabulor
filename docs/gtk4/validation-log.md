@@ -1632,6 +1632,48 @@ The production executable continues to render the owner's GTK3 branch until
 the frontend build target changes to GTK4; other operational lists are
 unchanged.
 
+### PR: #66 - GTK4 Stage 5 User List Model Ownership
+
+Date: 2026-07-16
+
+Implementation commit: `e6d30e26`
+
+Migration stage: 5, user-list model pass 3
+
+Files/workflows converted: per-session model lifetime; typed row snapshots;
+stable user identity; insert, update, remove, clear, typing refresh; privilege
+and alphabetic ordering; GTK4 sorted multi-selection model access
+
+GTK version: 4.22.4
+
+GLib version: 2.88.0
+
+Build configuration: MSVC x64 Release and Meson 1.11.2 Release with MSVC 19.44
+
+Automated checks:
+
+- [x] user model contract: duplicate insert and missing update/remove rejection
+- [x] ordering contract: ascending, descending, and unsorted insertion modes
+- [x] update contract: external sort-key change reorders stable row identity
+- [x] lifetime contract: identity removal, clear, and owner cleanup
+- [x] GTK4 model contract: typed rows, sorted list, and `GtkMultiSelection` access
+- [x] isolated GTK4 MSVC compile, link, and runtime probe with 0 warnings and 0 errors
+- [x] isolated GTK4 Meson compile, link, and runtime test
+- [x] GTK4 validator unit tests: 8/8
+- [x] production GTK3 frontend compiles and links with 0 warnings and 0 errors
+- [x] source boundary: no direct per-session toolkit model or row-reference ownership remains
+- [x] source inventory: only five GTK3 row-reference lines remain inside the owner
+- [x] source inventory: `GtkTreeView` type references reduced from 76 to 75 lines across 18 files
+
+Manual checks:
+
+- [ ] production user-list insert/update/remove, all sort modes, typing, and tab switching
+- [ ] GTK4 factories, selection, menus, keyboard, drag/drop, accessibility, and load checks await pass 4 and frontend cutover
+
+Scope: per-session user-list model data, sorting, identity, and lifetime only.
+The shared GTK3 view and its visible interaction paths remain unchanged for the
+next user-list pass.
+
 ## Per-PR Record Template
 
 Copy this section for each GTK4 PR:
