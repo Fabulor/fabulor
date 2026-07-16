@@ -742,6 +742,17 @@ grouped-tab owner conversion. Remaining Stage 5 work is the contained
 conversion of operational lists and editors, with manual GTK3 and GTK4 cutover
 validation retained in the validation log.
 
+Loaded Add-ons list pass 15 (2026-07-16): the Plugins and Scripts window now
+uses a dedicated cross-version typed owner for immutable name, version, file,
+description, and canonical-path rows. GTK4 uses the shared flat model stack,
+`GtkSingleSelection`, and four resizable `GtkColumnView` factories; GTK3 keeps
+the shipping list-store presentation inside the same boundary. Refresh,
+unload, and reload no longer read tree models, iterators, or selections in
+`plugingui.c`. The strict GTK4 probe compiles the owner and executes append,
+row-count, clear, and cleanup checks. Selection-driven actions remain in the
+manual GTK3 and GTK4 cutover matrix because the headless probe intentionally
+does not create a display-backed view.
+
 Primary surfaces:
 
 - server list and editor
