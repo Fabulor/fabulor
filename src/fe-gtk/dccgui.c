@@ -37,6 +37,7 @@
 #include "gtk-compat.h"
 #include "theme/theme-gtk.h"
 #include "maingui.h"
+#include "dcc-chat-list.h"
 #include "dcc-transfer-list.h"
 #include "theme/theme-access.h"
 
@@ -46,26 +47,13 @@
 #define ICON_DCC_CLEAR "edit-clear"
 
 
-enum	/* DCC CHAT */
-{
-	CCOL_STATUS,
-	CCOL_NICK,
-	CCOL_RECV,
-	CCOL_SENT,
-	CCOL_START,
-	CCOL_DCC,	/* struct DCC * */
-	CCOL_COLOR,	/* GdkRGBA * */
-	CN_COLUMNS
-};
-
 struct dccwindow
 {
 	GtkWidget *window;
 
 	GtkWidget *list;
+	FabulorDccChatList *chats;
 	FabulorDccTransferList *transfers;
-	GtkListStore *store;
-	GtkTreeSelection *sel;
 
 	GtkWidget *abort_button;
 	GtkWidget *accept_button;
@@ -138,46 +126,46 @@ fe_dcc_send_filereq (struct session *sess, char *nick, int maxcps, int passive)
 }
 
 static void
-dcc_store_color (GtkListStore *store, GtkTreeIter *iter, int column, int color_index)
+dcc_chat_snapshot (struct DCC *dcc, FabulorDccChatSnapshot *snapshot)
 {
-	GdkRGBA rgba;
-	const GdkRGBA *color = NULL;
-
-	if (color_index != 1 && theme_get_mirc_color ((unsigned int) color_index, &rgba))
-		color = &rgba;
-
-	if (color)
-	{
-		gtk_list_store_set (store, iter, column, color, -1);
-	}
-	else
-	{
-		gtk_list_store_set (store, iter, column, NULL, -1);
-	}
-}
-
-static void
-dcc_prepare_row_chat (struct DCC *dcc, GtkListStore *store, GtkTreeIter *iter,
-							 gboolean update_only)
-{
-	static char pos[16], size[16];
+	static char pos[32], size[32], start_time[32];
 	char *date;
+	GdkRGBA color;
 
 	date = ctime (&dcc->starttime);
-	date[strlen (date) - 1] = 0;	/* remove the \n */
+	if (date)
+	{
+		g_strlcpy (start_time, date, sizeof (start_time));
+		start_time[strcspn (start_time, "\r\n")] = 0;
+	}
+	else
+		start_time[0] = 0;
 
 	proper_unit (dcc->pos, pos, sizeof (pos));
 	proper_unit (dcc->size, size, sizeof (size));
 
-	gtk_list_store_set (store, iter,
-							  CCOL_STATUS, _(dccstat[dcc->dccstat].name),
-							  CCOL_NICK, dcc->nick,
-							  CCOL_RECV, pos,
-							  CCOL_SENT, size,
-							  CCOL_START, date,
-							  CCOL_DCC, dcc,
-							  -1);
-	dcc_store_color (store, iter, CCOL_COLOR, dccstat[dcc->dccstat].color);
+	memset (snapshot, 0, sizeof (*snapshot));
+	snapshot->identity = dcc;
+	snapshot->status = _(dccstat[dcc->dccstat].name);
+	snapshot->nick = dcc->nick;
+	snapshot->received = pos;
+	snapshot->sent = size;
+	snapshot->start_time = start_time;
+	snapshot->has_color = dccstat[dcc->dccstat].color != 1 &&
+		theme_get_mirc_color ((unsigned int) dccstat[dcc->dccstat].color, &color);
+	if (snapshot->has_color)
+		snapshot->color = color;
+}
+
+static void
+dcc_chat_apply (struct DCC *dcc, gboolean append, gboolean prepend)
+{
+	FabulorDccChatSnapshot snapshot;
+	dcc_chat_snapshot (dcc, &snapshot);
+	if (append)
+		fabulor_dcc_chat_list_append (dcccwin.chats, &snapshot, prepend);
+	else
+		fabulor_dcc_chat_list_update (dcccwin.chats, &snapshot);
 }
 
 static void
@@ -235,25 +223,6 @@ dcc_transfer_apply (struct DCC *dcc, gboolean append, gboolean prepend)
 		fabulor_dcc_transfer_list_update (dccfwin.transfers, &snapshot);
 }
 
-static gboolean
-dcc_find_row (struct DCC *find_dcc, GtkTreeModel *model, GtkTreeIter *iter, int col)
-{
-	struct DCC *dcc;
-
-	if (gtk_tree_model_get_iter_first (model, iter))
-	{
-		do
-		{
-			gtk_tree_model_get (model, iter, col, &dcc, -1);
-			if (dcc == find_dcc)
-				return TRUE;
-		}
-		while (gtk_tree_model_iter_next (model, iter));
-	}
-
-	return FALSE;
-}
-
 static void
 dcc_update_recv (struct DCC *dcc)
 {
@@ -265,15 +234,9 @@ dcc_update_recv (struct DCC *dcc)
 static void
 dcc_update_chat (struct DCC *dcc)
 {
-	GtkTreeIter iter;
-
 	if (!dcccwin.window)
 		return;
-
-	if (!dcc_find_row (dcc, GTK_TREE_MODEL (dcccwin.store), &iter, CCOL_DCC))
-		return;
-
-	dcc_prepare_row_chat (dcc, dcccwin.store, &iter, TRUE);
+	dcc_chat_apply (dcc, FALSE, FALSE);
 }
 
 static void
@@ -381,31 +344,6 @@ dcc_fill_window (int flags)
 		fabulor_dcc_transfer_list_select_first (dccfwin.transfers);
 	
 	update_clear_button_sensitivity ();
-}
-
-/* return list of selected DCCs */
-
-static GSList *
-treeview_get_selected (GtkTreeModel *model, GtkTreeSelection *sel, int column)
-{
-	GtkTreeIter iter;
-	GSList *list = NULL;
-	void *ptr;
-
-	if (gtk_tree_model_get_iter_first (model, &iter))
-	{
-		do
-		{
-			if (gtk_tree_selection_iter_is_selected (sel, &iter))
-			{
-				gtk_tree_model_get (model, &iter, column, &ptr, -1);
-				list = g_slist_prepend (list, ptr);
-			}
-		}
-		while (gtk_tree_model_iter_next (model, &iter));
-	}
-
-	return g_slist_reverse (list);
 }
 
 static void
@@ -613,20 +551,6 @@ dcc_dclick_cb (gpointer identity, gpointer user_data)
 	}
 }
 
-static void
-dcc_add_column (GtkWidget *tree, int textcol, int colorcol, char *title, gboolean right_justified)
-{
-	GtkCellRenderer *renderer;
-
-	renderer = gtk_cell_renderer_text_new ();
-	if (right_justified)
-		g_object_set (G_OBJECT (renderer), "xalign", (float) 1.0, NULL);
-	gtk_tree_view_insert_column_with_attributes (GTK_TREE_VIEW (tree), -1, title, renderer,
-																"text", textcol, THEME_GTK_FOREGROUND_PROPERTY, colorcol,
-																NULL);
-	gtk_cell_renderer_text_set_fixed_height_from_font (GTK_CELL_RENDERER_TEXT (renderer), 1);
-}
-
 static GtkWidget *
 dcc_detail_label (char *text, GtkWidget *box, int num)
 {
@@ -807,60 +731,46 @@ fe_dcc_open_send_win (int passive)
 
 /* DCC CHAT GUIs BELOW */
 
-static GSList *
-dcc_chat_get_selected (void)
-{
-	return treeview_get_selected (GTK_TREE_MODEL (dcccwin.store),
-											dcccwin.sel, CCOL_DCC);
-}
-
 static void
 accept_chat_clicked (GtkWidget * wid, gpointer none)
 {
-	struct DCC *dcc;
-	GSList *start, *list;
+	GPtrArray *list = fabulor_dcc_chat_list_dup_selected (dcccwin.chats);
+	guint i;
 
-	start = list = dcc_chat_get_selected ();
-	for (; list; list = list->next)
+	for (i = 0; i < list->len; i++)
 	{
-		dcc = list->data;
+		struct DCC *dcc = g_ptr_array_index (list, i);
 		dcc_get (dcc);
 	}
-	g_slist_free (start);
+	g_ptr_array_unref (list);
 }
 
 static void
 abort_chat_clicked (GtkWidget * wid, gpointer none)
 {
-	struct DCC *dcc;
-	GSList *start, *list;
+	GPtrArray *list = fabulor_dcc_chat_list_dup_selected (dcccwin.chats);
+	guint i;
 
-	start = list = dcc_chat_get_selected ();
-	for (; list; list = list->next)
+	for (i = 0; i < list->len; i++)
 	{
-		dcc = list->data;
+		struct DCC *dcc = g_ptr_array_index (list, i);
 		dcc_abort (dcc->serv->front_session, dcc);
 	}
-	g_slist_free (start);
+	g_ptr_array_unref (list);
 }
 
 static void
 dcc_chat_close_cb (void)
 {
+	fabulor_dcc_chat_list_free (dcccwin.chats);
+	dcccwin.chats = NULL;
 	dcccwin.window = NULL;
 }
 
 static void
-dcc_chat_append (struct DCC *dcc, GtkListStore *store, gboolean prepend)
+dcc_chat_append (struct DCC *dcc, gboolean prepend)
 {
-	GtkTreeIter iter;
-
-	if (prepend)
-		gtk_list_store_prepend (store, &iter);
-	else
-		gtk_list_store_append (store, &iter);
-
-	dcc_prepare_row_chat (dcc, store, &iter, FALSE);
+	dcc_chat_apply (dcc, TRUE, prepend);
 }
 
 static void
@@ -868,10 +778,9 @@ dcc_chat_fill_win (void)
 {
 	struct DCC *dcc;
 	GSList *list;
-	GtkTreeIter iter;
 	int i = 0;
 
-	gtk_list_store_clear (GTK_LIST_STORE (dcccwin.store));
+	fabulor_dcc_chat_list_clear (dcccwin.chats);
 
 	list = dcc_list;
 	while (list)
@@ -879,7 +788,7 @@ dcc_chat_fill_win (void)
 		dcc = list->data;
 		if (dcc->type == TYPE_CHATSEND || dcc->type == TYPE_CHATRECV)
 		{
-			dcc_chat_append (dcc, dcccwin.store, FALSE);
+			dcc_chat_append (dcc, FALSE);
 			i++;
 		}
 		list = list->next;
@@ -887,55 +796,52 @@ dcc_chat_fill_win (void)
 
 	/* if only one entry, select it (so Accept button can work) */
 	if (i == 1)
-	{
-		gtk_tree_model_get_iter_first (GTK_TREE_MODEL (dcccwin.store), &iter);
-		gtk_tree_selection_select_iter (dcccwin.sel, &iter);
-	}
+		fabulor_dcc_chat_list_select_first (dcccwin.chats);
 }
 
 static void
-dcc_chat_row_cb (GtkTreeSelection *sel, gpointer user_data)
+dcc_chat_row_cb (guint selected, gpointer user_data)
 {
 	struct DCC *dcc;
-	GSList *list;
+	GPtrArray *list;
 
-	list = dcc_chat_get_selected ();
-	if (!list)
+	if (selected == 0)
 	{
 		gtk_widget_set_sensitive (dcccwin.accept_button, FALSE);
 		gtk_widget_set_sensitive (dcccwin.abort_button, FALSE);
 		return;
 	}
 
+	list = fabulor_dcc_chat_list_dup_selected (dcccwin.chats);
 	gtk_widget_set_sensitive (dcccwin.abort_button, TRUE);
 
-	if (list->next)	/* multi selection */
+	if (selected > 1)	/* multi selection */
 		gtk_widget_set_sensitive (dcccwin.accept_button, TRUE);
 	else
 	{
 		/* turn OFF/ON appropriate buttons */
-		dcc = list->data;
+		dcc = g_ptr_array_index (list, 0);
 		if (dcc->dccstat == STAT_QUEUED && dcc->type == TYPE_CHATRECV)
 			gtk_widget_set_sensitive (dcccwin.accept_button, TRUE);
 		else
 			gtk_widget_set_sensitive (dcccwin.accept_button, FALSE);
 	}
 
-	g_slist_free (list);
+	g_ptr_array_unref (list);
 }
 
 static void
-dcc_chat_dclick_cb (GtkTreeView *view, GtkTreePath *path,
-						  GtkTreeViewColumn *column, gpointer data)
+dcc_chat_dclick_cb (gpointer identity, gpointer user_data)
 {
+	(void) identity;
+	(void) user_data;
 	accept_chat_clicked (0, 0);
 }
 
 int
 fe_dcc_open_chat_win (int passive)
 {
-	GtkWidget *view, *vbox, *bbox, *scroll;
-	GtkListStore *store;
+	GtkWidget *view, *vbox, *bbox;
 	char buf[128];
 
 	if (dcccwin.window)
@@ -953,31 +859,17 @@ fe_dcc_open_chat_win (int passive)
 	gtk_container_set_border_width (GTK_CONTAINER (dcccwin.window), 3);
 	gtk_box_set_spacing (GTK_BOX (vbox), 3);
 
-	store = gtk_list_store_new (CN_COLUMNS, G_TYPE_STRING, G_TYPE_STRING,
-									 G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING,
-									 G_TYPE_POINTER, THEME_GTK_COLOR_TYPE);
-	view = gtkutil_treeview_new (GTK_BOX (vbox), GTK_TREE_MODEL (store), NULL, -1);
-	scroll = gtk_widget_get_parent (view);
-
-	dcc_add_column (view, CCOL_STATUS, CCOL_COLOR, _("Status"), FALSE);
-	dcc_add_column (view, CCOL_NICK,   CCOL_COLOR, _("Nick"), FALSE);
-	dcc_add_column (view, CCOL_RECV,   CCOL_COLOR, _("Recv"), TRUE);
-	dcc_add_column (view, CCOL_SENT,   CCOL_COLOR, _("Sent"), TRUE);
-	dcc_add_column (view, CCOL_START,  CCOL_COLOR, _("Start Time"), FALSE);
-
-	gtk_tree_view_column_set_expand (gtk_tree_view_get_column (GTK_TREE_VIEW (view), 1), TRUE);
-	gtk_tree_view_set_grid_lines (GTK_TREE_VIEW (view), GTK_TREE_VIEW_GRID_LINES_HORIZONTAL);
-
+	dcccwin.chats = fabulor_dcc_chat_list_new (dcc_chat_row_cb,
+		dcc_chat_dclick_cb, NULL);
+	if (!dcccwin.chats)
+	{
+		fe_message (_("Failed to create the DCC Chat list."), FE_MSG_ERROR);
+		fabulor_gtk_window_destroy (GTK_WINDOW (dcccwin.window));
+		return FALSE;
+	}
+	view = fabulor_dcc_chat_list_create_view (dcccwin.chats, GTK_BOX (vbox),
+		_("Status"), _("Nick"), _("Recv"), _("Sent"), _("Start Time"));
 	dcccwin.list = view;
-	dcccwin.store = store;
-	dcccwin.sel = gtk_tree_view_get_selection (GTK_TREE_VIEW (view));
-	gtk_tree_selection_set_mode (dcccwin.sel, GTK_SELECTION_MULTIPLE);
-
-	g_signal_connect (G_OBJECT (dcccwin.sel), "changed",
-							G_CALLBACK (dcc_chat_row_cb), NULL);
-	/* double click */
-	g_signal_connect (G_OBJECT (view), "row-activated",
-							G_CALLBACK (dcc_chat_dclick_cb), NULL);
 
 	bbox = gtk_button_box_new (GTK_ORIENTATION_HORIZONTAL);
 	gtk_button_box_set_layout (GTK_BUTTON_BOX (bbox), GTK_BUTTONBOX_SPREAD);
@@ -1011,7 +903,7 @@ fe_dcc_add (struct DCC *dcc)
 
 	default: /* chat */
 		if (dcccwin.window)
-			dcc_chat_append (dcc, dcccwin.store, TRUE);
+			dcc_chat_append (dcc, TRUE);
 	}
 }
 
@@ -1039,8 +931,6 @@ fe_dcc_update (struct DCC *dcc)
 void
 fe_dcc_remove (struct DCC *dcc)
 {
-	GtkTreeIter iter;
-
 	switch (dcc->type)
 	{
 	case TYPE_SEND:
@@ -1051,10 +941,7 @@ fe_dcc_remove (struct DCC *dcc)
 
 	default:	/* chat */
 		if (dcccwin.window)
-		{
-			if (dcc_find_row (dcc, GTK_TREE_MODEL (dcccwin.store), &iter, CCOL_DCC))
-				gtk_list_store_remove (dcccwin.store, &iter);
-		}
+			fabulor_dcc_chat_list_remove (dcccwin.chats, dcc);
 		break;
 	}
 }

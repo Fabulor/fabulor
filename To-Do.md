@@ -283,7 +283,7 @@ Detailed planning and evidence live in:
   - [x] Convert the Ignore List to a typed cross-version editable owner with mask sorting, flag toggles, and selection-safe mutations.
   - [x] Convert the Ban List to a typed cross-version multi-selection owner with mode-safe removal, crop, clear, copy, and date sorting.
   - [x] Convert the combined DCC Uploads and Downloads table to a typed cross-version multi-selection owner with identity-safe updates and actions.
-  - [ ] Convert the distinct DCC Chat table to a typed cross-version owner.
+  - [x] Convert the distinct DCC Chat table to a typed cross-version owner.
 - [ ] Port the transcript and spell-check input widgets to GTK4 rendering and event semantics.
 - [ ] Add the GTK4 theme adapter and validate tray, notifications, icons, fonts, and platform integration.
   - [x] Retire `.zct` registration and mock Windows GTK theme staging, downloads, and installer choices.

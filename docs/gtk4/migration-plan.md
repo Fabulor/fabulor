@@ -800,7 +800,18 @@ clear-completed, and row activation consume identity snapshots without direct
 tree-model access in the file-transfer paths in `dccgui.c`. The strict probe
 covers prepend/append order, duplicate rejection, update, multi-selection,
 removal, callbacks, clear, and cleanup. The distinct DCC Chat schema and
-lifecycle remain isolated as the immediate pass 20 target.
+lifecycle were left isolated as the immediate pass 20 target.
+
+DCC Chat pass 20 (2026-07-17): the separate Chat window now has one
+cross-version owner for mutable status, nick, received and sent counters,
+start time, colour, multi-selection, and stable DCC identity. GTK4 uses typed
+rows, the shared flat model stack, `GtkMultiSelection`, and five text
+factories; GTK3 retains its shipping list-store presentation inside the owner.
+Refresh, prepend population, Accept, Abort, row activation, and removal no
+longer expose toolkit rows to `dccgui.c`. The strict probe covers duplicate
+rejection, update, ordered multi-selection, callbacks, removal, clear, and
+cleanup. The combined transfer and distinct Chat schemas are now both
+converted without merging their protocol workflows.
 
 Primary surfaces:
 

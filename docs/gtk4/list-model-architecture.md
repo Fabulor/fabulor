@@ -1,6 +1,6 @@
 # GTK4 List Model Architecture
 
-Status: Stage 5 pass 19 conversion contract
+Status: Stage 5 pass 20 conversion contract
 
 Date: 2026-07-17
 
@@ -100,7 +100,7 @@ navigation order.
      with numeric mode identity, sortable dates, and batch action snapshots.
    - [x] Convert the combined DCC transfer list to a typed cross-version
      multi-selection owner with in-place progress updates and identity actions.
-   - [ ] Convert the distinct DCC Chat list without conflating its schema or
+   - [x] Convert the distinct DCC Chat list without conflating its schema or
      accept/abort lifecycle with file transfers.
 5. [ ] Remove the final GTK3 tree-model, cell-renderer, iterator, and row-reference
    assumptions only after all owning surfaces have moved.
@@ -300,7 +300,17 @@ the owner. Progress refresh updates row properties in place; accept, resume,
 abort, clear-completed, details, filtering, and activation consume identity
 snapshots rather than toolkit rows. The strict probe verifies ordering,
 duplicate rejection, update, multi-selection, removal, callbacks, clear, and
-cleanup. The separate DCC Chat table remains a contained pass 20 target.
+cleanup. The separate DCC Chat table was left as the contained pass 20 target.
+
+The distinct DCC Chat table now has its own owner for status, nick, received,
+sent, start time, colour, and stable core identity. GTK4 uses typed mutable
+rows, the shared flat model stack, `GtkMultiSelection`, and five text-column
+factories. GTK3 keeps its list store, renderers, and tree selection inside the
+owner. Status/counter refresh, prepend population, single and multi-selection,
+Accept, Abort, and activation consume identity snapshots. The strict probe
+verifies duplicate rejection, mutable updates, selection order and callbacks,
+identity removal, clear, and cleanup. With both DCC schemas converted,
+`dccgui.c` no longer owns toolkit models, iterators, renderers, or selections.
 
 ## Executable Contract
 

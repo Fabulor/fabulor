@@ -6,6 +6,7 @@
 #include "../../src/fe-gtk/gtk4-list-models.h"
 #include "../../src/fe-gtk/ignore-list.h"
 #include "../../src/fe-gtk/ban-list.h"
+#include "../../src/fe-gtk/dcc-chat-list.h"
 #include "../../src/fe-gtk/dcc-transfer-list.h"
 #include "../../src/fe-gtk/addon-list.h"
 #include "../../src/fe-gtk/channel-model.h"
@@ -927,6 +928,77 @@ check_dcc_transfer_list_model (void)
 	return valid;
 }
 
+typedef struct
+{
+	guint selected;
+	guint calls;
+} ProbeDccChatSelection;
+
+static void
+probe_dcc_chat_selection (guint selected, gpointer user_data)
+{
+	ProbeDccChatSelection *selection = user_data;
+	selection->selected = selected;
+	selection->calls++;
+}
+
+static gboolean
+check_dcc_chat_list_model (void)
+{
+	ProbeDccChatSelection selection = { 0 };
+	gint first_identity = 1;
+	gint second_identity = 2;
+	FabulorDccChatSnapshot first = { 0 };
+	FabulorDccChatSnapshot second = { 0 };
+	FabulorDccChatList *list = fabulor_dcc_chat_list_new (
+		probe_dcc_chat_selection, NULL, &selection);
+	GPtrArray *rows = NULL;
+	gboolean valid = list != NULL;
+
+	first.identity = &first_identity;
+	first.status = "Queued";
+	first.nick = "alpha";
+	first.received = "0 bytes";
+	first.sent = "0 bytes";
+	first.start_time = "Fri Jul 17 00:00:00 2026";
+	second = first;
+	second.identity = &second_identity;
+	second.nick = "beta";
+	if (valid)
+	{
+		valid = fabulor_dcc_chat_list_append (list, &first, FALSE) &&
+			fabulor_dcc_chat_list_append (list, &second, TRUE) &&
+			!fabulor_dcc_chat_list_append (list, &first, FALSE) &&
+			fabulor_dcc_chat_list_get_n_rows (list) == 2;
+	}
+	if (valid)
+	{
+		first.status = "Active";
+		first.received = "512 bytes";
+		valid = fabulor_dcc_chat_list_update (list, &first) &&
+			fabulor_dcc_chat_list_set_selected (list, 0, TRUE) &&
+			fabulor_dcc_chat_list_set_selected (list, 1, TRUE) &&
+			fabulor_dcc_chat_list_get_n_selected (list) == 2 &&
+			selection.selected == 2 && selection.calls >= 2;
+	}
+	if (valid)
+	{
+		rows = fabulor_dcc_chat_list_dup_selected (list);
+		valid = rows->len == 2 &&
+			g_ptr_array_index (rows, 0) == &second_identity &&
+			g_ptr_array_index (rows, 1) == &first_identity &&
+			fabulor_dcc_chat_list_remove (list, &second_identity) &&
+			!fabulor_dcc_chat_list_remove (list, &second_identity) &&
+			fabulor_dcc_chat_list_get_n_rows (list) == 1;
+		g_ptr_array_unref (rows);
+		fabulor_dcc_chat_list_clear (list);
+		valid = valid && fabulor_dcc_chat_list_get_n_rows (list) == 0 &&
+			fabulor_dcc_chat_list_get_n_selected (list) == 0;
+	}
+	fabulor_dcc_chat_list_free (list);
+	return valid;
+}
+
 int
 main (void)
 {
@@ -994,6 +1066,11 @@ main (void)
 	if (!check_dcc_transfer_list_model ())
 	{
 		fprintf (stderr, "GTK4 DCC transfer list model contract mismatch\n");
+		return 1;
+	}
+	if (!check_dcc_chat_list_model ())
+	{
+		fprintf (stderr, "GTK4 DCC Chat list model contract mismatch\n");
 		return 1;
 	}
 
