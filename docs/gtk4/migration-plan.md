@@ -879,6 +879,19 @@ privately. Lazy page creation and notebook switching remain in `setup.c`. The
 strict probe covers hierarchy counts, stable page selection, callback
 de-duplication, missing-page rejection, and cleanup.
 
+Server List network-table pass 27 (2026-07-17): the main network chooser now
+has one cross-version owner for copied display names, stable `ircnet` identity,
+favorite emphasis, single selection, inline rename, filtered refresh order,
+and keyboard movement. GTK4 uses typed mutable rows, the shared flat model
+stack, `GtkSingleSelection`, `GtkListView`, and an editable-label factory;
+GTK3 keeps its list store, renderer, tree view, and selection privately. Add,
+remove, sort, favorite toggling, favorites-only refresh, remembered selection,
+scrolling, and Shift+Up/Down no longer traverse toolkit rows in
+`servlistgui.c`. The strict probe covers insertion order, duplicate rejection,
+selection, movement boundaries, updates, removal, clear, and cleanup. The
+detailed Servers, Autojoin channels, and Connect commands tables remain the
+next contained server-editor pass.
+
 Primary surfaces:
 
 - server list and editor

@@ -30,6 +30,7 @@ zoitechat_gtk_sources = [
   'key-binding-list.c',
   'sound-event-list.c',
   'preferences-category-list.c',
+  'server-network-list.c',
   'fe-gtk.c',
   'fkeys.c',
   'gtkutil.c',

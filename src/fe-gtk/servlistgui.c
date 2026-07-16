@@ -35,6 +35,7 @@
 #include "fe-gtk.h"
 #include "gtkutil.h"
 #include "gtk-compat.h"
+#include "server-network-list.h"
 #include "menu.h"
 #include "pixmaps.h"
 #include "fkeys.h"
@@ -58,6 +59,7 @@
 /* servlistgui.c globals */
 static GtkWidget *serverlist_win = NULL;
 static GtkWidget *networks_tree;		/* network TreeView */
+static FabulorServerNetworkList *network_list_view = NULL;
 
 static int netlist_win_width = 0;		/* don't hardcode pixels, just use as much as needed by default, save if resized */
 static int netlist_win_height = 0;
@@ -118,9 +120,10 @@ static commandentry *selected_cmd = NULL;
 static favchannel *selected_chan = NULL;
 static session *servlist_sess;
 
-static void servlist_network_row_cb (GtkTreeSelection *sel, gpointer user_data);
+static void servlist_network_row_cb (gpointer identity, gpointer user_data);
 static GtkWidget *servlist_open_edit (GtkWidget *parent, ircnet *net);
 static void servlist_password_changed_cb (GtkEditable *editable, gpointer userdata);
+static void servlist_network_list_release (void);
 
 static void
 servlist_update_password_tools (ircnet *net)
@@ -929,12 +932,11 @@ servlist_commands_populate (ircnet *net, GtkWidget *treeview)
 }
 
 static void
-servlist_networks_populate_ (GtkWidget *treeview, GSList *netlist, gboolean favorites)
+servlist_networks_populate (GSList *netlist)
 {
-	GtkListStore *store;
-	GtkTreeIter iter;
-	int i;
+	ircnet *selected = NULL;
 	ircnet *net;
+	int i = 0;
 
 	if (!netlist)
 	{
@@ -942,35 +944,23 @@ servlist_networks_populate_ (GtkWidget *treeview, GSList *netlist, gboolean favo
 		servlist_server_add (net, DEFAULT_SERVER);
 		netlist = network_list;
 	}
-	store = (GtkListStore *)gtk_tree_view_get_model (GTK_TREE_VIEW (treeview));
-	gtk_list_store_clear (store);
-
-	i = 0;
+	fabulor_server_network_list_clear (network_list_view);
 	while (netlist)
 	{
 		net = netlist->data;
-		if (!favorites || (net->flags & FLAG_FAVORITE))
+		if (!prefs.hex_gui_slist_fav || (net->flags & FLAG_FAVORITE))
 		{
-			if (favorites)
-				gtk_list_store_insert_with_values (store, &iter, 0x7fffffff, 0, net->name, 1, 1, 2, 400, -1);
-			else
-				gtk_list_store_insert_with_values (store, &iter, 0x7fffffff, 0, net->name, 1, 1, 2, (net->flags & FLAG_FAVORITE) ? 800 : 400, -1);
+			fabulor_server_network_list_append (network_list_view, net,
+				net->name, !!(net->flags & FLAG_FAVORITE), FALSE);
 			if (i == prefs.hex_gui_slist_select)
-			{
-				/* select this network */
-				servlist_select_and_show (GTK_TREE_VIEW (treeview), &iter, store);
-				selected_net = net;
-			}
+				selected = net;
 		}
 		i++;
 		netlist = netlist->next;
 	}
-}
-
-static void
-servlist_networks_populate (GtkWidget *treeview, GSList *netlist)
-{
-	servlist_networks_populate_ (treeview, netlist, prefs.hex_gui_slist_fav);
+	if (!selected || !fabulor_server_network_list_select (network_list_view,
+		selected))
+		fabulor_server_network_list_select_first (network_list_view);
 }
 
 static void
@@ -1082,8 +1072,6 @@ servlist_addserver (void)
 	/* select this server */
 	servlist_select_and_show (GTK_TREE_VIEW (edit_trees[SERVER_TREE]), &iter, store);
 	servlist_start_editing (GTK_TREE_VIEW (edit_trees[SERVER_TREE]));
-
-	servlist_server_row_cb (gtk_tree_view_get_selection (GTK_TREE_VIEW (networks_tree)), NULL);
 }
 
 static void
@@ -1103,8 +1091,6 @@ servlist_addcommand (void)
 
 	servlist_select_and_show (GTK_TREE_VIEW (edit_trees[CMD_TREE]), &iter, store);
 	servlist_start_editing (GTK_TREE_VIEW (edit_trees[CMD_TREE]));
-
-	servlist_command_row_cb (gtk_tree_view_get_selection (GTK_TREE_VIEW (networks_tree)), NULL);
 }
 
 static void
@@ -1125,52 +1111,31 @@ servlist_addchannel (void)
 	/* select this server */
 	servlist_select_and_show (GTK_TREE_VIEW (edit_trees[CHANNEL_TREE]), &iter, store);
 	servlist_start_editing (GTK_TREE_VIEW (edit_trees[CHANNEL_TREE]));
-
-	servlist_channel_row_cb (gtk_tree_view_get_selection (GTK_TREE_VIEW (networks_tree)), NULL);
 }
 
 static void
-servlist_addnet_cb (GtkWidget *item, GtkTreeView *treeview)
+servlist_addnet_cb (GtkWidget *item, gpointer user_data)
 {
-	GtkTreeIter iter;
-	GtkListStore *store;
 	ircnet *net;
+	(void) item;
+	(void) user_data;
 
 	net = servlist_net_add (_("New Network"), "", TRUE);
 	net->encoding = g_strdup (IRC_DEFAULT_CHARSET);
 	servlist_server_add (net, DEFAULT_SERVER);
 
-	store = (GtkListStore *)gtk_tree_view_get_model (treeview);
-	gtk_list_store_prepend (store, &iter);
-	gtk_list_store_set (store, &iter, 0, net->name, 1, 1, -1);
-
-	/* select this network */
-	servlist_select_and_show (GTK_TREE_VIEW (networks_tree), &iter, store);
-	servlist_start_editing (GTK_TREE_VIEW (networks_tree));
-
-	servlist_network_row_cb (gtk_tree_view_get_selection (GTK_TREE_VIEW (networks_tree)), NULL);
+	fabulor_server_network_list_append (network_list_view, net, net->name,
+		FALSE, TRUE);
+	fabulor_server_network_list_select (network_list_view, net);
+	fabulor_server_network_list_start_editing_selected (network_list_view);
 }
 
 static void
 servlist_deletenetwork (ircnet *net)
 {
-	GtkTreeSelection *sel;
-	GtkTreeModel *model;
-	GtkTreeIter iter;
-
-	/* remove from GUI */
-	sel = gtk_tree_view_get_selection (GTK_TREE_VIEW (networks_tree));
-	if (gtk_tree_selection_get_selected (sel, &model, &iter))
-		gtk_list_store_remove (GTK_LIST_STORE (model), &iter);
-
-	/* remove from list */
+	fabulor_server_network_list_remove (network_list_view, net);
 	servlist_net_remove (net);
-
-	/* force something to be selected */
-	gtk_tree_model_get_iter_first (model, &iter);
-	servlist_select_and_show (GTK_TREE_VIEW (networks_tree), &iter,
-									  GTK_LIST_STORE (model));
-	servlist_network_row_cb (sel, NULL);
+	fabulor_server_network_list_select_first (network_list_view);
 }
 
 static void
@@ -1218,25 +1183,37 @@ servlist_move_item (GtkTreeView *view, GSList *list, gpointer item, int delta)
 }
 
 static gboolean
-servlist_net_keypress_cb (GtkWidget *wid, GdkEventKey *evt, gpointer tree)
+servlist_net_keypress_cb (GtkWidget *wid, guint keyval,
+	GdkModifierType state, gpointer user_data)
 {
 	gboolean handled = FALSE;
-	
-	if (!selected_net || prefs.hex_gui_slist_fav)
+	ircnet *net = selected_net;
+	int delta = 0;
+	(void) wid;
+	(void) user_data;
+
+	if (!net || prefs.hex_gui_slist_fav)
 		return FALSE;
 
-	if (evt->state & STATE_SHIFT)
+	if (state & STATE_SHIFT)
 	{
-		if (evt->keyval == GDK_KEY_Up)
+		if (keyval == GDK_KEY_Up)
 		{
 			handled = TRUE;
-			network_list = servlist_move_item (GTK_TREE_VIEW (tree), network_list, selected_net, -1);
+			delta = -1;
 		}
-		else if (evt->keyval == GDK_KEY_Down)
+		else if (keyval == GDK_KEY_Down)
 		{
 			handled = TRUE;
-			network_list = servlist_move_item (GTK_TREE_VIEW (tree), network_list, selected_net, +1);
+			delta = 1;
 		}
+	}
+	if (handled && fabulor_server_network_list_move (network_list_view,
+		net, delta))
+	{
+		int pos = g_slist_index (network_list, net) + delta;
+		network_list = g_slist_remove (network_list, net);
+		network_list = g_slist_insert (network_list, net, pos);
 	}
 
 	return handled;
@@ -1264,44 +1241,25 @@ static void
 servlist_sort (GtkWidget *button, gpointer none)
 {
 	network_list=g_slist_sort(network_list,(GCompareFunc)servlist_compare);
-	servlist_networks_populate (networks_tree, network_list);
-}
-
-static gboolean
-servlist_has_selection (GtkTreeView *tree)
-{
-	GtkTreeSelection *sel;
-	GtkTreeModel *model;
-	GtkTreeIter iter;
-
-	/* make sure something is selected */
-	sel = gtk_tree_view_get_selection (GTK_TREE_VIEW (tree));
-	return gtk_tree_selection_get_selected (sel, &model, &iter);
+	servlist_networks_populate (network_list);
 }
 
 static void
 servlist_favor (GtkWidget *button, gpointer none)
 {
-	GtkTreeSelection *sel;
-	GtkTreeModel *model;
-	GtkTreeIter iter;
-
 	if (!selected_net)
 		return;
-
-	sel = gtk_tree_view_get_selection (GTK_TREE_VIEW (networks_tree));
-	if (gtk_tree_selection_get_selected (sel, &model, &iter))
+	if (selected_net->flags & FLAG_FAVORITE)
 	{
-		if (selected_net->flags & FLAG_FAVORITE)
-		{
-			gtk_list_store_set (GTK_LIST_STORE (model), &iter, 2, 400, -1);
-			selected_net->flags &= ~FLAG_FAVORITE;
-		}
-		else
-		{
-			gtk_list_store_set (GTK_LIST_STORE (model), &iter, 2, 800, -1);
-			selected_net->flags |= FLAG_FAVORITE;
-		}
+		selected_net->flags &= ~FLAG_FAVORITE;
+		fabulor_server_network_list_set_favorite (network_list_view,
+			selected_net, FALSE);
+	}
+	else
+	{
+		selected_net->flags |= FLAG_FAVORITE;
+		fabulor_server_network_list_set_favorite (network_list_view,
+			selected_net, TRUE);
 	}
 }
 
@@ -1437,7 +1395,7 @@ servlist_edit_configure_cb (GtkWindow *win, GdkEventConfigure *event, gpointer n
 static void
 servlist_edit_cb (GtkWidget *but, gpointer none)
 {
-	if (!servlist_has_selection (GTK_TREE_VIEW (networks_tree)))
+	if (!fabulor_server_network_list_get_selected (network_list_view))
 		return;
 	if (!selected_net || !selected_net->name)
 		return;
@@ -1461,7 +1419,7 @@ servlist_deletenet_cb (GtkWidget *item, ircnet *net)
 {
 	GtkWidget *dialog;
 
-	if (!servlist_has_selection (GTK_TREE_VIEW (networks_tree)))
+	if (!fabulor_server_network_list_get_selected (network_list_view))
 		return;
 
 	net = selected_net;
@@ -1626,37 +1584,13 @@ servlist_deletechannel_cb (void)
 	}
 }
 
-static ircnet *
-servlist_find_selected_net (GtkTreeSelection *sel)
-{
-	GtkTreeModel *model;
-	GtkTreeIter iter;
-	char *netname;
-	int pos;
-	ircnet *net = NULL;
-
-	if (gtk_tree_selection_get_selected (sel, &model, &iter))
-	{
-		gtk_tree_model_get (model, &iter, 0, &netname, -1);
-		net = servlist_net_find (netname, &pos, strcmp);
-		g_free (netname);
-		if (net)
-			prefs.hex_gui_slist_select = pos;
-	}
-
-	return net;
-}
-
 static void
-servlist_network_row_cb (GtkTreeSelection *sel, gpointer user_data)
+servlist_network_row_cb (gpointer identity, gpointer user_data)
 {
-	ircnet *net;
-
-	selected_net = NULL;
-
-	net = servlist_find_selected_net (sel);
-	if (net)
-		selected_net = net;
+	(void) user_data;
+	selected_net = identity;
+	if (selected_net)
+		prefs.hex_gui_slist_select = g_slist_index (network_list, selected_net);
 }
 
 static int
@@ -1886,49 +1820,25 @@ servlist_connect_cb (GtkWidget *button, gpointer userdata)
 	selected_net = NULL;
 }
 
-static void
-servlist_celledit_cb (GtkCellRendererText *cell, gchar *arg1, gchar *arg2,
-							 gpointer user_data)
+static gboolean
+servlist_network_edit_cb (gpointer identity, const gchar *new_name,
+	gpointer user_data)
 {
-	GtkTreeModel *model = (GtkTreeModel *)user_data;
-	GtkTreeIter iter;
-	GtkTreePath *path;
-	char *netname;
-	ircnet *net;
+	ircnet *net = identity;
+	char *old_name;
+	(void) user_data;
 
-	if (!arg1 || !arg2)
-		return;
-
-	path = gtk_tree_path_new_from_string (arg1);
-	if (!path)
-		return;
-
-	if (!gtk_tree_model_get_iter (model, &iter, path))
+	if (!net || !new_name)
+		return FALSE;
+	if (!new_name[0])
 	{
-		gtk_tree_path_free (path);
-		return;
+		servlist_deletenetwork (net);
+		return FALSE;
 	}
-	gtk_tree_model_get (model, &iter, 0, &netname, -1);
-
-	net = servlist_net_find (netname, NULL, strcmp);
-	g_free (netname);
-	if (net)
-	{
-		/* delete empty item */
-		if (arg2[0] == 0)
-		{
-			servlist_deletenetwork (net);
-			gtk_tree_path_free (path);
-			return;
-		}
-
-		netname = net->name;
-		net->name = g_strdup (arg2);
-		gtk_list_store_set (GTK_LIST_STORE (model), &iter, 0, net->name, -1);
-		g_free (netname);
-	}
-
-	gtk_tree_path_free (path);
+	old_name = net->name;
+	net->name = g_strdup (new_name);
+	g_free (old_name);
+	return TRUE;
 }
 
 static void
@@ -2049,6 +1959,22 @@ servlist_create_entry (GtkWidget *table, char *labeltext, int row,
 						   SERVLIST_X_PADDING, SERVLIST_Y_PADDING);
 
 	return entry;
+}
+
+static void
+servlist_network_list_release (void)
+{
+	fabulor_server_network_list_free (network_list_view);
+	network_list_view = NULL;
+	networks_tree = NULL;
+}
+
+static void
+servlist_network_list_destroy_cb (GtkWidget *widget, gpointer user_data)
+{
+	(void) widget;
+	(void) user_data;
+	servlist_network_list_release ();
 }
 
 static gint
@@ -2429,7 +2355,7 @@ fav_servlist (GtkWidget * igad, gpointer serv)
 	else
 		prefs.hex_gui_slist_fav = FALSE;
 
-	servlist_networks_populate (networks_tree, network_list);
+	servlist_networks_populate (network_list);
 }
 
 static GtkWidget *
@@ -2845,9 +2771,6 @@ servlist_open_networks (void)
 	GtkWidget *hbuttonbox1;
 	GtkWidget *button_connect;
 	GtkWidget *button_close;
-	GtkTreeModel *model;
-	GtkListStore *store;
-	GtkCellRenderer *renderer;
 	char buf[128];
 
 	servlist = gtk_window_new (GTK_WINDOW_TOPLEVEL);
@@ -2982,26 +2905,11 @@ servlist_open_networks (void)
 	gtk_scrolled_window_set_shadow_type (GTK_SCROLLED_WINDOW (scrolledwindow3),
 													 GTK_SHADOW_IN);
 
-	store = gtk_list_store_new (3, G_TYPE_STRING, G_TYPE_BOOLEAN, G_TYPE_INT);
-	model = GTK_TREE_MODEL (store);
-
-	networks_tree = treeview_networks = gtk_tree_view_new_with_model (model);
-	g_object_unref (model);
-	gtk_widget_show (treeview_networks);
-	fabulor_gtk_scrolled_window_set_child (GTK_SCROLLED_WINDOW (scrolledwindow3), treeview_networks);
-	gtk_tree_view_set_headers_visible (GTK_TREE_VIEW (treeview_networks),
-												  FALSE);
-
-	renderer = gtk_cell_renderer_text_new ();
-	g_signal_connect (G_OBJECT (renderer), "edited",
-							G_CALLBACK (servlist_celledit_cb), model);
-	gtk_tree_view_insert_column_with_attributes (
-								GTK_TREE_VIEW (treeview_networks), -1,
-						 		0, renderer,
-						 		"text", 0,
-								"editable", 1,
-								"weight", 2,
-								NULL);
+	network_list_view = fabulor_server_network_list_new (
+		servlist_network_row_cb, servlist_network_edit_cb, NULL);
+	networks_tree = treeview_networks =
+		fabulor_server_network_list_create_view (network_list_view,
+			GTK_SCROLLED_WINDOW (scrolledwindow3));
 
 	hbox = gtkutil_box_new (GTK_ORIENTATION_HORIZONTAL, FALSE, 0);
 	servlist_table_attach (table4, hbox, 0, 2, 1, 2,
@@ -3130,16 +3038,16 @@ fe_serverlist_open (session *sess)
 	serverlist_win = servlist_open_networks ();
 	gtkutil_set_icon (serverlist_win);
 
-	servlist_networks_populate (networks_tree, network_list);
+	servlist_networks_populate (network_list);
 
 	g_signal_connect (G_OBJECT (serverlist_win), "delete-event",
 						 	G_CALLBACK (servlist_delete_cb), 0);
 	g_signal_connect (G_OBJECT (serverlist_win), "configure-event",
 							G_CALLBACK (servlist_configure_cb), 0);
-	g_signal_connect (G_OBJECT (gtk_tree_view_get_selection (GTK_TREE_VIEW (networks_tree))),
-							"changed", G_CALLBACK (servlist_network_row_cb), NULL);
-	g_signal_connect (G_OBJECT (networks_tree), "key-press-event",
-							G_CALLBACK (servlist_net_keypress_cb), networks_tree);
+	g_signal_connect (G_OBJECT (serverlist_win), "destroy",
+							G_CALLBACK (servlist_network_list_destroy_cb), NULL);
+	fabulor_gtk_widget_on_key_pressed (networks_tree,
+		servlist_net_keypress_cb, NULL);
 
 	gtk_widget_show (serverlist_win);
 }

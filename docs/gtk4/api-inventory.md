@@ -162,6 +162,16 @@ expanded, and startup restores the remembered page. `setup.c` now contains no
 direct tree-model, iterator, path, cell-renderer, list-store, tree-selection,
 or child-reordering dependency.
 
+Stage 5 Server List network-table pass 27 moves the main network chooser into
+a cross-version owner. GTK4 uses typed mutable rows, the shared flat model
+stack, `GtkSingleSelection`, `GtkListView`, and an editable-label factory;
+GTK3 keeps its list store, renderer, tree view, and selection private. Add,
+remove, inline rename, favorite emphasis, favorites-only refresh, sorting,
+remembered selection, scrolling, and Shift+Up/Down ordering now use stable
+`ircnet` identity. The main chooser path in `servlistgui.c` no longer accesses
+a tree model, iterator, path, renderer, or selection. The three detailed
+network-editor tables remain for the next contained pass.
+
 Stage 5 user-list model pass 3 replaces the per-session `GtkListStore` and
 frontend-owned row-reference hash with `FabulorUserListModel`. The GTK4 branch
 owns typed rows, sorted list and multi-selection models, identity-indexed
@@ -493,7 +503,7 @@ Status: `not started`
 | Transcript | `xtext.c`, `xtext.h` | snapshot rendering and event model | not started |
 | Edit box and spell check | `maingui.c`, `sexy-spell-entry.c` | editable composition/subclass and controllers | not started |
 | Menus and commands | `menu.c`, `plugin-tray.c` | actions and menu models | not started |
-| Operational lists | `servlistgui.c`, `chanlist.c`, `userlistgui.c`, `dccgui.c`, `banlist.c`, `notifygui.c`, `ignoregui.c`, `plugingui.c`, `urlgrab.c` | list models, factories, editing | in progress; notify, user, channel-navigation, loaded add-on, URL History, Ignore List, Ban List, and both DCC owners established |
+| Operational lists | `servlistgui.c`, `chanlist.c`, `userlistgui.c`, `dccgui.c`, `banlist.c`, `notifygui.c`, `ignoregui.c`, `plugingui.c`, `urlgrab.c` | list models, factories, editing | in progress; main server-network chooser and all non-server-editor operational owners established |
 | Preferences/editors | `setup.c`, `fkeys.c`, `textgui.c`, `editlist.c` | generic edit list, Print Events, key bindings, sound events, and preference navigation converted | converted |
 | Themes | `theme/*.c`, `common/gtk3-theme-service.c` | GTK4 CSS compatibility and adapter policy | not started |
 | Platform integration | `fe-gtk.c`, `plugin-tray.c`, notifications | displays, surfaces, icons, native tray | not started |
