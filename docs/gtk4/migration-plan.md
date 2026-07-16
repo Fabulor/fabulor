@@ -593,6 +593,21 @@ Executable probes cover duplicate rejection, refresh ordering, identity
 fallback, selected action data, and cleanup. Manual GTK4 visual, keyboard, and
 accessibility validation remains for the production frontend cutover.
 
+User-list model pass 3 (2026-07-16): per-session user-list storage is now an
+opaque cross-version owner rather than a `GtkListStore` plus externally owned
+`GtkTreeRowReference` map in session state. One row snapshot builder supplies
+privilege icon/prefix markup, escaped nickname and typing state, hostname,
+away/nickname colour, and stable `struct User` identity to both toolkit paths.
+The GTK4 branch uses typed row objects, `GListStore`, `GtkSortListModel`, and
+`GtkMultiSelection`; it exposes only the sorted list and selection models needed
+by the next shared-view pass. Sorting covers privilege/alphabetic ascending and
+descending modes plus insertion order, updates can distinguish sort-key changes,
+and row properties notify only when presentation data changes. Executable probes
+cover duplicate rejection, all sort directions, unsorted insertion, external
+sort-key change, update/remove misses, identity removal, and cleanup. The shared
+user-list view, factories, pointer hit-testing, menus, keyboard forwarding, and
+drag/drop remain in the next contained pass.
+
 Primary surfaces:
 
 - server list and editor

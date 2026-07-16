@@ -62,6 +62,10 @@ navigation order.
    and factory lifecycle. The Notify List is the reference implementation.
 2. [ ] Convert the user list, including frequent updates, sorting, selection, and
    internal/external drag/drop integration.
+   - [x] Replace per-session stores and external row references with a typed,
+     identity-indexed cross-version model owner.
+   - [ ] Convert the shared view, factories, selection workflows, pointer
+     hit-testing, context menus, keyboard forwarding, and drag/drop.
 3. [ ] Convert channel navigation, expansion state, badges, keyboard switching,
    and channel-family reordering.
 4. [ ] Convert remaining tabular editors and operational lists according to their
@@ -87,6 +91,25 @@ The production GTK3 branch remains available until the frontend target changes
 toolkits, but all of its model, renderer, iterator, and selection operations are
 contained inside the owner. `notifygui.c` is toolkit-model independent.
 
+## User List Model Owner
+
+`user-list-model.c` owns one model per session. Session restore state holds only
+the opaque owner; it no longer stores a toolkit model or a second row-reference
+table. Stable `struct User *` identity indexes each row for constant-time
+updates and removals. The retained GTK3 branch contains its five remaining
+`GtkTreeRowReference` reference lines internally until the shared view moves.
+
+The GTK4 branch stores typed row objects with icon, prefix markup, nickname and
+typing markup, hostname, and optional foreground colour properties. It wraps
+the store in the shared sorted multi-selection stack. Its comparator delegates
+to Fabulor's existing IRC-aware alphabetic or privilege ordering and safely
+normalizes descending results. Presentation-only typing updates do not announce
+sort-key changes; identity or privilege/name changes can request re-sorting.
+
+The next pass will attach this model and selection owner to one shared
+`GtkColumnView`, replace cell renderers with factories, and move all visible
+selection and pointer workflows off the retained GTK3 view.
+
 ## Executable Contract
 
 `src/fe-gtk/gtk4-list-models.c` implements the GTK4-only ownership stacks.
@@ -97,6 +120,8 @@ The isolated GTK4 MSVC and Meson probes verify:
 - hierarchical expansion and child depth;
 - selected child stability when an unrelated root is removed; and
 - complete model and selection cleanup.
+- user-list duplicate rejection, ascending/descending/unsorted ordering,
+  external sort-key updates, typed row identity, removal, and cleanup.
 
 These probes establish architecture and ownership only. Production workflow,
 visual, keyboard, accessibility, and load validation remains mandatory for

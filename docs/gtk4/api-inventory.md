@@ -83,6 +83,15 @@ and explicit binding cleanup. The `GtkTreeView` type inventory is now 76 lines
 across 18 files; the retained Notify GTK3 implementation is isolated inside the
 owner until production cutover.
 
+Stage 5 user-list model pass 3 replaces the per-session `GtkListStore` and
+frontend-owned row-reference hash with `FabulorUserListModel`. The GTK4 branch
+owns typed rows, sorted list and multi-selection models, identity-indexed
+updates/removals, and IRC-aware ordering. The GTK3 branch's five remaining
+`GtkTreeRowReference` reference lines are private to the owner. No direct per-session
+store or row-reference ownership remains in `fe-gtk.h`, `maingui.c`, or
+`userlistgui.c`. The shared GTK3 user view remains for pass 4, so the
+`GtkTreeView` inventory is now 75 lines across 18 files.
+
 The visibility helper is limited to 17 reviewed roots whose descendants have
 finished construction and have no intentional hidden state at reveal time.
 The boundary deliberately does not abstract generic widget destruction,
@@ -329,7 +338,7 @@ clipboard ownership in `xtext.c`, not drag/drop, and remains assigned to Stage 6
 | `gtk_widget_get_window` | 31 | 6 | surface/native access only where unavoidable | 4/6 | in progress |
 | `gdk_window_*` | 48 | 8 | `GdkSurface`, snapshots, controllers, or removal | 4/6 | in progress |
 | `gtk_clipboard_*` | 1 | 1 | `GdkClipboard` and content providers | 4/6 | in progress |
-| `GtkTreeView` | 76 | 18 | choose GTK4 list/model widget per workflow | 5 | in progress; Notify owner converted |
+| `GtkTreeView` | 75 | 18 | choose GTK4 list/model widget per workflow | 5 | in progress; Notify and user model owners converted |
 | `GtkStatusIcon` | 6 | 1 | native Win32 tray or supported external backend | 7 | not started |
 | screen CSS provider installation | 4 | 3 | display-scoped provider installation | 7 | not started |
 

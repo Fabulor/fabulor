@@ -56,6 +56,7 @@
 #include "preferences-persistence.h"
 #include "fkeys.h"
 #include "userlistgui.h"
+#include "user-list-model.h"
 #include "chanview.h"
 #include "pixmaps.h"
 #include "plugin-tray.h"
@@ -6276,9 +6277,7 @@ void
 fe_session_callback (session *sess)
 {
         gtk_xtext_buffer_free (sess->res->buffer);
-        g_object_unref (G_OBJECT (sess->res->user_model));
-        if (sess->res->user_row_refs)
-                g_hash_table_destroy (sess->res->user_row_refs);
+        fabulor_user_list_model_free (sess->res->user_model);
 
         if (sess->res->banlist && sess->res->banlist->window)
                 mg_close_gen (NULL, sess->res->banlist->window);

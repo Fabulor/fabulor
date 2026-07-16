@@ -105,8 +105,7 @@ typedef struct restore_gui
 	void *tab;			/* (chan *) */
 
 	/* information stored when this tab isn't front-most */
-	GtkListStore *user_model;	/* for filling the GtkTreeView */
-	GHashTable *user_row_refs;
+	struct _FabulorUserListModel *user_model;
 	void *buffer;		/* xtext_Buffer */
 	char *input_text;	/* input text buffer (while not-front tab) */
 	char *topic_text;	/* topic GtkEntry buffer */
