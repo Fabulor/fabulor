@@ -2226,6 +2226,47 @@ Scope: Ban List model/view ownership and row interaction. Server capability
 detection, IRC replies, mode command batching, permission checks, titles, and
 confirmation text are unchanged.
 
+### PR: #82 - GTK4 Stage 5 DCC Transfer List
+
+Date: 2026-07-17
+
+Migration stage: 5, DCC transfer-list pass 19
+
+Files/workflows converted: combined Uploads and Downloads rows; mutable
+progress refresh; multi-selection; view filtering; details; activation;
+accept, resume, abort, and clear-completed actions
+
+GTK version: 4.22.4
+
+GLib version: 2.88.0
+
+Build configuration: MSVC x64 Release and strict GTK4 probe boundary
+
+Automated checks:
+
+- [x] production GTK3 frontend compiles and links with 0 warnings and 0 errors
+- [x] strict GTK4 probe compiles and executes the DCC transfer-list owner
+- [x] prepend/append order, duplicate rejection, and in-place update pass
+- [x] multi-selection, identity snapshots, callbacks, removal, and clear pass
+- [x] file-transfer state contains no legacy store, selection, transfer-column, iterator, or cell-renderer dependency
+- [x] production and strict build definitions include the new owner
+- [x] GTK4 dependency validator tests remain 8/8
+- [x] repository diff whitespace validation passes
+
+Manual checks:
+
+- [ ] shipping GTK3 combined Uploads and Downloads population and live progress
+- [ ] Both, Uploads, and Downloads filtering with active and completed rows
+- [ ] single and multi-select Accept, Resume, Abort, and Clear workflows
+- [ ] transfer details, Open Folder, double-click behavior, and close/reopen
+- [ ] zero-byte, queued resumable, failed, aborted, and completed presentation
+- [ ] GTK4 keyboard multi-selection, column sizing, colour, direction icons, and focus await frontend cutover
+
+Scope: combined file-transfer model/view ownership and row interaction. DCC
+protocol behavior, transfer engine state, command dispatch, and the distinct
+DCC Chat five-column workflow are unchanged. DCC Chat is the next contained
+Stage 5 target.
+
 ## Per-PR Record Template
 
 Copy this section for each GTK4 PR:

@@ -6,6 +6,7 @@
 #include "../../src/fe-gtk/gtk4-list-models.h"
 #include "../../src/fe-gtk/ignore-list.h"
 #include "../../src/fe-gtk/ban-list.h"
+#include "../../src/fe-gtk/dcc-transfer-list.h"
 #include "../../src/fe-gtk/addon-list.h"
 #include "../../src/fe-gtk/channel-model.h"
 #include "../../src/fe-gtk/channel-tree-view.h"
@@ -845,6 +846,87 @@ check_ban_list_model (void)
 	return valid;
 }
 
+typedef struct
+{
+	guint calls;
+} ProbeDccSelection;
+
+static void
+probe_dcc_selection (gpointer user_data)
+{
+	ProbeDccSelection *selection = user_data;
+	selection->calls++;
+}
+
+static gboolean
+check_dcc_transfer_list_model (void)
+{
+	ProbeDccSelection selection = { 0 };
+	gint first_identity = 1;
+	gint second_identity = 2;
+	FabulorDccTransferSnapshot first = { 0 };
+	FabulorDccTransferSnapshot second = { 0 };
+	FabulorDccTransferList *list = fabulor_dcc_transfer_list_new (
+		probe_dcc_selection, NULL, &selection);
+	GPtrArray *rows = NULL;
+	gboolean valid = list != NULL;
+
+	first.identity = &first_identity;
+	first.status = "Queued";
+	first.file = "first.bin";
+	first.size = "1.0 kB";
+	first.position = "0 bytes";
+	first.percentage = "0%";
+	first.speed = "0.0";
+	first.eta = "--:--:--";
+	first.nick = "alpha";
+	second = first;
+	second.identity = &second_identity;
+	second.upload = TRUE;
+	second.file = "second.bin";
+	second.nick = "beta";
+	if (valid)
+	{
+		valid = fabulor_dcc_transfer_list_append (list, &first, FALSE) &&
+			fabulor_dcc_transfer_list_append (list, &second, TRUE) &&
+			!fabulor_dcc_transfer_list_append (list, &first, FALSE) &&
+			fabulor_dcc_transfer_list_get_n_rows (list) == 2;
+	}
+	if (valid)
+	{
+		rows = fabulor_dcc_transfer_list_dup_all (list);
+		valid = rows->len == 2 &&
+			g_ptr_array_index (rows, 0) == &second_identity &&
+			g_ptr_array_index (rows, 1) == &first_identity;
+		g_ptr_array_unref (rows);
+	}
+	if (valid)
+	{
+		first.status = "Active";
+		first.position = "512 bytes";
+		first.percentage = "50%";
+		valid = fabulor_dcc_transfer_list_update (list, &first) &&
+			fabulor_dcc_transfer_list_set_selected (list, 1, TRUE) &&
+			fabulor_dcc_transfer_list_get_n_selected (list) == 1 &&
+			fabulor_dcc_transfer_list_get_first_selected (list) ==
+				&first_identity && selection.calls >= 1;
+	}
+	if (valid)
+	{
+		rows = fabulor_dcc_transfer_list_dup_selected (list);
+		valid = rows->len == 1 &&
+			g_ptr_array_index (rows, 0) == &first_identity &&
+			fabulor_dcc_transfer_list_remove (list, &first_identity) &&
+			!fabulor_dcc_transfer_list_remove (list, &first_identity) &&
+			fabulor_dcc_transfer_list_get_n_rows (list) == 1;
+		g_ptr_array_unref (rows);
+		fabulor_dcc_transfer_list_clear (list);
+		valid = valid && fabulor_dcc_transfer_list_get_n_rows (list) == 0;
+	}
+	fabulor_dcc_transfer_list_free (list);
+	return valid;
+}
+
 int
 main (void)
 {
@@ -907,6 +989,11 @@ main (void)
 	if (!check_ban_list_model ())
 	{
 		fprintf (stderr, "GTK4 ban list model contract mismatch\n");
+		return 1;
+	}
+	if (!check_dcc_transfer_list_model ())
+	{
+		fprintf (stderr, "GTK4 DCC transfer list model contract mismatch\n");
 		return 1;
 	}
 

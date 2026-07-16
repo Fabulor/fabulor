@@ -790,6 +790,18 @@ Mode-filtered command snapshots use numeric Ban, Exempt, Invite, and Quiet
 identity instead of translated type labels. The strict probe covers mixed
 selection, mode filtering, inversion, select-all, callbacks, clear, and cleanup.
 
+DCC transfer-list pass 19 (2026-07-17): the combined Uploads and Downloads
+window now has one cross-version owner for mutable transfer presentation and
+stable DCC identity. GTK4 uses typed rows, the shared flat model stack,
+`GtkMultiSelection`, one direction-image factory, and eight text factories;
+GTK3 keeps its shipping list-store presentation inside the owner. Progress
+updates mutate existing rows. Filtering, details, accept, resume, abort,
+clear-completed, and row activation consume identity snapshots without direct
+tree-model access in the file-transfer paths in `dccgui.c`. The strict probe
+covers prepend/append order, duplicate rejection, update, multi-selection,
+removal, callbacks, clear, and cleanup. The distinct DCC Chat schema and
+lifecycle remain isolated as the immediate pass 20 target.
+
 Primary surfaces:
 
 - server list and editor

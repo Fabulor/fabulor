@@ -37,6 +37,7 @@
 #include "gtk-compat.h"
 #include "theme/theme-gtk.h"
 #include "maingui.h"
+#include "dcc-transfer-list.h"
 #include "theme/theme-access.h"
 
 #define ICON_DCC_CANCEL "dialog-cancel"
@@ -44,22 +45,6 @@
 #define ICON_DCC_RESUME "view-refresh"
 #define ICON_DCC_CLEAR "edit-clear"
 
-
-enum	/* DCC SEND/RECV */
-{
-	COL_TYPE,
-	COL_STATUS,
-	COL_FILE,
-	COL_SIZE,
-	COL_POS,
-	COL_PERC,
-	COL_SPEED,
-	COL_ETA,
-	COL_NICK,
-	COL_DCC, /* struct DCC * */
-	COL_COLOR,	/* GdkRGBA */
-	N_COLUMNS
-};
 
 enum	/* DCC CHAT */
 {
@@ -78,6 +63,7 @@ struct dccwindow
 	GtkWidget *window;
 
 	GtkWidget *list;
+	FabulorDccTransferList *transfers;
 	GtkListStore *store;
 	GtkTreeSelection *sel;
 
@@ -101,33 +87,12 @@ struct my_dcc_send
 
 static struct dccwindow dccfwin = {NULL, };	/* file */
 static struct dccwindow dcccwin = {NULL, };	/* chat */
-static GdkPixbuf *pix_up = NULL;	/* down arrow */
-static GdkPixbuf *pix_dn = NULL;	/* up arrow */
 static int win_width = 600;
 static int win_height = 256;
 static short view_mode;	/* 1=download 2=upload 3=both */
 #define VIEW_DOWNLOAD 1
 #define VIEW_UPLOAD 2
 #define VIEW_BOTH 3
-
-static GdkPixbuf *
-dcc_load_icon (const char *stock_name)
-{
-	GtkIconTheme *theme = gtk_icon_theme_get_default ();
-	const char *icon_name = gtkutil_icon_name_from_stock (stock_name);
-	int width = 16;
-	int height = 16;
-
-	if (g_strcmp0 (stock_name, "gtk-go-up") == 0)
-		icon_name = "go-up";
-	else if (g_strcmp0 (stock_name, "gtk-go-down") == 0)
-		icon_name = "go-down";
-
-	gtk_icon_size_lookup (GTK_ICON_SIZE_MENU, &width, &height);
-
-	return gtk_icon_theme_load_icon (theme, icon_name, width, 0, NULL);
-}
-
 
 static void
 proper_unit (guint64 size, char *buf, size_t buf_len)
@@ -216,104 +181,58 @@ dcc_prepare_row_chat (struct DCC *dcc, GtkListStore *store, GtkTreeIter *iter,
 }
 
 static void
-dcc_prepare_row_send (struct DCC *dcc, GtkListStore *store, GtkTreeIter *iter,
-							 gboolean update_only)
+dcc_transfer_snapshot (struct DCC *dcc,
+	FabulorDccTransferSnapshot *snapshot)
 {
-	static char pos[16], size[16], kbs[14], perc[14], eta[14];
-	int to_go;
-	float per;
-
-	if (!pix_up)
-		pix_up = dcc_load_icon ("gtk-go-up");
-
-	/* percentage ack'ed */
-	per = (float) ((dcc->ack * 100.00) / dcc->size);
-	proper_unit (dcc->size, size, sizeof (size));
-	proper_unit (dcc->pos, pos, sizeof (pos));
-	g_snprintf (kbs, sizeof (kbs), "%.1f", ((float)dcc->cps) / 1024);
-	g_snprintf (perc, sizeof (perc), "%.0f%%", per);
-	if (dcc->cps != 0)
-	{
-		to_go = (dcc->size - dcc->ack) / dcc->cps;
-		g_snprintf (eta, sizeof (eta), "%.2d:%.2d:%.2d",
-					 to_go / 3600, (to_go / 60) % 60, to_go % 60);
-	} else
-		strcpy (eta, "--:--:--");
-
-	if (update_only)
-		gtk_list_store_set (store, iter,
-								  COL_STATUS, _(dccstat[dcc->dccstat].name),
-								  COL_POS, pos,
-								  COL_PERC, perc,
-								  COL_SPEED, kbs,
-								  COL_ETA, eta,
-									-1);
-	else
-		gtk_list_store_set (store, iter,
-								  COL_TYPE, pix_up,
-								  COL_STATUS, _(dccstat[dcc->dccstat].name),
-								  COL_FILE, file_part (dcc->file),
-								  COL_SIZE, size,
-								  COL_POS, pos,
-								  COL_PERC, perc,
-								  COL_SPEED, kbs,
-								  COL_ETA, eta,
-								  COL_NICK, dcc->nick,
-								  COL_DCC, dcc,
-									-1);
-	dcc_store_color (store, iter, COL_COLOR, dccstat[dcc->dccstat].color);
-}
-
-static void
-dcc_prepare_row_recv (struct DCC *dcc, GtkListStore *store, GtkTreeIter *iter,
-							 gboolean update_only)
-{
-	static char size[16], pos[16], kbs[16], perc[14], eta[16];
-	float per;
-	int to_go;
-
-	if (!pix_dn)
-		pix_dn = dcc_load_icon ("gtk-go-down");
+	static char size[32], pos[32], kbs[32], perc[32], eta[32];
+	guint64 progress = dcc->type == TYPE_SEND ? dcc->ack : dcc->pos;
+	guint64 remaining = dcc->size > progress ? dcc->size - progress : 0;
+	guint64 to_go = dcc->cps > 0 ? remaining / (guint64) dcc->cps : 0;
+	double percentage = dcc->size > 0 ?
+		((double) progress * 100.0) / (double) dcc->size : 0.0;
+	GdkRGBA color;
 
 	proper_unit (dcc->size, size, sizeof (size));
-	if (dcc->dccstat == STAT_QUEUED)
+	if (dcc->type == TYPE_RECV && dcc->dccstat == STAT_QUEUED)
 		proper_unit (dcc->resumable, pos, sizeof (pos));
 	else
 		proper_unit (dcc->pos, pos, sizeof (pos));
-	g_snprintf (kbs, sizeof (kbs), "%.1f", ((float)dcc->cps) / 1024);
-	/* percentage recv'ed */
-	per = (float) ((dcc->pos * 100.00) / dcc->size);
-	g_snprintf (perc, sizeof (perc), "%.0f%%", per);
-	if (dcc->cps != 0)
-	{
-		to_go = (dcc->size - dcc->pos) / dcc->cps;
-		g_snprintf (eta, sizeof (eta), "%.2d:%.2d:%.2d",
-					 to_go / 3600, (to_go / 60) % 60, to_go % 60);
-	} else
-		strcpy (eta, "--:--:--");
-
-	if (update_only)
-		gtk_list_store_set (store, iter,
-								  COL_STATUS, _(dccstat[dcc->dccstat].name),
-								  COL_POS, pos,
-								  COL_PERC, perc,
-								  COL_SPEED, kbs,
-								  COL_ETA, eta,
-									-1);
+	g_snprintf (kbs, sizeof (kbs), "%.1f", ((double) dcc->cps) / 1024.0);
+	g_snprintf (perc, sizeof (perc), "%.0f%%", percentage);
+	if (dcc->cps > 0)
+		g_snprintf (eta, sizeof (eta), "%.2llu:%.2llu:%.2llu",
+			(unsigned long long) (to_go / 3600),
+			(unsigned long long) ((to_go / 60) % 60),
+			(unsigned long long) (to_go % 60));
 	else
-		gtk_list_store_set (store, iter,
-								  COL_TYPE, pix_dn,
-								  COL_STATUS, _(dccstat[dcc->dccstat].name),
-								  COL_FILE, file_part (dcc->file),
-								  COL_SIZE, size,
-								  COL_POS, pos,
-								  COL_PERC, perc,
-								  COL_SPEED, kbs,
-								  COL_ETA, eta,
-								  COL_NICK, dcc->nick,
-								  COL_DCC, dcc,
-									-1);
-	dcc_store_color (store, iter, COL_COLOR, dccstat[dcc->dccstat].color);
+		g_strlcpy (eta, "--:--:--", sizeof (eta));
+
+	memset (snapshot, 0, sizeof (*snapshot));
+	snapshot->identity = dcc;
+	snapshot->upload = dcc->type == TYPE_SEND;
+	snapshot->status = _(dccstat[dcc->dccstat].name);
+	snapshot->file = file_part (dcc->file);
+	snapshot->size = size;
+	snapshot->position = pos;
+	snapshot->percentage = perc;
+	snapshot->speed = kbs;
+	snapshot->eta = eta;
+	snapshot->nick = dcc->nick;
+	snapshot->has_color = dccstat[dcc->dccstat].color != 1 &&
+		theme_get_mirc_color ((unsigned int) dccstat[dcc->dccstat].color, &color);
+	if (snapshot->has_color)
+		snapshot->color = color;
+}
+
+static void
+dcc_transfer_apply (struct DCC *dcc, gboolean append, gboolean prepend)
+{
+	FabulorDccTransferSnapshot snapshot;
+	dcc_transfer_snapshot (dcc, &snapshot);
+	if (append)
+		fabulor_dcc_transfer_list_append (dccfwin.transfers, &snapshot, prepend);
+	else
+		fabulor_dcc_transfer_list_update (dccfwin.transfers, &snapshot);
 }
 
 static gboolean
@@ -338,15 +257,9 @@ dcc_find_row (struct DCC *find_dcc, GtkTreeModel *model, GtkTreeIter *iter, int 
 static void
 dcc_update_recv (struct DCC *dcc)
 {
-	GtkTreeIter iter;
-
 	if (!dccfwin.window)
 		return;
-
-	if (!dcc_find_row (dcc, GTK_TREE_MODEL (dccfwin.store), &iter, COL_DCC))
-		return;
-
-	dcc_prepare_row_recv (dcc, dccfwin.store, &iter, TRUE);
+	dcc_transfer_apply (dcc, FALSE, FALSE);
 }
 
 static void
@@ -366,60 +279,41 @@ dcc_update_chat (struct DCC *dcc)
 static void
 dcc_update_send (struct DCC *dcc)
 {
-	GtkTreeIter iter;
-
 	if (!dccfwin.window)
 		return;
-
-	if (!dcc_find_row (dcc, GTK_TREE_MODEL (dccfwin.store), &iter, COL_DCC))
-		return;
-
-	dcc_prepare_row_send (dcc, dccfwin.store, &iter, TRUE);
+	dcc_transfer_apply (dcc, FALSE, FALSE);
 }
 
 static void
 close_dcc_file_window (GtkWindow *win, gpointer data)
 {
+	fabulor_dcc_transfer_list_free (dccfwin.transfers);
+	dccfwin.transfers = NULL;
 	dccfwin.window = NULL;
 }
 
 static void
-dcc_append (struct DCC *dcc, GtkListStore *store, gboolean prepend)
+dcc_append (struct DCC *dcc, gboolean prepend)
 {
-	GtkTreeIter iter;
-
-	if (prepend)
-		gtk_list_store_prepend (store, &iter);
-	else
-		gtk_list_store_append (store, &iter);
-
-	if (dcc->type == TYPE_RECV)
-		dcc_prepare_row_recv (dcc, store, &iter, FALSE);
-	else
-		dcc_prepare_row_send (dcc, store, &iter, FALSE);
+	dcc_transfer_apply (dcc, TRUE, prepend);
 }
 
 /* Returns aborted and completed transfers. */
 static GSList *
 dcc_get_completed (void)
 {
-	struct DCC *dcc;
-	GtkTreeIter iter;
-	GtkTreeModel *model;	
+	GPtrArray *rows;
 	GSList *completed = NULL;
+	guint i;
 
-	model = GTK_TREE_MODEL (dccfwin.store);
-	if (gtk_tree_model_get_iter_first (model, &iter))
+	rows = fabulor_dcc_transfer_list_dup_all (dccfwin.transfers);
+	for (i = 0; i < rows->len; i++)
 	{
-		do
-		{
-			gtk_tree_model_get (model, &iter, COL_DCC, &dcc, -1);
-			if (is_dcc_completed (dcc))
-				completed = g_slist_prepend (completed, dcc);
-				
-		} while (gtk_tree_model_iter_next (model, &iter));
+		struct DCC *dcc = g_ptr_array_index (rows, i);
+		if (is_dcc_completed (dcc))
+			completed = g_slist_prepend (completed, dcc);
 	}
-
+	g_ptr_array_unref (rows);
 	return completed;
 }
 
@@ -448,10 +342,9 @@ dcc_fill_window (int flags)
 {
 	struct DCC *dcc;
 	GSList *list;
-	GtkTreeIter iter;
 	int i = 0;
 
-	gtk_list_store_clear (GTK_LIST_STORE (dccfwin.store));
+	fabulor_dcc_transfer_list_clear (dccfwin.transfers);
 
 	if (flags & VIEW_UPLOAD)
 	{
@@ -461,7 +354,7 @@ dcc_fill_window (int flags)
 			dcc = list->data;
 			if (dcc->type == TYPE_SEND)
 			{
-				dcc_append (dcc, dccfwin.store, FALSE);
+				dcc_append (dcc, FALSE);
 				i++;
 			}
 			list = list->next;
@@ -476,7 +369,7 @@ dcc_fill_window (int flags)
 			dcc = list->data;
 			if (dcc->type == TYPE_RECV)
 			{
-				dcc_append (dcc, dccfwin.store, FALSE);
+				dcc_append (dcc, FALSE);
 				i++;
 			}
 			list = list->next;
@@ -485,10 +378,7 @@ dcc_fill_window (int flags)
 
 	/* if only one entry, select it (so Accept button can work) */
 	if (i == 1)
-	{
-		gtk_tree_model_get_iter_first (GTK_TREE_MODEL (dccfwin.store), &iter);
-		gtk_tree_selection_select_iter (dccfwin.sel, &iter);
-	}
+		fabulor_dcc_transfer_list_select_first (dccfwin.transfers);
 	
 	update_clear_button_sensitivity ();
 }
@@ -518,25 +408,21 @@ treeview_get_selected (GtkTreeModel *model, GtkTreeSelection *sel, int column)
 	return g_slist_reverse (list);
 }
 
-static GSList *
-dcc_get_selected (void)
-{
-	return treeview_get_selected (GTK_TREE_MODEL (dccfwin.store),
-											dccfwin.sel, COL_DCC);
-}
-
 static void
 resume_clicked (GtkWidget * wid, gpointer none)
 {
 	struct DCC *dcc;
 	char buf[512];
-	GSList *list;
+	GPtrArray *list;
 
-	list = dcc_get_selected ();
-	if (!list)
+	list = fabulor_dcc_transfer_list_dup_selected (dccfwin.transfers);
+	if (list->len == 0)
+	{
+		g_ptr_array_unref (list);
 		return;
-	dcc = list->data;
-	g_slist_free (list);
+	}
+	dcc = g_ptr_array_index (list, 0);
+	g_ptr_array_unref (list);
 
 	if (dcc->type == TYPE_RECV && !dcc_resume (dcc))
 	{
@@ -566,16 +452,15 @@ resume_clicked (GtkWidget * wid, gpointer none)
 static void
 abort_clicked (GtkWidget * wid, gpointer none)
 {
-	struct DCC *dcc;
-	GSList *start, *list;
+	GPtrArray *list = fabulor_dcc_transfer_list_dup_selected (dccfwin.transfers);
+	guint i;
 
-	start = list = dcc_get_selected ();
-	for (; list; list = list->next)
+	for (i = 0; i < list->len; i++)
 	{
-		dcc = list->data;
+		struct DCC *dcc = g_ptr_array_index (list, i);
 		dcc_abort (dcc->serv->front_session, dcc);
 	}
-	g_slist_free (start);
+	g_ptr_array_unref (list);
 	
 	/* Enable the clear button if it wasn't already enabled */
 	update_clear_button_sensitivity ();
@@ -584,32 +469,32 @@ abort_clicked (GtkWidget * wid, gpointer none)
 static void
 accept_clicked (GtkWidget * wid, gpointer none)
 {
-	struct DCC *dcc;
-	GSList *start, *list;
+	GPtrArray *list = fabulor_dcc_transfer_list_dup_selected (dccfwin.transfers);
+	guint i;
 
-	start = list = dcc_get_selected ();
-	for (; list; list = list->next)
+	for (i = 0; i < list->len; i++)
 	{
-		dcc = list->data;
+		struct DCC *dcc = g_ptr_array_index (list, i);
 		if (dcc->type != TYPE_SEND)
 			dcc_get (dcc);
 	}
-	g_slist_free (start);
+	g_ptr_array_unref (list);
 }
 
 static void
 clear_completed (GtkWidget * wid, gpointer none)
 {
 	struct DCC *dcc;
-	GSList *completed;
+	GSList *completed, *current;
 
 	/* Make a new list of only the completed items and abort each item.
 	 * A new list is made because calling dcc_abort removes items from the original list,
 	 * making it impossible to iterate over that list directly.
 	*/
-	for (completed = dcc_get_completed (); completed; completed = completed->next)
+	completed = dcc_get_completed ();
+	for (current = completed; current; current = current->next)
 	{
-		dcc = completed->data;
+		dcc = current->data;
 		dcc_abort (dcc->serv->front_session, dcc);
 	}
 
@@ -657,33 +542,34 @@ dcc_details_populate (struct DCC *dcc)
 }
 
 static void
-dcc_row_cb (GtkTreeSelection *sel, gpointer user_data)
+dcc_row_cb (gpointer user_data)
 {
 	struct DCC *dcc;
-	GSList *list;
+	GPtrArray *list;
 
-	list = dcc_get_selected ();
-	if (!list)
+	list = fabulor_dcc_transfer_list_dup_selected (dccfwin.transfers);
+	if (list->len == 0)
 	{
 		gtk_widget_set_sensitive (dccfwin.accept_button, FALSE);
 		gtk_widget_set_sensitive (dccfwin.resume_button, FALSE);
 		gtk_widget_set_sensitive (dccfwin.abort_button, FALSE);
 		dcc_details_populate (NULL);
+		g_ptr_array_unref (list);
 		return;
 	}
 
 	gtk_widget_set_sensitive (dccfwin.abort_button, TRUE);
 
-	if (list->next)	/* multi selection */
+	if (list->len > 1)	/* multi selection */
 	{
 		gtk_widget_set_sensitive (dccfwin.accept_button, TRUE);
 		gtk_widget_set_sensitive (dccfwin.resume_button, TRUE);
-		dcc_details_populate (list->data);
+		dcc_details_populate (g_ptr_array_index (list, 0));
 	}
 	else
 	{
 		/* turn OFF/ON appropriate buttons */
-		dcc = list->data;
+		dcc = g_ptr_array_index (list, 0);
 		if (dcc->dccstat == STAT_QUEUED && dcc->type == TYPE_RECV)
 		{
 			gtk_widget_set_sensitive (dccfwin.accept_button, TRUE);
@@ -698,21 +584,14 @@ dcc_row_cb (GtkTreeSelection *sel, gpointer user_data)
 		dcc_details_populate (dcc);
 	}
 
-	g_slist_free (list);
+	g_ptr_array_unref (list);
 }
 
 static void
-dcc_dclick_cb (GtkTreeView *view, GtkTreePath *path,
-					GtkTreeViewColumn *column, gpointer data)
+dcc_dclick_cb (gpointer identity, gpointer user_data)
 {
-	struct DCC *dcc;
-	GSList *list;
-
-	list = dcc_get_selected ();
-	if (!list)
-		return;
-	dcc = list->data;
-	g_slist_free (list);
+	struct DCC *dcc = identity;
+	(void) user_data;
 
 	if (dcc->type == TYPE_RECV)
 	{
@@ -808,8 +687,7 @@ dcc_configure_cb (GtkWindow *win, GdkEventConfigure *event, gpointer data)
 int
 fe_dcc_open_recv_win (int passive)
 {
-	GtkWidget *radio, *table, *vbox, *bbox, *view, *view_scrolled, *exp, *detailbox;
-	GtkListStore *store;
+	GtkWidget *radio, *table, *vbox, *bbox, *view, *exp, *detailbox;
 	GSList *group;
 	char buf[128];
 
@@ -826,47 +704,23 @@ fe_dcc_open_recv_win (int passive)
 	gtk_container_set_border_width (GTK_CONTAINER (dccfwin.window), 3);
 	gtk_box_set_spacing (GTK_BOX (vbox), 3);
 
-	store = gtk_list_store_new (N_COLUMNS, GDK_TYPE_PIXBUF, G_TYPE_STRING,
-										 G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING,
-										 G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING,
-										 G_TYPE_STRING, G_TYPE_POINTER, THEME_GTK_COLOR_TYPE);
-	view = gtkutil_treeview_new (GTK_BOX (vbox), GTK_TREE_MODEL (store), NULL, -1);
-	view_scrolled = gtk_widget_get_parent (view);
-	gtk_widget_set_hexpand (view_scrolled, TRUE);
-	gtk_widget_set_vexpand (view_scrolled, TRUE);
-	gtk_widget_set_hexpand (view, TRUE);
-	gtk_widget_set_vexpand (view, TRUE);
-	gtk_tree_view_set_grid_lines (GTK_TREE_VIEW (view), GTK_TREE_VIEW_GRID_LINES_HORIZONTAL);
-	/* Up/Down Icon column */
-	gtk_tree_view_insert_column_with_attributes (GTK_TREE_VIEW (view), -1, NULL,
-																gtk_cell_renderer_pixbuf_new (),
-																"pixbuf", COL_TYPE, NULL);
-	dcc_add_column (view, COL_STATUS, COL_COLOR, _("Status"), FALSE);
-	dcc_add_column (view, COL_FILE,   COL_COLOR, _("File"), FALSE);
-	dcc_add_column (view, COL_SIZE,   COL_COLOR, _("Size"), TRUE);
-	dcc_add_column (view, COL_POS,    COL_COLOR, _("Position"), TRUE);
-	dcc_add_column (view, COL_PERC,   COL_COLOR, "%", TRUE);
-	dcc_add_column (view, COL_SPEED,  COL_COLOR, "KB/s", TRUE);
-	dcc_add_column (view, COL_ETA,    COL_COLOR, _("ETA"), FALSE);
-	dcc_add_column (view, COL_NICK,   COL_COLOR, _("Nick"), FALSE);
-
-	gtk_tree_view_column_set_expand (gtk_tree_view_get_column (GTK_TREE_VIEW (view), COL_FILE), TRUE);
-	gtk_tree_view_column_set_expand (gtk_tree_view_get_column (GTK_TREE_VIEW (view), COL_NICK), TRUE);
-
+	dccfwin.transfers = fabulor_dcc_transfer_list_new (dcc_row_cb,
+		dcc_dclick_cb, NULL);
+	if (!dccfwin.transfers)
+	{
+		fe_message (_("Failed to create the DCC transfer list."), FE_MSG_ERROR);
+		fabulor_gtk_window_destroy (GTK_WINDOW (dccfwin.window));
+		return FALSE;
+	}
+	view = fabulor_dcc_transfer_list_create_view (dccfwin.transfers,
+		GTK_BOX (vbox), _("Status"), _("File"), _("Size"), _("Position"),
+		"%", "KB/s", _("ETA"), _("Nick"));
 	dccfwin.list = view;
-	dccfwin.store = store;
-	dccfwin.sel = gtk_tree_view_get_selection (GTK_TREE_VIEW (view));
 	view_mode = VIEW_BOTH;
-	gtk_tree_selection_set_mode (dccfwin.sel, GTK_SELECTION_MULTIPLE);
 
 	if (!prefs.hex_gui_tab_utils)
 		g_signal_connect (G_OBJECT (dccfwin.window), "configure-event",
 								G_CALLBACK (dcc_configure_cb), 0);
-	g_signal_connect (G_OBJECT (dccfwin.sel), "changed",
-							G_CALLBACK (dcc_row_cb), NULL);
-	/* double click */
-	g_signal_connect (G_OBJECT (view), "row-activated",
-							G_CALLBACK (dcc_dclick_cb), NULL);
 
 	table = gtk_grid_new ();
 	gtk_grid_set_column_spacing (GTK_GRID (table), 16);
@@ -1147,12 +1001,12 @@ fe_dcc_add (struct DCC *dcc)
 	{
 	case TYPE_RECV:
 		if (dccfwin.window && (view_mode & VIEW_DOWNLOAD))
-			dcc_append (dcc, dccfwin.store, TRUE);
+			dcc_append (dcc, TRUE);
 		break;
 
 	case TYPE_SEND:
 		if (dccfwin.window && (view_mode & VIEW_UPLOAD))
-			dcc_append (dcc, dccfwin.store, TRUE);
+			dcc_append (dcc, TRUE);
 		break;
 
 	default: /* chat */
@@ -1192,10 +1046,7 @@ fe_dcc_remove (struct DCC *dcc)
 	case TYPE_SEND:
 	case TYPE_RECV:
 		if (dccfwin.window)
-		{
-			if (dcc_find_row (dcc, GTK_TREE_MODEL (dccfwin.store), &iter, COL_DCC))
-				gtk_list_store_remove (dccfwin.store, &iter);
-		}
+			fabulor_dcc_transfer_list_remove (dccfwin.transfers, dcc);
 		break;
 
 	default:	/* chat */
