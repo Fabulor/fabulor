@@ -1,6 +1,6 @@
 # GTK4 List Model Architecture
 
-Status: Stage 5 pass 24 conversion contract
+Status: Stage 5 pass 25 conversion contract
 
 Date: 2026-07-17
 
@@ -361,6 +361,15 @@ movement. GTK3 retains its accelerator/combo/text renderers and list store
 inside the owner. Built-in rows may change only their accelerator; action/data
 editing, deletion, and movement remain restricted to custom rows. Reset and
 save consume copied records, and the strict probe verifies these invariants.
+
+The Preferences sound-event table now owns copied event names, mutable sound
+filenames, stable core event indices, and single selection. GTK4 uses typed
+mutable rows, `GtkSingleSelection` with explicit startup selection, and two
+`GtkColumnView` factories; GTK3 retains its list store, renderers, tree view,
+and selection privately. Entry edits update the row by stable event identity,
+and selection callbacks expose the same identity to browse/play and staged
+sound-file state. The strict probe verifies explicit selection, callbacks,
+live filename updates, missing-event rejection, clear, and cleanup.
 
 ## Executable Contract
 
