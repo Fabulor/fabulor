@@ -4,6 +4,7 @@
 
 #include "../../src/fe-gtk/gtk-compat.h"
 #include "../../src/fe-gtk/gtk4-list-models.h"
+#include "../../src/fe-gtk/channel-model.h"
 #include "../../src/fe-gtk/notify-list.h"
 #include "../../src/fe-gtk/user-list-model.h"
 #include "../../src/fe-gtk/user-list-view.h"
@@ -305,6 +306,75 @@ check_tree_model_stack (void)
 }
 
 static gboolean
+check_channel_model (void)
+{
+	gint server;
+	gint alpha;
+	gint beta;
+	gint utility;
+	FabulorChannelModel *model = fabulor_channel_model_new ();
+	FabulorChannelModelRow server_row = {
+		&server, "Server", NULL, NULL, PANGO_UNDERLINE_NONE
+	};
+	FabulorChannelModelRow alpha_row = {
+		&alpha, "#alpha", NULL, NULL, PANGO_UNDERLINE_NONE
+	};
+	FabulorChannelModelRow beta_row = {
+		&beta, "#beta", NULL, NULL, PANGO_UNDERLINE_NONE
+	};
+	FabulorChannelModelRow utility_row = {
+		&utility, "Utility", NULL, NULL, PANGO_UNDERLINE_NONE
+	};
+	gboolean valid = model != NULL;
+
+	if (valid)
+	{
+		valid = fabulor_channel_model_insert (model, &server_row, NULL, 0) &&
+			fabulor_channel_model_insert (model, &beta_row, &server, 0) &&
+			fabulor_channel_model_insert (model, &alpha_row, &server, 0) &&
+			fabulor_channel_model_insert (model, &utility_row, NULL, 1) &&
+			!fabulor_channel_model_insert (model, &utility_row, NULL, 0) &&
+			fabulor_channel_model_get_root_count (model) == 2 &&
+			fabulor_channel_model_get_child_count (model, &server) == 2 &&
+			fabulor_channel_model_get_flat_count (model) == 4 &&
+			fabulor_channel_model_get_flat_at (model, 1) == &alpha &&
+			fabulor_channel_model_get_parent (model, &beta) == &server;
+	}
+	if (valid)
+	{
+		alpha_row.name = "#alpha-renamed";
+		valid = fabulor_channel_model_select_identity (model, &alpha) &&
+			fabulor_channel_model_get_selected_identity (model) == &alpha &&
+			fabulor_channel_model_update (model, &alpha_row) &&
+			g_strcmp0 (fabulor_channel_model_get_name (model, &alpha),
+				"#alpha-renamed") == 0 &&
+			fabulor_channel_model_move_cyclic (model, &alpha, -1) &&
+			fabulor_channel_model_get_child_at (model, &server, 1) == &alpha &&
+			fabulor_channel_model_get_selected_identity (model) == &alpha;
+	}
+	if (valid)
+	{
+		valid = fabulor_channel_model_reparent (model, &beta, NULL, 1) &&
+			fabulor_channel_model_get_parent (model, &beta) == NULL &&
+			fabulor_channel_model_get_root_count (model) == 3 &&
+			fabulor_channel_model_remove (model, &alpha) &&
+			fabulor_channel_model_remove (model, &server) &&
+			!fabulor_channel_model_remove (model, &server) &&
+			fabulor_channel_model_get_flat_count (model) == 2;
+	}
+	if (valid)
+	{
+		GtkTreeListModel *tree = fabulor_channel_model_get_tree (model);
+		GtkSingleSelection *selection = fabulor_channel_model_get_selection (
+			model);
+		valid = GTK_IS_TREE_LIST_MODEL (tree) &&
+			GTK_IS_SINGLE_SELECTION (selection);
+	}
+	fabulor_channel_model_free (model);
+	return valid;
+}
+
+static gboolean
 check_notify_list_model (void)
 {
 	gint owner_alpha;
@@ -469,6 +539,11 @@ main (void)
 	if (!check_tree_model_stack ())
 	{
 		fprintf (stderr, "GTK4 tree list model contract mismatch\n");
+		return 1;
+	}
+	if (!check_channel_model ())
+	{
+		fprintf (stderr, "GTK4 channel hierarchy model contract mismatch\n");
 		return 1;
 	}
 	if (!check_notify_list_model ())

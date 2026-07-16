@@ -1,8 +1,8 @@
 # GTK4 List Model Architecture
 
-Status: Stage 5 pass 4 conversion contract
+Status: Stage 5 pass 5 conversion contract
 
-Date: 2026-07-15
+Date: 2026-07-16
 
 ## Purpose
 
@@ -68,6 +68,10 @@ navigation order.
      hit-testing, context menus, keyboard forwarding, and drag/drop.
 3. [ ] Convert channel navigation, expansion state, badges, keyboard switching,
    and channel-family reordering.
+   - [x] Replace the shared tree store and persistent channel iterators with an
+     identity-indexed cross-version hierarchy owner.
+   - [ ] Convert the visible tree/tab switcher, factories, expansion, selection,
+     menus, keyboard handling, drag/drop, and family reordering.
 4. [ ] Convert remaining tabular editors and operational lists according to their
    editing and multi-selection requirements.
 5. [ ] Remove the final GTK3 tree-model, cell-renderer, iterator, and row-reference
@@ -122,6 +126,22 @@ operations. Multi-click and key controllers preserve double-click commands and
 input forwarding, and the menu module owns GTK3 pointer-event translation for
 the neutral coordinate-based nick-menu call.
 
+## Channel Navigation Model Owner
+
+`channel-model.c` owns the two-level server/channel hierarchy independently of
+the displayed switcher. Stable `chan *` identity indexes typed row records and
+drives root/child traversal, updates, removal, reparenting, and cyclic sibling
+movement. Channel records no longer retain a toolkit iterator, and shared
+`chanview.c` code has no tree-store, iterator, or row-reference operations.
+
+The GTK4 branch owns one `GListStore` per hierarchy level and exposes the shared
+`GtkTreeListModel` and `GtkSingleSelection` stack. Mutations preserve selection
+by identity even when a selected child changes position or parent. The GTK3
+branch contains the retained `GtkTreeStore` and one on-demand row reference per
+record so the shipping tree remains functional until its visible view moves.
+The tab implementation no longer creates a hidden tree view solely to share
+model storage.
+
 ## Executable Contract
 
 `src/fe-gtk/gtk4-list-models.c` implements the GTK4-only ownership stacks.
@@ -135,6 +155,8 @@ The isolated GTK4 MSVC and Meson probes verify:
 - user-list duplicate rejection, ascending/descending/unsorted ordering,
   external sort-key updates, typed row identity, removal, and cleanup.
 - user-list view and multi-click helper signatures under the strict GTK4 build.
+- channel hierarchy duplicate rejection, traversal order, rename, cyclic move,
+  reparenting, removal, typed tree access, and selection persistence.
 
 These probes establish architecture and ownership only. Production workflow,
 visual, keyboard, accessibility, and load validation remains mandatory for

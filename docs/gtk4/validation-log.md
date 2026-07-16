@@ -1712,6 +1712,43 @@ Scope: the shared user-list view and interaction boundary. The shipping GTK3
 frontend uses the retained branch; production GTK4 visual and behavioural
 validation remains a cutover requirement.
 
+### PR: [#68 - GTK4 Stage 5 Channel Navigation Model Ownership](https://github.com/Fabulor/fabulor/pull/68)
+
+Date: 2026-07-16
+
+Migration stage: 5, channel-navigation model pass 5
+
+Files/workflows converted: channel hierarchy ownership; stable identity;
+root/child traversal; presentation updates; cyclic sibling movement;
+reparenting; removal; GTK4 tree-list and selection models; contained GTK3 tree
+storage and on-demand row references
+
+GTK version: 4.22.4
+
+GLib version: 2.88.0
+
+Build configuration: MSVC x64 Release and Meson 1.11.2 Release with MSVC 19.44
+
+Automated checks:
+
+- [x] full production GTK3 frontend rebuild with 0 warnings and 0 errors
+- [x] isolated GTK4 Meson configure, compile, link, and runtime test
+- [x] GTK4 dependency validator unit tests: 8/8
+- [x] channel-model probe covers duplicate rejection, hierarchy order, rename, cyclic movement, reparenting, removal, and selection persistence
+- [x] source boundary: shared `chanview.c` has no tree-store, iterator, or row-reference operations
+- [x] source boundary: channel records no longer retain `GtkTreeIter`
+- [x] GTK3 compatibility row references are contained in the model owner and resolved only on demand
+- [x] tab switcher no longer creates a hidden `GtkTreeView` for shared storage
+
+Manual checks:
+
+- [ ] shipping GTK3 tree/tab switching, rename, colours, close/reparent, movement, context menus, and drag/drop
+- [ ] GTK4 factories, expansion, selection, menus, keyboard, drag/drop, accessibility, and load checks await the visible-view pass and frontend cutover
+
+Scope: channel hierarchy model ownership and stable mutation semantics. The
+shipping GTK3 tree and tab widgets remain visible; the GTK4 channel switcher is
+the next contained Stage 5 pass.
+
 ## Per-PR Record Template
 
 Copy this section for each GTK4 PR:

@@ -622,6 +622,21 @@ Multi-click and key handling now use shared controllers, while nick-menu popup
 coordinates cross a neutral menu boundary. Manual GTK4 visual, keyboard,
 accessibility, and large-channel checks remain for the production cutover.
 
+Channel-navigation model pass 5 (2026-07-16): channel hierarchy and
+presentation state now belong to one identity-indexed cross-version owner.
+`chanview.c` no longer owns a `GtkTreeStore`, retains `GtkTreeIter` values in
+channel records, or traverses toolkit rows for insertion, lookup, removal,
+reparenting, and family movement. The GTK4 branch supplies typed row objects,
+per-parent `GListStore` ownership, `GtkTreeListModel`, and
+`GtkSingleSelection`; selection is restored by stable channel identity when
+rows move or change parent. The shipping GTK3 branch mirrors the same neutral
+hierarchy into a contained tree store and resolves its internal row references
+only on demand. Executable probes cover duplicate rejection, hierarchy order,
+rename, cyclic movement, reparenting, removal, and selection persistence. The
+visible channel tree/tab switcher, expansion policy, factories, context menus,
+keyboard switching, drag/drop, and accessibility remain together for the next
+contained pass.
+
 Primary surfaces:
 
 - server list and editor
