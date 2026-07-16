@@ -35,6 +35,7 @@
 #include "gtkutil.h"
 #include "gtk-compat.h"
 #include "maingui.h"
+#include "notify-list.h"
 #include "theme/theme-gtk.h"
 #include "notifygui.h"
 #include "theme/theme-access.h"
@@ -46,122 +47,38 @@
 #define LABEL_NOTIFY_OK _("_OK")
 
 
-/* model for the notify treeview */
-enum
-{
-	USER_COLUMN,
-	STATUS_COLUMN,
-	SERVER_COLUMN,
-	SEEN_COLUMN,
-	COLOUR_COLUMN,
-	NPS_COLUMN, 	/* struct notify_per_server * */
-	N_COLUMNS
-};
-
-
 static GtkWidget *notify_window = 0;
 static GtkWidget *notify_button_opendialog;
 static GtkWidget *notify_button_remove;
+static FabulorNotifyList *notify_gui_list;
 
 
 static void
 notify_closegui (void)
 {
 	notify_window = 0;
+	notify_gui_list = NULL;
+	notify_button_opendialog = NULL;
+	notify_button_remove = NULL;
 	notify_save ();
 }
 
-/* Need this to be able to set the foreground colour property of a row
- * from a GdkRGBA * in the model  -Vince
- */
 static void
-notify_treecell_property_mapper (GtkTreeViewColumn *col, GtkCellRenderer *cell,
-                                 GtkTreeModel *model, GtkTreeIter *iter,
-                                 gpointer data)
+notify_selection_changed (gpointer user_data)
 {
-	gchar *text;
-	GdkRGBA *colour;
-	int model_column = GPOINTER_TO_INT (data);
-
-	gtk_tree_model_get (GTK_TREE_MODEL (model), iter, 
-	                    COLOUR_COLUMN, &colour,
-	                    model_column, &text, -1);
-	g_object_set (G_OBJECT (cell), "text", text,
-	              THEME_GTK_FOREGROUND_PROPERTY, colour, NULL);
-	if (colour)
-		gdk_rgba_free (colour);
-	g_free (text);
-}
-
-static void
-notify_store_color (GtkListStore *store, GtkTreeIter *iter, const GdkRGBA *color)
-{
-	if (color)
-	{
-		GdkRGBA rgba = *color;
-		gtk_list_store_set (store, iter, COLOUR_COLUMN, &rgba, -1);
-	}
-	else
-	{
-		gtk_list_store_set (store, iter, COLOUR_COLUMN, NULL, -1);
-	}
-}
-
-static void
-notify_row_cb (GtkTreeSelection *sel, GtkTreeView *view)
-{
-	GtkTreeIter iter;
 	struct notify_per_server *servnot;
+	gboolean selected;
 
-	if (gtkutil_treeview_get_selected (view, &iter, NPS_COLUMN, &servnot, -1))
-	{
-		gtk_widget_set_sensitive (notify_button_opendialog, servnot ? servnot->ison : 0);
-		gtk_widget_set_sensitive (notify_button_remove, TRUE);
+	(void) user_data;
+	if (!notify_window || !notify_button_opendialog || !notify_button_remove)
 		return;
-	}
-
-	gtk_widget_set_sensitive (notify_button_opendialog, FALSE);
-	gtk_widget_set_sensitive (notify_button_remove, FALSE);
-}
-
-static GtkWidget *
-notify_treeview_new (GtkWidget *box)
-{
-	GtkListStore *store;
-	GtkWidget *view;
-	GtkWidget *scroll;
-	GtkTreeViewColumn *col;
-	int col_id;
-
-	store = gtk_list_store_new (N_COLUMNS,
-	                            G_TYPE_STRING,
-	                            G_TYPE_STRING,
-	                            G_TYPE_STRING,
-	                            G_TYPE_STRING,
-	                            THEME_GTK_COLOR_TYPE,
-										 G_TYPE_POINTER
-	                           );
-	g_return_val_if_fail (store != NULL, NULL);
-
-	view = gtkutil_treeview_new (GTK_BOX (box), GTK_TREE_MODEL (store),
-	                             notify_treecell_property_mapper,
-	                             USER_COLUMN, _("Name"),
-	                             STATUS_COLUMN, _("Status"),
-	                             SERVER_COLUMN, _("Network"),
-	                             SEEN_COLUMN, _("Last Seen"), -1);
-	scroll = gtk_widget_get_parent (view);
-	gtk_box_set_child_packing (GTK_BOX (box), scroll, TRUE, TRUE, 0, GTK_PACK_START);
-	gtk_tree_view_column_set_expand (gtk_tree_view_get_column (GTK_TREE_VIEW (view), 0), TRUE);
-
-	for (col_id=0; (col = gtk_tree_view_get_column (GTK_TREE_VIEW (view), col_id));
-	     col_id++)
-			gtk_tree_view_column_set_alignment (col, 0.5);
-
-	g_signal_connect (G_OBJECT (gtk_tree_view_get_selection (GTK_TREE_VIEW (view))),
-							"changed", G_CALLBACK (notify_row_cb), view);
-
-	gtk_widget_show (view);
-	return view;
+	selected = notify_gui_list &&
+		fabulor_notify_list_has_selection (notify_gui_list);
+	servnot = notify_gui_list ?
+		fabulor_notify_list_get_selected_server_data (notify_gui_list) : NULL;
+	gtk_widget_set_sensitive (notify_button_opendialog,
+		selected && servnot && servnot->ison);
+	gtk_widget_set_sensitive (notify_button_remove, selected);
 }
 
 void
@@ -176,18 +93,12 @@ notify_gui_update (void)
 	GdkRGBA color;
 	time_t lastseen;
 	char agobuf[128];
-
-	GtkListStore *store;
-	GtkTreeView *view;
-	GtkTreeIter iter;
-	gboolean valid;	/* true if we don't need to append a new tree row */
+	FabulorNotifyListRow row;
 
 	if (!notify_window)
 		return;
 
-	view = g_object_get_data (G_OBJECT (notify_window), "view");
-	store = GTK_LIST_STORE (gtk_tree_view_get_model (view));
-	valid = gtk_tree_model_get_iter_first (GTK_TREE_MODEL (store), &iter);
+	fabulor_notify_list_begin_update (notify_gui_list);
 
 	while (list)
 	{
@@ -225,16 +136,16 @@ notify_gui_update (void)
 					g_snprintf (agobuf, sizeof (agobuf), _("%d hours ago"), lastseenminutes / 60);
 				seen = agobuf;
 			}
-			if (!valid)	/* create new tree row if required */
-				gtk_list_store_append (store, &iter);
-			gtk_list_store_set (store, &iter, 0, name, 1, status,
-			                    2, server, 3, seen, 5, NULL, -1);
-			if (theme_get_color (THEME_TOKEN_MIRC_4, &color))
-				notify_store_color (store, &iter, &color);
-			else
-				notify_store_color (store, &iter, NULL);
-			if (valid)
-				valid = gtk_tree_model_iter_next (GTK_TREE_MODEL (store), &iter);
+			row.owner = notify;
+			row.server_data = NULL;
+			row.owner_name = notify->name;
+			row.display_name = name;
+			row.status = status;
+			row.network = server;
+			row.last_seen = seen;
+			row.foreground = theme_get_color (THEME_TOKEN_MIRC_4, &color) ?
+				&color : NULL;
+			g_warn_if_fail (fabulor_notify_list_append (notify_gui_list, &row));
 
 		} else
 		{
@@ -254,16 +165,17 @@ notify_gui_update (void)
 					g_snprintf (agobuf, sizeof (agobuf), _("%d minutes ago"), (int)(time (0) - lastseen) / 60);
 					seen = agobuf;
 
-					if (!valid)	/* create new tree row if required */
-						gtk_list_store_append (store, &iter);
-					gtk_list_store_set (store, &iter, 0, name, 1, status,
-					                    2, server, 3, seen, 5, servnot, -1);
-					if (theme_get_color (THEME_TOKEN_MIRC_3, &color))
-						notify_store_color (store, &iter, &color);
-					else
-						notify_store_color (store, &iter, NULL);
-					if (valid)
-						valid = gtk_tree_model_iter_next (GTK_TREE_MODEL (store), &iter);
+					row.owner = notify;
+					row.server_data = servnot;
+					row.owner_name = notify->name;
+					row.display_name = name;
+					row.status = status;
+					row.network = server;
+					row.last_seen = seen;
+					row.foreground = theme_get_color (THEME_TOKEN_MIRC_3, &color) ?
+						&color : NULL;
+					g_warn_if_fail (fabulor_notify_list_append (notify_gui_list,
+						&row));
 
 					servcount++;
 				}
@@ -274,70 +186,27 @@ notify_gui_update (void)
 		list = list->next;
 	}
 
-	while (valid)
-	{
-		GtkTreeIter old = iter;
-		/* get next iter now because removing invalidates old one */
-		valid = gtk_tree_model_iter_next (GTK_TREE_MODEL (store),
-                                      &iter);
-		gtk_list_store_remove (store, &old);
-	}
-
-	notify_row_cb (gtk_tree_view_get_selection (view), view);
+	fabulor_notify_list_end_update (notify_gui_list);
 }
 
 static void
 notify_opendialog_clicked (GtkWidget * igad)
 {
-	GtkTreeView *view;
-	GtkTreeIter iter;
 	struct notify_per_server *servnot;
 
-	view = g_object_get_data (G_OBJECT (notify_window), "view");
-	if (gtkutil_treeview_get_selected (view, &iter, NPS_COLUMN, &servnot, -1))
-	{
-		if (servnot)
-			open_query (servnot->server, servnot->notify->name, TRUE);
-	}
+	servnot = fabulor_notify_list_get_selected_server_data (notify_gui_list);
+	if (servnot)
+		open_query (servnot->server, servnot->notify->name, TRUE);
 }
 
 static void
 notify_remove_clicked (GtkWidget * igad)
 {
-	GtkTreeView *view;
-	GtkTreeModel *model;
-	GtkTreeIter iter;
-	GtkTreePath *path = NULL;
-	gboolean found = FALSE;
 	char *name;
 
-	view = g_object_get_data (G_OBJECT (notify_window), "view");
-	if (gtkutil_treeview_get_selected (view, &iter, USER_COLUMN, &name, -1))
+	name = fabulor_notify_list_dup_selected_name (notify_gui_list);
+	if (name)
 	{
-		model = gtk_tree_view_get_model (view);
-		found = (*name != 0);
-		while (!found)	/* the real nick is some previous node */
-		{
-			g_free (name); /* it's useless to us */
-			if (!path)
-				path = gtk_tree_model_get_path (model, &iter);
-			if (!gtk_tree_path_prev (path))	/* arrgh! no previous node! */
-			{
-				g_warning ("notify list state is invalid\n");
-				break;
-			}
-			if (!gtk_tree_model_get_iter (model, &iter, path))
-				break;
-			gtk_tree_model_get (model, &iter, USER_COLUMN, &name, -1);
-			found = (*name != 0);
-		}
-		if (path)
-			gtk_tree_path_free (path);
-		if (!found)
-			return;
-
-		/* ok, now we can remove it */
-		gtk_list_store_remove (GTK_LIST_STORE (model), &iter);
 		notify_deluser (name);
 		g_free (name);
 	}
@@ -436,7 +305,6 @@ void
 notify_opengui (void)
 {
 	GtkWidget *vbox, *bbox;
-	GtkWidget *view;
 	char buf[128];
 
 	if (notify_window)
@@ -451,8 +319,17 @@ notify_opengui (void)
 								250, &vbox, 0);
 	gtkutil_destroy_on_esc (notify_window);
 
-	view = notify_treeview_new (vbox);
-	g_object_set_data (G_OBJECT (notify_window), "view", view);
+	notify_gui_list = fabulor_notify_list_new (notify_selection_changed, NULL);
+	if (!notify_gui_list || !fabulor_notify_list_create_view (notify_gui_list,
+		GTK_BOX (vbox), _("Name"), _("Status"), _("Network"), _("Last Seen")))
+	{
+		fabulor_notify_list_free (notify_gui_list);
+		notify_gui_list = NULL;
+		fabulor_gtk_window_destroy (GTK_WINDOW (notify_window));
+		return;
+	}
+	g_object_set_data_full (G_OBJECT (notify_window), "notify-list",
+		notify_gui_list, (GDestroyNotify) fabulor_notify_list_free);
   
 	bbox = gtk_button_box_new (GTK_ORIENTATION_HORIZONTAL);
 	gtk_button_box_set_layout (GTK_BUTTON_BOX (bbox), GTK_BUTTONBOX_SPREAD);

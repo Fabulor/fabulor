@@ -66,13 +66,22 @@ paths remain outside this Stage 2 ownership conversion.
 
 Stage 5 model architecture pass 1 adds GTK4-only flat and hierarchical model
 stacks in `gtk4-list-models.c`. The flat stack owns a `GListStore`,
-`GtkSortListModel`, and `GtkMultiSelection`; the tree stack owns root
+`GtkSortListModel`, and workflow-selected single or multiple selection model;
+the tree stack owns root
 `GListStore`, `GtkTreeListModel`, and `GtkSingleSelection` instances. The
 isolated probes execute ordering, identity, expansion, selection, and cleanup
 contracts. No production `GtkTreeView`, `GtkTreeStore`, `GtkListStore`, or cell
 renderer has been replaced yet, so quantitative production counts are
 unchanged by this pass. A fresh literal type recount records 80 `GtkTreeView`
 lines across 18 files.
+
+Stage 5 Notify List pass 2 moves all direct tree-model, iterator, path,
+renderer, and selection operations out of `notifygui.c` and into the
+cross-version `notify-list.c` owner. Its GTK4 branch compiles typed row objects,
+single selection, four `GtkColumnView` factories, identity-preserving refresh,
+and explicit binding cleanup. The `GtkTreeView` type inventory is now 76 lines
+across 18 files; the retained Notify GTK3 implementation is isolated inside the
+owner until production cutover.
 
 The visibility helper is limited to 17 reviewed roots whose descendants have
 finished construction and have no intentional hidden state at reveal time.
@@ -320,7 +329,7 @@ clipboard ownership in `xtext.c`, not drag/drop, and remains assigned to Stage 6
 | `gtk_widget_get_window` | 31 | 6 | surface/native access only where unavoidable | 4/6 | in progress |
 | `gdk_window_*` | 48 | 8 | `GdkSurface`, snapshots, controllers, or removal | 4/6 | in progress |
 | `gtk_clipboard_*` | 1 | 1 | `GdkClipboard` and content providers | 4/6 | in progress |
-| `GtkTreeView` | 80 | 18 | choose GTK4 list/model widget per workflow | 5 | in progress; model architecture established |
+| `GtkTreeView` | 76 | 18 | choose GTK4 list/model widget per workflow | 5 | in progress; Notify owner converted |
 | `GtkStatusIcon` | 6 | 1 | native Win32 tray or supported external backend | 7 | not started |
 | screen CSS provider installation | 4 | 3 | display-scoped provider installation | 7 | not started |
 
