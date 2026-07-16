@@ -55,6 +55,7 @@
     <ClCompile Include="probe.c" />
     <ClCompile Include="..\..\src\fe-gtk\addon-list.c" />
     <ClCompile Include="..\..\src\fe-gtk\gtk4-list-models.c" />
+    <ClCompile Include="..\..\src\fe-gtk\ignore-list.c" />
     <ClCompile Include="..\..\src\fe-gtk\channel-model.c" />
     <ClCompile Include="..\..\src\fe-gtk\channel-tree-view.c" />
     <ClCompile Include="..\..\src\fe-gtk\notify-list.c" />

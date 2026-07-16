@@ -25,6 +25,7 @@ zoitechat_gtk_sources = [
   'fkeys.c',
   'gtkutil.c',
   'icon-resolver.c',
+  'ignore-list.c',
   'ignoregui.c',
   'joind.c',
   'menu.c',

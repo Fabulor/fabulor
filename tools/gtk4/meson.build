@@ -51,6 +51,7 @@ probe = executable(
   'probe.c',
   '../../src/fe-gtk/addon-list.c',
   '../../src/fe-gtk/gtk4-list-models.c',
+  '../../src/fe-gtk/ignore-list.c',
   '../../src/fe-gtk/channel-model.c',
   '../../src/fe-gtk/channel-tree-view.c',
   '../../src/fe-gtk/notify-list.c',

@@ -4,6 +4,7 @@
 
 #include "../../src/fe-gtk/gtk-compat.h"
 #include "../../src/fe-gtk/gtk4-list-models.h"
+#include "../../src/fe-gtk/ignore-list.h"
 #include "../../src/fe-gtk/addon-list.h"
 #include "../../src/fe-gtk/channel-model.h"
 #include "../../src/fe-gtk/channel-tree-view.h"
@@ -677,6 +678,101 @@ check_url_list_model (void)
 	return valid;
 }
 
+typedef struct
+{
+	gchar *old_mask;
+	gchar *new_mask;
+	gchar *flags_mask;
+	guint rename_flags;
+	guint changed_flags;
+	guint rename_count;
+	guint flags_count;
+} ProbeIgnoreCallbacks;
+
+static gboolean
+probe_ignore_rename (const gchar *old_mask, const gchar *new_mask, guint flags,
+	gpointer user_data)
+{
+	ProbeIgnoreCallbacks *callbacks = user_data;
+
+	callbacks->rename_count++;
+	callbacks->rename_flags = flags;
+	g_free (callbacks->old_mask);
+	g_free (callbacks->new_mask);
+	callbacks->old_mask = g_strdup (old_mask);
+	callbacks->new_mask = g_strdup (new_mask);
+	return g_strcmp0 (new_mask, "reject!*@*") != 0;
+}
+
+static void
+probe_ignore_flags (const gchar *mask, guint flags, gpointer user_data)
+{
+	ProbeIgnoreCallbacks *callbacks = user_data;
+
+	callbacks->flags_count++;
+	callbacks->changed_flags = flags;
+	g_free (callbacks->flags_mask);
+	callbacks->flags_mask = g_strdup (mask);
+}
+
+static gboolean
+check_ignore_list_model (void)
+{
+	ProbeIgnoreCallbacks callbacks = { 0 };
+	FabulorIgnoreList *list = fabulor_ignore_list_new (probe_ignore_rename,
+		probe_ignore_flags, &callbacks);
+	GPtrArray *masks = NULL;
+	gchar *first = NULL;
+	gboolean valid = list != NULL;
+
+	if (valid)
+	{
+		fabulor_ignore_list_append (list, "alpha!*@*", 1u | 4u | 64u, FALSE);
+		fabulor_ignore_list_append (list, "beta!*@*", 2u, FALSE);
+		first = fabulor_ignore_list_dup_mask_at (list, 0);
+		valid = fabulor_ignore_list_get_n_rows (list) == 2 &&
+			g_strcmp0 (first, "alpha!*@*") == 0 &&
+			fabulor_ignore_list_get_flags_at (list, 0) == (1u | 4u | 64u);
+		g_clear_pointer (&first, g_free);
+	}
+	if (valid)
+	{
+		valid = fabulor_ignore_list_rename_at (list, 0, "gamma!*@*") &&
+			callbacks.rename_count == 1 &&
+			callbacks.rename_flags == (1u | 4u | 64u) &&
+			g_strcmp0 (callbacks.old_mask, "alpha!*@*") == 0 &&
+			g_strcmp0 (callbacks.new_mask, "gamma!*@*") == 0 &&
+			!fabulor_ignore_list_rename_at (list, 0, "reject!*@*") &&
+			callbacks.rename_count == 2;
+	}
+	if (valid)
+	{
+		first = fabulor_ignore_list_dup_mask_at (list, 0);
+		valid = g_strcmp0 (first, "gamma!*@*") == 0 &&
+			fabulor_ignore_list_set_flag_at (list, 0, 128u, TRUE) &&
+			callbacks.flags_count == 1 &&
+			callbacks.changed_flags == (1u | 4u | 64u | 128u) &&
+			g_strcmp0 (callbacks.flags_mask, "gamma!*@*") == 0;
+		g_clear_pointer (&first, g_free);
+	}
+	if (valid)
+	{
+		masks = fabulor_ignore_list_dup_masks (list);
+		valid = masks->len == 2 &&
+			g_strcmp0 (g_ptr_array_index (masks, 0), "gamma!*@*") == 0 &&
+			g_strcmp0 (g_ptr_array_index (masks, 1), "beta!*@*") == 0;
+		g_ptr_array_unref (masks);
+		fabulor_ignore_list_clear (list);
+		valid = valid && fabulor_ignore_list_get_n_rows (list) == 0;
+	}
+
+	fabulor_ignore_list_free (list);
+	g_free (callbacks.old_mask);
+	g_free (callbacks.new_mask);
+	g_free (callbacks.flags_mask);
+	return valid;
+}
+
 int
 main (void)
 {
@@ -729,6 +825,11 @@ main (void)
 	if (!check_url_list_model ())
 	{
 		fprintf (stderr, "GTK4 URL list model contract mismatch\n");
+		return 1;
+	}
+	if (!check_ignore_list_model ())
+	{
+		fprintf (stderr, "GTK4 ignore list model contract mismatch\n");
 		return 1;
 	}
 

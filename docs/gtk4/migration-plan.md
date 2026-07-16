@@ -765,6 +765,19 @@ the shared multi-click controller; a typed GTK3 URL-menu adapter preserves exact
 pointer placement. The strict probe verifies newest-first order, truncation,
 clear, and cleanup.
 
+Ignore List pass 17 (2026-07-16): the first editable operational table now has
+one cross-version owner for masks and the complete ignore-engine flag word.
+GTK4 uses typed row objects, the shared flat model stack, `GtkSingleSelection`,
+a sortable `GtkColumnView`, editable-label mask cells, and seven check-button
+factories. GTK3 keeps its editable text and toggle renderers inside the same
+owner. Typed callbacks validate mask renames and synchronize visible flag
+changes with the common ignore engine. Add, delete with next-row selection,
+confirmed clear, mask snapshots, and initial population no longer expose tree
+models, paths, iterators, cell renderers, or selections to `ignoregui.c`.
+Historical flag values, including DCC bit 128 and hidden `IG_NOSAVE` bit 64,
+remain intact across edits. The strict probe covers accepted and rejected
+renames, callbacks, flag preservation, snapshots, clear, and cleanup.
+
 Primary surfaces:
 
 - server list and editor
