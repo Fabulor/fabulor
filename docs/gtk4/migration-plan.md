@@ -753,6 +753,18 @@ row-count, clear, and cleanup checks. Selection-driven actions remain in the
 manual GTK3 and GTK4 cutover matrix because the headless probe intentionally
 does not create a display-backed view.
 
+URL History list pass 16 (2026-07-16): URL History now uses a dedicated
+cross-version owner for immutable URL rows. GTK4 combines the shared flat model
+stack, `GtkSingleSelection`, `GtkListView`, and a signal-item factory; GTK3
+retains the shipping one-column tree inside the owner. New URLs prepend at
+position zero and both branches remove the oldest rows beyond the configured
+limit. Selection, copy, clear, and point-to-row lookup no longer expose tree
+models, paths, iterators, or selections to `urlgrab.c`. Double-click opening and
+right-click menus receive typed press count, coordinates, and modifiers through
+the shared multi-click controller; a typed GTK3 URL-menu adapter preserves exact
+pointer placement. The strict probe verifies newest-first order, truncation,
+clear, and cleanup.
+
 Primary surfaces:
 
 - server list and editor

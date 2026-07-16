@@ -32,51 +32,37 @@
 #include "gtk-compat.h"
 #include "menu.h"
 #include "maingui.h"
+#include "url-list.h"
 #include "urlgrab.h"
 
 #define ICON_URLGRAB_CLEAR "zc-menu-clear"
 #define ICON_URLGRAB_COPY "zc-menu-copy"
 #define ICON_URLGRAB_SAVE_AS "zc-menu-save-as"
 
-enum
-{
-	URL_COLUMN,
-	N_COLUMNS
-};
-
 static GtkWidget *urlgrabberwindow = 0;
+static FabulorUrlList *urlgrabberlist = NULL;
 
 
 static gboolean
-url_treeview_url_clicked_cb (GtkWidget *view, GdkEventButton *event,
-                             gpointer data)
+url_list_clicked_cb (GtkWidget *view, guint button, guint n_press, gdouble x,
+					gdouble y, GdkModifierType state, gpointer data)
 {
-	GtkTreeIter iter;
-	gchar *url;
-	GtkTreeSelection *sel;
-	GtkTreePath *path;
-	GtkTreeView *tree = GTK_TREE_VIEW (view);
+	FabulorUrlList *list = data;
+	gchar *url = fabulor_url_list_select_and_dup_at_point (list, x, y);
 
-	if (!event || !gtk_tree_view_get_path_at_pos (tree, event->x, event->y, &path, 0, 0, 0))
+	(void) view;
+	(void) state;
+	if (!url)
 		return FALSE;
 
-	sel = gtk_tree_view_get_selection (tree); 
-	gtk_tree_selection_unselect_all (sel);
-	gtk_tree_selection_select_path (sel, path);
-	gtk_tree_path_free (path); 
-
-	if (!gtkutil_treeview_get_selected (GTK_TREE_VIEW (view), &iter,
-	                                    URL_COLUMN, &url, -1))
-		return FALSE;
-	
-	switch (event->button)
+	switch (button)
 	{
 		case 1:
-			if (event->type == GDK_2BUTTON_PRESS)
+			if (n_press == 2)
 				fe_open_url (url);
 			break;
 		case 3:
-			menu_urlmenu (event, url);
+			menu_urlmenu_at (view, x, y, state, url);
 			break;
 		default:
 			break;
@@ -86,54 +72,31 @@ url_treeview_url_clicked_cb (GtkWidget *view, GdkEventButton *event,
 	return FALSE;
 }
 
-static GtkWidget *
-url_treeview_new (GtkWidget *box)
-{
-	GtkListStore *store;
-	GtkWidget *scroll, *view;
-
-	store = gtk_list_store_new (N_COLUMNS, G_TYPE_STRING);
-	g_return_val_if_fail (store != NULL, NULL);
-
-	view = gtkutil_treeview_new (GTK_BOX (box), GTK_TREE_MODEL (store), NULL,
-	                             URL_COLUMN, _("URL"), -1);
-	scroll = gtk_widget_get_parent (view);
-	gtk_widget_set_hexpand (scroll, TRUE);
-	gtk_widget_set_vexpand (scroll, TRUE);
-	g_signal_connect (G_OBJECT (view), "button-press-event",
-	                  G_CALLBACK (url_treeview_url_clicked_cb), NULL);
-	gtk_tree_view_set_headers_visible (GTK_TREE_VIEW (view), FALSE);
-	gtk_widget_show (view);
-	return view;
-}
-
 static void
 url_closegui (GtkWidget *wid, gpointer userdata)
 {
 	urlgrabberwindow = 0;
+	urlgrabberlist = NULL;
 }
 
 static void
 url_button_clear (void)
 {
-	GtkListStore *store;
-	
 	url_clear ();
-	store = GTK_LIST_STORE (g_object_get_data (G_OBJECT (urlgrabberwindow),
-	                                           "model"));
-	gtk_list_store_clear (store);
+	if (urlgrabberlist)
+		fabulor_url_list_clear (urlgrabberlist);
 }
 
 static void
 url_button_copy (GtkWidget *widget, gpointer data)
 {
-	GtkTreeView *view = GTK_TREE_VIEW (data);
-	GtkTreeIter iter;
-	gchar *url = NULL;
+	FabulorUrlList *list = data;
+	gchar *url = fabulor_url_list_dup_selected (list);
 
-	if (gtkutil_treeview_get_selected (view, &iter, URL_COLUMN, &url, -1))
+	if (url)
 	{
-		gtkutil_copy_to_clipboard (GTK_WIDGET (view), url);
+		fabulor_gtk_copy_text_to_clipboards (
+			fabulor_url_list_get_view (list), url);
 		g_free (url);
 	}
 }
@@ -157,27 +120,10 @@ url_button_save (void)
 void
 fe_url_add (const char *urltext)
 {
-	GtkListStore *store;
-	GtkTreeIter iter;
-	gboolean valid;
-	
-	if (urlgrabberwindow)
-	{
-		store = GTK_LIST_STORE (g_object_get_data (G_OBJECT (urlgrabberwindow),
-		                                           "model"));
-		gtk_list_store_prepend (store, &iter);
-		gtk_list_store_set (store, &iter,
-		                    URL_COLUMN, urltext,
-		                    -1);
-
-		if (prefs.hex_url_grabber_limit > 0)
-		{
-			valid = gtk_tree_model_iter_nth_child (
-				GTK_TREE_MODEL (store), &iter, NULL, prefs.hex_url_grabber_limit);
-			while (valid)
-				valid = gtk_list_store_remove (store, &iter);
-		}
-	}
+	if (urlgrabberwindow && urlgrabberlist)
+		fabulor_url_list_prepend (urlgrabberlist, urltext,
+			prefs.hex_url_grabber_limit > 0 ?
+			(guint) prefs.hex_url_grabber_limit : 0);
 }
 
 static int
@@ -204,9 +150,20 @@ url_opengui ()
 		mg_create_generic_tab ("UrlGrabber", buf, FALSE, TRUE, url_closegui, NULL,
 							 400, 256, &vbox, 0);
 	gtkutil_destroy_on_esc (urlgrabberwindow);
-	view = url_treeview_new (vbox);
-	g_object_set_data (G_OBJECT (urlgrabberwindow), "model",
-	                   gtk_tree_view_get_model (GTK_TREE_VIEW (view)));
+	urlgrabberlist = fabulor_url_list_new ();
+	view = urlgrabberlist ? fabulor_url_list_create_view (urlgrabberlist,
+		GTK_BOX (vbox), _("URL")) : NULL;
+	if (!view)
+	{
+		fabulor_url_list_free (urlgrabberlist);
+		urlgrabberlist = NULL;
+		fabulor_gtk_window_destroy (GTK_WINDOW (urlgrabberwindow));
+		return;
+	}
+	g_object_set_data_full (G_OBJECT (urlgrabberwindow), "url-list",
+		urlgrabberlist, (GDestroyNotify) fabulor_url_list_free);
+	fabulor_gtk_widget_on_multi_click (view, url_list_clicked_cb,
+		urlgrabberlist);
 
 	hbox = gtk_button_box_new (GTK_ORIENTATION_HORIZONTAL);
 	gtk_button_box_set_layout (GTK_BUTTON_BOX (hbox), GTK_BUTTONBOX_SPREAD);
@@ -217,7 +174,7 @@ url_opengui ()
 	gtkutil_button (hbox, ICON_URLGRAB_CLEAR,
 						 _("Clear list"), url_button_clear, 0, _("Clear"));
 	gtkutil_button (hbox, ICON_URLGRAB_COPY,
-						 _("Copy selected URL"), url_button_copy, view, _("Copy"));
+						 _("Copy selected URL"), url_button_copy, urlgrabberlist, _("Copy"));
 	gtkutil_button (hbox, ICON_URLGRAB_SAVE_AS,
 						 _("Save list to a file"), url_button_save, 0, _("Save As..."));
 
@@ -227,7 +184,7 @@ url_opengui ()
 		tree_foreach (url_tree, (tree_traverse_func *)populate_cb, NULL);
 	else
 	{
-		gtk_list_store_clear (GTK_LIST_STORE (gtk_tree_view_get_model (GTK_TREE_VIEW (view))));
+		fabulor_url_list_clear (urlgrabberlist);
 		fe_url_add ("URL Grabber is disabled.");
 	}
 }

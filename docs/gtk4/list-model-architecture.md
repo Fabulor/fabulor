@@ -1,6 +1,6 @@
 # GTK4 List Model Architecture
 
-Status: Stage 5 pass 15 conversion contract
+Status: Stage 5 pass 16 conversion contract
 
 Date: 2026-07-16
 
@@ -92,6 +92,8 @@ navigation order.
    editing and multi-selection requirements.
    - [x] Convert the loaded Add-ons table to a typed cross-version owner with
      GTK4 column factories and single-selection unload/reload lookup.
+   - [x] Convert URL History to a typed cross-version owner with newest-first
+     limit enforcement, single selection, and coordinate-based activation.
 5. [ ] Remove the final GTK3 tree-model, cell-renderer, iterator, and row-reference
    assumptions only after all owning surfaces have moved.
 
@@ -251,6 +253,15 @@ retains its list-store presentation inside the owner. Refresh, unload, and
 reload workflows consume owner methods, leaving `plugingui.c` independent of
 tree models, iterators, and selection APIs. The strict probe verifies append,
 row count, clear, and cleanup without requiring a display.
+
+URL History now owns immutable URL rows through the same flat-list boundary.
+GTK4 uses `GtkListView`, `GtkSingleSelection`, and a signal-item factory; GTK3
+retains its one-column tree inside the owner. Prepending and truncation preserve
+the configured newest-first limit on both paths. Selection, pointer row lookup,
+double-click activation, context actions, copying, and clearing no longer expose
+tree paths or iterators to `urlgrab.c`. The workflow receives typed button,
+press-count, coordinate, and modifier values, while a GTK3 menu adapter preserves
+context-menu placement at the selected row.
 
 ## Executable Contract
 
