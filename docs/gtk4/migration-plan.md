@@ -869,6 +869,16 @@ normalization, core `sound_files` ownership, and preference cancellation state
 remain in `setup.c`. The strict probe covers selection callbacks, identity-safe
 updates, missing-event rejection, clear, and cleanup.
 
+Preferences category-navigation pass 26 (2026-07-17): the Interface, Chatting,
+and Network hierarchy now has one cross-version owner for copied labels,
+stable page indices, expansion, non-selectable headings, and remembered single
+selection. GTK4 uses typed rows, per-category child stores,
+`GtkTreeListModel`, `GtkSingleSelection`, `GtkListView`, and a tree-expander
+factory; GTK3 keeps its tree store, renderer, tree view, and selection filter
+privately. Lazy page creation and notebook switching remain in `setup.c`. The
+strict probe covers hierarchy counts, stable page selection, callback
+de-duplication, missing-page rejection, and cleanup.
+
 Primary surfaces:
 
 - server list and editor

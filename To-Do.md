@@ -289,6 +289,7 @@ Detailed planning and evidence live in:
   - [x] Convert the Print Events editor and argument-help table to one typed cross-version owner with callback-gated edits and signal-safe selection.
   - [x] Convert the configurable key-bindings editor to a typed cross-version owner with accelerator capture, custom-row controls, reset, ordering, and save snapshots.
   - [x] Convert the Preferences sound-event table to a typed cross-version owner with stable event identity, explicit selection, and live file updates.
+  - [x] Convert the Preferences category hierarchy to a typed cross-version owner with non-selectable headings, stable page identity, expansion, remembered selection, and explicit page switching.
 - [ ] Port the transcript and spell-check input widgets to GTK4 rendering and event semantics.
 - [ ] Add the GTK4 theme adapter and validate tray, notifications, icons, fonts, and platform integration.
   - [x] Retire `.zct` registration and mock Windows GTK theme staging, downloads, and installer choices.

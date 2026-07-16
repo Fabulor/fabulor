@@ -62,6 +62,7 @@
 	<ClCompile Include="..\..\src\fe-gtk\print-event-list.c" />
 	<ClCompile Include="..\..\src\fe-gtk\key-binding-list.c" />
 	<ClCompile Include="..\..\src\fe-gtk\sound-event-list.c" />
+	<ClCompile Include="..\..\src\fe-gtk\preferences-category-list.c" />
     <ClCompile Include="..\..\src\fe-gtk\gtk4-list-models.c" />
     <ClCompile Include="..\..\src\fe-gtk\ignore-list.c" />
     <ClCompile Include="..\..\src\fe-gtk\channel-model.c" />

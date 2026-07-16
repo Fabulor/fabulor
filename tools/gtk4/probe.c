@@ -14,6 +14,7 @@
 #include "../../src/fe-gtk/print-event-list.h"
 #include "../../src/fe-gtk/key-binding-list.h"
 #include "../../src/fe-gtk/sound-event-list.h"
+#include "../../src/fe-gtk/preferences-category-list.h"
 #include "../../src/fe-gtk/addon-list.h"
 #include "../../src/fe-gtk/channel-model.h"
 #include "../../src/fe-gtk/channel-tree-view.h"
@@ -1333,6 +1334,66 @@ check_sound_event_list_model (void)
 	return valid;
 }
 
+typedef struct
+{
+	gint page_index;
+	guint calls;
+} ProbePreferencesCategorySelection;
+
+static void
+probe_preferences_category_selection (gint page_index, gpointer user_data)
+{
+	ProbePreferencesCategorySelection *selection = user_data;
+	selection->page_index = page_index;
+	selection->calls++;
+}
+
+static gboolean
+check_preferences_category_list_model (void)
+{
+	ProbePreferencesCategorySelection selection = { -1, 0 };
+	FabulorPreferencesCategoryList *list =
+		fabulor_preferences_category_list_new (
+			probe_preferences_category_selection, &selection);
+	guint interface_category;
+	guint chatting_category;
+	gboolean valid = list != NULL;
+
+	if (valid)
+	{
+		interface_category = fabulor_preferences_category_list_append_category (
+			list, "Interface");
+		fabulor_preferences_category_list_append_page (list,
+			interface_category, "Appearance", 0);
+		fabulor_preferences_category_list_append_page (list,
+			interface_category, "Input box", 1);
+		chatting_category = fabulor_preferences_category_list_append_category (
+			list, "Chatting");
+		fabulor_preferences_category_list_append_page (list,
+			chatting_category, "General", 4);
+		valid = interface_category == 0 && chatting_category == 1 &&
+			fabulor_preferences_category_list_get_n_categories (list) == 2 &&
+			fabulor_preferences_category_list_get_n_pages (list) == 3;
+	}
+	if (valid)
+	{
+		valid = fabulor_preferences_category_list_select_page (list, 4) &&
+			fabulor_preferences_category_list_get_selected_page (list) == 4 &&
+			selection.calls == 1 && selection.page_index == 4 &&
+			!fabulor_preferences_category_list_select_page (list, 2) &&
+			fabulor_preferences_category_list_get_selected_page (list) == 4 &&
+			selection.calls == 1;
+	}
+	if (valid)
+	{
+		valid = fabulor_preferences_category_list_select_page (list, 0) &&
+			fabulor_preferences_category_list_get_selected_page (list) == 0 &&
+			selection.calls == 2 && selection.page_index == 0;
+	}
+	fabulor_preferences_category_list_free (list);
+	return valid;
+}
+
 int
 main (void)
 {
@@ -1430,6 +1491,11 @@ main (void)
 	if (!check_sound_event_list_model ())
 	{
 		fprintf (stderr, "GTK4 sound-event list contract mismatch\n");
+		return 1;
+	}
+	if (!check_preferences_category_list_model ())
+	{
+		fprintf (stderr, "GTK4 Preferences category list contract mismatch\n");
 		return 1;
 	}
 
