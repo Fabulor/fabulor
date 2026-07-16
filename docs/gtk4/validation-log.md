@@ -1749,6 +1749,44 @@ Scope: channel hierarchy model ownership and stable mutation semantics. The
 shipping GTK3 tree and tab widgets remain visible; the GTK4 channel switcher is
 the next contained Stage 5 pass.
 
+### PR: [#69 - GTK4 Stage 5 Channel Tree View Ownership](https://github.com/Fabulor/fabulor/pull/69)
+
+Date: 2026-07-16
+
+Migration stage: 5, channel-tree view pass 6
+
+Files/workflows converted: hierarchical channel view ownership; GTK4
+`GtkListView` and `GtkTreeExpander` factory; optional icon and attributed-name
+binding; expansion; identity selection; callback dispatch; hit-testing;
+focus scrolling; teardown and selection-listener cleanup; contained GTK3 tree
+view, renderer, iterator, and path operations
+
+GTK version: 4.22.4
+
+GLib version: 2.88.0
+
+Build configuration: MSVC x64 Release and Meson 1.11.2 Release with MSVC 19.44
+
+Automated checks:
+
+- [x] strict GTK4 MSVC compile, link, and runtime probe with 0 warnings and 0 errors
+- [x] full production GTK3 frontend rebuild with 0 warnings and 0 errors
+- [x] isolated GTK4 Meson configure, compile, link, and runtime test
+- [x] GTK4 dependency validator unit tests: 8/8
+- [x] GTK4 runtime probe constructs the channel tree, expands its root, selects a child by identity, dispatches one selection callback, and destroys the view
+- [x] post-destruction probe reuses the model selection with GLib critical diagnostics treated as fatal
+- [x] source boundary: `chanview-tree.c` has no direct tree-view, renderer, iterator, or path operations
+- [x] factory unbind disconnects row notifications and view teardown disconnects its longer-lived selection listener
+
+Manual checks:
+
+- [ ] shipping GTK3 tree switching, expand/collapse, context menu, rename, colours, close/reparent, movement, and drag/drop
+- [ ] GTK4 row layout, icon and text alignment, pointer hit-testing, keyboard focus, accessibility, and large-channel load await frontend cutover
+
+Scope: the hierarchical channel-tree presentation. The grouped tab strip,
+close controls, animated scrolling, context actions, and family reordering are
+the next contained Stage 5 pass.
+
 ## Per-PR Record Template
 
 Copy this section for each GTK4 PR:

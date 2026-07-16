@@ -136,7 +136,7 @@ chanview_apply_theme (chanview *cv)
 	if (cv == NULL)
 		return;
 
-	/* Only the tree implementation has a GtkTreeView we can explicitly style. */
+	/* Only the tree implementation has a dedicated view we can explicitly style. */
 	if (cv->func_init != cv_tree_init)
 		return;
 
@@ -144,7 +144,7 @@ chanview_apply_theme (chanview *cv)
 	if (tv->tree == NULL)
 		return;
 
-	w = GTK_WIDGET (tv->tree);
+	w = tv->tree;
 	if (input_style)
 		font = input_style->font_desc;
 

@@ -117,6 +117,7 @@ FOR %%I IN ("$(ZoiteChatLib)fabulor.rc") DO IF %%~zI EQU 0 (
     <ClCompile Include="chanlist.c" />
     <ClCompile Include="chanview.c" />
     <ClCompile Include="channel-model.c" />
+    <ClCompile Include="channel-tree-view.c" />
     <ClCompile Include="custom-list.c" />
     <ClCompile Include="dccgui.c" />
     <ClCompile Include="editlist.c" />
