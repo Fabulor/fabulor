@@ -29,22 +29,16 @@
 #include "gtkutil.h"
 #include "gtk-compat.h"
 #include "chanview.h"
+#include "channel-model.h"
 #include "theme/theme-manager.h"
 #include "theme/theme-access.h"
-
-/* treeStore columns */
-#define COL_NAME 0		/* (char *) */
-#define COL_CHAN 1		/* (chan *) */
-#define COL_ATTR 2		/* (PangoAttrList *) */
-#define COL_PIXBUF 3		/* (GdkPixbuf *) */
-#define COL_UNDERLINE 4		/* (PangoUnderline) */
 
 struct _chanview
 {
 	/* impl scratch area */
 	char implscratch[sizeof (void *) * 8];
 
-	GtkTreeStore *store;
+	FabulorChannelModel *model;
 	int size;			/* number of channels in view */
 
 	GtkWidget *box;	/* the box we destroy when changing implementations */
@@ -61,7 +55,7 @@ struct _chanview
 	/* impl */
 	void (*func_init) (chanview *);
 	void (*func_postinit) (chanview *);
-	void *(*func_add) (chanview *, chan *, char *, GtkTreeIter *);
+	void *(*func_add) (chanview *, chan *, char *, chan *);
 	void (*func_move_focus) (chanview *, gboolean, int);
 	void (*func_change_orientation) (chanview *);
 	void (*func_remove) (chan *);
@@ -83,11 +77,13 @@ struct _chanview
 struct _chan
 {
 	chanview *cv;	/* our owner */
-	GtkTreeIter iter;
 	void *userdata;	/* session * */
 	void *family;		/* server * or null */
 	void *impl;	/* togglebutton or null */
 	GdkPixbuf *icon;
+	char *name;
+	PangoAttrList *attributes;
+	PangoUnderline underline;
 	short allow_closure;	/* allow it to be closed when it still has children? */
 	short tag;
 };
@@ -95,6 +91,7 @@ struct _chan
 static chan *cv_find_chan_by_number (chanview *cv, int num);
 static int cv_find_number_of_chan (chanview *cv, chan *find_ch);
 static void cv_find_neighbors_for_removal (chanview *cv, chan *find_ch, chan **left_ch, chan **first_ch);
+static void chanview_update_model_row (chan *ch);
 
 static int
 cv_scroll_direction (gdouble dx, gdouble dy)
@@ -181,52 +178,24 @@ truncate_tab_name (char *name, int max)
 	return name;
 }
 
-/* iterate through a model, into 1 depth of children */
-
 static void
-model_foreach_1 (GtkTreeModel *model, void (*func)(void *, GtkTreeIter *),
-					  void *userdata)
+chanview_pop_cb (chanview *cv, chan *ch)
 {
-	GtkTreeIter iter, inner;
+	chan *parent = fabulor_channel_model_get_parent (cv->model, ch);
 
-	if (gtk_tree_model_get_iter_first (model, &iter))
-	{
-		do
-		{
-			func (userdata, &iter);
-			if (gtk_tree_model_iter_children (model, &inner, &iter))
-			{
-				do
-					func (userdata, &inner);
-				while (gtk_tree_model_iter_next (model, &inner));
-			}
-		}
-		while (gtk_tree_model_iter_next (model, &iter));
-	}
-}
-
-static void
-chanview_pop_cb (chanview *cv, GtkTreeIter *iter)
-{
-	chan *ch;
-	char *name;
-	PangoAttrList *attr;
-
-	gtk_tree_model_get (GTK_TREE_MODEL (cv->store), iter,
-							  COL_NAME, &name, COL_CHAN, &ch, COL_ATTR, &attr, -1);
-	ch->impl = cv->func_add (cv, ch, name, NULL);
-	if (attr)
-	{
-		cv->func_set_color (ch, attr);
-		pango_attr_list_unref (attr);
-	}
-	g_free (name);
+	ch->impl = cv->func_add (cv, ch, ch->name, parent);
+	if (ch->attributes)
+		cv->func_set_color (ch, ch->attributes);
 }
 
 static void
 chanview_populate (chanview *cv)
 {
-	model_foreach_1 (GTK_TREE_MODEL (cv->store), (void *)chanview_pop_cb, cv);
+	guint count = fabulor_channel_model_get_flat_count (cv->model);
+	guint i;
+
+	for (i = 0; i < count; i++)
+		chanview_pop_cb (cv, fabulor_channel_model_get_flat_at (cv->model, i));
 }
 
 void
@@ -286,19 +255,23 @@ chanview_set_impl (chanview *cv, int type)
 }
 
 static void
-chanview_free_ch (chanview *cv, GtkTreeIter *iter)
+chanview_free_ch (chan *ch)
 {
-	chan *ch;
-
-	gtk_tree_model_get (GTK_TREE_MODEL (cv->store), iter, COL_CHAN, &ch, -1);
+	g_free (ch->name);
+	if (ch->attributes)
+		pango_attr_list_unref (ch->attributes);
 	g_free (ch);
 }
 
 static void
-chanview_destroy_store (chanview *cv)	/* free every (chan *) in the store */
+chanview_destroy_model (chanview *cv)
 {
-	model_foreach_1 (GTK_TREE_MODEL (cv->store), (void *)chanview_free_ch, cv);
-	g_object_unref (cv->store);
+	guint count = fabulor_channel_model_get_flat_count (cv->model);
+	guint i;
+
+	for (i = 0; i < count; i++)
+		chanview_free_ch (fabulor_channel_model_get_flat_at (cv->model, i));
+	fabulor_channel_model_free (cv->model);
 }
 
 static void
@@ -316,7 +289,7 @@ chanview_destroy (chanview *cv)
 	if (cv->box)
 		gtk_widget_destroy (cv->box);
 
-	chanview_destroy_store (cv);
+	chanview_destroy_model (cv);
 	g_free (cv);
 }
 
@@ -335,8 +308,7 @@ chanview_new (int type, int trunc_len, gboolean sort, gboolean use_icons,
 	chanview *cv;
 
 	cv = g_new0 (chanview, 1);
-	cv->store = gtk_tree_store_new (5, G_TYPE_STRING, G_TYPE_POINTER,
-							  PANGO_TYPE_ATTR_LIST, GDK_TYPE_PIXBUF, G_TYPE_INT);
+	cv->model = fabulor_channel_model_new ();
 	cv->font_desc = font_desc;
 	cv->box = gtk_box_new (GTK_ORIENTATION_HORIZONTAL, 0);
 	cv->trunc_len = trunc_len;
@@ -367,53 +339,44 @@ chanview_set_callbacks (chanview *cv,
 	cv->cb_compare = cb_compare;
 }
 
-/* find a place to insert this new entry, based on the compare function */
-
-static void
-chanview_insert_sorted (chanview *cv, GtkTreeIter *add_iter, GtkTreeIter *parent, void *ud)
+static guint
+chanview_insert_position (chanview *cv, chan *parent, void *userdata)
 {
-	GtkTreeIter iter;
-	chan *ch;
+	guint count;
+	guint i;
 
-	if (cv->sorted && gtk_tree_model_iter_children (GTK_TREE_MODEL (cv->store), &iter, parent))
+	if (!parent)
+		return fabulor_channel_model_get_root_count (cv->model);
+	count = fabulor_channel_model_get_child_count (cv->model, parent);
+	if (cv->sorted)
 	{
-		do
+		for (i = 0; i < count; i++)
 		{
-			gtk_tree_model_get (GTK_TREE_MODEL (cv->store), &iter, COL_CHAN, &ch, -1);
-			if (ch->tag == 0 && cv->cb_compare (ch->userdata, ud) > 0)
-			{
-				gtk_tree_store_insert_before (cv->store, add_iter, parent, &iter);
-				return;
-			}
+			chan *existing = fabulor_channel_model_get_child_at (
+				cv->model, parent, i);
+			if (existing->tag == 0 &&
+				cv->cb_compare (existing->userdata, userdata) > 0)
+				return i;
 		}
-		while (gtk_tree_model_iter_next (GTK_TREE_MODEL (cv->store), &iter));
 	}
-
-	gtk_tree_store_append (cv->store, add_iter, parent);
+	return count;
 }
 
 /* find a parent node with the same "family" pointer (i.e. the Server tab) */
 
-static int
-chanview_find_parent (chanview *cv, void *family, GtkTreeIter *search_iter, chan *avoid)
+static chan *
+chanview_find_parent (chanview *cv, void *family, chan *avoid)
 {
-	chan *search_ch;
+	guint count = fabulor_channel_model_get_root_count (cv->model);
+	guint i;
 
-	/* find this new row's parent, if any */
-	if (gtk_tree_model_get_iter_first (GTK_TREE_MODEL (cv->store), search_iter))
+	for (i = 0; i < count; i++)
 	{
-		do
-		{
-			gtk_tree_model_get (GTK_TREE_MODEL (cv->store), search_iter, 
-									  COL_CHAN, &search_ch, -1);
-			if (family == search_ch->family && search_ch != avoid /*&&
-				 gtk_tree_store_iter_depth (cv->store, search_iter) == 0*/)
-				return TRUE;
-		}
-		while (gtk_tree_model_iter_next (GTK_TREE_MODEL (cv->store), search_iter));
+		chan *candidate = fabulor_channel_model_get_root_at (cv->model, i);
+		if (family == candidate->family && candidate != avoid)
+			return candidate;
 	}
-
-	return FALSE;
+	return NULL;
 }
 
 static chan *
@@ -421,18 +384,9 @@ chanview_add_real (chanview *cv, char *name, void *family, void *userdata,
 						 gboolean allow_closure, int tag, GdkPixbuf *icon,
 						 chan *ch, chan *avoid)
 {
-	GtkTreeIter parent_iter;
-	GtkTreeIter iter;
-	gboolean has_parent = FALSE;
-
-	if (chanview_find_parent (cv, family, &parent_iter, avoid))
-	{
-		chanview_insert_sorted (cv, &iter, &parent_iter, userdata);
-		has_parent = TRUE;
-	} else
-	{
-		gtk_tree_store_append (cv->store, &iter, NULL);
-	}
+	chan *parent = chanview_find_parent (cv, family, avoid);
+	guint position;
+	FabulorChannelModelRow row;
 
 	if (!ch)
 	{
@@ -443,19 +397,21 @@ chanview_add_real (chanview *cv, char *name, void *family, void *userdata,
 		ch->allow_closure = allow_closure;
 		ch->tag = tag;
 		ch->icon = icon;
+		ch->underline = PANGO_UNDERLINE_NONE;
 	}
-	memcpy (&(ch->iter), &iter, sizeof (iter));
-
-	gtk_tree_store_set (cv->store, &iter, COL_NAME, name, COL_CHAN, ch,
-							  COL_PIXBUF, icon,
-							  COL_UNDERLINE, PANGO_UNDERLINE_NONE,
-							  -1);
+	g_free (ch->name);
+	ch->name = g_strdup (name);
+	row.identity = ch;
+	row.name = ch->name;
+	row.attributes = ch->attributes;
+	row.icon = ch->icon;
+	row.underline = ch->underline;
+	position = chanview_insert_position (cv, parent, userdata);
+	g_return_val_if_fail (fabulor_channel_model_insert (cv->model, &row,
+		parent, position), NULL);
 
 	cv->size++;
-	if (!has_parent)
-		ch->impl = cv->func_add (cv, ch, name, NULL);
-	else
-		ch->impl = cv->func_add (cv, ch, name, &parent_iter);
+	ch->impl = cv->func_add (cv, ch, name, parent);
 
 	return ch;
 }
@@ -534,19 +490,37 @@ chan_focus (chan *ch)
 void
 chan_move (chan *ch, int delta)
 {
+	fabulor_channel_model_move_cyclic (ch->cv->model, ch, delta);
 	ch->cv->func_move (ch, delta);
 }
 
 void
 chan_move_family (chan *ch, int delta)
 {
+	chan *root = fabulor_channel_model_get_parent (ch->cv->model, ch);
+	fabulor_channel_model_move_cyclic (ch->cv->model, root ? root : ch, delta);
 	ch->cv->func_move_family (ch, delta);
+}
+
+static void
+chanview_update_model_row (chan *ch)
+{
+	FabulorChannelModelRow row = {
+		ch, ch->name, ch->attributes, ch->icon, ch->underline
+	};
+
+	g_warn_if_fail (fabulor_channel_model_update (ch->cv->model, &row));
 }
 
 void
 chan_set_color (chan *ch, PangoAttrList *list)
 {
-	gtk_tree_store_set (ch->cv->store, &ch->iter, COL_ATTR, list, -1);	
+	if (list)
+		pango_attr_list_ref (list);
+	if (ch->attributes)
+		pango_attr_list_unref (ch->attributes);
+	ch->attributes = list;
+	chanview_update_model_row (ch);
 	ch->cv->func_set_color (ch, list);
 }
 
@@ -557,7 +531,9 @@ chan_rename (chan *ch, char *name, int trunc_len)
 
 	new_name = truncate_tab_name (name, trunc_len);
 
-	gtk_tree_store_set (ch->cv->store, &ch->iter, COL_NAME, new_name, -1);
+	g_free (ch->name);
+	ch->name = g_strdup (new_name);
+	chanview_update_model_row (ch);
 	ch->cv->func_rename (ch, new_name);
 	ch->cv->trunc_len = trunc_len;
 
@@ -570,35 +546,8 @@ chan_rename (chan *ch, char *name, int trunc_len)
 static int
 cv_find_number_of_chan (chanview *cv, chan *find_ch)
 {
-	GtkTreeIter iter, inner;
-	chan *ch;
-	int i = 0;
-
-	if (gtk_tree_model_get_iter_first (GTK_TREE_MODEL (cv->store), &iter))
-	{
-		do
-		{
-			gtk_tree_model_get (GTK_TREE_MODEL (cv->store), &iter, COL_CHAN, &ch, -1);
-			if (ch == find_ch)
-				return i;
-			i++;
-
-			if (gtk_tree_model_iter_children (GTK_TREE_MODEL (cv->store), &inner, &iter))
-			{
-				do
-				{
-					gtk_tree_model_get (GTK_TREE_MODEL (cv->store), &inner, COL_CHAN, &ch, -1);
-					if (ch == find_ch)
-						return i;
-					i++;
-				}
-				while (gtk_tree_model_iter_next (GTK_TREE_MODEL (cv->store), &inner));
-			}
-		}
-		while (gtk_tree_model_iter_next (GTK_TREE_MODEL (cv->store), &iter));
-	}
-
-	return 0;	/* WARNING */
+	gint position = fabulor_channel_model_get_flat_position (cv->model, find_ch);
+	return position >= 0 ? position : 0;
 }
 
 /* this thing is overly complicated too */
@@ -606,103 +555,53 @@ cv_find_number_of_chan (chanview *cv, chan *find_ch)
 static chan *
 cv_find_chan_by_number (chanview *cv, int num)
 {
-	GtkTreeIter iter, inner;
-	chan *ch;
-	int i = 0;
-
-	if (gtk_tree_model_get_iter_first (GTK_TREE_MODEL (cv->store), &iter))
-	{
-		do
-		{
-			if (i == num)
-			{
-				gtk_tree_model_get (GTK_TREE_MODEL (cv->store), &iter, COL_CHAN, &ch, -1);
-				return ch;
-			}
-			i++;
-
-			if (gtk_tree_model_iter_children (GTK_TREE_MODEL (cv->store), &inner, &iter))
-			{
-				do
-				{
-					if (i == num)
-					{
-						gtk_tree_model_get (GTK_TREE_MODEL (cv->store), &inner, COL_CHAN, &ch, -1);
-						return ch;
-					}
-					i++;
-				}
-				while (gtk_tree_model_iter_next (GTK_TREE_MODEL (cv->store), &inner));
-			}
-		}
-		while (gtk_tree_model_iter_next (GTK_TREE_MODEL (cv->store), &iter));
-	}
-
-	return NULL;
+	return num < 0 ? NULL : fabulor_channel_model_get_flat_at (
+		cv->model, (guint) num);
 }
 
 static void
 cv_find_neighbors_for_removal (chanview *cv, chan *find_ch, chan **left_ch, chan **first_ch)
 {
-	GtkTreeIter iter, inner;
-	chan *ch;
+	guint count;
+	guint i;
 	chan *prev = NULL;
 
 	*left_ch = NULL;
 	*first_ch = NULL;
 
-	if (gtk_tree_model_get_iter_first (GTK_TREE_MODEL (cv->store), &iter))
+	count = fabulor_channel_model_get_flat_count (cv->model);
+	for (i = 0; i < count; i++)
 	{
-		do
-		{
-			gtk_tree_model_get (GTK_TREE_MODEL (cv->store), &iter, COL_CHAN, &ch, -1);
-			if (ch == find_ch)
-				*left_ch = prev;
-			else if (*first_ch == NULL)
-				*first_ch = ch;
-			prev = ch;
-
-			if (gtk_tree_model_iter_children (GTK_TREE_MODEL (cv->store), &inner, &iter))
-			{
-				do
-				{
-					gtk_tree_model_get (GTK_TREE_MODEL (cv->store), &inner, COL_CHAN, &ch, -1);
-					if (ch == find_ch)
-						*left_ch = prev;
-					else if (*first_ch == NULL)
-						*first_ch = ch;
-					prev = ch;
-				}
-				while (gtk_tree_model_iter_next (GTK_TREE_MODEL (cv->store), &inner));
-			}
-		}
-		while (gtk_tree_model_iter_next (GTK_TREE_MODEL (cv->store), &iter));
+		chan *candidate = fabulor_channel_model_get_flat_at (cv->model, i);
+		if (candidate == find_ch)
+			*left_ch = prev;
+		else if (*first_ch == NULL)
+			*first_ch = candidate;
+		prev = candidate;
 	}
 }
 
 static void
 chan_emancipate_children (chan *ch)
 {
-	char *name;
 	chan *childch;
-	GtkTreeIter childiter;
-	PangoAttrList *attr;
 
-	while (gtk_tree_model_iter_children (GTK_TREE_MODEL (ch->cv->store), &childiter, &ch->iter))
+	while ((childch = fabulor_channel_model_get_child_at (
+		ch->cv->model, ch, 0)) != NULL)
 	{
-		/* remove and re-add all the children, but avoid using "ch" as parent */
-		gtk_tree_model_get (GTK_TREE_MODEL (ch->cv->store), &childiter,
-								  COL_NAME, &name, COL_CHAN, &childch, COL_ATTR, &attr, -1);
+		chan *new_parent;
+		guint position;
+
 		ch->cv->func_remove (childch);
-		gtk_tree_store_remove (ch->cv->store, &childiter);
-		ch->cv->size--;
-		chanview_add_real (childch->cv, name, childch->family, childch->userdata, childch->allow_closure, childch->tag, childch->icon, childch, ch);
-		if (attr)
-		{
-			childch->cv->func_set_color (childch, attr);
-			pango_attr_list_unref (attr);
-		}
-		g_free (name);
+		new_parent = chanview_find_parent (ch->cv, childch->family, ch);
+		position = chanview_insert_position (ch->cv, new_parent,
+			childch->userdata);
+		g_warn_if_fail (fabulor_channel_model_reparent (ch->cv->model,
+			childch, new_parent, position));
+		childch->impl = ch->cv->func_add (ch->cv, childch, childch->name,
+			new_parent);
+		if (childch->attributes)
+			childch->cv->func_set_color (childch, childch->attributes);
 	}
 }
 
@@ -718,7 +617,7 @@ chan_remove (chan *ch, gboolean force)
 
 	/* is this ch allowed to be closed while still having children? */
 	if (!force &&
-		 gtk_tree_model_iter_has_child (GTK_TREE_MODEL (ch->cv->store), &ch->iter) &&
+		 fabulor_channel_model_get_child_count (ch->cv->model, ch) > 0 &&
 		 !ch->allow_closure)
 		return FALSE;
 
@@ -742,8 +641,8 @@ chan_remove (chan *ch, gboolean force)
 	}
 
 	ch->cv->size--;
-	gtk_tree_store_remove (ch->cv->store, &ch->iter);
-	g_free (ch);
+	g_warn_if_fail (fabulor_channel_model_remove (ch->cv->model, ch));
+	chanview_free_ch (ch);
 	return TRUE;
 }
 

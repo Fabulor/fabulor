@@ -51,18 +51,20 @@ cv_tree_sel_cb (GtkTreeSelection *sel, chanview *cv)
 	chan *prev_ch;
 	gboolean has_prev;
 
-	has_prev = cv->focused && gtk_tree_store_iter_is_valid (cv->store, &cv->focused->iter);
+	has_prev = cv->focused && fabulor_channel_model_get_iter (
+		cv->model, cv->focused, &prev_iter);
 	if (has_prev)
-		prev_iter = cv->focused->iter;
+		prev_ch = cv->focused;
 
 	if (gtk_tree_selection_get_selected (sel, &model, &iter))
 	{
-		gtk_tree_model_get (model, &iter, COL_CHAN, &ch, -1);
+		gtk_tree_model_get (model, &iter,
+			FABULOR_CHANNEL_COLUMN_IDENTITY, &ch, -1);
 
 		if (has_prev)
 		{
-			gtk_tree_model_get (model, &prev_iter, COL_CHAN, &prev_ch, -1);
-			if (prev_ch != ch && gtk_tree_store_is_ancestor (cv->store, &iter, &prev_iter))
+			if (prev_ch != ch && fabulor_channel_model_get_parent (
+				cv->model, prev_ch) == ch)
 			{
 				view = gtk_tree_selection_get_tree_view (sel);
 				path = gtk_tree_model_get_path (model, &iter);
@@ -77,9 +79,13 @@ cv_tree_sel_cb (GtkTreeSelection *sel, chanview *cv)
 				}
 			}
 			if (prev_ch != ch)
-				gtk_tree_store_set (cv->store, &prev_iter, COL_UNDERLINE, PANGO_UNDERLINE_NONE, -1);
+			{
+				prev_ch->underline = PANGO_UNDERLINE_NONE;
+				chanview_update_model_row (prev_ch);
+			}
 		}
-		gtk_tree_store_set (cv->store, &iter, COL_UNDERLINE, PANGO_UNDERLINE_SINGLE, -1);
+		ch->underline = PANGO_UNDERLINE_SINGLE;
+		chanview_update_model_row (ch);
 
 		cv->focused = ch;
 		cv->cb_focus (cv, ch, ch->tag, ch->userdata);
@@ -96,9 +102,12 @@ cv_tree_click_cb (GtkTreeView *tree, GdkEventButton *event, chanview *cv)
 
 	if (gtk_tree_view_get_path_at_pos (tree, event->x, event->y, &path, 0, 0, 0))
 	{
-		if (gtk_tree_model_get_iter (GTK_TREE_MODEL (cv->store), &iter, path))
+		if (gtk_tree_model_get_iter (
+			fabulor_channel_model_get_tree_model (cv->model), &iter, path))
 		{
-			gtk_tree_model_get (GTK_TREE_MODEL (cv->store), &iter, COL_CHAN, &ch, -1);
+			gtk_tree_model_get (
+				fabulor_channel_model_get_tree_model (cv->model), &iter,
+				FABULOR_CHANNEL_COLUMN_IDENTITY, &ch, -1);
 			ret = cv->cb_contextmenu (cv, ch, ch->tag, ch->userdata, event);
 		}
 		gtk_tree_path_free (path);
@@ -148,7 +157,8 @@ cv_tree_init (chanview *cv)
 	gtk_container_add (GTK_CONTAINER (cv->box), win);
 	gtk_widget_show (win);
 
-	view = gtk_tree_view_new_with_model (GTK_TREE_MODEL (cv->store));
+	view = gtk_tree_view_new_with_model (
+		fabulor_channel_model_get_tree_model (cv->model));
 	gtk_widget_set_hexpand (view, TRUE);
 	gtk_widget_set_vexpand (view, TRUE);
 	gtk_widget_set_name (view, "zoitechat-tree");
@@ -186,7 +196,8 @@ cv_tree_init (chanview *cv)
 			g_object_set (G_OBJECT (renderer), "ypad", 0, NULL);
 
 		gtk_tree_view_column_pack_start (col, renderer, FALSE);
-		gtk_tree_view_column_set_attributes (col, renderer, "pixbuf", COL_PIXBUF, NULL);
+		gtk_tree_view_column_set_attributes (col, renderer, "pixbuf",
+			FABULOR_CHANNEL_COLUMN_ICON, NULL);
 	}
 
 	renderer = gtk_cell_renderer_text_new ();
@@ -196,9 +207,9 @@ cv_tree_init (chanview *cv)
 	gtk_cell_renderer_text_set_fixed_height_from_font (GTK_CELL_RENDERER_TEXT (renderer), 1);
 	gtk_tree_view_column_pack_start (col, renderer, TRUE);
 	gtk_tree_view_column_set_attributes (col, renderer,
-								  "text", COL_NAME,
-								  "attributes", COL_ATTR,
-								  "underline", COL_UNDERLINE,
+								  "text", FABULOR_CHANNEL_COLUMN_NAME,
+								  "attributes", FABULOR_CHANNEL_COLUMN_ATTRIBUTES,
+								  "underline", FABULOR_CHANNEL_COLUMN_UNDERLINE,
 								  NULL);
 	gtk_tree_view_column_set_expand (col, TRUE);
 	gtk_tree_view_column_set_sizing (col, GTK_TREE_VIEW_COLUMN_GROW_ONLY);
@@ -233,14 +244,17 @@ cv_tree_postinit (chanview *cv)
 }
 
 static void *
-cv_tree_add (chanview *cv, chan *ch, char *name, GtkTreeIter *parent)
+cv_tree_add (chanview *cv, chan *ch, char *name, chan *parent)
 {
 	GtkTreePath *path;
+	GtkTreeIter parent_iter;
 
-	if (parent)
+	if (parent && fabulor_channel_model_get_iter (cv->model, parent,
+		&parent_iter))
 	{
 		/* expand the parent node */
-		path = gtk_tree_model_get_path (GTK_TREE_MODEL (cv->store), parent);
+		path = gtk_tree_model_get_path (
+			fabulor_channel_model_get_tree_model (cv->model), &parent_iter);
 		if (path)
 		{
 			gtk_tree_view_expand_row (((treeview *)cv)->tree, path, FALSE);
@@ -263,12 +277,15 @@ cv_tree_focus (chan *ch)
 	GtkTreeModel *model = gtk_tree_view_get_model (tree);
 	GtkTreePath *path;
 	GtkTreeIter parent;
+	GtkTreeIter iter;
 	GdkRectangle cell_rect;
 	GdkRectangle vis_rect;
 	gint dest_y;
 
 	/* expand the parent node */
-	if (gtk_tree_model_iter_parent (model, &parent, &ch->iter))
+	if (!fabulor_channel_model_get_iter (ch->cv->model, ch, &iter))
+		return;
+	if (gtk_tree_model_iter_parent (model, &parent, &iter))
 	{
 		path = gtk_tree_model_get_path (model, &parent);
 		if (path)
@@ -283,7 +300,7 @@ cv_tree_focus (chan *ch)
 		}
 	}
 
-	path = gtk_tree_model_get_path (model, &ch->iter);
+	path = gtk_tree_model_get_path (model, &iter);
 	if (path)
 	{
 		/* This full section does what
@@ -338,50 +355,17 @@ cv_tree_remove (chan *ch)
 }
 
 static void
-move_row (chan *ch, int delta, GtkTreeIter *parent)
-{
-	GtkTreeStore *store = ch->cv->store;
-	GtkTreeIter *src = &ch->iter;
-	GtkTreeIter dest = ch->iter;
-	GtkTreePath *dest_path;
-
-	if (delta < 0) /* down */
-	{
-		if (gtk_tree_model_iter_next (GTK_TREE_MODEL (store), &dest))
-			gtk_tree_store_swap (store, src, &dest);
-		else	/* move to top */
-			gtk_tree_store_move_after (store, src, NULL);
-
-	} else
-	{
-		dest_path = gtk_tree_model_get_path (GTK_TREE_MODEL (store), &dest);
-		if (gtk_tree_path_prev (dest_path))
-		{
-			gtk_tree_model_get_iter (GTK_TREE_MODEL (store), &dest, dest_path);
-			gtk_tree_store_swap (store, src, &dest);
-		} else
-		{	/* move to bottom */
-			gtk_tree_store_move_before (store, src, NULL);
-		}
-
-		gtk_tree_path_free (dest_path);
-	}
-}
-
-static void
 cv_tree_move (chan *ch, int delta)
 {
-	GtkTreeIter parent;
-
-	/* do nothing if this is a server row */
-	if (gtk_tree_model_iter_parent (GTK_TREE_MODEL (ch->cv->store), &parent, &ch->iter))
-		move_row (ch, delta, &parent);
+	(void) ch;
+	(void) delta;
 }
 
 static void
 cv_tree_move_family (chan *ch, int delta)
 {
-	move_row (ch, delta, NULL);
+	(void) ch;
+	(void) delta;
 }
 
 static void
@@ -407,15 +391,7 @@ cv_tree_rename (chan *ch, char *name)
 static chan *
 cv_tree_get_parent (chan *ch)
 {
-	chan *parent_ch = NULL;
-	GtkTreeIter parent;
-
-	if (gtk_tree_model_iter_parent (GTK_TREE_MODEL (ch->cv->store), &parent, &ch->iter))
-	{
-		gtk_tree_model_get (GTK_TREE_MODEL (ch->cv->store), &parent, COL_CHAN, &parent_ch, -1);
-	}
-
-	return parent_ch;
+	return fabulor_channel_model_get_parent (ch->cv->model, ch);
 }
 
 static gboolean
@@ -423,13 +399,17 @@ cv_tree_is_collapsed (chan *ch)
 {
 	chan *parent = cv_tree_get_parent (ch);
 	GtkTreePath *path = NULL;
+	GtkTreeIter parent_iter;
 	gboolean ret;
 
 	if (parent == NULL)
 		return FALSE;
 
-	path = gtk_tree_model_get_path (GTK_TREE_MODEL (parent->cv->store),
-											  &parent->iter);
+	if (!fabulor_channel_model_get_iter (parent->cv->model, parent,
+		&parent_iter))
+		return FALSE;
+	path = gtk_tree_model_get_path (
+		fabulor_channel_model_get_tree_model (parent->cv->model), &parent_iter);
 	ret = !gtk_tree_view_row_expanded (((treeview *)parent->cv)->tree, path);
 	gtk_tree_path_free (path);
 	

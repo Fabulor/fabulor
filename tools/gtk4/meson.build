@@ -50,6 +50,7 @@ probe = executable(
   'fabulor-gtk4-probe',
   'probe.c',
   '../../src/fe-gtk/gtk4-list-models.c',
+  '../../src/fe-gtk/channel-model.c',
   '../../src/fe-gtk/notify-list.c',
   '../../src/fe-gtk/user-list-model.c',
   '../../src/fe-gtk/user-list-view.c',

@@ -146,6 +146,9 @@
     <ClCompile Include="chanview.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="channel-model.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
     <ClCompile Include="custom-list.c">
       <Filter>Source Files</Filter>
     </ClCompile>

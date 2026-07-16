@@ -15,6 +15,7 @@ zoitechat_gtk_sources = [
   'banlist.c',
   'chanlist.c',
   'chanview.c',
+  'channel-model.c',
   'custom-list.c',
   'dccgui.c',
   'editlist.c',
