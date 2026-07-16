@@ -16,16 +16,6 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301, USA
  */
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <fcntl.h>
-#include <time.h>
-
-#ifndef WIN32
-#include <unistd.h>
-#endif
-
 #include "fe-gtk.h"
 #include "theme/theme-manager.h"
 
@@ -37,6 +27,7 @@
 #include "gtkutil.h"
 #include "gtk-compat.h"
 #include "maingui.h"
+#include "ban-list.h"
 #include "banlist.h"
 
 #define ICON_BANLIST_REMOVE "list-remove"
@@ -88,28 +79,6 @@ static mode_info modes[MODE_CT] = {
 		supports_quiet
 	}
 };
-
-/* model for the banlist tree */
-enum
-{
-	TYPE_COLUMN,
-	MASK_COLUMN,
-	FROM_COLUMN,
-	DATE_COLUMN,
-	N_COLUMNS
-};
-
-static GtkTreeView *
-get_view (struct session *sess)
-{
-	return GTK_TREE_VIEW (sess->res->banlist->treeview);
-}
-
-static GtkListStore *
-get_store (struct session *sess)
-{
-	return GTK_LIST_STORE (gtk_tree_view_get_model (get_view (sess)));
-}
 
 static void
 supports_bans (banlist_info *banl, int i)
@@ -210,8 +179,6 @@ fe_add_ban_list (struct session *sess, char *mask, char *who, char *when, int rp
 {
 	banlist_info *banl = sess->res->banlist;
 	int i;
-	GtkListStore *store;
-	GtkTreeIter iter;
 
 	if (!banl)
 		return FALSE;
@@ -226,13 +193,9 @@ fe_add_ban_list (struct session *sess, char *mask, char *who, char *when, int rp
 	}
 	if (banl->pending & 1<<i)
 	{
-		store = get_store (sess);
-		gtk_list_store_append (store, &iter);
-
-		gtk_list_store_set (store, &iter, TYPE_COLUMN, _(modes[i].type), MASK_COLUMN, mask,
-						FROM_COLUMN, who, DATE_COLUMN, when, -1);
-
-		banl->line_ct++;
+		fabulor_ban_list_append (banl->list, (guint) i, _(modes[i].type),
+			mask, who, when);
+		banl->line_ct = (int) fabulor_ban_list_get_n_rows (banl->list);
 		return TRUE;
 	}
 	else return FALSE;
@@ -332,96 +295,89 @@ fe_ban_list_end (struct session *sess, int rplcode)
 }
 
 static void
-banlist_copyentry (GtkWidget *menuitem, GtkTreeView *view)
+banlist_copyentry (GtkWidget *item, banlist_info *banl)
 {
-	GtkTreeModel *model;
-	GtkTreeSelection *sel;
-	GtkTreeIter iter;
-	GValue mask;
-	GValue from;
-	GValue date;
 	char *str;
 
-	memset (&mask, 0, sizeof (mask));
-	memset (&from, 0, sizeof (from));
-	memset (&date, 0, sizeof (date));
-	
-	/* get selection (which should have been set on click)
-	 * and temporarily switch to single mode to get selected iter */
-	sel = gtk_tree_view_get_selection (view);
-	gtk_tree_selection_set_mode (sel, GTK_SELECTION_SINGLE);
-	if (gtk_tree_selection_get_selected (sel, &model, &iter))
+	if (GPOINTER_TO_INT (g_object_get_data (G_OBJECT (item),
+		"fabulor-ban-copy-entry")))
+		str = fabulor_ban_list_dup_selected_entry (banl->list,
+			_("%s on %s by %s"));
+	else
+		str = fabulor_ban_list_dup_selected_mask (banl->list);
+	if (str && *str)
+		gtkutil_copy_to_clipboard (item, str);
+	g_free (str);
+#if GTK_MAJOR_VERSION >= 4
 	{
-		gtk_tree_model_get_value (model, &iter, MASK_COLUMN, &mask);
-		gtk_tree_model_get_value (model, &iter, FROM_COLUMN, &from);
-		gtk_tree_model_get_value (model, &iter, DATE_COLUMN, &date);
-
-		/* poor way to get which is selected but it works */
-		if (strcmp (_("Copy mask"), gtk_menu_item_get_label (GTK_MENU_ITEM(menuitem))) == 0)
-			str = g_value_dup_string (&mask);
-		else
-			str = g_strdup_printf (_("%s on %s by %s"), g_value_get_string (&mask),
-								g_value_get_string (&date), g_value_get_string (&from));
-
-		if (str[0] != 0)
-			gtkutil_copy_to_clipboard (menuitem, str);
-			
-		g_value_unset (&mask);
-		g_value_unset (&from);
-		g_value_unset (&date);
-		g_free (str);
+		GtkWidget *popover = gtk_widget_get_ancestor (item, GTK_TYPE_POPOVER);
+		if (popover)
+			gtk_popover_popdown (GTK_POPOVER (popover));
 	}
-	gtk_tree_selection_set_mode (sel, GTK_SELECTION_MULTIPLE);
+#endif
 }
 
-static gboolean
-banlist_button_pressed (GtkWidget *wid, GdkEventButton *event, gpointer userdata)
+#if GTK_MAJOR_VERSION >= 4
+static void
+banlist_popover_closed (GtkPopover *popover, gpointer user_data)
 {
-	GtkTreePath *path;
+	(void) user_data;
+	gtk_widget_unparent (GTK_WIDGET (popover));
+}
+#endif
+
+static gboolean
+banlist_button_pressed (GtkWidget *wid, guint button, guint n_press,
+	gdouble x, gdouble y, GdkModifierType state, gpointer userdata)
+{
+	banlist_info *banl = userdata;
 	GtkWidget *menu, *maskitem, *allitem;
 
-	/* Check for right click */
-	if (event->type == GDK_BUTTON_PRESS && event->button == 3)
+	(void) n_press;
+	(void) state;
+
+	if (button == 3 && fabulor_ban_list_select_at_point (banl->list, x, y))
 	{
-		if (gtk_tree_view_get_path_at_pos (GTK_TREE_VIEW (wid), event->x, event->y,
-												&path, NULL, NULL, NULL))
-		{
-			/* Must set the row active for use in callback */
-			gtk_tree_view_set_cursor (GTK_TREE_VIEW(wid), path, NULL, FALSE);
-			gtk_tree_path_free (path);
-			
+#if GTK_MAJOR_VERSION >= 4
+		GtkWidget *box = gtk_box_new (GTK_ORIENTATION_VERTICAL, 0);
+		GdkRectangle point = { (gint) x, (gint) y, 1, 1 };
+		menu = gtk_popover_new ();
+		maskitem = gtk_button_new_with_label (_("Copy mask"));
+		allitem = gtk_button_new_with_label (_("Copy entry"));
+		g_object_set_data (G_OBJECT (allitem), "fabulor-ban-copy-entry",
+			GINT_TO_POINTER (TRUE));
+		g_signal_connect (maskitem, "clicked", G_CALLBACK (banlist_copyentry), banl);
+		g_signal_connect (allitem, "clicked", G_CALLBACK (banlist_copyentry), banl);
+		fabulor_gtk_box_append (GTK_BOX (box), maskitem, FALSE, FALSE, 0);
+		fabulor_gtk_box_append (GTK_BOX (box), allitem, FALSE, FALSE, 0);
+		fabulor_gtk_popover_set_child (GTK_POPOVER (menu), box);
+		gtk_widget_set_parent (menu, wid);
+		gtk_popover_set_pointing_to (GTK_POPOVER (menu), &point);
+		g_signal_connect (menu, "closed", G_CALLBACK (banlist_popover_closed), NULL);
+		gtk_popover_popup (GTK_POPOVER (menu));
+#else
 			menu = gtk_menu_new ();
 			maskitem = gtk_menu_item_new_with_label (_("Copy mask"));
 			allitem = gtk_menu_item_new_with_label (_("Copy entry"));
-			g_signal_connect (maskitem, "activate", G_CALLBACK(banlist_copyentry), wid);
-			g_signal_connect (allitem, "activate", G_CALLBACK(banlist_copyentry), wid);
+			g_object_set_data (G_OBJECT (allitem), "fabulor-ban-copy-entry",
+				GINT_TO_POINTER (TRUE));
+			g_signal_connect (maskitem, "activate", G_CALLBACK (banlist_copyentry), banl);
+			g_signal_connect (allitem, "activate", G_CALLBACK (banlist_copyentry), banl);
 			gtk_menu_shell_append (GTK_MENU_SHELL(menu), maskitem);
 			gtk_menu_shell_append (GTK_MENU_SHELL(menu), allitem);
 			gtk_widget_show_all (menu);
-			
-			gtk_menu_popup_at_pointer (GTK_MENU (menu), (GdkEvent *) event);
-		}
-		
+			gtk_menu_popup_at_pointer (GTK_MENU (menu), NULL);
+#endif
 		return TRUE;
 	}
-	
 	return FALSE;
 }
 
 static void
-banlist_select_changed (GtkWidget *item, banlist_info *banl)
+banlist_select_changed (guint selected, gpointer user_data)
 {
-	GList *list;
-
-	if (banl->line_ct == 0)
-		banl->select_ct = 0;
-	else
-	{
-		list = gtk_tree_selection_get_selected_rows (GTK_TREE_SELECTION (item), NULL);
-		banl->select_ct = g_list_length (list);
-		g_list_foreach (list, (GFunc) gtk_tree_path_free, NULL);
-		g_list_free (list);
-	}
+	banlist_info *banl = user_data;
+	banl->select_ct = (int) selected;
 	banlist_sensitize (banl);
 }
 
@@ -439,15 +395,12 @@ banlist_do_refresh (banlist_info *banl)
 
 	if (sess->server->connected)
 	{
-		GtkListStore *store;
-
 		g_snprintf (tbuf, sizeof tbuf, "Ban List (%s, %s) - %s",
 						sess->channel, sess->server->servername, _(DISPLAY_NAME));
 		mg_set_title (banl->window, tbuf);
 
-		store = get_store (sess);
-		gtk_list_store_clear (store);
 		banl->line_ct = 0;
+		fabulor_ban_list_clear (banl->list);
 		banl->pending = banl->checked;
 		if (banl->pending)
 		{
@@ -478,58 +431,28 @@ banlist_refresh (GtkWidget * wid, banlist_info *banl)
 }
 
 static int
-banlist_unban_inner (gpointer none, banlist_info *banl, int mode_num)
+banlist_unban_inner (banlist_info *banl, int mode_num, gboolean selected)
 {
 	session *sess = banl->sess;
-	GtkTreeModel *model;
-	GtkTreeSelection *sel;
-	GtkTreeIter iter;
 	char tbuf[2048];
-	char **masks, *mask, *type;
-	int num_sel, i;
+	GPtrArray *masks = fabulor_ban_list_dup_masks (banl->list,
+		(guint) mode_num, selected);
+	int count = (int) masks->len;
 
-
-	model = GTK_TREE_MODEL (get_store (sess));
-	sel = gtk_tree_view_get_selection (get_view (sess));
-
-	if (!gtk_tree_model_get_iter_first (model, &iter))
-		return 0;
-
-	masks = g_new (char *, banl->line_ct);
-	num_sel = 0;
-	do
-	{
-		if (gtk_tree_selection_iter_is_selected (sel, &iter))
-		{
-			gtk_tree_model_get (model, &iter, TYPE_COLUMN, &type, MASK_COLUMN, &mask, -1);
-
-			if (strcmp (_(modes[mode_num].type), type) != 0)
-				continue;
-
-			masks[num_sel++] = g_strdup (mask);
-			g_free (mask);
-			g_free (type);
-		}
-	}
-	while (gtk_tree_model_iter_next (model, &iter));
-
-	if (num_sel)
-		send_channel_modes (sess, tbuf, masks, 0, num_sel, '-', modes[mode_num].letter, 0);
-
-	for (i=0; i < num_sel; i++)
-		g_free (masks[i]);
-	g_free (masks);
-
-	return num_sel;
+	if (count)
+		send_channel_modes (sess, tbuf, (char **) masks->pdata, 0, count, '-',
+			modes[mode_num].letter, 0);
+	g_ptr_array_unref (masks);
+	return count;
 }
 
 static void
-banlist_unban (GtkWidget * wid, banlist_info *banl)
+banlist_remove_rows (banlist_info *banl, gboolean selected)
 {
 	int i, num = 0;
 
 	for (i = 0; i < MODE_CT; i++)
-		num += banlist_unban_inner (wid, banl, i);
+		num += banlist_unban_inner (banl, i, selected);
 
 	if (num < 1)
 	{
@@ -541,17 +464,22 @@ banlist_unban (GtkWidget * wid, banlist_info *banl)
 }
 
 static void
+banlist_unban (GtkWidget *wid, banlist_info *banl)
+{
+	(void) wid;
+	banlist_remove_rows (banl, TRUE);
+}
+
+static void
 banlist_clear_cb (GtkDialog *dialog, gint response, gpointer data)
 {
 	banlist_info *banl = data;
-	GtkTreeSelection *sel;
 
 	fabulor_gtk_window_destroy (GTK_WINDOW (dialog));
 
 	if (response == GTK_RESPONSE_OK)
 	{
-		sel = gtk_tree_view_get_selection (get_view (banl->sess));
-		gtk_tree_selection_select_all (sel);
+		fabulor_ban_list_select_all (banl->list);
 		banlist_unban (NULL, banl);
 	}
 }
@@ -573,47 +501,12 @@ banlist_clear (GtkWidget * wid, banlist_info *banl)
 }
 
 static void
-banlist_add_selected_cb (GtkTreeModel *model, GtkTreePath *path, GtkTreeIter *iter, gpointer data)
-{
-	GSList **lp = data;
-	GtkTreeIter *copy;
-
-	if (lp == NULL)
-	{
-		return;
-	}
-
-	copy = g_new (GtkTreeIter, 1);
-	*copy = *iter;
-
-	*lp = g_slist_append (*lp, copy);
-}
-
-static void
 banlist_crop (GtkWidget * wid, banlist_info *banl)
 {
-	session *sess = banl->sess;
-	GtkTreeSelection *select;
-	GSList *list = NULL, *node;
-	int num_sel;
-
-	select = gtk_tree_view_get_selection (get_view (sess));
-	gtk_tree_selection_selected_foreach (select, banlist_add_selected_cb,
-	                                     &list);
-
-	num_sel = g_slist_length (list);
-	if (num_sel)
-	{
-		gtk_tree_selection_select_all (select);
-
-		for (node = list; node; node = node->next)
-			gtk_tree_selection_unselect_iter (select, node->data);
-
-		g_slist_foreach (list, (GFunc)g_free, NULL);
-		g_slist_free (list);
-
-		banlist_unban (NULL, banl);
-	} else
+	(void) wid;
+	if (fabulor_ban_list_get_n_selected (banl->list) > 0)
+		banlist_remove_rows (banl, FALSE);
+	else
 		fe_message (_("You must select some bans."), FE_MSG_ERROR);
 }
 
@@ -638,124 +531,6 @@ banlist_toggle (GtkWidget *item, gpointer data)
 	}
 }
 
-/* NOTICE:  The official strptime() is not available on all platforms so
- * I've implemented a special version here.  The official version is
- * vastly more general than this:  it uses locales for weekday and month
- * names and its second arg is a format character-string.  This special
- * version depends on the format returned by ctime(3) whose manpage
- * says it returns:
- *     "a null-terminated string of the form "Wed Jun 30 21:49:08 1993\n"
- *
- * If the real strpftime() comes available, use this format string:
- *		#define DATE_FORMAT "%a %b %d %T %Y"
- */
-static void
-banlist_strptime (char *ti, struct tm *tm)
-{
-	/* Expect something like "Sat Mar 16 21:24:27 2013" */
-	static char *mon[] = { "Jan", "Feb", "Mar", "Apr", "May", "Jun",
-								  "Jul", "Aug", "Sep", "Oct", "Nov", "Dec", NULL };
-	int M = -1, d = -1, h = -1, m = -1, s = -1, y = -1;
-
-	if (*ti == 0)
-	{
-		memset (tm, 0, sizeof *tm);
-		return;
-	}
-	/* No need to supply tm->tm_wday; mktime() doesn't read it */
-	ti += 4;
-	while ((mon[++M]))
-		if (strncmp (ti, mon[M], 3) == 0)
-			break;
-	ti += 4;
-
-	d = strtol (ti, &ti, 10);
-	h = strtol (++ti, &ti, 10);
-	m = strtol (++ti, &ti, 10);
-	s = strtol (++ti, &ti, 10);
-	y = strtol (++ti, NULL, 10) - 1900;
-
-	tm->tm_sec = s;
-	tm->tm_min = m;
-	tm->tm_hour = h;
-	tm->tm_mday = d;
-	tm->tm_mon = M;
-	tm->tm_year = y;
-}
-
-gint
-banlist_date_sort (GtkTreeModel *model, GtkTreeIter *a, GtkTreeIter *b, gpointer user_data)
-{
-	struct tm tm1, tm2;
-	time_t t1, t2;
-	char *time1, *time2;
-
-	gtk_tree_model_get(model, a, DATE_COLUMN, &time1, -1);
-	gtk_tree_model_get(model, b, DATE_COLUMN, &time2, -1);
-	banlist_strptime (time1, &tm1);
-	banlist_strptime (time2, &tm2);
-	t1 = mktime (&tm1);
-	t2 = mktime (&tm2);
-
-	if (t1 < t2) return 1;
-	if (t1 == t2) return 0;
-	return -1;
-}
-
-static GtkWidget *
-banlist_treeview_new (GtkWidget *box, banlist_info *banl)
-{
-	GtkListStore *store;
-	GtkWidget *view;
-	GtkTreeSelection *select;
-	GtkTreeViewColumn *col;
-	GtkTreeSortable *sortable;
-
-	store = gtk_list_store_new (N_COLUMNS, G_TYPE_STRING, G_TYPE_STRING,
-										 G_TYPE_STRING, G_TYPE_STRING);
-	g_return_val_if_fail (store != NULL, NULL);
-
-	sortable = GTK_TREE_SORTABLE (store);
-	gtk_tree_sortable_set_sort_func (sortable, DATE_COLUMN, banlist_date_sort, GINT_TO_POINTER (DATE_COLUMN), NULL);
-
-	view = gtkutil_treeview_new (GTK_BOX (box), GTK_TREE_MODEL (store), NULL,
-										  TYPE_COLUMN, _("Type"),
-										  MASK_COLUMN, _("Mask"),
-										  FROM_COLUMN, _("From"),
-										  DATE_COLUMN, _("Date"), -1);
-	g_signal_connect (G_OBJECT (view), "button-press-event", G_CALLBACK (banlist_button_pressed), NULL);
-
-	col = gtk_tree_view_get_column (GTK_TREE_VIEW (view), MASK_COLUMN);
-	gtk_tree_view_column_set_alignment (col, 0.5);
-	gtk_tree_view_column_set_min_width (col, 100);
-	gtk_tree_view_column_set_sort_column_id (col, MASK_COLUMN);
-	gtk_tree_view_column_set_sizing (col, GTK_TREE_VIEW_COLUMN_AUTOSIZE);
-	gtk_tree_view_column_set_resizable (col, TRUE);
-
-	col = gtk_tree_view_get_column (GTK_TREE_VIEW (view), TYPE_COLUMN);
-	gtk_tree_view_column_set_alignment (col, 0.5);
-	gtk_tree_view_column_set_sort_column_id (col, TYPE_COLUMN);
-
-	col = gtk_tree_view_get_column (GTK_TREE_VIEW (view), FROM_COLUMN);
-	gtk_tree_view_column_set_alignment (col, 0.5);
-	gtk_tree_view_column_set_sort_column_id (col, FROM_COLUMN);
-	gtk_tree_view_column_set_sizing (col, GTK_TREE_VIEW_COLUMN_AUTOSIZE);
-	gtk_tree_view_column_set_resizable (col, TRUE);
-
-	col = gtk_tree_view_get_column (GTK_TREE_VIEW (view), DATE_COLUMN);
-	gtk_tree_view_column_set_alignment (col, 0.5);
-	gtk_tree_view_column_set_sort_column_id (col, DATE_COLUMN);
-	gtk_tree_view_column_set_sizing (col, GTK_TREE_VIEW_COLUMN_AUTOSIZE);
-	gtk_tree_view_column_set_resizable (col, TRUE);
-
-	select = gtk_tree_view_get_selection (GTK_TREE_VIEW (view));
-	g_signal_connect (G_OBJECT (select), "changed", G_CALLBACK (banlist_select_changed), banl);
-	gtk_tree_selection_set_mode (select, GTK_SELECTION_MULTIPLE);
-
-	gtk_widget_show (view);
-	return view;
-}
-
 static void
 banlist_closegui (GtkWidget *wid, banlist_info *banl)
 {
@@ -763,6 +538,7 @@ banlist_closegui (GtkWidget *wid, banlist_info *banl)
 
 	if (sess->res->banlist == banl)
 	{
+		fabulor_ban_list_free (banl->list);
 		g_free (banl);
 		sess->res->banlist = NULL;
 	}
@@ -820,8 +596,18 @@ banlist_opengui (struct session *sess)
 	gtk_container_set_border_width (GTK_CONTAINER (banl->window), 3);
 	gtk_box_set_spacing (GTK_BOX (vbox), 3);
 
-	/* create banlist view */
-	banl->treeview = banlist_treeview_new (vbox, banl);
+	banl->list = fabulor_ban_list_new (banlist_select_changed, banl);
+	if (!banl->list)
+	{
+		fe_message (_("Failed to create the Ban List."), FE_MSG_ERROR);
+		fabulor_gtk_window_destroy (GTK_WINDOW (banl->window));
+		return;
+	}
+	{
+		GtkWidget *view = fabulor_ban_list_create_view (banl->list,
+			GTK_BOX (vbox), _("Type"), _("Mask"), _("From"), _("Date"));
+		fabulor_gtk_widget_on_multi_click (view, banlist_button_pressed, banl);
+	}
 
 	table = banlist_table_new ();
 	fabulor_gtk_box_append (GTK_BOX (vbox), table, FALSE, FALSE, 0);

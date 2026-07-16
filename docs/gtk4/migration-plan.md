@@ -778,6 +778,18 @@ Historical flag values, including DCC bit 128 and hidden `IG_NOSAVE` bit 64,
 remain intact across edits. The strict probe covers accepted and rejected
 renames, callbacks, flag preservation, snapshots, clear, and cleanup.
 
+Ban List pass 18 (2026-07-17): the Ban List now has one cross-version owner for
+numeric mode identity, mask, setter, display date, parsed timestamp, and
+multi-selection state. GTK4 uses typed rows, the shared flat model stack,
+`GtkMultiSelection`, four sortable `GtkColumnView` factories, and coordinate
+hit-testing. GTK3 retains its shipping list-store presentation inside the
+owner. Refresh population, row and selection counts, right-click selection,
+copy mask/entry, selected removal, inverse crop removal, and confirmed clear no
+longer expose tree models, paths, iterators, or selections to `banlist.c`.
+Mode-filtered command snapshots use numeric Ban, Exempt, Invite, and Quiet
+identity instead of translated type labels. The strict probe covers mixed
+selection, mode filtering, inversion, select-all, callbacks, clear, and cleanup.
+
 Primary surfaces:
 
 - server list and editor

@@ -1,8 +1,8 @@
 # GTK4 List Model Architecture
 
-Status: Stage 5 pass 17 conversion contract
+Status: Stage 5 pass 18 conversion contract
 
-Date: 2026-07-16
+Date: 2026-07-17
 
 ## Purpose
 
@@ -96,6 +96,8 @@ navigation order.
      limit enforcement, single selection, and coordinate-based activation.
    - [x] Convert the Ignore List to a typed cross-version editable owner with
      mask sorting, flag toggles, and selection-safe add/delete/clear mutations.
+   - [x] Convert the Ban List to a typed cross-version multi-selection owner
+     with numeric mode identity, sortable dates, and batch action snapshots.
 5. [ ] Remove the final GTK3 tree-model, cell-renderer, iterator, and row-reference
    assumptions only after all owning surfaces have moved.
 
@@ -274,6 +276,16 @@ Rename validation, flag synchronization, add/delete/clear, next-row selection,
 and mask snapshots cross typed callbacks and values; `ignoregui.c` no longer
 handles toolkit rows. The strict probe verifies historical flag values, hidden
 flag preservation, accepted/rejected renames, callbacks, snapshots, and cleanup.
+
+The Ban List owner stores numeric server-mode identity alongside immutable
+type, mask, setter, date, and parsed timestamp values. GTK4 uses typed rows,
+`GtkMultiSelection`, four sortable `GtkColumnView` factories, and coordinate
+hit-testing; GTK3 keeps its list store and tree selection private. Remove,
+crop, confirmed clear, contextual copy, row counts, and selection sensitivity
+now consume typed owner methods. Per-mode snapshots no longer compare translated
+display labels, preserving Ban, Exempt, Invite, and Quiet dispatch under
+localization. The strict probe verifies mixed selection, mode-filtered remove
+and crop snapshots, inversion, select-all, clear, callbacks, and cleanup.
 
 ## Executable Contract
 

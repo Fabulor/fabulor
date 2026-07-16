@@ -2186,6 +2186,46 @@ Scope: Ignore List model/view ownership and editing workflows. Common ignore
 matching, counters, command behavior, persistence format, and confirmation text
 are unchanged.
 
+### PR: #81 - GTK4 Stage 5 Ban List
+
+Date: 2026-07-17
+
+Migration stage: 5, Ban List pass 18
+
+Files/workflows converted: four-mode immutable rows; multi-selection; sorting;
+copy; selected remove; inverse crop; confirmed clear; refresh population
+
+GTK version: 4.22.4
+
+GLib version: 2.88.0
+
+Build configuration: MSVC x64 Release and strict GTK4 probe boundary
+
+Automated checks:
+
+- [x] production GTK3 frontend compiles and links with 0 warnings and 0 errors
+- [x] strict GTK4 probe compiles and executes the Ban List owner
+- [x] mixed multi-selection, selection callbacks, inversion, and select-all pass
+- [x] numeric mode-filtered remove and crop snapshots pass
+- [x] row counts, clear, and cleanup checks pass
+- [x] `banlist.c` contains no direct tree-model, path, iterator, cell-renderer, list-store, or tree-selection dependency
+- [x] production and strict build definitions include the new owner
+- [x] GTK4 dependency validator tests remain 8/8
+- [x] repository diff whitespace validation passes
+
+Manual checks:
+
+- [ ] shipping GTK3 Ban, Exempt, Invite, and Quiet refresh and capability toggles
+- [ ] Type, Mask, From, and Date sorting with mixed mode rows
+- [ ] multi-select Remove, Crop, confirmed/cancelled Clear, and post-action refresh
+- [ ] Copy mask and Copy entry context actions on sorted rows
+- [ ] operator/non-operator and disconnected sensitivity states
+- [ ] GTK4 keyboard multi-selection, context popover placement, sorting, and focus await frontend cutover
+
+Scope: Ban List model/view ownership and row interaction. Server capability
+detection, IRC replies, mode command batching, permission checks, titles, and
+confirmation text are unchanged.
+
 ## Per-PR Record Template
 
 Copy this section for each GTK4 PR:
