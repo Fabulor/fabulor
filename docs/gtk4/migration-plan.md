@@ -685,6 +685,17 @@ no longer enumerate GTK children or rediscover families through widget data.
 Family-box construction, close presentation, animated scrolling presentation,
 keyboard handling, and drag/drop remain for the grouped-tab owner conversion.
 
+Grouped-tab family-owner pass 10 (2026-07-16): every tab view now owns an
+explicit map from authoritative model root identity to its family box and
+separator. Root insertion creates one record; child insertion resolves its
+model parent and uses the current sibling position instead of comparing widget
+userdata. Child removal leaves the root family intact, root removal destroys
+and unregisters the emptied family after reparenting, and view cleanup releases
+all records across orientation and implementation changes. Family discovery,
+empty-box pruning, and sorted insertion no longer enumerate GTK children or
+store family identity on GTK widgets. Close presentation, scroll geometry,
+keyboard handling, and drag/drop remain for later grouped-tab passes.
+
 Primary surfaces:
 
 - server list and editor

@@ -20,17 +20,27 @@
 /* file included in chanview.c */
 
 typedef struct _tab_scroll_animation tab_scroll_animation;
+typedef struct _tab_family tab_family;
 
 typedef struct
 {
 	GtkWidget *outer;	/* outer box */
 	GtkWidget *inner;	/* inner box */
+	GHashTable *families;	/* root chan * -> tab_family */
 	tab_scroll_animation *backward_animation;
 	tab_scroll_animation *forward_animation;
 	int backward_is_moving;
 	int forward_is_moving;
 	int ignore_toggle;
 } tabview;
+
+G_STATIC_ASSERT (sizeof (tabview) <= sizeof (((chanview *) 0)->implscratch));
+
+struct _tab_family
+{
+	GtkWidget *box;
+	GtkWidget *separator;
+};
 
 static void chanview_populate (chanview *cv);
 
@@ -49,11 +59,7 @@ struct _tab_scroll_animation
 /* userdata for gobjects used here:
  *
  * tab (togglebuttons inside boxes):
- *   "u" userdata passed to tab-focus callback function (sess)
  *   "c" the tab's (chan *)
- *
- * box (family box)
- *   "f" family
  *
  */
 
@@ -301,6 +307,7 @@ tab_scroll_cb (GtkWidget *widget, gdouble dx, gdouble dy, gpointer cv)
 static void
 cv_tabs_init (chanview *cv)
 {
+	tabview *tabs = (tabview *) cv;
 	GtkWidget *box;
 	GtkWidget *viewport;
 	GtkWidget *outer;
@@ -313,7 +320,7 @@ cv_tabs_init (chanview *cv)
 	{
 		outer = gtkutil_box_new (GTK_ORIENTATION_HORIZONTAL, FALSE, 0);
 	}
-	((tabview *)cv)->outer = outer;
+	tabs->outer = outer;
 	gtk_widget_show (outer);
 
 	viewport = gtk_scrolled_window_new (0, 0);
@@ -340,7 +347,9 @@ cv_tabs_init (chanview *cv)
 	{
 		box = gtkutil_box_new (GTK_ORIENTATION_HORIZONTAL, FALSE, 0);
 	}
-	((tabview *)cv)->inner = box;
+	tabs->inner = box;
+	tabs->families = g_hash_table_new_full (g_direct_hash, g_direct_equal,
+		NULL, g_free);
 	gtk_container_add (GTK_CONTAINER (viewport), box);
 	gtk_widget_show (box);
 
@@ -352,152 +361,64 @@ cv_tabs_postinit (chanview *cv)
 {
 }
 
-static void
-tab_add_sorted (chanview *cv, GtkWidget *box, GtkWidget *tab, chan *ch)
+static guint
+tab_model_position (chanview *cv, chan *parent, chan *ch)
 {
-	GList *list;
-	GtkWidget *child;
-	int i = 0;
-	void *b;
+	guint count = fabulor_channel_model_get_child_count (cv->model, parent);
+	guint position;
 
-	if (!cv->sorted)
-	{
-		fabulor_gtk_box_append (GTK_BOX (box), tab, FALSE, FALSE, 0);
-		gtk_widget_show (tab);
-		return;
-	}
-
-	/* sorting TODO:
-    *   - move tab if renamed (dialogs) */
-
-	/* userdata, passed to mg_tabs_compare() */
-	b = ch->userdata;
-
-	list = gtk_container_get_children (GTK_CONTAINER (box));
-	while (list)
-	{
-		child = list->data;
-		if (!GTK_IS_SEPARATOR (child))
-		{
-			void *a = g_object_get_data (G_OBJECT (child), "u");
-
-			if (ch->tag == 0 && cv->cb_compare (a, b) > 0)
-			{
-				fabulor_gtk_box_append (GTK_BOX (box), tab, FALSE, FALSE, 0);
-				gtk_box_reorder_child (GTK_BOX (box), tab, ++i);
-				gtk_widget_show (tab);
-				return;
-			}
-		}
-		i++;
-		list = list->next;
-	}
-
-	/* append */
-	fabulor_gtk_box_append (GTK_BOX (box), tab, FALSE, FALSE, 0);
-	gtk_box_reorder_child (GTK_BOX (box), tab, i);
-	gtk_widget_show (tab);
-}
-
-/* remove empty boxes and separators */
-
-static void
-cv_tabs_prune (chanview *cv)
-{
-	GList *boxes, *children;
-	GtkWidget *box, *inner;
-	GtkWidget *child;
-	int empty;
-
-	inner = ((tabview *)cv)->inner;
-	boxes = gtk_container_get_children (GTK_CONTAINER (inner));
-	while (boxes)
-	{
-		child = boxes->data;
-		box = child;
-		boxes = boxes->next;
-
-		/* check if the box is empty (except a vseperator) */
-		empty = TRUE;
-		children = gtk_container_get_children (GTK_CONTAINER (box));
-		while (children)
-		{
-			if (!GTK_IS_SEPARATOR ((GtkWidget *)children->data))
-			{
-				empty = FALSE;
-				break;
-			}
-			children = children->next;
-		}
-
-		if (empty)
-			gtk_widget_destroy (box);
-	}
+	g_return_val_if_fail (parent != NULL, 0);
+	for (position = 0; position < count; position++)
+		if (fabulor_channel_model_get_child_at (cv->model, parent,
+			position) == ch)
+			return position;
+	g_warn_if_reached ();
+	return count > 0 ? count - 1 : 0;
 }
 
 static void
-tab_add_real (chanview *cv, GtkWidget *tab, chan *ch)
+tab_add_real (chanview *cv, GtkWidget *tab, chan *ch, chan *parent)
 {
-	GList *boxes, *children;
-	GtkWidget *sep, *box, *inner;
-	GtkWidget *child;
-	int empty;
+	tabview *tabs = (tabview *) cv;
+	chan *root = parent ? parent : ch;
+	tab_family *family = g_hash_table_lookup (tabs->families, root);
 
-	inner = ((tabview *)cv)->inner;
-	/* see if a family for this tab already exists */
-	boxes = gtk_container_get_children (GTK_CONTAINER (inner));
-	while (boxes)
+	if (!family)
 	{
-		child = boxes->data;
-		box = child;
-
-		if (g_object_get_data (G_OBJECT (box), "f") == ch->family)
+		g_return_if_fail (parent == NULL);
+		family = g_new0 (tab_family, 1);
+		if (cv->vertical)
 		{
-			tab_add_sorted (cv, box, tab, ch);
-			gtk_widget_queue_resize (gtk_widget_get_parent(inner));
-			return;
+			family->box = gtkutil_box_new (GTK_ORIENTATION_VERTICAL, FALSE, 0);
+			family->separator = gtk_separator_new (GTK_ORIENTATION_HORIZONTAL);
 		}
-
-		boxes = boxes->next;
-
-		/* check if the box is empty (except a vseperator) */
-		empty = TRUE;
-		children = gtk_container_get_children (GTK_CONTAINER (box));
-		while (children)
+		else
 		{
-			if (!GTK_IS_SEPARATOR ((GtkWidget *)children->data))
-			{
-				empty = FALSE;
-				break;
-			}
-			children = children->next;
+			family->box = gtkutil_box_new (GTK_ORIENTATION_HORIZONTAL, FALSE, 0);
+			family->separator = gtk_separator_new (GTK_ORIENTATION_VERTICAL);
 		}
-
-		if (empty)
-			gtk_widget_destroy (box);
+		g_hash_table_insert (tabs->families, root, family);
+		fabulor_gtk_box_append (GTK_BOX (tabs->inner), family->box,
+			FALSE, FALSE, 0);
+		fabulor_gtk_box_append (GTK_BOX (family->box), tab,
+			FALSE, FALSE, 0);
+		fabulor_gtk_box_append (GTK_BOX (family->box), family->separator,
+			FALSE, FALSE, 4);
+		gtk_widget_show (family->separator);
+		gtk_widget_show (family->box);
 	}
+	else
+	{
+		guint position = tab_model_position (cv, parent, ch);
 
-	/* create a new family box */
-	if (cv->vertical)
-	{
-		/* vertical */
-		box = gtkutil_box_new (GTK_ORIENTATION_VERTICAL, FALSE, 0);
-		sep = gtk_separator_new (GTK_ORIENTATION_HORIZONTAL);
-	} else
-	{
-		/* horiz */
-		box = gtkutil_box_new (GTK_ORIENTATION_HORIZONTAL, FALSE, 0);
-		sep = gtk_separator_new (GTK_ORIENTATION_VERTICAL);
+		fabulor_gtk_box_append (GTK_BOX (family->box), tab,
+			FALSE, FALSE, 0);
+		/* The server tab occupies position zero in each family box. */
+		gtk_box_reorder_child (GTK_BOX (family->box), tab,
+			(gint) position + 1);
 	}
-
-	gtk_widget_show (sep);
-	fabulor_gtk_box_append (GTK_BOX (inner), box, FALSE, FALSE, 0);
-	g_object_set_data (G_OBJECT (box), "f", ch->family);
-	fabulor_gtk_box_append (GTK_BOX (box), tab, FALSE, FALSE, 0);
-	fabulor_gtk_box_append (GTK_BOX (box), sep, FALSE, FALSE, 4);
 	gtk_widget_show (tab);
-	gtk_widget_show (box);
-	gtk_widget_queue_resize (gtk_widget_get_parent(inner));
+	gtk_widget_queue_resize (gtk_widget_get_parent (tabs->inner));
 }
 
 static gboolean
@@ -643,8 +564,6 @@ cv_tabs_add (chanview *cv, chan *ch, char *name, chan *parent)
 	GtkWidget *close_button;
 	GtkWidget *close_icon;
 
-	(void) parent;
-
 	but = gtk_toggle_button_new ();
 	gtk_widget_set_name (but, "zoitechat-tab");
 	gtk_widget_set_size_request (but, -1, 14);
@@ -679,12 +598,11 @@ cv_tabs_add (chanview *cv, chan *ch, char *name, chan *parent)
 	/* for keyboard */
 	g_signal_connect (G_OBJECT (but), "toggled",
 						 	G_CALLBACK (tab_toggled_cb), ch);
-	g_object_set_data (G_OBJECT (but), "u", ch->userdata);
 	gtk_widget_show_all (hbox);
 	if (!prefs.hex_gui_tab_closebuttons)
 		gtk_widget_hide (close_button);
 
-	tab_add_real (cv, but, ch);
+	tab_add_real (cv, but, ch, parent);
 
 	return but;
 }
@@ -731,10 +649,21 @@ cv_tabs_move_focus (chanview *cv, gboolean relative, int num)
 static void
 cv_tabs_remove (chan *ch)
 {
+	tabview *tabs = (tabview *) ch->cv;
+	chan *parent = fabulor_channel_model_get_parent (ch->cv->model, ch);
+	tab_family *family;
+
 	gtk_widget_destroy (ch->impl);
 	ch->impl = NULL;
+	if (parent)
+		return;
 
-	cv_tabs_prune (ch->cv);
+	family = g_hash_table_lookup (tabs->families, ch);
+	if (family)
+	{
+		gtk_widget_destroy (family->box);
+		g_hash_table_remove (tabs->families, ch);
+	}
 }
 
 static void cv_tabs_move_family (chan *ch, int delta);
@@ -742,7 +671,9 @@ static void cv_tabs_move_family (chan *ch, int delta);
 static void
 cv_tabs_move (chan *ch, int delta)
 {
+	tabview *tabs = (tabview *) ch->cv;
 	chan *parent = fabulor_channel_model_get_parent (ch->cv->model, ch);
+	tab_family *family;
 	guint count;
 	guint position;
 
@@ -751,13 +682,16 @@ cv_tabs_move (chan *ch, int delta)
 		cv_tabs_move_family (ch, delta);
 		return;
 	}
+	family = g_hash_table_lookup (tabs->families, parent);
+	if (!family)
+		return;
 	count = fabulor_channel_model_get_child_count (ch->cv->model, parent);
 	for (position = 0; position < count; position++)
 		if (fabulor_channel_model_get_child_at (ch->cv->model, parent,
 			position) == ch)
 		{
 			/* The server tab occupies position zero in each family box. */
-			gtk_box_reorder_child (GTK_BOX (gtk_widget_get_parent (ch->impl)),
+			gtk_box_reorder_child (GTK_BOX (family->box),
 				ch->impl, (gint) position + 1);
 			return;
 		}
@@ -766,19 +700,22 @@ cv_tabs_move (chan *ch, int delta)
 static void
 cv_tabs_move_family (chan *ch, int delta)
 {
+	tabview *tabs = (tabview *) ch->cv;
 	chan *root = fabulor_channel_model_get_parent (ch->cv->model, ch);
+	tab_family *family;
 	guint count = fabulor_channel_model_get_root_count (ch->cv->model);
 	guint position;
-	GtkWidget *box;
 
 	(void) delta;
 	if (!root)
 		root = ch;
-	box = gtk_widget_get_parent (root->impl);
+	family = g_hash_table_lookup (tabs->families, root);
+	if (!family)
+		return;
 	for (position = 0; position < count; position++)
 		if (fabulor_channel_model_get_root_at (ch->cv->model, position) == root)
 		{
-			gtk_box_reorder_child (GTK_BOX (((tabview *) ch->cv)->inner), box,
+			gtk_box_reorder_child (GTK_BOX (tabs->inner), family->box,
 				(gint) position);
 			return;
 		}
@@ -791,8 +728,15 @@ cv_tabs_cleanup (chanview *cv)
 
 	tab_scroll_animation_cancel (&tabs->backward_animation);
 	tab_scroll_animation_cancel (&tabs->forward_animation);
+	if (tabs->families)
+	{
+		g_hash_table_destroy (tabs->families);
+		tabs->families = NULL;
+	}
 	if (cv->box)
 		gtk_widget_destroy (tabs->outer);
+	tabs->outer = NULL;
+	tabs->inner = NULL;
 }
 
 static void
