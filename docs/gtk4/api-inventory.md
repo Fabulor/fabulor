@@ -98,7 +98,15 @@ retains its list store and tree selection privately. Transfer refresh, details,
 filtering, completion cleanup, accept/resume/abort actions, and activation now
 resolve stable DCC identity without direct toolkit rows in the file-transfer
 paths in `dccgui.c`. Shared legacy tree helpers remain solely for the distinct
-five-column DCC Chat table targeted by pass 20.
+five-column DCC Chat table at this pass and are removed by pass 20 below.
+
+Stage 5 DCC Chat pass 20 moves the remaining five-column table into its own
+cross-version owner. GTK4 uses typed mutable rows, `GtkMultiSelection`, and
+five text factories; GTK3 retains its list store, renderers, and selection
+privately. Refresh, prepend population, Accept, Abort, activation, and removal
+now resolve stable DCC identity. `dccgui.c` contains no direct tree-model,
+iterator, path, cell-renderer, list-store, or tree-selection dependency, and
+the transfer and chat schemas remain separate owners.
 
 Stage 5 user-list model pass 3 replaces the per-session `GtkListStore` and
 frontend-owned row-reference hash with `FabulorUserListModel`. The GTK4 branch
@@ -431,7 +439,7 @@ Status: `not started`
 | Transcript | `xtext.c`, `xtext.h` | snapshot rendering and event model | not started |
 | Edit box and spell check | `maingui.c`, `sexy-spell-entry.c` | editable composition/subclass and controllers | not started |
 | Menus and commands | `menu.c`, `plugin-tray.c` | actions and menu models | not started |
-| Operational lists | `servlistgui.c`, `chanlist.c`, `userlistgui.c`, `dccgui.c`, `banlist.c`, `notifygui.c`, `ignoregui.c`, `plugingui.c`, `urlgrab.c` | list models, factories, editing | in progress; notify, user, channel-navigation, loaded add-on, URL History, Ignore List, Ban List, and DCC transfer owners established |
+| Operational lists | `servlistgui.c`, `chanlist.c`, `userlistgui.c`, `dccgui.c`, `banlist.c`, `notifygui.c`, `ignoregui.c`, `plugingui.c`, `urlgrab.c` | list models, factories, editing | in progress; notify, user, channel-navigation, loaded add-on, URL History, Ignore List, Ban List, and both DCC owners established |
 | Preferences/editors | `setup.c`, `fkeys.c`, `textgui.c`, `editlist.c` | generated widgets, models, async dialogs | not started |
 | Themes | `theme/*.c`, `common/gtk3-theme-service.c` | GTK4 CSS compatibility and adapter policy | not started |
 | Platform integration | `fe-gtk.c`, `plugin-tray.c`, notifications | displays, surfaces, icons, native tray | not started |

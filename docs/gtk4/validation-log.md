@@ -2267,6 +2267,45 @@ protocol behavior, transfer engine state, command dispatch, and the distinct
 DCC Chat five-column workflow are unchanged. DCC Chat is the next contained
 Stage 5 target.
 
+### PR: #83 - GTK4 Stage 5 DCC Chat List
+
+Date: 2026-07-17
+
+Migration stage: 5, DCC Chat pass 20
+
+Files/workflows converted: five-column DCC Chat rows; mutable status and
+counters; prepend population; multi-selection; activation; Accept and Abort
+
+GTK version: 4.22.4
+
+GLib version: 2.88.0
+
+Build configuration: MSVC x64 Release and strict GTK4 probe boundary
+
+Automated checks:
+
+- [x] production GTK3 frontend compiles and links with 0 warnings and 0 errors
+- [x] strict GTK4 probe compiles and executes the DCC Chat owner
+- [x] duplicate rejection, in-place update, and row counts pass
+- [x] ordered multi-selection, callbacks, identity removal, and clear pass
+- [x] `dccgui.c` contains no direct tree-model, path, iterator, cell-renderer, list-store, or tree-selection dependency
+- [x] production and strict build definitions include the new owner
+- [x] GTK4 dependency validator tests remain 8/8
+- [x] repository diff whitespace validation passes
+
+Manual checks:
+
+- [ ] shipping GTK3 DCC Chat list population and live status/counter refresh
+- [ ] incoming and outgoing Chat rows, including queued, active, failed, and aborted states
+- [ ] single and multi-select Accept and Abort workflows
+- [ ] double-click activation and close/reopen behavior
+- [ ] status colours, numeric alignment, long nicks, and start-time presentation
+- [ ] GTK4 keyboard multi-selection, column sizing, activation, colour, and focus await frontend cutover
+
+Scope: DCC Chat model/view ownership and row interaction. DCC protocol,
+socket lifecycle, command dispatch, and the separately converted file-transfer
+workflow are unchanged.
+
 ## Per-PR Record Template
 
 Copy this section for each GTK4 PR:
