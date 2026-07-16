@@ -10,6 +10,7 @@
 #include "../../src/fe-gtk/notify-list.h"
 #include "../../src/fe-gtk/user-list-model.h"
 #include "../../src/fe-gtk/user-list-view.h"
+#include "../../src/fe-gtk/url-list.h"
 
 #if GTK_MAJOR_VERSION != 4
 #error The GTK4 probe must compile against GTK 4 headers.
@@ -641,6 +642,41 @@ check_addon_list_model (void)
 	return valid;
 }
 
+static gboolean
+check_url_list_model (void)
+{
+	FabulorUrlList *list = fabulor_url_list_new ();
+	gchar *first = NULL;
+	gchar *second = NULL;
+	gchar *third = NULL;
+	gboolean valid = list != NULL;
+
+	if (valid)
+	{
+		fabulor_url_list_prepend (list, "https://one.example/", 2);
+		fabulor_url_list_prepend (list, "https://two.example/", 2);
+		fabulor_url_list_prepend (list, "https://three.example/", 2);
+		first = fabulor_url_list_dup_at (list, 0);
+		second = fabulor_url_list_dup_at (list, 1);
+		third = fabulor_url_list_dup_at (list, 2);
+		valid = fabulor_url_list_get_n_rows (list) == 2 &&
+			g_strcmp0 (first, "https://three.example/") == 0 &&
+			g_strcmp0 (second, "https://two.example/") == 0 &&
+			third == NULL;
+		g_clear_pointer (&first, g_free);
+		g_clear_pointer (&second, g_free);
+		g_clear_pointer (&third, g_free);
+	}
+	if (valid)
+	{
+		fabulor_url_list_clear (list);
+		valid = fabulor_url_list_get_n_rows (list) == 0;
+	}
+
+	fabulor_url_list_free (list);
+	return valid;
+}
+
 int
 main (void)
 {
@@ -688,6 +724,11 @@ main (void)
 	if (!check_addon_list_model ())
 	{
 		fprintf (stderr, "GTK4 addon list model contract mismatch\n");
+		return 1;
+	}
+	if (!check_url_list_model ())
+	{
+		fprintf (stderr, "GTK4 URL list model contract mismatch\n");
 		return 1;
 	}
 

@@ -60,6 +60,7 @@
     <ClCompile Include="..\..\src\fe-gtk\notify-list.c" />
     <ClCompile Include="..\..\src\fe-gtk\user-list-model.c" />
     <ClCompile Include="..\..\src\fe-gtk\user-list-view.c" />
+    <ClCompile Include="..\..\src\fe-gtk\url-list.c" />
   </ItemGroup>
   <Target Name="ValidateFabulorGtk4Root" BeforeTargets="PrepareForBuild">
     <Error Condition="'$(Platform)'!='x64'" Text="The initial Fabulor GTK4 dependency contract supports x64 only." />

@@ -1213,6 +1213,30 @@ menu_urlmenu (GdkEventButton *event, char *url)
 	menu_popup (menu, event, NULL);
 }
 
+void
+menu_urlmenu_at (GtkWidget *origin, gdouble x, gdouble y,
+	GdkModifierType state, char *url)
+{
+	GdkEventButton event;
+	gint origin_x = 0;
+	gint origin_y = 0;
+
+	memset (&event, 0, sizeof (event));
+	event.type = GDK_BUTTON_PRESS;
+	event.window = gtk_widget_get_window (origin);
+	event.send_event = TRUE;
+	event.time = GDK_CURRENT_TIME;
+	event.x = x;
+	event.y = y;
+	event.state = state;
+	event.button = 3;
+	if (event.window)
+		gdk_window_get_origin (event.window, &origin_x, &origin_y);
+	event.x_root = origin_x + x;
+	event.y_root = origin_y + y;
+	menu_urlmenu (&event, url);
+}
+
 static void
 menu_chan_cycle (GtkWidget * menu, char *chan)
 {

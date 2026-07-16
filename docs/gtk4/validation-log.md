@@ -2110,6 +2110,43 @@ Scope: the loaded Add-ons table and its selection-dependent actions only.
 Add-on loading policy, file selection, path containment, and command dispatch
 are unchanged.
 
+### PR: [#79 - GTK4 Stage 5 URL History List](https://github.com/Fabulor/fabulor/pull/79)
+
+Date: 2026-07-16
+
+Migration stage: 5, URL History list pass 16
+
+Files/workflows converted: URL row ownership; newest-first limit enforcement;
+GTK4 list-item factory; selection, copy, clear, double-click, and context lookup
+
+GTK version: 4.22.4
+
+GLib version: 2.88.0
+
+Build configuration: MSVC x64 Release and strict GTK4 probe boundary
+
+Automated checks:
+
+- [x] production GTK3 frontend compiles and links with 0 warnings and 0 errors
+- [x] strict GTK4 probe compiles and executes the URL History owner
+- [x] GTK4 prepend order, configured limit, row lookup, clear, and cleanup checks pass
+- [x] `urlgrab.c` contains no direct tree-model, path, iterator, selection, list-store, or raw button-event dependency
+- [x] production and strict build definitions include the new owner
+- [x] GTK4 dependency validator tests remain 8/8
+- [x] repository diff whitespace validation passes
+
+Manual checks:
+
+- [ ] shipping GTK3 URL History population, newest-first ordering, and configured limit
+- [ ] single selection, Copy, Clear, Save As, and disabled-state message
+- [ ] double-click browser opening and right-click menu placement/actions
+- [ ] close/reopen cleanup and additions while the window is open
+- [ ] GTK4 row presentation and selection-driven actions await frontend cutover
+
+Scope: URL History model/view ownership and row interaction only. URL capture,
+logging, browser dispatch, save-file behavior, and URL menu contents are
+unchanged.
+
 ## Per-PR Record Template
 
 Copy this section for each GTK4 PR:

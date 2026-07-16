@@ -41,6 +41,7 @@ zoitechat_gtk_sources = [
   'sexy-spell-entry.c',
   'textgui.c',
   'urlgrab.c',
+  'url-list.c',
   'userlistgui.c',
   'user-list-model.c',
   'user-list-view.c',
