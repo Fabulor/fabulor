@@ -1,6 +1,6 @@
 # GTK4 List Model Architecture
 
-Status: Stage 5 pass 18 conversion contract
+Status: Stage 5 pass 19 conversion contract
 
 Date: 2026-07-17
 
@@ -98,6 +98,10 @@ navigation order.
      mask sorting, flag toggles, and selection-safe add/delete/clear mutations.
    - [x] Convert the Ban List to a typed cross-version multi-selection owner
      with numeric mode identity, sortable dates, and batch action snapshots.
+   - [x] Convert the combined DCC transfer list to a typed cross-version
+     multi-selection owner with in-place progress updates and identity actions.
+   - [ ] Convert the distinct DCC Chat list without conflating its schema or
+     accept/abort lifecycle with file transfers.
 5. [ ] Remove the final GTK3 tree-model, cell-renderer, iterator, and row-reference
    assumptions only after all owning surfaces have moved.
 
@@ -286,6 +290,17 @@ now consume typed owner methods. Per-mode snapshots no longer compare translated
 display labels, preserving Ban, Exempt, Invite, and Quiet dispatch under
 localization. The strict probe verifies mixed selection, mode-filtered remove
 and crop snapshots, inversion, select-all, clear, callbacks, and cleanup.
+
+The combined DCC Uploads and Downloads table now owns transfer direction,
+status, filename, size, position, percentage, speed, ETA, nick, colour, and
+stable core identity. GTK4 uses typed mutable rows, the shared flat model
+stack, `GtkMultiSelection`, one direction-image factory, and eight text-column
+factories. GTK3 retains its list store, renderers, and tree selection inside
+the owner. Progress refresh updates row properties in place; accept, resume,
+abort, clear-completed, details, filtering, and activation consume identity
+snapshots rather than toolkit rows. The strict probe verifies ordering,
+duplicate rejection, update, multi-selection, removal, callbacks, clear, and
+cleanup. The separate DCC Chat table remains a contained pass 20 target.
 
 ## Executable Contract
 
