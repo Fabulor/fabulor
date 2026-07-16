@@ -471,6 +471,8 @@ tab_click_cb (GtkWidget *wid, guint button, guint n_press, gdouble x,
 			ch->cv->cb_xbutton (ch->cv, ch, ch->tag, ch->userdata);
 			return TRUE;
 		}
+		if (item)
+			tab_pressed_cb (GTK_TOGGLE_BUTTON (item->tab), ch);
 	}
 
 	return ch->cv->cb_contextmenu (ch->cv, ch, ch->tag, ch->userdata, wid,
@@ -544,8 +546,6 @@ cv_tabs_add (chanview *cv, chan *ch, char *name, chan *parent)
 									  tab_close_leave_cb, ch);
 	/* Keep close-button hover distinct from whole-tab hover. */
 	fabulor_gtk_widget_suppress_pointer_prelight (item->tab);
-	g_signal_connect (G_OBJECT (item->tab), "pressed",
-							G_CALLBACK (tab_pressed_cb), ch);
 	/* for keyboard */
 	g_signal_connect (G_OBJECT (item->tab), "toggled",
 						 	G_CALLBACK (tab_toggled_cb), ch);
