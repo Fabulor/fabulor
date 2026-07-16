@@ -826,6 +826,19 @@ row lifetime while no longer traversing toolkit rows for join, copy, context,
 save, refresh, or teardown. The strict probe covers collation order, duplicate
 rejection, multi-selection, selected text, sorted export records, and cleanup.
 
+Generic editable-list pass 22 (2026-07-17): the shared two-column editor used
+by Commands, Popups, User Menu, Replace, URL Handlers, User List Buttons,
+Dialog Buttons, and CTCP Replies now has one cross-version owner for copied
+name/command rows, editable cells, single selection, add/delete, ordering, and
+save snapshots. GTK4 uses typed mutable rows, the shared unsorted flat model
+stack, `GtkSingleSelection`, two `GtkEditableLabel` factories, and row-object
+drag/drop; GTK3 keeps its editable renderers and native reorderable tree inside
+the owner. Shift+Up/Down now enters through the shared key-controller boundary
+and performs boundary-safe model movement. Configuration serialization,
+post-save reload, button refresh, and user-menu refresh remain in the workflow
+wrapper. The strict probe covers editing, movement, snapshots, deletion,
+empty-row initialization, and cleanup.
+
 Primary surfaces:
 
 - server list and editor

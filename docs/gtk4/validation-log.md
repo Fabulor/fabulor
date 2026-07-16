@@ -2345,6 +2345,46 @@ Scope: Channel List model/view ownership and row interaction. IRC `/LIST`
 protocol handling, server-side list arguments, filtering semantics, command
 dispatch, and authoritative downloaded-row storage are unchanged.
 
+### PR: #85 - GTK4 Stage 5 Generic Editable Lists
+
+Date: 2026-07-17
+
+Migration stage: 5, generic editable-list pass 22
+
+Files/workflows converted: Commands, Popups, User Menu, Replace, URL Handlers,
+User List Buttons, Dialog Buttons, and CTCP Replies two-column editors; editing;
+add/delete; single selection; pointer drag; Shift+Up/Down; ordered save snapshots
+
+GTK version: 4.22.4
+
+GLib version: 2.88.0
+
+Build configuration: MSVC x64 Release and strict GTK4 probe boundary
+
+Automated checks:
+
+- [x] production GTK3 frontend compiles and links with 0 warnings and 0 errors
+- [x] strict GTK4 probe compiles and executes the editable-list owner with 0 warnings and 0 errors
+- [x] field edits, boundary-safe movement, and ordered snapshots pass
+- [x] selection, deletion, empty-row initialization, and cleanup pass
+- [x] `editlist.c` contains no direct tree-model, path, iterator, cell-renderer, list-store, tree-selection, raw key-event, or key-press signal dependency
+- [x] production and strict build definitions include the new owner
+- [x] GTK4 dependency validator tests remain 8/8
+- [x] repository diff whitespace validation passes
+
+Manual checks:
+
+- [ ] shipping GTK3 open, edit, add, delete, pointer reorder, Shift+Up/Down, cancel, save, and reopen
+- [ ] all eight editor entry points preserve labels, tooltips, ordering, and file output
+- [ ] Commands, Popups, User Menu, CTCP Replies, URL Handlers, and replacements reload immediately after save
+- [ ] User List and Dialog Button editors refresh every open session after save
+- [ ] empty and long name/command values remain editable without clipping or crashes
+- [ ] GTK4 inline editing, pointer drag placement, keyboard movement, focus, accessibility, and scale await frontend cutover
+
+Scope: generic editor model/view ownership and row interaction. Configuration
+file syntax, list parsing, menu/button construction, command dispatch, and
+post-save workflow refresh behavior are unchanged.
+
 ## Per-PR Record Template
 
 Copy this section for each GTK4 PR:

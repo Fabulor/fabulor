@@ -81,6 +81,7 @@ FOR %%I IN ("$(ZoiteChatLib)fabulor.rc") DO IF %%~zI EQU 0 (
     <ClInclude Include="dcc-chat-list.h" />
     <ClInclude Include="dcc-transfer-list.h" />
     <ClInclude Include="editlist.h" />
+	<ClInclude Include="editable-list.h" />
     <ClInclude Include="fe-gtk.h" />
     <ClInclude Include="fkeys.h" />
     <ClInclude Include="gtk-compat.h" />
@@ -133,6 +134,7 @@ FOR %%I IN ("$(ZoiteChatLib)fabulor.rc") DO IF %%~zI EQU 0 (
     <ClCompile Include="dcc-transfer-list.c" />
     <ClCompile Include="dccgui.c" />
     <ClCompile Include="editlist.c" />
+	<ClCompile Include="editable-list.c" />
     <ClCompile Include="fe-gtk.c" />
     <ClCompile Include="fkeys.c" />
     <ClCompile Include="gtkutil.c" />
