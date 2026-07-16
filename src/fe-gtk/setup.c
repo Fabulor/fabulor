@@ -38,6 +38,7 @@
 #include "theme/theme-preferences.h"
 #include "gtkutil.h"
 #include "gtk-compat.h"
+#include "sound-event-list.h"
 #include "maingui.h"
 #include "pixmaps.h"
 #include "menu.h"
@@ -1665,64 +1666,27 @@ setup_create_appearance_page (void)
 /* === GLOBALS for sound GUI === */
 
 static GtkWidget *sndfile_entry;
+static FabulorSoundEventList *sound_event_list;
 static int ignore_changed = FALSE;
 
 extern struct text_event te[]; /* text.c */
 extern char *sound_files[];
 
 static void
-setup_snd_populate (GtkTreeView * treeview)
+setup_snd_populate (void)
 {
-        GtkListStore *store;
-        GtkTreeIter iter;
-        GtkTreeSelection *sel;
-        GtkTreePath *path;
         int i;
 
-        sel = gtk_tree_view_get_selection (treeview);
-        store = (GtkListStore *)gtk_tree_view_get_model (treeview);
-
-        for (i = NUM_XP-1; i >= 0; i--)
-        {
-                gtk_list_store_prepend (store, &iter);
-                if (sound_files[i])
-                        gtk_list_store_set (store, &iter, 0, te[i].name, 1, sound_files[i], 2, i, -1);
-                else
-                        gtk_list_store_set (store, &iter, 0, te[i].name, 1, "", 2, i, -1);
-                if (i == last_selected_row)
-                {
-                        gtk_tree_selection_select_iter (sel, &iter);
-                        path = gtk_tree_model_get_path (GTK_TREE_MODEL (store), &iter);
-                        if (path)
-                        {
-                                gtk_tree_view_scroll_to_cell (treeview, path, NULL, TRUE, 0.5, 0.5);
-                                gtk_tree_view_set_cursor (treeview, path, NULL, FALSE);
-                                gtk_tree_path_free (path);
-                        }
-                }
-        }
-}
-
-static int
-setup_snd_get_selected (GtkTreeSelection *sel, GtkTreeIter *iter)
-{
-        int n;
-        GtkTreeModel *model;
-
-        if (!gtk_tree_selection_get_selected (sel, &model, iter))
-                return -1;
-
-        gtk_tree_model_get (model, iter, 2, &n, -1);
-        return n;
+        fabulor_sound_event_list_clear (sound_event_list);
+        for (i = 0; i < NUM_XP; i++)
+                fabulor_sound_event_list_append (sound_event_list, te[i].name,
+                                                 sound_files[i], i);
 }
 
 static void
-setup_snd_row_cb (GtkTreeSelection *sel, gpointer user_data)
+setup_snd_row_cb (gint n, gpointer user_data)
 {
-        int n;
-        GtkTreeIter iter;
-
-        n = setup_snd_get_selected (sel, &iter);
+        (void) user_data;
         if (n == -1)
                 return;
         last_selected_row = n;
@@ -1733,29 +1697,6 @@ setup_snd_row_cb (GtkTreeSelection *sel, gpointer user_data)
         else
                 gtk_entry_set_text (GTK_ENTRY (sndfile_entry), "");
         ignore_changed = FALSE;
-}
-
-static void
-setup_snd_add_columns (GtkTreeView * treeview)
-{
-        GtkCellRenderer *renderer;
-        GtkTreeModel *model;
-
-        /* event column */
-        renderer = gtk_cell_renderer_text_new ();
-        gtk_tree_view_insert_column_with_attributes (GTK_TREE_VIEW (treeview),
-                                                                                                                                -1, _("Event"), renderer,
-                                                                                                                                "text", 0, NULL);
-
-        /* file column */
-        renderer = gtk_cell_renderer_text_new ();
-        gtk_tree_view_insert_column_with_attributes (GTK_TREE_VIEW (treeview),
-                                                                                                                                -1, _("Sound file"), renderer,
-                                                                                                                                "text", 1, NULL);
-
-        model = GTK_TREE_MODEL (gtk_list_store_new (3, G_TYPE_STRING, G_TYPE_STRING, G_TYPE_INT));
-        gtk_tree_view_set_model (GTK_TREE_VIEW (treeview), model);
-        g_object_unref (model);
 }
 
 static void
@@ -1806,18 +1747,16 @@ setup_snd_play_cb (GtkWidget *button, GtkEntry *entry)
 }
 
 static void
-setup_snd_changed_cb (GtkEntry *ent, GtkTreeView *tree)
+setup_snd_changed_cb (GtkEntry *ent, gpointer user_data)
 {
         int n;
-        GtkTreeIter iter;
-        GtkListStore *store;
-        GtkTreeSelection *sel;
+
+        (void) user_data;
 
         if (ignore_changed)
                 return;
 
-        sel = gtk_tree_view_get_selection (tree);
-        n = setup_snd_get_selected (sel, &iter);
+        n = fabulor_sound_event_list_get_selected_event (sound_event_list);
         if (n == -1)
                 return;
 
@@ -1825,9 +1764,8 @@ setup_snd_changed_cb (GtkEntry *ent, GtkTreeView *tree)
         g_free (sound_files[n]);
         sound_files[n] = g_strdup (gtk_entry_get_text (GTK_ENTRY (ent)));
 
-        /* update the TreeView list */
-        store = (GtkListStore *)gtk_tree_view_get_model (tree);
-        gtk_list_store_set (store, &iter, 1, sound_files[n], -1);
+        fabulor_sound_event_list_update_file (sound_event_list, n,
+                                              sound_files[n]);
 
         gtk_widget_set_sensitive (cancel_button, FALSE);
 }
@@ -1837,13 +1775,11 @@ setup_create_sound_page (void)
 {
         GtkWidget *vbox1;
         GtkWidget *vbox2;
-        GtkWidget *scrolledwindow1;
         GtkWidget *sound_tree;
         GtkWidget *table1;
         GtkWidget *sound_label;
         GtkWidget *sound_browse;
         GtkWidget *sound_play;
-        GtkTreeSelection *sel;
 
         vbox1 = gtkutil_box_new (GTK_ORIENTATION_VERTICAL, FALSE, 0);
         gtk_container_set_border_width (GTK_CONTAINER (vbox1), 6);
@@ -1853,24 +1789,18 @@ setup_create_sound_page (void)
         gtk_widget_show (vbox2);
         fabulor_gtk_box_append (GTK_BOX (vbox1), vbox2, TRUE, TRUE, 0);
 
-        scrolledwindow1 = gtk_scrolled_window_new (NULL, NULL);
-        gtk_widget_show (scrolledwindow1);
-        fabulor_gtk_box_append (GTK_BOX (vbox2), scrolledwindow1, TRUE, TRUE, 0);
-        gtk_scrolled_window_set_policy (GTK_SCROLLED_WINDOW (scrolledwindow1),
-                                                                                          GTK_POLICY_AUTOMATIC, GTK_POLICY_ALWAYS);
-        gtk_scrolled_window_set_shadow_type (GTK_SCROLLED_WINDOW (scrolledwindow1),
-                                                                                                         GTK_SHADOW_IN);
-
-        sound_tree = gtk_tree_view_new ();
-        sel = gtk_tree_view_get_selection (GTK_TREE_VIEW (sound_tree));
-        gtk_tree_selection_set_mode (sel, GTK_SELECTION_SINGLE);
-        setup_snd_add_columns (GTK_TREE_VIEW (sound_tree));
-        setup_snd_populate (GTK_TREE_VIEW (sound_tree));
-        g_signal_connect (G_OBJECT (sel), "changed",
-                                                        G_CALLBACK (setup_snd_row_cb), NULL);
-        gtk_widget_show (sound_tree);
-        fabulor_gtk_scrolled_window_set_child (GTK_SCROLLED_WINDOW (scrolledwindow1), sound_tree);
-        gtk_tree_view_set_grid_lines (GTK_TREE_VIEW (sound_tree), GTK_TREE_VIEW_GRID_LINES_HORIZONTAL);
+        sound_event_list = fabulor_sound_event_list_new (setup_snd_row_cb, NULL);
+        sound_tree = fabulor_sound_event_list_create_view (sound_event_list,
+                                                           GTK_BOX (vbox2),
+                                                           _("Event"),
+                                                           _("Sound file"));
+        if (!sound_tree)
+        {
+                fabulor_sound_event_list_free (sound_event_list);
+                sound_event_list = NULL;
+                return vbox1;
+        }
+        setup_snd_populate ();
 
         table1 = gtkutil_grid_new (2, 3, FALSE);
         gtk_widget_show (table1);
@@ -1885,7 +1815,7 @@ setup_create_sound_page (void)
 
         sndfile_entry = gtk_entry_new ();
         g_signal_connect (G_OBJECT (sndfile_entry), "changed",
-                                                        G_CALLBACK (setup_snd_changed_cb), sound_tree);
+                                                        G_CALLBACK (setup_snd_changed_cb), NULL);
         gtk_widget_show (sndfile_entry);
         setup_table_attach (table1, sndfile_entry, 0, 1, 1, 2, TRUE, FALSE,
                             SETUP_ALIGN_FILL, SETUP_ALIGN_FILL, 0, 0);
@@ -1904,7 +1834,10 @@ setup_create_sound_page (void)
         setup_table_attach (table1, sound_play, 2, 3, 1, 2, FALSE, FALSE,
                             SETUP_ALIGN_FILL, SETUP_ALIGN_FILL, 0, 0);
 
-        setup_snd_row_cb (sel, NULL);
+        if (!fabulor_sound_event_list_select_event (sound_event_list,
+                                                     last_selected_row) &&
+            NUM_XP > 0)
+                fabulor_sound_event_list_select_event (sound_event_list, 0);
 
         return vbox1;
 }
@@ -2542,6 +2475,10 @@ static void
 setup_close_cb (GtkWidget *win, GtkWidget **swin)
 {
         *swin = NULL;
+
+        fabulor_sound_event_list_free (sound_event_list);
+        sound_event_list = NULL;
+        sndfile_entry = NULL;
 
         theme_preferences_stage_discard ();
 

@@ -13,6 +13,7 @@
 #include "../../src/fe-gtk/editable-list.h"
 #include "../../src/fe-gtk/print-event-list.h"
 #include "../../src/fe-gtk/key-binding-list.h"
+#include "../../src/fe-gtk/sound-event-list.h"
 #include "../../src/fe-gtk/addon-list.h"
 #include "../../src/fe-gtk/channel-model.h"
 #include "../../src/fe-gtk/channel-tree-view.h"
@@ -1281,6 +1282,57 @@ check_key_binding_list_model (void)
 	return valid;
 }
 
+typedef struct
+{
+	gint event_index;
+	guint calls;
+} ProbeSoundEventSelection;
+
+static void
+probe_sound_event_selection (gint event_index, gpointer user_data)
+{
+	ProbeSoundEventSelection *selection = user_data;
+	selection->event_index = event_index;
+	selection->calls++;
+}
+
+static gboolean
+check_sound_event_list_model (void)
+{
+	ProbeSoundEventSelection selection = { -1, 0 };
+	FabulorSoundEventList *list = fabulor_sound_event_list_new (
+		probe_sound_event_selection, &selection);
+	gchar *file = NULL;
+	gboolean valid = list != NULL;
+
+	if (valid)
+	{
+		fabulor_sound_event_list_append (list, "Connected", "one.wav", 7);
+		fabulor_sound_event_list_append (list, "Message", NULL, 12);
+		valid = fabulor_sound_event_list_get_n_rows (list) == 2 &&
+			fabulor_sound_event_list_select_event (list, 12) &&
+			fabulor_sound_event_list_get_selected_event (list) == 12 &&
+			selection.calls >= 1 && selection.event_index == 12;
+	}
+	if (valid)
+	{
+		valid = fabulor_sound_event_list_update_file (list, 12, "two.wav") &&
+			!fabulor_sound_event_list_update_file (list, 99, "missing.wav");
+		file = fabulor_sound_event_list_dup_file (list, 12);
+		valid = valid && g_strcmp0 (file, "two.wav") == 0 &&
+			fabulor_sound_event_list_dup_file (list, 99) == NULL;
+		g_free (file);
+	}
+	if (valid)
+	{
+		fabulor_sound_event_list_clear (list);
+		valid = fabulor_sound_event_list_get_n_rows (list) == 0 &&
+			fabulor_sound_event_list_get_selected_event (list) == -1;
+	}
+	fabulor_sound_event_list_free (list);
+	return valid;
+}
+
 int
 main (void)
 {
@@ -1373,6 +1425,11 @@ main (void)
 	if (!check_key_binding_list_model ())
 	{
 		fprintf (stderr, "GTK4 key-binding list contract mismatch\n");
+		return 1;
+	}
+	if (!check_sound_event_list_model ())
+	{
+		fprintf (stderr, "GTK4 sound-event list contract mismatch\n");
 		return 1;
 	}
 

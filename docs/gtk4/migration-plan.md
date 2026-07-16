@@ -860,6 +860,15 @@ and menu accelerator refresh remain in `fkeys.c`. The strict probe covers
 normalization, protected built-ins, custom edits, movement, deletion,
 snapshots, selection callbacks, clear, and cleanup.
 
+Preferences sound-event pass 25 (2026-07-17): the event/sound-file table now
+has one cross-version owner for copied names, mutable filenames, stable event
+indices, and explicit single selection. GTK4 uses typed rows,
+`GtkSingleSelection`, and two `GtkColumnView` factories; GTK3 keeps its list
+store, renderers, tree view, and selection privately. Browse, play, filename
+normalization, core `sound_files` ownership, and preference cancellation state
+remain in `setup.c`. The strict probe covers selection callbacks, identity-safe
+updates, missing-event rejection, clear, and cleanup.
+
 Primary surfaces:
 
 - server list and editor
