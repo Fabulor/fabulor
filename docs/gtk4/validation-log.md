@@ -1926,6 +1926,43 @@ Scope: grouped-tab family identity and lifetime only. Close presentation,
 scroll geometry and animation presentation, keyboard handling, and drag/drop
 remain in the legacy tab implementation for later contained passes.
 
+### PR: [#74 - GTK4 Stage 5 Grouped Tab Presentation Ownership](https://github.com/Fabulor/fabulor/pull/74)
+
+Date: 2026-07-16
+
+Migration stage: 5, grouped-tab item-owner pass 11
+
+Files/workflows converted: per-view channel-to-item ownership; tab, label, and
+close-button identity; rename and colour updates; close hit-testing and hover
+cleanup lookup; item removal and whole-view teardown ordering
+
+GTK version: 4.22.4
+
+GLib version: 2.88.0
+
+Build configuration: MSVC x64 Release and strict GTK4 probe boundary
+
+Automated checks:
+
+- [x] production GTK3 frontend compiles and links with 0 warnings and 0 errors
+- [x] no tab label, close-button, or channel identity remains in GTK object data
+- [x] close callbacks, rename, colour, and removal resolve channel-owned item records
+- [x] widgets are destroyed before whole-view item records are released
+- [x] the compile-time assertion still protects the channel-view implementation scratch boundary
+- [x] strict GTK4 probe and dependency validator remain green
+- [x] repository diff whitespace validation passes
+
+Manual checks:
+
+- [ ] shipping GTK3 tab rename and colour updates across server, channel, dialog, and utility tabs
+- [ ] close-button visibility, hover, click, context menu, and cursor behavior
+- [ ] tabs/tree switching and orientation changes with active and background tabs
+- [ ] GTK4 close geometry and hover presentation await the next contained pass
+
+Scope: grouped-tab item identity and presentation lifetime only. Cross-version
+close geometry and hover presentation, animated scrolling presentation,
+keyboard handling, and drag/drop remain for later contained passes.
+
 ## Per-PR Record Template
 
 Copy this section for each GTK4 PR:

@@ -21,12 +21,14 @@
 
 typedef struct _tab_scroll_animation tab_scroll_animation;
 typedef struct _tab_family tab_family;
+typedef struct _tab_item tab_item;
+typedef struct _tabview_state tabview_state;
 
 typedef struct
 {
 	GtkWidget *outer;	/* outer box */
 	GtkWidget *inner;	/* inner box */
-	GHashTable *families;	/* root chan * -> tab_family */
+	tabview_state *state;
 	tab_scroll_animation *backward_animation;
 	tab_scroll_animation *forward_animation;
 	int backward_is_moving;
@@ -42,6 +44,19 @@ struct _tab_family
 	GtkWidget *separator;
 };
 
+struct _tab_item
+{
+	GtkWidget *tab;
+	GtkWidget *label;
+	GtkWidget *close_button;
+};
+
+struct _tabview_state
+{
+	GHashTable *families;	/* root chan * -> tab_family */
+	GHashTable *items;	/* chan * -> tab_item */
+};
+
 static void chanview_populate (chanview *cv);
 
 struct _tab_scroll_animation
@@ -55,13 +70,6 @@ struct _tab_scroll_animation
 	int *moving_flag;
 	tab_scroll_animation **slot;
 };
-
-/* userdata for gobjects used here:
- *
- * tab (togglebuttons inside boxes):
- *   "c" the tab's (chan *)
- *
- */
 
 static inline gint
 cv_tabs_get_viewport_size (GtkAdjustment *adj)
@@ -348,7 +356,10 @@ cv_tabs_init (chanview *cv)
 		box = gtkutil_box_new (GTK_ORIENTATION_HORIZONTAL, FALSE, 0);
 	}
 	tabs->inner = box;
-	tabs->families = g_hash_table_new_full (g_direct_hash, g_direct_equal,
+	tabs->state = g_new0 (tabview_state, 1);
+	tabs->state->families = g_hash_table_new_full (g_direct_hash, g_direct_equal,
+		NULL, g_free);
+	tabs->state->items = g_hash_table_new_full (g_direct_hash, g_direct_equal,
 		NULL, g_free);
 	gtk_container_add (GTK_CONTAINER (viewport), box);
 	gtk_widget_show (box);
@@ -381,7 +392,7 @@ tab_add_real (chanview *cv, GtkWidget *tab, chan *ch, chan *parent)
 {
 	tabview *tabs = (tabview *) cv;
 	chan *root = parent ? parent : ch;
-	tab_family *family = g_hash_table_lookup (tabs->families, root);
+	tab_family *family = g_hash_table_lookup (tabs->state->families, root);
 
 	if (!family)
 	{
@@ -397,7 +408,7 @@ tab_add_real (chanview *cv, GtkWidget *tab, chan *ch, chan *parent)
 			family->box = gtkutil_box_new (GTK_ORIENTATION_HORIZONTAL, FALSE, 0);
 			family->separator = gtk_separator_new (GTK_ORIENTATION_VERTICAL);
 		}
-		g_hash_table_insert (tabs->families, root, family);
+		g_hash_table_insert (tabs->state->families, root, family);
 		fabulor_gtk_box_append (GTK_BOX (tabs->inner), family->box,
 			FALSE, FALSE, 0);
 		fabulor_gtk_box_append (GTK_BOX (family->box), tab,
@@ -471,7 +482,8 @@ tab_click_cb (GtkWidget *wid, guint button, guint n_press, gdouble x,
 	gdouble y, GdkModifierType state, gpointer user_data)
 {
 	chan *ch = user_data;
-	GtkWidget *close_button;
+	tabview *tabs = (tabview *) ch->cv;
+	tab_item *item = g_hash_table_lookup (tabs->state->items, ch);
 	gint close_x;
 	gint close_y;
 	GtkAllocation close_alloc;
@@ -479,11 +491,11 @@ tab_click_cb (GtkWidget *wid, guint button, guint n_press, gdouble x,
 	(void) n_press;
 	if (button == 1)
 	{
-		close_button = g_object_get_data (G_OBJECT (wid), "tab-close-button");
-		if (prefs.hex_gui_tab_closebuttons && close_button &&
-			gtk_widget_translate_coordinates (close_button, wid, 0, 0, &close_x, &close_y))
+		if (prefs.hex_gui_tab_closebuttons && item &&
+			gtk_widget_translate_coordinates (item->close_button, wid, 0, 0,
+				&close_x, &close_y))
 		{
-			gtk_widget_get_allocation (close_button, &close_alloc);
+			gtk_widget_get_allocation (item->close_button, &close_alloc);
 			if (x >= close_x && x < close_x + close_alloc.width &&
 				y >= close_y && y < close_y + close_alloc.height)
 			{
@@ -500,32 +512,34 @@ tab_click_cb (GtkWidget *wid, guint button, guint n_press, gdouble x,
 static void
 tab_close_motion_cb (GtkWidget *wid, gdouble x, gdouble y, gpointer user_data)
 {
-	GtkWidget *close_button;
+	chan *ch = user_data;
+	tabview *tabs = (tabview *) ch->cv;
+	tab_item *item = g_hash_table_lookup (tabs->state->items, ch);
 	gint close_x;
 	gint close_y;
 	GtkAllocation close_alloc;
 	gboolean hover = FALSE;
 
-	(void) user_data;
-
-	close_button = g_object_get_data (G_OBJECT (wid), "tab-close-button");
-	if (prefs.hex_gui_tab_closebuttons && close_button &&
-		gtk_widget_translate_coordinates (close_button, wid, 0, 0, &close_x, &close_y))
+	if (prefs.hex_gui_tab_closebuttons && item &&
+		gtk_widget_translate_coordinates (item->close_button, wid, 0, 0,
+			&close_x, &close_y))
 	{
-		gtk_widget_get_allocation (close_button, &close_alloc);
+		gtk_widget_get_allocation (item->close_button, &close_alloc);
 		hover = x >= close_x && x < close_x + close_alloc.width &&
 			y >= close_y && y < close_y + close_alloc.height;
 	}
 
 	if (hover)
 	{
-		gtk_widget_set_state_flags (close_button, GTK_STATE_FLAG_PRELIGHT, TRUE);
+		gtk_widget_set_state_flags (item->close_button,
+			GTK_STATE_FLAG_PRELIGHT, TRUE);
 		fabulor_gtk_widget_set_pointing_cursor (wid, TRUE);
 	}
 	else
 	{
-		if (close_button)
-			gtk_widget_unset_state_flags (close_button, GTK_STATE_FLAG_PRELIGHT);
+		if (item)
+			gtk_widget_unset_state_flags (item->close_button,
+				GTK_STATE_FLAG_PRELIGHT);
 		fabulor_gtk_widget_set_pointing_cursor (wid, FALSE);
 	}
 }
@@ -533,78 +547,63 @@ tab_close_motion_cb (GtkWidget *wid, gdouble x, gdouble y, gpointer user_data)
 static void
 tab_close_leave_cb (GtkWidget *wid, gpointer user_data)
 {
-	GtkWidget *close_button;
+	chan *ch = user_data;
+	tabview *tabs = (tabview *) ch->cv;
+	tab_item *item = g_hash_table_lookup (tabs->state->items, ch);
 
-	(void) user_data;
-
-	close_button = g_object_get_data (G_OBJECT (wid), "tab-close-button");
-	if (prefs.hex_gui_tab_closebuttons && close_button)
-		gtk_widget_unset_state_flags (close_button, GTK_STATE_FLAG_PRELIGHT);
+	if (prefs.hex_gui_tab_closebuttons && item)
+		gtk_widget_unset_state_flags (item->close_button,
+			GTK_STATE_FLAG_PRELIGHT);
 	fabulor_gtk_widget_set_pointing_cursor (wid, FALSE);
-}
-
-static GtkWidget *
-tab_get_label (GtkWidget *tab)
-{
-	GtkWidget *label;
-
-	label = g_object_get_data (G_OBJECT (tab), "tab-label");
-	if (label)
-		return label;
-
-	return gtk_bin_get_child (GTK_BIN (tab));
 }
 
 static void *
 cv_tabs_add (chanview *cv, chan *ch, char *name, chan *parent)
 {
-	GtkWidget *but;
+	tabview *tabs = (tabview *) cv;
+	tab_item *item = g_new0 (tab_item, 1);
 	GtkWidget *hbox;
-	GtkWidget *label;
-	GtkWidget *close_button;
 	GtkWidget *close_icon;
 
-	but = gtk_toggle_button_new ();
-	gtk_widget_set_name (but, "zoitechat-tab");
-	gtk_widget_set_size_request (but, -1, 14);
+	item->tab = gtk_toggle_button_new ();
+	gtk_widget_set_name (item->tab, "zoitechat-tab");
+	gtk_widget_set_size_request (item->tab, -1, 14);
 	hbox = gtk_box_new (GTK_ORIENTATION_HORIZONTAL, 2);
-	label = gtk_label_new (name);
-	close_button = gtk_button_new ();
-	gtk_style_context_add_class (gtk_widget_get_style_context (close_button), "flat");
+	item->label = gtk_label_new (name);
+	item->close_button = gtk_button_new ();
+	gtk_style_context_add_class (gtk_widget_get_style_context (item->close_button), "flat");
 	close_icon = gtk_image_new_from_icon_name ("window-close-symbolic", GTK_ICON_SIZE_MENU);
 	gtk_image_set_pixel_size (GTK_IMAGE (close_icon), 8);
-	gtk_button_set_always_show_image (GTK_BUTTON (close_button), TRUE);
-	gtk_widget_set_can_focus (close_button, FALSE);
-	fabulor_gtk_button_set_child (GTK_BUTTON (close_button), close_icon);
-	fabulor_gtk_box_append (GTK_BOX (hbox), label, TRUE, TRUE, 0);
-	fabulor_gtk_box_append (GTK_BOX (hbox), close_button, FALSE, FALSE, 0);
-	fabulor_gtk_button_set_child (GTK_BUTTON (but), hbox);
-	g_object_set_data (G_OBJECT (but), "tab-label", label);
-	g_object_set_data (G_OBJECT (but), "tab-close-button", close_button);
-	g_object_set_data (G_OBJECT (but), "c", ch);
+	gtk_button_set_always_show_image (GTK_BUTTON (item->close_button), TRUE);
+	gtk_widget_set_can_focus (item->close_button, FALSE);
+	fabulor_gtk_button_set_child (GTK_BUTTON (item->close_button), close_icon);
+	fabulor_gtk_box_append (GTK_BOX (hbox), item->label, TRUE, TRUE, 0);
+	fabulor_gtk_box_append (GTK_BOX (hbox), item->close_button, FALSE, FALSE, 0);
+	fabulor_gtk_button_set_child (GTK_BUTTON (item->tab), hbox);
+	g_hash_table_insert (tabs->state->items, ch, item);
 	/* used for close-button hit testing and context actions */
-	fabulor_gtk_widget_on_multi_click (but, tab_click_cb, ch);
-	fabulor_gtk_widget_on_scroll (but, tab_scroll_cb, cv);
-	fabulor_gtk_widget_on_scroll (close_button, tab_scroll_cb, cv);
-	fabulor_gtk_widget_on_pointer_motion (but, tab_close_motion_cb,
-									  tab_close_leave_cb, NULL);
+	fabulor_gtk_widget_on_multi_click (item->tab, tab_click_cb, ch);
+	fabulor_gtk_widget_on_scroll (item->tab, tab_scroll_cb, cv);
+	fabulor_gtk_widget_on_scroll (item->close_button, tab_scroll_cb, cv);
+	fabulor_gtk_widget_on_pointer_motion (item->tab, tab_close_motion_cb,
+									  tab_close_leave_cb, ch);
 	/* avoid prelights */
-	g_signal_connect (G_OBJECT (but), "enter-notify-event",
+	g_signal_connect (G_OBJECT (item->tab), "enter-notify-event",
 						 	G_CALLBACK (tab_ignore_cb), NULL);
-	g_signal_connect (G_OBJECT (but), "leave-notify-event",
+	g_signal_connect (G_OBJECT (item->tab), "leave-notify-event",
 						 	G_CALLBACK (tab_ignore_cb), NULL);
-	g_signal_connect (G_OBJECT (but), "pressed",
+	g_signal_connect (G_OBJECT (item->tab), "pressed",
 							G_CALLBACK (tab_pressed_cb), ch);
 	/* for keyboard */
-	g_signal_connect (G_OBJECT (but), "toggled",
+	g_signal_connect (G_OBJECT (item->tab), "toggled",
 						 	G_CALLBACK (tab_toggled_cb), ch);
 	gtk_widget_show_all (hbox);
 	if (!prefs.hex_gui_tab_closebuttons)
-		gtk_widget_hide (close_button);
+		gtk_widget_hide (item->close_button);
 
-	tab_add_real (cv, but, ch, parent);
+	tab_add_real (cv, item->tab, ch, parent);
 
-	return but;
+	return item->tab;
 }
 
 static void
@@ -650,19 +649,21 @@ static void
 cv_tabs_remove (chan *ch)
 {
 	tabview *tabs = (tabview *) ch->cv;
+	tab_item *item = g_hash_table_lookup (tabs->state->items, ch);
 	chan *parent = fabulor_channel_model_get_parent (ch->cv->model, ch);
 	tab_family *family;
 
-	gtk_widget_destroy (ch->impl);
+	gtk_widget_destroy (item ? item->tab : ch->impl);
+	g_hash_table_remove (tabs->state->items, ch);
 	ch->impl = NULL;
 	if (parent)
 		return;
 
-	family = g_hash_table_lookup (tabs->families, ch);
+	family = g_hash_table_lookup (tabs->state->families, ch);
 	if (family)
 	{
 		gtk_widget_destroy (family->box);
-		g_hash_table_remove (tabs->families, ch);
+		g_hash_table_remove (tabs->state->families, ch);
 	}
 }
 
@@ -682,7 +683,7 @@ cv_tabs_move (chan *ch, int delta)
 		cv_tabs_move_family (ch, delta);
 		return;
 	}
-	family = g_hash_table_lookup (tabs->families, parent);
+	family = g_hash_table_lookup (tabs->state->families, parent);
 	if (!family)
 		return;
 	count = fabulor_channel_model_get_child_count (ch->cv->model, parent);
@@ -709,7 +710,7 @@ cv_tabs_move_family (chan *ch, int delta)
 	(void) delta;
 	if (!root)
 		root = ch;
-	family = g_hash_table_lookup (tabs->families, root);
+	family = g_hash_table_lookup (tabs->state->families, root);
 	if (!family)
 		return;
 	for (position = 0; position < count; position++)
@@ -728,13 +729,15 @@ cv_tabs_cleanup (chanview *cv)
 
 	tab_scroll_animation_cancel (&tabs->backward_animation);
 	tab_scroll_animation_cancel (&tabs->forward_animation);
-	if (tabs->families)
-	{
-		g_hash_table_destroy (tabs->families);
-		tabs->families = NULL;
-	}
 	if (cv->box)
 		gtk_widget_destroy (tabs->outer);
+	if (tabs->state)
+	{
+		g_hash_table_destroy (tabs->state->items);
+		g_hash_table_destroy (tabs->state->families);
+		g_free (tabs->state);
+		tabs->state = NULL;
+	}
 	tabs->outer = NULL;
 	tabs->inner = NULL;
 }
@@ -742,25 +745,32 @@ cv_tabs_cleanup (chanview *cv)
 static void
 cv_tabs_set_color (chan *ch, PangoAttrList *list)
 {
-	gtk_label_set_attributes (GTK_LABEL (tab_get_label (ch->impl)), list);
+	tabview *tabs = (tabview *) ch->cv;
+	tab_item *item = g_hash_table_lookup (tabs->state->items, ch);
+
+	g_return_if_fail (item != NULL);
+	gtk_label_set_attributes (GTK_LABEL (item->label), list);
 }
 
 static void
 cv_tabs_rename (chan *ch, char *name)
 {
+	tabview *tabs = (tabview *) ch->cv;
+	tab_item *item = g_hash_table_lookup (tabs->state->items, ch);
 	PangoAttrList *attr;
-	GtkWidget *tab = ch->impl;
 
-	attr = gtk_label_get_attributes (GTK_LABEL (tab_get_label (tab)));
+	g_return_if_fail (item != NULL);
+	attr = gtk_label_get_attributes (GTK_LABEL (item->label));
 	if (attr)
 		pango_attr_list_ref (attr);
 
-	gtk_label_set_text (GTK_LABEL (tab_get_label (tab)), name);
-	gtk_widget_queue_resize (gtk_widget_get_parent(gtk_widget_get_parent(gtk_widget_get_parent(tab))));
+	gtk_label_set_text (GTK_LABEL (item->label), name);
+	gtk_widget_queue_resize (gtk_widget_get_parent (gtk_widget_get_parent (
+		gtk_widget_get_parent (item->tab))));
 
 	if (attr)
 	{
-		gtk_label_set_attributes (GTK_LABEL (tab_get_label (tab)), attr);
+		gtk_label_set_attributes (GTK_LABEL (item->label), attr);
 		pango_attr_list_unref (attr);
 	}
 }

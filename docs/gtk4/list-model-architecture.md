@@ -1,6 +1,6 @@
 # GTK4 List Model Architecture
 
-Status: Stage 5 pass 10 conversion contract
+Status: Stage 5 pass 11 conversion contract
 
 Date: 2026-07-16
 
@@ -80,8 +80,10 @@ navigation order.
      channel-model positions without enumerating GTK children.
    - [x] Own grouped-tab family boxes by model-root identity with deterministic
      creation, insertion, removal, and cleanup.
-   - [ ] Convert grouped-tab close presentation, animated scrolling
-     presentation, keyboard handling, and drag/drop.
+   - [x] Own each grouped tab's button, label, and close-button presentation by
+     channel identity without GTK widget metadata.
+   - [ ] Convert grouped-tab close geometry and hover presentation, animated
+     scrolling presentation, keyboard handling, and drag/drop.
 4. [ ] Convert remaining tabular editors and operational lists according to their
    editing and multi-selection requirements.
 5. [ ] Remove the final GTK3 tree-model, cell-renderer, iterator, and row-reference
@@ -204,6 +206,14 @@ leaves its root family intact, while removing a root destroys and unregisters
 the now-empty family after child reparenting. Orientation changes, view-mode
 changes, and teardown release the complete map. Family discovery and pruning
 therefore no longer inspect GTK children or store family identity on widgets.
+
+Each grouped-tab view also owns an identity-indexed item record for every
+channel. The record carries the tab button, label, and close button used by
+focus, rename, colour, close hit-testing, hover cleanup, and removal workflows.
+Those workflows no longer discover presentation children through ad hoc GTK
+object data, and item records are released only after their widget tree is
+destroyed during view cleanup. Close geometry and hover-state translation are
+still retained GTK3 presentation details for the next contained pass.
 
 ## Executable Contract
 
