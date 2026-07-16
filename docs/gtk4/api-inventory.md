@@ -117,6 +117,15 @@ copying, sorted export, context selection, and width persistence now consume
 typed owner methods. `chanlist.c` contains no direct tree-model, iterator,
 path, cell-renderer, list-store, tree-selection, or custom-list dependency.
 
+Stage 5 generic editable-list pass 22 moves the shared two-column editor into
+a cross-version owner. GTK4 uses typed mutable rows, `GtkSingleSelection`, two
+`GtkEditableLabel` column factories, and row-object drag/drop; GTK3 retains
+editable renderers and native pointer reordering privately. Add, delete,
+in-place edits, Shift+Up/Down movement, pointer movement, and ordered save
+snapshots now cross typed methods. `editlist.c` contains no direct tree-model,
+iterator, path, cell-renderer, list-store, tree-selection, raw key-event, or
+`key-press-event` dependency.
+
 Stage 5 user-list model pass 3 replaces the per-session `GtkListStore` and
 frontend-owned row-reference hash with `FabulorUserListModel`. The GTK4 branch
 owns typed rows, sorted list and multi-selection models, identity-indexed
@@ -449,7 +458,7 @@ Status: `not started`
 | Edit box and spell check | `maingui.c`, `sexy-spell-entry.c` | editable composition/subclass and controllers | not started |
 | Menus and commands | `menu.c`, `plugin-tray.c` | actions and menu models | not started |
 | Operational lists | `servlistgui.c`, `chanlist.c`, `userlistgui.c`, `dccgui.c`, `banlist.c`, `notifygui.c`, `ignoregui.c`, `plugingui.c`, `urlgrab.c` | list models, factories, editing | in progress; notify, user, channel-navigation, loaded add-on, URL History, Ignore List, Ban List, and both DCC owners established |
-| Preferences/editors | `setup.c`, `fkeys.c`, `textgui.c`, `editlist.c` | generated widgets, models, async dialogs | not started |
+| Preferences/editors | `setup.c`, `fkeys.c`, `textgui.c`, `editlist.c` | generic edit list converted; preferences, key bindings, and event text remain | in progress |
 | Themes | `theme/*.c`, `common/gtk3-theme-service.c` | GTK4 CSS compatibility and adapter policy | not started |
 | Platform integration | `fe-gtk.c`, `plugin-tray.c`, notifications | displays, surfaces, icons, native tray | not started |
 

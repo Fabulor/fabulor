@@ -25,6 +25,7 @@ zoitechat_gtk_sources = [
   'dcc-transfer-list.c',
   'dccgui.c',
   'editlist.c',
+  'editable-list.c',
   'fe-gtk.c',
   'fkeys.c',
   'gtkutil.c',

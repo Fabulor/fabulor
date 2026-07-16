@@ -54,6 +54,7 @@ probe = executable(
   '../../src/fe-gtk/channel-list.c',
   '../../src/fe-gtk/dcc-chat-list.c',
   '../../src/fe-gtk/dcc-transfer-list.c',
+  '../../src/fe-gtk/editable-list.c',
   '../../src/fe-gtk/gtk4-list-models.c',
   '../../src/fe-gtk/ignore-list.c',
   '../../src/fe-gtk/channel-model.c',

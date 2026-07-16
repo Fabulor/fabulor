@@ -10,6 +10,7 @@
 #include "../../src/fe-gtk/channel-list.h"
 #include "../../src/fe-gtk/dcc-chat-list.h"
 #include "../../src/fe-gtk/dcc-transfer-list.h"
+#include "../../src/fe-gtk/editable-list.h"
 #include "../../src/fe-gtk/addon-list.h"
 #include "../../src/fe-gtk/channel-model.h"
 #include "../../src/fe-gtk/channel-tree-view.h"
@@ -1058,6 +1059,65 @@ check_dcc_chat_list_model (void)
 	return valid;
 }
 
+static gboolean
+check_editable_list_model (void)
+{
+	FabulorEditableList *list = fabulor_editable_list_new ();
+	GPtrArray *rows = NULL;
+	gboolean valid = list != NULL;
+
+	if (valid)
+	{
+		fabulor_editable_list_append (list, "alpha", "one");
+		fabulor_editable_list_append (list, "beta", "two");
+		fabulor_editable_list_append (list, "gamma", "three");
+		valid = fabulor_editable_list_get_n_rows (list) == 3 &&
+			fabulor_editable_list_set_text_at (list, 1,
+				FABULOR_EDITABLE_LIST_COMMAND, "updated") &&
+			fabulor_editable_list_set_selected (list, 1) &&
+			fabulor_editable_list_move_selected (list, -1) &&
+			!fabulor_editable_list_move_selected (list, -1);
+	}
+	if (valid)
+	{
+		rows = fabulor_editable_list_dup_all (list);
+		valid = rows->len == 3 &&
+			strcmp (((FabulorEditableListRecord *) g_ptr_array_index (
+				rows, 0))->name, "beta") == 0 &&
+			strcmp (((FabulorEditableListRecord *) g_ptr_array_index (
+				rows, 0))->command, "updated") == 0 &&
+			strcmp (((FabulorEditableListRecord *) g_ptr_array_index (
+				rows, 1))->name, "alpha") == 0;
+		g_ptr_array_unref (rows);
+	}
+	if (valid)
+	{
+		valid = fabulor_editable_list_set_selected (list, 1) &&
+			fabulor_editable_list_remove_selected (list) &&
+			fabulor_editable_list_get_n_rows (list) == 2;
+		fabulor_editable_list_add_empty (list);
+		valid = valid && fabulor_editable_list_get_n_rows (list) == 3 &&
+			fabulor_editable_list_set_text_at (list, 2,
+				FABULOR_EDITABLE_LIST_NAME, "delta") &&
+			fabulor_editable_list_set_text_at (list, 2,
+				FABULOR_EDITABLE_LIST_COMMAND, "four");
+	}
+	if (valid)
+	{
+		rows = fabulor_editable_list_dup_all (list);
+		valid = rows->len == 3 &&
+			strcmp (((FabulorEditableListRecord *) g_ptr_array_index (
+				rows, 1))->name, "gamma") == 0 &&
+			strcmp (((FabulorEditableListRecord *) g_ptr_array_index (
+				rows, 2))->name, "delta") == 0 &&
+			strcmp (((FabulorEditableListRecord *) g_ptr_array_index (
+				rows, 2))->command, "four") == 0;
+		g_ptr_array_unref (rows);
+	}
+	fabulor_editable_list_free (list);
+	return valid;
+}
+
 int
 main (void)
 {
@@ -1135,6 +1195,11 @@ main (void)
 	if (!check_dcc_chat_list_model ())
 	{
 		fprintf (stderr, "GTK4 DCC Chat list model contract mismatch\n");
+		return 1;
+	}
+	if (!check_editable_list_model ())
+	{
+		fprintf (stderr, "GTK4 editable list model contract mismatch\n");
 		return 1;
 	}
 

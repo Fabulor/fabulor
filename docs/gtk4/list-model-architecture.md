@@ -1,6 +1,6 @@
 # GTK4 List Model Architecture
 
-Status: Stage 5 pass 21 conversion contract
+Status: Stage 5 pass 22 conversion contract
 
 Date: 2026-07-17
 
@@ -105,6 +105,9 @@ navigation order.
    - [x] Convert the high-volume Channel List with sorted export,
      multi-selection actions, batched population, and retained GTK3 fast-path
      storage behind the owner boundary.
+   - [x] Convert the generic two-column configuration editors with editable
+     cells, single selection, add/delete, pointer drag, keyboard movement, and
+     ordered save snapshots.
 5. [ ] Remove the final GTK3 tree-model, cell-renderer, iterator, and row-reference
    assumptions only after all owning surfaces have moved.
 
@@ -326,6 +329,18 @@ pending-row batches, local filtering, and core row ownership remain in
 `chanlist.c`; that workflow now crosses snapshots and copied records instead of
 tree models. The strict probe verifies collation order, duplicate rejection,
 multi-selection, selected text, sorted export records, clear, and cleanup.
+
+The generic configuration-list editor now owns copied name/command rows,
+editable cells, single selection, add/delete behavior, pointer and keyboard
+reordering, and ordered save snapshots. GTK4 uses typed mutable row objects,
+the shared unsorted flat model stack, `GtkSingleSelection`, two
+`GtkEditableLabel` column factories, and row-object drag/drop. GTK3 retains
+its editable cell renderers and native reorderable tree privately. The eight
+Commands, Popups, User Menu, Replace, URL Handlers, User List Buttons, Dialog
+Buttons, and CTCP Replies workflows retain their existing file serialization
+and post-save reload side effects in `editlist.c`, which no longer handles
+toolkit rows or raw key events. The strict probe verifies edits, boundary-safe
+movement, ordered snapshots, deletion, empty-row population, and cleanup.
 
 ## Executable Contract
 
