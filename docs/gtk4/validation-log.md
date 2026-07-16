@@ -1591,7 +1591,7 @@ Scope: architecture and executable model contracts only. Production GTK3
 models, views, cell renderers, event handling, and visible workflows remain
 unchanged until each owning Stage 5 surface is converted as one unit.
 
-### PR: #65 - GTK4 Stage 5 Notify List
+### PR: [#65 - GTK4 Stage 5 Notify List](https://github.com/Fabulor/fabulor/pull/65)
 
 Date: 2026-07-16
 
