@@ -35,20 +35,11 @@ typedef struct session zoitechat_context;
 #include "../common/cfgfiles.h"
 #include "gtkutil.h"
 #include "gtk-compat.h"
+#include "addon-list.h"
 #include "maingui.h"
 
-/* model for the plugin treeview */
-enum
-{
-	NAME_COLUMN,
-	VERSION_COLUMN,
-	FILE_COLUMN,
-	DESC_COLUMN,
-	FILEPATH_COLUMN,
-	N_COLUMNS
-};
-
 static GtkWidget *plugin_window = NULL;
+static FabulorAddonList *plugin_list_view = NULL;
 
 static const char *
 plugingui_safe_string (const char *value)
@@ -143,60 +134,11 @@ plugingui_icon_button (GtkWidget *box, const char *label,
 }
 
 
-static GtkWidget *
-plugingui_treeview_new (GtkWidget *box)
-{
-	GtkListStore *store;
-	GtkWidget *view;
-	GtkTreeViewColumn *col;
-	int col_id;
-
-	store = gtk_list_store_new (N_COLUMNS, G_TYPE_STRING, G_TYPE_STRING,
-	                            G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING);
-	g_return_val_if_fail (store != NULL, NULL);
-	view = gtkutil_treeview_new (GTK_BOX (box), GTK_TREE_MODEL (store), NULL,
-	                             NAME_COLUMN, _("Name"),
-	                             VERSION_COLUMN, _("Version"),
-	                             FILE_COLUMN, _("File"),
-	                             DESC_COLUMN, _("Description"),
-	                             FILEPATH_COLUMN, NULL, -1);
-	gtk_tree_view_set_grid_lines (GTK_TREE_VIEW (view), GTK_TREE_VIEW_GRID_LINES_HORIZONTAL);
-	for (col_id=0; (col = gtk_tree_view_get_column (GTK_TREE_VIEW (view), col_id));
-	     col_id++)
-			gtk_tree_view_column_set_alignment (col, 0.5);
-
-	return view;
-}
-
-static char *
-plugingui_getfilename (GtkTreeView *view)
-{
-	GtkTreeModel *model;
-	GtkTreeSelection *sel;
-	GtkTreeIter iter;
-	GValue file;
-	char *str;
-
-	memset (&file, 0, sizeof (file));
-
-	sel = gtk_tree_view_get_selection (view);
-	if (gtk_tree_selection_get_selected (sel, &model, &iter))
-	{
-		gtk_tree_model_get_value (model, &iter, FILEPATH_COLUMN, &file);
-
-		str = g_value_dup_string (&file);
-		g_value_unset (&file);
-
-		return str;
-	}
-
-	return NULL;
-}
-
 static void
 plugingui_close (GtkWidget * wid, gpointer a)
 {
 	plugin_window = NULL;
+	plugin_list_view = NULL;
 }
 
 extern GSList *plugin_list;
@@ -206,22 +148,11 @@ fe_pluginlist_update (void)
 {
 	zoitechat_plugin *pl;
 	GSList *list;
-	GtkTreeView *view;
-	GtkListStore *store;
-	GtkTreeIter iter;
 
-	if (!plugin_window)
+	if (!plugin_window || !plugin_list_view)
 		return;
 
-	view = g_object_get_data (G_OBJECT (plugin_window), "view");
-	if (!GTK_IS_TREE_VIEW (view))
-		return;
-
-	store = GTK_LIST_STORE (gtk_tree_view_get_model (view));
-	if (!GTK_IS_LIST_STORE (store))
-		return;
-
-	gtk_list_store_clear (store);
+	fabulor_addon_list_clear (plugin_list_view);
 
 	list = plugin_list;
 	while (list)
@@ -229,12 +160,12 @@ fe_pluginlist_update (void)
 		pl = list->data;
 		if (pl && pl->version && pl->version[0] != 0)
 		{
-			gtk_list_store_append (store, &iter);
-			gtk_list_store_set (store, &iter, NAME_COLUMN, plugingui_safe_string (pl->name),
-			                    VERSION_COLUMN, plugingui_safe_string (pl->version),
-			                    FILE_COLUMN, pl->filename ? file_part (pl->filename) : "",
-			                    DESC_COLUMN, plugingui_safe_string (pl->desc),
-			                    FILEPATH_COLUMN, plugingui_safe_string (pl->filename), -1);
+			fabulor_addon_list_append (plugin_list_view,
+				plugingui_safe_string (pl->name),
+				plugingui_safe_string (pl->version),
+				pl->filename ? file_part (pl->filename) : "",
+				plugingui_safe_string (pl->desc),
+				plugingui_safe_string (pl->filename));
 		}
 		list = list->next;
 	}
@@ -384,12 +315,9 @@ plugingui_unload (GtkWidget * wid, gpointer unused)
 {
 	char *modname, *file;
 	session *target_sess;
-	GtkTreeView *view;
-	GtkTreeIter iter;
-	
-	view = g_object_get_data (G_OBJECT (plugin_window), "view");
-	if (!gtkutil_treeview_get_selected (view, &iter, NAME_COLUMN, &modname,
-	                                    FILEPATH_COLUMN, &file, -1))
+
+	if (!plugin_list_view || !fabulor_addon_list_dup_selected (
+		plugin_list_view, &modname, &file))
 		return;
 	if (!modname || !*modname)
 	{
@@ -436,9 +364,10 @@ plugingui_unload (GtkWidget * wid, gpointer unused)
 }
 
 static void
-plugingui_reloadbutton_cb (GtkWidget *wid, GtkTreeView *view)
+plugingui_reloadbutton_cb (GtkWidget *wid, gpointer unused)
 {
-	char *file = plugingui_getfilename(view);
+	char *file = plugin_list_view ?
+		fabulor_addon_list_dup_selected_path (plugin_list_view) : NULL;
 	session *target_sess;
 
 	if (file)
@@ -468,7 +397,6 @@ void
 plugingui_open (void)
 {
 	GtkWidget *view;
-	GtkWidget *view_scroll;
 	GtkWidget *vbox, *hbox;
 	char buf[128];
 
@@ -483,15 +411,18 @@ plugingui_open (void)
 														 700, 300, &vbox, 0);
 	gtkutil_destroy_on_esc (plugin_window);
 
-	view = plugingui_treeview_new (vbox);
-	view_scroll = gtk_widget_get_parent (view);
-	if (view_scroll)
+	plugin_list_view = fabulor_addon_list_new ();
+	view = plugin_list_view ? fabulor_addon_list_create_view (plugin_list_view,
+		GTK_BOX (vbox), _("Name"), _("Version"), _("File"), _("Description")) : NULL;
+	if (!view)
 	{
-		gtk_box_set_child_packing (GTK_BOX (vbox), view_scroll, TRUE, TRUE, 0, GTK_PACK_START);
-		gtk_widget_set_hexpand (view_scroll, TRUE);
-		gtk_widget_set_vexpand (view_scroll, TRUE);
+		fabulor_addon_list_free (plugin_list_view);
+		plugin_list_view = NULL;
+		fabulor_gtk_window_destroy (GTK_WINDOW (plugin_window));
+		return;
 	}
-	g_object_set_data (G_OBJECT (plugin_window), "view", view);
+	g_object_set_data_full (G_OBJECT (plugin_window), "addon-list",
+		plugin_list_view, (GDestroyNotify) fabulor_addon_list_free);
 
 
 	hbox = gtk_button_box_new (GTK_ORIENTATION_HORIZONTAL);
@@ -505,7 +436,7 @@ plugingui_open (void)
 		plugingui_icon_button (hbox, _("_Unload"), ICON_PLUGIN_UNLOAD,
 									  G_CALLBACK (plugingui_unload), NULL);
 		plugingui_icon_button (hbox, _("_Reload"), ICON_PLUGIN_RELOAD,
-									  G_CALLBACK (plugingui_reloadbutton_cb), view);
+									  G_CALLBACK (plugingui_reloadbutton_cb), NULL);
 	}
 
 	fe_pluginlist_update ();

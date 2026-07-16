@@ -4,6 +4,7 @@
 
 #include "../../src/fe-gtk/gtk-compat.h"
 #include "../../src/fe-gtk/gtk4-list-models.h"
+#include "../../src/fe-gtk/addon-list.h"
 #include "../../src/fe-gtk/channel-model.h"
 #include "../../src/fe-gtk/channel-tree-view.h"
 #include "../../src/fe-gtk/notify-list.h"
@@ -616,6 +617,30 @@ check_user_list_model (void)
 	return valid;
 }
 
+static gboolean
+check_addon_list_model (void)
+{
+	FabulorAddonList *list = fabulor_addon_list_new ();
+	gboolean valid = list != NULL;
+
+	if (valid)
+	{
+		fabulor_addon_list_append (list, "Alpha", "1.0", "alpha.dll",
+			"Alpha addon", "C:/addons/alpha.dll");
+		fabulor_addon_list_append (list, "Beta", "2.0", "beta.py",
+			"Beta addon", "C:/addons/beta.py");
+		valid = fabulor_addon_list_get_n_rows (list) == 2;
+	}
+	if (valid)
+	{
+		fabulor_addon_list_clear (list);
+		valid = fabulor_addon_list_get_n_rows (list) == 0;
+	}
+
+	fabulor_addon_list_free (list);
+	return valid;
+}
+
 int
 main (void)
 {
@@ -658,6 +683,11 @@ main (void)
 	if (!check_user_list_model ())
 	{
 		fprintf (stderr, "GTK4 user list model contract mismatch\n");
+		return 1;
+	}
+	if (!check_addon_list_model ())
+	{
+		fprintf (stderr, "GTK4 addon list model contract mismatch\n");
 		return 1;
 	}
 

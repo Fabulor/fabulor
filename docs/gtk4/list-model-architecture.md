@@ -1,6 +1,6 @@
 # GTK4 List Model Architecture
 
-Status: Stage 5 pass 14 conversion contract
+Status: Stage 5 pass 15 conversion contract
 
 Date: 2026-07-16
 
@@ -90,6 +90,8 @@ navigation order.
      channel-view drag/drop already uses the typed Stage 4 boundary.
 4. [ ] Convert remaining tabular editors and operational lists according to their
    editing and multi-selection requirements.
+   - [x] Convert the loaded Add-ons table to a typed cross-version owner with
+     GTK4 column factories and single-selection unload/reload lookup.
 5. [ ] Remove the final GTK3 tree-model, cell-renderer, iterator, and row-reference
    assumptions only after all owning surfaces have moved.
 
@@ -241,6 +243,14 @@ The final drag/drop audit found no tab-local drag/drop implementation: moving
 the complete channel view already uses the typed Stage 4 source/drop-controller
 boundary. This completes the grouped-tab conversion contract; shipping GTK3
 and eventual GTK4 cutover behavior still require the manual validation matrix.
+
+The loaded Add-ons table now has a dedicated owner for its immutable name,
+version, file, description, and canonical path rows. GTK4 uses the shared flat
+model stack, `GtkSingleSelection`, and four `GtkColumnView` factories; GTK3
+retains its list-store presentation inside the owner. Refresh, unload, and
+reload workflows consume owner methods, leaving `plugingui.c` independent of
+tree models, iterators, and selection APIs. The strict probe verifies append,
+row count, clear, and cleanup without requiring a display.
 
 ## Executable Contract
 

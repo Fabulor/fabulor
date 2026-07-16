@@ -278,6 +278,7 @@ Detailed planning and evidence live in:
   - [x] Convert grouped-tab close hit-testing, hover state, cursor feedback, and whole-tab prelight suppression to cross-version helpers.
   - [x] Convert grouped-tab scroll target discovery and adjustment ownership to model-driven cross-version geometry.
   - [x] Convert grouped-tab mouse and keyboard activation and confirm channel-view drag/drop already uses the typed Stage 4 boundary.
+  - [x] Convert the loaded Add-ons table to a cross-version typed owner with GTK4 column factories and single-selection actions.
 - [ ] Port the transcript and spell-check input widgets to GTK4 rendering and event semantics.
 - [ ] Add the GTK4 theme adapter and validate tray, notifications, icons, fonts, and platform integration.
   - [x] Retire `.zct` registration and mock Windows GTK theme staging, downloads, and installer choices.

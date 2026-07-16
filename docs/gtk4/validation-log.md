@@ -2074,6 +2074,42 @@ Scope: grouped-tab activation and final drag/drop audit. The grouped-tab owner
 conversion is complete; remaining Stage 5 work covers operational lists and
 editors.
 
+### PR: [#78 - GTK4 Stage 5 Loaded Add-ons List](https://github.com/Fabulor/fabulor/pull/78)
+
+Date: 2026-07-16
+
+Migration stage: 5, loaded Add-ons list pass 15
+
+Files/workflows converted: loaded add-on row ownership; GTK4 column factories;
+single-selection name/path lookup; refresh, unload, and reload integration
+
+GTK version: 4.22.4
+
+GLib version: 2.88.0
+
+Build configuration: MSVC x64 Release and strict GTK4 probe boundary
+
+Automated checks:
+
+- [x] production GTK3 frontend compiles and links with 0 warnings and 0 errors
+- [x] strict GTK4 probe compiles and executes the Add-on List owner
+- [x] GTK4 owner append, row-count, clear, and cleanup checks pass
+- [x] `plugingui.c` contains no direct tree-model, iterator, list-store, or tree-selection dependency
+- [x] production and strict build definitions include the new owner
+- [x] GTK4 dependency validator tests remain 8/8
+- [x] repository diff whitespace validation passes
+
+Manual checks:
+
+- [ ] shipping GTK3 Add-ons window row contents, column sizing, and selection
+- [ ] Load, Unload, and Reload actions for native, Python, and Tcl add-ons
+- [ ] refresh after load/unload and window close/reopen cleanup
+- [ ] GTK4 column presentation and selection-driven actions await frontend cutover
+
+Scope: the loaded Add-ons table and its selection-dependent actions only.
+Add-on loading policy, file selection, path containment, and command dispatch
+are unchanged.
+
 ## Per-PR Record Template
 
 Copy this section for each GTK4 PR:
