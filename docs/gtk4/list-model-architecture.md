@@ -1,6 +1,6 @@
 # GTK4 List Model Architecture
 
-Status: Stage 5 pass 23 conversion contract
+Status: Stage 5 pass 24 conversion contract
 
 Date: 2026-07-17
 
@@ -351,6 +351,16 @@ validated through the frontend callback against the row's own signal index
 before the owner accepts it, so a selected-row mismatch cannot update the
 wrong event. The strict probe verifies signal identity, accepted and rejected
 edits, selection callbacks, help population, clearing, and cleanup.
+
+The configurable key-bindings editor now owns copied key labels, canonical
+accelerators, action names, data fields, built-in/custom identity, single
+selection, and ordered snapshots. GTK4 uses typed mutable rows,
+`GtkSingleSelection`, a key-capture button with `GtkShortcutLabel`, an action
+`GtkDropDown`, editable data labels, and controller-based Shift+Up/Down
+movement. GTK3 retains its accelerator/combo/text renderers and list store
+inside the owner. Built-in rows may change only their accelerator; action/data
+editing, deletion, and movement remain restricted to custom rows. Reset and
+save consume copied records, and the strict probe verifies these invariants.
 
 ## Executable Contract
 

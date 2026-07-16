@@ -27,6 +27,7 @@ zoitechat_gtk_sources = [
   'editlist.c',
   'editable-list.c',
   'print-event-list.c',
+  'key-binding-list.c',
   'fe-gtk.c',
   'fkeys.c',
   'gtkutil.c',
