@@ -1632,7 +1632,7 @@ The production executable continues to render the owner's GTK3 branch until
 the frontend build target changes to GTK4; other operational lists are
 unchanged.
 
-### PR: #66 - GTK4 Stage 5 User List Model Ownership
+### PR: [#66 - GTK4 Stage 5 User List Model Ownership](https://github.com/Fabulor/fabulor/pull/66)
 
 Date: 2026-07-16
 
