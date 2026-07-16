@@ -13,7 +13,7 @@ struct _FabulorGtk4FlatModelStack
 {
 	GListStore *store;
 	GtkSortListModel *sorted;
-	GtkMultiSelection *selection;
+	GtkSelectionModel *selection;
 };
 
 struct _FabulorGtk4TreeModelStack
@@ -30,20 +30,34 @@ fabulor_gtk4_list_item_type_is_valid (GType item_type)
 }
 
 FabulorGtk4FlatModelStack *
-fabulor_gtk4_flat_model_stack_new (GType item_type, GtkSorter *sorter)
+fabulor_gtk4_flat_model_stack_new (GType item_type, GtkSorter *sorter,
+									FabulorGtk4SelectionMode selection_mode)
 {
 	FabulorGtk4FlatModelStack *stack;
 
 	g_return_val_if_fail (fabulor_gtk4_list_item_type_is_valid (item_type), NULL);
 	g_return_val_if_fail (sorter == NULL || GTK_IS_SORTER (sorter), NULL);
+	g_return_val_if_fail (selection_mode == FABULOR_GTK4_SELECTION_SINGLE ||
+		selection_mode == FABULOR_GTK4_SELECTION_MULTIPLE, NULL);
 
 	stack = g_new0 (FabulorGtk4FlatModelStack, 1);
 	stack->store = g_list_store_new (item_type);
 	stack->sorted = gtk_sort_list_model_new (
 		G_LIST_MODEL (g_object_ref (stack->store)),
 		sorter ? g_object_ref (sorter) : NULL);
-	stack->selection = gtk_multi_selection_new (
-		G_LIST_MODEL (g_object_ref (stack->sorted)));
+	if (selection_mode == FABULOR_GTK4_SELECTION_SINGLE)
+	{
+		GtkSingleSelection *selection = gtk_single_selection_new (
+			G_LIST_MODEL (g_object_ref (stack->sorted)));
+		gtk_single_selection_set_autoselect (selection, FALSE);
+		gtk_single_selection_set_can_unselect (selection, TRUE);
+		stack->selection = GTK_SELECTION_MODEL (selection);
+	}
+	else
+	{
+		stack->selection = GTK_SELECTION_MODEL (gtk_multi_selection_new (
+			G_LIST_MODEL (g_object_ref (stack->sorted))));
+	}
 	return stack;
 }
 
@@ -73,7 +87,7 @@ fabulor_gtk4_flat_model_stack_get_sorted (FabulorGtk4FlatModelStack *stack)
 	return stack->sorted;
 }
 
-GtkMultiSelection *
+GtkSelectionModel *
 fabulor_gtk4_flat_model_stack_get_selection (FabulorGtk4FlatModelStack *stack)
 {
 	g_return_val_if_fail (stack != NULL, NULL);

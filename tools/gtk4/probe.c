@@ -4,6 +4,7 @@
 
 #include "../../src/fe-gtk/gtk-compat.h"
 #include "../../src/fe-gtk/gtk4-list-models.h"
+#include "../../src/fe-gtk/notify-list.h"
 
 #if GTK_MAJOR_VERSION != 4
 #error The GTK4 probe must compile against GTK 4 headers.
@@ -150,9 +151,10 @@ check_flat_model_stack (void)
 	GtkSorter *sorter = GTK_SORTER (gtk_custom_sorter_new (
 		compare_file_basename, NULL, NULL));
 	FabulorGtk4FlatModelStack *stack =
-		fabulor_gtk4_flat_model_stack_new (G_TYPE_FILE, sorter);
+		fabulor_gtk4_flat_model_stack_new (G_TYPE_FILE, sorter,
+			FABULOR_GTK4_SELECTION_MULTIPLE);
 	GtkSortListModel *sorted = NULL;
-	GtkMultiSelection *selection = NULL;
+	GtkSelectionModel *selection = NULL;
 	GFile *file_zero = g_file_new_for_uri ("file:///0");
 	GFile *file_a = g_file_new_for_uri ("file:///a");
 	GFile *file_b = g_file_new_for_uri ("file:///b");
@@ -175,12 +177,11 @@ check_flat_model_stack (void)
 	}
 	if (valid)
 	{
-		valid = gtk_selection_model_select_item (
-			GTK_SELECTION_MODEL (selection), 0, TRUE);
+		valid = gtk_selection_model_select_item (selection, 0, TRUE);
 		fabulor_gtk4_flat_model_stack_append (stack, file_zero);
 		item = g_list_model_get_item (G_LIST_MODEL (sorted), 1);
-		valid = valid && item == file_a && gtk_selection_model_is_selected (
-			GTK_SELECTION_MODEL (selection), 1);
+		valid = valid && item == file_a &&
+			gtk_selection_model_is_selected (selection, 1);
 		g_clear_object (&item);
 	}
 	if (valid)
@@ -277,6 +278,66 @@ check_tree_model_stack (void)
 	return valid;
 }
 
+static gboolean
+check_notify_list_model (void)
+{
+	gint owner_alpha;
+	gint owner_beta;
+	gint server_alpha;
+	FabulorNotifyList *list = fabulor_notify_list_new (NULL, NULL);
+	FabulorNotifyListRow alpha = {
+		&owner_alpha, NULL, "Alpha", "Alpha", "Offline", "", "Never", NULL
+	};
+	FabulorNotifyListRow beta = {
+		&owner_beta, NULL, "Beta", "Beta", "Offline", "", "Never", NULL
+	};
+	gchar *selected_name = NULL;
+	gboolean valid = list != NULL;
+
+	if (valid)
+	{
+		fabulor_notify_list_begin_update (list);
+		valid = fabulor_notify_list_append (list, &alpha) &&
+			fabulor_notify_list_append (list, &beta) &&
+			!fabulor_notify_list_append (list, &alpha);
+		fabulor_notify_list_end_update (list);
+		valid = valid && fabulor_notify_list_get_n_rows (list) == 2 &&
+			fabulor_notify_list_select_identity (list, &owner_alpha, NULL);
+	}
+	if (valid)
+	{
+		selected_name = fabulor_notify_list_dup_selected_name (list);
+		valid = g_strcmp0 (selected_name, "Alpha") == 0 &&
+			fabulor_notify_list_get_selected_server_data (list) == NULL;
+		g_clear_pointer (&selected_name, g_free);
+	}
+	if (valid)
+	{
+		alpha.server_data = &server_alpha;
+		alpha.status = "Online";
+		alpha.network = "ExampleNet";
+		alpha.last_seen = "0 minutes ago";
+		fabulor_notify_list_begin_update (list);
+		valid = fabulor_notify_list_append (list, &beta) &&
+			fabulor_notify_list_append (list, &alpha);
+		fabulor_notify_list_end_update (list);
+		selected_name = fabulor_notify_list_dup_selected_name (list);
+		valid = valid && g_strcmp0 (selected_name, "Alpha") == 0 &&
+			fabulor_notify_list_get_selected_server_data (list) == &server_alpha;
+		g_clear_pointer (&selected_name, g_free);
+	}
+	if (valid)
+	{
+		fabulor_notify_list_begin_update (list);
+		fabulor_notify_list_end_update (list);
+		valid = fabulor_notify_list_get_n_rows (list) == 0 &&
+			!fabulor_notify_list_has_selection (list);
+	}
+
+	fabulor_notify_list_free (list);
+	return valid;
+}
+
 int
 main (void)
 {
@@ -294,6 +355,11 @@ main (void)
 	if (!check_tree_model_stack ())
 	{
 		fprintf (stderr, "GTK4 tree list model contract mismatch\n");
+		return 1;
+	}
+	if (!check_notify_list_model ())
+	{
+		fprintf (stderr, "GTK4 notify list model contract mismatch\n");
 		return 1;
 	}
 

@@ -21,14 +21,20 @@ G_BEGIN_DECLS
 typedef struct _FabulorGtk4FlatModelStack FabulorGtk4FlatModelStack;
 typedef struct _FabulorGtk4TreeModelStack FabulorGtk4TreeModelStack;
 
+typedef enum
+{
+	FABULOR_GTK4_SELECTION_SINGLE,
+	FABULOR_GTK4_SELECTION_MULTIPLE
+} FabulorGtk4SelectionMode;
+
 FabulorGtk4FlatModelStack *fabulor_gtk4_flat_model_stack_new (
-	GType item_type, GtkSorter *sorter);
+	GType item_type, GtkSorter *sorter, FabulorGtk4SelectionMode selection_mode);
 void fabulor_gtk4_flat_model_stack_free (FabulorGtk4FlatModelStack *stack);
 GListStore *fabulor_gtk4_flat_model_stack_get_store (
 	FabulorGtk4FlatModelStack *stack);
 GtkSortListModel *fabulor_gtk4_flat_model_stack_get_sorted (
 	FabulorGtk4FlatModelStack *stack);
-GtkMultiSelection *fabulor_gtk4_flat_model_stack_get_selection (
+GtkSelectionModel *fabulor_gtk4_flat_model_stack_get_selection (
 	FabulorGtk4FlatModelStack *stack);
 void fabulor_gtk4_flat_model_stack_append (FabulorGtk4FlatModelStack *stack,
 	gpointer item);
