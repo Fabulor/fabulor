@@ -432,12 +432,6 @@ tab_add_real (chanview *cv, GtkWidget *tab, chan *ch, chan *parent)
 	gtk_widget_queue_resize (gtk_widget_get_parent (tabs->inner));
 }
 
-static gboolean
-tab_ignore_cb (GtkWidget *widget, GdkEventCrossing *event, gpointer user_data)
-{
-	return TRUE;
-}
-
 /* called when a tab is clicked (button down) */
 
 static void
@@ -484,24 +478,16 @@ tab_click_cb (GtkWidget *wid, guint button, guint n_press, gdouble x,
 	chan *ch = user_data;
 	tabview *tabs = (tabview *) ch->cv;
 	tab_item *item = g_hash_table_lookup (tabs->state->items, ch);
-	gint close_x;
-	gint close_y;
-	GtkAllocation close_alloc;
 
 	(void) n_press;
 	if (button == 1)
 	{
 		if (prefs.hex_gui_tab_closebuttons && item &&
-			gtk_widget_translate_coordinates (item->close_button, wid, 0, 0,
-				&close_x, &close_y))
+			fabulor_gtk_widget_contains_descendant_point (wid,
+				item->close_button, x, y))
 		{
-			gtk_widget_get_allocation (item->close_button, &close_alloc);
-			if (x >= close_x && x < close_x + close_alloc.width &&
-				y >= close_y && y < close_y + close_alloc.height)
-			{
-				ch->cv->cb_xbutton (ch->cv, ch, ch->tag, ch->userdata);
-				return TRUE;
-			}
+			ch->cv->cb_xbutton (ch->cv, ch, ch->tag, ch->userdata);
+			return TRUE;
 		}
 	}
 
@@ -515,31 +501,19 @@ tab_close_motion_cb (GtkWidget *wid, gdouble x, gdouble y, gpointer user_data)
 	chan *ch = user_data;
 	tabview *tabs = (tabview *) ch->cv;
 	tab_item *item = g_hash_table_lookup (tabs->state->items, ch);
-	gint close_x;
-	gint close_y;
-	GtkAllocation close_alloc;
-	gboolean hover = FALSE;
-
-	if (prefs.hex_gui_tab_closebuttons && item &&
-		gtk_widget_translate_coordinates (item->close_button, wid, 0, 0,
-			&close_x, &close_y))
-	{
-		gtk_widget_get_allocation (item->close_button, &close_alloc);
-		hover = x >= close_x && x < close_x + close_alloc.width &&
-			y >= close_y && y < close_y + close_alloc.height;
-	}
+	gboolean hover = prefs.hex_gui_tab_closebuttons && item &&
+		fabulor_gtk_widget_contains_descendant_point (wid,
+			item->close_button, x, y);
 
 	if (hover)
 	{
-		gtk_widget_set_state_flags (item->close_button,
-			GTK_STATE_FLAG_PRELIGHT, TRUE);
+		fabulor_gtk_widget_set_prelight (item->close_button, TRUE);
 		fabulor_gtk_widget_set_pointing_cursor (wid, TRUE);
 	}
 	else
 	{
 		if (item)
-			gtk_widget_unset_state_flags (item->close_button,
-				GTK_STATE_FLAG_PRELIGHT);
+			fabulor_gtk_widget_set_prelight (item->close_button, FALSE);
 		fabulor_gtk_widget_set_pointing_cursor (wid, FALSE);
 	}
 }
@@ -552,8 +526,7 @@ tab_close_leave_cb (GtkWidget *wid, gpointer user_data)
 	tab_item *item = g_hash_table_lookup (tabs->state->items, ch);
 
 	if (prefs.hex_gui_tab_closebuttons && item)
-		gtk_widget_unset_state_flags (item->close_button,
-			GTK_STATE_FLAG_PRELIGHT);
+		fabulor_gtk_widget_set_prelight (item->close_button, FALSE);
 	fabulor_gtk_widget_set_pointing_cursor (wid, FALSE);
 }
 
@@ -587,11 +560,8 @@ cv_tabs_add (chanview *cv, chan *ch, char *name, chan *parent)
 	fabulor_gtk_widget_on_scroll (item->close_button, tab_scroll_cb, cv);
 	fabulor_gtk_widget_on_pointer_motion (item->tab, tab_close_motion_cb,
 									  tab_close_leave_cb, ch);
-	/* avoid prelights */
-	g_signal_connect (G_OBJECT (item->tab), "enter-notify-event",
-						 	G_CALLBACK (tab_ignore_cb), NULL);
-	g_signal_connect (G_OBJECT (item->tab), "leave-notify-event",
-						 	G_CALLBACK (tab_ignore_cb), NULL);
+	/* Keep close-button hover distinct from whole-tab hover. */
+	fabulor_gtk_widget_suppress_pointer_prelight (item->tab);
 	g_signal_connect (G_OBJECT (item->tab), "pressed",
 							G_CALLBACK (tab_pressed_cb), ch);
 	/* for keyboard */

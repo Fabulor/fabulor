@@ -427,6 +427,102 @@ fabulor_gtk_widget_on_pointer_motion (GtkWidget *widget,
 }
 
 static inline void
+fabulor_gtk_widget_set_prelight (GtkWidget *widget, gboolean prelight)
+{
+	g_return_if_fail (GTK_IS_WIDGET (widget));
+
+	if (prelight)
+		gtk_widget_set_state_flags (widget, GTK_STATE_FLAG_PRELIGHT, TRUE);
+	else
+		gtk_widget_unset_state_flags (widget, GTK_STATE_FLAG_PRELIGHT);
+}
+
+#if GTK_MAJOR_VERSION >= 4
+static inline void
+fabulor_gtk_suppress_prelight_enter_cb (GtkEventControllerMotion *controller,
+									gdouble x, gdouble y, gpointer user_data)
+{
+	(void) x;
+	(void) y;
+	(void) user_data;
+	fabulor_gtk_widget_set_prelight (
+		gtk_event_controller_get_widget (GTK_EVENT_CONTROLLER (controller)),
+		FALSE);
+}
+
+static inline void
+fabulor_gtk_suppress_prelight_leave_cb (GtkEventControllerMotion *controller,
+									gpointer user_data)
+{
+	(void) user_data;
+	fabulor_gtk_widget_set_prelight (
+		gtk_event_controller_get_widget (GTK_EVENT_CONTROLLER (controller)),
+		FALSE);
+}
+#else
+static inline gboolean
+fabulor_gtk_suppress_prelight_cb (GtkWidget *widget, GdkEventCrossing *event,
+								  gpointer user_data)
+{
+	(void) event;
+	(void) user_data;
+	fabulor_gtk_widget_set_prelight (widget, FALSE);
+	return TRUE;
+}
+#endif
+
+static inline void
+fabulor_gtk_widget_suppress_pointer_prelight (GtkWidget *widget)
+{
+	g_return_if_fail (GTK_IS_WIDGET (widget));
+
+#if GTK_MAJOR_VERSION >= 4
+	GtkEventController *controller = gtk_event_controller_motion_new ();
+
+	g_signal_connect (controller, "enter",
+		G_CALLBACK (fabulor_gtk_suppress_prelight_enter_cb), NULL);
+	g_signal_connect (controller, "leave",
+		G_CALLBACK (fabulor_gtk_suppress_prelight_leave_cb), NULL);
+	gtk_widget_add_controller (widget, controller);
+#else
+	g_signal_connect (widget, "enter-notify-event",
+		G_CALLBACK (fabulor_gtk_suppress_prelight_cb), NULL);
+	g_signal_connect (widget, "leave-notify-event",
+		G_CALLBACK (fabulor_gtk_suppress_prelight_cb), NULL);
+#endif
+}
+
+static inline gboolean
+fabulor_gtk_widget_contains_descendant_point (GtkWidget *widget,
+										  GtkWidget *descendant,
+										  gdouble x, gdouble y)
+{
+	g_return_val_if_fail (GTK_IS_WIDGET (widget), FALSE);
+	g_return_val_if_fail (GTK_IS_WIDGET (descendant), FALSE);
+	g_return_val_if_fail (gtk_widget_is_ancestor (descendant, widget), FALSE);
+
+#if GTK_MAJOR_VERSION >= 4
+	graphene_point_t source = GRAPHENE_POINT_INIT ((float) x, (float) y);
+	graphene_point_t target;
+
+	if (!gtk_widget_compute_point (widget, descendant, &source, &target))
+		return FALSE;
+	return gtk_widget_contains (descendant, target.x, target.y);
+#else
+	gint descendant_x;
+	gint descendant_y;
+	GtkAllocation allocation;
+
+	if (!gtk_widget_translate_coordinates (descendant, widget, 0, 0,
+		&descendant_x, &descendant_y))
+		return FALSE;
+	gtk_widget_get_allocation (descendant, &allocation);
+	return x >= descendant_x && x < descendant_x + allocation.width &&
+		y >= descendant_y && y < descendant_y + allocation.height;
+#endif
+}
+
+static inline void
 fabulor_gtk_widget_set_pointing_cursor (GtkWidget *widget, gboolean pointing)
 {
 	g_return_if_fail (GTK_IS_WIDGET (widget));

@@ -1,6 +1,6 @@
 # GTK4 List Model Architecture
 
-Status: Stage 5 pass 11 conversion contract
+Status: Stage 5 pass 12 conversion contract
 
 Date: 2026-07-16
 
@@ -82,8 +82,10 @@ navigation order.
      creation, insertion, removal, and cleanup.
    - [x] Own each grouped tab's button, label, and close-button presentation by
      channel identity without GTK widget metadata.
-   - [ ] Convert grouped-tab close geometry and hover presentation, animated
-     scrolling presentation, keyboard handling, and drag/drop.
+   - [x] Convert close hit-testing, hover state, cursor feedback, and whole-tab
+     prelight suppression to cross-version helpers.
+   - [ ] Convert grouped-tab animated scrolling presentation, keyboard
+     handling, and drag/drop.
 4. [ ] Convert remaining tabular editors and operational lists according to their
    editing and multi-selection requirements.
 5. [ ] Remove the final GTK3 tree-model, cell-renderer, iterator, and row-reference
@@ -213,7 +215,11 @@ focus, rename, colour, close hit-testing, hover cleanup, and removal workflows.
 Those workflows no longer discover presentation children through ad hoc GTK
 object data, and item records are released only after their widget tree is
 destroyed during view cleanup. Close geometry and hover-state translation are
-still retained GTK3 presentation details for the next contained pass.
+now cross-version presentation helpers: GTK4 transforms the pointer into the
+descendant close button with `gtk_widget_compute_point()` and tests native
+widget containment, while GTK3 retains allocation-based geometry internally.
+Both branches share explicit prelight state, pointer cursor feedback, and
+whole-tab prelight suppression without raw crossing events in tab code.
 
 ## Executable Contract
 

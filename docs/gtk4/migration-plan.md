@@ -707,6 +707,17 @@ Widgets are destroyed before item records during whole-view cleanup, while an
 individual record remains live through its tab destruction callback window.
 Cross-version close geometry and hover presentation remain for the next pass.
 
+Grouped-tab close-presentation pass 12 (2026-07-16): close hit-testing now
+uses one cross-version descendant-point helper. GTK4 transforms parent pointer
+coordinates into the close button with `gtk_widget_compute_point()` and tests
+`gtk_widget_contains()`; GTK3 retains the exact translated-allocation bounds
+inside the compatibility layer. Explicit prelight and whole-tab prelight
+suppression helpers preserve close hover, pointer cursor feedback, left-click
+close dispatch, and context fallback without `GdkEventCrossing`, raw enter/leave
+signals, allocation reads, or coordinate translation in `chanview-tabs.c`.
+The strict GTK4 probe compiles all three new helper signatures and branches.
+Animated scrolling presentation, keyboard handling, and drag/drop remain.
+
 Primary surfaces:
 
 - server list and editor
