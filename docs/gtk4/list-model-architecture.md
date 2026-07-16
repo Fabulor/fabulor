@@ -1,6 +1,6 @@
 # GTK4 List Model Architecture
 
-Status: Stage 5 pass 7 conversion contract
+Status: Stage 5 pass 8 conversion contract
 
 Date: 2026-07-16
 
@@ -74,6 +74,8 @@ navigation order.
      identity selection, hit-testing, and scrolling.
    - [x] Convert tree and tab close/context input to a neutral widget, button,
      coordinate, and modifier boundary.
+   - [x] Move toggle suppression and scroll-animation lifetime into each channel
+     view and resolve keyboard focus movement through stable model identity.
    - [ ] Convert the grouped tab-strip owner, family boxes, close presentation,
      animated scrolling, keyboard handling, drag/drop, and family reordering.
 4. [ ] Convert remaining tabular editors and operational lists according to their
@@ -174,6 +176,15 @@ The GTK3 menu adapter obtains the current event only while placing its retained
 popup and has a widget-anchored fallback. Middle-click close and right-click
 context behavior remain unchanged while the future tab owner no longer needs a
 GTK3 event type in its public contract.
+
+Grouped-tab transient state is now view-owned. Each channel view owns its
+forward and backward animation slots, movement flags, and toggle-suppression
+guard; cleanup cancels outstanding timeout sources before destroying the tab
+widgets. Multiple windows can therefore animate or change focus independently.
+Relative and absolute focus movement use the authoritative flattened channel
+model rather than enumerating family boxes and toggle-button children. Family
+construction, presentation updates, and widget reordering remain in the legacy
+tab implementation for the next owner pass.
 
 ## Executable Contract
 
