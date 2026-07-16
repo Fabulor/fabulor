@@ -108,6 +108,15 @@ now resolve stable DCC identity. `dccgui.c` contains no direct tree-model,
 iterator, path, cell-renderer, list-store, or tree-selection dependency, and
 the transfer and chat schemas remain separate owners.
 
+Stage 5 Channel List pass 21 moves the high-volume three-column table into a
+cross-version owner. GTK4 uses typed immutable rows, `GtkMultiSelection`,
+sortable `GtkColumnView` factories, collation-key ordering, and coordinate
+hit-testing; GTK3 keeps the specialized append-and-resort `CustomList` path
+private for shipping performance. Batched population, filtering, joining,
+copying, sorted export, context selection, and width persistence now consume
+typed owner methods. `chanlist.c` contains no direct tree-model, iterator,
+path, cell-renderer, list-store, tree-selection, or custom-list dependency.
+
 Stage 5 user-list model pass 3 replaces the per-session `GtkListStore` and
 frontend-owned row-reference hash with `FabulorUserListModel`. The GTK4 branch
 owns typed rows, sorted list and multi-selection models, identity-indexed

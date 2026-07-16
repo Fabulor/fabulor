@@ -55,6 +55,7 @@
     <ClCompile Include="probe.c" />
     <ClCompile Include="..\..\src\fe-gtk\addon-list.c" />
     <ClCompile Include="..\..\src\fe-gtk\ban-list.c" />
+	<ClCompile Include="..\..\src\fe-gtk\channel-list.c" />
     <ClCompile Include="..\..\src\fe-gtk\dcc-chat-list.c" />
     <ClCompile Include="..\..\src\fe-gtk\dcc-transfer-list.c" />
     <ClCompile Include="..\..\src\fe-gtk\gtk4-list-models.c" />

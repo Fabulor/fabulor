@@ -813,6 +813,19 @@ rejection, update, ordered multi-selection, callbacks, removal, clear, and
 cleanup. The combined transfer and distinct Chat schemas are now both
 converted without merging their protocol workflows.
 
+Channel List pass 21 (2026-07-17): the high-volume `/LIST` window now has one
+cross-version owner for stable row identity, channel, users, topic, collation
+key, sorted presentation, multi-selection, hit-testing, export snapshots, and
+column widths. GTK4 uses typed immutable rows, the shared flat model stack,
+`GtkMultiSelection`, three sortable `GtkColumnView` factories, and incremental
+sorting after view creation. GTK3 retains its specialized `CustomList`
+append-and-final-resort implementation inside the owner to preserve current
+large-list performance. The frontend keeps its immediate first-row display,
+250 ms pending batches, local user/search filtering, and authoritative core
+row lifetime while no longer traversing toolkit rows for join, copy, context,
+save, refresh, or teardown. The strict probe covers collation order, duplicate
+rejection, multi-selection, selected text, sorted export records, and cleanup.
+
 Primary surfaces:
 
 - server list and editor

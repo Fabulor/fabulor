@@ -1,11 +1,13 @@
 #include <gtk/gtk.h>
 
 #include <stdio.h>
+#include <string.h>
 
 #include "../../src/fe-gtk/gtk-compat.h"
 #include "../../src/fe-gtk/gtk4-list-models.h"
 #include "../../src/fe-gtk/ignore-list.h"
 #include "../../src/fe-gtk/ban-list.h"
+#include "../../src/fe-gtk/channel-list.h"
 #include "../../src/fe-gtk/dcc-chat-list.h"
 #include "../../src/fe-gtk/dcc-transfer-list.h"
 #include "../../src/fe-gtk/addon-list.h"
@@ -791,6 +793,63 @@ probe_ban_selection (guint selected, gpointer user_data)
 }
 
 static gboolean
+check_channel_list_model (void)
+{
+	gint beta_identity = 1;
+	gint alpha_identity = 2;
+	FabulorChannelListSnapshot beta = {
+		&beta_identity, "#beta", 20, "Beta topic", "beta"
+	};
+	FabulorChannelListSnapshot alpha = {
+		&alpha_identity, "#alpha", 10, "Alpha topic", "alpha"
+	};
+	FabulorChannelList *list = fabulor_channel_list_new (NULL, NULL);
+	GPtrArray *rows = NULL;
+	GPtrArray *selected = NULL;
+	gchar *first = NULL;
+	gboolean valid = list != NULL;
+
+	if (valid)
+	{
+		valid = fabulor_channel_list_append (list, &beta) &&
+			fabulor_channel_list_append (list, &alpha) &&
+			!fabulor_channel_list_append (list, &beta) &&
+			fabulor_channel_list_get_n_rows (list) == 2;
+	}
+	if (valid)
+	{
+		rows = fabulor_channel_list_dup_all (list);
+		valid = rows->len == 2 &&
+			strcmp (((FabulorChannelListRecord *) g_ptr_array_index (
+				rows, 0))->channel, "#alpha") == 0 &&
+			((FabulorChannelListRecord *) g_ptr_array_index (rows, 0))->users == 10 &&
+			strcmp (((FabulorChannelListRecord *) g_ptr_array_index (
+				rows, 1))->topic, "Beta topic") == 0;
+		g_ptr_array_unref (rows);
+	}
+	if (valid)
+	{
+		valid = fabulor_channel_list_set_selected (list, 0, TRUE) &&
+			fabulor_channel_list_set_selected (list, 1, TRUE);
+		selected = fabulor_channel_list_dup_selected_text (list,
+			FABULOR_CHANNEL_LIST_TOPIC);
+		first = fabulor_channel_list_dup_first_selected_channel (list);
+		valid = valid && selected->len == 2 &&
+			strcmp (g_ptr_array_index (selected, 0), "Alpha topic") == 0 &&
+			strcmp (first, "#alpha") == 0;
+		g_ptr_array_unref (selected);
+		g_free (first);
+	}
+	if (valid)
+	{
+		fabulor_channel_list_clear (list);
+		valid = fabulor_channel_list_get_n_rows (list) == 0;
+	}
+	fabulor_channel_list_free (list);
+	return valid;
+}
+
+static gboolean
 check_ban_list_model (void)
 {
 	ProbeBanSelection selection = { 0 };
@@ -1061,6 +1120,11 @@ main (void)
 	if (!check_ban_list_model ())
 	{
 		fprintf (stderr, "GTK4 ban list model contract mismatch\n");
+		return 1;
+	}
+	if (!check_channel_list_model ())
+	{
+		fprintf (stderr, "GTK4 channel list model contract mismatch\n");
 		return 1;
 	}
 	if (!check_dcc_transfer_list_model ())
