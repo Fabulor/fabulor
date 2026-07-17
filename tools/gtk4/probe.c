@@ -17,6 +17,7 @@
 #include "../../src/fe-gtk/preferences-category-list.h"
 #include "../../src/fe-gtk/server-network-list.h"
 #include "../../src/fe-gtk/server-entry-list.h"
+#include "../../src/fe-gtk/spell-entry-widget.h"
 #include "../../src/fe-gtk/spell-entry-words.h"
 #include "../../src/fe-gtk/xtext-background.h"
 #include "../../src/fe-gtk/xtext-accessible.h"
@@ -1912,6 +1913,22 @@ check_xtext_scroll_copy_policy (void)
 }
 
 static gboolean
+check_spell_entry_widget_policy (void)
+{
+	GType entry_type = g_type_from_name ("FabulorGtk4ProbeSpellEntry");
+
+	if (entry_type == G_TYPE_INVALID)
+	{
+		entry_type = g_type_register_static_simple (GTK_TYPE_ENTRY,
+			"FabulorGtk4ProbeSpellEntry", sizeof (GtkEntryClass), NULL,
+			sizeof (GtkEntry), NULL, 0);
+	}
+
+	return g_type_is_a (entry_type, GTK_TYPE_ENTRY) &&
+		g_type_is_a (entry_type, GTK_TYPE_EDITABLE);
+}
+
+static gboolean
 check_spell_entry_word_policy (void)
 {
 	FabulorSpellWords *words = fabulor_spell_words_new (
@@ -2381,6 +2398,11 @@ main (void)
 	if (!check_spell_entry_word_policy ())
 	{
 		fprintf (stderr, "GTK4 spell-entry word policy mismatch\n");
+		return 1;
+	}
+	if (!check_spell_entry_widget_policy ())
+	{
+		fprintf (stderr, "GTK4 spell-entry widget policy mismatch\n");
 		return 1;
 	}
 	if (!check_xtext_performance_policy ())

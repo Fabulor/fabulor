@@ -306,6 +306,7 @@ Detailed planning and evidence live in:
   - [x] Expose a bounded read-only GTK4 accessible-text snapshot with Unicode boundaries and coalesced append, trim, clear, timestamp, and buffer-switch updates.
   - [x] Validate deterministic append redraw coalescing and wrapped-line scrollback bounds, preserving immediate local echo and the newest complete entry.
   - [x] Separate spell-input UTF-8 word ownership into tested byte and character ranges so Unicode dictionary and replacement actions target the correct text.
+  - [x] Retain the spell-entry subclass with inherited editable semantics and replace its draw, pointer, redraw, and theme-lifetime virtual boundaries.
 - [ ] Add the GTK4 theme adapter and validate tray, notifications, icons, fonts, and platform integration.
   - [x] Retire `.zct` registration and mock Windows GTK theme staging, downloads, and installer choices.
   - [ ] Discover system GTK4 desktop themes and imported themes under `%APPDATA%\Fabulor\themes`.

@@ -109,6 +109,7 @@ FOR %%I IN ("$(ZoiteChatLib)fabulor.rc") DO IF %%~zI EQU 0 (
     <ClInclude Include="setup.h" />
     <ClInclude Include="sexy-iso-codes.h" />
     <ClInclude Include="sexy-spell-entry.h" />
+	<ClInclude Include="spell-entry-widget.h" />
     <ClInclude Include="spell-entry-words.h" />
     <ClInclude Include="textgui.h" />
     <ClInclude Include="urlgrab.h" />
@@ -183,6 +184,7 @@ FOR %%I IN ("$(ZoiteChatLib)fabulor.rc") DO IF %%~zI EQU 0 (
     <ClCompile Include="setup.c" />
     <ClCompile Include="sexy-iso-codes.c" />
     <ClCompile Include="sexy-spell-entry.c" />
+	<ClCompile Include="spell-entry-widget.c" />
     <ClCompile Include="spell-entry-words.c" />
     <ClCompile Include="textgui.c" />
     <ClCompile Include="urlgrab.c" />

@@ -455,7 +455,8 @@ The line counts below identify review size, not priority by themselves.
 | `src/fe-gtk/setup.c` | 2,548 | 491 | preferences tree, generated controls, dialogs | 2/3/5 |
 | `src/fe-gtk/fkeys.c` | 2,386 | 282 | accelerators and editable cell renderers | 4/5 |
 | `src/fe-gtk/fe-gtk.c` | 1,928 | 110 | startup, runtime paths, display/icon setup | 1/7/8 |
-| `src/fe-gtk/sexy-spell-entry.c` | 1,878 | 156 | `GtkEntry` subclass, drawing, pointer events | 6 |
+| `src/fe-gtk/sexy-spell-entry.c` | 1,878 | 156 | `GtkEntry` subclass, spell attributes, menus | 6 |
+| `src/fe-gtk/spell-entry-widget.c` | 40 | 11 | cross-version pointer and redraw boundary | 6 |
 | `src/fe-gtk/theme/theme-preferences.c` | 1,946 | 564 | theme UI, models, response-driven dialogs | 3/5/7 |
 | `src/fe-gtk/plugin-tray.c` | 1,620 | 147 | GTK3 status icon/AppIndicator and Win32 tray | 7 |
 | `src/fe-gtk/dccgui.c` | 1,209 | 245 | transfer models, progress, dialogs | 3/5 |
@@ -607,7 +608,7 @@ Status: `not started`
 |---|---|---|---|
 | Main windows and tabs | `maingui.c`, `chanview*.c` | child ownership, gestures, DnD, focus | in progress |
 | Transcript | `xtext.c`, `xtext.h`, `xtext-render-target.c` | snapshot rendering and event model | in progress; render destination ownership established |
-| Edit box and spell check | `maingui.c`, `sexy-spell-entry.c` | editable composition/subclass and controllers | not started |
+| Edit box and spell check | `maingui.c`, `sexy-spell-entry.c`, `spell-entry-*.c` | styling attributes and dynamic menus | in progress; word and widget lifecycle boundaries established |
 | Menus and commands | `menu.c`, `plugin-tray.c` | actions and menu models | not started |
 | Operational lists | `servlistgui.c`, `chanlist.c`, `userlistgui.c`, `dccgui.c`, `banlist.c`, `notifygui.c`, `ignoregui.c`, `plugingui.c`, `urlgrab.c` | list models, factories, editing | converted; toolkit-specific models and views are contained by cross-version owners |
 | Preferences/editors | `setup.c`, `fkeys.c`, `textgui.c`, `editlist.c` | generic edit list, Print Events, key bindings, sound events, and preference navigation converted | converted |

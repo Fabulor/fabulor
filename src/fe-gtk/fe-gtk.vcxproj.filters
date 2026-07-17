@@ -81,6 +81,12 @@
     <ClInclude Include="sexy-spell-entry.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+	<ClInclude Include="spell-entry-widget.h">
+	  <Filter>Header Files</Filter>
+	</ClInclude>
+	<ClInclude Include="spell-entry-words.h">
+	  <Filter>Header Files</Filter>
+	</ClInclude>
     <ClInclude Include="textgui.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -218,6 +224,12 @@
     <ClCompile Include="sexy-spell-entry.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+	<ClCompile Include="spell-entry-widget.c">
+	  <Filter>Source Files</Filter>
+	</ClCompile>
+	<ClCompile Include="spell-entry-words.c">
+	  <Filter>Source Files</Filter>
+	</ClCompile>
     <ClCompile Include="textgui.c">
       <Filter>Source Files</Filter>
     </ClCompile>
