@@ -3206,6 +3206,52 @@ Scope: edit-box Pango attribute construction and palette roles only. GTK4
 dynamic spelling/colour menus and complete production input validation remain
 separate passes.
 
+### PR: #107 - GTK4 Stage 6 Spell-Input Dynamic Menus
+
+Date: 2026-07-17
+
+Migration stage: 6, spell-input dynamic menu and action pass 4
+
+Files/workflows converted: immutable spelling and formatting menu projection;
+per-entry GTK4 action ownership; lazy Enchant suggestions; language-targeted
+replace/add actions; session ignore; spell toggle; IRC attributes; colours
+0-15; pointer and keyboard context-menu refresh; GTK3 popup containment
+
+GTK version: 4.22.4
+
+GLib version: 2.88.0
+
+Build configuration: MSVC x64 Release and strict GTK4 probe boundary
+
+Automated checks:
+
+- [x] production GTK3 frontend compiles and links with 0 warnings and 0 errors
+- [x] strict GTK4 probe compiles, links, and executes with 0 warnings and 0 errors
+- [x] independent Meson/Ninja GTK4 probe compiles and executes with warnings treated as errors
+- [x] complete `sexy-spell-entry.c` source passes an MSVC GTK4 syntax compile
+- [x] disabled spell state omits spelling suggestions but retains formatting and toggle actions
+- [x] two dictionaries expose language-specific replacement and add targets
+- [x] empty suggestion lists remain represented without an executable action
+- [x] eleven suggestions preserve the ten-item nested `More...` boundary
+- [x] all five IRC attribute and sixteen colour insertion actions are present
+- [x] action targets carry language strings rather than Enchant pointers
+- [x] GTK3 `populate-popup` and markup-menu code is explicitly version-contained
+- [x] GTK4 dependency contract includes the translated-menu `intl` header, import library, and runtime
+- [x] repository diff whitespace validation passes
+
+Manual checks:
+
+- [ ] shipping GTK3 suggestions, replacement, add, Ignore All, and persistence remain unchanged
+- [ ] shipping GTK3 formatting and colour swatch menu remains unchanged
+- [ ] GTK4 right-click targets the pointer word and Shift+F10/Menu targets the cursor word
+- [ ] GTK4 spell toggle updates underline and menu state
+- [ ] GTK4 formatting insertion replaces selection and preserves cursor behavior
+- [ ] production GTK4 typing and context-menu latency awaits full client integration
+
+Scope: spelling and formatting context-menu projection, activation ownership,
+and GTK3 containment only. Complete production GTK4 input validation remains
+the final Stage 6 spell-input pass.
+
 ## Per-PR Record Template
 
 Copy this section for each GTK4 PR:

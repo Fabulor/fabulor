@@ -2277,6 +2277,7 @@ mg_destroy_tab_cb (GtkWidget *item, chan *ch)
         mg_xbutton_cb (mg_gui->chanview, ch, chan_get_tag (ch), chan_get_userdata (ch));
 }
 
+#if GTK_MAJOR_VERSION < 4
 static void
 mg_color_insert (GtkWidget *item, gpointer userdata)
 {
@@ -2394,6 +2395,7 @@ mg_create_color_menu (GtkWidget *menu, session *sess)
                 mg_markup_item (subsubmenu, buf, i);
         }
 }
+#endif
 
 static void
 mg_set_guint8 (GtkCheckMenuItem *item, guint8 *setting)
@@ -4588,11 +4590,13 @@ mg_change_layout (int type)
         }
 }
 
+#if GTK_MAJOR_VERSION < 4
 static void
 mg_inputbox_rightclick (GtkEntry *entry, GtkWidget *menu)
 {
         mg_create_color_menu (menu, NULL);
 }
+#endif
 
 typedef struct
 {
@@ -5534,8 +5538,10 @@ mg_create_entry (session *sess, GtkWidget *box)
         gtk_widget_set_name (entry, "zoitechat-inputbox");
         fabulor_gtk_widget_on_key_pressed (entry, key_handle_key_press, NULL);
         fabulor_gtk_widget_on_focus_enter (entry, mg_inputbox_focus, gui);
+#if GTK_MAJOR_VERSION < 4
         g_signal_connect (G_OBJECT (entry), "populate-popup",
                                                         G_CALLBACK (mg_inputbox_rightclick), NULL);
+#endif
         g_signal_connect (G_OBJECT (entry), "insert-emoji",
                                                         G_CALLBACK (mg_inputbox_insert_emoji_cb), NULL);
         g_signal_connect (G_OBJECT (entry), "icon-release",

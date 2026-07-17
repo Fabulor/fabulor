@@ -15,6 +15,7 @@
     "bin/glib-2.0-0.dll",
     "bin/graphene-1.0-0.dll",
     "bin/gtk-4-1.dll",
+    "bin/intl.dll",
     "include/cairo/cairo.h",
     "include/gdk-pixbuf-2.0/gdk-pixbuf/gdk-pixbuf.h",
     "include/glib-2.0/glib.h",
@@ -22,6 +23,7 @@
     "include/gtk-4.0/gtk/gtk.h",
     "include/gtk-4.0/gtk/gtkversion.h",
     "include/harfbuzz/hb.h",
+    "include/libintl.h",
     "include/pango-1.0/pango/pango.h",
     "lib/cairo.lib",
     "lib/glib-2.0.lib",
@@ -30,6 +32,7 @@
     "lib/graphene-1.0/include/graphene-config.h",
     "lib/gobject-2.0.lib",
     "lib/gtk-4.lib",
+    "lib/intl.lib",
     "lib/pkgconfig/glib-2.0.pc",
     "lib/pkgconfig/gtk4.pc"
   ]

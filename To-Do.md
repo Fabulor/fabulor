@@ -308,6 +308,7 @@ Detailed planning and evidence live in:
   - [x] Separate spell-input UTF-8 word ownership into tested byte and character ranges so Unicode dictionary and replacement actions target the correct text.
   - [x] Retain the spell-entry subclass with inherited editable semantics and replace its draw, pointer, redraw, and theme-lifetime virtual boundaries.
   - [x] Move IRC formatting, semantic colours, and misspelling Pango attributes into a tested widget-independent owner.
+  - [x] Replace GTK4 spell and formatting popup mutation with an owned dynamic menu model and per-entry actions.
 - [ ] Add the GTK4 theme adapter and validate tray, notifications, icons, fonts, and platform integration.
   - [x] Retire `.zct` registration and mock Windows GTK theme staging, downloads, and installer choices.
   - [ ] Discover system GTK4 desktop themes and imported themes under `%APPDATA%\Fabulor\themes`.

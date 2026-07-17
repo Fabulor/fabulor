@@ -26,6 +26,7 @@ endif
 message(validation.stdout().strip())
 
 gtk4_includes = include_directories(
+	join_paths(gtk4_root, 'include'),
   join_paths(gtk4_root, 'include', 'gtk-4.0'),
   join_paths(gtk4_root, 'include', 'glib-2.0'),
   join_paths(gtk4_root, 'lib', 'glib-2.0', 'include'),
@@ -47,12 +48,14 @@ graphene_library = cc.find_library('graphene-1.0', dirs: gtk4_library_dir, requi
 gio_library = cc.find_library('gio-2.0', dirs: gtk4_library_dir, required: true)
 gobject_library = cc.find_library('gobject-2.0', dirs: gtk4_library_dir, required: true)
 glib_library = cc.find_library('glib-2.0', dirs: gtk4_library_dir, required: true)
+intl_library = cc.find_library('intl', dirs: gtk4_library_dir, required: true)
 
 probe = executable(
   'fabulor-gtk4-probe',
   'probe.c',
   '../../src/fe-gtk/spell-entry-words.c',
 	'../../src/fe-gtk/spell-entry-style.c',
+	'../../src/fe-gtk/spell-entry-menu.c',
 	'../../src/fe-gtk/spell-entry-widget.c',
   '../../src/fe-gtk/addon-list.c',
   '../../src/fe-gtk/ban-list.c',
@@ -87,7 +90,7 @@ probe = executable(
   '../../src/fe-gtk/user-list-view.c',
   '../../src/fe-gtk/url-list.c',
   include_directories: gtk4_includes,
-  dependencies: [gtk4_library, pango_library, gdk_pixbuf_library, cairo_library, graphene_library, gio_library, gobject_library, glib_library],
+  dependencies: [gtk4_library, pango_library, gdk_pixbuf_library, cairo_library, graphene_library, gio_library, gobject_library, glib_library, intl_library],
 )
 
 probe_environment = environment()

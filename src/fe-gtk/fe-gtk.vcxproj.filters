@@ -82,7 +82,10 @@
       <Filter>Header Files</Filter>
     </ClInclude>
 	<ClInclude Include="spell-entry-style.h">
-	  <Filter>Header Files</Filter>
+		<Filter>Header Files</Filter>
+	</ClInclude>
+	<ClInclude Include="spell-entry-menu.h">
+		<Filter>Header Files</Filter>
 	</ClInclude>
 	<ClInclude Include="spell-entry-widget.h">
 	  <Filter>Header Files</Filter>
@@ -228,7 +231,10 @@
       <Filter>Source Files</Filter>
     </ClCompile>
 	<ClCompile Include="spell-entry-style.c">
-	  <Filter>Source Files</Filter>
+		<Filter>Source Files</Filter>
+	</ClCompile>
+	<ClCompile Include="spell-entry-menu.c">
+		<Filter>Source Files</Filter>
 	</ClCompile>
 	<ClCompile Include="spell-entry-widget.c">
 	  <Filter>Source Files</Filter>
