@@ -194,8 +194,8 @@ store or row-reference ownership remains in `fe-gtk.h`, `maingui.c`, or
 The visibility helper is limited to 17 reviewed roots whose descendants have
 finished construction and have no intentional hidden state at reveal time.
 The boundary deliberately does not abstract generic widget destruction,
-remaining mixed start/end box ordering, menu/item visibility, events,
-clipboard ownership, or list/tree models. Those operations have GTK4 lifetime
+remaining mixed start/end box ordering, menu/item visibility, events, or
+list/tree models. Those operations have GTK4 lifetime
 or behaviour changes that must remain visible at each caller. Dynamic removal
 is limited to five children with a known owning `GtkBox`. The box helper
 preserves explicit widget alignment/expansion, adds GTK3 packing padding to
@@ -337,8 +337,8 @@ lists, channel lists, URL actions, and URL history now request one stable
 standard-plus-primary copy operation without exposing GTK3 `GdkAtom` values.
 The GTK4 branch resolves `GdkClipboard` objects from the widget display and
 avoids duplicate writes when the backend aliases primary and standard
-clipboards. Transcript-owned selection and clipboard code remains isolated in
-`xtext.c` for the custom-widget stage.
+clipboards. Transcript-owned selection and clipboard code is now isolated in
+`xtext-selection.c` for the custom-widget stage.
 
 The first event-controller boundary covers simple interactions whose callbacks
 do not consume coordinates or event metadata. Character Chart hover uses a
@@ -413,8 +413,9 @@ and pane-placement consumers. GTK4 uses local pointer content with
 same-application restrictions remain in `gtk-compat.h`. User-list file and
 internal hover share typed row selection and deterministic leave/drop cleanup.
 The former action-code identity and stale leading-character target test are
-removed. The remaining consumer-side `GtkSelectionData` reference is transcript
-clipboard ownership in `xtext.c`, not drag/drop, and remains assigned to Stage 6.
+removed. The remaining consumer-side `GtkSelectionData` reference is contained
+inside the GTK3 branch of the Stage 6 transcript selection adapter, not
+drag/drop or transcript content logic.
 
 ## Quantitative API Baseline
 
@@ -515,6 +516,15 @@ separator, URL-hover, tooltip, and scrolling logic. `FabulorXTextClick`
 replaces raw `GdkEventButton` word-click payloads, and coordinate-based menu
 entry points preserve popup behavior. The only remaining direct transcript
 event slots are GTK3 selection ownership and selection payload delivery.
+
+Stage 6 transcript selection pass 5 removes those final direct event slots.
+`xtext-selection.c` registers GTK3 targets after realization and delivers the
+same UTF-8, text, compound-text, and locale payloads through signals. Its GTK4
+branch publishes an owned string `GdkContentProvider` to CLIPBOARD and PRIMARY,
+uses provider identity to distinguish its own update from replacement, and
+disconnects change observation before widget teardown. `xtext.c` now owns only
+selection ranges and text production; it contains no toolkit clipboard,
+selection event, target, atom, or payload type.
 
 Status: `in progress`
 

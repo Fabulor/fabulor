@@ -48,6 +48,7 @@
 #include "gtk-compat.h"
 #include "xtext.h"
 #include "xtext-geometry.h"
+#include "xtext-selection.h"
 #include "xtext-widget-class.h"
 #include "fkeys.h"
 #include "theme/theme-access.h"
@@ -64,9 +65,6 @@
 #else
 #include <unistd.h>
 #include <gdk/gdkcairo.h>
-#ifdef GDK_WINDOWING_X11
-#include <gdk/gdkx.h>
-#endif
 #endif
 #include <gdk-pixbuf/gdk-pixbuf.h>
 #include <pango/pangocairo.h>
@@ -106,15 +104,6 @@ enum
 	LAST_SIGNAL
 };
 
-/* values for selection info */
-enum
-{
-	TARGET_UTF8_STRING,
-	TARGET_STRING,
-	TARGET_TEXT,
-	TARGET_COMPOUND_TEXT
-};
-
 enum
 {
 	PROP_0,
@@ -124,51 +113,6 @@ enum
 	PROP_VSCROLL_POLICY
 };
 
-
-/* Selection targets for PRIMARY selection / copy-paste.
- *
- * On Wayland, GtkWidget has no GdkWindow until it is realized. Registering
- * selection targets during instance init is too early and can crash under the
- * Wayland backend (window/display is NULL).
- */
-static const GtkTargetEntry gtk_xtext_selection_targets[] = {
-	{ "UTF8_STRING", 0, TARGET_UTF8_STRING },
-	{ "STRING", 0, TARGET_STRING },
-	{ "TEXT",   0, TARGET_TEXT },
-	{ "COMPOUND_TEXT", 0, TARGET_COMPOUND_TEXT }
-};
-
-static void
-gtk_xtext_install_selection_targets_on_realize (GtkWidget *widget, gpointer user_data)
-{
-	(void)user_data;
-
-	if (gtk_widget_get_window (widget) == NULL)
-		return;
-
-	gtk_selection_add_targets (widget,
-	                          GDK_SELECTION_PRIMARY,
-	                          (GtkTargetEntry *)gtk_xtext_selection_targets,
-	                          (gint)G_N_ELEMENTS (gtk_xtext_selection_targets));
-}
-
-static void
-gtk_xtext_install_selection_targets (GtkWidget *widget)
-{
-	if (gtk_widget_get_realized (widget) && gtk_widget_get_window (widget) != NULL)
-	{
-		gtk_selection_add_targets (widget,
-		                          GDK_SELECTION_PRIMARY,
-		                          (GtkTargetEntry *)gtk_xtext_selection_targets,
-		                          (gint)G_N_ELEMENTS (gtk_xtext_selection_targets));
-		return;
-	}
-
-	g_signal_connect (widget,
-	                  "realize",
-	                  G_CALLBACK (gtk_xtext_install_selection_targets_on_realize),
-	                  NULL);
-}
 
 static guint xtext_signals[LAST_SIGNAL];
 
@@ -181,6 +125,10 @@ static void gtk_xtext_render_page (GtkXText * xtext);
 static void gtk_xtext_calc_lines (xtext_buffer *buf, int);
 static gboolean gtk_xtext_is_selecting (GtkXText *xtext);
 static char *gtk_xtext_selection_get_text (GtkXText *xtext, int *len_ret);
+static gchar *gtk_xtext_selection_text (GtkWidget *widget, gint *length,
+	gpointer user_data);
+static void gtk_xtext_selection_lost (GtkWidget *widget, gpointer user_data);
+static void gtk_xtext_unselect (GtkXText *xtext);
 static textentry *gtk_xtext_nth (GtkXText *xtext, int line, int *subline);
 static void gtk_xtext_adjustment_changed (GtkAdjustment * adj,
 												GtkXText * xtext);
@@ -977,6 +925,8 @@ gtk_xtext_init (GtkXText * xtext)
 	xtext->background_surface = NULL;
 	xtext->background_clip_surface = NULL;
 	xtext->render_target = fabulor_xtext_render_target_new ();
+	xtext->selection = fabulor_xtext_selection_new (GTK_WIDGET (xtext),
+		gtk_xtext_selection_text, gtk_xtext_selection_lost, NULL);
 	xtext->background_clip_x = 0;
 	xtext->background_clip_y = 0;
 	xtext->background_clip_width = 0;
@@ -1033,7 +983,6 @@ gtk_xtext_init (GtkXText * xtext)
 	fabulor_gtk_widget_on_focus_leave (GTK_WIDGET (xtext),
 		gtk_xtext_focus_changed, NULL);
 
-	gtk_xtext_install_selection_targets (GTK_WIDGET (xtext));
 	gtk_style_context_add_class (gtk_widget_get_style_context (GTK_WIDGET (xtext)), "view");
 	g_signal_connect (G_OBJECT (xtext), "style-updated", G_CALLBACK (gtk_xtext_style_updated), NULL);
 }
@@ -1238,6 +1187,12 @@ gtk_xtext_cleanup (GtkXText *xtext)
 	{
 		fabulor_xtext_render_target_free (xtext->render_target);
 		xtext->render_target = NULL;
+	}
+
+	if (xtext->selection)
+	{
+		fabulor_xtext_selection_free (xtext->selection);
+		xtext->selection = NULL;
 	}
 
 	if (xtext->font)
@@ -2824,12 +2779,8 @@ gtk_xtext_set_clip_owner (GtkWidget *xtext, guint32 event_time)
 	if (str)
 	{
 		if (str[0])
-		{
-			gtk_clipboard_set_text (gtk_widget_get_clipboard (xtext, GDK_SELECTION_CLIPBOARD), str, len);
-			
-			gtk_selection_owner_set (xtext, GDK_SELECTION_PRIMARY, event_time);
-			gtk_selection_owner_set (xtext, GDK_SELECTION_SECONDARY, event_time);
-		}
+			fabulor_xtext_selection_publish (GTK_XTEXT (xtext)->selection,
+				str, len, event_time);
 
 		g_free (str);
 	}
@@ -3053,18 +3004,6 @@ gtk_xtext_button_press (GtkWidget *widget, guint button, guint n_press,
 	return FALSE;
 }
 
-/* another program has claimed the selection */
-
-static gboolean
-gtk_xtext_selection_kill (GtkXText *xtext, GdkEventSelection *event)
-{
-#ifndef WIN32
-	if (xtext->buffer->last_ent_start)
-		gtk_xtext_unselect (xtext);
-#endif
-	return TRUE;
-}
-
 static gboolean
 gtk_xtext_is_selecting (GtkXText *xtext)
 {
@@ -3085,6 +3024,26 @@ gtk_xtext_is_selecting (GtkXText *xtext)
 	}
 
 	return FALSE;
+}
+
+static gchar *
+gtk_xtext_selection_text (GtkWidget *widget, gint *length,
+	gpointer user_data)
+{
+	(void) user_data;
+	return gtk_xtext_selection_get_text (GTK_XTEXT (widget), length);
+}
+
+static void
+gtk_xtext_selection_lost (GtkWidget *widget, gpointer user_data)
+{
+	(void) user_data;
+#ifndef WIN32
+	if (GTK_XTEXT (widget)->buffer->last_ent_start)
+		gtk_xtext_unselect (GTK_XTEXT (widget));
+#else
+	(void) widget;
+#endif
 }
 
 static char *
@@ -3181,64 +3140,6 @@ gtk_xtext_selection_get_text (GtkXText *xtext, int *len_ret)
 
 	*len_ret = len;
 	return stripped;
-}
-
-/* another program is asking for our selection */
-
-static void
-gtk_xtext_selection_get (GtkWidget * widget,
-								 GtkSelectionData * selection_data_ptr,
-								 guint info, guint time)
-{
-	GtkXText *xtext = GTK_XTEXT (widget);
-	char *stripped;
-	guchar *new_text;
-	int len;
-	gsize glen;
-
-	stripped = gtk_xtext_selection_get_text (xtext, &len);
-	if (!stripped)
-		return;
-
-	switch (info)
-	{
-	case TARGET_UTF8_STRING:
-		/* it's already in utf8 */
-		gtk_selection_data_set_text (selection_data_ptr, stripped, len);
-		break;
-	case TARGET_TEXT:
-	case TARGET_COMPOUND_TEXT:
-#ifdef GDK_WINDOWING_X11
-		{
-			GdkDisplay *display;
-			GdkWindow *window = gtk_widget_get_window (widget);
-
-			if (!window || !GDK_IS_WINDOW (window))
-				break;
-			display = gdk_window_get_display (window);
-			if (!display)
-				break;
-			GdkAtom encoding;
-			gint format;
-			gint new_length;
-
-			gdk_x11_display_string_to_compound_text (display, stripped, &encoding,
-												&format, &new_text, &new_length);
-			gtk_selection_data_set (selection_data_ptr, encoding, format,
-											new_text, new_length);
-			gdk_x11_free_compound_text (new_text);
-
-		}
-		break;
-#endif
-	default:
-		new_text = g_locale_from_utf8 (stripped, len, NULL, &glen, NULL);
-		gtk_selection_data_set (selection_data_ptr, GDK_SELECTION_TYPE_STRING,
-										8, new_text, glen);
-		g_free (new_text);
-	}
-
-	g_free (stripped);
 }
 
 static gboolean
@@ -3368,10 +3269,6 @@ gtk_xtext_class_init (GtkXTextClass * class)
 	object_class->finalize = gtk_xtext_finalize;
 
 	fabulor_xtext_widget_class_install (widget_class, &widget_callbacks);
-#if GTK_MAJOR_VERSION < 4
-	widget_class->selection_clear_event = (void *)gtk_xtext_selection_kill;
-	widget_class->selection_get = gtk_xtext_selection_get;
-#endif
 
 	xtext_class->word_click = NULL;
 	xtext_class->set_scroll_adjustments = gtk_xtext_scroll_adjustments;

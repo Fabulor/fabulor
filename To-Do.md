@@ -297,6 +297,7 @@ Detailed planning and evidence live in:
   - [x] Route transcript wrapping, rendering, selection scrolling, visibility, and buffer-switch dimensions through validated widget geometry instead of `GdkWindow` size reads.
   - [x] Install transcript measurement, allocation, realize/unrealize, and GTK3 draw or GTK4 snapshot class methods through a tested cross-version widget-class adapter.
   - [x] Replace transcript pointer, click, scroll, leave, and focus event virtual methods with normalized GTK3 signals or GTK4 controllers while preserving selection and word-click behavior.
+  - [x] Replace transcript selection ownership and payload virtual methods with a GTK3 signal or GTK4 content-provider adapter while preserving primary selection and explicit copy behavior.
 - [ ] Add the GTK4 theme adapter and validate tray, notifications, icons, fonts, and platform integration.
   - [x] Retire `.zct` registration and mock Windows GTK theme staging, downloads, and installer choices.
   - [ ] Discover system GTK4 desktop themes and imported themes under `%APPDATA%\Fabulor\themes`.

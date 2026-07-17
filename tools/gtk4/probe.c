@@ -20,6 +20,7 @@
 #include "../../src/fe-gtk/xtext-geometry.h"
 #include "../../src/fe-gtk/xtext-input.h"
 #include "../../src/fe-gtk/xtext-render-target.h"
+#include "../../src/fe-gtk/xtext-selection.h"
 #include "../../src/fe-gtk/xtext-widget-class.h"
 #include "../../src/fe-gtk/addon-list.h"
 #include "../../src/fe-gtk/channel-model.h"
@@ -120,6 +121,13 @@ check_compatibility_helper_signatures (void)
 		fabulor_gtk_box_remove_child;
 	void (*volatile copy_text_to_clipboards) (GtkWidget *, const gchar *) =
 		fabulor_gtk_copy_text_to_clipboards;
+	FabulorXTextSelection *(*volatile xtext_selection_new) (GtkWidget *,
+		FabulorXTextSelectionTextFunc, FabulorXTextSelectionClearFunc,
+		gpointer) = fabulor_xtext_selection_new;
+	void (*volatile xtext_selection_free) (FabulorXTextSelection *) =
+		fabulor_xtext_selection_free;
+	void (*volatile xtext_selection_publish) (FabulorXTextSelection *,
+		const gchar *, gint, guint32) = fabulor_xtext_selection_publish;
 	void (*volatile widget_on_pointer_enter) (GtkWidget *, FabulorGtkWidgetInteractionFunc, gpointer) =
 		fabulor_gtk_widget_on_pointer_enter;
 	void (*volatile widget_on_pointer_motion) (GtkWidget *, FabulorGtkPointerMotionFunc,
@@ -192,6 +200,9 @@ check_compatibility_helper_signatures (void)
 	(void) box_append_trailing_pair;
 	(void) box_remove_child;
 	(void) copy_text_to_clipboards;
+	(void) xtext_selection_new;
+	(void) xtext_selection_free;
+	(void) xtext_selection_publish;
 	(void) widget_on_pointer_enter;
 	(void) widget_on_pointer_motion;
 	(void) widget_on_pointer_motion_with_state;
@@ -1670,6 +1681,19 @@ check_xtext_input_policy (void)
 }
 
 static gboolean
+check_xtext_selection_policy (void)
+{
+	gchar *full = fabulor_xtext_selection_copy_text ("Fabulor", -1);
+	gchar *bounded = fabulor_xtext_selection_copy_text ("Fabulor", 3);
+	gboolean valid = g_strcmp0 (full, "Fabulor") == 0 &&
+		g_strcmp0 (bounded, "Fab") == 0;
+
+	g_free (full);
+	g_free (bounded);
+	return valid;
+}
+
+static gboolean
 check_xtext_widget_class_policy (void)
 {
 	GtkWidgetClass *widget_class = g_type_class_ref (
@@ -1904,6 +1928,11 @@ main (void)
 	if (!check_xtext_input_policy ())
 	{
 		fprintf (stderr, "GTK4 transcript input policy mismatch\n");
+		return 1;
+	}
+	if (!check_xtext_selection_policy ())
+	{
+		fprintf (stderr, "GTK4 transcript selection policy mismatch\n");
 		return 1;
 	}
 	if (!check_xtext_widget_class_policy ())

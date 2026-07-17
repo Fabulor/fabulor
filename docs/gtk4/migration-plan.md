@@ -972,6 +972,18 @@ dispatch. Coordinate-based popup entry points preserve URL, nickname, channel,
 and context-menu placement. Only GTK3 selection ownership and payload slots
 remain for the next clipboard pass.
 
+Transcript selection pass 5 (2026-07-17): `xtext-selection.c` now owns the
+toolkit-version clipboard boundary. GTK3 retains deferred PRIMARY target
+registration, UTF-8 and locale payload conversion, explicit CLIPBOARD updates,
+and PRIMARY/SECONDARY ownership through signal connections rather than
+`GtkWidgetClass` event slots. GTK4 publishes one owned string content provider
+to the display CLIPBOARD and PRIMARY clipboard, tracks provider identity, and
+clears Unix selection highlighting when another owner replaces PRIMARY.
+Windows keeps its existing persistent-highlight behavior. The strict probe
+compiles the GTK4 provider path and verifies complete and bounded payload
+copying. No direct selection event or payload virtual method remains in
+`GtkXTextClass`.
+
 Primary surfaces:
 
 - `xtext.c` / `xtext.h`
