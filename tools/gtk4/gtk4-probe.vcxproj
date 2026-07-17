@@ -72,6 +72,7 @@
 	<ClCompile Include="..\..\src\fe-gtk\xtext-geometry.c" />
 	<ClCompile Include="..\..\src\fe-gtk\xtext-hit-test.c" />
 	<ClCompile Include="..\..\src\fe-gtk\xtext-input.c" />
+	<ClCompile Include="..\..\src\fe-gtk\xtext-performance.c" />
 	<ClCompile Include="..\..\src\fe-gtk\xtext-render-target.c" />
 	<ClCompile Include="..\..\src\fe-gtk\xtext-scroll-copy.c" />
 	<ClCompile Include="..\..\src\fe-gtk\xtext-selection.c" />

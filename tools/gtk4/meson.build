@@ -70,6 +70,7 @@ probe = executable(
   '../../src/fe-gtk/xtext-geometry.c',
   '../../src/fe-gtk/xtext-hit-test.c',
   '../../src/fe-gtk/xtext-input.c',
+  '../../src/fe-gtk/xtext-performance.c',
   '../../src/fe-gtk/xtext-render-target.c',
   '../../src/fe-gtk/xtext-scroll-copy.c',
   '../../src/fe-gtk/xtext-selection.c',

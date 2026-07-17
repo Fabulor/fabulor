@@ -65,6 +65,7 @@ zoitechat_gtk_sources = [
   'xtext-geometry.c',
   'xtext-hit-test.c',
   'xtext-input.c',
+  'xtext-performance.c',
   'xtext-render-target.c',
   'xtext-scroll-copy.c',
   'xtext-selection.c',
