@@ -20,6 +20,7 @@
 #include "../../src/fe-gtk/xtext-geometry.h"
 #include "../../src/fe-gtk/xtext-input.h"
 #include "../../src/fe-gtk/xtext-render-target.h"
+#include "../../src/fe-gtk/xtext-scroll-copy.h"
 #include "../../src/fe-gtk/xtext-selection.h"
 #include "../../src/fe-gtk/xtext-widget-class.h"
 #include "../../src/fe-gtk/addon-list.h"
@@ -121,6 +122,12 @@ check_compatibility_helper_signatures (void)
 		fabulor_gtk_box_remove_child;
 	void (*volatile copy_text_to_clipboards) (GtkWidget *, const gchar *) =
 		fabulor_gtk_copy_text_to_clipboards;
+	void (*volatile widget_add_css_class) (GtkWidget *, const gchar *) =
+		fabulor_gtk_widget_add_css_class;
+	void (*volatile widget_queue_draw_region) (GtkWidget *, gint, gint,
+		gint, gint) = fabulor_gtk_widget_queue_draw_region;
+	gboolean (*volatile widget_has_toplevel_focus) (GtkWidget *) =
+		fabulor_gtk_widget_has_toplevel_focus;
 	FabulorXTextSelection *(*volatile xtext_selection_new) (GtkWidget *,
 		FabulorXTextSelectionTextFunc, FabulorXTextSelectionClearFunc,
 		gpointer) = fabulor_xtext_selection_new;
@@ -200,6 +207,9 @@ check_compatibility_helper_signatures (void)
 	(void) box_append_trailing_pair;
 	(void) box_remove_child;
 	(void) copy_text_to_clipboards;
+	(void) widget_add_css_class;
+	(void) widget_queue_draw_region;
+	(void) widget_has_toplevel_focus;
 	(void) xtext_selection_new;
 	(void) xtext_selection_free;
 	(void) xtext_selection_publish;
@@ -1694,6 +1704,27 @@ check_xtext_selection_policy (void)
 }
 
 static gboolean
+check_xtext_scroll_copy_policy (void)
+{
+	FabulorXTextScrollCopy copy;
+	gboolean valid;
+
+	valid = fabulor_xtext_scroll_copy_plan (-20, 100, 10, 2, TRUE,
+		&copy) && copy.source_y == 20 && copy.destination_y == 0 &&
+		copy.copy_height == 80 && copy.damage_y == 70 &&
+		copy.damage_height == 30;
+	valid = valid && fabulor_xtext_scroll_copy_plan (20, 100, 10, 2,
+		TRUE, &copy) && copy.source_y == 0 && copy.destination_y == 20 &&
+		copy.copy_height == 80 && copy.damage_y == 0 &&
+		copy.damage_height == 20;
+	valid = valid && !fabulor_xtext_scroll_copy_plan (-20, 100, 10, 2,
+		FALSE, &copy) && copy.copy_height == 0 && copy.damage_height == 0;
+	valid = valid && !fabulor_xtext_scroll_copy_plan (100, 100, 10, 2,
+		TRUE, &copy);
+	return valid;
+}
+
+static gboolean
 check_xtext_widget_class_policy (void)
 {
 	GtkWidgetClass *widget_class = g_type_class_ref (
@@ -1933,6 +1964,11 @@ main (void)
 	if (!check_xtext_selection_policy ())
 	{
 		fprintf (stderr, "GTK4 transcript selection policy mismatch\n");
+		return 1;
+	}
+	if (!check_xtext_scroll_copy_policy ())
+	{
+		fprintf (stderr, "GTK4 transcript scroll-copy policy mismatch\n");
 		return 1;
 	}
 	if (!check_xtext_widget_class_policy ())

@@ -48,6 +48,7 @@
 #include "gtk-compat.h"
 #include "xtext.h"
 #include "xtext-geometry.h"
+#include "xtext-scroll-copy.h"
 #include "xtext-selection.h"
 #include "xtext-widget-class.h"
 #include "fkeys.h"
@@ -262,6 +263,7 @@ xtext_adj_set_page_increment (GtkAdjustment *adj, gdouble page_increment)
 	gtk_adjustment_set_page_increment (adj, page_increment);
 }
 
+#if GTK_MAJOR_VERSION < 4
 static cairo_surface_t *
 xtext_surface_from_window (GdkWindow *window)
 {
@@ -292,6 +294,7 @@ xtext_surface_from_window (GdkWindow *window)
 
 	return surface;
 }
+#endif
 
 static cairo_t *
 xtext_create_context (GtkXText *xtext)
@@ -912,12 +915,14 @@ gtk_xtext_sync_palette_from_theme (GtkXText *xtext)
 	gtk_xtext_set_palette (xtext, palette);
 }
 
+#if GTK_MAJOR_VERSION < 4
 static void
 gtk_xtext_style_updated (GtkWidget *widget, gpointer user_data)
 {
 	(void) user_data;
 	gtk_xtext_sync_palette_from_theme (GTK_XTEXT (widget));
 }
+#endif
 
 static void
 gtk_xtext_init (GtkXText * xtext)
@@ -983,8 +988,10 @@ gtk_xtext_init (GtkXText * xtext)
 	fabulor_gtk_widget_on_focus_leave (GTK_WIDGET (xtext),
 		gtk_xtext_focus_changed, NULL);
 
-	gtk_style_context_add_class (gtk_widget_get_style_context (GTK_WIDGET (xtext)), "view");
+	fabulor_gtk_widget_add_css_class (GTK_WIDGET (xtext), "view");
+#if GTK_MAJOR_VERSION < 4
 	g_signal_connect (G_OBJECT (xtext), "style-updated", G_CALLBACK (gtk_xtext_style_updated), NULL);
+#endif
 }
 
 static void
@@ -1281,6 +1288,7 @@ gtk_xtext_unrealize (GtkWidget * widget)
 #endif
 }
 
+#if GTK_MAJOR_VERSION < 4
 static void
 gtk_xtext_get_pointer (GdkWindow *window, gint *x, gint *y, GdkModifierType *mask)
 {
@@ -1348,6 +1356,7 @@ gtk_xtext_clear_background (GtkWidget *widget)
 		gdk_window_set_background_pattern (window, NULL);
 	G_GNUC_END_IGNORE_DEPRECATIONS
 }
+#endif
 
 static void
 gtk_xtext_realize (GtkWidget * widget)
@@ -1749,7 +1758,7 @@ gtk_xtext_draw_marker (GtkXText * xtext, textentry * ent, int y)
 	xtext_draw_line (xtext, cr, &xtext->marker_gc, x, render_y, x + width, render_y);
 	cairo_destroy (cr);
 
-	if (gtk_window_has_toplevel_focus (GTK_WINDOW (gtk_widget_get_toplevel (GTK_WIDGET (xtext)))))
+	if (fabulor_gtk_widget_has_toplevel_focus (GTK_WIDGET (xtext)))
 	{
 		xtext->buffer->marker_seen = TRUE;
 	}
@@ -1852,7 +1861,8 @@ gtk_xtext_paint (GtkWidget *widget, GdkRectangle *area)
 	if (G_LIKELY (gtk_widget_get_realized (widget)))
 	{
 		if (area)
-			gtk_widget_queue_draw_area (widget, area->x, area->y, area->width, area->height);
+			fabulor_gtk_widget_queue_draw_region (widget, area->x, area->y,
+				area->width, area->height);
 		else
 			gtk_widget_queue_draw (widget);
 	}
@@ -4748,7 +4758,9 @@ gtk_xtext_render_page (GtkXText * xtext)
 	gdouble adj_page_size = xtext_adj_get_page_size (xtext->adj);
 	int startline = adj_value;
 	int pos, overlap;
+#if GTK_MAJOR_VERSION < 4
 	GdkWindow *window;
+#endif
 
 	if(!gtk_widget_get_realized(GTK_WIDGET(xtext)))
 	  return;
@@ -4760,9 +4772,11 @@ gtk_xtext_render_page (GtkXText * xtext)
 		return;
 	width = geometry.width;
 	height = geometry.height;
+#if GTK_MAJOR_VERSION < 4
 	window = gtk_widget_get_window (GTK_WIDGET (xtext));
 	if (!window)
 		return;
+#endif
 
 	if (width < 34 || height < xtext->fontsize || width < xtext->buffer->indent + 32)
 		return;
@@ -4787,24 +4801,21 @@ gtk_xtext_render_page (GtkXText * xtext)
 	overlap = xtext->buffer->last_pixel_pos - pos;
 	xtext->buffer->last_pixel_pos = pos;
 
-	if (abs (overlap) < height)
 	{
-		GdkRectangle area;
-		cairo_t *cr;
-		int src_x = 0;
-		int src_y = 0;
-		int dest_x = 0;
-		int dest_y = 0;
-		int copy_height = 0;
+		FabulorXTextScrollCopy copy;
+		gboolean native_capture = FALSE;
+#if GTK_MAJOR_VERSION < 4
+		native_capture = window != NULL;
+#endif
 
-		if (overlap < 1)	/* DOWN */
+		if (fabulor_xtext_scroll_copy_plan (overlap, height,
+			xtext->fontsize, xtext->font->descent, native_capture, &copy))
 		{
-			int remainder;
+#if GTK_MAJOR_VERSION < 4
+			GdkRectangle area;
+			cairo_t *cr;
 			cairo_surface_t *surface;
 
-			src_y = -overlap;
-			dest_y = 0;
-			copy_height = height + overlap;
 			cr = xtext_create_context (xtext);
 			cairo_save (cr);
 			cairo_set_operator (cr, CAIRO_OPERATOR_SOURCE);
@@ -4815,54 +4826,29 @@ gtk_xtext_render_page (GtkXText * xtext)
 				cairo_destroy (cr);
 				goto full_redraw;
 			}
-			cairo_set_source_surface (cr, surface, dest_x - src_x, dest_y - src_y);
+			cairo_set_source_surface (cr, surface, 0.0,
+				(double) (copy.destination_y - copy.source_y));
 			cairo_surface_destroy (surface);
-			cairo_rectangle (cr, dest_x, dest_y, width, copy_height);
+			cairo_rectangle (cr, 0.0, (double) copy.destination_y,
+				(double) width, (double) copy.copy_height);
 			cairo_fill (cr);
 			cairo_restore (cr);
 			cairo_destroy (cr);
-			remainder = ((height - xtext->font->descent) % xtext->fontsize) +
-							xtext->font->descent;
-			area.y = (height + overlap) - remainder;
-			area.height = remainder - overlap;
-		} else
-		{
-			cairo_surface_t *surface;
 
-			src_y = 0;
-			dest_y = overlap;
-			copy_height = height - overlap;
-			cr = xtext_create_context (xtext);
-			cairo_save (cr);
-			cairo_set_operator (cr, CAIRO_OPERATOR_SOURCE);
-			surface = xtext_surface_from_window (window);
-			if (!surface)
-			{
-				cairo_restore (cr);
-				cairo_destroy (cr);
-				goto full_redraw;
-			}
-			cairo_set_source_surface (cr, surface, dest_x - src_x, dest_y - src_y);
-			cairo_surface_destroy (surface);
-			cairo_rectangle (cr, dest_x, dest_y, width, copy_height);
-			cairo_fill (cr);
-			cairo_restore (cr);
-			cairo_destroy (cr);
-			area.y = 0;
-			area.height = overlap;
-		}
-
-		if (area.height > 0)
-		{
 			area.x = 0;
+			area.y = copy.damage_y;
 			area.width = width;
+			area.height = copy.damage_height;
 			gtk_xtext_paint (GTK_WIDGET (xtext), &area);
-		}
 
-		return;
+			return;
+#endif
+		}
 	}
 
+#if GTK_MAJOR_VERSION < 4
 full_redraw:
+#endif
 	width -= MARGIN;
 	lines_max = ((height + xtext->pixel_offset) / xtext->fontsize) + 1;
 
@@ -5608,8 +5594,9 @@ gtk_xtext_append_entry (xtext_buffer *buf, textentry * ent, time_t stamp)
 	ent->sublines = NULL;
 	buf->num_lines += gtk_xtext_lines_taken (buf, ent);
 
-	if ((buf->marker_pos == NULL || buf->marker_seen) && (buf->xtext->buffer != buf || 
-		!gtk_window_has_toplevel_focus (GTK_WINDOW (gtk_widget_get_toplevel (GTK_WIDGET (buf->xtext))))))
+	if ((buf->marker_pos == NULL || buf->marker_seen) &&
+		(buf->xtext->buffer != buf ||
+		 !fabulor_gtk_widget_has_toplevel_focus (GTK_WIDGET (buf->xtext))))
 	{
 		buf->marker_pos = ent;
 		buf->marker_state = MARKER_IS_SET;

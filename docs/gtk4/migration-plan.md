@@ -984,6 +984,17 @@ compiles the GTK4 provider path and verifies complete and bounded payload
 copying. No direct selection event or payload virtual method remains in
 `GtkXTextClass`.
 
+Transcript frame-redraw pass 6 (2026-07-17): page rendering no longer requires
+a native `GdkWindow` before reaching the full renderer. `xtext-scroll-copy.c`
+owns the tested overlap, pixel-copy, and damage-region policy. GTK3 retains its
+native-window capture optimization when a partial vertical copy is valid;
+GTK4 deliberately rejects native capture and performs a complete
+snapshot-backed redraw. Shared compatibility helpers now own CSS class
+attachment, focused-root detection, and damage redraw requests, with GTK4
+expanding partial damage to a widget frame. Native pointer and background
+window helpers are compiled only for GTK3. The strict probe verifies upward,
+downward, unavailable-capture, and full-height scroll cases.
+
 Primary surfaces:
 
 - `xtext.c` / `xtext.h`

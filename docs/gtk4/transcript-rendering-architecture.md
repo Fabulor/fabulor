@@ -1,6 +1,6 @@
 # GTK4 Transcript Rendering Architecture
 
-Status: Stage 6 pass 5 rendering, widget-class, input, and selection contracts
+Status: Stage 6 pass 6 rendering, widget-class, input, selection, and frame contracts
 
 ## Purpose
 
@@ -99,6 +99,20 @@ clears Unix selection highlighting; Windows preserves its established visible
 selection behavior. Teardown disconnects change observation before releasing
 the adapter while clipboard-held content remains independently referenced.
 
+## Frame Redraw And Scroll Copy
+
+`src/fe-gtk/xtext-scroll-copy.c` owns partial vertical-copy eligibility and
+damage geometry. GTK3 may capture its native window when overlap is non-zero,
+smaller than the viewport, and font metrics are valid. It copies retained
+pixels and queues only the newly exposed region.
+
+GTK4 has no native capture source, so the same policy rejects the optimization
+and the transcript renders the full page into its active snapshot context.
+Full rendering no longer checks for a `GdkWindow`. GTK4 damage requests queue a
+widget frame, while GTK3 retains region invalidation. Cross-version helpers
+also resolve the transcript CSS class and focused root without removed GTK3
+APIs.
+
 ## Ownership Invariants
 
 - An active context may be temporarily replaced and then restored for nested
@@ -111,11 +125,14 @@ the adapter while clipboard-held content remains independently referenced.
 - Selection publication owns its payload independently of transcript buffers.
 - An adapter ignores its own PRIMARY update and reacts only to replacement.
 - Selection change observation is disconnected before widget teardown.
+- Native-window scroll capture is a GTK3 optimization, never a GTK4 rendering
+  prerequisite.
+- GTK4 without native capture always reaches full snapshot rendering.
 
 ## Planned Passes
 
 1. Validate background images, markers, search highlights, URL hit testing,
-   scrolling, accessibility, high DPI, and scrollback performance.
+   accessibility, high DPI, and scrollback performance.
 
 The spell-check input is a separate Stage 6 boundary and will not share
 transcript rendering ownership.
@@ -139,7 +156,10 @@ The strict GTK4 probe verifies:
 - modifier-aware pointer motion has a strict GTK4-compatible signature;
 - non-left, single, double, and repeated left presses classify consistently;
 - negative, zero, and positive scroll deltas map to up, neutral, and down; and
-- complete and bounded selection payload copies preserve their requested text.
+- complete and bounded selection payload copies preserve their requested text;
+- upward and downward native scroll-copy plans preserve retained pixels and
+  identify exposed damage; and
+- unavailable or full-height capture falls back to complete rendering.
 
 Manual transcript output and latency checks remain required when the GTK4
 widget class is connected to this boundary.
