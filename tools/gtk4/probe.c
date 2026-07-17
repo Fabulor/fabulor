@@ -18,6 +18,7 @@
 #include "../../src/fe-gtk/server-network-list.h"
 #include "../../src/fe-gtk/server-entry-list.h"
 #include "../../src/fe-gtk/xtext-geometry.h"
+#include "../../src/fe-gtk/xtext-input.h"
 #include "../../src/fe-gtk/xtext-render-target.h"
 #include "../../src/fe-gtk/xtext-widget-class.h"
 #include "../../src/fe-gtk/addon-list.h"
@@ -123,6 +124,9 @@ check_compatibility_helper_signatures (void)
 		fabulor_gtk_widget_on_pointer_enter;
 	void (*volatile widget_on_pointer_motion) (GtkWidget *, FabulorGtkPointerMotionFunc,
 		FabulorGtkPointerLeaveFunc, gpointer) = fabulor_gtk_widget_on_pointer_motion;
+	void (*volatile widget_on_pointer_motion_with_state) (GtkWidget *,
+		FabulorGtkPointerMotionStateFunc, FabulorGtkPointerLeaveFunc, gpointer) =
+		fabulor_gtk_widget_on_pointer_motion_with_state;
 	void (*volatile widget_set_prelight) (GtkWidget *, gboolean) =
 		fabulor_gtk_widget_set_prelight;
 	void (*volatile widget_suppress_pointer_prelight) (GtkWidget *) =
@@ -190,6 +194,7 @@ check_compatibility_helper_signatures (void)
 	(void) copy_text_to_clipboards;
 	(void) widget_on_pointer_enter;
 	(void) widget_on_pointer_motion;
+	(void) widget_on_pointer_motion_with_state;
 	(void) widget_set_prelight;
 	(void) widget_suppress_pointer_prelight;
 	(void) widget_get_descendant_origin;
@@ -1647,6 +1652,24 @@ check_xtext_geometry (void)
 }
 
 static gboolean
+check_xtext_input_policy (void)
+{
+	return fabulor_xtext_selection_press (2, 1) ==
+			FABULOR_XTEXT_SELECTION_PRESS_NONE &&
+		fabulor_xtext_selection_press (1, 1) ==
+			FABULOR_XTEXT_SELECTION_PRESS_SINGLE &&
+		fabulor_xtext_selection_press (1, 2) ==
+			FABULOR_XTEXT_SELECTION_PRESS_WORD &&
+		fabulor_xtext_selection_press (1, 3) ==
+			FABULOR_XTEXT_SELECTION_PRESS_LINE &&
+		fabulor_xtext_selection_press (1, 4) ==
+			FABULOR_XTEXT_SELECTION_PRESS_LINE &&
+		fabulor_xtext_scroll_direction (-0.25) == -1 &&
+		fabulor_xtext_scroll_direction (0.0) == 0 &&
+		fabulor_xtext_scroll_direction (0.25) == 1;
+}
+
+static gboolean
 check_xtext_widget_class_policy (void)
 {
 	GtkWidgetClass *widget_class = g_type_class_ref (
@@ -1876,6 +1899,11 @@ main (void)
 	if (!check_xtext_geometry ())
 	{
 		fprintf (stderr, "GTK4 transcript geometry contract mismatch\n");
+		return 1;
+	}
+	if (!check_xtext_input_policy ())
+	{
+		fprintf (stderr, "GTK4 transcript input policy mismatch\n");
 		return 1;
 	}
 	if (!check_xtext_widget_class_policy ())

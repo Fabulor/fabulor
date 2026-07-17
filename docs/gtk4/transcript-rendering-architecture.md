@@ -1,6 +1,6 @@
 # GTK4 Transcript Rendering Architecture
 
-Status: Stage 6 pass 3 render-target, geometry, and widget-class contracts
+Status: Stage 6 pass 4 rendering, widget-class, and input-controller contracts
 
 ## Purpose
 
@@ -63,6 +63,28 @@ GTK3 still creates, moves, and releases its native child window inside the
 parent class, initializes Pango state, and relies on the adapter for snapshot
 rendering.
 
+## Input Controllers
+
+Transcript input is connected during widget initialization through the shared
+GTK compatibility helpers. GTK3 uses motion, leave, button, scroll, and focus
+signals; GTK4 uses `GtkEventControllerMotion`, `GtkGestureClick`,
+`GtkEventControllerScroll`, and `GtkEventControllerFocus`.
+
+`src/fe-gtk/xtext-input.c` owns toolkit-neutral selection-press and scroll
+direction policy. Modifier-aware motion preserves Shift timestamp selection,
+Ctrl colour-copy state, separator dragging, URL hover, tooltip updates, and
+selection extension. Single, double, and triple-or-greater left clicks retain
+character, word, and line selection semantics. Pointer coordinates and state
+are retained for GTK4 selection auto-scroll timers.
+
+The `word_click` signal now carries `FabulorXTextClick` instead of a borrowed
+`GdkEventButton`. Its consumer routes popup actions through coordinate-based
+menu entry points, preserving button, click count, position, and modifiers.
+Cursor changes use GTK4 cursor names or the existing GTK3 cursor objects.
+
+Only GTK3 selection ownership and payload callbacks remain assigned directly
+on `GtkWidgetClass`; they belong to the next clipboard pass.
+
 ## Ownership Invariants
 
 - An active context may be temporarily replaced and then restored for nested
@@ -75,9 +97,8 @@ rendering.
 
 ## Planned Passes
 
-1. Move pointer, click, scroll, leave, focus, and selection input to controllers.
-2. Replace GTK3 selection ownership and clipboard payload callbacks.
-3. Validate background images, markers, search highlights, URL hit testing,
+1. Replace GTK3 selection ownership and clipboard payload callbacks.
+2. Validate background images, markers, search highlights, URL hit testing,
    scrolling, accessibility, high DPI, and scrollback performance.
 
 The spell-check input is a separate Stage 6 boundary and will not share
@@ -99,6 +120,10 @@ The strict GTK4 probe verifies:
   and snapshot class methods;
 - horizontal and vertical minimum requests remain 200 and 90; and
 - unchanged and changed width decisions remain distinct.
+- modifier-aware pointer motion has a strict GTK4-compatible signature;
+- non-left, single, double, and repeated left presses classify consistently;
+  and
+- negative, zero, and positive scroll deltas map to up, neutral, and down.
 
 Manual transcript output and latency checks remain required when the GTK4
 widget class is connected to this boundary.

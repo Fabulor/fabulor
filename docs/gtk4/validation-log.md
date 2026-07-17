@@ -2732,6 +2732,46 @@ Scope: transcript measurement, allocation, lifecycle, and frame rendering class
 methods only. Pointer/input controllers, selection, clipboard behavior,
 background validation, and spell-check input remain unchanged.
 
+### PR: #95 - GTK4 Stage 6 Transcript Input Controllers
+
+Date: 2026-07-17
+
+Migration stage: 6, transcript input-controller pass 4
+
+Files/workflows converted: pointer motion and leave; modifier state; click
+press/count and release; character/word/line selection policy; smooth and
+discrete scrolling; focus redraw; cursor roles; word-click payload; popup-menu
+coordinates
+
+GTK version: 4.22.4
+
+GLib version: 2.88.0
+
+Build configuration: MSVC x64 Release and strict GTK4 probe boundary
+
+Automated checks:
+
+- [x] production GTK3 frontend compiles and links with 0 warnings and 0 errors
+- [x] strict GTK4 probe compiles, links, and executes with 0 warnings and 0 errors
+- [x] modifier-aware motion helper has a strict GTK4-compatible signature
+- [x] non-left, single, double, triple, and repeated click policies pass
+- [x] negative, zero, and positive scroll direction policies pass
+- [x] transcript button, motion, scroll, and leave class event slots are removed
+- [x] only GTK3 selection ownership and payload class slots remain
+- [x] GTK4 dependency validator tests remain 8/8
+- [x] repository diff whitespace validation passes
+
+Manual checks:
+
+- [ ] shipping GTK3 transcript preserves character, word, line, and drag selection
+- [ ] Shift timestamps, Ctrl colour copy, auto-copy, and selection auto-scroll behave unchanged
+- [ ] URL hover/click, tooltips, separator drag, popup placement, wheel scrolling, and focus redraw behave unchanged
+- [ ] GTK4 controller interaction, accessibility, high-DPI, scrollback-load, and latency checks await full widget integration
+
+Scope: transcript pointer, click, scroll, leave, focus, and selection-input
+dispatch only. Selection ownership, clipboard payloads, background validation,
+and spell-check input remain unchanged.
+
 ## Per-PR Record Template
 
 Copy this section for each GTK4 PR:

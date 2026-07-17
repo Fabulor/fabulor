@@ -1165,6 +1165,30 @@ menu_middlemenu (session *sess, GdkEventButton *event)
 	menu_popup (menu, event, accel_group);
 }
 
+void
+menu_middlemenu_at (session *sess, GtkWidget *origin, gdouble x, gdouble y,
+	GdkModifierType state)
+{
+	GdkEventButton event;
+	gint origin_x = 0;
+	gint origin_y = 0;
+
+	memset (&event, 0, sizeof (event));
+	event.type = GDK_BUTTON_PRESS;
+	event.window = gtk_widget_get_window (origin);
+	event.send_event = TRUE;
+	event.time = GDK_CURRENT_TIME;
+	event.x = x;
+	event.y = y;
+	event.state = state;
+	event.button = 2;
+	if (event.window)
+		gdk_window_get_origin (event.window, &origin_x, &origin_y);
+	event.x_root = origin_x + x;
+	event.y_root = origin_y + y;
+	menu_middlemenu (sess, &event);
+}
+
 static void
 open_url_cb (GtkWidget *item, char *url)
 {
@@ -1323,6 +1347,30 @@ menu_chanmenu (struct session *sess, GdkEventButton * event, char *chan)
 
 	menu_add_plugin_items (menu, "\x5$CHAN", str_copy);
 	menu_popup (menu, event, NULL);
+}
+
+void
+menu_chanmenu_at (session *sess, GtkWidget *origin, gdouble x, gdouble y,
+	GdkModifierType state, char *chan)
+{
+	GdkEventButton event;
+	gint origin_x = 0;
+	gint origin_y = 0;
+
+	memset (&event, 0, sizeof (event));
+	event.type = GDK_BUTTON_PRESS;
+	event.window = gtk_widget_get_window (origin);
+	event.send_event = TRUE;
+	event.time = GDK_CURRENT_TIME;
+	event.x = x;
+	event.y = y;
+	event.state = state;
+	event.button = 3;
+	if (event.window)
+		gdk_window_get_origin (event.window, &origin_x, &origin_y);
+	event.x_root = origin_x + x;
+	event.y_root = origin_y + y;
+	menu_chanmenu (sess, &event, chan);
 }
 
 static void

@@ -319,12 +319,15 @@ fabulor_gtk_widget_on_focus_leave (GtkWidget *widget,
 
 typedef void (*FabulorGtkPointerMotionFunc) (GtkWidget *widget, gdouble x,
 											 gdouble y, gpointer user_data);
+typedef void (*FabulorGtkPointerMotionStateFunc) (GtkWidget *widget,
+	gdouble x, gdouble y, GdkModifierType state, gpointer user_data);
 typedef void (*FabulorGtkPointerLeaveFunc) (GtkWidget *widget,
 											gpointer user_data);
 
 typedef struct
 {
 	FabulorGtkPointerMotionFunc motion_callback;
+	FabulorGtkPointerMotionStateFunc motion_state_callback;
 	FabulorGtkPointerLeaveFunc leave_callback;
 	gpointer user_data;
 	guint references;
@@ -348,9 +351,15 @@ fabulor_gtk_pointer_motion_cb (GtkEventControllerMotion *controller,
 {
 	FabulorGtkPointerTracking *tracking = user_data;
 
-	tracking->motion_callback (
-		gtk_event_controller_get_widget (GTK_EVENT_CONTROLLER (controller)),
-		x, y, tracking->user_data);
+	if (tracking->motion_state_callback)
+		tracking->motion_state_callback (
+			gtk_event_controller_get_widget (GTK_EVENT_CONTROLLER (controller)),
+			x, y, gtk_event_controller_get_current_event_state (
+				GTK_EVENT_CONTROLLER (controller)), tracking->user_data);
+	else
+		tracking->motion_callback (
+			gtk_event_controller_get_widget (GTK_EVENT_CONTROLLER (controller)),
+			x, y, tracking->user_data);
 }
 
 static inline void
@@ -370,7 +379,12 @@ fabulor_gtk_pointer_motion_cb (GtkWidget *widget, GdkEventMotion *event,
 {
 	FabulorGtkPointerTracking *tracking = user_data;
 
-	tracking->motion_callback (widget, event->x, event->y, tracking->user_data);
+	if (tracking->motion_state_callback)
+		tracking->motion_state_callback (widget, event->x, event->y,
+			event->state, tracking->user_data);
+	else
+		tracking->motion_callback (widget, event->x, event->y,
+			tracking->user_data);
 	return FALSE;
 }
 
@@ -387,19 +401,20 @@ fabulor_gtk_pointer_leave_cb (GtkWidget *widget, GdkEventCrossing *event,
 #endif
 
 static inline void
-fabulor_gtk_widget_on_pointer_motion (GtkWidget *widget,
-								  FabulorGtkPointerMotionFunc motion_callback,
-								  FabulorGtkPointerLeaveFunc leave_callback,
-								  gpointer user_data)
+fabulor_gtk_widget_on_pointer_motion_full (GtkWidget *widget,
+	FabulorGtkPointerMotionFunc motion_callback,
+	FabulorGtkPointerMotionStateFunc motion_state_callback,
+	FabulorGtkPointerLeaveFunc leave_callback, gpointer user_data)
 {
 	FabulorGtkPointerTracking *tracking;
 
 	g_return_if_fail (GTK_IS_WIDGET (widget));
-	g_return_if_fail (motion_callback != NULL);
+	g_return_if_fail (motion_callback != NULL || motion_state_callback != NULL);
 	g_return_if_fail (leave_callback != NULL);
 
 	tracking = g_new (FabulorGtkPointerTracking, 1);
 	tracking->motion_callback = motion_callback;
+	tracking->motion_state_callback = motion_state_callback;
 	tracking->leave_callback = leave_callback;
 	tracking->user_data = user_data;
 	tracking->references = 2;
@@ -424,6 +439,24 @@ fabulor_gtk_widget_on_pointer_motion (GtkWidget *widget,
 		G_CALLBACK (fabulor_gtk_pointer_leave_cb), tracking,
 		fabulor_gtk_pointer_tracking_free, 0);
 #endif
+}
+
+static inline void
+fabulor_gtk_widget_on_pointer_motion (GtkWidget *widget,
+	FabulorGtkPointerMotionFunc motion_callback,
+	FabulorGtkPointerLeaveFunc leave_callback, gpointer user_data)
+{
+	fabulor_gtk_widget_on_pointer_motion_full (widget, motion_callback, NULL,
+		leave_callback, user_data);
+}
+
+static inline void
+fabulor_gtk_widget_on_pointer_motion_with_state (GtkWidget *widget,
+	FabulorGtkPointerMotionStateFunc motion_callback,
+	FabulorGtkPointerLeaveFunc leave_callback, gpointer user_data)
+{
+	fabulor_gtk_widget_on_pointer_motion_full (widget, NULL, motion_callback,
+		leave_callback, user_data);
 }
 
 static inline void
