@@ -3656,18 +3656,14 @@ mg_word_check (GtkWidget * xtext, char *word)
 /* mouse click inside text area */
 
 static void
-mg_word_clicked (GtkWidget *xtext, char *word,
+mg_word_clicked (GtkWidget *xtext, const FabulorXTextHit *hit,
                  const FabulorXTextClick *click)
 {
         session *sess = current_sess;
-        int word_type = 0, start, end;
+        char *word = hit ? hit->word : NULL;
+        int word_type = hit ? hit->type : 0;
+        char *matched;
         char *tmp;
-
-        if (word)
-        {
-                word_type = mg_word_check (xtext, word);
-                url_last (&start, &end);
-        }
 
         if (click->button == 1)                  /* left button */
         {
@@ -3684,8 +3680,12 @@ mg_word_clicked (GtkWidget *xtext, char *word,
                         case WORD_URL:
                         case WORD_HOST6:
                         case WORD_HOST:
-                                word[end] = 0;
-                                fe_open_url (word + start);
+                                matched = fabulor_xtext_hit_dup_match (hit);
+                                if (matched)
+                                {
+                                        fe_open_url (matched);
+                                        g_free (matched);
+                                }
                         }
                 }
                 return;
@@ -3713,28 +3713,43 @@ mg_word_clicked (GtkWidget *xtext, char *word,
         case WORD_URL:
         case WORD_HOST6:
         case WORD_HOST:
-                word[end] = 0;
-                word += start;
-                menu_urlmenu_at (xtext, click->x, click->y, click->state, word);
+                matched = fabulor_xtext_hit_dup_match (hit);
+                if (matched)
+                {
+                        menu_urlmenu_at (xtext, click->x, click->y,
+                                        click->state, matched);
+                        g_free (matched);
+                }
                 break;
         case WORD_NICK:
-                word[end] = 0;
-                word += start;
-                menu_nickmenu_at (sess, xtext, click->x, click->y,
-                                  click->state, word, FALSE);
+                matched = fabulor_xtext_hit_dup_match (hit);
+                if (matched)
+                {
+                        menu_nickmenu_at (sess, xtext, click->x, click->y,
+                                          click->state, matched, FALSE);
+                        g_free (matched);
+                }
                 break;
         case WORD_CHANNEL:
-                word[end] = 0;
-                word += start;
-                menu_chanmenu_at (sess, xtext, click->x, click->y,
-                                  click->state, word);
+                matched = fabulor_xtext_hit_dup_match (hit);
+                if (matched)
+                {
+                        menu_chanmenu_at (sess, xtext, click->x, click->y,
+                                          click->state, matched);
+                        g_free (matched);
+                }
                 break;
         case WORD_EMAIL:
-                word[end] = 0;
-                word += start;
-                tmp = g_strdup_printf ("mailto:%s", word + (ispunct (*word) ? 1 : 0));
-                menu_urlmenu_at (xtext, click->x, click->y, click->state, tmp);
-                g_free (tmp);
+                matched = fabulor_xtext_hit_dup_match (hit);
+                if (matched)
+                {
+                        tmp = g_strdup_printf ("mailto:%s",
+                                               matched + (ispunct (*matched) ? 1 : 0));
+                        menu_urlmenu_at (xtext, click->x, click->y,
+                                        click->state, tmp);
+                        g_free (tmp);
+                        g_free (matched);
+                }
                 break;
         case WORD_DIALOG:
                 menu_nickmenu_at (sess, xtext, click->x, click->y,

@@ -20,6 +20,7 @@
 #include "../../src/fe-gtk/xtext-background.h"
 #include "../../src/fe-gtk/xtext-decoration.h"
 #include "../../src/fe-gtk/xtext-geometry.h"
+#include "../../src/fe-gtk/xtext-hit-test.h"
 #include "../../src/fe-gtk/xtext-input.h"
 #include "../../src/fe-gtk/xtext-render-target.h"
 #include "../../src/fe-gtk/xtext-scroll-copy.h"
@@ -1811,6 +1812,48 @@ check_xtext_geometry (void)
 }
 
 static gboolean
+check_xtext_hit_test_policy (void)
+{
+	offlen_t first = { 0, 2, 0, 0 };
+	offlen_t second = { 3, 4, 0, 0 };
+	GSList *runs = NULL;
+	FabulorXTextHit hit;
+	gchar word[] = "xx#fabulor,";
+	gchar *match;
+	gint line = -1;
+	gint offset = 10;
+	gint length = 11;
+	gboolean valid = fabulor_xtext_hit_test_line (0, 0, 10, 3, &line) &&
+		line == 3 &&
+		fabulor_xtext_hit_test_line (-1, 0, 10, 3, &line) && line == 2 &&
+		!fabulor_xtext_hit_test_line (0, 0, 0, 3, &line) && line == 0 &&
+		fabulor_xtext_hit_test_separator (TRUE, 100, 9, 94) &&
+		fabulor_xtext_hit_test_separator (TRUE, 100, 9, 95) &&
+		fabulor_xtext_hit_test_separator (TRUE, 100, 9, 96) &&
+		!fabulor_xtext_hit_test_separator (TRUE, 100, 9, 97) &&
+		!fabulor_xtext_hit_test_separator (FALSE, 100, 9, 95);
+
+	runs = g_slist_append (runs, &first);
+	runs = g_slist_append (runs, &second);
+	valid = valid && fabulor_xtext_hit_test_adjust_match (runs, 2, 6,
+		&offset, &length) && offset == 13 && length == 4;
+	g_slist_free (runs);
+
+	fabulor_xtext_hit_init (&hit, word, 2, 2, 10);
+	valid = valid && fabulor_xtext_hit_has_match (&hit);
+	match = fabulor_xtext_hit_dup_match (&hit);
+	valid = valid && g_strcmp0 (match, "#fabulor") == 0 &&
+		g_strcmp0 (word, "xx#fabulor,") == 0;
+	g_free (match);
+	fabulor_xtext_hit_init (&hit, word, 2, 2, 99);
+	valid = valid && hit.type == 0 && !fabulor_xtext_hit_has_match (&hit) &&
+		fabulor_xtext_hit_dup_match (&hit) == NULL;
+	fabulor_xtext_hit_init (&hit, word, -1, 0, 0);
+	valid = valid && hit.type == -1 && !fabulor_xtext_hit_has_match (&hit);
+	return valid;
+}
+
+static gboolean
 check_xtext_input_policy (void)
 {
 	return fabulor_xtext_selection_press (2, 1) ==
@@ -2102,6 +2145,11 @@ main (void)
 	if (!check_xtext_geometry ())
 	{
 		fprintf (stderr, "GTK4 transcript geometry contract mismatch\n");
+		return 1;
+	}
+	if (!check_xtext_hit_test_policy ())
+	{
+		fprintf (stderr, "GTK4 transcript hit-test contract mismatch\n");
 		return 1;
 	}
 	if (!check_xtext_input_policy ())

@@ -552,6 +552,14 @@ and bounded hover paint/clear state. This removes the widget's individual
 highlight entry, offsets, inside, clear, and render-only fields without adding
 a GTK dependency to the policy.
 
+Stage 6 transcript hit-testing pass 9 moves scrollback-line calculation,
+separator proximity, stripped-format match adjustment, and bounded hit-result
+handling into `xtext-hit-test.c`. `word_click` now carries the already captured
+classification and byte range beside its normalized click. The main-window
+consumer duplicates that range for URL, host, nickname, channel, and email
+actions rather than re-running classification, depending on global
+`url_last()` state, or writing a terminator into the transcript scratch buffer.
+
 Status: `in progress`
 
 ### Input: `SexySpellEntry`

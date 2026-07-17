@@ -1,6 +1,6 @@
 # GTK4 Transcript Rendering Architecture
 
-Status: Stage 6 pass 8 rendering, widget-class, input, selection, frame, background, and decoration contracts
+Status: Stage 6 pass 9 rendering, widget-class, input, selection, frame, background, decoration, and hit-test contracts
 
 ## Purpose
 
@@ -143,6 +143,22 @@ rendered. `GtkXText` still applies the established underline, selection
 palette, marker colour, and Cairo line; it no longer stores or coordinates six
 independent hover fields and flags.
 
+## Hit Testing
+
+`src/fe-gtk/xtext-hit-test.c` owns toolkit-neutral coordinate and match-result
+policy. It maps pointer y coordinates, including the established negative-y
+rounding, to scrollback lines; applies the one-pixel separator tolerance; and
+translates stripped URL/nickname/channel match offsets back through IRC
+formatting runs with overflow and range validation.
+
+The synchronous `word_click` signal now carries one borrowed-word
+`FabulorXTextHit` with captured classification and byte bounds. Its sole
+consumer duplicates only a validated match before opening a URL or creating a
+URL, nickname, channel, or email menu. It neither reclassifies the scratch word
+through global last-match state nor writes a terminator into that buffer.
+Plain-word middle menus, dialog nickname menus, selection, timestamp regions,
+wrapped lines, and empty clicks retain their existing behavior.
+
 ## Ownership Invariants
 
 - An active context may be temporarily replaced and then restored for nested
@@ -169,11 +185,16 @@ independent hover fields and flags.
   precedence.
 - Hover painting, clearing, suspension, and inside-range state belong to one
   owner and are reset at the end of each targeted render.
+- Hit classifications and match bounds are captured together before signal
+  dispatch and rejected when they exceed the borrowed word.
+- Consumers duplicate actionable match text and never mutate the transcript
+  scratch buffer.
+- IRC formatting offset adjustment is bounded before entry offsets are
+  updated.
 
 ## Planned Passes
 
-1. Validate URL hit testing, accessibility, high DPI, and scrollback
-   performance.
+1. Validate accessibility, high DPI, and scrollback performance.
 
 The spell-check input is a separate Stage 6 boundary and will not share
 transcript rendering ownership.
@@ -208,6 +229,12 @@ The strict GTK4 probe verifies:
 - search ranges classify start, middle, end, current, and adjacent boundaries;
 - hover ranges exclude their ending byte and preserve paint/clear modes; and
 - timestamp suspension and owner cleanup reset decoration state safely.
+- negative and positive pointer coordinates map to deterministic scrollback
+  lines;
+- separator hit tolerance remains exactly one pixel on each side;
+- formatting runs translate stripped match offsets back to entry offsets; and
+- invalid ranges are rejected while valid matched substrings are duplicated
+  without modifying their source word.
 
 Manual transcript output and latency checks remain required when the GTK4
 widget class is connected to this boundary.

@@ -2919,6 +2919,46 @@ Scope: transcript marker placement, search range classification, and transient
 hover-highlight state only. URL hit testing, accessibility, high DPI,
 scrollback performance, and spell-check input remain separate targets.
 
+### PR: #100 - GTK4 Stage 6 Transcript Hit Testing
+
+Date: 2026-07-17
+
+Migration stage: 6, transcript hit-testing pass 9
+
+Files/workflows converted: pointer-to-scrollback-line mapping; separator hit
+tolerance; IRC-formatting match adjustment; captured word type and byte range;
+URL/host/nickname/channel/email click dispatch; immutable matched-substring
+ownership
+
+GTK version: 4.22.4
+
+GLib version: 2.88.0
+
+Build configuration: MSVC x64 Release and strict GTK4 probe boundary
+
+Automated checks:
+
+- [x] production GTK3 frontend compiles and links with 0 warnings and 0 errors
+- [x] strict GTK4 probe compiles, links, and executes with 0 warnings and 0 errors
+- [x] positive and negative pointer-to-line contracts pass
+- [x] separator centre and one-pixel edge tolerance contracts pass
+- [x] formatted match offset and invalid-range contracts pass
+- [x] matched-substring duplication preserves the source word
+- [x] GTK4 dependency validator tests remain 8/8
+- [x] repository diff whitespace validation passes
+
+Manual checks:
+
+- [ ] URL and host hover/click/menu behavior remains unchanged
+- [ ] nickname, channel, email, plain-word, and dialog menus remain unchanged
+- [ ] wrapped lines, timestamps, formatted links, and separator dragging remain unchanged
+- [ ] selection and empty-click focus behavior remain unchanged
+- [ ] GTK4 snapshot hit testing awaits full widget integration
+
+Scope: transcript line, separator, formatted-match, and word-click hit testing
+only. Accessibility, high DPI, scrollback performance, and spell-check input
+remain separate targets.
+
 ## Per-PR Record Template
 
 Copy this section for each GTK4 PR:
