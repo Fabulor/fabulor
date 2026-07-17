@@ -1,6 +1,6 @@
 # GTK4 Transcript Rendering Architecture
 
-Status: Stage 6 pass 11 rendering, widget-class, input, selection, frame, background, decoration, hit-test, accessibility, display-scale, and accessible-text contracts
+Status: Stage 6 pass 12 rendering, widget-class, input, selection, frame, background, decoration, hit-test, accessibility, display-scale, accessible-text, and performance contracts
 
 ## Purpose
 
@@ -197,6 +197,29 @@ idle source before releasing the owner or transcript buffers. GTK3 retains the
 pass 10 ATK role and label without taking on a migration-only custom ATK text
 subclass.
 
+## Append And Scrollback Performance
+
+`src/fe-gtk/xtext-performance.c` owns the deterministic append-refresh and
+scrollback-bound policy. Appends to the visible buffer render immediately at
+the bottom so local echo is not delayed. Appends while older content is being
+viewed share one idle refresh, and appends to hidden buffers do not schedule a
+transcript redraw. An already queued historical-view refresh coalesces later
+appends; returning to the bottom cancels that source and renders immediately.
+
+The configured line limit counts wrapped display lines. One appended entry can
+add several lines, so trimming now removes as many complete oldest entries as
+needed instead of removing only one. The newest entry is always retained even
+when it alone wraps beyond the configured limit. Append-owned trimming does not
+schedule a separate 40 ms redraw; the append path performs the single required
+immediate or idle refresh. If trimming changes visible rows while a refresh is
+already pending, that refresh is promoted to a full repaint.
+
+The strict probe gates policy results and operation counts, not elapsed wall
+time. It also reports a one-million-decision diagnostic for trend comparison.
+This makes CI deterministic while preserving a useful signal for substantial
+policy regressions. Production GTK4 transcript latency still requires manual
+measurement after the complete widget is connected.
+
 ## Ownership Invariants
 
 - An active context may be temporarily replaced and then restored for nested
@@ -240,12 +263,18 @@ subclass.
   range.
 - Unobserved accessible text remains lazy and adds no per-message snapshot work.
 - Queued accessibility work is cancelled before transcript buffer teardown.
+- Visible bottom appends render immediately; historical-view appends coalesce
+  into one idle refresh.
+- Scrollback trimming removes complete oldest entries until the wrapped-line
+  bound is met, but never discards the sole newest entry.
+- Append-owned trimming cannot create an independent delayed redraw.
 
 ## Planned Passes
 
 1. Validate transcript role, text reading, and live updates with production
    GTK4 screen readers.
-2. Validate scrollback performance and latency at production scale.
+2. Measure complete transcript rendering and input latency in the production
+   GTK4 client; the deterministic append policy is already validated.
 
 The spell-check input is a separate Stage 6 boundary and will not share
 transcript rendering ownership.
@@ -295,7 +324,14 @@ The strict GTK4 probe verifies:
   character, word, sentence, line, and paragraph ranges;
 - content replacement reports minimal insertion/removal ranges;
 - oversized snapshots remain within the 1 MiB bound; and
-- the GTK4 transcript type implements `GtkAccessibleText`.
+- the GTK4 transcript type implements `GtkAccessibleText`;
+- hidden and already-pending historical-view appends schedule no additional
+  redraw;
+- visible bottom appends select immediate rendering while historical-view
+  appends select one idle refresh;
+- wrapped-line trimming stops at the configured bound where complete-entry
+  retention permits and always preserves the newest entry; and
+- one million refresh decisions execute as a reported, non-gating diagnostic.
 
 Manual transcript output and latency checks remain required when the GTK4
 widget class is connected to this boundary.

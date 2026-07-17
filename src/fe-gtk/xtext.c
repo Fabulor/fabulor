@@ -48,6 +48,7 @@
 #include "gtk-compat.h"
 #include "xtext.h"
 #include "xtext-geometry.h"
+#include "xtext-performance.h"
 #include "xtext-scroll-copy.h"
 #include "xtext-selection.h"
 #include "xtext-widget-class.h"
@@ -4863,14 +4864,15 @@ gtk_xtext_kill_ent (xtext_buffer *buffer, textentry *ent)
 
 /* remove the topline from the list */
 
-static void
-gtk_xtext_remove_top (xtext_buffer *buffer)
+static gboolean
+gtk_xtext_remove_top_internal (xtext_buffer *buffer, gboolean schedule_render)
 {
 	textentry *ent;
+	gboolean visible;
 
 	ent = buffer->text_first;
 	if (!ent)
-		return;
+		return FALSE;
 	buffer->num_lines -= ent->subline_count;
 	buffer->pagetop_line -= ent->subline_count;
 	buffer->last_pixel_pos -= (ent->subline_count * buffer->xtext->fontsize);
@@ -4889,7 +4891,8 @@ gtk_xtext_remove_top (xtext_buffer *buffer)
 		buffer->xtext->select_start_adj -= ent->subline_count;
 	}
 
-	if (gtk_xtext_kill_ent (buffer, ent))
+	visible = gtk_xtext_kill_ent (buffer, ent);
+	if (visible && schedule_render)
 	{
 		if (!buffer->xtext->add_io_tag)
 		{
@@ -4906,6 +4909,14 @@ gtk_xtext_remove_top (xtext_buffer *buffer)
 														buffer->xtext);
 		}
 	}
+
+	return visible;
+}
+
+static void
+gtk_xtext_remove_top (xtext_buffer *buffer)
+{
+	gtk_xtext_remove_top_internal (buffer, TRUE);
 }
 
 static void
@@ -5465,11 +5476,13 @@ gtk_xtext_render_page_timeout (GtkXText * xtext)
 	/* less than a complete page? */
 	if (xtext->buffer->num_lines <= xtext_adj_get_page_size (adj))
 	{
+		xtext->force_render = FALSE;
 		xtext->buffer->old_value = 0;
 		xtext_adj_set_value (adj, 0);
 		gtk_xtext_render_page (xtext);
 	} else if (xtext->buffer->scrollbar_down)
 	{
+		xtext->force_render = FALSE;
 		g_signal_handler_block (xtext->adj, xtext->vc_signal_tag);
 		gtk_xtext_adjustment_set (xtext->buffer, FALSE);
 		xtext_adj_set_value (adj,
@@ -5496,6 +5509,8 @@ static void
 gtk_xtext_append_entry (xtext_buffer *buf, textentry * ent, time_t stamp)
 {
 	int i;
+	gboolean trimmed_visible = FALSE;
+	FabulorXTextAppendRefresh refresh_plan;
 
 	/* we don't like tabs */
 	i = 0;
@@ -5541,36 +5556,43 @@ gtk_xtext_append_entry (xtext_buffer *buf, textentry * ent, time_t stamp)
 		buf->marker_seen = FALSE;
 	}
 
-	if (buf->xtext->max_lines > 2 && buf->xtext->max_lines < buf->num_lines)
+	while (fabulor_xtext_should_trim_oldest (buf->xtext->max_lines,
+		buf->num_lines, buf->text_first != buf->text_last))
 	{
-		gtk_xtext_remove_top (buf);
+		trimmed_visible |= gtk_xtext_remove_top_internal (buf, FALSE);
 	}
 
-	if (buf->xtext->buffer == buf)
+	refresh_plan = fabulor_xtext_append_refresh_plan (
+		buf->xtext->buffer == buf, buf->xtext->add_io_tag != 0,
+		buf->scrollbar_down);
+	if (buf->xtext->buffer == buf &&
+		(buf->num_lines - 1) <= xtext_adj_get_page_size (buf->xtext->adj))
+		dontscroll (buf);
+	if (refresh_plan != FABULOR_XTEXT_APPEND_REFRESH_NONE)
 	{
-		/* this could be improved */
-		if ((buf->num_lines - 1) <= xtext_adj_get_page_size (buf->xtext->adj))
-			dontscroll (buf);
-
-		if (!buf->xtext->add_io_tag)
+		if (buf->xtext->add_io_tag)
 		{
-			/* remove scrolling events */
-			if (buf->xtext->io_tag)
-			{
-				g_source_remove (buf->xtext->io_tag);
-				buf->xtext->io_tag = 0;
-			}
-			/* When at the bottom of the buffer, render immediately so long
-			 * scrollback doesn't delay newly-sent messages appearing.
-			 * Otherwise, keep idle batching to avoid extra redraws while
-			 * scrolling around old content. */
-			if (buf->scrollbar_down)
-				gtk_xtext_render_page_timeout (buf->xtext);
-			else
-				buf->xtext->add_io_tag = g_idle_add ((GSourceFunc)
-										gtk_xtext_render_page_timeout,
-										buf->xtext);
+			g_source_remove (buf->xtext->add_io_tag);
+			buf->xtext->add_io_tag = 0;
 		}
+		/* remove scrolling events */
+		if (buf->xtext->io_tag)
+		{
+			g_source_remove (buf->xtext->io_tag);
+			buf->xtext->io_tag = 0;
+		}
+		if (trimmed_visible)
+			buf->xtext->force_render = TRUE;
+		if (refresh_plan == FABULOR_XTEXT_APPEND_REFRESH_IMMEDIATE)
+			gtk_xtext_render_page_timeout (buf->xtext);
+		else
+			buf->xtext->add_io_tag = g_idle_add ((GSourceFunc)
+									gtk_xtext_render_page_timeout,
+									buf->xtext);
+	} else if (trimmed_visible && buf->xtext->buffer == buf)
+	{
+		/* A pending refresh must repaint if trimming changed visible rows. */
+		buf->xtext->force_render = TRUE;
 	}
 	if (buf->scrollbar_down)
 	{

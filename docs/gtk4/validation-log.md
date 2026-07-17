@@ -3040,6 +3040,51 @@ Scope: bounded read-only GTK4 transcript text exposure and update lifetime only.
 Production screen-reader validation, accessible selection/geometry, scrollback
 performance, and spell-check input remain separate targets.
 
+### PR: #103 - GTK4 Stage 6 Transcript Performance Policy
+
+Date: 2026-07-17
+
+Migration stage: 6, transcript performance and latency pass 12
+
+Files/workflows converted: visible-buffer append refresh planning; immediate
+bottom redraw; historical-view idle coalescing; wrapped-display-line trimming;
+complete newest-entry retention; visible-trim repaint promotion; informational
+policy timing diagnostic
+
+GTK version: 4.22.4
+
+GLib version: 2.88.0
+
+Build configuration: MSVC x64 Release and strict GTK4 probe boundary
+
+Automated checks:
+
+- [x] production GTK3 frontend compiles and links with 0 warnings and 0 errors
+- [x] strict GTK4 probe compiles, links, and executes with 0 warnings and 0 errors
+- [x] visible bottom appends select immediate redraw
+- [x] historical-view appends select one coalesced idle refresh
+- [x] hidden-buffer and already-pending historical-view appends schedule no additional refresh
+- [x] multi-line append trimming reaches the configured wrapped-line bound
+- [x] a sole oversized newest entry is retained
+- [x] one million policy decisions complete as a non-gating diagnostic
+
+Performance observations:
+
+- strict-probe policy diagnostic: 1,000,000 decisions in 1,540 microseconds
+- elapsed time is informational; deterministic policy outcomes and operation
+  counts are the CI pass/fail contract
+
+Manual checks:
+
+- [ ] shipping GTK3 local echo remains immediate at the scrollback limit
+- [ ] shipping GTK3 historical scroll position remains stable during append bursts
+- [ ] production GTK4 large-scrollback wheel, Page Up, busy-channel, and local-echo latency awaits full widget integration
+- [ ] production measurements record scrollback size, plugin set, spell-check state, network, and lag-meter value
+
+Scope: transcript append refresh and wrapped-line retention policy only. Full
+renderer throughput, input latency, visual smoothness, screen-reader behavior,
+and spell-check input remain production validation or separate Stage 6 targets.
+
 ## Per-PR Record Template
 
 Copy this section for each GTK4 PR:

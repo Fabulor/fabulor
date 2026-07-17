@@ -24,6 +24,7 @@
 #include "../../src/fe-gtk/xtext-geometry.h"
 #include "../../src/fe-gtk/xtext-hit-test.h"
 #include "../../src/fe-gtk/xtext-input.h"
+#include "../../src/fe-gtk/xtext-performance.h"
 #include "../../src/fe-gtk/xtext-render-target.h"
 #include "../../src/fe-gtk/xtext-scroll-copy.h"
 #include "../../src/fe-gtk/xtext-selection.h"
@@ -1910,6 +1911,54 @@ check_xtext_scroll_copy_policy (void)
 }
 
 static gboolean
+check_xtext_performance_policy (void)
+{
+	const guint iterations = 1000000;
+	volatile guint checksum = 0;
+	gint lines = 100000;
+	guint removals = 0;
+	gint64 started;
+	gint64 elapsed;
+	guint i;
+
+	if (fabulor_xtext_append_refresh_plan (FALSE, FALSE, TRUE) !=
+		FABULOR_XTEXT_APPEND_REFRESH_NONE ||
+		fabulor_xtext_append_refresh_plan (TRUE, TRUE, FALSE) !=
+		FABULOR_XTEXT_APPEND_REFRESH_NONE ||
+		fabulor_xtext_append_refresh_plan (TRUE, TRUE, TRUE) !=
+		FABULOR_XTEXT_APPEND_REFRESH_IMMEDIATE ||
+		fabulor_xtext_append_refresh_plan (TRUE, FALSE, TRUE) !=
+		FABULOR_XTEXT_APPEND_REFRESH_IMMEDIATE ||
+		fabulor_xtext_append_refresh_plan (TRUE, FALSE, FALSE) !=
+		FABULOR_XTEXT_APPEND_REFRESH_IDLE ||
+		fabulor_xtext_should_trim_oldest (0, 5001, TRUE) ||
+		fabulor_xtext_should_trim_oldest (2, 5001, TRUE) ||
+		fabulor_xtext_should_trim_oldest (5000, 5000, TRUE) ||
+		fabulor_xtext_should_trim_oldest (5000, 5001, FALSE) ||
+		!fabulor_xtext_should_trim_oldest (5000, 5001, TRUE))
+		return FALSE;
+
+	while (fabulor_xtext_should_trim_oldest (5000, lines, lines > 1))
+	{
+		lines -= (gint) ((removals % 4) + 1);
+		removals++;
+	}
+	if (lines > 5000 || lines < 4997 || removals != 38000)
+		return FALSE;
+
+	started = g_get_monotonic_time ();
+	for (i = 0; i < iterations; i++)
+	{
+		checksum += (guint) fabulor_xtext_append_refresh_plan (TRUE,
+			(i & 3u) != 0, (i & 4u) != 0);
+	}
+	elapsed = g_get_monotonic_time () - started;
+	printf ("Transcript policy diagnostic: %u decisions in %" G_GINT64_FORMAT
+		" us\n", iterations, elapsed);
+	return checksum == 750000;
+}
+
+static gboolean
 probe_bytes_equal (GBytes *bytes, const gchar *expected)
 {
 	gsize length;
@@ -2295,6 +2344,11 @@ main (void)
 	if (!check_xtext_scroll_copy_policy ())
 	{
 		fprintf (stderr, "GTK4 transcript scroll-copy policy mismatch\n");
+		return 1;
+	}
+	if (!check_xtext_performance_policy ())
+	{
+		fprintf (stderr, "GTK4 transcript performance policy mismatch\n");
 		return 1;
 	}
 	if (!check_xtext_accessible_policy ())
