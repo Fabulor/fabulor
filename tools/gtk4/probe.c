@@ -17,6 +17,7 @@
 #include "../../src/fe-gtk/preferences-category-list.h"
 #include "../../src/fe-gtk/server-network-list.h"
 #include "../../src/fe-gtk/server-entry-list.h"
+#include "../../src/fe-gtk/spell-entry-menu.h"
 #include "../../src/fe-gtk/spell-entry-style.h"
 #include "../../src/fe-gtk/spell-entry-widget.h"
 #include "../../src/fe-gtk/spell-entry-words.h"
@@ -1673,14 +1674,18 @@ static gboolean
 check_xtext_decoration_policy (void)
 {
 	FabulorXTextDecoration *decoration = fabulor_xtext_decoration_new ();
-	offsets_t first = { 0 };
-	offsets_t second = { 0 };
+	offsets_t first;
+	offsets_t second;
 	GList *marks = NULL;
 	GList *current;
 	gint entry_a = 1;
 	gint entry_b = 2;
 	gint marker_y = -1;
-	gboolean valid = decoration != NULL &&
+	gboolean valid;
+
+	first.u = 0;
+	second.u = 0;
+	valid = decoration != NULL &&
 		!fabulor_xtext_marker_position (FALSE, &entry_a, &entry_a, NULL,
 			10, 3, 12, 2, &marker_y) && marker_y == 0 &&
 		fabulor_xtext_marker_position (TRUE, &entry_a, &entry_a, &entry_b,
@@ -2110,6 +2115,83 @@ check_spell_entry_widget_policy (void)
 		g_type_is_a (entry_type, GTK_TYPE_EDITABLE);
 }
 
+static guint
+spell_menu_count_action (GMenuModel *model, const gchar *expected_action)
+{
+	guint count = 0;
+	gint i;
+
+	for (i = 0; i < g_menu_model_get_n_items (model); i++)
+	{
+		GVariant *action = g_menu_model_get_item_attribute_value (model, i,
+			G_MENU_ATTRIBUTE_ACTION, G_VARIANT_TYPE_STRING);
+		GMenuModel *submenu;
+		GMenuModel *section;
+
+		if (action && g_strcmp0 (g_variant_get_string (action, NULL),
+			expected_action) == 0)
+			count++;
+		g_clear_pointer (&action, g_variant_unref);
+
+		submenu = g_menu_model_get_item_link (model, i, G_MENU_LINK_SUBMENU);
+		if (submenu)
+		{
+			count += spell_menu_count_action (submenu, expected_action);
+			g_object_unref (submenu);
+		}
+		section = g_menu_model_get_item_link (model, i, G_MENU_LINK_SECTION);
+		if (section)
+		{
+			count += spell_menu_count_action (section, expected_action);
+			g_object_unref (section);
+		}
+	}
+
+	return count;
+}
+
+static gboolean
+check_spell_entry_menu_policy (void)
+{
+	static const gchar *english_suggestions[] = {
+		"one", "two", "three", "four", "five", "six", "seven", "eight",
+		"nine", "ten", "eleven"
+	};
+	FabulorSpellMenuDictionary dictionaries[] = {
+		{ "en_AU", "English (Australia)", english_suggestions,
+			G_N_ELEMENTS (english_suggestions) },
+		{ "fr_FR", "French (France)", NULL, 0 }
+	};
+	GMenuModel *model = fabulor_spell_entry_menu_new ("wrod", TRUE, TRUE,
+		dictionaries, G_N_ELEMENTS (dictionaries));
+	gboolean valid;
+
+	valid = g_menu_model_get_n_items (model) == 3 &&
+		spell_menu_count_action (model,
+			FABULOR_SPELL_MENU_ACTION_REPLACE) == 11 &&
+		spell_menu_count_action (model,
+			FABULOR_SPELL_MENU_ACTION_ADD) == 2 &&
+		spell_menu_count_action (model,
+			FABULOR_SPELL_MENU_ACTION_IGNORE) == 1 &&
+		spell_menu_count_action (model,
+			FABULOR_SPELL_MENU_ACTION_INSERT) == 21 &&
+		spell_menu_count_action (model,
+			FABULOR_SPELL_MENU_ACTION_ENABLED) == 1;
+	g_object_unref (model);
+
+	model = fabulor_spell_entry_menu_new (NULL, FALSE, FALSE, NULL, 0);
+	valid = valid && g_menu_model_get_n_items (model) == 2 &&
+		spell_menu_count_action (model,
+			FABULOR_SPELL_MENU_ACTION_REPLACE) == 0 &&
+		spell_menu_count_action (model,
+			FABULOR_SPELL_MENU_ACTION_INSERT) == 21 &&
+		spell_menu_count_action (model,
+			FABULOR_SPELL_MENU_ACTION_ENABLED) == 1;
+	g_object_unref (model);
+
+	return valid;
+}
+
 static gboolean
 check_spell_entry_word_policy (void)
 {
@@ -2184,8 +2266,8 @@ check_xtext_performance_policy (void)
 			(i & 3u) != 0, (i & 4u) != 0);
 	}
 	elapsed = g_get_monotonic_time () - started;
-	printf ("Transcript policy diagnostic: %u decisions in %" G_GINT64_FORMAT
-		" us\n", iterations, elapsed);
+	printf ("Transcript policy diagnostic: %u decisions in %.0f us\n",
+		iterations, (double) elapsed);
 	return checksum == 750000;
 }
 
@@ -2585,6 +2667,11 @@ main (void)
 	if (!check_spell_entry_widget_policy ())
 	{
 		fprintf (stderr, "GTK4 spell-entry widget policy mismatch\n");
+		return 1;
+	}
+	if (!check_spell_entry_menu_policy ())
+	{
+		fprintf (stderr, "GTK4 spell-entry menu policy mismatch\n");
 		return 1;
 	}
 	if (!check_spell_entry_style_policy ())

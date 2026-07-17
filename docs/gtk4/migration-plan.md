@@ -1088,6 +1088,16 @@ instead of treating theme-token enum values as mIRC indexes. The strict probe
 validates formatting-disabled state, toggles, hidden shaping, colour roles,
 reverse semantics, trailing colour-parameter hiding, and spell underline ranges.
 
+Spell-input dynamic-menu pass 4 (2026-07-17): `spell-entry-menu.c` now owns a
+GTK-independent `GMenuModel` projection for suggestions, per-language add,
+session ignore, spell enablement, IRC attributes, and colours 0-15. GTK4 owns
+one action group and current extra-menu model per entry, refreshes suggestions
+only for pointer or keyboard context-menu requests, and resolves language
+targets against the active dictionary table at activation time. The GTK3
+`populate-popup` and markup colour menu remain explicitly contained until
+cutover. The strict probe validates disabled, multi-dictionary, no-suggestion,
+long-suggestion, formatting, colour, and action-count contracts.
+
 Primary surfaces:
 
 - `xtext.c` / `xtext.h`

@@ -1,6 +1,6 @@
 # GTK4 Spell Input Architecture
 
-Status: Stage 6 spell-input pass 3 Pango styling boundary
+Status: Stage 6 spell-input pass 4 dynamic menu and action boundary
 
 ## Purpose
 
@@ -79,6 +79,27 @@ Reverse formatting now explicitly swaps the resolved default foreground and
 background. Previously it passed semantic theme-token enum values through the
 mIRC colour resolver, making the result depend on unrelated enum numbering.
 
+## Menu Ownership
+
+`spell-entry-menu.c` owns the immutable `GMenuModel` projection for spelling
+and input formatting. The model contains replacement suggestions, per-language
+dictionary choices, session ignore, the spell-check toggle, all five IRC
+attribute controls, and colour codes 0-15. Suggestion lists longer than ten
+items retain the established nested `More...` grouping.
+
+GTK4 installs one `GSimpleActionGroup` on each spell entry. Replacement and
+dictionary targets carry a language identifier rather than an Enchant pointer;
+the callback resolves that identifier against the currently active dictionary
+table at activation time. Replacing a menu model therefore cannot leave an
+action holding a stale dictionary or native menu item.
+
+Models rebuild only immediately before a secondary-click or keyboard context
+menu. Enchant suggestion generation is not part of text-change or cursor-change
+processing, preserving the edit-box latency boundary. GTK3 retains its existing
+`populate-popup` implementation behind an explicit version guard until final
+GTK3 removal. GTK4 formatting actions insert directly into the owning editable,
+including replacing the current selection, without using global session state.
+
 ## Invariants
 
 - Pango and Enchant ranges are UTF-8 byte indexed.
@@ -96,12 +117,15 @@ mIRC colour resolver, making the result depend on unrelated enum numbering.
 - Styling accepts resolved colours and has no GTK widget or theme dependency.
 - IRC controls and formatting ranges are byte indexed with the text snapshot.
 - Reverse formatting swaps semantic defaults rather than mIRC palette indexes.
+- One entry owns one GTK4 action group and its current extra-menu model.
+- Menu actions never retain Enchant dictionary or GTK menu-item pointers.
+- Suggestions are generated on context-menu demand, not while typing.
+- Pointer and Shift+F10/Menu-key paths refresh the same dynamic model.
+- Spell, formatting, and colour commands remain keyboard accessible.
 
 ## Planned Passes
 
-1. Replace legacy `populate-popup` menu mutation with GTK4 actions and dynamic
-   suggestion, dictionary, ignore, and colour-menu models.
-2. Validate emoji insertion, clipboard, shortcuts, URL paste, Enchant latency,
+1. Validate emoji insertion, clipboard, shortcuts, URL paste, Enchant latency,
    personal-dictionary persistence, accessibility, and high-DPI behavior in
    the production GTK4 client.
 
@@ -125,7 +149,12 @@ The strict GTK4 probe verifies:
 - mIRC foreground/background colours resolve through the supplied palette;
 - trailing mIRC colour parameters remain hidden;
 - reverse formatting swaps semantic default colours; and
-- misspelling ranges carry the semantic spell underline and colour.
+- misspelling ranges carry the semantic spell underline and colour;
+- checked and disabled spell states produce deterministic root models;
+- one- and multi-dictionary menus expose stable add, ignore, and replacement
+  actions without native pointers;
+- long suggestion lists retain the ten-item `More...` boundary; and
+- all formatting and colour insertion actions remain present.
 
-Production Enchant and menu behavior remains a manual GTK3 regression check
-until the complete GTK4 input widget is connected.
+Production Enchant behavior remains a manual GTK3 regression check until the
+complete GTK4 input widget is connected.
