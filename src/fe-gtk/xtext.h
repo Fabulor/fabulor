@@ -21,6 +21,7 @@
 #define ZOITECHAT_XTEXT_H
 
 #include <gtk/gtk.h>
+#include "xtext-accessible.h"
 #include "xtext-background.h"
 #include "xtext-decoration.h"
 #include "xtext-display.h"
@@ -140,6 +141,11 @@ struct _GtkXText
 	FabulorXTextDecoration *decoration;
 	FabulorXTextRenderTarget *render_target;
 	FabulorXTextSelection *selection;
+#if GTK_MAJOR_VERSION >= 4
+	FabulorXTextAccessible *accessible_text;
+	guint accessible_update_tag;
+	gboolean accessible_dirty;
+#endif
 	GdkCursor *hand_cursor;
 	GdkCursor *resize_cursor;
 

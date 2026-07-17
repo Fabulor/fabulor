@@ -2998,6 +2998,48 @@ Scope: transcript role/name semantics and toolkit-neutral display calculations
 only. Accessible text exposure, production GTK4 visual checks, scrollback
 performance, and spell-check input remain separate targets.
 
+### PR: #102 - GTK4 Stage 6 Transcript Accessible Text
+
+Date: 2026-07-17
+
+Migration stage: 6, transcript accessible-text pass 11
+
+Files/workflows converted: GTK4 `GtkAccessibleText` registration and vtable;
+bounded recent plain-text snapshot; Unicode character/word/sentence/line ranges;
+append, trim, clear, timestamp, and buffer-switch invalidation; coalesced idle
+refresh; minimal content-change notification; teardown cancellation
+
+GTK version: 4.22.4
+
+GLib version: 2.88.0
+
+Build configuration: MSVC x64 Release and strict GTK4 probe boundary
+
+Automated checks:
+
+- [x] production GTK3 frontend compiles and links with 0 warnings and 0 errors
+- [x] strict GTK4 probe compiles, links, and executes with 0 warnings and 0 errors
+- [x] character-indexed complete and bounded content queries pass
+- [x] Pango word and sentence plus entry line-boundary contracts pass
+- [x] minimal insertion replacement range contract passes
+- [x] accessible snapshots remain within the 1 MiB safety bound
+- [x] unobserved accessible text remains lazy until its first query
+- [x] GTK4 transcript probe type implements `GtkAccessibleText`
+- [x] GTK4 dependency validator tests remain 8/8
+- [x] repository diff whitespace validation passes
+
+Manual checks:
+
+- [ ] GTK4 screen readers report the labelled transcript log and read recent text
+- [ ] incoming messages and channel switches produce timely, non-duplicated updates
+- [ ] displayed timestamps and hidden IRC runs match the accessible snapshot
+- [ ] large scrollback remains responsive while accessibility is active
+- [ ] selection mutation and text geometry remain unsupported for the read-only log
+
+Scope: bounded read-only GTK4 transcript text exposure and update lifetime only.
+Production screen-reader validation, accessible selection/geometry, scrollback
+performance, and spell-check input remain separate targets.
+
 ## Per-PR Record Template
 
 Copy this section for each GTK4 PR:

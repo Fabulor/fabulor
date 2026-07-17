@@ -569,6 +569,16 @@ hit testing, and cursor placement retain logical dimensions. Full accessible
 scrollback text exposure and production GTK4 screen-reader validation remain
 separate from this role-and-name baseline.
 
+Stage 6 transcript accessible-text pass 11 implements GTK4's read-only
+`GtkAccessibleText` interface over a recent valid UTF-8 snapshot. The snapshot
+omits hidden IRC runs, follows timestamp visibility, is bounded to 1 MiB, and
+uses Pango Unicode boundaries for character, word, sentence, line, and
+paragraph queries. Append bursts, trimming, clears, timestamp changes, and
+buffer switches coalesce into one idle refresh with minimal removal/insertion
+notifications after the interface is first queried; ordinary sessions retain
+no snapshot maintenance cost. GTK3 retains its existing ATK log role/name; accessible
+selection mutation and text geometry remain unsupported for this read-only log.
+
 Status: `in progress`
 
 ### Input: `SexySpellEntry`

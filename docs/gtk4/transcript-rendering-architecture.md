@@ -1,6 +1,6 @@
 # GTK4 Transcript Rendering Architecture
 
-Status: Stage 6 pass 10 rendering, widget-class, input, selection, frame, background, decoration, hit-test, accessibility, and display-scale contracts
+Status: Stage 6 pass 11 rendering, widget-class, input, selection, frame, background, decoration, hit-test, accessibility, display-scale, and accessible-text contracts
 
 ## Purpose
 
@@ -174,6 +174,29 @@ their established logical coordinates. Inline flag images retain their 14 to
 widget's device scale and painted back into logical coordinates. Cache keys
 include scale so a monitor-scale change cannot reuse a lower-resolution image.
 
+## Accessible Text
+
+GTK4 `GtkXText` implements the native read-only `GtkAccessibleText` interface
+through `src/fe-gtk/xtext-accessible.c`. The owner retains valid UTF-8 recent
+content, uses character offsets rather than byte offsets, and supplies
+character, word, sentence, line, and paragraph slices. Pango log attributes
+provide Unicode-aware word and sentence boundaries. The caret is reported at
+the end of the log; selection mutation, range geometry, and point-to-offset
+mapping return unsupported because the transcript is not an editable control.
+
+The snapshot contains at most 1 MiB and starts at a complete recent entry when
+possible. It strips IRC formatting and hidden runs, includes timestamps only
+when that buffer displays them, and repairs malformed input before exposure.
+Append bursts, scrollback trimming, clears, timestamp changes, and channel
+buffer switches mark the snapshot dirty. One idle refresh computes the common
+prefix and suffix, then emits only the changed removal and insertion ranges.
+Before the interface is first queried, changes only mark the owner dirty and
+ordinary sessions perform no snapshot or diff work. The first query refreshes
+synchronously; later changes use the idle path. Widget teardown cancels the
+idle source before releasing the owner or transcript buffers. GTK3 retains the
+pass 10 ATK role and label without taking on a migration-only custom ATK text
+subclass.
+
 ## Ownership Invariants
 
 - An active context may be temporarily replaced and then restored for nested
@@ -211,11 +234,17 @@ include scale so a monitor-scale change cannot reuse a lower-resolution image.
 - Invalid scale factors normalize to one and overflowed image dimensions are
   rejected.
 - The transcript exposes a log role and stable label on GTK3 and GTK4.
+- GTK4 accessible text is valid UTF-8, read-only, character-indexed, and bounded
+  to recent content.
+- Accessible updates are coalesced and report only the differing character
+  range.
+- Unobserved accessible text remains lazy and adds no per-message snapshot work.
+- Queued accessibility work is cancelled before transcript buffer teardown.
 
 ## Planned Passes
 
-1. Expose accessible scrollback text and validate it with production GTK4
-   screen readers.
+1. Validate transcript role, text reading, and live updates with production
+   GTK4 screen readers.
 2. Validate scrollback performance and latency at production scale.
 
 The spell-check input is a separate Stage 6 boundary and will not share
@@ -262,6 +291,11 @@ The strict GTK4 probe verifies:
 - inline flag sizing preserves logical layout at 1x, 2x, and 3x device scales;
 - invalid scale and pixel conversions are normalized or rejected safely; and
 - the GTK4 widget subclass exposes the log accessibility role.
+- read-only accessible content uses character offsets and deterministic
+  character, word, sentence, line, and paragraph ranges;
+- content replacement reports minimal insertion/removal ranges;
+- oversized snapshots remain within the 1 MiB bound; and
+- the GTK4 transcript type implements `GtkAccessibleText`.
 
 Manual transcript output and latency checks remain required when the GTK4
 widget class is connected to this boundary.
