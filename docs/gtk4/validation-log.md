@@ -3165,6 +3165,47 @@ Scope: spell-entry class lifetime, editing inheritance, pointer dispatch,
 redraw, and theme refresh only. Formatting ownership, GTK4 dynamic menus, and
 complete production input validation remain separate passes.
 
+### PR: #106 - GTK4 Stage 6 Spell-Input Styling Boundary
+
+Date: 2026-07-17
+
+Migration stage: 6, spell-input Pango styling pass 3
+
+Files/workflows converted: IRC control shaping; bold, italic, strikethrough,
+underline, reset, and reverse ranges; mIRC colour resolution; semantic default
+and spell colours; misspelling attributes; Pango attribute-list ownership
+
+GTK version: 4.22.4
+
+GLib version: 2.88.0
+
+Build configuration: MSVC x64 Release and strict GTK4 probe boundary
+
+Automated checks:
+
+- [x] production GTK3 frontend compiles and links with 0 warnings and 0 errors
+- [x] strict GTK4 probe compiles, links, and executes with 0 warnings and 0 errors
+- [x] formatting-disabled text produces no Pango attributes
+- [x] IRC controls are hidden and all four formatting toggles have stable ranges
+- [x] reset restores normal weight and the semantic foreground colour
+- [x] mIRC foreground and background indexes resolve through the supplied palette
+- [x] colour parameters are hidden when a sequence ends the input
+- [x] reverse formatting swaps semantic foreground and background colours
+- [x] misspelling byte ranges carry error underline and semantic spell colour
+- [x] repository diff whitespace validation passes
+
+Manual checks:
+
+- [ ] shipping GTK3 edit-box bold, italic, underline, and strikethrough previews remain unchanged
+- [ ] reset, reverse, foreground-only, and foreground/background colour previews remain correct
+- [ ] control bytes and colour parameters remain hidden while editing
+- [ ] misspelling underlines coexist with IRC formatting and theme changes
+- [ ] formatting-disabled preference shows literal input without Pango styling
+
+Scope: edit-box Pango attribute construction and palette roles only. GTK4
+dynamic spelling/colour menus and complete production input validation remain
+separate passes.
+
 ## Per-PR Record Template
 
 Copy this section for each GTK4 PR:

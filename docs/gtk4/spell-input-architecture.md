@@ -1,6 +1,6 @@
 # GTK4 Spell Input Architecture
 
-Status: Stage 6 spell-input pass 2 widget lifecycle and event boundary
+Status: Stage 6 spell-input pass 3 Pango styling boundary
 
 ## Purpose
 
@@ -57,6 +57,28 @@ does not manufacture click coordinates from private widget details. The GTK4
 dynamic-menu pass will own context-menu position and action state explicitly;
 keyboard menus continue to use the editable cursor.
 
+## Styling Ownership
+
+`spell-entry-style.c` owns the complete Pango attribute list for one edit-box
+text snapshot. The widget resolves semantic theme colours into a small palette;
+the owner then applies hidden IRC controls, bold, italic, strikethrough,
+underline, reset, reverse, mIRC foreground/background colours, and spell-error
+underlines without accessing a GTK widget or the global theme manager.
+
+Formatting and spell ranges remain UTF-8 byte indexed because Pango attributes
+use bytes. The style owner returns one referenced `PangoAttrList`, and the
+widget swaps that owner before adding misspelling ranges. The previous
+per-attribute helpers, parser state, ineffective attribute-copy cleanup, and
+list-emptiness scan have left `SexySpellEntry`.
+
+Colour parameters are hidden whether another character follows the sequence or
+the sequence ends the input. The previous end-of-input path applied the colour
+but omitted the parameter-shaping range.
+
+Reverse formatting now explicitly swaps the resolved default foreground and
+background. Previously it passed semantic theme-token enum values through the
+mIRC colour resolver, making the result depend on unrelated enum numbering.
+
 ## Invariants
 
 - Pango and Enchant ranges are UTF-8 byte indexed.
@@ -70,14 +92,16 @@ keyboard menus continue to use the editable cursor.
 - No spell-entry draw, button-press, or style-update class virtual remains.
 - Widget redraw does not depend on a native window.
 - Theme-listener lifetime cannot outlive the spell entry.
+- One owner constructs and releases each Pango attribute list.
+- Styling accepts resolved colours and has no GTK widget or theme dependency.
+- IRC controls and formatting ranges are byte indexed with the text snapshot.
+- Reverse formatting swaps semantic defaults rather than mIRC palette indexes.
 
 ## Planned Passes
 
-1. Move IRC formatting and misspelling Pango attributes behind a tested text
-   styling boundary.
-2. Replace legacy `populate-popup` menu mutation with GTK4 actions and dynamic
+1. Replace legacy `populate-popup` menu mutation with GTK4 actions and dynamic
    suggestion, dictionary, ignore, and colour-menu models.
-3. Validate emoji insertion, clipboard, shortcuts, URL paste, Enchant latency,
+2. Validate emoji insertion, clipboard, shortcuts, URL paste, Enchant latency,
    personal-dictionary persistence, accessibility, and high-DPI behavior in
    the production GTK4 client.
 
@@ -92,10 +116,16 @@ The strict GTK4 probe verifies:
 - ASCII and multibyte words are segmented in stable order;
 - the multibyte word `café` has distinct correct byte and character ranges;
 - cursor lookup within and at the end of that word returns the same range;
-- duplicated word text remains valid UTF-8; and
+- duplicated word text remains valid UTF-8;
 - empty owners reject invalid range, lookup, and duplication requests;
 - a strict GTK4 `GtkEntry` subclass inherits `GtkEditable`; and
-- pointer/redraw adapter source compiles against the allowlisted GTK4 headers.
+- pointer/redraw adapter source compiles against the allowlisted GTK4 headers;
+- disabled formatting produces an empty attribute list;
+- hidden controls and bold, italic, strikethrough, and underline ranges match;
+- mIRC foreground/background colours resolve through the supplied palette;
+- trailing mIRC colour parameters remain hidden;
+- reverse formatting swaps semantic default colours; and
+- misspelling ranges carry the semantic spell underline and colour.
 
 Production Enchant and menu behavior remains a manual GTK3 regression check
 until the complete GTK4 input widget is connected.

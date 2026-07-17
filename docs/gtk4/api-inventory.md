@@ -455,7 +455,8 @@ The line counts below identify review size, not priority by themselves.
 | `src/fe-gtk/setup.c` | 2,548 | 491 | preferences tree, generated controls, dialogs | 2/3/5 |
 | `src/fe-gtk/fkeys.c` | 2,386 | 282 | accelerators and editable cell renderers | 4/5 |
 | `src/fe-gtk/fe-gtk.c` | 1,928 | 110 | startup, runtime paths, display/icon setup | 1/7/8 |
-| `src/fe-gtk/sexy-spell-entry.c` | 1,878 | 156 | `GtkEntry` subclass, spell attributes, menus | 6 |
+| `src/fe-gtk/sexy-spell-entry.c` | 1,424 | 118 | `GtkEntry` subclass, Enchant backend, menus | 6 |
+| `src/fe-gtk/spell-entry-style.c` | 330 | 43 | Pango IRC formatting and spell attributes | 6 |
 | `src/fe-gtk/spell-entry-widget.c` | 40 | 11 | cross-version pointer and redraw boundary | 6 |
 | `src/fe-gtk/theme/theme-preferences.c` | 1,946 | 564 | theme UI, models, response-driven dialogs | 3/5/7 |
 | `src/fe-gtk/plugin-tray.c` | 1,620 | 147 | GTK3 status icon/AppIndicator and Win32 tray | 7 |

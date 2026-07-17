@@ -17,6 +17,7 @@
 #include "../../src/fe-gtk/preferences-category-list.h"
 #include "../../src/fe-gtk/server-network-list.h"
 #include "../../src/fe-gtk/server-entry-list.h"
+#include "../../src/fe-gtk/spell-entry-style.h"
 #include "../../src/fe-gtk/spell-entry-widget.h"
 #include "../../src/fe-gtk/spell-entry-words.h"
 #include "../../src/fe-gtk/xtext-background.h"
@@ -1913,6 +1914,187 @@ check_xtext_scroll_copy_policy (void)
 }
 
 static gboolean
+probe_spell_mirc_color (gint color_index, FabulorSpellEntryColor *color,
+	gpointer user_data)
+{
+	(void) user_data;
+	color->red = (guint16) (1000 + color_index);
+	color->green = (guint16) (2000 + color_index);
+	color->blue = (guint16) (3000 + color_index);
+	return TRUE;
+}
+
+static gboolean
+spell_style_has_type (PangoAttrList *attributes, PangoAttrType type,
+	guint index)
+{
+	PangoAttrIterator *iterator = pango_attr_list_get_iterator (attributes);
+	gboolean found = FALSE;
+
+	do
+	{
+		gint start;
+		gint end;
+		GSList *items;
+		GSList *item;
+
+		pango_attr_iterator_range (iterator, &start, &end);
+		if ((gint) index < start || (gint) index >= end)
+			continue;
+		items = pango_attr_iterator_get_attrs (iterator);
+		for (item = items; item; item = item->next)
+		{
+			PangoAttribute *attribute = item->data;
+			if (attribute->klass->type == type)
+			{
+				found = TRUE;
+				break;
+			}
+		}
+		g_slist_free_full (items, (GDestroyNotify) pango_attribute_destroy);
+	}
+	while (!found && pango_attr_iterator_next (iterator));
+	pango_attr_iterator_destroy (iterator);
+	return found;
+}
+
+static gboolean
+spell_style_has_int (PangoAttrList *attributes, PangoAttrType type,
+	guint index, gint expected)
+{
+	PangoAttrIterator *iterator = pango_attr_list_get_iterator (attributes);
+	gboolean found = FALSE;
+
+	do
+	{
+		gint start;
+		gint end;
+		GSList *items;
+		GSList *item;
+
+		pango_attr_iterator_range (iterator, &start, &end);
+		if ((gint) index < start || (gint) index >= end)
+			continue;
+		items = pango_attr_iterator_get_attrs (iterator);
+		for (item = items; item; item = item->next)
+		{
+			PangoAttribute *attribute = item->data;
+			if (attribute->klass->type == type &&
+				((PangoAttrInt *) attribute)->value == expected)
+			{
+				found = TRUE;
+				break;
+			}
+		}
+		g_slist_free_full (items, (GDestroyNotify) pango_attribute_destroy);
+	}
+	while (!found && pango_attr_iterator_next (iterator));
+	pango_attr_iterator_destroy (iterator);
+	return found;
+}
+
+static gboolean
+spell_style_has_color (PangoAttrList *attributes, PangoAttrType type,
+	guint index, guint16 red, guint16 green, guint16 blue)
+{
+	PangoAttrIterator *iterator = pango_attr_list_get_iterator (attributes);
+	gboolean found = FALSE;
+
+	do
+	{
+		gint start;
+		gint end;
+		GSList *items;
+		GSList *item;
+
+		pango_attr_iterator_range (iterator, &start, &end);
+		if ((gint) index < start || (gint) index >= end)
+			continue;
+		items = pango_attr_iterator_get_attrs (iterator);
+		for (item = items; item; item = item->next)
+		{
+			PangoAttribute *attribute = item->data;
+			PangoAttrColor *color = (PangoAttrColor *) attribute;
+
+			if (attribute->klass->type == type && color->color.red == red &&
+				color->color.green == green && color->color.blue == blue)
+			{
+				found = TRUE;
+				break;
+			}
+		}
+		g_slist_free_full (items, (GDestroyNotify) pango_attribute_destroy);
+	}
+	while (!found && pango_attr_iterator_next (iterator));
+	pango_attr_iterator_destroy (iterator);
+	return found;
+}
+
+static gboolean
+check_spell_entry_style_policy (void)
+{
+	FabulorSpellEntryPalette palette = {
+		{ 100, 200, 300 }, { 400, 500, 600 }, { 700, 800, 900 },
+		probe_spell_mirc_color, NULL
+	};
+	PangoAttrList *attributes;
+	gboolean valid;
+
+	attributes = fabulor_spell_entry_style_build ("plain", FALSE, &palette);
+	valid = !fabulor_spell_entry_style_has_attributes (attributes);
+	pango_attr_list_unref (attributes);
+
+	attributes = fabulor_spell_entry_style_build ("a\002b\002c", TRUE,
+		&palette);
+	valid = valid && fabulor_spell_entry_style_has_attributes (attributes) &&
+		spell_style_has_type (attributes, PANGO_ATTR_SHAPE, 1) &&
+		spell_style_has_int (attributes, PANGO_ATTR_WEIGHT, 2,
+			PANGO_WEIGHT_BOLD) &&
+		spell_style_has_int (attributes, PANGO_ATTR_WEIGHT, 4,
+			PANGO_WEIGHT_NORMAL);
+	pango_attr_list_unref (attributes);
+	attributes = fabulor_spell_entry_style_build ("\002b\017n", TRUE,
+		&palette);
+	valid = valid && spell_style_has_int (attributes, PANGO_ATTR_WEIGHT, 3,
+		PANGO_WEIGHT_NORMAL) && spell_style_has_color (attributes,
+		PANGO_ATTR_FOREGROUND, 3, 100, 200, 300);
+	pango_attr_list_unref (attributes);
+
+	attributes = fabulor_spell_entry_style_build ("\035i\036s\037u", TRUE,
+		&palette);
+	valid = valid && spell_style_has_int (attributes, PANGO_ATTR_STYLE, 5,
+		PANGO_STYLE_ITALIC) && spell_style_has_int (attributes,
+		PANGO_ATTR_STRIKETHROUGH, 5, TRUE) && spell_style_has_int (
+		attributes, PANGO_ATTR_UNDERLINE, 5, PANGO_UNDERLINE_SINGLE);
+	pango_attr_list_unref (attributes);
+
+	attributes = fabulor_spell_entry_style_build ("x\003" "04,12y", TRUE,
+		&palette);
+	valid = valid && spell_style_has_type (attributes, PANGO_ATTR_SHAPE, 2) &&
+		spell_style_has_color (attributes,
+		PANGO_ATTR_FOREGROUND, 7, 1004, 2004, 3004) &&
+		spell_style_has_color (attributes, PANGO_ATTR_BACKGROUND, 7,
+			1012, 2012, 3012);
+	pango_attr_list_unref (attributes);
+	attributes = fabulor_spell_entry_style_build ("x\003" "04", TRUE,
+		&palette);
+	valid = valid && spell_style_has_type (attributes, PANGO_ATTR_SHAPE, 2);
+	pango_attr_list_unref (attributes);
+
+	attributes = fabulor_spell_entry_style_build ("\026x", TRUE, &palette);
+	valid = valid && spell_style_has_color (attributes,
+		PANGO_ATTR_FOREGROUND, 1, 400, 500, 600) &&
+		spell_style_has_color (attributes, PANGO_ATTR_BACKGROUND, 1,
+			100, 200, 300);
+	fabulor_spell_entry_style_add_misspelling (attributes, 1, 2, &palette);
+	valid = valid && spell_style_has_int (attributes, PANGO_ATTR_UNDERLINE, 1,
+		PANGO_UNDERLINE_ERROR) && spell_style_has_color (attributes,
+		PANGO_ATTR_UNDERLINE_COLOR, 1, 700, 800, 900);
+	pango_attr_list_unref (attributes);
+	return valid;
+}
+
+static gboolean
 check_spell_entry_widget_policy (void)
 {
 	GType entry_type = g_type_from_name ("FabulorGtk4ProbeSpellEntry");
@@ -2403,6 +2585,11 @@ main (void)
 	if (!check_spell_entry_widget_policy ())
 	{
 		fprintf (stderr, "GTK4 spell-entry widget policy mismatch\n");
+		return 1;
+	}
+	if (!check_spell_entry_style_policy ())
+	{
+		fprintf (stderr, "GTK4 spell-entry style policy mismatch\n");
 		return 1;
 	}
 	if (!check_xtext_performance_policy ())
