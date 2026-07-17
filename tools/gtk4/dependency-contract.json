@@ -11,7 +11,9 @@
     "sha256": "3910a612083c2a155c5a4a2026990701841c0d7f7de28756b2f0865decb161be"
   },
   "required_files": [
+    "bin/cairo-2.dll",
     "bin/glib-2.0-0.dll",
+    "bin/graphene-1.0-0.dll",
     "bin/gtk-4-1.dll",
     "include/cairo/cairo.h",
     "include/gdk-pixbuf-2.0/gdk-pixbuf/gdk-pixbuf.h",
@@ -21,8 +23,10 @@
     "include/gtk-4.0/gtk/gtkversion.h",
     "include/harfbuzz/hb.h",
     "include/pango-1.0/pango/pango.h",
+    "lib/cairo.lib",
     "lib/glib-2.0.lib",
     "lib/glib-2.0/include/glibconfig.h",
+    "lib/graphene-1.0.lib",
     "lib/graphene-1.0/include/graphene-config.h",
     "lib/gobject-2.0.lib",
     "lib/gtk-4.lib",

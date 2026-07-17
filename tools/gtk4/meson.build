@@ -42,6 +42,8 @@ gtk4_library_dir = join_paths(gtk4_root, 'lib')
 gtk4_library = cc.find_library('gtk-4', dirs: gtk4_library_dir, required: true)
 pango_library = cc.find_library('pango-1.0', dirs: gtk4_library_dir, required: true)
 gdk_pixbuf_library = cc.find_library('gdk_pixbuf-2.0', dirs: gtk4_library_dir, required: true)
+cairo_library = cc.find_library('cairo', dirs: gtk4_library_dir, required: true)
+graphene_library = cc.find_library('graphene-1.0', dirs: gtk4_library_dir, required: true)
 gio_library = cc.find_library('gio-2.0', dirs: gtk4_library_dir, required: true)
 gobject_library = cc.find_library('gobject-2.0', dirs: gtk4_library_dir, required: true)
 glib_library = cc.find_library('glib-2.0', dirs: gtk4_library_dir, required: true)
@@ -61,6 +63,7 @@ probe = executable(
   '../../src/fe-gtk/preferences-category-list.c',
   '../../src/fe-gtk/server-network-list.c',
   '../../src/fe-gtk/server-entry-list.c',
+  '../../src/fe-gtk/xtext-render-target.c',
   '../../src/fe-gtk/gtk4-list-models.c',
   '../../src/fe-gtk/ignore-list.c',
   '../../src/fe-gtk/channel-model.c',
@@ -70,7 +73,7 @@ probe = executable(
   '../../src/fe-gtk/user-list-view.c',
   '../../src/fe-gtk/url-list.c',
   include_directories: gtk4_includes,
-  dependencies: [gtk4_library, pango_library, gdk_pixbuf_library, gio_library, gobject_library, glib_library],
+  dependencies: [gtk4_library, pango_library, gdk_pixbuf_library, cairo_library, graphene_library, gio_library, gobject_library, glib_library],
 )
 
 probe_environment = environment()

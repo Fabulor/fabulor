@@ -928,6 +928,18 @@ Exit criteria:
 
 ### Stage 6: Custom Text And Input Widgets
 
+Transcript render-target pass 1 (2026-07-17): `GtkXText` now owns one contained
+render destination instead of raw draw-window, draw-surface, and draw-context
+fields. The existing Cairo/Pango renderer requests referenced contexts from
+that owner. GTK3 retains its direct-window fallback privately; GTK4 has an
+explicit `GtkSnapshot` Cairo begin/end path that produces a render node without
+a display. Cairo and Graphene are now explicit strict-probe dependencies. The
+probe covers empty targets, offscreen painting, active-context exchange and
+restoration, snapshot output, and cleanup. Geometry, class virtual methods,
+controllers, selection, clipboard behavior, and performance remain separate
+passes. The detailed contract is in
+[`transcript-rendering-architecture.md`](transcript-rendering-architecture.md).
+
 Primary surfaces:
 
 - `xtext.c` / `xtext.h`

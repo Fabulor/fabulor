@@ -293,6 +293,7 @@ Detailed planning and evidence live in:
   - [x] Convert the main Server List network table to a typed cross-version owner with stable network identity, favorite state, inline rename, filtering refresh, selection, and keyboard ordering.
   - [x] Convert the Server List server, autojoin-channel, and connect-command editors to a typed cross-version owner with stable entry identity, inline editing, add/remove actions, and keyboard ordering.
 - [ ] Port the transcript and spell-check input widgets to GTK4 rendering and event semantics.
+  - [x] Establish a tested transcript render-target owner for active Cairo contexts, offscreen surfaces, the contained GTK3 window fallback, and GTK4 snapshot output.
 - [ ] Add the GTK4 theme adapter and validate tray, notifications, icons, fonts, and platform integration.
   - [x] Retire `.zct` registration and mock Windows GTK theme staging, downloads, and installer choices.
   - [ ] Discover system GTK4 desktop themes and imported themes under `%APPDATA%\Fabulor\themes`.

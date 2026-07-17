@@ -334,18 +334,7 @@ xtext_surface_from_window (GdkWindow *window)
 static cairo_t *
 xtext_create_context (GtkXText *xtext)
 {
-	cairo_t *cr;
-
-	if (xtext->draw_surface)
-		return cairo_create (xtext->draw_surface);
-	if (xtext->draw_cr)
-		return cairo_reference (xtext->draw_cr);
-
-	G_GNUC_BEGIN_IGNORE_DEPRECATIONS
-	cr = gdk_cairo_create (xtext->draw_window);
-	G_GNUC_END_IGNORE_DEPRECATIONS
-
-	return cr;
+	return fabulor_xtext_render_target_create_context (xtext->render_target);
 }
 
 static inline void
@@ -973,9 +962,7 @@ gtk_xtext_init (GtkXText * xtext)
 {
 	xtext->background_surface = NULL;
 	xtext->background_clip_surface = NULL;
-	xtext->draw_window = NULL;
-	xtext->draw_surface = NULL;
-	xtext->draw_cr = NULL;
+	xtext->render_target = fabulor_xtext_render_target_new ();
 	xtext->background_clip_x = 0;
 	xtext->background_clip_y = 0;
 	xtext->background_clip_width = 0;
@@ -1218,6 +1205,12 @@ gtk_xtext_cleanup (GtkXText *xtext)
 		xtext->background_clip_surface = NULL;
 	}
 
+	if (xtext->render_target)
+	{
+		fabulor_xtext_render_target_free (xtext->render_target);
+		xtext->render_target = NULL;
+	}
+
 	if (xtext->font)
 	{
 		backend_font_close (xtext);
@@ -1280,7 +1273,10 @@ gtk_xtext_finalize (GObject *object)
 static void
 gtk_xtext_unrealize (GtkWidget * widget)
 {
+	FabulorXTextRenderTarget *target = GTK_XTEXT (widget)->render_target;
 	backend_deinit (GTK_XTEXT (widget));
+	if (target)
+		fabulor_xtext_render_target_set_window (target, NULL);
 
 	/*
 	 * Keep GtkWidget/GdkWindow association intact until parent unrealize.
@@ -1423,8 +1419,8 @@ gtk_xtext_realize (GtkWidget * widget)
 	xtext_set_fg (xtext, XTEXT_FG);
 	xtext_set_bg (xtext, XTEXT_BG);
 
-	/* draw directly to window */
-	xtext->draw_window = window;
+	/* Keep the GTK3 fallback contained behind the render target. */
+	fabulor_xtext_render_target_set_window (xtext->render_target, window);
 
 	if (xtext->background_surface)
 	{
@@ -1785,9 +1781,9 @@ gtk_xtext_render (GtkWidget *widget, GdkRectangle *area, cairo_t *cr)
 	textentry *ent_start, *ent_end;
 	int x, y;
 	GtkAllocation allocation;
-	cairo_t *old_cr = xtext->draw_cr;
+	cairo_t *old_cr = fabulor_xtext_render_target_exchange_context (
+		xtext->render_target, cr);
 
-	xtext->draw_cr = cr;
 	xtext->render_cycle++;
 	if (xtext->background_clip_surface)
 	{
@@ -1861,7 +1857,7 @@ done:
 		cairo_surface_destroy (xtext->background_clip_surface);
 		xtext->background_clip_surface = NULL;
 	}
-	xtext->draw_cr = old_cr;
+	fabulor_xtext_render_target_exchange_context (xtext->render_target, old_cr);
 }
 
 static void
@@ -4684,7 +4680,7 @@ gtk_xtext_render_ents (GtkXText * xtext, textentry * enta, textentry * entb)
 	 * window painting may not be presented immediately. Queue a frame instead so
 	 * selections appear right away.
 	 */
-	if (xtext->draw_cr == NULL)
+	if (!fabulor_xtext_render_target_has_active_context (xtext->render_target))
 	{
 		GtkWidget *w = GTK_WIDGET (xtext);
 		if (gtk_widget_get_realized (w))
@@ -4786,10 +4782,10 @@ gtk_xtext_render_page (GtkXText * xtext)
 	 * widget's ::draw handler can result in the compositor never presenting the
 	 * new buffer. Symptom: chat only updates after you move/resize the window.
 	 *
-	 * If we're not currently inside ::draw, xtext->draw_cr is NULL. In that case
-	 * just request a redraw and let the normal GTK paint cycle do the work.
+	 * If no render context is active, request a redraw and let the normal GTK
+	 * paint cycle do the work.
 	 */
-	if (xtext->draw_cr == NULL)
+	if (!fabulor_xtext_render_target_has_active_context (xtext->render_target))
 	{
 		GtkWidget *w = GTK_WIDGET (xtext);
 		if (gtk_widget_get_realized (w))

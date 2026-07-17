@@ -21,6 +21,7 @@
 #define ZOITECHAT_XTEXT_H
 
 #include <gtk/gtk.h>
+#include "xtext-render-target.h"
 #include <cairo.h>
 #include "xtext-color.h"
 
@@ -139,9 +140,7 @@ struct _GtkXText
 	GtkScrollablePolicy vscroll_policy;
 	cairo_surface_t *background_surface;	/* 0 = use palette[19] */
 	cairo_surface_t *background_clip_surface;
-	GdkWindow *draw_window;			/* points to ->window */
-	cairo_surface_t *draw_surface;	/* temporary surface for offscreen draws */
-	cairo_t *draw_cr;					/* GTK3 draw context */
+	FabulorXTextRenderTarget *render_target;
 	int background_clip_x;
 	int background_clip_y;
 	int background_clip_width;

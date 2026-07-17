@@ -57,7 +57,8 @@ zoitechat_gtk_sources = [
   'userlistgui.c',
   'user-list-model.c',
   'user-list-view.c',
-  'xtext.c'
+  'xtext.c',
+  'xtext-render-target.c'
 ]
 
 zoitechat_gtk_cflags = []
