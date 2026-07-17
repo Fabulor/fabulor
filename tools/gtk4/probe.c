@@ -19,6 +19,7 @@
 #include "../../src/fe-gtk/server-entry-list.h"
 #include "../../src/fe-gtk/xtext-geometry.h"
 #include "../../src/fe-gtk/xtext-render-target.h"
+#include "../../src/fe-gtk/xtext-widget-class.h"
 #include "../../src/fe-gtk/addon-list.h"
 #include "../../src/fe-gtk/channel-model.h"
 #include "../../src/fe-gtk/channel-tree-view.h"
@@ -34,6 +35,74 @@
 #if GLIB_SIZEOF_VOID_P != 8
 #error The initial GTK4 probe requires a 64-bit GLib build.
 #endif
+
+typedef struct
+{
+	GtkWidget parent_instance;
+} FabulorProbeXTextWidget;
+
+typedef struct
+{
+	GtkWidgetClass parent_class;
+} FabulorProbeXTextWidgetClass;
+
+G_DEFINE_TYPE (FabulorProbeXTextWidget, fabulor_probe_xtext_widget,
+	GTK_TYPE_WIDGET)
+
+static void
+probe_xtext_realize (GtkWidget *widget)
+{
+	(void) widget;
+}
+
+static void
+probe_xtext_unrealize (GtkWidget *widget)
+{
+	(void) widget;
+}
+
+static void
+probe_xtext_allocate (GtkWidget *widget,
+	const FabulorXTextAllocation *allocation)
+{
+	(void) widget;
+	(void) allocation;
+}
+
+static void
+probe_xtext_render (GtkWidget *widget, const GdkRectangle *area,
+	cairo_t *context)
+{
+	(void) widget;
+	(void) area;
+	(void) context;
+}
+
+static FabulorXTextRenderTarget *
+probe_xtext_render_target (GtkWidget *widget)
+{
+	(void) widget;
+	return NULL;
+}
+
+static void
+fabulor_probe_xtext_widget_class_init (FabulorProbeXTextWidgetClass *class)
+{
+	static const FabulorXTextWidgetCallbacks callbacks = {
+		probe_xtext_realize,
+		probe_xtext_unrealize,
+		probe_xtext_allocate,
+		probe_xtext_render,
+		probe_xtext_render_target
+	};
+	fabulor_xtext_widget_class_install (GTK_WIDGET_CLASS (class), &callbacks);
+}
+
+static void
+fabulor_probe_xtext_widget_init (FabulorProbeXTextWidget *widget)
+{
+	(void) widget;
+}
 
 static void
 check_compatibility_helper_signatures (void)
@@ -1578,6 +1647,45 @@ check_xtext_geometry (void)
 }
 
 static gboolean
+check_xtext_widget_class_policy (void)
+{
+	GtkWidgetClass *widget_class = g_type_class_ref (
+		fabulor_probe_xtext_widget_get_type ());
+	gint minimum = 0;
+	gint natural = 0;
+	gint minimum_baseline = 0;
+	gint natural_baseline = 0;
+
+	if (!widget_class->realize || !widget_class->unrealize ||
+		!widget_class->size_allocate || !widget_class->measure ||
+		!widget_class->snapshot)
+	{
+		g_type_class_unref (widget_class);
+		return FALSE;
+	}
+	widget_class->measure (NULL, GTK_ORIENTATION_HORIZONTAL, -1, &minimum,
+		&natural, &minimum_baseline, &natural_baseline);
+	if (minimum != 200 || natural != 200 || minimum_baseline != -1 ||
+		natural_baseline != -1)
+	{
+		g_type_class_unref (widget_class);
+		return FALSE;
+	}
+	fabulor_xtext_widget_measure (GTK_ORIENTATION_HORIZONTAL, &minimum,
+		&natural, &minimum_baseline, &natural_baseline);
+	if (minimum != 200 || natural != 200 || minimum_baseline != -1 ||
+		natural_baseline != -1)
+		return FALSE;
+	fabulor_xtext_widget_measure (GTK_ORIENTATION_VERTICAL, &minimum,
+		&natural, &minimum_baseline, &natural_baseline);
+	g_type_class_unref (widget_class);
+	return minimum == 90 && natural == 90 && minimum_baseline == -1 &&
+		natural_baseline == -1 &&
+		!fabulor_xtext_widget_width_changed (640, 640) &&
+		fabulor_xtext_widget_width_changed (640, 800);
+}
+
+static gboolean
 check_xtext_render_target (void)
 {
 	FabulorXTextRenderTarget *target = fabulor_xtext_render_target_new ();
@@ -1768,6 +1876,11 @@ main (void)
 	if (!check_xtext_geometry ())
 	{
 		fprintf (stderr, "GTK4 transcript geometry contract mismatch\n");
+		return 1;
+	}
+	if (!check_xtext_widget_class_policy ())
+	{
+		fprintf (stderr, "GTK4 transcript widget-class contract mismatch\n");
 		return 1;
 	}
 

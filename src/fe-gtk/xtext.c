@@ -47,6 +47,7 @@
 #include "fe-gtk.h"
 #include "xtext.h"
 #include "xtext-geometry.h"
+#include "xtext-widget-class.h"
 #include "fkeys.h"
 #include "theme/theme-access.h"
 
@@ -1274,8 +1275,10 @@ gtk_xtext_finalize (GObject *object)
 static void
 gtk_xtext_unrealize (GtkWidget * widget)
 {
-	FabulorXTextRenderTarget *target = GTK_XTEXT (widget)->render_target;
-	backend_deinit (GTK_XTEXT (widget));
+	GtkXText *xtext = GTK_XTEXT (widget);
+	backend_deinit (xtext);
+#if GTK_MAJOR_VERSION < 4
+	FabulorXTextRenderTarget *target = xtext->render_target;
 	if (target)
 		fabulor_xtext_render_target_set_window (target, NULL);
 
@@ -1290,6 +1293,10 @@ gtk_xtext_unrealize (GtkWidget * widget)
 
 	gtk_widget_set_window (widget, NULL);
 	gtk_widget_set_realized (widget, FALSE);
+#else
+	if (GTK_WIDGET_CLASS (gtk_xtext_parent_class)->unrealize)
+		(*GTK_WIDGET_CLASS (gtk_xtext_parent_class)->unrealize) (widget);
+#endif
 }
 
 static void
@@ -1364,6 +1371,7 @@ static void
 gtk_xtext_realize (GtkWidget * widget)
 {
 	GtkXText *xtext;
+#if GTK_MAJOR_VERSION < 4
 	GdkWindowAttr attributes;
 	GdkWindow *window;
 	GtkAllocation allocation;
@@ -1440,70 +1448,60 @@ gtk_xtext_realize (GtkWidget * widget)
 	}
 
 	gtk_xtext_clear_background (widget);
-
+#else
+	xtext = GTK_XTEXT (widget);
+	if (GTK_WIDGET_CLASS (gtk_xtext_parent_class)->realize)
+		(*GTK_WIDGET_CLASS (gtk_xtext_parent_class)->realize) (widget);
+	xtext->depth = 32;
+	xtext->light_gc.red = 1.0;
+	xtext->light_gc.green = 1.0;
+	xtext->light_gc.blue = 1.0;
+	xtext->light_gc.alpha = 1.0;
+	xtext->dark_gc.red = 0x1111 / 65535.0;
+	xtext->dark_gc.green = 0x1111 / 65535.0;
+	xtext->dark_gc.blue = 0x1111 / 65535.0;
+	xtext->dark_gc.alpha = 1.0;
+	xtext->thin_gc.red = 0x8e38 / 65535.0;
+	xtext->thin_gc.green = 0x8e38 / 65535.0;
+	xtext->thin_gc.blue = 0x9f38 / 65535.0;
+	xtext->thin_gc.alpha = 1.0;
+	xtext->marker_gc = xtext->palette[XTEXT_MARKER];
+	xtext_set_fg (xtext, XTEXT_FG);
+	xtext_set_bg (xtext, XTEXT_BG);
+	if (xtext->background_surface)
+		xtext->ts_x = xtext->ts_y = 0;
+#endif
 	backend_init (xtext);
 }
 
 static void
-gtk_xtext_size_request_internal (GtkWidget *widget, GtkRequisition *requisition)
-{
-	requisition->width = 200;
-	requisition->height = 90;
-}
-
-
-static void
-gtk_xtext_get_preferred_width (GtkWidget *widget, gint *minimum, gint *natural)
-{
-	GtkRequisition requisition;
-
-	gtk_xtext_size_request_internal (widget, &requisition);
-	*minimum = requisition.width;
-	*natural = requisition.width;
-}
-
-static void
-gtk_xtext_get_preferred_height (GtkWidget *widget, gint *minimum, gint *natural)
-{
-	GtkRequisition requisition;
-
-	gtk_xtext_size_request_internal (widget, &requisition);
-	*minimum = requisition.height;
-	*natural = requisition.height;
-}
-
-static void
-gtk_xtext_get_preferred_height_for_width (GtkWidget *widget, gint width,
-														gint *minimum, gint *natural)
-{
-	GtkRequisition requisition;
-
-	(void)width;
-	gtk_xtext_size_request_internal (widget, &requisition);
-	*minimum = requisition.height;
-	*natural = requisition.height;
-}
-
-static void
-gtk_xtext_size_allocate (GtkWidget * widget, GtkAllocation * allocation)
+gtk_xtext_allocate (GtkWidget *widget,
+	const FabulorXTextAllocation *allocation)
 {
 	GtkXText *xtext = GTK_XTEXT (widget);
-	int height_only = FALSE;
+	int height_only = !fabulor_xtext_widget_width_changed (
+		xtext->buffer->window_width, allocation->width);
+#if GTK_MAJOR_VERSION < 4
+	GtkAllocation gtk_allocation = {
+		allocation->x, allocation->y, allocation->width, allocation->height
+	};
 	GdkWindow *window;
 
-	if (allocation->width == xtext->buffer->window_width)
-		height_only = TRUE;
-
-	gtk_widget_set_allocation (widget, allocation);
+	gtk_widget_set_allocation (widget, &gtk_allocation);
+#else
+	(void) allocation->baseline;
+#endif
 	if (gtk_widget_get_realized (GTK_WIDGET(widget)))
 	{
 		xtext->buffer->window_width = allocation->width;
 		xtext->buffer->window_height = allocation->height;
 
+#if GTK_MAJOR_VERSION < 4
 		window = gtk_widget_get_window (widget);
 		if (window)
 			gdk_window_move_resize (window, allocation->x, allocation->y,
 									allocation->width, allocation->height);
+#endif
 		dontscroll (xtext->buffer);	/* force scrolling off */
 		if (!height_only)
 			gtk_xtext_calc_lines (xtext->buffer, FALSE);
@@ -1776,7 +1774,7 @@ gtk_xtext_draw_marker (GtkXText * xtext, textentry * ent, int y)
 }
 
 static void
-gtk_xtext_render (GtkWidget *widget, GdkRectangle *area, cairo_t *cr)
+gtk_xtext_render (GtkWidget *widget, const GdkRectangle *area, cairo_t *cr)
 {
 	GtkXText *xtext = GTK_XTEXT (widget);
 	textentry *ent_start, *ent_end;
@@ -1878,24 +1876,10 @@ gtk_xtext_paint (GtkWidget *widget, GdkRectangle *area)
 	}
 }
 
-static gboolean
-gtk_xtext_draw (GtkWidget *widget, cairo_t *cr)
+static FabulorXTextRenderTarget *
+gtk_xtext_get_render_target (GtkWidget *widget)
 {
-	GdkRectangle area;
-
-	if (!gdk_cairo_get_clip_rectangle (cr, &area))
-	{
-		GtkAllocation allocation;
-
-		gtk_widget_get_allocation (widget, &allocation);
-		area.x = 0;
-		area.y = 0;
-		area.width = allocation.width;
-		area.height = allocation.height;
-	}
-
-	gtk_xtext_render (widget, &area, cr);
-	return FALSE;
+	return GTK_XTEXT (widget)->render_target;
 }
 
 
@@ -3278,6 +3262,13 @@ gtk_xtext_class_init (GtkXTextClass * class)
 	GtkWidgetClass *widget_class;
 	GtkXTextClass *xtext_class;
 	GObjectClass *object_class;
+	static const FabulorXTextWidgetCallbacks widget_callbacks = {
+		gtk_xtext_realize,
+		gtk_xtext_unrealize,
+		gtk_xtext_allocate,
+		gtk_xtext_render,
+		gtk_xtext_get_render_target
+	};
 
 	object_class = G_OBJECT_CLASS (class);
 	widget_class = (GtkWidgetClass *) class;
@@ -3312,20 +3303,16 @@ gtk_xtext_class_init (GtkXTextClass * class)
 	object_class->dispose = gtk_xtext_dispose;
 	object_class->finalize = gtk_xtext_finalize;
 
-	widget_class->realize = gtk_xtext_realize;
-	widget_class->unrealize = gtk_xtext_unrealize;
-	widget_class->size_allocate = gtk_xtext_size_allocate;
+	fabulor_xtext_widget_class_install (widget_class, &widget_callbacks);
+#if GTK_MAJOR_VERSION < 4
 	widget_class->button_press_event = gtk_xtext_button_press;
 	widget_class->button_release_event = gtk_xtext_button_release;
 	widget_class->motion_notify_event = gtk_xtext_motion_notify;
 	widget_class->selection_clear_event = (void *)gtk_xtext_selection_kill;
 	widget_class->selection_get = gtk_xtext_selection_get;
-	widget_class->draw = gtk_xtext_draw;
-	widget_class->get_preferred_width = gtk_xtext_get_preferred_width;
-	widget_class->get_preferred_height = gtk_xtext_get_preferred_height;
-	widget_class->get_preferred_height_for_width = gtk_xtext_get_preferred_height_for_width;
 	widget_class->scroll_event = gtk_xtext_scroll;
 	widget_class->leave_notify_event = gtk_xtext_leave_notify;
+#endif
 
 	xtext_class->word_click = NULL;
 	xtext_class->set_scroll_adjustments = gtk_xtext_scroll_adjustments;

@@ -1,6 +1,6 @@
 # GTK4 Transcript Rendering Architecture
 
-Status: Stage 6 pass 2 render-target and geometry contracts
+Status: Stage 6 pass 3 render-target, geometry, and widget-class contracts
 
 ## Purpose
 
@@ -41,6 +41,28 @@ The transcript no longer obtains operational dimensions from its native
 capture helper. GTK3 pointer lookup and smooth-scroll surface capture retain
 their native window references without making layout depend on them.
 
+## Widget Class Lifecycle
+
+`src/fe-gtk/xtext-widget-class.c` owns the versioned `GtkWidgetClass`
+signatures. One static callback table connects the adapter to `GtkXText`
+content state while the adapter installs:
+
+- GTK3 preferred-width and preferred-height methods, allocation, realization,
+  unrealization, and Cairo `draw`;
+- GTK4 `measure`, width/height/baseline allocation, realization,
+  unrealization, and `snapshot`.
+
+The fixed 200 by 90 minimum request remains unchanged. Width-change
+classification is shared so GTK3 and GTK4 trigger the same line recalculation
+or height-only adjustment behavior. GTK4 snapshot dispatch validates widget
+geometry, opens the render target's snapshot Cairo context, renders the full
+widget area, and closes the context in the same frame.
+
+GTK3 still creates, moves, and releases its native child window inside the
+`GtkXText` callbacks. The GTK4 realization path is surface-free, chains to the
+parent class, initializes Pango state, and relies on the adapter for snapshot
+rendering.
+
 ## Ownership Invariants
 
 - An active context may be temporarily replaced and then restored for nested
@@ -53,10 +75,9 @@ their native window references without making layout depend on them.
 
 ## Planned Passes
 
-1. Add GTK4 measure, allocation, realize/unrealize, and snapshot class methods.
-2. Move pointer, click, scroll, leave, focus, and selection input to controllers.
-3. Replace GTK3 selection ownership and clipboard payload callbacks.
-4. Validate background images, markers, search highlights, URL hit testing,
+1. Move pointer, click, scroll, leave, focus, and selection input to controllers.
+2. Replace GTK3 selection ownership and clipboard payload callbacks.
+3. Validate background images, markers, search highlights, URL hit testing,
    scrolling, accessibility, high DPI, and scrollback performance.
 
 The spell-check input is a separate Stage 6 boundary and will not share
@@ -73,7 +94,11 @@ The strict GTK4 probe verifies:
 - ending the snapshot produces a non-empty `GskRenderNode` and leaves no active
   context;
 - positive geometry is preserved; and
-- zero or negative dimensions are rejected and reset safely.
+- zero or negative dimensions are rejected and reset safely;
+- the GTK4 widget subclass receives measure, allocation, realize, unrealize,
+  and snapshot class methods;
+- horizontal and vertical minimum requests remain 200 and 90; and
+- unchanged and changed width decisions remain distinct.
 
 Manual transcript output and latency checks remain required when the GTK4
 widget class is connected to this boundary.

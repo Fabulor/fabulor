@@ -2695,6 +2695,43 @@ Scope: transcript dimension sourcing only. Native GTK3 pointer and surface
 operations, class virtual methods, controllers, selection, clipboard behavior,
 and spell-check input remain unchanged.
 
+### PR: #94 - GTK4 Stage 6 Transcript Widget Class
+
+Date: 2026-07-17
+
+Migration stage: 6, transcript widget-class pass 3
+
+Files/workflows converted: transcript preferred-size and measure policy;
+allocation dispatch and width-change policy; realize/unrealize dispatch; GTK3
+Cairo draw; GTK4 snapshot Cairo lifecycle; class callback registration
+
+GTK version: 4.22.4
+
+GLib version: 2.88.0
+
+Build configuration: MSVC x64 Release and strict GTK4 probe boundary
+
+Automated checks:
+
+- [x] production GTK3 frontend compiles and links with 0 warnings and 0 errors
+- [x] strict GTK4 probe compiles, links, and executes with 0 warnings and 0 errors
+- [x] headless GTK4 subclass receives measure, allocation, realize, unrealize, and snapshot slots
+- [x] horizontal and vertical minimum requests remain 200 and 90 pixels
+- [x] unchanged-width and changed-width resize decisions remain distinct
+- [x] GTK4 snapshot dispatch uses the validated geometry and render-target owners
+- [x] GTK4 dependency validator tests remain 8/8
+- [x] repository diff whitespace validation passes
+
+Manual checks:
+
+- [ ] shipping GTK3 transcript preserves initial display, resize, wrapping, scrolling, and redraw behavior
+- [ ] repeated realize/unrealize and window creation leave no stale Pango layout, native window, or render context
+- [ ] GTK4 visual, high-DPI, accessibility, scrollback-load, and latency checks await full widget integration
+
+Scope: transcript measurement, allocation, lifecycle, and frame rendering class
+methods only. Pointer/input controllers, selection, clipboard behavior,
+background validation, and spell-check input remain unchanged.
+
 ## Per-PR Record Template
 
 Copy this section for each GTK4 PR:
