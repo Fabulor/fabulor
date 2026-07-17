@@ -54,6 +54,7 @@
   <ItemGroup>
     <ClCompile Include="probe.c" />
 	<ClCompile Include="..\..\src\fe-gtk\spell-entry-words.c" />
+	<ClCompile Include="..\..\src\fe-gtk\spell-entry-style.c" />
 	<ClCompile Include="..\..\src\fe-gtk\spell-entry-widget.c" />
     <ClCompile Include="..\..\src\fe-gtk\addon-list.c" />
     <ClCompile Include="..\..\src\fe-gtk\ban-list.c" />

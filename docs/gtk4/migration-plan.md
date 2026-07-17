@@ -1079,6 +1079,15 @@ dispose. GTK3 keeps exact public-layout hit testing; GTK4 uses its internal
 editable cursor after click processing because it no longer exposes entry
 layout coordinates. Dynamic context-menu position remains a separate pass.
 
+Spell-input styling pass 3 (2026-07-17): `spell-entry-style.c` now owns one
+Pango attribute list for hidden IRC controls, bold, italic, strikethrough,
+underline, reset, reverse, mIRC colours, and misspelling ranges. The widget
+supplies resolved semantic and mIRC colours without exposing GTK or theme
+state to the owner. Reverse formatting now swaps the semantic default colours
+instead of treating theme-token enum values as mIRC indexes. The strict probe
+validates formatting-disabled state, toggles, hidden shaping, colour roles,
+reverse semantics, trailing colour-parameter hiding, and spell underline ranges.
+
 Primary surfaces:
 
 - `xtext.c` / `xtext.h`

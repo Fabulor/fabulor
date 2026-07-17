@@ -51,6 +51,7 @@ zoitechat_gtk_sources = [
   'servlistgui.c',
   'setup.c',
   'sexy-spell-entry.c',
+	'spell-entry-style.c',
 	'spell-entry-widget.c',
   'spell-entry-words.c',
   'textgui.c',

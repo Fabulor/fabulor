@@ -24,6 +24,7 @@
 
 #include <gtk/gtk.h>
 #include "sexy-spell-entry.h"
+#include "spell-entry-style.h"
 #include "spell-entry-widget.h"
 #include "spell-entry-words.h"
 #include <string.h>
@@ -53,7 +54,6 @@
 #include "theme/theme-access.h"
 #include "theme/theme-manager.h"
 #include "theme/theme-palette.h"
-#include "xtext.h"
 #include "gtk-compat.h"
 #include "gtkutil.h"
 
@@ -63,31 +63,44 @@
 #define ICON_SPELL_CHECK "zc-menu-spell-check"
 
 static void
-color_to_rgb16 (const GdkRGBA *color, guint16 *red, guint16 *green, guint16 *blue)
+color_to_spell_entry_color (const GdkRGBA *source,
+	FabulorSpellEntryColor *destination)
 {
-	*red = (guint16) CLAMP (color->red * 65535.0 + 0.5, 0.0, 65535.0);
-	*green = (guint16) CLAMP (color->green * 65535.0 + 0.5, 0.0, 65535.0);
-	*blue = (guint16) CLAMP (color->blue * 65535.0 + 0.5, 0.0, 65535.0);
+	destination->red = (guint16) CLAMP (source->red * 65535.0 + 0.5,
+		0.0, 65535.0);
+	destination->green = (guint16) CLAMP (source->green * 65535.0 + 0.5,
+		0.0, 65535.0);
+	destination->blue = (guint16) CLAMP (source->blue * 65535.0 + 0.5,
+		0.0, 65535.0);
+}
+
+static gboolean
+resolve_spell_entry_mirc_color (gint color_index,
+	FabulorSpellEntryColor *color, gpointer user_data)
+{
+	GdkRGBA rgba = { 0 };
+
+	(void) user_data;
+	if (color_index < 0 ||
+		!theme_get_mirc_color ((unsigned int) color_index, &rgba))
+		return FALSE;
+	color_to_spell_entry_color (&rgba, color);
+	return TRUE;
 }
 
 static void
-theme_token_color_rgb16 (ThemeSemanticToken token, guint16 *red, guint16 *green, guint16 *blue)
+get_spell_entry_palette (FabulorSpellEntryPalette *palette)
 {
-	GdkRGBA color = { 0 };
+	GdkRGBA rgba = { 0 };
 
-	if (!theme_get_color (token, &color))
-		return;
-	color_to_rgb16 (&color, red, green, blue);
-}
-
-static void
-theme_mirc_color_rgb16 (int mirc_idx, guint16 *red, guint16 *green, guint16 *blue)
-{
-	GdkRGBA color = { 0 };
-
-	if (!theme_get_mirc_color ((unsigned int) mirc_idx, &color))
-		return;
-	color_to_rgb16 (&color, red, green, blue);
+	memset (palette, 0, sizeof (*palette));
+	if (theme_get_color (THEME_TOKEN_TEXT_FOREGROUND, &rgba))
+		color_to_spell_entry_color (&rgba, &palette->text_foreground);
+	if (theme_get_color (THEME_TOKEN_TEXT_BACKGROUND, &rgba))
+		color_to_spell_entry_color (&rgba, &palette->text_background);
+	if (theme_get_color (THEME_TOKEN_SPELL, &rgba))
+		color_to_spell_entry_color (&rgba, &palette->spell_error);
+	palette->resolve_mirc_color = resolve_spell_entry_mirc_color;
 }
 
 /*
@@ -174,8 +187,6 @@ enum
 	LAST_SIGNAL
 };
 static guint signals[LAST_SIGNAL] = {0};
-
-static PangoAttrList *empty_attrs_list = NULL;
 
 #ifdef G_OS_WIN32
 static GModule *
@@ -332,22 +343,6 @@ sexy_spell_entry_class_init(SexySpellEntryClass *klass)
 					   G_TYPE_BOOLEAN,
 					   1, G_TYPE_STRING);
 
-	if (empty_attrs_list == NULL)
-	{
-		empty_attrs_list = pango_attr_list_new ();
-	}
-}
-
-static void
-insert_hiddenchar (SexySpellEntry *entry, guint start, guint end)
-{
-	PangoAttribute *hattr;
-	PangoRectangle rect = { 0 };
-
-	hattr = pango_attr_shape_new (&rect, &rect);
-	hattr->start_index = start;
-	hattr->end_index = end;
-	pango_attr_list_insert (entry->priv->attr_list, hattr);
 }
 
 static guint8
@@ -404,128 +399,6 @@ sexy_spell_entry_theme_changed (const ThemeChangedEvent *event, gpointer userdat
 
 	sexy_spell_entry_apply_caret_style (entry);
 	sexy_spell_entry_recheck_all (entry);
-}
-
-static void
-insert_underline_error (SexySpellEntry *entry, guint start, guint end)
-{
-	PangoAttribute *ucolor;
-	PangoAttribute *unline;
-	guint16 red;
-	guint16 green;
-	guint16 blue;
-
-	theme_token_color_rgb16 (THEME_TOKEN_SPELL, &red, &green, &blue);
-	ucolor = pango_attr_underline_color_new (red, green, blue);
-	unline = pango_attr_underline_new (PANGO_UNDERLINE_ERROR);
-
-	ucolor->start_index = start;
-	unline->start_index = start;
-
-	ucolor->end_index = end;
-	unline->end_index = end;
-
-	pango_attr_list_insert (entry->priv->attr_list, ucolor);
-	pango_attr_list_insert (entry->priv->attr_list, unline);
-}
-
-static void
-insert_underline (SexySpellEntry *entry, guint start, gboolean toggle)
-{
-	PangoAttribute *uattr;
-
-	uattr = pango_attr_underline_new (toggle ? PANGO_UNDERLINE_NONE : PANGO_UNDERLINE_SINGLE);
-	uattr->start_index = start;
-	uattr->end_index = PANGO_ATTR_INDEX_TO_TEXT_END;
-	pango_attr_list_change (entry->priv->attr_list, uattr);
-}
-
-static void
-insert_bold (SexySpellEntry *entry, guint start, gboolean toggle)
-{
-	PangoAttribute *battr;
-
-	battr = pango_attr_weight_new (toggle ? PANGO_WEIGHT_NORMAL : PANGO_WEIGHT_BOLD);
-	battr->start_index = start;
-	battr->end_index = PANGO_ATTR_INDEX_TO_TEXT_END;
-	pango_attr_list_change (entry->priv->attr_list, battr);
-}
-
-static void
-insert_italic (SexySpellEntry *entry, guint start, gboolean toggle)
-{
-	PangoAttribute *iattr;
-
-	iattr  = pango_attr_style_new (toggle ? PANGO_STYLE_NORMAL : PANGO_STYLE_ITALIC); 
-	iattr->start_index = start;
-	iattr->end_index = PANGO_ATTR_INDEX_TO_TEXT_END;
-	pango_attr_list_change (entry->priv->attr_list, iattr);
-}
-
-static void
-insert_strikethrough (SexySpellEntry *entry, guint start, gboolean toggle)
-{
-	PangoAttribute *sattr;
-
-	sattr  = pango_attr_strikethrough_new (!toggle);
-	sattr->start_index = start;
-	sattr->end_index = PANGO_ATTR_INDEX_TO_TEXT_END;
-	pango_attr_list_change (entry->priv->attr_list, sattr);
-}
-
-static void
-insert_color (SexySpellEntry *entry, guint start, int fgcolor, int bgcolor)
-{
-	PangoAttribute *fgattr;
-	PangoAttribute *ulattr;
-	PangoAttribute *bgattr;
-	guint16 red;
-	guint16 green;
-	guint16 blue;
-
-	if (fgcolor < 0)
-	{
-		theme_token_color_rgb16 (THEME_TOKEN_TEXT_FOREGROUND, &red, &green, &blue);
-		fgattr = pango_attr_foreground_new (red, green, blue);
-		ulattr = pango_attr_underline_color_new (red, green, blue);
-	}
-	else
-	{
-		theme_mirc_color_rgb16 (fgcolor, &red, &green, &blue);
-		fgattr = pango_attr_foreground_new (red, green, blue);
-		ulattr = pango_attr_underline_color_new (red, green, blue);
-	}
-
-	if (bgcolor < 0)
-	{
-		theme_token_color_rgb16 (THEME_TOKEN_TEXT_BACKGROUND, &red, &green, &blue);
-		bgattr = pango_attr_background_new (red, green, blue);
-	}
-	else
-	{
-		theme_mirc_color_rgb16 (bgcolor, &red, &green, &blue);
-		bgattr = pango_attr_background_new (red, green, blue);
-	}
-
-	fgattr->start_index = start;
-	fgattr->end_index = PANGO_ATTR_INDEX_TO_TEXT_END;
-	pango_attr_list_change (entry->priv->attr_list, fgattr);
-	ulattr->start_index = start;
-	ulattr->end_index = PANGO_ATTR_INDEX_TO_TEXT_END;
-	pango_attr_list_change (entry->priv->attr_list, ulattr);
-	bgattr->start_index = start;
-	bgattr->end_index = PANGO_ATTR_INDEX_TO_TEXT_END;
-	pango_attr_list_change (entry->priv->attr_list, bgattr);
-}
-
-static void
-insert_reset (SexySpellEntry *entry, guint start)
-{
-	insert_bold (entry, start, TRUE);
-	insert_underline (entry, start, TRUE);
-	insert_italic (entry, start, TRUE);
-	insert_strikethrough (entry, start, TRUE);
-	insert_color (entry, start, -1, -1);
 }
 
 static gboolean
@@ -1036,234 +909,28 @@ word_misspelled(SexySpellEntry *entry, int start, int end)
 }
 
 static void
-check_word(SexySpellEntry *entry, int start, int end)
+check_word (SexySpellEntry *entry, int start, int end,
+	const FabulorSpellEntryPalette *palette)
 {
-	PangoAttrIterator *it;
-
-	/* Check to see if we've got any attributes at this position.
-	 * If so, free them, since we'll readd it if the word is misspelled */
-	it = pango_attr_list_get_iterator(entry->priv->attr_list);
-	if (it == NULL)
-		return;
-	do {
-		gint s, e;
-		pango_attr_iterator_range(it, &s, &e);
-		if (s == start) {
-			GSList *attrs = pango_attr_iterator_get_attrs(it);
-			g_slist_foreach(attrs, (GFunc) pango_attribute_destroy, NULL);
-			g_slist_free(attrs);
-		}
-	} while (pango_attr_iterator_next(it));
-	pango_attr_iterator_destroy(it);
-
 	if (word_misspelled(entry, start, end))
-		insert_underline_error(entry, start, end);
-}
-
-static void
-check_attributes (SexySpellEntry *entry, const char *text, int len)
-{
-	gboolean bold = FALSE;
-	gboolean italic = FALSE;
-	gboolean underline = FALSE;
-	gboolean strikethrough = FALSE;
-	int parsing_color = 0;
-	char fg_color[3];
-	char bg_color[3];
-	int i, offset = 0;
-
-	memset (bg_color, 0, sizeof(bg_color));
-	memset (fg_color, 0, sizeof(fg_color));
-
-	for (i = 0; i < len; i++)
-	{
-		switch (text[i])
-		{
-		case ATTR_BOLD:
-			insert_hiddenchar (entry, i, i + 1);
-			insert_bold (entry, i, bold);
-			bold = !bold;
-			goto check_color;
-
-		case ATTR_ITALICS:
-			insert_hiddenchar (entry, i, i + 1);
-			insert_italic (entry, i, italic);
-			italic = !italic;
-			goto check_color;
-
-		case ATTR_STRIKETHROUGH:
-			insert_hiddenchar (entry, i, i + 1);
-			insert_strikethrough (entry, i, strikethrough);
-			strikethrough = !strikethrough;
-			goto check_color;
-
-		case ATTR_UNDERLINE:
-			insert_hiddenchar (entry, i, i + 1);
-			insert_underline (entry, i, underline);
-			underline = !underline;
-			goto check_color;
-
-		case ATTR_RESET:
-			insert_hiddenchar (entry, i, i + 1);
-			insert_reset (entry, i);
-			bold = FALSE;
-			italic = FALSE;
-			underline = FALSE;
-			strikethrough = FALSE;
-			goto check_color;
-
-		case ATTR_HIDDEN:
-			insert_hiddenchar (entry, i, i + 1);
-			goto check_color;
-
-		case ATTR_REVERSE:
-			insert_hiddenchar (entry, i, i + 1);
-			insert_color (entry, i, THEME_TOKEN_TEXT_BACKGROUND, THEME_TOKEN_TEXT_FOREGROUND);
-			goto check_color;
-
-		case '\n':
-			insert_reset (entry, i);
-			parsing_color = 0;
-			break;
-
-		case ATTR_COLOR:
-			insert_hiddenchar (entry, i, i + 1);
-			parsing_color = 1;
-			offset = 1;
-			break;
-
-		default:
-check_color:
-			if (!parsing_color)
-				continue;
-
-			if (!g_unichar_isdigit (text[i]))
-			{
-				if (text[i] == ',' && parsing_color <= 3)
-				{
-					parsing_color = 3;
-					offset++;
-					continue;
-				}
-				else
-					parsing_color = 5;
-			}
-
-			/* don't parse background color without a comma */
-			else if (parsing_color == 3 && text[i - 1] != ',')
-				parsing_color = 5;
-
-			switch (parsing_color)
-			{
-			case 1:
-				fg_color[0] = text[i];
-				parsing_color++;
-				offset++;
-				continue;
-			case 2:
-				fg_color[1] = text[i];
-				parsing_color++;
-				offset++;
-				continue;
-			case 3:
-				bg_color[0] = text[i];
-				parsing_color++;
-				offset++;
-				continue;
-			case 4:
-				bg_color[1] = text[i];
-				parsing_color++;
-				offset++;
-				continue;
-			case 5:
-				if (bg_color[0] != 0)
-				{
-					insert_hiddenchar (entry, i - offset, i);
-					insert_color (entry, i, atoi (fg_color), atoi (bg_color));
-				}
-				else if (fg_color[0] != 0)
-				{
-					insert_hiddenchar (entry, i - offset, i);
-					insert_color (entry, i, atoi (fg_color), -1);
-				}
-				else
-				{
-					/* No colors but some commas may have been added */
-					insert_hiddenchar (entry, i - offset, i - offset + 1);
-					insert_color (entry, i, -1, -1);
-				}
-
-				memset (bg_color, 0, sizeof(bg_color));
-				memset (fg_color, 0, sizeof(fg_color));
-				parsing_color = 0;
-				offset = 0;
-				continue;
-			}
-		}
-	}
-
-	if (parsing_color)
-	{
-		if (bg_color[0] != 0)
-		{
-			insert_color (entry, len, atoi (fg_color), atoi (bg_color));
-		}
-		else if (fg_color[0] != 0)
-		{
-			insert_color (entry, len, atoi (fg_color), -1);
-		}
-		else
-		{
-			insert_color (entry, len, -1, -1);
-		}
-	}
-}
-
-static gboolean
-attr_list_has_attrs (PangoAttrList *attrs)
-{
-	PangoAttrIterator *it;
-	gboolean has = FALSE;
-
-	if (!attrs)
-		return FALSE;
-
-	it = pango_attr_list_get_iterator (attrs);
-	if (!it)
-		return FALSE;
-
-	do
-	{
-		GSList *list = pango_attr_iterator_get_attrs (it);
-		has = (list != NULL);
-		g_slist_free_full (list, (GDestroyNotify) pango_attribute_destroy);
-		if (has)
-			break;
-	}
-	while (pango_attr_iterator_next (it));
-	pango_attr_iterator_destroy (it);
-
-	return has;
+		fabulor_spell_entry_style_add_misspelling (entry->priv->attr_list,
+			(guint) start, (guint) end, palette);
 }
 
 static void
 sexy_spell_entry_recheck_all(SexySpellEntry *entry)
 {
+	FabulorSpellEntryPalette palette;
+	PangoAttrList *attributes;
 	guint i;
-	int text_len;
 	const char *text;
 
-	/* Remove all existing pango attributes.  These will get readded as we check */
+	get_spell_entry_palette (&palette);
+	text = gtk_entry_get_text (GTK_ENTRY (entry));
+	attributes = fabulor_spell_entry_style_build (text,
+		entry->priv->parseattr, &palette);
 	pango_attr_list_unref(entry->priv->attr_list);
-	entry->priv->attr_list = pango_attr_list_new();
-
-	if (entry->priv->parseattr)
-	{
-		/* Check for attributes */
-		text = gtk_entry_get_text (GTK_ENTRY (entry));
-		text_len = strlen (text);
-		check_attributes (entry, text, text_len);
-	}
+	entry->priv->attr_list = attributes;
 
 	if (have_enchant && entry->priv->checked
 		&& g_slist_length (entry->priv->dict_list) != 0)
@@ -1274,11 +941,13 @@ sexy_spell_entry_recheck_all(SexySpellEntry *entry)
 			FabulorSpellWordRange range;
 			if (fabulor_spell_words_get (entry->priv->words, i, &range))
 				check_word (entry, (gint) range.byte_start,
-					(gint) range.byte_end);
+					(gint) range.byte_end, &palette);
 		}
 	}
 
-	gtk_entry_set_attributes (GTK_ENTRY (entry), attr_list_has_attrs (entry->priv->attr_list) ? entry->priv->attr_list : NULL);
+	gtk_entry_set_attributes (GTK_ENTRY (entry),
+		fabulor_spell_entry_style_has_attributes (entry->priv->attr_list) ?
+		entry->priv->attr_list : NULL);
 
 	fabulor_spell_entry_queue_redraw (GTK_WIDGET (entry));
 }

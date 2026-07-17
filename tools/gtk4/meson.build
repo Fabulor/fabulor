@@ -52,6 +52,7 @@ probe = executable(
   'fabulor-gtk4-probe',
   'probe.c',
   '../../src/fe-gtk/spell-entry-words.c',
+	'../../src/fe-gtk/spell-entry-style.c',
 	'../../src/fe-gtk/spell-entry-widget.c',
   '../../src/fe-gtk/addon-list.c',
   '../../src/fe-gtk/ban-list.c',
