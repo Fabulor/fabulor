@@ -1016,6 +1016,17 @@ range, and teardown releases one opaque owner. The strict probe covers marker
 positions, adjacent and current search matches, hover boundaries, paint/clear
 modes, suspension, and cleanup.
 
+Transcript hit-testing pass 9 (2026-07-17): `xtext-hit-test.c` now owns
+coordinate-to-scrollback-line mapping, separator tolerance, IRC-formatting
+offset adjustment, and validated word-match results. The `word_click` signal
+captures classification and match bounds synchronously instead of asking its
+consumer to classify the shared scratch word again and read global last-match
+state. URL, host, nickname, channel, and email consumers duplicate only the
+validated matched substring and no longer terminate text inside the transcript
+scratch buffer. The strict probe covers negative-y mapping, separator edges,
+formatted offsets, invalid bounds, immutable duplication, and non-link result
+types.
+
 Primary surfaces:
 
 - `xtext.c` / `xtext.h`

@@ -144,14 +144,6 @@ static void gtk_xtext_recalc_widths (xtext_buffer *buf, int);
 static void gtk_xtext_fix_indent (xtext_buffer *buf);
 static int gtk_xtext_find_subline (GtkXText *xtext, textentry *ent, int line);
 /* static char *gtk_xtext_conv_color (unsigned char *text, int len, int *newlen); */
-/* For use by gtk_xtext_strip_color() and its callers -- */
-struct offlen_s {
-	guint16 off;
-	guint16 len;
-	guint16 emph;
-	guint16 width;
-};
-typedef struct offlen_s offlen_t;
 static unsigned char *
 gtk_xtext_strip_color (unsigned char *text, int len, unsigned char *outbuf,
 							  int *newlen, GSList **slp, int strip_hidden);
@@ -164,6 +156,8 @@ static void gtk_xtext_search_textentry_fini (gpointer, gpointer);
 static void gtk_xtext_search_fini (xtext_buffer *);
 static gboolean gtk_xtext_search_init (xtext_buffer *buf, const gchar *text, gtk_xtext_search_flags flags, GError **perr);
 static char * gtk_xtext_get_word (GtkXText * xtext, int x, int y, textentry ** ret_ent, int *ret_off, int *ret_len, GSList **slp);
+static void gtk_xtext_get_hit (GtkXText *xtext, int x, int y,
+	FabulorXTextHit *hit);
 static gboolean gtk_xtext_word_select_char (const unsigned char *ch);
 static gboolean gtk_xtext_get_word_select_range (GtkXText *xtext, int x, int y, textentry **ret_ent, int *ret_off, int *ret_len);
 static void gtk_xtext_pointer_motion (GtkWidget *widget, gdouble x,
@@ -1545,13 +1539,10 @@ gtk_xtext_find_char (GtkXText * xtext, int x, int y, int *off, int *out_of_bound
 	int subline;
 	int outofbounds = FALSE;
 
-	/* Adjust y value for negative rounding, double to int */
-	if (y < 0)
-		y -= xtext->fontsize;
-
-	line = (y + xtext->pixel_offset) / xtext->fontsize;
-	ent = gtk_xtext_nth (xtext,
-		line + (int)xtext_adj_get_value (xtext->adj), &subline);
+	if (!fabulor_xtext_hit_test_line (y, xtext->pixel_offset,
+		xtext->fontsize, (gint) xtext_adj_get_value (xtext->adj), &line))
+		return NULL;
+	ent = gtk_xtext_nth (xtext, line, &subline);
 	if (!ent)
 		return NULL;
 
@@ -2433,32 +2424,10 @@ gtk_xtext_get_word_adjust (GtkXText *xtext, int x, int y, textentry **word_ent, 
 		word_type = xtext->urlcheck_function (GTK_WIDGET (xtext), word);
 		if (word_type > 0)
 		{
-			if (url_last (&laststart, &lastend))
-			{
-				int cumlen, startadj = 0, endadj = 0;
-				offlen_t *meta;
-				GSList *sl;
-
-				for (sl = slp, cumlen = 0; sl; sl = g_slist_next (sl))
-				{
-					meta = sl->data;
-					startadj = meta->off - cumlen;
-					cumlen += meta->len;
-					if (laststart < cumlen)
-						break;
-				}
-				for (sl = slp, cumlen = 0; sl; sl = g_slist_next (sl))
-				{
-					meta = sl->data;
-					endadj = meta->off - cumlen;
-					cumlen += meta->len;
-					if (lastend < cumlen)
-						break;
-				}
-				laststart += startadj;
-				*offset += laststart;
-				*len = lastend + endadj - laststart;
-			}
+			if (!url_last (&laststart, &lastend) ||
+				!fabulor_xtext_hit_test_adjust_match (slp, laststart, lastend,
+					offset, len))
+				word_type = 0;
 		}
 	}
 	g_slist_free_full (slp, g_free);
@@ -2466,12 +2435,31 @@ gtk_xtext_get_word_adjust (GtkXText *xtext, int x, int y, textentry **word_ent, 
 	return word_type;
 }
 
+static void
+gtk_xtext_get_hit (GtkXText *xtext, int x, int y, FabulorXTextHit *hit)
+{
+	unsigned char *word;
+	gint word_type = 0;
+	gint match_start = 0;
+	gint match_end = 0;
+
+	word = gtk_xtext_get_word (xtext, x, y, NULL, NULL, NULL, NULL);
+	if (word && xtext->urlcheck_function)
+	{
+		word_type = xtext->urlcheck_function (GTK_WIDGET (xtext), word);
+		if (word_type > 0 && !url_last (&match_start, &match_end))
+			word_type = 0;
+	}
+	fabulor_xtext_hit_init (hit, (gchar *) word, word_type, match_start,
+		match_end);
+}
+
 static gboolean
 gtk_xtext_motion (GtkWidget *widget, gdouble event_x, gdouble event_y,
 	GdkModifierType state)
 {
 	GtkXText *xtext = GTK_XTEXT (widget);
-	int redraw, tmp, offset, len, line_x;
+	int redraw, tmp, offset, len;
 	int x = (int) event_x;
 	int y = (int) event_y;
 	textentry *word_ent;
@@ -2533,19 +2521,16 @@ gtk_xtext_motion (GtkWidget *widget, gdouble event_x, gdouble event_y,
 		return FALSE;
 	}
 
-	if (xtext->separator && xtext->buffer->indent)
+	if (fabulor_xtext_hit_test_separator (xtext->separator,
+		xtext->buffer->indent, xtext->space_width, x))
 	{
-		line_x = xtext->buffer->indent - ((xtext->space_width + 1) / 2);
-		if (line_x == x || line_x == x + 1 || line_x == x - 1)
+		if (!xtext->cursor_resize)
 		{
-			if (!xtext->cursor_resize)
-			{
-				gtk_xtext_set_pointer_cursor (xtext, "col-resize");
-				xtext->cursor_hand = FALSE;
-				xtext->cursor_resize = TRUE;
-			}
-			return FALSE;
+			gtk_xtext_set_pointer_cursor (xtext, "col-resize");
+			xtext->cursor_hand = FALSE;
+			xtext->cursor_resize = TRUE;
 		}
+		return FALSE;
 	}
 
 	if (xtext->urlcheck_function == NULL)
@@ -2704,7 +2689,7 @@ gtk_xtext_button_release (GtkWidget *widget, guint button, gdouble x,
 {
 	GtkXText *xtext = GTK_XTEXT (widget);
 	FabulorXTextClick click = { button, 1, x, y, state };
-	unsigned char *word;
+	FabulorXTextHit hit;
 	int old;
 	int event_x = (int) x;
 	int event_y = (int) y;
@@ -2775,9 +2760,9 @@ gtk_xtext_button_release (GtkWidget *widget, guint button, gdouble x,
 
 		if (!gtk_xtext_is_selecting (xtext))
 		{
-			word = gtk_xtext_get_word (xtext, event_x, event_y, 0, 0, 0, 0);
+			gtk_xtext_get_hit (xtext, event_x, event_y, &hit);
 			g_signal_emit (G_OBJECT (xtext), xtext_signals[WORD_CLICK], 0,
-				word ? word : NULL, &click);
+				&hit, &click);
 		}
 	}
 
@@ -2791,10 +2776,10 @@ gtk_xtext_button_press (GtkWidget *widget, guint button, guint n_press,
 {
 	GtkXText *xtext = GTK_XTEXT (widget);
 	FabulorXTextClick click = { button, n_press, event_x, event_y, state };
+	FabulorXTextHit hit;
 	FabulorXTextSelectionPress selection_press;
 	textentry *ent;
-	unsigned char *word;
-	int line_x, offset, len;
+	int offset, len;
 	int x = (int) event_x;
 	int y = (int) event_y;
 
@@ -2806,14 +2791,11 @@ gtk_xtext_button_press (GtkWidget *widget, guint button, guint n_press,
 
 	if (button == 3 || button == 2) /* right/middle click */
 	{
-		word = gtk_xtext_get_word (xtext, x, y, 0, 0, 0, 0);
-		if (word)
-		{
-			g_signal_emit (G_OBJECT (xtext), xtext_signals[WORD_CLICK], 0,
-								word, &click);
-		} else
-			g_signal_emit (G_OBJECT (xtext), xtext_signals[WORD_CLICK], 0,
-								"", &click);
+		gtk_xtext_get_hit (xtext, x, y, &hit);
+		if (hit.word == NULL)
+			fabulor_xtext_hit_init (&hit, "", 0, 0, 0);
+		g_signal_emit (G_OBJECT (xtext), xtext_signals[WORD_CLICK], 0,
+			&hit, &click);
 		return FALSE;
 	}
 
@@ -2855,16 +2837,13 @@ gtk_xtext_button_press (GtkWidget *widget, guint button, guint n_press,
 	}
 
 	/* check if it was a separator-bar click */
-	if (xtext->separator && xtext->buffer->indent)
+	if (fabulor_xtext_hit_test_separator (xtext->separator,
+		xtext->buffer->indent, xtext->space_width, x))
 	{
-		line_x = xtext->buffer->indent - ((xtext->space_width + 1) / 2);
-		if (line_x == x || line_x == x + 1 || line_x == x - 1)
-		{
-			xtext->moving_separator = TRUE;
-			/* draw the separator line */
-			gtk_xtext_draw_sep (xtext, -1);
-			return FALSE;
-		}
+		xtext->moving_separator = TRUE;
+		/* draw the separator line */
+		gtk_xtext_draw_sep (xtext, -1);
+		return FALSE;
 	}
 
 	xtext->button_down = TRUE;

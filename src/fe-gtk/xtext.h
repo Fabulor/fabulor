@@ -23,6 +23,7 @@
 #include <gtk/gtk.h>
 #include "xtext-background.h"
 #include "xtext-decoration.h"
+#include "xtext-hit-test.h"
 #include "xtext-input.h"
 #include "xtext-render-target.h"
 #include "xtext-selection.h"
@@ -254,7 +255,7 @@ struct _GtkXText
 struct _GtkXTextClass
 {
 	GtkWidgetClass parent_class;
-	void (*word_click) (GtkXText *xtext, char *word,
+	void (*word_click) (GtkXText *xtext, const FabulorXTextHit *hit,
 		const FabulorXTextClick *click);
 	void (*set_scroll_adjustments) (GtkXText *xtext, GtkAdjustment *hadj, GtkAdjustment *vadj);
 };
