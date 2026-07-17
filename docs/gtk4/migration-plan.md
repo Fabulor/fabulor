@@ -940,6 +940,16 @@ controllers, selection, clipboard behavior, and performance remain separate
 passes. The detailed contract is in
 [`transcript-rendering-architecture.md`](transcript-rendering-architecture.md).
 
+Transcript geometry pass 2 (2026-07-17): wrapping, page and partial rendering,
+selection auto-scroll, entry visibility, line recalculation, and buffer-switch
+size tracking now use one validated widget-geometry boundary. GTK3 reads its
+allocation and GTK4 uses current widget width and height. Native `GdkWindow`
+size reads remain only in the private GTK3 window-to-surface capture helper;
+pointer lookup and smooth-scroll capture keep their required native references.
+The strict probe verifies positive and rejected geometry independently of a
+display. Class virtual methods, controllers, selection, clipboard behavior,
+and performance remain separate passes.
+
 Primary surfaces:
 
 - `xtext.c` / `xtext.h`

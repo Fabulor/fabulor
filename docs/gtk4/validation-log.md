@@ -2659,6 +2659,42 @@ Scope: transcript rendering-destination ownership only. Geometry, class virtual
 methods, controllers, selection, clipboard behavior, and spell-check input
 remain unchanged.
 
+### PR: #93 - GTK4 Stage 6 Transcript Geometry
+
+Date: 2026-07-17
+
+Migration stage: 6, transcript geometry pass 2
+
+Files/workflows converted: transcript allocated-geometry owner; line wrapping
+and recalculation; page and partial rendering; selection auto-scroll; entry
+visibility; buffer-switch size tracking; strict geometry contract
+
+GTK version: 4.22.4
+
+GLib version: 2.88.0
+
+Build configuration: MSVC x64 Release and strict GTK4 probe boundary
+
+Automated checks:
+
+- [x] production GTK3 frontend compiles and links with 0 warnings and 0 errors
+- [x] strict GTK4 probe compiles, links, and executes with 0 warnings and 0 errors
+- [x] positive dimensions are preserved and non-positive dimensions are rejected and reset
+- [x] operational transcript size reads no longer depend on `GdkWindow`
+- [x] native window dimensions remain only in the private GTK3 surface-capture helper
+- [x] GTK4 dependency validator tests remain 8/8
+- [x] repository diff whitespace validation passes
+
+Manual checks:
+
+- [ ] shipping GTK3 transcript preserves wrapping, resize, scrolling, selection, visibility, and buffer switching
+- [ ] smooth scrolling preserves overlap capture without flicker or stale pixels
+- [ ] GTK4 visual, high-DPI, accessibility, scrollback-load, and latency checks await widget-class integration
+
+Scope: transcript dimension sourcing only. Native GTK3 pointer and surface
+operations, class virtual methods, controllers, selection, clipboard behavior,
+and spell-check input remain unchanged.
+
 ## Per-PR Record Template
 
 Copy this section for each GTK4 PR:

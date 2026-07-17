@@ -58,6 +58,7 @@ zoitechat_gtk_sources = [
   'user-list-model.c',
   'user-list-view.c',
   'xtext.c',
+  'xtext-geometry.c',
   'xtext-render-target.c'
 ]
 

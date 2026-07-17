@@ -1,6 +1,6 @@
 # GTK4 Transcript Rendering Architecture
 
-Status: Stage 6 pass 1 render-target contract
+Status: Stage 6 pass 2 render-target and geometry contracts
 
 ## Purpose
 
@@ -28,6 +28,19 @@ active until the paired end call clears the target and destroys the snapshot
 context. This lets the existing Cairo/Pango renderer become a GTK4 snapshot
 producer without duplicating text layout or IRC formatting logic.
 
+## Widget Geometry
+
+`src/fe-gtk/xtext-geometry.c` owns the transcript's toolkit-version geometry
+boundary. GTK3 reads the widget allocation; GTK4 reads the widget width and
+height. Both paths reject zero or negative dimensions before rendering,
+wrapping, selection scrolling, visibility checks, or buffer switching begins.
+
+The transcript no longer obtains operational dimensions from its native
+`GdkWindow`. The remaining `gdk_window_get_width()` and
+`gdk_window_get_height()` calls are private to the GTK3 window-to-Cairo-surface
+capture helper. GTK3 pointer lookup and smooth-scroll surface capture retain
+their native window references without making layout depend on them.
+
 ## Ownership Invariants
 
 - An active context may be temporarily replaced and then restored for nested
@@ -40,11 +53,10 @@ producer without duplicating text layout or IRC formatting logic.
 
 ## Planned Passes
 
-1. Replace render-size reads from `GdkWindow` with allocated widget geometry.
-2. Add GTK4 measure, allocation, realize/unrealize, and snapshot class methods.
-3. Move pointer, click, scroll, leave, focus, and selection input to controllers.
-4. Replace GTK3 selection ownership and clipboard payload callbacks.
-5. Validate background images, markers, search highlights, URL hit testing,
+1. Add GTK4 measure, allocation, realize/unrealize, and snapshot class methods.
+2. Move pointer, click, scroll, leave, focus, and selection input to controllers.
+3. Replace GTK3 selection ownership and clipboard payload callbacks.
+4. Validate background images, markers, search highlights, URL hit testing,
    scrolling, accessibility, high DPI, and scrollback performance.
 
 The spell-check input is a separate Stage 6 boundary and will not share
@@ -59,7 +71,9 @@ The strict GTK4 probe verifies:
 - active contexts are referenced, exchanged, restored, and cleared safely;
 - a GTK4 snapshot Cairo context becomes the active target; and
 - ending the snapshot produces a non-empty `GskRenderNode` and leaves no active
-  context.
+  context;
+- positive geometry is preserved; and
+- zero or negative dimensions are rejected and reset safely.
 
 Manual transcript output and latency checks remain required when the GTK4
 widget class is connected to this boundary.
