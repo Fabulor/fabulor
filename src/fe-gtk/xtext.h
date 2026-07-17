@@ -22,6 +22,7 @@
 
 #include <gtk/gtk.h>
 #include "xtext-background.h"
+#include "xtext-decoration.h"
 #include "xtext-input.h"
 #include "xtext-render-target.h"
 #include "xtext-selection.h"
@@ -69,14 +70,6 @@ typedef struct textentry textentry;
  * as chained from ent->marks.  It saves starting and
  * ending+1 offset of a found occurrence.
  */
-typedef union offsets_u {
-	struct offsets_s {
-		guint16	start;
-		guint16	end;
-	} o;
-	guint32 u;
-} offsets_t;
-
 typedef enum marker_reset_reason_e {
 	MARKER_WAS_NEVER_SET,
 	MARKER_IS_SET,
@@ -142,6 +135,7 @@ struct _GtkXText
 	GtkScrollablePolicy hscroll_policy;
 	GtkScrollablePolicy vscroll_policy;
 	FabulorXTextBackground *background;
+	FabulorXTextDecoration *decoration;
 	FabulorXTextRenderTarget *render_target;
 	FabulorXTextSelection *selection;
 	GdkCursor *hand_cursor;
@@ -186,9 +180,6 @@ struct _GtkXText
 	char num[8];					  /* for parsing mirc color */
 	int nc;							  /* offset into xtext->num */
 
-	textentry *hilight_ent;
-	int hilight_start;
-	int hilight_end;
 	time_t tooltip_stamp;
 	unsigned int tooltip_stamp_set:1;
 
@@ -246,9 +237,6 @@ struct _GtkXText
 	unsigned int skip_stamp:1;
 	unsigned int mark_stamp:1;	/* Cut&Paste with stamps? */
 	unsigned int force_stamp:1;	/* force redrawing it */
-	unsigned int render_hilights_only:1;
-	unsigned int in_hilight:1;
-	unsigned int un_hilight:1;
 	unsigned int recycle:1;
 	unsigned int force_render:1;
 	unsigned int color_paste:1; /* CTRL was pressed when selection finished */

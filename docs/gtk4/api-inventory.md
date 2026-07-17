@@ -543,6 +543,15 @@ uncomposable sources use the transcript palette background. The cache exists
 only within a frame and all Cairo references are released by the owner, so
 `GtkXText` no longer carries background cache geometry or render-cycle fields.
 
+Stage 6 transcript decorations pass 8 moves marker geometry, search-match
+boundary flags, and transient hover-highlight state into
+`xtext-decoration.c`. Search discovery and IRC text parsing remain in
+`xtext.c`, while the owner supplies deterministic start/mid/end/current
+classification, marker placement before an entry or after its predecessor,
+and bounded hover paint/clear state. This removes the widget's individual
+highlight entry, offsets, inside, clear, and render-only fields without adding
+a GTK dependency to the policy.
+
 Status: `in progress`
 
 ### Input: `SexySpellEntry`

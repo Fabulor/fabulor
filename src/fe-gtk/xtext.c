@@ -157,7 +157,6 @@ gtk_xtext_strip_color (unsigned char *text, int len, unsigned char *outbuf,
 							  int *newlen, GSList **slp, int strip_hidden);
 static gboolean gtk_xtext_check_ent_visibility (GtkXText * xtext, textentry *find_ent, int add);
 static int gtk_xtext_render_page_timeout (GtkXText * xtext);
-static int gtk_xtext_search_offset (xtext_buffer *buf, textentry *ent, unsigned int off);
 static GList * gtk_xtext_search_textentry (xtext_buffer *, textentry *);
 static void gtk_xtext_search_textentry_add (xtext_buffer *, textentry *, GList *, gboolean);
 static void gtk_xtext_search_textentry_del (xtext_buffer *, textentry *);
@@ -824,6 +823,7 @@ static void
 gtk_xtext_init (GtkXText * xtext)
 {
 	xtext->background = fabulor_xtext_background_new ();
+	xtext->decoration = fabulor_xtext_decoration_new ();
 	xtext->render_target = fabulor_xtext_render_target_new ();
 	xtext->selection = fabulor_xtext_selection_new (GTK_WIDGET (xtext),
 		gtk_xtext_selection_text, gtk_xtext_selection_lost, NULL);
@@ -856,8 +856,6 @@ gtk_xtext_init (GtkXText * xtext)
 	xtext->color_paste = FALSE;
 	xtext->skip_border_fills = FALSE;
 	xtext->skip_stamp = FALSE;
-	xtext->render_hilights_only = FALSE;
-	xtext->un_hilight = FALSE;
 	xtext->recycle = FALSE;
 	xtext->dont_render = FALSE;
 	xtext->dont_render2 = FALSE;
@@ -1071,6 +1069,11 @@ gtk_xtext_cleanup (GtkXText *xtext)
 	{
 		fabulor_xtext_background_free (xtext->background);
 		xtext->background = NULL;
+	}
+	if (xtext->decoration)
+	{
+		fabulor_xtext_decoration_free (xtext->decoration);
+		xtext->decoration = NULL;
 	}
 
 	if (xtext->render_target)
@@ -1621,17 +1624,10 @@ gtk_xtext_draw_marker (GtkXText * xtext, textentry * ent, int y)
 	cairo_t *cr;
 	GtkAllocation allocation;
 
-	if (!xtext->marker) return;
-
-	if (xtext->buffer->marker_pos == ent)
-	{
-		render_y = y + xtext->font->descent;
-	}
-	else if (xtext->buffer->marker_pos == ent->next && ent->next != NULL)
-	{
-		render_y = y + xtext->font->descent + xtext->fontsize * ent->subline_count;
-	}
-	else return;
+	if (!fabulor_xtext_marker_position (xtext->marker,
+		xtext->buffer->marker_pos, ent, ent->next, y, xtext->font->descent,
+		xtext->fontsize, ent->subline_count, &render_y))
+		return;
 
 	x = 0;
 	gtk_widget_get_allocation (GTK_WIDGET (xtext), &allocation);
@@ -2328,17 +2324,18 @@ gtk_xtext_get_word_select_range (GtkXText *xtext, int x, int y, textentry **ret_
 static void
 gtk_xtext_unrender_hilight (GtkXText *xtext)
 {
-	xtext->render_hilights_only = TRUE;
+	textentry *entry = (textentry *) fabulor_xtext_decoration_hover_entry (
+		xtext->decoration);
+
+	fabulor_xtext_decoration_begin_hover_render (xtext->decoration, TRUE);
 	xtext->skip_border_fills = TRUE;
 	xtext->skip_stamp = TRUE;
-	xtext->un_hilight = TRUE;
 
-	gtk_xtext_render_ents (xtext, xtext->hilight_ent, NULL);
+	gtk_xtext_render_ents (xtext, entry, NULL);
 
-	xtext->render_hilights_only = FALSE;
 	xtext->skip_border_fills = FALSE;
 	xtext->skip_stamp = FALSE;
-	xtext->un_hilight = FALSE;
+	fabulor_xtext_decoration_end_hover_render (xtext->decoration);
 }
 
 static void
@@ -2366,21 +2363,17 @@ gtk_xtext_leave (GtkWidget *widget)
 	if (xtext->cursor_hand)
 	{
 		gtk_xtext_unrender_hilight (xtext);
-		xtext->hilight_start = -1;
-		xtext->hilight_end = -1;
 		xtext->cursor_hand = FALSE;
 		gtk_xtext_set_pointer_cursor (xtext, NULL);
-		xtext->hilight_ent = NULL;
+		fabulor_xtext_decoration_clear_hover (xtext->decoration);
 	}
 
 	if (xtext->cursor_resize)
 	{
 		gtk_xtext_unrender_hilight (xtext);
-		xtext->hilight_start = -1;
-		xtext->hilight_end = -1;
 		xtext->cursor_resize = FALSE;
 		gtk_xtext_set_pointer_cursor (xtext, NULL);
-		xtext->hilight_ent = NULL;
+		fabulor_xtext_decoration_clear_hover (xtext->decoration);
 	}
 
 	if (xtext->tooltip_stamp_set)
@@ -2562,9 +2555,8 @@ gtk_xtext_motion (GtkWidget *widget, gdouble event_x, gdouble event_y,
 	if (word_type > 0)
 	{
 		if (!xtext->cursor_hand ||
-			 xtext->hilight_ent != word_ent ||
-			 xtext->hilight_start != offset ||
-			 xtext->hilight_end != offset + len)
+			 !fabulor_xtext_decoration_hover_equals (xtext->decoration,
+				word_ent, offset, offset + len))
 		{
 			if (!xtext->cursor_hand)
 			{
@@ -2574,22 +2566,22 @@ gtk_xtext_motion (GtkWidget *widget, gdouble event_x, gdouble event_y,
 			}
 
 			/* un-render the old hilight */
-			if (xtext->hilight_ent)
+			if (fabulor_xtext_decoration_has_hover (xtext->decoration))
 				gtk_xtext_unrender_hilight (xtext);
 
-			xtext->hilight_ent = word_ent;
-			xtext->hilight_start = offset;
-			xtext->hilight_end = offset + len;
+			fabulor_xtext_decoration_set_hover (xtext->decoration, word_ent,
+				offset, offset + len);
 
 			xtext->skip_border_fills = TRUE;
-			xtext->render_hilights_only = TRUE;
+			fabulor_xtext_decoration_begin_hover_render (xtext->decoration,
+				FALSE);
 			xtext->skip_stamp = TRUE;
 
 			gtk_xtext_render_ents (xtext, word_ent, NULL);
 
 			xtext->skip_border_fills = FALSE;
-			xtext->render_hilights_only = FALSE;
 			xtext->skip_stamp = FALSE;
+			fabulor_xtext_decoration_end_hover_render (xtext->decoration);
 		}
 		return FALSE;
 	}
@@ -3352,11 +3344,11 @@ gtk_xtext_render_flush (GtkXText * xtext, int x, int y, unsigned char *str,
 	if (y - xtext->font->ascent > xtext->clip_y2 || (y - xtext->font->ascent) + xtext->fontsize < xtext->clip_y)
 		return str_width;
 
-	if (xtext->render_hilights_only)
+	if (fabulor_xtext_decoration_hover_render_only (xtext->decoration))
 	{
-		if (!xtext->in_hilight)	/* is it a hilight prefix? */
+		if (!fabulor_xtext_decoration_hover_inside (xtext->decoration))
 			return str_width;
-		if (!xtext->un_hilight)	/* doing a hilight? no need to draw the text */
+		if (!fabulor_xtext_decoration_hover_clearing (xtext->decoration))
 			goto dounder;
 	}
 
@@ -3455,63 +3447,6 @@ gtk_xtext_reset (GtkXText * xtext, int mark, int attribs)
 	xtext->nc = 0;
 }
 
-/*
- * gtk_xtext_search_offset (buf, ent, off) --
- * Look for arg offset in arg textentry
- * Return one or more flags:
- * 	GTK_MATCH_MID if we are in a match
- * 	GTK_MATCH_START if we're at the first byte of it
- * 	GTK_MATCH_END if we're at the first byte past it
- * 	GTK_MATCH_CUR if it is the current match
- */
-#define GTK_MATCH_START	1
-#define GTK_MATCH_MID	2
-#define GTK_MATCH_END	4
-#define GTK_MATCH_CUR	8
-static int
-gtk_xtext_search_offset (xtext_buffer *buf, textentry *ent, unsigned int off)
-{
-	GList *gl;
-	offsets_t o;
-	int flags = 0;
-
-	for (gl = g_list_first (ent->marks); gl; gl = g_list_next (gl))
-	{
-		o.u = GPOINTER_TO_UINT (gl->data);
-		if (off < o.o.start || off > o.o.end)
-			continue;
-		flags = GTK_MATCH_MID;
-		if (off == o.o.start)
-			flags |= GTK_MATCH_START;
-		if (off == o.o.end)
-		{
-			gl = g_list_next (gl);
-			if (gl)
-			{
-				o.u = GPOINTER_TO_UINT (gl->data);
-				if (off ==  o.o.start)	/* If subseq match is adjacent */
-				{
-					flags |= (gl == buf->curmark)? GTK_MATCH_CUR: 0;
-				}
-				else		/* If subseq match is not adjacent */
-				{
-					flags |= GTK_MATCH_END;
-				}
-			}
-			else		/* If there is no subseq match */
-			{
-				flags |= GTK_MATCH_END;
-			}
-		}
-		else if (gl == buf->curmark)	/* If not yet at the end of this match */
-		{
-			flags |= GTK_MATCH_CUR;
-		}
-		break;
-	}
-	return flags;
-}
-
 /* render a single line, which WONT wrap, and parse mIRC colors */
 
 #define RENDER_FLUSH x += gtk_xtext_render_flush (xtext, x, y, pstr, j, emphasis, gtk_xtext_lookup_run_width (ent, &slp_cache, pstr - ent->str, j, *emphasis))
@@ -3532,7 +3467,7 @@ gtk_xtext_render_str (GtkXText * xtext, int y, textentry * ent,
 	int srch_mark = FALSE;
 	GSList *slp_cache = ent->slp;
 
-	xtext->in_hilight = FALSE;
+	fabulor_xtext_decoration_set_hover_inside (xtext->decoration, FALSE);
 
 	offset = str - ent->str;
 
@@ -3544,14 +3479,14 @@ gtk_xtext_render_str (GtkXText * xtext, int y, textentry * ent,
 		xtext->backcolor = TRUE;
 		mark = TRUE;
 	}
-	if (xtext->hilight_ent == ent &&
-		 xtext->hilight_start <= i + offset && xtext->hilight_end > i + offset)
+	if (fabulor_xtext_decoration_hover_contains (xtext->decoration, ent,
+		i + offset))
 	{
-		if (!xtext->un_hilight)
+		if (!fabulor_xtext_decoration_hover_clearing (xtext->decoration))
 		{
 			xtext->underline = TRUE;
 		}
-		xtext->in_hilight = TRUE;
+		fabulor_xtext_decoration_set_hover_inside (xtext->decoration, TRUE);
 	}
 
 	if (!xtext->skip_border_fills && !xtext->dont_render)
@@ -3582,17 +3517,18 @@ gtk_xtext_render_str (GtkXText * xtext, int y, textentry * ent,
 	while (i < len)
 	{
 
-		if (xtext->hilight_ent == ent && xtext->hilight_start == (i + offset))
+		if (fabulor_xtext_decoration_hover_starts (xtext->decoration, ent,
+			i + offset))
 		{
 			RENDER_FLUSH;
 			pstr += j;
 			j = 0;
-			if (!xtext->un_hilight)
+			if (!fabulor_xtext_decoration_hover_clearing (xtext->decoration))
 			{
 				xtext->underline = TRUE;
 			}
 
-			xtext->in_hilight = TRUE;
+			fabulor_xtext_decoration_set_hover_inside (xtext->decoration, TRUE);
 		}
 
 		if ((xtext->parsing_color && isdigit (str[i]) && xtext->nc < 2) ||
@@ -3669,14 +3605,15 @@ gtk_xtext_render_str (GtkXText * xtext, int y, textentry * ent,
 			}
 
 			if (!left_only && !mark &&
-				 (k = gtk_xtext_search_offset (xtext->buffer, ent, offset + i)))
+				 (k = fabulor_xtext_search_match (ent->marks,
+					xtext->buffer->curmark, offset + i)))
 			{
 				RENDER_FLUSH;
 				pstr += j;
 				j = 0;
 				if (!(xtext->buffer->search_flags & highlight))
 				{
-					if (k & GTK_MATCH_CUR)
+					if (k & FABULOR_XTEXT_MATCH_CURRENT)
 					{
 						xtext_set_bg (xtext, XTEXT_MARK_BG);
 						xtext_set_fg (xtext, XTEXT_MARK_FG);
@@ -3692,15 +3629,17 @@ gtk_xtext_render_str (GtkXText * xtext, int y, textentry * ent,
 				}
 				else
 				{
-					xtext->underline = (k & GTK_MATCH_CUR)? TRUE: FALSE;
-					if (k & (GTK_MATCH_START | GTK_MATCH_MID))
+					xtext->underline =
+						(k & FABULOR_XTEXT_MATCH_CURRENT) ? TRUE : FALSE;
+					if (k & (FABULOR_XTEXT_MATCH_START |
+						FABULOR_XTEXT_MATCH_MID))
 					{
 						xtext_set_bg (xtext, XTEXT_MARK_BG);
 						xtext_set_fg (xtext, XTEXT_MARK_FG);
 						xtext->backcolor = TRUE;
 						srch_mark = TRUE;
 					}
-					if (k & GTK_MATCH_END)
+					if (k & FABULOR_XTEXT_MATCH_END)
 					{
 						xtext_set_bg (xtext, xtext->col_back);
 						xtext_set_fg (xtext, xtext->col_fore);
@@ -3769,7 +3708,8 @@ gtk_xtext_render_str (GtkXText * xtext, int y, textentry * ent,
 				*emphasis = 0;
 				pstr += j + 1;
 				j = 0;
-				gtk_xtext_reset (xtext, mark, !xtext->in_hilight);
+				gtk_xtext_reset (xtext, mark,
+					!fabulor_xtext_decoration_hover_inside (xtext->decoration));
 				break;
 			case ATTR_COLOR:
 				RENDER_FLUSH;
@@ -3829,14 +3769,17 @@ gtk_xtext_render_str (GtkXText * xtext, int y, textentry * ent,
 			xtext->dont_render2 = FALSE;
 		}
 
-		if (xtext->hilight_ent == ent && xtext->hilight_end == (i + offset))
+		if (fabulor_xtext_decoration_hover_ends (xtext->decoration, ent,
+			i + offset))
 		{
 			RENDER_FLUSH;
 			pstr += j;
 			j = 0;
 			xtext->underline = FALSE;
-			xtext->in_hilight = FALSE;
-			if (xtext->render_hilights_only)
+			fabulor_xtext_decoration_set_hover_inside (xtext->decoration,
+				FALSE);
+			if (fabulor_xtext_decoration_hover_render_only (
+				xtext->decoration))
 			{
 				/* stop drawing this ent */
 				ret = 0;
@@ -4088,17 +4031,16 @@ gtk_xtext_render_stamp (GtkXText * xtext, textentry * ent,
 								char *text, int len, int line, int win_width)
 {
 	textentry tmp_ent;
-	int jo, ji, hs;
+	int jo, ji;
 	int xsize, y, emphasis;
 
 	/* trashing ent here, so make a backup first */
 	memcpy (&tmp_ent, ent, sizeof (tmp_ent));
 	jo = xtext->jump_out_offset;	/* back these up */
 	ji = xtext->jump_in_offset;
-	hs = xtext->hilight_start;
 	xtext->jump_out_offset = 0;
 	xtext->jump_in_offset = 0;
-	xtext->hilight_start = 0xffff;	/* temp disable */
+	fabulor_xtext_decoration_suspend_hover (xtext->decoration);
 	emphasis = 0;
 
 	if (xtext->mark_stamp)
@@ -4125,7 +4067,7 @@ gtk_xtext_render_stamp (GtkXText * xtext, textentry * ent,
 	memcpy (ent, &tmp_ent, sizeof (tmp_ent));
 	xtext->jump_out_offset = jo;
 	xtext->jump_in_offset = ji;
-	xtext->hilight_start = hs;
+	fabulor_xtext_decoration_resume_hover (xtext->decoration);
 
 	/* with a non-fixed-width font, sometimes we don't draw enough
 		background i.e. when this stamp is shorter than xtext->stamp_width */

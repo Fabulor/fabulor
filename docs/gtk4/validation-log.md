@@ -2880,6 +2880,45 @@ Scope: transcript background source, composition, fallback, frame cache, and
 teardown only. Markers, highlights, hit testing, accessibility, high DPI,
 scrollback performance, and spell-check input remain separate targets.
 
+### PR: #99 - GTK4 Stage 6 Transcript Decorations
+
+Date: 2026-07-17
+
+Migration stage: 6, transcript decorations pass 8
+
+Files/workflows converted: marker-line placement; persistent search-match
+boundary classification; adjacent current-match precedence; transient
+URL/nickname hover ranges; targeted highlight paint/clear state; timestamp
+suspension; decoration teardown
+
+GTK version: 4.22.4
+
+GLib version: 2.88.0
+
+Build configuration: MSVC x64 Release and strict GTK4 probe boundary
+
+Automated checks:
+
+- [x] production GTK3 frontend compiles and links with 0 warnings and 0 errors
+- [x] strict GTK4 probe compiles, links, and executes with 0 warnings and 0 errors
+- [x] marker positions before and after transcript entries pass
+- [x] search start, middle, end, current, and adjacent boundary contracts pass
+- [x] hover range, paint/clear, suspension, and teardown contracts pass
+- [x] GTK4 dependency validator tests remain 8/8
+- [x] repository diff whitespace validation passes
+
+Manual checks:
+
+- [ ] shipping GTK3 marker line position, colour, and seen state remain unchanged
+- [ ] Search current/all highlighting and adjacent matches remain unchanged
+- [ ] URL, nickname, and channel hover underlines clear without residue
+- [ ] timestamp hover and tooltip behavior remain unchanged
+- [ ] GTK4 snapshot decoration output awaits full widget integration
+
+Scope: transcript marker placement, search range classification, and transient
+hover-highlight state only. URL hit testing, accessibility, high DPI,
+scrollback performance, and spell-check input remain separate targets.
+
 ## Per-PR Record Template
 
 Copy this section for each GTK4 PR:

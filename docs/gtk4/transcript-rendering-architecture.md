@@ -1,6 +1,6 @@
 # GTK4 Transcript Rendering Architecture
 
-Status: Stage 6 pass 7 rendering, widget-class, input, selection, frame, and background contracts
+Status: Stage 6 pass 8 rendering, widget-class, input, selection, frame, background, and decoration contracts
 
 ## Purpose
 
@@ -127,6 +127,22 @@ cache exactly once, and limits cache dimensions to 8192 pixels per axis.
 `GtkXText` now asks only whether a source exists and requests region painting;
 it does not retain cache geometry, tile coordinates, or render-cycle state.
 
+## Markers And Highlights
+
+`src/fe-gtk/xtext-decoration.c` owns decoration state and geometry that does
+not belong to IRC text parsing. It calculates the marker line at an entry's
+baseline or after the preceding wrapped entry, and classifies stored search
+ranges as start, middle, end, and current. Adjacent matches preserve the
+existing rule that the next current match takes precedence at their shared
+offset.
+
+The same owner retains the transient pointer-hover entry and byte range. It
+distinguishes painting from clearing, tracks whether the current text run is
+inside the range, and supports temporary suspension while timestamp text is
+rendered. `GtkXText` still applies the established underline, selection
+palette, marker colour, and Cairo line; it no longer stores or coordinates six
+independent hover fields and flags.
+
 ## Ownership Invariants
 
 - An active context may be temporarily replaced and then restored for nested
@@ -148,11 +164,16 @@ it does not retain cache geometry, tile coordinates, or render-cycle state.
   than an unpainted region.
 - A background cache cannot survive its frame or exceed the viewport safety
   bound.
+- Marker placement depends only on entry identity and validated line metrics.
+- Search range classification preserves adjacent-match and current-match
+  precedence.
+- Hover painting, clearing, suspension, and inside-range state belong to one
+  owner and are reset at the end of each targeted render.
 
 ## Planned Passes
 
-1. Validate markers, search highlights, URL hit testing, accessibility, high
-   DPI, and scrollback performance.
+1. Validate URL hit testing, accessibility, high DPI, and scrollback
+   performance.
 
 The spell-check input is a separate Stage 6 boundary and will not share
 transcript rendering ownership.
@@ -183,6 +204,10 @@ The strict GTK4 probe verifies:
 - an absent background source paints the exact palette fallback;
 - a fitted image produces exact centred content and black letterboxing; and
 - source replacement and removal update surface-presence state safely.
+- marker placement before an entry and after its predecessor is deterministic;
+- search ranges classify start, middle, end, current, and adjacent boundaries;
+- hover ranges exclude their ending byte and preserve paint/clear modes; and
+- timestamp suspension and owner cleanup reset decoration state safely.
 
 Manual transcript output and latency checks remain required when the GTK4
 widget class is connected to this boundary.
