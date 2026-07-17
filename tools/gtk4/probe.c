@@ -17,6 +17,7 @@
 #include "../../src/fe-gtk/preferences-category-list.h"
 #include "../../src/fe-gtk/server-network-list.h"
 #include "../../src/fe-gtk/server-entry-list.h"
+#include "../../src/fe-gtk/xtext-background.h"
 #include "../../src/fe-gtk/xtext-geometry.h"
 #include "../../src/fe-gtk/xtext-input.h"
 #include "../../src/fe-gtk/xtext-render-target.h"
@@ -1659,6 +1660,74 @@ check_server_entry_list_model (void)
 }
 
 static gboolean
+check_xtext_background_policy (void)
+{
+	FabulorXTextBackground *background = fabulor_xtext_background_new ();
+	FabulorXTextGeometry geometry = { 4, 4 };
+	XTextColor fallback = { 1.0, 0.0, 0.0, 1.0 };
+	cairo_surface_t *output = cairo_image_surface_create (
+		CAIRO_FORMAT_ARGB32, 4, 4);
+	cairo_surface_t *source = cairo_image_surface_create (
+		CAIRO_FORMAT_ARGB32, 4, 2);
+	cairo_t *context = cairo_create (output);
+	cairo_t *source_context = cairo_create (source);
+	guint32 pixel = 0;
+	gboolean valid = background != NULL &&
+		cairo_surface_status (output) == CAIRO_STATUS_SUCCESS &&
+		cairo_surface_status (source) == CAIRO_STATUS_SUCCESS &&
+		cairo_status (context) == CAIRO_STATUS_SUCCESS &&
+		cairo_status (source_context) == CAIRO_STATUS_SUCCESS &&
+		!fabulor_xtext_background_has_surface (background);
+
+	if (valid)
+	{
+		fabulor_xtext_background_begin_frame (background);
+		fabulor_xtext_background_paint (background, context, &fallback,
+			&geometry, 0, 0, 4, 4, 0, 0);
+		fabulor_xtext_background_end_frame (background);
+		cairo_surface_flush (output);
+		memcpy (&pixel, cairo_image_surface_get_data (output), sizeof pixel);
+		valid = pixel == 0xffff0000U;
+		if (!valid)
+			fprintf (stderr, "fallback pixel: 0x%08x\n", pixel);
+	}
+	if (valid)
+	{
+		cairo_set_source_rgb (source_context, 0.0, 1.0, 0.0);
+		cairo_paint (source_context);
+		cairo_surface_flush (source);
+		cairo_set_operator (context, CAIRO_OPERATOR_CLEAR);
+		cairo_paint (context);
+		cairo_set_operator (context, CAIRO_OPERATOR_OVER);
+		fabulor_xtext_background_set_surface (background, source);
+		valid = fabulor_xtext_background_has_surface (background);
+		fabulor_xtext_background_begin_frame (background);
+		fabulor_xtext_background_paint (background, context, &fallback,
+			&geometry, 0, 0, 4, 4, 0, 0);
+		fabulor_xtext_background_end_frame (background);
+		cairo_surface_flush (output);
+		memcpy (&pixel, cairo_image_surface_get_data (output), sizeof pixel);
+		valid = valid && pixel == 0xff000000U;
+		if (pixel != 0xff000000U)
+			fprintf (stderr, "letterbox pixel: 0x%08x\n", pixel);
+		memcpy (&pixel, cairo_image_surface_get_data (output) +
+			(2 * cairo_image_surface_get_stride (output)), sizeof pixel);
+		valid = valid && pixel == 0xff00ff00U;
+		if (pixel != 0xff00ff00U)
+			fprintf (stderr, "fitted image pixel: 0x%08x\n", pixel);
+		fabulor_xtext_background_set_surface (background, NULL);
+		valid = valid && !fabulor_xtext_background_has_surface (background);
+	}
+
+	cairo_destroy (source_context);
+	cairo_destroy (context);
+	cairo_surface_destroy (source);
+	cairo_surface_destroy (output);
+	fabulor_xtext_background_free (background);
+	return valid;
+}
+
+static gboolean
 check_xtext_geometry (void)
 {
 	FabulorXTextGeometry geometry = { 99, 99 };
@@ -1949,6 +2018,11 @@ main (void)
 	if (!check_xtext_render_target ())
 	{
 		fprintf (stderr, "GTK4 transcript render-target contract mismatch\n");
+		return 1;
+	}
+	if (!check_xtext_background_policy ())
+	{
+		fprintf (stderr, "GTK4 transcript background contract mismatch\n");
 		return 1;
 	}
 	if (!check_xtext_geometry ())

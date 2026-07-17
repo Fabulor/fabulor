@@ -21,6 +21,7 @@
 #define ZOITECHAT_XTEXT_H
 
 #include <gtk/gtk.h>
+#include "xtext-background.h"
 #include "xtext-input.h"
 #include "xtext-render-target.h"
 #include "xtext-selection.h"
@@ -140,16 +141,9 @@ struct _GtkXText
 	GtkAdjustment *hadj;
 	GtkScrollablePolicy hscroll_policy;
 	GtkScrollablePolicy vscroll_policy;
-	cairo_surface_t *background_surface;	/* 0 = use palette[19] */
-	cairo_surface_t *background_clip_surface;
+	FabulorXTextBackground *background;
 	FabulorXTextRenderTarget *render_target;
 	FabulorXTextSelection *selection;
-	int background_clip_x;
-	int background_clip_y;
-	int background_clip_width;
-	int background_clip_height;
-	int background_clip_cycle;
-	int render_cycle;
 	GdkCursor *hand_cursor;
 	GdkCursor *resize_cursor;
 

@@ -2843,6 +2843,43 @@ Scope: transcript frame invalidation, focus, and partial-scroll optimization
 only. Background composition, highlights, hit testing, accessibility, and
 spell-check input remain separate targets.
 
+### PR: #98 - GTK4 Stage 6 Transcript Background Composition
+
+Date: 2026-07-17
+
+Migration stage: 6, transcript background-composition pass 7
+
+Files/workflows converted: background source ownership; aspect-fitted image
+composition; repeated non-image surfaces; frame-local viewport cache; palette
+fallback; source replacement and teardown
+
+GTK version: 4.22.4
+
+GLib version: 2.88.0
+
+Build configuration: MSVC x64 Release and strict GTK4 probe boundary
+
+Automated checks:
+
+- [x] production GTK3 frontend compiles and links with 0 warnings and 0 errors
+- [x] strict GTK4 probe compiles, links, and executes with 0 warnings and 0 errors
+- [x] absent-source palette fallback produces the expected pixels
+- [x] fitted image content and black letterboxing produce the expected pixels
+- [x] source presence, replacement, frame cache, and teardown contracts pass
+- [x] GTK4 dependency validator tests remain 8/8
+- [x] repository diff whitespace validation passes
+
+Manual checks:
+
+- [ ] shipping GTK3 transcript background colour remains unchanged
+- [ ] shipping GTK3 background images preserve fitting, centring, and letterboxing
+- [ ] background updates and repeated non-image surfaces remain unchanged
+- [ ] GTK4 snapshot background output awaits full widget integration
+
+Scope: transcript background source, composition, fallback, frame cache, and
+teardown only. Markers, highlights, hit testing, accessibility, high DPI,
+scrollback performance, and spell-check input remain separate targets.
+
 ## Per-PR Record Template
 
 Copy this section for each GTK4 PR:

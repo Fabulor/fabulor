@@ -995,6 +995,16 @@ expanding partial damage to a widget frame. Native pointer and background
 window helpers are compiled only for GTK3. The strict probe verifies upward,
 downward, unavailable-capture, and full-height scroll cases.
 
+Transcript background-composition pass 7 (2026-07-17): one Cairo-only owner
+now retains the optional background source, builds and clears its frame-local
+viewport cache, contains image fitting with black letterboxing or repeated
+non-image surfaces, and paints the palette fallback when composition is
+unavailable. `GtkXText` no longer stores cache dimensions, tile offsets, or
+render-cycle state. The owner keeps the existing 8192-pixel viewport safety
+bound and releases all referenced Cairo surfaces during replacement and
+teardown. The strict probe verifies exact fallback, letterbox, fitted-image,
+surface-presence, and cleanup behavior without a display.
+
 Primary surfaces:
 
 - `xtext.c` / `xtext.h`
