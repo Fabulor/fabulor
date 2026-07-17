@@ -2622,6 +2622,43 @@ Manual checks:
 Scope: detailed Server List editor model/view ownership and interaction.
 Network connection behavior and configuration persistence remain unchanged.
 
+### PR: #92 - GTK4 Stage 6 Transcript Render Target
+
+Date: 2026-07-17
+
+Migration stage: 6, transcript render-target pass 1
+
+Files/workflows converted: transcript Cairo destination ownership; active
+context exchange; offscreen surface selection; GTK3 window fallback;
+GTK4 snapshot Cairo lifecycle; strict dependency contract
+
+GTK version: 4.22.4
+
+GLib version: 2.88.0
+
+Build configuration: MSVC x64 Release and strict GTK4 probe boundary
+
+Automated checks:
+
+- [x] production GTK3 frontend compiles and links with 0 warnings and 0 errors
+- [x] strict GTK4 probe compiles, links, and executes with 0 warnings and 0 errors
+- [x] empty, offscreen, active-context, restoration, snapshot-node, and cleanup contracts pass
+- [x] `GtkXText` no longer stores raw draw-window, draw-surface, or draw-context fields
+- [x] Cairo and Graphene headers, libraries, and runtime DLLs are explicit validated dependencies
+- [x] GTK4 dependency validator tests remain 8/8
+- [x] repository diff whitespace validation passes
+
+Manual checks:
+
+- [ ] shipping GTK3 transcript preserves text, formatting, colours, backgrounds, timestamps, markers, and search highlights
+- [ ] selection redraw, URL hover, scrolling, resize, new-message display, and shutdown preserve prior behavior
+- [ ] repeated session/window creation leaves no render-target warning or stale context
+- [ ] GTK4 visual, high-DPI, accessibility, scrollback-load, and latency checks await widget-class integration
+
+Scope: transcript rendering-destination ownership only. Geometry, class virtual
+methods, controllers, selection, clipboard behavior, and spell-check input
+remain unchanged.
+
 ## Per-PR Record Template
 
 Copy this section for each GTK4 PR:

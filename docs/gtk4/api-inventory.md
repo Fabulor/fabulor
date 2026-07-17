@@ -483,7 +483,15 @@ Required preserved behaviour:
 - background image/colour and theme updates
 - accessibility exposure and high-DPI rendering
 
-Status: `not started`
+Stage 6 transcript render-target pass 1 replaces the widget's raw draw-window,
+draw-surface, and draw-context fields with one owned destination boundary.
+Existing Cairo/Pango rendering now consumes referenced contexts from that
+owner. GTK3 retains its `GdkWindow` fallback privately, while GTK4 can open and
+close a Cairo context through `GtkSnapshot` and produce a `GskRenderNode`.
+Window geometry, class virtual methods, selection, clipboard ownership, and
+input events remain for following passes.
+
+Status: `in progress`
 
 ### Input: `SexySpellEntry`
 
@@ -510,7 +518,7 @@ Status: `not started`
 | Cluster | Main files | GTK4 concern | Status |
 |---|---|---|---|
 | Main windows and tabs | `maingui.c`, `chanview*.c` | child ownership, gestures, DnD, focus | in progress |
-| Transcript | `xtext.c`, `xtext.h` | snapshot rendering and event model | not started |
+| Transcript | `xtext.c`, `xtext.h`, `xtext-render-target.c` | snapshot rendering and event model | in progress; render destination ownership established |
 | Edit box and spell check | `maingui.c`, `sexy-spell-entry.c` | editable composition/subclass and controllers | not started |
 | Menus and commands | `menu.c`, `plugin-tray.c` | actions and menu models | not started |
 | Operational lists | `servlistgui.c`, `chanlist.c`, `userlistgui.c`, `dccgui.c`, `banlist.c`, `notifygui.c`, `ignoregui.c`, `plugingui.c`, `urlgrab.c` | list models, factories, editing | converted; toolkit-specific models and views are contained by cross-version owners |

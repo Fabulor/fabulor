@@ -17,6 +17,7 @@
 #include "../../src/fe-gtk/preferences-category-list.h"
 #include "../../src/fe-gtk/server-network-list.h"
 #include "../../src/fe-gtk/server-entry-list.h"
+#include "../../src/fe-gtk/xtext-render-target.h"
 #include "../../src/fe-gtk/addon-list.h"
 #include "../../src/fe-gtk/channel-model.h"
 #include "../../src/fe-gtk/channel-tree-view.h"
@@ -1561,6 +1562,75 @@ check_server_entry_list_model (void)
 	return valid;
 }
 
+static gboolean
+check_xtext_render_target (void)
+{
+	FabulorXTextRenderTarget *target = fabulor_xtext_render_target_new ();
+	cairo_surface_t *surface = cairo_image_surface_create (CAIRO_FORMAT_ARGB32,
+		16, 16);
+	cairo_t *surface_context = NULL;
+	cairo_t *copy = NULL;
+	GtkSnapshot *snapshot = NULL;
+	GskRenderNode *node = NULL;
+	gboolean valid = target != NULL &&
+		cairo_surface_status (surface) == CAIRO_STATUS_SUCCESS &&
+		fabulor_xtext_render_target_create_context (target) == NULL &&
+		!fabulor_xtext_render_target_has_active_context (target);
+
+	if (valid)
+	{
+		fabulor_xtext_render_target_set_surface (target, surface);
+		copy = fabulor_xtext_render_target_create_context (target);
+		valid = copy != NULL && cairo_status (copy) == CAIRO_STATUS_SUCCESS;
+		if (copy)
+		{
+			cairo_set_source_rgb (copy, 1.0, 0.0, 0.0);
+			cairo_paint (copy);
+			cairo_destroy (copy);
+		}
+		fabulor_xtext_render_target_set_surface (target, NULL);
+	}
+	if (valid)
+	{
+		surface_context = cairo_create (surface);
+		valid = fabulor_xtext_render_target_exchange_context (target,
+			surface_context) == NULL &&
+			fabulor_xtext_render_target_has_active_context (target);
+		copy = fabulor_xtext_render_target_create_context (target);
+		valid = valid && copy != NULL &&
+			cairo_get_target (copy) == cairo_get_target (surface_context) &&
+			fabulor_xtext_render_target_exchange_context (target, NULL) ==
+				surface_context &&
+			!fabulor_xtext_render_target_has_active_context (target);
+		if (copy)
+			cairo_destroy (copy);
+		cairo_destroy (surface_context);
+	}
+	if (valid)
+	{
+		snapshot = gtk_snapshot_new ();
+		surface_context = fabulor_xtext_render_target_begin_snapshot (target,
+			snapshot, 32, 16);
+		valid = surface_context != NULL &&
+			fabulor_xtext_render_target_has_active_context (target);
+		if (surface_context)
+		{
+			cairo_set_source_rgb (surface_context, 0.0, 1.0, 0.0);
+			cairo_paint (surface_context);
+			fabulor_xtext_render_target_end_snapshot (target, surface_context);
+		}
+		valid = valid &&
+			!fabulor_xtext_render_target_has_active_context (target);
+		node = gtk_snapshot_free_to_node (snapshot);
+		valid = valid && node != NULL;
+		if (node)
+			gsk_render_node_unref (node);
+	}
+	cairo_surface_destroy (surface);
+	fabulor_xtext_render_target_free (target);
+	return valid;
+}
+
 int
 main (void)
 {
@@ -1673,6 +1743,11 @@ main (void)
 	if (!check_server_entry_list_model ())
 	{
 		fprintf (stderr, "GTK4 server-entry list contract mismatch\n");
+		return 1;
+	}
+	if (!check_xtext_render_target ())
+	{
+		fprintf (stderr, "GTK4 transcript render-target contract mismatch\n");
 		return 1;
 	}
 
