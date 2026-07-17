@@ -961,6 +961,17 @@ probe registers a headless GTK4 widget subclass and verifies all five class
 slots, fixed minimum requests, and width-change policy. Controllers, selection,
 clipboard behavior, and performance remain separate passes.
 
+Transcript input-controller pass 4 (2026-07-17): pointer motion and leave,
+single/multiple click press, click release, scrolling, and focus changes now
+connect through shared GTK3 signal or GTK4 controller helpers instead of
+`GtkWidgetClass` event virtual methods. A modifier-aware motion contract
+preserves selection and timestamp behavior. A toolkit-neutral input owner
+classifies character/word/line selection and scroll direction, while
+`FabulorXTextClick` replaces the borrowed `GdkEventButton` in word-click
+dispatch. Coordinate-based popup entry points preserve URL, nickname, channel,
+and context-menu placement. Only GTK3 selection ownership and payload slots
+remain for the next clipboard pass.
+
 Primary surfaces:
 
 - `xtext.c` / `xtext.h`

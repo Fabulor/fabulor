@@ -21,6 +21,7 @@
 #define ZOITECHAT_XTEXT_H
 
 #include <gtk/gtk.h>
+#include "xtext-input.h"
 #include "xtext-render-target.h"
 #include <cairo.h>
 #include "xtext-color.h"
@@ -175,6 +176,9 @@ struct _GtkXText
 	int select_start_y;
 	int select_end_x;
 	int select_end_y;
+	gdouble pointer_x;
+	gdouble pointer_y;
+	GdkModifierType pointer_state;
 
 	int max_lines;
 
@@ -252,6 +256,7 @@ struct _GtkXText
 	unsigned int recycle:1;
 	unsigned int force_render:1;
 	unsigned int color_paste:1; /* CTRL was pressed when selection finished */
+	unsigned int pointer_valid:1;
 
 	/* settings/prefs */
 	unsigned int auto_indent:1;
@@ -265,7 +270,8 @@ struct _GtkXText
 struct _GtkXTextClass
 {
 	GtkWidgetClass parent_class;
-	void (*word_click) (GtkXText * xtext, char *word, GdkEventButton * event);
+	void (*word_click) (GtkXText *xtext, char *word,
+		const FabulorXTextClick *click);
 	void (*set_scroll_adjustments) (GtkXText *xtext, GtkAdjustment *hadj, GtkAdjustment *vadj);
 };
 

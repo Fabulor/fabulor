@@ -507,6 +507,15 @@ resize state, and the contained GTK3 native-window work. Direct event and
 selection slots remain assigned to the following controller and clipboard
 passes.
 
+Stage 6 transcript input-controller pass 4 removes button press/release,
+motion, leave, and scroll event slots from `GtkXTextClass`. GTK3 signals and
+GTK4 motion, gesture-click, scroll, and focus controllers feed normalized
+coordinates, modifiers, click counts, and deltas into the existing selection,
+separator, URL-hover, tooltip, and scrolling logic. `FabulorXTextClick`
+replaces raw `GdkEventButton` word-click payloads, and coordinate-based menu
+entry points preserve popup behavior. The only remaining direct transcript
+event slots are GTK3 selection ownership and selection payload delivery.
+
 Status: `in progress`
 
 ### Input: `SexySpellEntry`

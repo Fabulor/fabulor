@@ -3656,7 +3656,8 @@ mg_word_check (GtkWidget * xtext, char *word)
 /* mouse click inside text area */
 
 static void
-mg_word_clicked (GtkWidget *xtext, char *word, GdkEventButton *even)
+mg_word_clicked (GtkWidget *xtext, char *word,
+                 const FabulorXTextClick *click)
 {
         session *sess = current_sess;
         int word_type = 0, start, end;
@@ -3668,7 +3669,7 @@ mg_word_clicked (GtkWidget *xtext, char *word, GdkEventButton *even)
                 url_last (&start, &end);
         }
 
-        if (even->button == 1)                  /* left button */
+        if (click->button == 1)                  /* left button */
         {
                 if (word == NULL)
                 {
@@ -3676,7 +3677,7 @@ mg_word_clicked (GtkWidget *xtext, char *word, GdkEventButton *even)
                         return;
                 }
 
-                if ((even->state & 13) == prefs.hex_gui_url_mod)
+                if ((click->state & 13) == prefs.hex_gui_url_mod)
                 {
                         switch (word_type)
                         {
@@ -3690,11 +3691,12 @@ mg_word_clicked (GtkWidget *xtext, char *word, GdkEventButton *even)
                 return;
         }
 
-        if (even->button == 2)
+        if (click->button == 2)
         {
                 if (sess->type == SESS_DIALOG)
-                        menu_middlemenu (sess, even);
-                else if (even->type == GDK_2BUTTON_PRESS)
+                        menu_middlemenu_at (sess, xtext, click->x, click->y,
+                                            click->state);
+                else if (click->n_press == 2)
                         userlist_select (sess, word);
                 return;
         }
@@ -3705,34 +3707,38 @@ mg_word_clicked (GtkWidget *xtext, char *word, GdkEventButton *even)
         {
         case 0:
         case WORD_PATH:
-                menu_middlemenu (sess, even);
+                menu_middlemenu_at (sess, xtext, click->x, click->y,
+                                    click->state);
                 break;
         case WORD_URL:
         case WORD_HOST6:
         case WORD_HOST:
                 word[end] = 0;
                 word += start;
-                menu_urlmenu (even, word);
+                menu_urlmenu_at (xtext, click->x, click->y, click->state, word);
                 break;
         case WORD_NICK:
                 word[end] = 0;
                 word += start;
-                menu_nickmenu (sess, even, word, FALSE);
+                menu_nickmenu_at (sess, xtext, click->x, click->y,
+                                  click->state, word, FALSE);
                 break;
         case WORD_CHANNEL:
                 word[end] = 0;
                 word += start;
-                menu_chanmenu (sess, even, word);
+                menu_chanmenu_at (sess, xtext, click->x, click->y,
+                                  click->state, word);
                 break;
         case WORD_EMAIL:
                 word[end] = 0;
                 word += start;
                 tmp = g_strdup_printf ("mailto:%s", word + (ispunct (*word) ? 1 : 0));
-                menu_urlmenu (even, tmp);
+                menu_urlmenu_at (xtext, click->x, click->y, click->state, tmp);
                 g_free (tmp);
                 break;
         case WORD_DIALOG:
-                menu_nickmenu (sess, even, sess->channel, FALSE);
+                menu_nickmenu_at (sess, xtext, click->x, click->y,
+                                  click->state, sess->channel, FALSE);
                 break;
         }
 }
