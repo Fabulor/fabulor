@@ -17,6 +17,7 @@
 #include "../../src/fe-gtk/preferences-category-list.h"
 #include "../../src/fe-gtk/server-network-list.h"
 #include "../../src/fe-gtk/server-entry-list.h"
+#include "../../src/fe-gtk/spell-entry-words.h"
 #include "../../src/fe-gtk/xtext-background.h"
 #include "../../src/fe-gtk/xtext-accessible.h"
 #include "../../src/fe-gtk/xtext-decoration.h"
@@ -1911,6 +1912,37 @@ check_xtext_scroll_copy_policy (void)
 }
 
 static gboolean
+check_spell_entry_word_policy (void)
+{
+	FabulorSpellWords *words = fabulor_spell_words_new (
+		"alpha caf\303\251 omega", pango_language_from_string ("en"));
+	FabulorSpellWordRange range;
+	gchar *word;
+	gboolean valid;
+
+	valid = fabulor_spell_words_count (words) == 3 &&
+		fabulor_spell_words_get (words, 1, &range) &&
+		range.byte_start == 6 && range.byte_end == 11 &&
+		range.character_start == 6 && range.character_end == 10 &&
+		fabulor_spell_words_find_character (words, 8, &range) &&
+		range.byte_start == 6 && range.byte_end == 11 &&
+		fabulor_spell_words_find_character (words, 10, &range) &&
+		range.character_start == 6 && range.character_end == 10;
+	word = fabulor_spell_words_dup_word (words, 1);
+	valid = valid && g_strcmp0 (word, "caf\303\251") == 0;
+	g_free (word);
+	fabulor_spell_words_free (words);
+
+	words = fabulor_spell_words_new (NULL, NULL);
+	valid = valid && fabulor_spell_words_count (words) == 0 &&
+		!fabulor_spell_words_get (words, 0, &range) &&
+		!fabulor_spell_words_find_character (words, 0, &range) &&
+		fabulor_spell_words_dup_word (words, 0) == NULL;
+	fabulor_spell_words_free (words);
+	return valid;
+}
+
+static gboolean
 check_xtext_performance_policy (void)
 {
 	const guint iterations = 1000000;
@@ -2344,6 +2376,11 @@ main (void)
 	if (!check_xtext_scroll_copy_policy ())
 	{
 		fprintf (stderr, "GTK4 transcript scroll-copy policy mismatch\n");
+		return 1;
+	}
+	if (!check_spell_entry_word_policy ())
+	{
+		fprintf (stderr, "GTK4 spell-entry word policy mismatch\n");
 		return 1;
 	}
 	if (!check_xtext_performance_policy ())

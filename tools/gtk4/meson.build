@@ -51,6 +51,7 @@ glib_library = cc.find_library('glib-2.0', dirs: gtk4_library_dir, required: tru
 probe = executable(
   'fabulor-gtk4-probe',
   'probe.c',
+  '../../src/fe-gtk/spell-entry-words.c',
   '../../src/fe-gtk/addon-list.c',
   '../../src/fe-gtk/ban-list.c',
   '../../src/fe-gtk/channel-list.c',

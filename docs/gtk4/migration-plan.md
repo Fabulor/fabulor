@@ -1052,6 +1052,23 @@ GTK3 keeps its existing ATK role/name. Production screen-reader behavior,
 read-only selection/geometry limitations, and scrollback performance remain
 explicit validation targets.
 
+Transcript performance pass 12 (2026-07-17): append refresh policy now keeps
+bottom-of-buffer local echo immediate, coalesces historical-view bursts, and
+prevents append-owned trimming from scheduling a separate delayed redraw.
+Wrapped-line limiting removes complete oldest entries until the configured
+bound is met while preserving a sole oversized newest entry. Deterministic
+policy outcomes are gating; elapsed probe timing is informational.
+
+Spell-input word-boundary pass 1 (2026-07-17): `spell-entry-words.c` now owns
+Pango segmentation and paired UTF-8 byte and character ranges. Spell checks
+and Pango attributes use bytes; `GtkEditable` dictionary, ignore, and
+replacement actions use characters. This corrects non-ASCII targeting and
+replaces three parallel arrays plus repeated cleanup blocks with one owner.
+The strict GTK4 probe covers `café`, cursor lookup, duplication, and empty
+input. Class lifecycle, formatting attributes, menus, and production Enchant
+validation remain separate passes. The detailed contract is in
+[`spell-input-architecture.md`](spell-input-architecture.md).
+
 Primary surfaces:
 
 - `xtext.c` / `xtext.h`

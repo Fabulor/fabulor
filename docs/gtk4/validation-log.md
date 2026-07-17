@@ -3085,6 +3085,47 @@ Scope: transcript append refresh and wrapped-line retention policy only. Full
 renderer throughput, input latency, visual smoothness, screen-reader behavior,
 and spell-check input remain production validation or separate Stage 6 targets.
 
+### PR: #104 - GTK4 Stage 6 Spell-Input Word Boundary
+
+Date: 2026-07-17
+
+Migration stage: 6, spell-input word-boundary pass 1
+
+Files/workflows converted: Pango word segmentation ownership; paired UTF-8 byte
+and character ranges; popup cursor lookup; add-to-dictionary and session-ignore
+selection; replacement mutation; underline checks; language/preference refresh;
+single-owner cleanup
+
+GTK version: 4.22.4
+
+GLib version: 2.88.0
+
+Build configuration: MSVC x64 Release and strict GTK4 probe boundary
+
+Automated checks:
+
+- [x] production GTK3 frontend compiles and links with 0 warnings and 0 errors
+- [x] strict GTK4 probe compiles, links, and executes with 0 warnings and 0 errors
+- [x] ASCII and multibyte word order remains deterministic
+- [x] `café` byte range is 6-11 and character range is 6-10
+- [x] cursor lookup inside and at the word end returns the same range
+- [x] empty owners reject invalid access without exposing storage
+- [x] UTF-8 word duplication returns the exact source word
+- [x] GTK4 dependency validator tests remain 8/8
+- [x] repository diff whitespace validation passes
+
+Manual checks:
+
+- [ ] shipping GTK3 misspelling underlines and suggestions remain unchanged
+- [ ] add to personal dictionary remains persistent after restart
+- [ ] Ignore All remains session-scoped
+- [ ] accented-word replacement targets only the selected word
+- [ ] URL exclusion, IRC formatting, emoji insertion, and edit-box latency remain unchanged
+
+Scope: spell-input word segmentation, coordinate ownership, and refresh lifetime
+only. GTK4 subclass lifecycle, editable delegation, formatting attributes,
+dynamic menus, and complete production input validation remain separate passes.
+
 ## Per-PR Record Template
 
 Copy this section for each GTK4 PR:
