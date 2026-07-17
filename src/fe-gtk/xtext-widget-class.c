@@ -188,6 +188,20 @@ xtext_widget_draw (GtkWidget *widget, cairo_t *context)
 #endif
 
 void
+fabulor_xtext_widget_accessibility_init (GtkWidget *widget,
+	const gchar *label)
+{
+	g_return_if_fail (GTK_IS_WIDGET (widget));
+	g_return_if_fail (label != NULL && *label != '\0');
+#if GTK_MAJOR_VERSION >= 4
+	gtk_accessible_update_property (GTK_ACCESSIBLE (widget),
+		GTK_ACCESSIBLE_PROPERTY_LABEL, label, -1);
+#else
+	atk_object_set_name (gtk_widget_get_accessible (widget), label);
+#endif
+}
+
+void
 fabulor_xtext_widget_class_install (GtkWidgetClass *widget_class,
 	const FabulorXTextWidgetCallbacks *callbacks)
 {
@@ -203,9 +217,12 @@ fabulor_xtext_widget_class_install (GtkWidgetClass *widget_class,
 	widget_class->unrealize = xtext_widget_unrealize;
 	widget_class->size_allocate = xtext_widget_size_allocate;
 #if GTK_MAJOR_VERSION >= 4
+	gtk_widget_class_set_accessible_role (widget_class,
+		GTK_ACCESSIBLE_ROLE_LOG);
 	widget_class->measure = xtext_widget_measure;
 	widget_class->snapshot = xtext_widget_snapshot;
 #else
+	gtk_widget_class_set_accessible_role (widget_class, ATK_ROLE_LOG);
 	widget_class->draw = xtext_widget_draw;
 	widget_class->get_preferred_width = xtext_widget_get_preferred_width;
 	widget_class->get_preferred_height = xtext_widget_get_preferred_height;

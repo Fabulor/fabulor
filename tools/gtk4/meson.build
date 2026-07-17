@@ -65,6 +65,7 @@ probe = executable(
   '../../src/fe-gtk/server-entry-list.c',
   '../../src/fe-gtk/xtext-background.c',
   '../../src/fe-gtk/xtext-decoration.c',
+  '../../src/fe-gtk/xtext-display.c',
   '../../src/fe-gtk/xtext-geometry.c',
   '../../src/fe-gtk/xtext-hit-test.c',
   '../../src/fe-gtk/xtext-input.c',

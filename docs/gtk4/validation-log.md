@@ -2959,6 +2959,45 @@ Scope: transcript line, separator, formatted-match, and word-click hit testing
 only. Accessibility, high DPI, scrollback performance, and spell-check input
 remain separate targets.
 
+### PR: #101 - GTK4 Stage 6 Transcript Accessibility And Display Scale
+
+Date: 2026-07-17
+
+Migration stage: 6, transcript accessibility and display-scale pass 10
+
+Files/workflows converted: cross-version transcript role and label; Pango font
+metric conversion; strike and underline coordinates; inline flag logical and
+device sizing; scale-aware pixbuf caching and Cairo painting
+
+GTK version: 4.22.4
+
+GLib version: 2.88.0
+
+Build configuration: MSVC x64 Release and strict GTK4 probe boundary
+
+Automated checks:
+
+- [x] production GTK3 frontend compiles and links with 0 warnings and 0 errors
+- [x] strict GTK4 probe compiles, links, and executes with 0 warnings and 0 errors
+- [x] Pango metric rounding and decoration coordinate contracts pass
+- [x] inline flag bounds and 1x/2x/3x scale contracts pass
+- [x] invalid scale and device-to-logical conversion contracts pass
+- [x] GTK4 transcript widget exposes the log accessibility role
+- [x] GTK4 dependency validator tests remain 8/8
+- [x] repository diff whitespace validation passes
+
+Manual checks:
+
+- [ ] GTK3 transcript text, wrapping, underline, and strikethrough remain unchanged
+- [ ] flags remain aligned and sharp at 100%, 150%, and 200% display scaling
+- [ ] GTK3 and GTK4 accessibility tools report a labelled transcript log
+- [ ] full GTK4 accessible scrollback text awaits its dedicated integration pass
+- [ ] scrollback-load and latency checks remain a separate target
+
+Scope: transcript role/name semantics and toolkit-neutral display calculations
+only. Accessible text exposure, production GTK4 visual checks, scrollback
+performance, and spell-check input remain separate targets.
+
 ## Per-PR Record Template
 
 Copy this section for each GTK4 PR:

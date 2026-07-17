@@ -23,6 +23,7 @@
 #include <gtk/gtk.h>
 #include "xtext-background.h"
 #include "xtext-decoration.h"
+#include "xtext-display.h"
 #include "xtext-hit-test.h"
 #include "xtext-input.h"
 #include "xtext-render-target.h"

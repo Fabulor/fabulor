@@ -1,6 +1,6 @@
 # GTK4 Transcript Rendering Architecture
 
-Status: Stage 6 pass 9 rendering, widget-class, input, selection, frame, background, decoration, and hit-test contracts
+Status: Stage 6 pass 10 rendering, widget-class, input, selection, frame, background, decoration, hit-test, accessibility, and display-scale contracts
 
 ## Purpose
 
@@ -159,6 +159,21 @@ through global last-match state nor writes a terminator into that buffer.
 Plain-word middle menus, dialog nickname menus, selection, timestamp regions,
 wrapped lines, and empty clicks retain their existing behavior.
 
+## Accessibility And Display Scale
+
+The widget-class adapter assigns `GtkXText` the toolkit's log role, and widget
+initialization supplies the stable localized label `Transcript`. This is the
+cross-version semantic baseline for the custom scrollback control; it does not
+claim that every rendered line is exposed as accessible text yet.
+
+`src/fe-gtk/xtext-display.c` owns toolkit-neutral display calculations. Pango
+ascent, descent, and line-height conversion preserve the existing integer
+rounding and post-1.44 line-gap behavior. Strike and underline positions retain
+their established logical coordinates. Inline flag images retain their 14 to
+64 logical-pixel height bounds and 4:3 layout width, but are loaded at the
+widget's device scale and painted back into logical coordinates. Cache keys
+include scale so a monitor-scale change cannot reuse a lower-resolution image.
+
 ## Ownership Invariants
 
 - An active context may be temporarily replaced and then restored for nested
@@ -191,10 +206,17 @@ wrapped lines, and empty clicks retain their existing behavior.
   scratch buffer.
 - IRC formatting offset adjustment is bounded before entry offsets are
   updated.
+- Transcript layout, hit testing, and decoration placement use logical pixels.
+- Inline flags load at device resolution without changing their logical width.
+- Invalid scale factors normalize to one and overflowed image dimensions are
+  rejected.
+- The transcript exposes a log role and stable label on GTK3 and GTK4.
 
 ## Planned Passes
 
-1. Validate accessibility, high DPI, and scrollback performance.
+1. Expose accessible scrollback text and validate it with production GTK4
+   screen readers.
+2. Validate scrollback performance and latency at production scale.
 
 The spell-check input is a separate Stage 6 boundary and will not share
 transcript rendering ownership.
@@ -235,6 +257,11 @@ The strict GTK4 probe verifies:
 - formatting runs translate stripped match offsets back to entry offsets; and
 - invalid ranges are rejected while valid matched substrings are duplicated
   without modifying their source word.
+- Pango metric rounding and decoration coordinates preserve their established
+  logical positions;
+- inline flag sizing preserves logical layout at 1x, 2x, and 3x device scales;
+- invalid scale and pixel conversions are normalized or rejected safely; and
+- the GTK4 widget subclass exposes the log accessibility role.
 
 Manual transcript output and latency checks remain required when the GTK4
 widget class is connected to this boundary.

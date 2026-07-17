@@ -560,6 +560,15 @@ consumer duplicates that range for URL, host, nickname, channel, and email
 actions rather than re-running classification, depending on global
 `url_last()` state, or writing a terminator into the transcript scratch buffer.
 
+Stage 6 transcript accessibility and display-scale pass 10 assigns the custom
+widget a cross-version log role and stable `Transcript` accessible label.
+`xtext-display.c` now owns the established Pango metric rounding, decoration
+coordinates, inline-image bounds, scale normalization, and device-to-logical
+conversion. Flag bitmaps load at widget scale for sharp output while wrapping,
+hit testing, and cursor placement retain logical dimensions. Full accessible
+scrollback text exposure and production GTK4 screen-reader validation remain
+separate from this role-and-name baseline.
+
 Status: `in progress`
 
 ### Input: `SexySpellEntry`
