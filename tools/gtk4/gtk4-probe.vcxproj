@@ -67,6 +67,7 @@
 	<ClCompile Include="..\..\src\fe-gtk\server-entry-list.c" />
 	<ClCompile Include="..\..\src\fe-gtk\xtext-background.c" />
 	<ClCompile Include="..\..\src\fe-gtk\xtext-decoration.c" />
+	<ClCompile Include="..\..\src\fe-gtk\xtext-display.c" />
 	<ClCompile Include="..\..\src\fe-gtk\xtext-geometry.c" />
 	<ClCompile Include="..\..\src\fe-gtk\xtext-hit-test.c" />
 	<ClCompile Include="..\..\src\fe-gtk\xtext-input.c" />

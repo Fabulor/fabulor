@@ -392,19 +392,6 @@ xtext_emoji_flag_code_at (const char *str, int len, char code[3], int *bytes)
 	return TRUE;
 }
 
-static int
-xtext_emoji_flag_height (GtkXText *xtext)
-{
-	int height = xtext->fontsize - 2;
-
-	if (height < 14)
-		height = 14;
-	if (height > 64)
-		height = 64;
-
-	return height;
-}
-
 static GdkPixbuf *
 xtext_emoji_flag_load_pixbuf (GtkXText *xtext, const char *code)
 {
@@ -412,11 +399,14 @@ xtext_emoji_flag_load_pixbuf (GtkXText *xtext, const char *code)
 	GError *error = NULL;
 	char *name;
 	char *path;
-	int height;
-	int width;
+	int device_height;
+	int device_width;
+	int scale_factor = fabulor_xtext_scale_factor (
+		gtk_widget_get_scale_factor (GTK_WIDGET (xtext)));
 
-	height = xtext_emoji_flag_height (xtext);
-	width = (height * 4) / 3;
+	if (!fabulor_xtext_inline_image_size (xtext->fontsize, scale_factor,
+		NULL, NULL, &device_width, &device_height))
+		return NULL;
 	name = g_strdup_printf ("%s.png", code);
 
 #ifdef G_OS_WIN32
@@ -425,7 +415,8 @@ xtext_emoji_flag_load_pixbuf (GtkXText *xtext, const char *code)
 		if (base_path)
 		{
 			path = g_build_filename (base_path, "share", "emoji-flags", name, NULL);
-			pixbuf = gdk_pixbuf_new_from_file_at_scale (path, width, height, TRUE, &error);
+			pixbuf = gdk_pixbuf_new_from_file_at_scale (path, device_width,
+				device_height, TRUE, &error);
 			g_clear_error (&error);
 			g_free (path);
 			g_free (base_path);
@@ -436,7 +427,8 @@ xtext_emoji_flag_load_pixbuf (GtkXText *xtext, const char *code)
 	if (!pixbuf)
 	{
 		path = g_build_filename ("share", "emoji-flags", name, NULL);
-		pixbuf = gdk_pixbuf_new_from_file_at_scale (path, width, height, TRUE, &error);
+		pixbuf = gdk_pixbuf_new_from_file_at_scale (path, device_width,
+			device_height, TRUE, &error);
 		g_clear_error (&error);
 		g_free (path);
 	}
@@ -450,11 +442,17 @@ xtext_emoji_flag_get_pixbuf (GtkXText *xtext, const char *code)
 {
 	GdkPixbuf *pixbuf;
 	char *key;
+	int logical_height;
+	int scale_factor = fabulor_xtext_scale_factor (
+		gtk_widget_get_scale_factor (GTK_WIDGET (xtext)));
 
 	if (xtext_flag_pixbuf_cache == NULL)
 		xtext_flag_pixbuf_cache = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, g_object_unref);
 
-	key = g_strdup_printf ("%s:%d", code, xtext_emoji_flag_height (xtext));
+	if (!fabulor_xtext_inline_image_size (xtext->fontsize, scale_factor,
+		NULL, &logical_height, NULL, NULL))
+		return NULL;
+	key = g_strdup_printf ("%s:%d:%d", code, logical_height, scale_factor);
 	pixbuf = g_hash_table_lookup (xtext_flag_pixbuf_cache, key);
 	if (pixbuf)
 	{
@@ -486,9 +484,16 @@ xtext_emoji_flag_at (GtkXText *xtext, const char *str, int len, int *bytes, GdkP
 }
 
 static int
-xtext_emoji_flag_width (GdkPixbuf *pixbuf)
+xtext_emoji_flag_width (GtkXText *xtext, GdkPixbuf *pixbuf)
 {
-	return gdk_pixbuf_get_width (pixbuf) + 2;
+	int logical_width;
+	int scale_factor = fabulor_xtext_scale_factor (
+		gtk_widget_get_scale_factor (GTK_WIDGET (xtext)));
+
+	if (!fabulor_xtext_device_to_logical (gdk_pixbuf_get_width (pixbuf),
+		scale_factor, &logical_width))
+		return 0;
+	return logical_width + 2;
 }
 
 static PangoAttribute *
@@ -597,6 +602,8 @@ backend_font_open (GtkXText *xtext, char *name)
 	PangoLanguage *lang;
 	PangoContext *context;
 	PangoFontMetrics *metrics;
+	FabulorXTextFontMetrics logical_metrics;
+	gint pango_height = -1;
 
 	xtext->font = &xtext->pango_font;
 	xtext->font->font = backend_font_open_real (name);
@@ -614,22 +621,23 @@ backend_font_open (GtkXText *xtext, char *name)
 	context = gtk_widget_get_pango_context (GTK_WIDGET (xtext));
 	lang = pango_context_get_language (context);
 	metrics = pango_context_get_metrics (context, xtext->font->font, lang);
-	xtext->font->ascent = pango_font_metrics_get_ascent (metrics) / PANGO_SCALE;
-	xtext->font->descent = pango_font_metrics_get_descent (metrics) / PANGO_SCALE;
-
 	/*
 	 * In later versions of pango, a font's height should be calculated like
 	 * this to account for line gap; a typical symptom of not doing so is
 	 * cutting off the underscore on some fonts.
 	 */
 #if PANGO_VERSION_CHECK(1, 44, 0)
-	xtext->fontsize = pango_font_metrics_get_height (metrics) / PANGO_SCALE + 1;
-
-	if (xtext->fontsize == 0)
-		xtext->fontsize = xtext->font->ascent + xtext->font->descent;
-#else
-	xtext->fontsize = xtext->font->ascent + xtext->font->descent;
+	pango_height = pango_font_metrics_get_height (metrics);
 #endif
+	if (fabulor_xtext_font_metrics_init (
+		pango_font_metrics_get_ascent (metrics),
+		pango_font_metrics_get_descent (metrics), pango_height, PANGO_SCALE,
+		FALSE, &logical_metrics))
+	{
+		xtext->font->ascent = logical_metrics.ascent;
+		xtext->font->descent = logical_metrics.descent;
+		xtext->fontsize = logical_metrics.line_height;
+	}
 
 	pango_font_metrics_unref (metrics);
 }
@@ -657,7 +665,7 @@ backend_get_text_width_emph (GtkXText *xtext, guchar *str, int len, int emphasis
 
 		if (xtext_emoji_flag_at (xtext, (const char *) str, len, &flag_len, &pixbuf))
 		{
-			width += xtext_emoji_flag_width (pixbuf);
+			width += xtext_emoji_flag_width (xtext, pixbuf);
 			str += flag_len;
 			len -= flag_len;
 			continue;
@@ -735,6 +743,11 @@ backend_draw_text_emph (GtkXText *xtext, gboolean dofill, int x, int y,
 
 		if (xtext_emoji_flag_at (xtext, p, remaining, &flag_len, &pixbuf))
 		{
+			int image_height;
+			int image_y;
+			int scale_factor = fabulor_xtext_scale_factor (
+				gtk_widget_get_scale_factor (GTK_WIDGET (xtext)));
+
 			if (segment_len > 0)
 			{
 				PangoLayoutLine *line;
@@ -748,10 +761,18 @@ backend_draw_text_emph (GtkXText *xtext, gboolean dofill, int x, int y,
 				draw_x += segment_width;
 			}
 
-			gdk_cairo_set_source_pixbuf (cr, pixbuf, draw_x,
-				y - xtext->font->ascent + ((xtext->fontsize - gdk_pixbuf_get_height (pixbuf)) / 2));
+			if (!fabulor_xtext_device_to_logical (
+				gdk_pixbuf_get_height (pixbuf), scale_factor, &image_height))
+				image_height = 0;
+			image_y = y - xtext->font->ascent +
+				((xtext->fontsize - image_height) / 2);
+			cairo_save (cr);
+			cairo_translate (cr, draw_x, image_y);
+			cairo_scale (cr, 1.0 / scale_factor, 1.0 / scale_factor);
+			gdk_cairo_set_source_pixbuf (cr, pixbuf, 0, 0);
 			cairo_paint (cr);
-			draw_x += xtext_emoji_flag_width (pixbuf);
+			cairo_restore (cr);
+			draw_x += xtext_emoji_flag_width (xtext, pixbuf);
 			xtext_set_source_color (cr, &xtext->fgc, 1.0);
 
 			p += flag_len;
@@ -816,6 +837,8 @@ gtk_xtext_style_updated (GtkWidget *widget, gpointer user_data)
 static void
 gtk_xtext_init (GtkXText * xtext)
 {
+	fabulor_xtext_widget_accessibility_init (GTK_WIDGET (xtext),
+		_("Transcript"));
 	xtext->background = fabulor_xtext_background_new ();
 	xtext->decoration = fabulor_xtext_decoration_new ();
 	xtext->render_target = fabulor_xtext_render_target_new ();
@@ -1461,7 +1484,7 @@ find_x (GtkXText *xtext, textentry *ent, int x, int subline, int indent)
 	{
 		GdkPixbuf *pixbuf;
 		if (xtext_emoji_flag_at (xtext, (const char *) ent->str + off, len, &mbl, &pixbuf))
-			mbw = xtext_emoji_flag_width (pixbuf);
+			mbw = xtext_emoji_flag_width (xtext, pixbuf);
 		else
 		{
 			mbl = charlen (ent->str + off);
@@ -3339,7 +3362,10 @@ gtk_xtext_render_flush (GtkXText * xtext, int x, int y, unsigned char *str,
 	if (xtext->strikethrough)
 	{
 		cairo_t *cr;
-		int strike_y = y - xtext->font->ascent + (xtext->fontsize / 2);
+		int strike_y;
+
+		fabulor_xtext_decoration_positions (y, xtext->font->ascent,
+			xtext->fontsize, &strike_y, NULL);
 
 		cr = xtext_create_context (xtext);
 		xtext_draw_line (xtext, cr, &xtext->fgc, x, strike_y, x + str_width - 1, strike_y);
@@ -3351,7 +3377,10 @@ gtk_xtext_render_flush (GtkXText * xtext, int x, int y, unsigned char *str,
 dounder:
 	{
 		cairo_t *cr;
-		int underline_y = y + 1;
+		int underline_y;
+
+		fabulor_xtext_decoration_positions (y, xtext->font->ascent,
+			xtext->fontsize, NULL, &underline_y);
 
 		cr = xtext_create_context (xtext);
 		xtext_draw_line (xtext, cr, &xtext->fgc, x, underline_y, x + str_width - 1, underline_y);
@@ -3930,7 +3959,7 @@ find_next_wrap (GtkXText * xtext, textentry * ent, unsigned char *str,
 					if (xtext_emoji_flag_at (xtext, (const char *) str,
 					                         ent->str + ent->str_len - str,
 					                         &mbl, &pixbuf))
-						char_width = xtext_emoji_flag_width (pixbuf);
+						char_width = xtext_emoji_flag_width (xtext, pixbuf);
 					else
 					{
 						mbl = charlen (str);

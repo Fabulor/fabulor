@@ -43,6 +43,8 @@ gboolean fabulor_xtext_widget_width_changed (gint previous_width,
 	gint width);
 void fabulor_xtext_widget_class_install (GtkWidgetClass *widget_class,
 	const FabulorXTextWidgetCallbacks *callbacks);
+void fabulor_xtext_widget_accessibility_init (GtkWidget *widget,
+	const gchar *label);
 
 G_END_DECLS
 

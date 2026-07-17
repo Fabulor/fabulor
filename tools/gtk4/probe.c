@@ -19,6 +19,7 @@
 #include "../../src/fe-gtk/server-entry-list.h"
 #include "../../src/fe-gtk/xtext-background.h"
 #include "../../src/fe-gtk/xtext-decoration.h"
+#include "../../src/fe-gtk/xtext-display.h"
 #include "../../src/fe-gtk/xtext-geometry.h"
 #include "../../src/fe-gtk/xtext-hit-test.h"
 #include "../../src/fe-gtk/xtext-input.h"
@@ -1906,6 +1907,53 @@ check_xtext_scroll_copy_policy (void)
 }
 
 static gboolean
+check_xtext_display_policy (void)
+{
+	FabulorXTextFontMetrics metrics;
+	gint logical_width;
+	gint logical_height;
+	gint device_width;
+	gint device_height;
+	gint logical_pixels;
+	gint strike_y;
+	gint underline_y;
+
+	if (!fabulor_xtext_font_metrics_init (10 * 1024 + 511,
+		3 * 1024 + 999, 14 * 1024 + 500, 1024, FALSE, &metrics) ||
+		metrics.ascent != 10 || metrics.descent != 3 ||
+		metrics.line_height != 15)
+		return FALSE;
+	if (!fabulor_xtext_font_metrics_init (10 * 1024 + 511,
+		3 * 1024 + 999, 14 * 1024 + 500, 1024, TRUE, &metrics) ||
+		metrics.line_height != 13 ||
+		fabulor_xtext_font_metrics_init (-1, 0, 0, 1024, FALSE, &metrics))
+		return FALSE;
+	if (!fabulor_xtext_inline_image_size (20, 2, &logical_width,
+		&logical_height, &device_width, &device_height) ||
+		logical_width != 24 || logical_height != 18 ||
+		device_width != 48 || device_height != 36)
+		return FALSE;
+	if (!fabulor_xtext_inline_image_size (10, 1, &logical_width,
+		&logical_height, NULL, NULL) || logical_width != 18 ||
+		logical_height != 14)
+		return FALSE;
+	if (!fabulor_xtext_inline_image_size (100, 3, &logical_width,
+		&logical_height, &device_width, &device_height) ||
+		logical_width != 85 || logical_height != 64 ||
+		device_width != 255 || device_height != 192)
+		return FALSE;
+	if (!fabulor_xtext_device_to_logical (49, 2, &logical_pixels) ||
+		logical_pixels != 25 ||
+		fabulor_xtext_device_to_logical (-1, 2, &logical_pixels) ||
+		fabulor_xtext_scale_factor (0) != 1 ||
+		fabulor_xtext_scale_factor (3) != 3)
+		return FALSE;
+	fabulor_xtext_decoration_positions (20, 12, 16, &strike_y,
+		&underline_y);
+	return strike_y == 16 && underline_y == 21;
+}
+
+static gboolean
 check_xtext_widget_class_policy (void)
 {
 	GtkWidgetClass *widget_class = g_type_class_ref (
@@ -1917,7 +1965,9 @@ check_xtext_widget_class_policy (void)
 
 	if (!widget_class->realize || !widget_class->unrealize ||
 		!widget_class->size_allocate || !widget_class->measure ||
-		!widget_class->snapshot)
+		!widget_class->snapshot ||
+		gtk_widget_class_get_accessible_role (widget_class) !=
+		GTK_ACCESSIBLE_ROLE_LOG)
 	{
 		g_type_class_unref (widget_class);
 		return FALSE;
@@ -1934,7 +1984,10 @@ check_xtext_widget_class_policy (void)
 		&natural, &minimum_baseline, &natural_baseline);
 	if (minimum != 200 || natural != 200 || minimum_baseline != -1 ||
 		natural_baseline != -1)
+	{
+		g_type_class_unref (widget_class);
 		return FALSE;
+	}
 	fabulor_xtext_widget_measure (GTK_ORIENTATION_VERTICAL, &minimum,
 		&natural, &minimum_baseline, &natural_baseline);
 	g_type_class_unref (widget_class);
@@ -2165,6 +2218,11 @@ main (void)
 	if (!check_xtext_scroll_copy_policy ())
 	{
 		fprintf (stderr, "GTK4 transcript scroll-copy policy mismatch\n");
+		return 1;
+	}
+	if (!check_xtext_display_policy ())
+	{
+		fprintf (stderr, "GTK4 transcript display policy mismatch\n");
 		return 1;
 	}
 	if (!check_xtext_widget_class_policy ())

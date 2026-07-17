@@ -302,6 +302,7 @@ Detailed planning and evidence live in:
   - [x] Move transcript background source, fitted or tiled composition, frame cache, palette fallback, and teardown into a tested Cairo-only owner.
   - [x] Move transcript marker placement, search-match boundary classification, and transient hover-highlight state into a tested toolkit-neutral decoration owner.
   - [x] Contain transcript line, separator, formatted-match, and word-click hit testing behind a validated result boundary without scratch-buffer mutation.
+  - [x] Assign transcript log semantics and a stable accessible label, and validate logical font/decorations plus scale-aware inline flag rendering.
 - [ ] Add the GTK4 theme adapter and validate tray, notifications, icons, fonts, and platform integration.
   - [x] Retire `.zct` registration and mock Windows GTK theme staging, downloads, and installer choices.
   - [ ] Discover system GTK4 desktop themes and imported themes under `%APPDATA%\Fabulor\themes`.

@@ -1027,6 +1027,17 @@ scratch buffer. The strict probe covers negative-y mapping, separator edges,
 formatted offsets, invalid bounds, immutable duplication, and non-link result
 types.
 
+Transcript accessibility and display-scale pass 10 (2026-07-17): the custom
+widget now exposes the toolkit log role and stable localized `Transcript`
+label on GTK3 and GTK4. `xtext-display.c` owns logical font metrics,
+strike/underline positions, scale normalization, and inline-image dimensions.
+Emoji flags load and cache at device resolution for the widget's scale while
+wrapping, hit testing, and cursor placement retain their existing logical
+width. The strict probe verifies metric rounding, image bounds and 1x/2x/3x
+sizing, coordinate conversion, decoration placement, and the GTK4 role. Full
+accessible scrollback text exposure, production screen-reader checks, and
+scrollback performance remain separate validation targets.
+
 Primary surfaces:
 
 - `xtext.c` / `xtext.h`
