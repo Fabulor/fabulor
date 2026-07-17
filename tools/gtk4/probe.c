@@ -18,6 +18,7 @@
 #include "../../src/fe-gtk/server-network-list.h"
 #include "../../src/fe-gtk/server-entry-list.h"
 #include "../../src/fe-gtk/xtext-background.h"
+#include "../../src/fe-gtk/xtext-accessible.h"
 #include "../../src/fe-gtk/xtext-decoration.h"
 #include "../../src/fe-gtk/xtext-display.h"
 #include "../../src/fe-gtk/xtext-geometry.h"
@@ -53,8 +54,10 @@ typedef struct
 	GtkWidgetClass parent_class;
 } FabulorProbeXTextWidgetClass;
 
-G_DEFINE_TYPE (FabulorProbeXTextWidget, fabulor_probe_xtext_widget,
-	GTK_TYPE_WIDGET)
+G_DEFINE_TYPE_WITH_CODE (FabulorProbeXTextWidget, fabulor_probe_xtext_widget,
+	GTK_TYPE_WIDGET,
+	G_IMPLEMENT_INTERFACE (GTK_TYPE_ACCESSIBLE_TEXT,
+		fabulor_xtext_accessible_text_interface_init))
 
 static void
 probe_xtext_realize (GtkWidget *widget)
@@ -1907,6 +1910,78 @@ check_xtext_scroll_copy_policy (void)
 }
 
 static gboolean
+probe_bytes_equal (GBytes *bytes, const gchar *expected)
+{
+	gsize length;
+	const gchar *data = g_bytes_get_data (bytes, &length);
+
+	return length == strlen (expected) &&
+		memcmp (data, expected, length) == 0;
+}
+
+static gboolean
+check_xtext_accessible_policy (void)
+{
+	FabulorXTextAccessible *accessible = fabulor_xtext_accessible_new (NULL,
+		NULL);
+	FabulorXTextAccessibleChange change;
+	GBytes *contents;
+	gchar *large;
+	gsize content_bytes;
+	guint start;
+	guint end;
+	gboolean valid;
+
+	valid = !fabulor_xtext_accessible_is_observed (accessible) &&
+		fabulor_xtext_accessible_replace (accessible,
+		"Hello world.\nSecond line", &change) && change.remove_start == 0 &&
+		change.remove_end == 0 && change.insert_start == 0 &&
+		change.insert_end == 24 &&
+		fabulor_xtext_accessible_length (accessible) == 24 &&
+		fabulor_xtext_accessible_is_observed (accessible);
+	contents = fabulor_xtext_accessible_contents (accessible, 6, 11);
+	valid = valid && probe_bytes_equal (contents, "world");
+	g_bytes_unref (contents);
+	contents = fabulor_xtext_accessible_contents_at (accessible, 1,
+		FABULOR_XTEXT_ACCESSIBLE_CHARACTER, &start, &end);
+	valid = valid && start == 1 && end == 2 &&
+		probe_bytes_equal (contents, "e");
+	g_bytes_unref (contents);
+	contents = fabulor_xtext_accessible_contents_at (accessible, 7,
+		FABULOR_XTEXT_ACCESSIBLE_WORD, &start, &end);
+	valid = valid && start == 6 && end == 13 &&
+		probe_bytes_equal (contents, "world.\n");
+	g_bytes_unref (contents);
+	contents = fabulor_xtext_accessible_contents_at (accessible, 7,
+		FABULOR_XTEXT_ACCESSIBLE_SENTENCE, &start, &end);
+	valid = valid && start == 0 && end == 13 &&
+		probe_bytes_equal (contents, "Hello world.\n");
+	g_bytes_unref (contents);
+	contents = fabulor_xtext_accessible_contents_at (accessible, 7,
+		FABULOR_XTEXT_ACCESSIBLE_LINE, &start, &end);
+	valid = valid && start == 0 && end == 13 &&
+		probe_bytes_equal (contents, "Hello world.\n");
+	g_bytes_unref (contents);
+	valid = valid && fabulor_xtext_accessible_replace (accessible,
+		"Hello brave world.\nSecond line", &change) &&
+		change.remove_start == 6 && change.remove_end == 6 &&
+		change.insert_start == 6 && change.insert_end == 12;
+	large = g_malloc (FABULOR_XTEXT_ACCESSIBLE_MAX_BYTES + 32);
+	memset (large, 'a', FABULOR_XTEXT_ACCESSIBLE_MAX_BYTES + 31);
+	large[FABULOR_XTEXT_ACCESSIBLE_MAX_BYTES + 31] = '\0';
+	valid = valid && fabulor_xtext_accessible_replace (accessible, large,
+		&change);
+	contents = fabulor_xtext_accessible_contents (accessible, 0, G_MAXUINT);
+	g_bytes_get_data (contents, &content_bytes);
+	valid = valid && content_bytes <= FABULOR_XTEXT_ACCESSIBLE_MAX_BYTES &&
+		fabulor_xtext_accessible_length (accessible) == content_bytes;
+	g_bytes_unref (contents);
+	g_free (large);
+	fabulor_xtext_accessible_free (accessible);
+	return valid;
+}
+
+static gboolean
 check_xtext_display_policy (void)
 {
 	FabulorXTextFontMetrics metrics;
@@ -1963,7 +2038,9 @@ check_xtext_widget_class_policy (void)
 	gint minimum_baseline = 0;
 	gint natural_baseline = 0;
 
-	if (!widget_class->realize || !widget_class->unrealize ||
+	if (!g_type_is_a (fabulor_probe_xtext_widget_get_type (),
+		GTK_TYPE_ACCESSIBLE_TEXT) || !widget_class->realize ||
+		!widget_class->unrealize ||
 		!widget_class->size_allocate || !widget_class->measure ||
 		!widget_class->snapshot ||
 		gtk_widget_class_get_accessible_role (widget_class) !=
@@ -2218,6 +2295,11 @@ main (void)
 	if (!check_xtext_scroll_copy_policy ())
 	{
 		fprintf (stderr, "GTK4 transcript scroll-copy policy mismatch\n");
+		return 1;
+	}
+	if (!check_xtext_accessible_policy ())
+	{
+		fprintf (stderr, "GTK4 transcript accessible-text policy mismatch\n");
 		return 1;
 	}
 	if (!check_xtext_display_policy ())

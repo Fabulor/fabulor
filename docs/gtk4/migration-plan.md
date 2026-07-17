@@ -1038,6 +1038,20 @@ sizing, coordinate conversion, decoration placement, and the GTK4 role. Full
 accessible scrollback text exposure, production screen-reader checks, and
 scrollback performance remain separate validation targets.
 
+Transcript accessible-text pass 11 (2026-07-17): GTK4 `GtkXText` now
+implements the native read-only `GtkAccessibleText` interface through a tested
+owner. It exposes recent plain valid UTF-8 transcript content with character
+offsets, displayed timestamps, hidden-run removal, Pango Unicode boundaries,
+and a 1 MiB safety bound. Appends, trims, clears, timestamp changes, and buffer
+switches coalesce into one idle refresh; common-prefix/suffix comparison emits
+minimal removal and insertion notifications after the interface is first
+queried. Unobserved sessions perform no snapshot work, and teardown cancels queued work.
+The strict probe verifies range slicing, character/word/sentence/line
+boundaries, insertion diffs, size containment, and interface registration.
+GTK3 keeps its existing ATK role/name. Production screen-reader behavior,
+read-only selection/geometry limitations, and scrollback performance remain
+explicit validation targets.
+
 Primary surfaces:
 
 - `xtext.c` / `xtext.h`

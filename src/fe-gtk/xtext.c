@@ -117,8 +117,15 @@ enum
 
 static guint xtext_signals[LAST_SIGNAL];
 
+#if GTK_MAJOR_VERSION >= 4
 G_DEFINE_TYPE_WITH_CODE (GtkXText, gtk_xtext, GTK_TYPE_WIDGET,
-                         G_IMPLEMENT_INTERFACE (GTK_TYPE_SCROLLABLE, NULL))
+	G_IMPLEMENT_INTERFACE (GTK_TYPE_SCROLLABLE, NULL)
+	G_IMPLEMENT_INTERFACE (GTK_TYPE_ACCESSIBLE_TEXT,
+		fabulor_xtext_accessible_text_interface_init))
+#else
+G_DEFINE_TYPE_WITH_CODE (GtkXText, gtk_xtext, GTK_TYPE_WIDGET,
+	G_IMPLEMENT_INTERFACE (GTK_TYPE_SCROLLABLE, NULL))
+#endif
 
 char *nocasestrstr (const char *text, const char *tofind);	/* util.c */
 int xtext_get_stamp_str (time_t, char **);
@@ -171,6 +178,98 @@ static gboolean gtk_xtext_button_release (GtkWidget *widget, guint button,
 static gboolean gtk_xtext_scroll (GtkWidget *widget, gdouble dx,
 	gdouble dy, gpointer user_data);
 static void gtk_xtext_focus_changed (GtkWidget *widget, gpointer user_data);
+#if GTK_MAJOR_VERSION >= 4
+static void gtk_xtext_accessible_schedule (GtkXText *xtext);
+#endif
+
+#if GTK_MAJOR_VERSION >= 4
+
+static gchar *
+gtk_xtext_accessible_build (GtkXText *xtext)
+{
+	GString *snapshot = g_string_sized_new (4096);
+	textentry *ent;
+	textentry *first = NULL;
+	gsize estimated_bytes = 0;
+	gboolean first_line = TRUE;
+
+	if (!xtext->buffer)
+		return g_string_free (snapshot, FALSE);
+	for (ent = xtext->buffer->text_last; ent; ent = ent->prev)
+	{
+		gsize entry_bytes = (gsize) ent->str_len + 129;
+
+		if (first && estimated_bytes + entry_bytes >
+			FABULOR_XTEXT_ACCESSIBLE_MAX_BYTES)
+			break;
+		first = ent;
+		estimated_bytes += entry_bytes;
+	}
+	for (ent = first; ent; ent = ent->next)
+	{
+		gchar *stripped;
+		gint stripped_length = 0;
+
+		if (!first_line)
+			g_string_append_c (snapshot, '\n');
+		first_line = FALSE;
+		if (xtext->buffer->time_stamp)
+		{
+			gchar *stamp = NULL;
+			gint stamp_length = xtext_get_stamp_str (ent->stamp, &stamp);
+
+			if (stamp_length > 0)
+				g_string_append_len (snapshot, stamp, stamp_length);
+			g_free (stamp);
+		}
+		stripped = (gchar *) gtk_xtext_strip_color (ent->str, ent->str_len,
+			NULL, &stripped_length, NULL, TRUE);
+		g_string_append_len (snapshot, stripped, stripped_length);
+		g_free (stripped);
+	}
+	return g_string_free (snapshot, FALSE);
+}
+
+static void
+gtk_xtext_accessible_refresh (FabulorXTextAccessible *accessible,
+	gpointer user_data)
+{
+	GtkXText *xtext = GTK_XTEXT (user_data);
+	FabulorXTextAccessibleChange change;
+	gchar *snapshot;
+
+	if (!xtext->accessible_dirty)
+		return;
+	xtext->accessible_dirty = FALSE;
+	snapshot = gtk_xtext_accessible_build (xtext);
+	if (fabulor_xtext_accessible_replace (accessible, snapshot, &change))
+		fabulor_xtext_accessible_notify (GTK_WIDGET (xtext), &change);
+	g_free (snapshot);
+}
+
+static gboolean
+gtk_xtext_accessible_update (gpointer user_data)
+{
+	GtkXText *xtext = GTK_XTEXT (user_data);
+
+	xtext->accessible_update_tag = 0;
+	gtk_xtext_accessible_refresh (xtext->accessible_text, xtext);
+	return G_SOURCE_REMOVE;
+}
+
+static void
+gtk_xtext_accessible_schedule (GtkXText *xtext)
+{
+	if (!xtext->accessible_text)
+		return;
+	xtext->accessible_dirty = TRUE;
+	if (fabulor_xtext_accessible_is_observed (xtext->accessible_text) &&
+		!xtext->accessible_update_tag)
+		xtext->accessible_update_tag = g_idle_add (gtk_xtext_accessible_update,
+			xtext);
+}
+
+#endif
 
 static inline void
 gtk_xtext_cursor_unref (GdkCursor *cursor)
@@ -844,6 +943,13 @@ gtk_xtext_init (GtkXText * xtext)
 	xtext->render_target = fabulor_xtext_render_target_new ();
 	xtext->selection = fabulor_xtext_selection_new (GTK_WIDGET (xtext),
 		gtk_xtext_selection_text, gtk_xtext_selection_lost, NULL);
+#if GTK_MAJOR_VERSION >= 4
+	xtext->accessible_text = fabulor_xtext_accessible_new (
+		gtk_xtext_accessible_refresh, xtext);
+	fabulor_xtext_accessible_attach (GTK_WIDGET (xtext),
+		xtext->accessible_text);
+	xtext->accessible_dirty = TRUE;
+#endif
 	xtext->io_tag = 0;
 	xtext->add_io_tag = 0;
 	xtext->scroll_tag = 0;
@@ -1053,6 +1159,9 @@ gtk_xtext_new (const XTextColor *palette, int separator)
 	xtext->wordwrap = TRUE;
 	xtext->buffer = gtk_xtext_buffer_new (xtext);
 	xtext->orig_buffer = xtext->buffer;
+#if GTK_MAJOR_VERSION >= 4
+	gtk_xtext_accessible_schedule (xtext);
+#endif
 
 	/* GTK3 already uses the GTK render pipeline; no manual double-buffering toggle. */
 	gtk_xtext_set_palette (xtext, palette);
@@ -1081,6 +1190,20 @@ gtk_xtext_cleanup (GtkXText *xtext)
 		g_source_remove (xtext->io_tag);
 		xtext->io_tag = 0;
 	}
+
+#if GTK_MAJOR_VERSION >= 4
+	if (xtext->accessible_update_tag)
+	{
+		g_source_remove (xtext->accessible_update_tag);
+		xtext->accessible_update_tag = 0;
+	}
+	if (xtext->accessible_text)
+	{
+		fabulor_xtext_accessible_attach (GTK_WIDGET (xtext), NULL);
+		fabulor_xtext_accessible_free (xtext->accessible_text);
+		xtext->accessible_text = NULL;
+	}
+#endif
 
 	if (xtext->background)
 	{
@@ -4888,6 +5011,10 @@ gtk_xtext_clear (xtext_buffer *buf, int lines)
 
 	if (marker_reset)
 		buf->marker_state = MARKER_RESET_BY_CLEAR;
+#if GTK_MAJOR_VERSION >= 4
+	if (buf->xtext->buffer == buf)
+		gtk_xtext_accessible_schedule (buf->xtext);
+#endif
 }
 
 static gboolean
@@ -5459,6 +5586,10 @@ gtk_xtext_append_entry (xtext_buffer *buf, textentry * ent, time_t stamp)
 		gl = gtk_xtext_search_textentry (buf, ent);
 		gtk_xtext_search_textentry_add (buf, ent, gl, FALSE);
 	}
+#if GTK_MAJOR_VERSION >= 4
+	if (buf->xtext->buffer == buf)
+		gtk_xtext_accessible_schedule (buf->xtext);
+#endif
 }
 
 /* the main two public functions */
@@ -5684,6 +5815,10 @@ void
 gtk_xtext_set_time_stamp (xtext_buffer *buf, gboolean time_stamp)
 {
 	buf->time_stamp = time_stamp;
+#if GTK_MAJOR_VERSION >= 4
+	if (buf->xtext->buffer == buf)
+		gtk_xtext_accessible_schedule (buf->xtext);
+#endif
 }
 
 void
@@ -5801,6 +5936,9 @@ gtk_xtext_buffer_show (GtkXText *xtext, xtext_buffer *buf, int render)
 
 	/* now change to the new buffer */
 	xtext->buffer = buf;
+#if GTK_MAJOR_VERSION >= 4
+	gtk_xtext_accessible_schedule (xtext);
+#endif
 	dontscroll (buf);	/* force scrolling off */
 	{
 		gdouble lower = 0;
@@ -5899,7 +6037,12 @@ gtk_xtext_buffer_free (xtext_buffer *buf)
 	textentry *ent, *next;
 
 	if (buf->xtext->buffer == buf)
+	{
 		buf->xtext->buffer = buf->xtext->orig_buffer;
+#if GTK_MAJOR_VERSION >= 4
+		gtk_xtext_accessible_schedule (buf->xtext);
+#endif
+	}
 
 	if (buf->xtext->selection_buffer == buf)
 		buf->xtext->selection_buffer = NULL;
