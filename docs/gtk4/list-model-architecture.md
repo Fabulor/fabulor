@@ -1,6 +1,6 @@
 # GTK4 List Model Architecture
 
-Status: Stage 5 pass 27 conversion contract
+Status: Stage 5 pass 28 conversion contract
 
 Date: 2026-07-17
 
@@ -391,8 +391,17 @@ selection privately. Add, remove, sort, favorite toggling, favorites-only
 refresh, remembered network selection, and Shift+Up/Down now cross identity
 methods. The strict probe verifies prepend/append order, duplicate rejection,
 selection callbacks, movement boundaries, favorite and name updates, removal,
-clear, and cleanup. The detailed Servers, Autojoin channels, and Connect
-commands editor tables remain a separate pass.
+clear, and cleanup.
+
+The detailed Server List editor now uses one cross-version owner for its
+Servers, Autojoin channels, and Connect commands tables. Rows retain stable
+core-object identity independently of duplicate display text. GTK4 uses typed
+mutable rows, the shared flat model stack, `GtkSingleSelection`,
+`GtkColumnView`, and editable-label factories; GTK3 keeps list stores, tree
+views, renderers, and selection private. Add, remove, inline edit, empty-value
+deletion, server/command canonicalization, optional channel keys, and
+Shift+Up/Down ordering cross identity methods. Editor-window ownership keeps
+models and callbacks contained across repeated open/close cycles.
 
 ## Executable Contract
 
@@ -415,6 +424,9 @@ The isolated GTK4 MSVC and Meson probes verify:
   dispatch, missing-page rejection, and cleanup.
 - Server-network prepend/append order, duplicate rejection, identity selection,
   movement, favorite/name updates, removal, clear, and cleanup.
+- Server-entry duplicate-label handling, identity selection, primary and
+  secondary updates, movement boundaries, removal, one-column constraints,
+  clear, and cleanup.
 
 These probes establish architecture and ownership only. Production workflow,
 visual, keyboard, accessibility, and load validation remains mandatory for

@@ -16,6 +16,7 @@
 #include "../../src/fe-gtk/sound-event-list.h"
 #include "../../src/fe-gtk/preferences-category-list.h"
 #include "../../src/fe-gtk/server-network-list.h"
+#include "../../src/fe-gtk/server-entry-list.h"
 #include "../../src/fe-gtk/addon-list.h"
 #include "../../src/fe-gtk/channel-model.h"
 #include "../../src/fe-gtk/channel-tree-view.h"
@@ -1480,6 +1481,86 @@ check_server_network_list_model (void)
 	return valid;
 }
 
+typedef struct
+{
+	gpointer identity;
+	guint calls;
+} ProbeServerEntrySelection;
+
+static void
+probe_server_entry_selection (gpointer identity, gpointer user_data)
+{
+	ProbeServerEntrySelection *selection = user_data;
+	selection->identity = identity;
+	selection->calls++;
+}
+
+static gboolean
+check_server_entry_list_model (void)
+{
+	ProbeServerEntrySelection selection = { NULL, 0 };
+	FabulorServerEntryList *list = fabulor_server_entry_list_new (TRUE,
+		probe_server_entry_selection, NULL, &selection);
+	FabulorServerEntryList *single = fabulor_server_entry_list_new (FALSE,
+		NULL, NULL, NULL);
+	gint identities[3];
+	gchar *text = NULL;
+	gboolean valid = list != NULL && single != NULL;
+
+	if (valid)
+	{
+		valid = fabulor_server_entry_list_append (list, &identities[0],
+			"Alpha", "key-a") &&
+			fabulor_server_entry_list_append (list, &identities[1],
+				"Beta", "") &&
+			fabulor_server_entry_list_append (list, &identities[2],
+				"Alpha", "key-c") &&
+			!fabulor_server_entry_list_append (list, &identities[0],
+				"Duplicate identity", "") &&
+			fabulor_server_entry_list_get_n_rows (list) == 3 &&
+			fabulor_server_entry_list_get_identity_at (list, 2) ==
+				&identities[2];
+	}
+	if (valid)
+	{
+		valid = fabulor_server_entry_list_select (list, &identities[1]) &&
+			fabulor_server_entry_list_get_selected (list) == &identities[1] &&
+			selection.identity == &identities[1] && selection.calls >= 1 &&
+			fabulor_server_entry_list_move (list, &identities[1], -1) &&
+			fabulor_server_entry_list_get_identity_at (list, 0) ==
+				&identities[1] &&
+			!fabulor_server_entry_list_move (list, &identities[1], -1);
+	}
+	if (valid)
+	{
+		valid = fabulor_server_entry_list_update (list, &identities[1],
+			FABULOR_SERVER_ENTRY_PRIMARY, "Renamed") &&
+			fabulor_server_entry_list_update (list, &identities[1],
+				FABULOR_SERVER_ENTRY_SECONDARY, "new-key");
+		text = fabulor_server_entry_list_dup_text (list, &identities[1],
+			FABULOR_SERVER_ENTRY_SECONDARY);
+		valid = valid && g_strcmp0 (text, "new-key") == 0;
+		g_free (text);
+	}
+	if (valid)
+	{
+		valid = fabulor_server_entry_list_append (single, &identities[0],
+			"Only", NULL) &&
+			!fabulor_server_entry_list_update (single, &identities[0],
+				FABULOR_SERVER_ENTRY_SECONDARY, "invalid") &&
+			fabulor_server_entry_list_dup_text (single, &identities[0],
+				FABULOR_SERVER_ENTRY_SECONDARY) == NULL &&
+			fabulor_server_entry_list_remove (list, &identities[0]) &&
+			!fabulor_server_entry_list_remove (list, &identities[0]);
+		fabulor_server_entry_list_clear (list);
+		valid = valid && fabulor_server_entry_list_get_n_rows (list) == 0 &&
+			fabulor_server_entry_list_get_selected (list) == NULL;
+	}
+	fabulor_server_entry_list_free (single);
+	fabulor_server_entry_list_free (list);
+	return valid;
+}
+
 int
 main (void)
 {
@@ -1587,6 +1668,11 @@ main (void)
 	if (!check_server_network_list_model ())
 	{
 		fprintf (stderr, "GTK4 server-network list contract mismatch\n");
+		return 1;
+	}
+	if (!check_server_entry_list_model ())
+	{
+		fprintf (stderr, "GTK4 server-entry list contract mismatch\n");
 		return 1;
 	}
 
