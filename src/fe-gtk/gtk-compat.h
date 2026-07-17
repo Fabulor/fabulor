@@ -139,6 +139,51 @@ fabulor_gtk_box_remove_child (GtkBox *box, GtkWidget *child)
 }
 
 static inline void
+fabulor_gtk_widget_add_css_class (GtkWidget *widget, const gchar *name)
+{
+	g_return_if_fail (GTK_IS_WIDGET (widget));
+	g_return_if_fail (name != NULL);
+
+#if GTK_MAJOR_VERSION >= 4
+	gtk_widget_add_css_class (widget, name);
+#else
+	gtk_style_context_add_class (gtk_widget_get_style_context (widget), name);
+#endif
+}
+
+static inline void
+fabulor_gtk_widget_queue_draw_region (GtkWidget *widget, gint x, gint y,
+	gint width, gint height)
+{
+	g_return_if_fail (GTK_IS_WIDGET (widget));
+
+#if GTK_MAJOR_VERSION >= 4
+	(void) x;
+	(void) y;
+	(void) width;
+	(void) height;
+	gtk_widget_queue_draw (widget);
+#else
+	gtk_widget_queue_draw_area (widget, x, y, width, height);
+#endif
+}
+
+static inline gboolean
+fabulor_gtk_widget_has_toplevel_focus (GtkWidget *widget)
+{
+	g_return_val_if_fail (GTK_IS_WIDGET (widget), FALSE);
+
+#if GTK_MAJOR_VERSION >= 4
+	GtkRoot *root = gtk_widget_get_root (widget);
+	return GTK_IS_WINDOW (root) && gtk_window_is_active (GTK_WINDOW (root));
+#else
+	GtkWidget *toplevel = gtk_widget_get_toplevel (widget);
+	return GTK_IS_WINDOW (toplevel) &&
+		gtk_window_has_toplevel_focus (GTK_WINDOW (toplevel));
+#endif
+}
+
+static inline void
 fabulor_gtk_copy_text_to_clipboards (GtkWidget *widget, const gchar *text)
 {
 	g_return_if_fail (GTK_IS_WIDGET (widget));

@@ -526,6 +526,15 @@ disconnects change observation before widget teardown. `xtext.c` now owns only
 selection ranges and text production; it contains no toolkit clipboard,
 selection event, target, atom, or payload type.
 
+Stage 6 transcript frame-redraw pass 6 removes the full-page renderer's
+unconditional native-window gate. `xtext-scroll-copy.c` calculates GTK3
+surface-copy and damage geometry independently of the widget. GTK4 reports no
+native capture and falls through to complete snapshot rendering, while GTK3
+keeps its existing optimized copy when overlap is bounded. CSS class
+attachment, partial redraw requests, and top-level focus checks now use shared
+cross-version helpers. Native window capture, pointer lookup, and background
+window setup are compiled only in the GTK3 branch.
+
 Status: `in progress`
 
 ### Input: `SexySpellEntry`
