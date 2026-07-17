@@ -950,6 +950,17 @@ The strict probe verifies positive and rejected geometry independently of a
 display. Class virtual methods, controllers, selection, clipboard behavior,
 and performance remain separate passes.
 
+Transcript widget-class pass 3 (2026-07-17): one cross-version adapter now
+installs transcript measurement, allocation, realization, unrealization, and
+render class methods. GTK3 receives its existing preferred-size and Cairo draw
+contracts; GTK4 receives `measure`, width/height/baseline allocation, and
+snapshot rendering through the established render target. `GtkXText` retains
+content-specific Pango lifecycle, resize recalculation, and the contained GTK3
+native child-window operations behind one static callback table. The strict
+probe registers a headless GTK4 widget subclass and verifies all five class
+slots, fixed minimum requests, and width-change policy. Controllers, selection,
+clipboard behavior, and performance remain separate passes.
+
 Primary surfaces:
 
 - `xtext.c` / `xtext.h`

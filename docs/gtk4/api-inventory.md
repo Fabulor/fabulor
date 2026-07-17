@@ -498,6 +498,15 @@ and leaves native window dimensions only in the GTK3 window-to-surface capture
 helper. Native windows remain where GTK3 still requires pointer lookup and
 smooth-scroll capture, but no longer define transcript layout.
 
+Stage 6 transcript widget-class pass 3 moves the versioned class signatures to
+`xtext-widget-class.c`. GTK3 preferred-size, allocation, realize/unrealize, and
+draw slots share one callback contract with GTK4 measure, allocation,
+realize/unrealize, and snapshot slots. GTK4 snapshot dispatch uses the existing
+geometry and render-target owners; `GtkXText` retains only content lifecycle,
+resize state, and the contained GTK3 native-window work. Direct event and
+selection slots remain assigned to the following controller and clipboard
+passes.
+
 Status: `in progress`
 
 ### Input: `SexySpellEntry`

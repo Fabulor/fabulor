@@ -67,6 +67,7 @@
 	<ClCompile Include="..\..\src\fe-gtk\server-entry-list.c" />
 	<ClCompile Include="..\..\src\fe-gtk\xtext-geometry.c" />
 	<ClCompile Include="..\..\src\fe-gtk\xtext-render-target.c" />
+	<ClCompile Include="..\..\src\fe-gtk\xtext-widget-class.c" />
     <ClCompile Include="..\..\src\fe-gtk\gtk4-list-models.c" />
     <ClCompile Include="..\..\src\fe-gtk\ignore-list.c" />
     <ClCompile Include="..\..\src\fe-gtk\channel-model.c" />

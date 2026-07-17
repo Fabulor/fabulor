@@ -295,6 +295,7 @@ Detailed planning and evidence live in:
 - [ ] Port the transcript and spell-check input widgets to GTK4 rendering and event semantics.
   - [x] Establish a tested transcript render-target owner for active Cairo contexts, offscreen surfaces, the contained GTK3 window fallback, and GTK4 snapshot output.
   - [x] Route transcript wrapping, rendering, selection scrolling, visibility, and buffer-switch dimensions through validated widget geometry instead of `GdkWindow` size reads.
+  - [x] Install transcript measurement, allocation, realize/unrealize, and GTK3 draw or GTK4 snapshot class methods through a tested cross-version widget-class adapter.
 - [ ] Add the GTK4 theme adapter and validate tray, notifications, icons, fonts, and platform integration.
   - [x] Retire `.zct` registration and mock Windows GTK theme staging, downloads, and installer choices.
   - [ ] Discover system GTK4 desktop themes and imported themes under `%APPDATA%\Fabulor\themes`.
