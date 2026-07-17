@@ -66,6 +66,7 @@ probe = executable(
   '../../src/fe-gtk/xtext-geometry.c',
   '../../src/fe-gtk/xtext-input.c',
   '../../src/fe-gtk/xtext-render-target.c',
+  '../../src/fe-gtk/xtext-selection.c',
   '../../src/fe-gtk/xtext-widget-class.c',
   '../../src/fe-gtk/gtk4-list-models.c',
   '../../src/fe-gtk/ignore-list.c',

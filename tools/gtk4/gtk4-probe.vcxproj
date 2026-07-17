@@ -68,6 +68,7 @@
 	<ClCompile Include="..\..\src\fe-gtk\xtext-geometry.c" />
 	<ClCompile Include="..\..\src\fe-gtk\xtext-input.c" />
 	<ClCompile Include="..\..\src\fe-gtk\xtext-render-target.c" />
+	<ClCompile Include="..\..\src\fe-gtk\xtext-selection.c" />
 	<ClCompile Include="..\..\src\fe-gtk\xtext-widget-class.c" />
     <ClCompile Include="..\..\src\fe-gtk\gtk4-list-models.c" />
     <ClCompile Include="..\..\src\fe-gtk\ignore-list.c" />

@@ -1,6 +1,6 @@
 # GTK4 Transcript Rendering Architecture
 
-Status: Stage 6 pass 4 rendering, widget-class, and input-controller contracts
+Status: Stage 6 pass 5 rendering, widget-class, input, and selection contracts
 
 ## Purpose
 
@@ -82,8 +82,22 @@ The `word_click` signal now carries `FabulorXTextClick` instead of a borrowed
 menu entry points, preserving button, click count, position, and modifiers.
 Cursor changes use GTK4 cursor names or the existing GTK3 cursor objects.
 
-Only GTK3 selection ownership and payload callbacks remain assigned directly
-on `GtkWidgetClass`; they belong to the next clipboard pass.
+No input or selection callback remains assigned directly on `GtkWidgetClass`.
+
+## Selection And Clipboard Ownership
+
+`src/fe-gtk/xtext-selection.c` owns selection publication and replacement.
+`GtkXText` supplies selected text and responds to ownership loss without
+exposing toolkit clipboard types to its content logic.
+
+GTK3 registers PRIMARY targets after realization and connects selection-clear
+and selection-get signals. It preserves UTF-8, text, compound-text, locale
+string, explicit CLIPBOARD, PRIMARY, and SECONDARY behavior. GTK4 stores a
+string in one `GdkContentProvider`, publishes it to CLIPBOARD and PRIMARY, and
+compares provider identity when PRIMARY changes. An external replacement
+clears Unix selection highlighting; Windows preserves its established visible
+selection behavior. Teardown disconnects change observation before releasing
+the adapter while clipboard-held content remains independently referenced.
 
 ## Ownership Invariants
 
@@ -94,11 +108,13 @@ on `GtkWidgetClass`; they belong to the next clipboard pass.
 - The target must have no active context when it is freed.
 - Widget teardown releases the target once and leaves no borrowed target state
   in `GtkXText`.
+- Selection publication owns its payload independently of transcript buffers.
+- An adapter ignores its own PRIMARY update and reacts only to replacement.
+- Selection change observation is disconnected before widget teardown.
 
 ## Planned Passes
 
-1. Replace GTK3 selection ownership and clipboard payload callbacks.
-2. Validate background images, markers, search highlights, URL hit testing,
+1. Validate background images, markers, search highlights, URL hit testing,
    scrolling, accessibility, high DPI, and scrollback performance.
 
 The spell-check input is a separate Stage 6 boundary and will not share
@@ -122,8 +138,8 @@ The strict GTK4 probe verifies:
 - unchanged and changed width decisions remain distinct.
 - modifier-aware pointer motion has a strict GTK4-compatible signature;
 - non-left, single, double, and repeated left presses classify consistently;
-  and
-- negative, zero, and positive scroll deltas map to up, neutral, and down.
+- negative, zero, and positive scroll deltas map to up, neutral, and down; and
+- complete and bounded selection payload copies preserve their requested text.
 
 Manual transcript output and latency checks remain required when the GTK4
 widget class is connected to this boundary.

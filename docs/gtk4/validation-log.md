@@ -2772,6 +2772,41 @@ Scope: transcript pointer, click, scroll, leave, focus, and selection-input
 dispatch only. Selection ownership, clipboard payloads, background validation,
 and spell-check input remain unchanged.
 
+### PR: #96 - GTK4 Stage 6 Transcript Selection Ownership
+
+Date: 2026-07-17
+
+Migration stage: 6, transcript selection pass 5
+
+Files/workflows converted: PRIMARY target registration; selection ownership
+and replacement; UTF-8, text, compound-text, and locale payload delivery;
+explicit copy; CLIPBOARD and PRIMARY GTK4 content publication; adapter cleanup
+
+GTK version: 4.22.4
+
+GLib version: 2.88.0
+
+Build configuration: MSVC x64 Release and strict GTK4 probe boundary
+
+Automated checks:
+
+- [x] production GTK3 frontend compiles and links with 0 warnings and 0 errors
+- [x] strict GTK4 probe compiles, links, and executes with 0 warnings and 0 errors
+- [x] complete and bounded selection payload-copy policies pass
+- [x] transcript class has no direct input or selection event slot
+- [x] transcript content code has no clipboard, target, atom, event, or payload API
+- [x] GTK4 dependency validator tests remain 8/8
+- [x] repository diff whitespace validation passes
+
+Manual checks:
+
+- [ ] shipping GTK3 selection, auto-copy, explicit copy, and colour-copy behavior remain unchanged
+- [ ] PRIMARY replacement clears selection on Unix and retains established Windows behavior
+- [ ] GTK4 CLIPBOARD/PRIMARY interoperability awaits full widget integration
+
+Scope: transcript selection ownership, publication, replacement, and payload
+delivery only. Background validation and spell-check input remain unchanged.
+
 ## Per-PR Record Template
 
 Copy this section for each GTK4 PR:

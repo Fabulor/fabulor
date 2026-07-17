@@ -23,6 +23,7 @@
 #include <gtk/gtk.h>
 #include "xtext-input.h"
 #include "xtext-render-target.h"
+#include "xtext-selection.h"
 #include <cairo.h>
 #include "xtext-color.h"
 
@@ -142,6 +143,7 @@ struct _GtkXText
 	cairo_surface_t *background_surface;	/* 0 = use palette[19] */
 	cairo_surface_t *background_clip_surface;
 	FabulorXTextRenderTarget *render_target;
+	FabulorXTextSelection *selection;
 	int background_clip_x;
 	int background_clip_y;
 	int background_clip_width;

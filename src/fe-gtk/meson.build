@@ -61,6 +61,7 @@ zoitechat_gtk_sources = [
   'xtext-geometry.c',
   'xtext-input.c',
   'xtext-render-target.c',
+  'xtext-selection.c',
   'xtext-widget-class.c'
 ]
 
