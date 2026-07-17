@@ -17,6 +17,7 @@
 #include "../../src/fe-gtk/preferences-category-list.h"
 #include "../../src/fe-gtk/server-network-list.h"
 #include "../../src/fe-gtk/server-entry-list.h"
+#include "../../src/fe-gtk/xtext-geometry.h"
 #include "../../src/fe-gtk/xtext-render-target.h"
 #include "../../src/fe-gtk/addon-list.h"
 #include "../../src/fe-gtk/channel-model.h"
@@ -1563,6 +1564,20 @@ check_server_entry_list_model (void)
 }
 
 static gboolean
+check_xtext_geometry (void)
+{
+	FabulorXTextGeometry geometry = { 99, 99 };
+	gboolean valid = fabulor_xtext_geometry_init (&geometry, 640, 480) &&
+		geometry.width == 640 && geometry.height == 480;
+
+	valid = valid && !fabulor_xtext_geometry_init (&geometry, 0, 480) &&
+		geometry.width == 0 && geometry.height == 0;
+	valid = valid && !fabulor_xtext_geometry_init (&geometry, 640, -1) &&
+		geometry.width == 0 && geometry.height == 0;
+	return valid;
+}
+
+static gboolean
 check_xtext_render_target (void)
 {
 	FabulorXTextRenderTarget *target = fabulor_xtext_render_target_new ();
@@ -1748,6 +1763,11 @@ main (void)
 	if (!check_xtext_render_target ())
 	{
 		fprintf (stderr, "GTK4 transcript render-target contract mismatch\n");
+		return 1;
+	}
+	if (!check_xtext_geometry ())
+	{
+		fprintf (stderr, "GTK4 transcript geometry contract mismatch\n");
 		return 1;
 	}
 

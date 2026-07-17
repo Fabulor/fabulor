@@ -46,6 +46,7 @@
 
 #include "fe-gtk.h"
 #include "xtext.h"
+#include "xtext-geometry.h"
 #include "fkeys.h"
 #include "theme/theme-access.h"
 
@@ -2217,6 +2218,7 @@ static gint
 gtk_xtext_scrolldown_timeout (GtkXText * xtext)
 {
 	int p_y, win_height;
+	FabulorXTextGeometry geometry;
 	xtext_buffer *buf = xtext->buffer;
 	GtkAdjustment *adj = xtext->adj;
 	GdkWindow *window;
@@ -2225,7 +2227,9 @@ gtk_xtext_scrolldown_timeout (GtkXText * xtext)
 	if (!window)
 		return 0;
 	gtk_xtext_get_pointer (window, NULL, &p_y, NULL);
-	win_height = gdk_window_get_height (window);
+	if (!fabulor_xtext_geometry_from_widget (GTK_WIDGET (xtext), &geometry))
+		return 0;
+	win_height = geometry.height;
 
 	if (buf->last_ent_end == NULL ||	/* If context has changed OR */
 		 buf->pagetop_ent == NULL ||	/* pagetop_ent is reset OR */
@@ -2300,17 +2304,16 @@ gtk_xtext_selection_update (GtkXText * xtext, GdkEventMotion * event, int p_y, g
 {
 	int win_height;
 	int moved;
-	GdkWindow *window;
+	FabulorXTextGeometry geometry;
 
 	if (xtext->scroll_tag)
 	{
 		return;
 	}
 
-	window = gtk_widget_get_window (GTK_WIDGET (xtext));
-	if (!window)
+	if (!fabulor_xtext_geometry_from_widget (GTK_WIDGET (xtext), &geometry))
 		return;
-	win_height = gdk_window_get_height (window);
+	win_height = geometry.height;
 
 	/* selecting past top of window, scroll up! */
 	if (p_y < 0 && xtext_adj_get_value (xtext->adj) >= 0)
@@ -4583,16 +4586,15 @@ static void
 gtk_xtext_calc_lines (xtext_buffer *buf, int fire_signal)
 {
 	textentry *ent;
+	FabulorXTextGeometry geometry;
 	int width;
 	int height;
 	int lines;
-	GdkWindow *window;
 
-	window = gtk_widget_get_window (GTK_WIDGET (buf->xtext));
-	if (!window)
+	if (!fabulor_xtext_geometry_from_widget (GTK_WIDGET (buf->xtext), &geometry))
 		return;
-	height = gdk_window_get_height (window);
-	width = gdk_window_get_width (window);
+	height = geometry.height;
+	width = geometry.width;
 	width -= MARGIN;
 
 	if (width < 30 || height < buf->xtext->fontsize || width < buf->indent + 30)
@@ -4689,22 +4691,21 @@ gtk_xtext_render_ents (GtkXText * xtext, textentry * enta, textentry * entb)
 	}
 
 	textentry *ent, *orig_ent, *tmp_ent;
+	FabulorXTextGeometry geometry;
 	int line;
 	int lines_max;
 	int width;
 	int height;
 	int subline;
 	int drawing = FALSE;
-	GdkWindow *window;
 
 	if (xtext->buffer->indent < MARGIN)
 		xtext->buffer->indent = MARGIN;	  /* 2 pixels is our left margin */
 
-	window = gtk_widget_get_window (GTK_WIDGET (xtext));
-	if (!window)
+	if (!fabulor_xtext_geometry_from_widget (GTK_WIDGET (xtext), &geometry))
 		return 0;
-	height = gdk_window_get_height (window);
-	width = gdk_window_get_width (window);
+	height = geometry.height;
+	width = geometry.width;
 	width -= MARGIN;
 
 	if (width < 32 || height < xtext->fontsize || width < xtext->buffer->indent + 30)
@@ -4794,6 +4795,7 @@ gtk_xtext_render_page (GtkXText * xtext)
 	}
 
 	textentry *ent;
+	FabulorXTextGeometry geometry;
 	int line;
 	int lines_max;
 	int width;
@@ -4811,11 +4813,13 @@ gtk_xtext_render_page (GtkXText * xtext)
 	if (xtext->buffer->indent < MARGIN)
 		xtext->buffer->indent = MARGIN;	  /* 2 pixels is our left margin */
 
+	if (!fabulor_xtext_geometry_from_widget (GTK_WIDGET (xtext), &geometry))
+		return;
+	width = geometry.width;
+	height = geometry.height;
 	window = gtk_widget_get_window (GTK_WIDGET (xtext));
 	if (!window)
 		return;
-	width = gdk_window_get_width (window);
-	height = gdk_window_get_height (window);
 
 	if (width < 34 || height < xtext->fontsize || width < xtext->buffer->indent + 32)
 		return;
@@ -5151,20 +5155,19 @@ static gboolean
 gtk_xtext_check_ent_visibility (GtkXText * xtext, textentry *find_ent, int add)
 {
 	textentry *ent;
+	FabulorXTextGeometry geometry;
 	int lines;
 	xtext_buffer *buf = xtext->buffer;
 	int height;
-	GdkWindow *window;
 
 	if (find_ent == NULL)
 	{
 		return FALSE;
 	}
 
-	window = gtk_widget_get_window (GTK_WIDGET (xtext));
-	if (!window)
+	if (!fabulor_xtext_geometry_from_widget (GTK_WIDGET (xtext), &geometry))
 		return FALSE;
-	height = gdk_window_get_height (window);
+	height = geometry.height;
 
 	ent = buf->pagetop_ent;
 	/* If top line not completely displayed return FALSE */
@@ -6019,8 +6022,8 @@ gtk_xtext_moveto_marker_pos (GtkXText *xtext)
 void
 gtk_xtext_buffer_show (GtkXText *xtext, xtext_buffer *buf, int render)
 {
+	FabulorXTextGeometry geometry;
 	int w, h;
-	GdkWindow *window;
 
 	buf->xtext = xtext;
 
@@ -6044,11 +6047,10 @@ gtk_xtext_buffer_show (GtkXText *xtext, xtext_buffer *buf, int render)
 	if (!gtk_widget_get_realized (GTK_WIDGET (xtext)))
 		gtk_widget_realize (GTK_WIDGET (xtext));
 
-	window = gtk_widget_get_window (GTK_WIDGET (xtext));
-	if (!window)
+	if (!fabulor_xtext_geometry_from_widget (GTK_WIDGET (xtext), &geometry))
 		return;
-	h = gdk_window_get_height (window);
-	w = gdk_window_get_width (window);
+	h = geometry.height;
+	w = geometry.width;
 
 	/* after a font change */
 	if (buf->needs_recalc)

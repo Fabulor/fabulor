@@ -491,6 +491,13 @@ close a Cairo context through `GtkSnapshot` and produce a `GskRenderNode`.
 Window geometry, class virtual methods, selection, clipboard ownership, and
 input events remain for following passes.
 
+Stage 6 transcript geometry pass 2 moves wrapping, rendering, selection-scroll,
+visibility, and buffer-switch dimensions behind `xtext-geometry.c`. The owner
+uses GTK3 allocations and GTK4 widget width/height, rejects non-positive sizes,
+and leaves native window dimensions only in the GTK3 window-to-surface capture
+helper. Native windows remain where GTK3 still requires pointer lookup and
+smooth-scroll capture, but no longer define transcript layout.
+
 Status: `in progress`
 
 ### Input: `SexySpellEntry`
