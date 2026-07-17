@@ -87,6 +87,7 @@ FOR %%I IN ("$(ZoiteChatLib)fabulor.rc") DO IF %%~zI EQU 0 (
 	<ClInclude Include="sound-event-list.h" />
 	<ClInclude Include="preferences-category-list.h" />
 	<ClInclude Include="server-network-list.h" />
+	<ClInclude Include="server-entry-list.h" />
     <ClInclude Include="fe-gtk.h" />
     <ClInclude Include="fkeys.h" />
     <ClInclude Include="gtk-compat.h" />
@@ -145,6 +146,7 @@ FOR %%I IN ("$(ZoiteChatLib)fabulor.rc") DO IF %%~zI EQU 0 (
 	<ClCompile Include="sound-event-list.c" />
 	<ClCompile Include="preferences-category-list.c" />
 	<ClCompile Include="server-network-list.c" />
+	<ClCompile Include="server-entry-list.c" />
     <ClCompile Include="fe-gtk.c" />
     <ClCompile Include="fkeys.c" />
     <ClCompile Include="gtkutil.c" />

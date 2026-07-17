@@ -2583,6 +2583,45 @@ Scope: main Server List network chooser model/view ownership and interaction.
 The detailed Servers, Autojoin channels, and Connect commands editor tables,
 network connection workflow, and configuration persistence remain unchanged.
 
+### PR: #91 - GTK4 Stage 5 Server Editor Lists
+
+Date: 2026-07-17
+
+Migration stage: 5, Server List editor-table pass 28
+
+Files/workflows converted: Servers, Autojoin channels, and Connect commands
+tables; stable core-object identity; inline editing; add/remove; empty-value
+deletion; optional channel keys; Shift+Up/Down ordering; editor teardown
+
+GTK version: 4.22.4
+
+GLib version: 2.88.0
+
+Build configuration: MSVC x64 Release and strict GTK4 probe boundary
+
+Automated checks:
+
+- [x] production GTK3 frontend compiles and links with 0 warnings and 0 errors
+- [x] strict GTK4 probe compiles and executes the server-entry owner with 0 warnings and 0 errors
+- [x] duplicate labels, stable identity, selection, primary/secondary updates, movement boundaries, removal, one-column constraints, clear, and cleanup pass
+- [x] `servlistgui.c` no longer accesses tree models, iterators, paths, renderers, list stores, tree selections, or tree views
+- [x] production and strict build definitions include the new owner
+- [x] GTK4 dependency validator tests remain 8/8
+- [x] repository diff whitespace validation passes
+
+Manual checks:
+
+- [ ] shipping GTK3 editor preserves all three tabs, row text, and remembered selection
+- [ ] Add selects a new server, channel, or command and immediately starts inline editing
+- [ ] primary edits persist; empty edits delete except for the protected last server
+- [ ] server and command canonicalization and channel-key clearing preserve prior behavior
+- [ ] Shift+Up/Down keeps visible and saved order synchronized in all three tabs
+- [ ] repeated editor open/close cycles leave no stale selection, model, or callback state
+- [ ] GTK4 focus, accessibility, duplicate labels, long values, and scale await frontend cutover
+
+Scope: detailed Server List editor model/view ownership and interaction.
+Network connection behavior and configuration persistence remain unchanged.
+
 ## Per-PR Record Template
 
 Copy this section for each GTK4 PR:

@@ -892,6 +892,20 @@ selection, movement boundaries, updates, removal, clear, and cleanup. The
 detailed Servers, Autojoin channels, and Connect commands tables remain the
 next contained server-editor pass.
 
+Server List editor-table pass 28 (2026-07-17): the Servers, Autojoin channels,
+and Connect commands tables now share one cross-version owner for stable
+core-object identity, copied display values, optional secondary text, single
+selection, inline editing, and keyboard movement. GTK4 uses typed mutable rows,
+the shared flat model stack, `GtkSingleSelection`, `GtkColumnView`, and
+editable-label factories; GTK3 keeps its stores, renderers, tree views, and
+selections privately. Add, remove, canonicalized edits, empty-value deletion,
+channel-key clearing, and Shift+Up/Down no longer traverse toolkit rows in
+`servlistgui.c`. The strict probe covers duplicate labels, identity selection,
+updates, movement boundaries, one-column constraints, removal, clear, and
+cleanup. This completes the Stage 5 implementation inventory; manual GTK4
+visual, keyboard, accessibility, and performance checks remain part of the
+production cutover validation.
+
 Primary surfaces:
 
 - server list and editor
