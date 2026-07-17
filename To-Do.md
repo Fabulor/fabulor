@@ -299,6 +299,7 @@ Detailed planning and evidence live in:
   - [x] Replace transcript pointer, click, scroll, leave, and focus event virtual methods with normalized GTK3 signals or GTK4 controllers while preserving selection and word-click behavior.
   - [x] Replace transcript selection ownership and payload virtual methods with a GTK3 signal or GTK4 content-provider adapter while preserving primary selection and explicit copy behavior.
   - [x] Contain transcript native-window scroll copying to GTK3 and route GTK4 frame damage, focus, CSS class, and scrolling through full snapshot redraw semantics.
+  - [x] Move transcript background source, fitted or tiled composition, frame cache, palette fallback, and teardown into a tested Cairo-only owner.
 - [ ] Add the GTK4 theme adapter and validate tray, notifications, icons, fonts, and platform integration.
   - [x] Retire `.zct` registration and mock Windows GTK theme staging, downloads, and installer choices.
   - [ ] Discover system GTK4 desktop themes and imported themes under `%APPDATA%\Fabulor\themes`.

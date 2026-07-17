@@ -114,6 +114,7 @@ FOR %%I IN ("$(ZoiteChatLib)fabulor.rc") DO IF %%~zI EQU 0 (
     <ClInclude Include="url-list.h" />
     <ClInclude Include="userlistgui.h" />
     <ClInclude Include="xtext.h" />
+	<ClInclude Include="xtext-background.h" />
 	<ClInclude Include="xtext-geometry.h" />
 	<ClInclude Include="xtext-input.h" />
 	<ClInclude Include="xtext-render-target.h" />
@@ -183,6 +184,7 @@ FOR %%I IN ("$(ZoiteChatLib)fabulor.rc") DO IF %%~zI EQU 0 (
     <ClCompile Include="user-list-model.c" />
     <ClCompile Include="user-list-view.c" />
     <ClCompile Include="xtext.c" />
+	<ClCompile Include="xtext-background.c" />
 	<ClCompile Include="xtext-geometry.c" />
 	<ClCompile Include="xtext-input.c" />
 	<ClCompile Include="xtext-render-target.c" />

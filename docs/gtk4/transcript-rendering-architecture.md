@@ -1,6 +1,6 @@
 # GTK4 Transcript Rendering Architecture
 
-Status: Stage 6 pass 6 rendering, widget-class, input, selection, and frame contracts
+Status: Stage 6 pass 7 rendering, widget-class, input, selection, frame, and background contracts
 
 ## Purpose
 
@@ -113,6 +113,20 @@ widget frame, while GTK3 retains region invalidation. Cross-version helpers
 also resolve the transcript CSS class and focused root without removed GTK3
 APIs.
 
+## Background Composition
+
+`src/fe-gtk/xtext-background.c` owns the optional Cairo source surface and its
+frame-local viewport cache. Image surfaces are aspect-fitted and centred over
+a black letterbox. Other Cairo surface types repeat from the supplied tile
+offset. An absent, invalid, oversized, or failed source falls back to the
+current transcript palette colour.
+
+The owner clears its cache at both frame boundaries and whenever the source is
+replaced. It retains its own source reference, releases the previous source and
+cache exactly once, and limits cache dimensions to 8192 pixels per axis.
+`GtkXText` now asks only whether a source exists and requests region painting;
+it does not retain cache geometry, tile coordinates, or render-cycle state.
+
 ## Ownership Invariants
 
 - An active context may be temporarily replaced and then restored for nested
@@ -128,11 +142,17 @@ APIs.
 - Native-window scroll capture is a GTK3 optimization, never a GTK4 rendering
   prerequisite.
 - GTK4 without native capture always reaches full snapshot rendering.
+- Background source references and frame caches are owned and released by one
+  Cairo-only boundary.
+- Background composition failure always produces the palette fallback rather
+  than an unpainted region.
+- A background cache cannot survive its frame or exceed the viewport safety
+  bound.
 
 ## Planned Passes
 
-1. Validate background images, markers, search highlights, URL hit testing,
-   accessibility, high DPI, and scrollback performance.
+1. Validate markers, search highlights, URL hit testing, accessibility, high
+   DPI, and scrollback performance.
 
 The spell-check input is a separate Stage 6 boundary and will not share
 transcript rendering ownership.
@@ -160,6 +180,9 @@ The strict GTK4 probe verifies:
 - upward and downward native scroll-copy plans preserve retained pixels and
   identify exposed damage; and
 - unavailable or full-height capture falls back to complete rendering.
+- an absent background source paints the exact palette fallback;
+- a fitted image produces exact centred content and black letterboxing; and
+- source replacement and removal update surface-presence state safely.
 
 Manual transcript output and latency checks remain required when the GTK4
 widget class is connected to this boundary.

@@ -337,119 +337,15 @@ static void
 xtext_draw_bg_offset (GtkXText *xtext, int x, int y, int width, int height, int tile_x, int tile_y)
 {
 	cairo_t *cr = xtext_create_context (xtext);
+	FabulorXTextGeometry geometry;
 
-	if (xtext->background_surface)
-	{
-		GtkAllocation allocation;
-		int clip_x;
-		int clip_y;
-		int clip_w;
-		int clip_h;
+	if (cr && fabulor_xtext_geometry_from_widget (GTK_WIDGET (xtext),
+		&geometry))
+		fabulor_xtext_background_paint (xtext->background, cr, &xtext->bgc,
+			&geometry, x, y, width, height, tile_x, tile_y);
 
-		if (cairo_surface_status (xtext->background_surface) != CAIRO_STATUS_SUCCESS)
-		{
-			xtext_draw_rectangle (xtext, cr, &xtext->bgc, x, y, width, height);
-			cairo_destroy (cr);
-			return;
-		}
-
-		gtk_widget_get_allocation (GTK_WIDGET (xtext), &allocation);
-		clip_x = 0;
-		clip_y = 0;
-		clip_w = allocation.width;
-		clip_h = allocation.height;
-
-		if (clip_w < 1 || clip_h < 1 || clip_w > 8192 || clip_h > 8192)
-		{
-			xtext_draw_rectangle (xtext, cr, &xtext->bgc, x, y, width, height);
-			cairo_destroy (cr);
-			return;
-		}
-
-		if (xtext->background_clip_surface == NULL ||
-			xtext->background_clip_cycle != xtext->render_cycle ||
-			xtext->background_clip_x != clip_x ||
-			xtext->background_clip_y != clip_y ||
-			xtext->background_clip_width != clip_w ||
-			xtext->background_clip_height != clip_h)
-		{
-			cairo_t *bg_cr;
-
-			if (xtext->background_clip_surface)
-			{
-				cairo_surface_destroy (xtext->background_clip_surface);
-				xtext->background_clip_surface = NULL;
-			}
-
-			xtext->background_clip_surface = cairo_image_surface_create (CAIRO_FORMAT_ARGB32, clip_w, clip_h);
-			if (cairo_surface_status (xtext->background_clip_surface) != CAIRO_STATUS_SUCCESS)
-			{
-				cairo_surface_destroy (xtext->background_clip_surface);
-				xtext->background_clip_surface = NULL;
-				xtext_draw_rectangle (xtext, cr, &xtext->bgc, x, y, width, height);
-				cairo_destroy (cr);
-				return;
-			}
-			bg_cr = cairo_create (xtext->background_clip_surface);
-			if (cairo_surface_get_type (xtext->background_surface) == CAIRO_SURFACE_TYPE_IMAGE)
-			{
-				int src_w = cairo_image_surface_get_width (xtext->background_surface);
-				int src_h = cairo_image_surface_get_height (xtext->background_surface);
-				if (src_w > 0 && src_h > 0)
-				{
-					double scale_x = (double)clip_w / (double)src_w;
-					double scale_y = (double)clip_h / (double)src_h;
-					double scale = scale_x < scale_y ? scale_x : scale_y;
-					double draw_w = src_w * scale;
-					double draw_h = src_h * scale;
-					double draw_x = ((double)clip_w - draw_w) / 2.0;
-					double draw_y = ((double)clip_h - draw_h) / 2.0;
-					cairo_set_source_rgb (bg_cr, 0.0, 0.0, 0.0);
-					cairo_paint (bg_cr);
-					cairo_save (bg_cr);
-					cairo_translate (bg_cr, draw_x, draw_y);
-					cairo_scale (bg_cr, scale, scale);
-					cairo_set_source_surface (bg_cr, xtext->background_surface, 0.0, 0.0);
-					cairo_pattern_set_extend (cairo_get_source (bg_cr), CAIRO_EXTEND_NONE);
-					cairo_rectangle (bg_cr, 0.0, 0.0, (double)src_w, (double)src_h);
-					cairo_fill (bg_cr);
-					cairo_restore (bg_cr);
-				}
-				else
-				{
-					cairo_set_source_surface (bg_cr, xtext->background_surface, tile_x - clip_x, tile_y - clip_y);
-					cairo_pattern_set_extend (cairo_get_source (bg_cr), CAIRO_EXTEND_REPEAT);
-					cairo_rectangle (bg_cr, 0.0, 0.0, (double)clip_w, (double)clip_h);
-					cairo_fill (bg_cr);
-				}
-			}
-			else
-			{
-				cairo_set_source_surface (bg_cr, xtext->background_surface, tile_x - clip_x, tile_y - clip_y);
-				cairo_pattern_set_extend (cairo_get_source (bg_cr), CAIRO_EXTEND_REPEAT);
-				cairo_rectangle (bg_cr, 0.0, 0.0, (double)clip_w, (double)clip_h);
-				cairo_fill (bg_cr);
-			}
-			cairo_destroy (bg_cr);
-
-			xtext->background_clip_x = clip_x;
-			xtext->background_clip_y = clip_y;
-			xtext->background_clip_width = clip_w;
-			xtext->background_clip_height = clip_h;
-			xtext->background_clip_cycle = xtext->render_cycle;
-		}
-
-		cairo_set_source_surface (cr, xtext->background_clip_surface,
-			(double)xtext->background_clip_x, (double)xtext->background_clip_y);
-		cairo_rectangle (cr, (double)x, (double)y, (double)width, (double)height);
-		cairo_fill (cr);
-	}
-	else
-	{
-		xtext_draw_rectangle (xtext, cr, &xtext->bgc, x, y, width, height);
-	}
-
-	cairo_destroy (cr);
+	if (cr)
+		cairo_destroy (cr);
 }
 
 static inline void
@@ -927,17 +823,10 @@ gtk_xtext_style_updated (GtkWidget *widget, gpointer user_data)
 static void
 gtk_xtext_init (GtkXText * xtext)
 {
-	xtext->background_surface = NULL;
-	xtext->background_clip_surface = NULL;
+	xtext->background = fabulor_xtext_background_new ();
 	xtext->render_target = fabulor_xtext_render_target_new ();
 	xtext->selection = fabulor_xtext_selection_new (GTK_WIDGET (xtext),
 		gtk_xtext_selection_text, gtk_xtext_selection_lost, NULL);
-	xtext->background_clip_x = 0;
-	xtext->background_clip_y = 0;
-	xtext->background_clip_width = 0;
-	xtext->background_clip_height = 0;
-	xtext->background_clip_cycle = 0;
-	xtext->render_cycle = 0;
 	xtext->io_tag = 0;
 	xtext->add_io_tag = 0;
 	xtext->scroll_tag = 0;
@@ -1178,16 +1067,10 @@ gtk_xtext_cleanup (GtkXText *xtext)
 		xtext->io_tag = 0;
 	}
 
-	if (xtext->background_surface)
+	if (xtext->background)
 	{
-		cairo_surface_destroy (xtext->background_surface);
-		xtext->background_surface = NULL;
-	}
-
-	if (xtext->background_clip_surface)
-	{
-		cairo_surface_destroy (xtext->background_clip_surface);
-		xtext->background_clip_surface = NULL;
+		fabulor_xtext_background_free (xtext->background);
+		xtext->background = NULL;
 	}
 
 	if (xtext->render_target)
@@ -1422,7 +1305,7 @@ gtk_xtext_realize (GtkWidget * widget)
 	/* Keep the GTK3 fallback contained behind the render target. */
 	fabulor_xtext_render_target_set_window (xtext->render_target, window);
 
-	if (xtext->background_surface)
+	if (fabulor_xtext_background_has_surface (xtext->background))
 	{
 		xtext->ts_x = xtext->ts_y = 0;
 	}
@@ -1459,7 +1342,7 @@ gtk_xtext_realize (GtkWidget * widget)
 	xtext->marker_gc = xtext->palette[XTEXT_MARKER];
 	xtext_set_fg (xtext, XTEXT_FG);
 	xtext_set_bg (xtext, XTEXT_BG);
-	if (xtext->background_surface)
+	if (fabulor_xtext_background_has_surface (xtext->background))
 		xtext->ts_x = xtext->ts_y = 0;
 #endif
 	backend_init (xtext);
@@ -1774,12 +1657,7 @@ gtk_xtext_render (GtkWidget *widget, const GdkRectangle *area, cairo_t *cr)
 	cairo_t *old_cr = fabulor_xtext_render_target_exchange_context (
 		xtext->render_target, cr);
 
-	xtext->render_cycle++;
-	if (xtext->background_clip_surface)
-	{
-		cairo_surface_destroy (xtext->background_clip_surface);
-		xtext->background_clip_surface = NULL;
-	}
+	fabulor_xtext_background_begin_frame (xtext->background);
 
 	gtk_widget_get_allocation (widget, &allocation);
 
@@ -1842,11 +1720,7 @@ xit:
 		gtk_xtext_draw_sep (xtext, -1);
 
 done:
-	if (xtext->background_clip_surface)
-	{
-		cairo_surface_destroy (xtext->background_clip_surface);
-		xtext->background_clip_surface = NULL;
-	}
+	fabulor_xtext_background_end_frame (xtext->background);
 	fabulor_xtext_render_target_exchange_context (xtext->render_target, old_cr);
 }
 
@@ -3486,7 +3360,8 @@ gtk_xtext_render_flush (GtkXText * xtext, int x, int y, unsigned char *str,
 			goto dounder;
 	}
 
-	dofill = !xtext->background_surface || xtext->backcolor;
+	dofill = !fabulor_xtext_background_has_surface (xtext->background) ||
+		xtext->backcolor;
 
 	backend_draw_text_emph (xtext, dofill, x, y, str, len, str_width, *emphasis);
 
@@ -4452,23 +4327,8 @@ gtk_xtext_set_font (GtkXText *xtext, char *name)
 void
 gtk_xtext_set_background (GtkXText * xtext, cairo_surface_t *surface)
 {
-	if (xtext->background_surface)
-	{
-		cairo_surface_destroy (xtext->background_surface);
-		xtext->background_surface = NULL;
-	}
-
-	if (xtext->background_clip_surface)
-	{
-		cairo_surface_destroy (xtext->background_clip_surface);
-		xtext->background_clip_surface = NULL;
-	}
-
 	dontscroll (xtext->buffer);
-	if (surface)
-	{
-		xtext->background_surface = cairo_surface_reference (surface);
-	}
+	fabulor_xtext_background_set_surface (xtext->background, surface);
 
 	if (surface && gtk_widget_get_realized (GTK_WIDGET(xtext)))
 	{

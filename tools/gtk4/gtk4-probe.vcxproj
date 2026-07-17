@@ -65,6 +65,7 @@
 	<ClCompile Include="..\..\src\fe-gtk\preferences-category-list.c" />
 	<ClCompile Include="..\..\src\fe-gtk\server-network-list.c" />
 	<ClCompile Include="..\..\src\fe-gtk\server-entry-list.c" />
+	<ClCompile Include="..\..\src\fe-gtk\xtext-background.c" />
 	<ClCompile Include="..\..\src\fe-gtk\xtext-geometry.c" />
 	<ClCompile Include="..\..\src\fe-gtk\xtext-input.c" />
 	<ClCompile Include="..\..\src\fe-gtk\xtext-render-target.c" />

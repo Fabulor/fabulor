@@ -535,6 +535,14 @@ attachment, partial redraw requests, and top-level focus checks now use shared
 cross-version helpers. Native window capture, pointer lookup, and background
 window setup are compiled only in the GTK3 branch.
 
+Stage 6 transcript background-composition pass 7 moves the optional source
+surface and its fitted or tiled viewport cache into `xtext-background.c`.
+Image sources preserve aspect ratio and use black letterboxing; non-image
+sources repeat with the existing tile offsets; invalid, absent, oversized, or
+uncomposable sources use the transcript palette background. The cache exists
+only within a frame and all Cairo references are released by the owner, so
+`GtkXText` no longer carries background cache geometry or render-cycle fields.
+
 Status: `in progress`
 
 ### Input: `SexySpellEntry`
