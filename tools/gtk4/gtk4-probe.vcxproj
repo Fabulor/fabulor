@@ -53,6 +53,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="probe.c" />
+	<ClCompile Include="..\..\src\fe-gtk\spell-entry-words.c" />
     <ClCompile Include="..\..\src\fe-gtk\addon-list.c" />
     <ClCompile Include="..\..\src\fe-gtk\ban-list.c" />
 	<ClCompile Include="..\..\src\fe-gtk\channel-list.c" />
