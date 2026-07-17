@@ -3126,6 +3126,45 @@ Scope: spell-input word segmentation, coordinate ownership, and refresh lifetime
 only. GTK4 subclass lifecycle, editable delegation, formatting attributes,
 dynamic menus, and complete production input validation remain separate passes.
 
+### PR: #105 - GTK4 Stage 6 Spell-Input Widget Lifecycle
+
+Date: 2026-07-17
+
+Migration stage: 6, spell-input widget lifecycle and event pass 2
+
+Files/workflows converted: inherited `GtkEditable` semantics; normalized click
+dispatch; GTK3 exact pointer lookup; GTK4 editable-cursor fallback; queued
+redraw; caret/style refresh; theme-listener ownership; class virtual cleanup
+
+GTK version: 4.22.4
+
+GLib version: 2.88.0
+
+Build configuration: MSVC x64 Release and strict GTK4 probe boundary
+
+Automated checks:
+
+- [x] production GTK3 frontend compiles and links with 0 warnings and 0 errors
+- [x] strict GTK4 probe compiles, links, and executes with 0 warnings and 0 errors
+- [x] a strict GTK4 `GtkEntry` subclass inherits `GtkEditable`
+- [x] pointer and redraw adapter source compiles against GTK4 4.22.4
+- [x] production spell entry has no draw, button-press, or style-update class virtual
+- [x] redraw scheduling has no `GdkWindow` dependency
+- [x] theme listener is unregistered during idempotent disposal
+- [x] repository diff whitespace validation passes
+
+Manual checks:
+
+- [ ] shipping GTK3 pointer and keyboard spelling menus target the expected word
+- [ ] native selection, focus, input methods, and caret remain unchanged
+- [ ] theme changes refresh caret contrast and misspelling underline colours
+- [ ] repeated input creation and destruction produces no stale theme callback
+- [ ] GTK4 right-click and keyboard menu targeting awaits the dynamic-menu pass
+
+Scope: spell-entry class lifetime, editing inheritance, pointer dispatch,
+redraw, and theme refresh only. Formatting ownership, GTK4 dynamic menus, and
+complete production input validation remain separate passes.
+
 ## Per-PR Record Template
 
 Copy this section for each GTK4 PR:

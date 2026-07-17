@@ -24,6 +24,7 @@
 
 #include <gtk/gtk.h>
 #include "sexy-spell-entry.h"
+#include "spell-entry-widget.h"
 #include "spell-entry-words.h"
 #include <string.h>
 #include <fcntl.h>
@@ -50,8 +51,10 @@
 #include "../common/cfgfiles.h"
 #include "../common/zoitechatc.h"
 #include "theme/theme-access.h"
+#include "theme/theme-manager.h"
 #include "theme/theme-palette.h"
 #include "xtext.h"
+#include "gtk-compat.h"
 #include "gtkutil.h"
 
 
@@ -125,18 +128,18 @@ struct _SexySpellEntryPriv
 	GHashTable           *dict_hash;
 	GSList               *dict_list;
 	FabulorSpellWords    *words;
+	guint                 theme_listener_id;
 	gboolean              checked;
 	gboolean              parseattr;
 };
 
 static void sexy_spell_entry_class_init(SexySpellEntryClass *klass);
-static void sexy_spell_entry_editable_init (GtkEditableInterface *iface);
 static void sexy_spell_entry_init(SexySpellEntry *entry);
 static void sexy_spell_entry_finalize(GObject *obj);
 static void sexy_spell_entry_destroy(GObject *obj);
-static gboolean sexy_spell_entry_draw(GtkWidget *widget, cairo_t *cr);
-static gint sexy_spell_entry_button_press(GtkWidget *widget, GdkEventButton *event);
-static void sexy_spell_entry_style_updated (GtkWidget *widget);
+static gboolean sexy_spell_entry_button_press (GtkWidget *widget, guint button,
+														guint n_press, gdouble x, gdouble y,
+														GdkModifierType state, gpointer user_data);
 
 /* GtkEditable handlers */
 static void sexy_spell_entry_changed(GtkEditable *editable, gpointer data);
@@ -145,8 +148,6 @@ static void sexy_spell_entry_changed(GtkEditable *editable, gpointer data);
 static gboolean sexy_spell_entry_popup_menu(GtkWidget *widget, SexySpellEntry *entry);
 
 /* Internal utility functions */
-static gint       gtk_entry_find_position                     (GtkEntry             *entry,
-                                                               gint                  x);
 static gboolean   word_misspelled                             (SexySpellEntry       *entry,
                                                                int                   start,
                                                                int                   end);
@@ -165,7 +166,7 @@ static GtkEntryClass *parent_class = NULL;
 static int codetable_ref = 0;
 #endif
 
-G_DEFINE_TYPE_EXTENDED(SexySpellEntry, sexy_spell_entry, GTK_TYPE_ENTRY, 0, G_IMPLEMENT_INTERFACE(GTK_TYPE_EDITABLE, sexy_spell_entry_editable_init));
+G_DEFINE_TYPE(SexySpellEntry, sexy_spell_entry, GTK_TYPE_ENTRY)
 
 enum
 {
@@ -294,7 +295,6 @@ sexy_spell_entry_class_init(SexySpellEntryClass *klass)
 {
 	GObjectClass *gobject_class;
 	GObjectClass *object_class;
-	GtkWidgetClass *widget_class;
 
 	initialize_enchant();
 
@@ -302,7 +302,6 @@ sexy_spell_entry_class_init(SexySpellEntryClass *klass)
 
 	gobject_class = G_OBJECT_CLASS(klass);
 	object_class  = G_OBJECT_CLASS(klass);
-	widget_class  = GTK_WIDGET_CLASS(klass);
 
 	if (have_enchant)
 		klass->word_check = default_word_check;
@@ -310,10 +309,6 @@ sexy_spell_entry_class_init(SexySpellEntryClass *klass)
 	gobject_class->finalize = sexy_spell_entry_finalize;
 
 	object_class->dispose = sexy_spell_entry_destroy;
-
-	widget_class->draw = sexy_spell_entry_draw;
-	widget_class->button_press_event = sexy_spell_entry_button_press;
-	widget_class->style_updated = sexy_spell_entry_style_updated;
 
 	/**
 	 * SexySpellEntry::word-check:
@@ -341,42 +336,6 @@ sexy_spell_entry_class_init(SexySpellEntryClass *klass)
 	{
 		empty_attrs_list = pango_attr_list_new ();
 	}
-}
-
-static void
-sexy_spell_entry_editable_init (GtkEditableInterface *iface)
-{
-}
-
-
-static gint
-gtk_entry_find_position (GtkEntry *entry, gint x)
-{
-	PangoLayout *layout;
-	PangoLayoutLine *line;
-	const gchar *text;
-	gint index;
-	gint pos;
-	gboolean trailing;
-
-	{
-		gint layout_x;
-		gint layout_y;
-
-		gtk_entry_get_layout_offsets(entry, &layout_x, &layout_y);
-		x -= layout_x;
-	}
-
-	layout = gtk_entry_get_layout(entry);
-	text = pango_layout_get_text(layout);
-	line = pango_layout_get_lines(layout)->data;
-	pango_layout_line_x_to_index(line, x * PANGO_SCALE, &index, &trailing);
-
-
-	pos = g_utf8_pointer_to_offset (text, text + index);
-	pos += trailing;
-
-	return pos;
 }
 
 static void
@@ -425,11 +384,26 @@ sexy_spell_entry_apply_caret_style (SexySpellEntry *entry)
 }
 
 static void
-sexy_spell_entry_style_updated (GtkWidget *widget)
+sexy_spell_entry_style_updated (GtkWidget *widget, gpointer userdata)
 {
-	GTK_WIDGET_CLASS (parent_class)->style_updated (widget);
+	(void) userdata;
 	if (SEXY_IS_SPELL_ENTRY (widget))
 		sexy_spell_entry_apply_caret_style (SEXY_SPELL_ENTRY (widget));
+}
+
+static void
+sexy_spell_entry_theme_changed (const ThemeChangedEvent *event, gpointer userdata)
+{
+	SexySpellEntry *entry = SEXY_SPELL_ENTRY (userdata);
+
+	if (!theme_changed_event_has_reason (event, THEME_CHANGED_REASON_MODE) &&
+	    !theme_changed_event_has_reason (event, THEME_CHANGED_REASON_PALETTE) &&
+	    !theme_changed_event_has_reason (event, THEME_CHANGED_REASON_THEME_PACK) &&
+	    !theme_changed_event_has_reason (event, THEME_CHANGED_REASON_WIDGET_STYLE))
+		return;
+
+	sexy_spell_entry_apply_caret_style (entry);
+	sexy_spell_entry_recheck_all (entry);
 }
 
 static void
@@ -926,9 +900,15 @@ sexy_spell_entry_init(SexySpellEntry *entry)
 	entry->priv->checked = TRUE;
 	entry->priv->parseattr = TRUE;
 
+#if GTK_MAJOR_VERSION < 4
 	g_signal_connect(G_OBJECT(entry), "popup-menu", G_CALLBACK(sexy_spell_entry_popup_menu), entry);
 	g_signal_connect(G_OBJECT(entry), "populate-popup", G_CALLBACK(sexy_spell_entry_populate_popup), NULL);
+	g_signal_connect(G_OBJECT(entry), "style-updated", G_CALLBACK(sexy_spell_entry_style_updated), NULL);
+#endif
 	g_signal_connect(G_OBJECT(entry), "changed", G_CALLBACK(sexy_spell_entry_changed), NULL);
+	fabulor_gtk_widget_on_multi_click (GTK_WIDGET (entry), sexy_spell_entry_button_press, NULL);
+	entry->priv->theme_listener_id = theme_listener_register (
+		"spell-entry", sexy_spell_entry_theme_changed, entry);
 	sexy_spell_entry_apply_caret_style (entry);
 }
 
@@ -975,6 +955,14 @@ sexy_spell_entry_finalize(GObject *obj)
 static void
 sexy_spell_entry_destroy(GObject *obj)
 {
+	SexySpellEntry *entry = SEXY_SPELL_ENTRY (obj);
+
+	if (entry->priv->theme_listener_id)
+	{
+		theme_listener_unregister (entry->priv->theme_listener_id);
+		entry->priv->theme_listener_id = 0;
+	}
+
 	if (G_OBJECT_CLASS(parent_class)->dispose)
 		G_OBJECT_CLASS(parent_class)->dispose(obj);
 }
@@ -1261,9 +1249,6 @@ attr_list_has_attrs (PangoAttrList *attrs)
 static void
 sexy_spell_entry_recheck_all(SexySpellEntry *entry)
 {
-	GdkRectangle rect;
-	GtkAllocation allocation;
-	GtkWidget *widget = GTK_WIDGET(entry);
 	guint i;
 	int text_len;
 	const char *text;
@@ -1295,35 +1280,23 @@ sexy_spell_entry_recheck_all(SexySpellEntry *entry)
 
 	gtk_entry_set_attributes (GTK_ENTRY (entry), attr_list_has_attrs (entry->priv->attr_list) ? entry->priv->attr_list : NULL);
 
-	if (gtk_widget_get_realized (GTK_WIDGET(entry)))
-	{
-		gtk_widget_get_allocation (GTK_WIDGET(entry), &allocation);
-		
-		rect.x = 0; rect.y = 0;
-		rect.width  = allocation.width;
-		rect.height = allocation.height;
-		gdk_window_invalidate_rect(gtk_widget_get_window (widget), &rect, TRUE);
-	}
+	fabulor_spell_entry_queue_redraw (GTK_WIDGET (entry));
 }
 
 static gboolean
-sexy_spell_entry_draw(GtkWidget *widget, cairo_t *cr)
-{
-	return GTK_WIDGET_CLASS(parent_class)->draw (widget, cr);
-}
-
-
-static gint
-sexy_spell_entry_button_press(GtkWidget *widget, GdkEventButton *event)
+sexy_spell_entry_button_press (GtkWidget *widget, guint button, guint n_press,
+	gdouble x, gdouble y, GdkModifierType state, gpointer user_data)
 {
 	SexySpellEntry *entry = SEXY_SPELL_ENTRY(widget);
-	GtkEntry *gtk_entry = GTK_ENTRY(widget);
-	gint pos;
 
-	pos = gtk_entry_find_position(gtk_entry, event->x);
-	entry->priv->mark_character = pos;
-
-	return GTK_WIDGET_CLASS(parent_class)->button_press_event (widget, event);
+	(void) button;
+	(void) n_press;
+	(void) y;
+	(void) state;
+	(void) user_data;
+	entry->priv->mark_character = fabulor_spell_entry_pointer_position (
+		GTK_ENTRY (widget), x);
+	return FALSE;
 }
 
 static gboolean

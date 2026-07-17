@@ -1069,6 +1069,16 @@ input. Class lifecycle, formatting attributes, menus, and production Enchant
 validation remain separate passes. The detailed contract is in
 [`spell-input-architecture.md`](spell-input-architecture.md).
 
+Spell-input widget-lifecycle pass 2 (2026-07-17): the custom `GtkEntry`
+subclass is retained and now inherits the toolkit's `GtkEditable` contract
+instead of registering an empty duplicate interface. No-op draw and legacy
+button/style class virtuals are removed. Pointer marking uses a normalized
+click boundary, redraw uses `gtk_widget_queue_draw()`, and an owned theme
+listener refreshes caret and underline colours before being unregistered at
+dispose. GTK3 keeps exact public-layout hit testing; GTK4 uses its internal
+editable cursor after click processing because it no longer exposes entry
+layout coordinates. Dynamic context-menu position remains a separate pass.
+
 Primary surfaces:
 
 - `xtext.c` / `xtext.h`

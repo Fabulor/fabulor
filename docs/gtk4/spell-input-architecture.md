@@ -1,6 +1,6 @@
 # GTK4 Spell Input Architecture
 
-Status: Stage 6 spell-input pass 1 word-boundary contract
+Status: Stage 6 spell-input pass 2 widget lifecycle and event boundary
 
 ## Purpose
 
@@ -32,6 +32,31 @@ storage. The owner duplicates requested words and releases its text and ranges
 together. Enchant broker, dictionary, suggestion, and persistence ownership
 remain unchanged.
 
+## Widget Lifecycle
+
+`SexySpellEntry` remains a `GtkEntry` subclass. GTK3 and GTK4 both make
+`GtkEntry` a `GtkEditable`, so the subclass now inherits that implementation
+instead of registering an empty duplicate interface. This also preserves the
+toolkit's native focus, input-method, selection, and cursor behavior without a
+composed editable delegate owned by Fabulor.
+
+The removed GTK3 class virtuals are replaced by explicit boundaries:
+
+- pointer presses use the shared normalized multi-click callback;
+- `spell-entry-widget.c` maps GTK3 pointer coordinates through the public Pango
+  layout and, on GTK4, reads the cursor updated by the internal text delegate;
+- spell and formatting refreshes call `gtk_widget_queue_draw()` instead of
+  invalidating a native `GdkWindow` rectangle;
+- GTK3 desktop style notifications remain signal-based, while Fabulor theme
+  changes update the caret and spell underline palette through an owned theme
+  listener; and
+- disposal unregisters the theme listener before releasing private state.
+
+GTK4 removed the public `GtkEntry` layout-position API. Therefore this pass
+does not manufacture click coordinates from private widget details. The GTK4
+dynamic-menu pass will own context-menu position and action state explicitly;
+keyboard menus continue to use the editable cursor.
+
 ## Invariants
 
 - Pango and Enchant ranges are UTF-8 byte indexed.
@@ -41,22 +66,24 @@ remain unchanged.
 - Language and preference refreshes replace one owner instead of manually
   freeing three parallel arrays.
 - The owner has no GTK widget, event, menu, or clipboard dependency.
+- The custom entry inherits one toolkit-owned `GtkEditable` implementation.
+- No spell-entry draw, button-press, or style-update class virtual remains.
+- Widget redraw does not depend on a native window.
+- Theme-listener lifetime cannot outlive the spell entry.
 
 ## Planned Passes
 
-1. Convert subclass lifecycle, editable delegation, pointer marking, redraw,
-   style updates, and focus behavior to explicit GTK3/GTK4 adapters.
-2. Move IRC formatting and misspelling Pango attributes behind a tested text
+1. Move IRC formatting and misspelling Pango attributes behind a tested text
    styling boundary.
-3. Replace legacy `populate-popup` menu mutation with GTK4 actions and dynamic
+2. Replace legacy `populate-popup` menu mutation with GTK4 actions and dynamic
    suggestion, dictionary, ignore, and colour-menu models.
-4. Validate emoji insertion, clipboard, shortcuts, URL paste, Enchant latency,
+3. Validate emoji insertion, clipboard, shortcuts, URL paste, Enchant latency,
    personal-dictionary persistence, accessibility, and high-DPI behavior in
    the production GTK4 client.
 
-The custom-widget versus composed-input decision remains open until the class
-and menu adapters show which option preserves behavior with less ownership
-complexity.
+The custom-widget versus composed-input decision is closed for the current
+port: retaining the subclass preserves native behavior with less ownership
+than duplicating `GtkEntry` around a delegated child.
 
 ## Executable Contract
 
@@ -66,7 +93,9 @@ The strict GTK4 probe verifies:
 - the multibyte word `café` has distinct correct byte and character ranges;
 - cursor lookup within and at the end of that word returns the same range;
 - duplicated word text remains valid UTF-8; and
-- empty owners reject invalid range, lookup, and duplication requests.
+- empty owners reject invalid range, lookup, and duplication requests;
+- a strict GTK4 `GtkEntry` subclass inherits `GtkEditable`; and
+- pointer/redraw adapter source compiles against the allowlisted GTK4 headers.
 
 Production Enchant and menu behavior remains a manual GTK3 regression check
 until the complete GTK4 input widget is connected.
