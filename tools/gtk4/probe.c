@@ -18,6 +18,7 @@
 #include "../../src/fe-gtk/server-network-list.h"
 #include "../../src/fe-gtk/server-entry-list.h"
 #include "../../src/fe-gtk/xtext-background.h"
+#include "../../src/fe-gtk/xtext-decoration.h"
 #include "../../src/fe-gtk/xtext-geometry.h"
 #include "../../src/fe-gtk/xtext-input.h"
 #include "../../src/fe-gtk/xtext-render-target.h"
@@ -1660,6 +1661,74 @@ check_server_entry_list_model (void)
 }
 
 static gboolean
+check_xtext_decoration_policy (void)
+{
+	FabulorXTextDecoration *decoration = fabulor_xtext_decoration_new ();
+	offsets_t first = { 0 };
+	offsets_t second = { 0 };
+	GList *marks = NULL;
+	GList *current;
+	gint entry_a = 1;
+	gint entry_b = 2;
+	gint marker_y = -1;
+	gboolean valid = decoration != NULL &&
+		!fabulor_xtext_marker_position (FALSE, &entry_a, &entry_a, NULL,
+			10, 3, 12, 2, &marker_y) && marker_y == 0 &&
+		fabulor_xtext_marker_position (TRUE, &entry_a, &entry_a, &entry_b,
+			10, 3, 12, 2, &marker_y) && marker_y == 13 &&
+		fabulor_xtext_marker_position (TRUE, &entry_b, &entry_a, &entry_b,
+			10, 3, 12, 2, &marker_y) && marker_y == 37;
+
+	first.o.start = 2;
+	first.o.end = 5;
+	second.o.start = 5;
+	second.o.end = 8;
+	marks = g_list_append (marks, GUINT_TO_POINTER (first.u));
+	marks = g_list_append (marks, GUINT_TO_POINTER (second.u));
+	current = g_list_last (marks);
+	valid = valid && fabulor_xtext_search_match (marks, current, 1) == 0 &&
+		fabulor_xtext_search_match (marks, current, 2) ==
+			(FABULOR_XTEXT_MATCH_START | FABULOR_XTEXT_MATCH_MID) &&
+		fabulor_xtext_search_match (marks, current, 5) ==
+			(FABULOR_XTEXT_MATCH_MID | FABULOR_XTEXT_MATCH_CURRENT) &&
+		fabulor_xtext_search_match (marks, current, 6) ==
+			(FABULOR_XTEXT_MATCH_MID | FABULOR_XTEXT_MATCH_CURRENT) &&
+		fabulor_xtext_search_match (marks, current, 8) ==
+			(FABULOR_XTEXT_MATCH_MID | FABULOR_XTEXT_MATCH_END);
+	g_list_free (marks);
+
+	valid = valid && !fabulor_xtext_decoration_has_hover (decoration) &&
+		!fabulor_xtext_decoration_set_hover (decoration, NULL, 2, 5) &&
+		fabulor_xtext_decoration_set_hover (decoration, &entry_a, 2, 5) &&
+		fabulor_xtext_decoration_hover_equals (decoration, &entry_a, 2, 5) &&
+		fabulor_xtext_decoration_hover_contains (decoration, &entry_a, 2) &&
+		fabulor_xtext_decoration_hover_contains (decoration, &entry_a, 4) &&
+		!fabulor_xtext_decoration_hover_contains (decoration, &entry_a, 5) &&
+		fabulor_xtext_decoration_hover_starts (decoration, &entry_a, 2) &&
+		fabulor_xtext_decoration_hover_ends (decoration, &entry_a, 5);
+	fabulor_xtext_decoration_begin_hover_render (decoration, TRUE);
+	fabulor_xtext_decoration_set_hover_inside (decoration, TRUE);
+	valid = valid && fabulor_xtext_decoration_hover_render_only (decoration) &&
+		fabulor_xtext_decoration_hover_clearing (decoration) &&
+		fabulor_xtext_decoration_hover_inside (decoration);
+	fabulor_xtext_decoration_suspend_hover (decoration);
+	valid = valid && !fabulor_xtext_decoration_hover_contains (decoration,
+		&entry_a, 3);
+	fabulor_xtext_decoration_resume_hover (decoration);
+	valid = valid && fabulor_xtext_decoration_hover_contains (decoration,
+		&entry_a, 3);
+	fabulor_xtext_decoration_end_hover_render (decoration);
+	fabulor_xtext_decoration_clear_hover (decoration);
+	valid = valid && !fabulor_xtext_decoration_has_hover (decoration) &&
+		!fabulor_xtext_decoration_hover_render_only (decoration) &&
+		!fabulor_xtext_decoration_hover_clearing (decoration) &&
+		!fabulor_xtext_decoration_hover_inside (decoration);
+
+	fabulor_xtext_decoration_free (decoration);
+	return valid;
+}
+
+static gboolean
 check_xtext_background_policy (void)
 {
 	FabulorXTextBackground *background = fabulor_xtext_background_new ();
@@ -2023,6 +2092,11 @@ main (void)
 	if (!check_xtext_background_policy ())
 	{
 		fprintf (stderr, "GTK4 transcript background contract mismatch\n");
+		return 1;
+	}
+	if (!check_xtext_decoration_policy ())
+	{
+		fprintf (stderr, "GTK4 transcript decoration contract mismatch\n");
 		return 1;
 	}
 	if (!check_xtext_geometry ())

@@ -1005,6 +1005,17 @@ bound and releases all referenced Cairo surfaces during replacement and
 teardown. The strict probe verifies exact fallback, letterbox, fitted-image,
 surface-presence, and cleanup behavior without a display.
 
+Transcript decorations pass 8 (2026-07-17): `xtext-decoration.c` now owns
+marker-line placement, persistent search-match boundary classification, and
+transient URL/nickname hover-highlight ranges and paint modes. The text parser
+still applies established palette colours and Cairo lines, but no longer
+carries six independent hover range and render-state fields or its own search
+offset walker. Adjacent search occurrences retain current-match precedence,
+timestamp rendering temporarily suspends hover decoration without mutating its
+range, and teardown releases one opaque owner. The strict probe covers marker
+positions, adjacent and current search matches, hover boundaries, paint/clear
+modes, suspension, and cleanup.
+
 Primary surfaces:
 
 - `xtext.c` / `xtext.h`
