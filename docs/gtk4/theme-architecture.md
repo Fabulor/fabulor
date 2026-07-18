@@ -1,6 +1,6 @@
 # GTK4 Theme Architecture
 
-Status: Stage 7 pass 5 complete pre-production GTK4 theme ownership stack
+Status: Stage 7 pass 12 complete through GTK4 preference binding
 
 ## Scope
 
@@ -118,6 +118,26 @@ display-scoped providers before releasing copied preference state. It exposes
 read-only choices, selected state, appearance, active provider identity, and
 diagnostics for the future GTK4 preferences page.
 
+## Preference Surface
+
+`src/fe-gtk/theme/theme-preferences-gtk4.c` owns the candidate GTK4 desktop
+theme and variant controls together with their lifecycle controller. Its
+choice model is rebuilt from controller-owned metadata, while committed theme
+identifiers remain stable and source-qualified. A callback receives only
+successfully applied theme and variant values for later persistence into
+`gui_gtk4_theme` and `gui_gtk4_variant`.
+
+Theme and variant changes are transactional. Invalid CSS leaves the previous
+provider, stored values, and visible selection intact and exposes the parser
+failure as status. Missing saved themes visibly fall back to system default;
+high contrast suppresses custom providers while preserving the selected theme.
+Appearance refreshes do not emit persistence callbacks. Destruction disconnects
+both controls and unparents the surface before releasing controller state.
+
+The surface remains in the strict GTK4 candidate build until the production
+preferences window itself crosses the GTK4 boundary. Shipping GTK3 preferences
+and their GTK3 theme service are unchanged by this pass.
+
 ## Invariants
 
 - GTK3-only layouts are never returned by GTK4 discovery.
@@ -143,12 +163,15 @@ diagnostics for the future GTK4 preferences page.
 - Controller refresh commits preference state only after provider success.
 - Discovery metadata can be released immediately after controller refresh.
 - Controller destruction removes active providers before releasing its state.
+- Preference callbacks run only after controller application succeeds.
+- Appearance-only refresh never writes persisted theme values.
+- Preference teardown disconnects controls before releasing callback state.
 - `.hct` and `colors.conf` remain independent Fabulor formats.
 
 ## Planned Passes
 
-1. Bind the lifecycle controller to the production GTK4 preferences UI and
-   persisted configuration.
+1. Insert the owned GTK4 preference surface into the production preferences
+   window and connect its commit callback to the reserved configuration keys.
 2. Connect the Windows appearance decision to the production GTK4 runtime and
    validate light, dark, and high-contrast rendering without a bundled theme.
 3. Retire GTK3 discovery, imports, and `%APPDATA%\Fabulor\gtk3-themes` only
@@ -171,3 +194,7 @@ The Windows appearance matrix covers custom follow-system, explicit light,
 explicit dark, system-default, invalid variant, and high-contrast decisions.
 The controller contract verifies copied-choice lifetime, invalid-CSS rollback,
 unavailable-selection fallback, high-contrast teardown, and final cleanup.
+The preference-surface contract verifies successful commit callbacks, invalid
+theme rollback without persistence, system-default selection, high-contrast
+refresh without persistence, missing saved-theme status, and unparented
+teardown after the surface has been attached to a container.

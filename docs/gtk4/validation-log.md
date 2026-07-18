@@ -3757,6 +3757,46 @@ Manual checks:
 Scope: backend selection and shipping decision integration only. This pass does
 not implement a new shell icon, StatusNotifier service, or popup renderer.
 
+### PR: Pending - GTK4 Stage 7 Theme Preference Binding
+
+Date: 2026-07-18
+
+Migration stage: 7, GTK4 theme-preference binding pass 12
+
+Files/workflows converted: owned GTK4 theme and variant controls; lifecycle
+controller binding; transactional selection and persistence callback; missing
+theme, invalid CSS, and high-contrast status; parented-widget teardown
+
+GTK version: GTK4 4.22.4 probe
+
+GLib version: GTK4 probe 2.88.0
+
+Build configuration: strict GTK4 MSVC probe, fresh MSVC Meson/Ninja probe, and
+Linux GCC C11 syntax validation
+
+Automated checks:
+
+- [x] strict GTK4 MSVC probe compiles, links, and executes with 0 warnings and 0 errors
+- [x] fresh MSVC Meson/Ninja probe compiles 48 objects with warnings treated as errors
+- [x] independent Meson runtime test passes 1/1
+- [x] Linux GCC C11 syntax check passes with all warnings treated as errors
+- [x] successful theme and variant changes emit committed stable values
+- [x] invalid CSS restores the prior selection and does not emit persistence
+- [x] system-default selection removes the active custom provider
+- [x] high-contrast refresh suppresses custom CSS without persistence writes
+- [x] unavailable saved themes expose system-default fallback status
+- [x] teardown unparents an attached surface and disconnects its controls
+- [x] repository diff whitespace validation passes
+
+Manual checks:
+
+- [ ] production GTK4 preferences-window insertion awaits frontend cutover
+- [ ] packaged Windows light, dark, and high-contrast testing remains pending
+- [ ] imported theme selection awaits the production GTK4 build
+
+Scope: candidate GTK4 preference ownership and persistence boundary only. This
+pass does not alter the shipping GTK3 preference page or GTK3 theme service.
+
 ## Per-PR Record Template
 
 Copy this section for each GTK4 PR:

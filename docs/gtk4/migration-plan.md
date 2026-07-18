@@ -1276,6 +1276,16 @@ legacy status-icon fallback; Unix-like GTK4 builds require an available
 StatusNotifier backend. Stable backend names and the full decision matrix are
 covered by the strict probe. Native backend implementation remains deferred.
 
+GTK4 theme-preference binding pass 12 (2026-07-18):
+`theme-preferences-gtk4.c` now owns the candidate GTK4 theme and variant
+controls, lifecycle controller, discovered choice model, and persistence
+callback boundary. Selections apply transactionally before committed values
+are emitted; invalid CSS restores the prior controls and active provider.
+Unavailable saved themes and high contrast have explicit status, appearance
+refresh does not produce persistence writes, and teardown disconnects controls
+before unparenting the owned surface. Production preferences-window insertion
+and packaged Windows appearance testing remain deferred until GTK4 cutover.
+
 Exit criteria:
 
 - Theme switching, restart persistence, tray state, notifications, icons,

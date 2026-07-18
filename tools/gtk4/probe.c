@@ -11,6 +11,7 @@
 #include "../../src/fe-gtk/emoji-picker.h"
 #include "../../src/fe-gtk/theme/theme-gtk4.h"
 #include "../../src/fe-gtk/theme/theme-gtk4-controller.h"
+#include "../../src/fe-gtk/theme/theme-preferences-gtk4.h"
 #include "../../src/fe-gtk/tray-action-model.h"
 #include "../../src/fe-gtk/tray-backend-policy.h"
 #include "../../src/fe-gtk/tray-menu-composition.h"
@@ -2423,6 +2424,157 @@ check_gtk4_theme_controller_policy (void)
 	return valid;
 }
 
+typedef struct
+{
+	char *theme_id;
+	guint variant;
+	guint count;
+} ProbeThemePreferencesCommit;
+
+static void
+probe_theme_preferences_commit (const char *theme_id, guint variant,
+	gpointer user_data)
+{
+	ProbeThemePreferencesCommit *commit = user_data;
+
+	g_free (commit->theme_id);
+	commit->theme_id = g_strdup (theme_id);
+	commit->variant = variant;
+	commit->count++;
+}
+
+static guint
+probe_theme_choice_index (const GPtrArray *choices, const char *display_name)
+{
+	guint i;
+
+	for (i = 0; choices && i < choices->len; i++)
+	{
+		const FabulorGtk4ThemeChoice *choice = g_ptr_array_index (choices, i);
+
+		if (g_strcmp0 (choice->display_name, display_name) == 0)
+			return i;
+	}
+	return GTK_INVALID_LIST_POSITION;
+}
+
+static gboolean
+check_gtk4_theme_preferences_binding (void)
+{
+	GError *error = NULL;
+	char *temporary = g_dir_make_tmp (
+		"fabulor-gtk4-theme-preferences-XXXXXX", &error);
+	char *profile_root;
+	char *valid_root;
+	char *invalid_root;
+	char *invalid_gtk_dir;
+	char *invalid_css;
+	GPtrArray *discovered;
+	char *valid_id = NULL;
+	ThemePreferencesGtk4 *preferences;
+	ThemePreferencesGtk4 *missing_preferences;
+	ThemeGtk4Controller *controller;
+	const GPtrArray *choices;
+	ProbeThemePreferencesCommit commit = { 0 };
+	GtkWidget *container;
+	GtkWidget *retained;
+	guint valid_index;
+	guint invalid_index;
+	gboolean valid;
+	guint i;
+
+	if (!temporary)
+	{
+		g_clear_error (&error);
+		return FALSE;
+	}
+	profile_root = fabulor_gtk4_theme_profile_dir (temporary);
+	g_mkdir_with_parents (profile_root, 0700);
+	valid_root = probe_make_gtk4_theme (profile_root, "valid", "Valid", TRUE);
+	invalid_root = g_build_filename (profile_root, "invalid", NULL);
+	invalid_gtk_dir = g_build_filename (invalid_root, "gtk-4.0", NULL);
+	invalid_css = g_build_filename (invalid_gtk_dir, "gtk.css", NULL);
+	g_mkdir_with_parents (invalid_gtk_dir, 0700);
+	g_file_set_contents (invalid_css,
+		"window { color: definitely-not-a-colour; }\n", -1, NULL);
+	discovered = fabulor_gtk4_theme_discover (temporary);
+	for (i = 0; i < discovered->len; i++)
+	{
+		const FabulorGtk4Theme *theme = g_ptr_array_index (discovered, i);
+
+		if (g_strcmp0 (theme->display_name, "Valid") == 0)
+			valid_id = g_strdup (theme->id);
+	}
+	g_ptr_array_unref (discovered);
+
+	preferences = theme_preferences_gtk4_new (NULL, temporary, valid_id,
+		FABULOR_GTK4_THEME_VARIANT_PREFER_LIGHT, FALSE, FALSE,
+		probe_theme_preferences_commit, &commit, NULL, &error);
+	controller = theme_preferences_gtk4_controller (preferences);
+	choices = controller ? theme_gtk4_controller_choices (controller) : NULL;
+	valid_index = probe_theme_choice_index (choices, "Valid");
+	invalid_index = probe_theme_choice_index (choices, "invalid");
+	valid = preferences != NULL && error == NULL && choices &&
+		choices->len == 3 && valid_index != GTK_INVALID_LIST_POSITION &&
+		invalid_index != GTK_INVALID_LIST_POSITION &&
+		GTK_IS_BOX (theme_preferences_gtk4_widget (preferences)) &&
+		g_strcmp0 (theme_preferences_gtk4_stored_id (preferences), valid_id) == 0 &&
+		theme_preferences_gtk4_stored_variant (preferences) ==
+			FABULOR_GTK4_THEME_VARIANT_PREFER_LIGHT &&
+		theme_gtk4_controller_theme_is_active (controller) &&
+		theme_preferences_gtk4_status (preferences) == NULL;
+	valid = valid && theme_preferences_gtk4_select_variant (preferences,
+		FABULOR_GTK4_THEME_VARIANT_PREFER_DARK, &error) && error == NULL &&
+		commit.count == 1 && commit.variant ==
+			FABULOR_GTK4_THEME_VARIANT_PREFER_DARK &&
+		g_strcmp0 (commit.theme_id, valid_id) == 0 &&
+		theme_gtk4_controller_active_provider_count (controller) == 2;
+	valid = valid && !theme_preferences_gtk4_select_theme (preferences,
+		invalid_index, &error) && error != NULL && commit.count == 1 &&
+		g_strcmp0 (theme_preferences_gtk4_stored_id (preferences), valid_id) == 0 &&
+		g_strcmp0 (theme_gtk4_controller_active_id (controller), valid_id) == 0 &&
+		theme_preferences_gtk4_status (preferences) != NULL;
+	g_clear_error (&error);
+	valid = valid && theme_preferences_gtk4_select_theme (preferences, 0,
+		&error) && error == NULL && commit.count == 2 &&
+		commit.theme_id[0] == '\0' &&
+		!theme_gtk4_controller_theme_is_active (controller);
+	valid = valid && theme_preferences_gtk4_select_theme (preferences,
+		valid_index, &error) && error == NULL && commit.count == 3 &&
+		theme_preferences_gtk4_refresh (preferences, TRUE, TRUE, &error) &&
+		error == NULL && !theme_gtk4_controller_theme_is_active (controller) &&
+		theme_preferences_gtk4_status (preferences) != NULL;
+
+	container = gtk_box_new (GTK_ORIENTATION_VERTICAL, 0);
+	g_object_ref_sink (container);
+	retained = g_object_ref (theme_preferences_gtk4_widget (preferences));
+	gtk_box_append (GTK_BOX (container), retained);
+	theme_preferences_gtk4_free (preferences);
+	valid = valid && gtk_widget_get_parent (retained) == NULL;
+	g_object_unref (retained);
+	g_object_unref (container);
+
+	missing_preferences = theme_preferences_gtk4_new (NULL, temporary,
+		"profile:missing", FABULOR_GTK4_THEME_VARIANT_FOLLOW_SYSTEM,
+		FALSE, FALSE, NULL, NULL, NULL, &error);
+	valid = valid && missing_preferences != NULL && error == NULL &&
+		theme_preferences_gtk4_status (missing_preferences) != NULL &&
+		theme_gtk4_controller_selected_index (
+			theme_preferences_gtk4_controller (missing_preferences)) == 0;
+	theme_preferences_gtk4_free (missing_preferences);
+
+	g_free (commit.theme_id);
+	g_free (valid_id);
+	g_free (invalid_css);
+	g_free (invalid_gtk_dir);
+	g_free (invalid_root);
+	g_free (valid_root);
+	g_free (profile_root);
+	probe_remove_tree (temporary);
+	g_free (temporary);
+	return valid;
+}
+
 static gboolean
 probe_spell_mirc_color (gint color_index, FabulorSpellEntryColor *color,
 	gpointer user_data)
@@ -3571,6 +3723,11 @@ main (void)
 	if (!check_gtk4_theme_controller_policy ())
 	{
 		fprintf (stderr, "GTK4 theme controller policy mismatch\n");
+		return 1;
+	}
+	if (!check_gtk4_theme_preferences_binding ())
+	{
+		fprintf (stderr, "GTK4 theme preferences binding mismatch\n");
 		return 1;
 	}
 	if (!check_tray_action_model ())
