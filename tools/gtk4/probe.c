@@ -12,6 +12,7 @@
 #include "../../src/fe-gtk/theme/theme-gtk4.h"
 #include "../../src/fe-gtk/theme/theme-gtk4-controller.h"
 #include "../../src/fe-gtk/tray-action-model.h"
+#include "../../src/fe-gtk/tray-backend-policy.h"
 #include "../../src/fe-gtk/tray-menu-composition.h"
 #include "../../src/fe-gtk/tray-menu-presenter-gtk4.h"
 #include "../../src/fe-gtk/ignore-list.h"
@@ -2689,6 +2690,61 @@ check_tray_action_model (void)
 }
 
 static gboolean
+tray_backend_policy_matches (const FabulorTrayBackendEnvironment *environment,
+	FabulorTrayBackendKind expected, const char *expected_name,
+	gboolean expected_usable)
+{
+	FabulorTrayBackendKind selected =
+		fabulor_tray_backend_select (environment);
+
+	return selected == expected &&
+		g_strcmp0 (fabulor_tray_backend_name (selected), expected_name) == 0 &&
+		fabulor_tray_backend_is_usable (selected) == expected_usable;
+}
+
+static gboolean
+check_tray_backend_policy (void)
+{
+	FabulorTrayBackendEnvironment environment = { 0 };
+	gboolean passed;
+
+	environment.windows = TRUE;
+	environment.windows_shell_available = TRUE;
+	environment.status_notifier_compiled = TRUE;
+	environment.status_notifier_available = TRUE;
+	passed = tray_backend_policy_matches (&environment,
+		FABULOR_TRAY_BACKEND_DISABLED, "disabled", FALSE);
+
+	environment.enabled = TRUE;
+	passed = passed && tray_backend_policy_matches (&environment,
+		FABULOR_TRAY_BACKEND_WINDOWS_SHELL, "windows-shell", TRUE);
+	environment.windows_shell_available = FALSE;
+	passed = passed && tray_backend_policy_matches (&environment,
+		FABULOR_TRAY_BACKEND_UNAVAILABLE, "unavailable", FALSE);
+
+	environment.windows = FALSE;
+	environment.toolkit_major = 4;
+	passed = passed && tray_backend_policy_matches (&environment,
+		FABULOR_TRAY_BACKEND_STATUS_NOTIFIER, "status-notifier", TRUE);
+	environment.status_notifier_available = FALSE;
+	environment.legacy_status_icon_available = TRUE;
+	passed = passed && tray_backend_policy_matches (&environment,
+		FABULOR_TRAY_BACKEND_UNAVAILABLE, "unavailable", FALSE);
+
+	environment.toolkit_major = 0;
+	passed = passed && tray_backend_policy_matches (&environment,
+		FABULOR_TRAY_BACKEND_UNAVAILABLE, "unavailable", FALSE);
+	environment.toolkit_major = 3;
+	passed = passed && tray_backend_policy_matches (&environment,
+		FABULOR_TRAY_BACKEND_LEGACY_STATUS_ICON,
+		"legacy-status-icon", TRUE);
+	environment.status_notifier_available = TRUE;
+	passed = passed && tray_backend_policy_matches (&environment,
+		FABULOR_TRAY_BACKEND_STATUS_NOTIFIER, "status-notifier", TRUE);
+	return passed;
+}
+
+static gboolean
 check_tray_menu_composition (void)
 {
 	GMenu *built_in = g_menu_new ();
@@ -3520,6 +3576,11 @@ main (void)
 	if (!check_tray_action_model ())
 	{
 		fprintf (stderr, "GTK4 tray action model contract mismatch\n");
+		return 1;
+	}
+	if (!check_tray_backend_policy ())
+	{
+		fprintf (stderr, "GTK4 tray backend policy mismatch\n");
 		return 1;
 	}
 	if (!check_tray_menu_composition ())

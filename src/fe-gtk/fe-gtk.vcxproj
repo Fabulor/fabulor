@@ -105,6 +105,7 @@ FOR %%I IN ("$(ZoiteChatLib)fabulor.rc") DO IF %%~zI EQU 0 (
     <ClInclude Include="palette.h" />
     <ClInclude Include="pixmaps.h" />
     <ClInclude Include="plugin-tray.h" />
+    <ClInclude Include="tray-backend-policy.h" />
     <ClInclude Include="plugingui.h" />
     <ClInclude Include="rawlog.h" />
     <ClInclude Include="servlistgui.h" />
@@ -183,6 +184,7 @@ FOR %%I IN ("$(ZoiteChatLib)fabulor.rc") DO IF %%~zI EQU 0 (
     <ClCompile Include="plugin-notification.c" />
     <ClCompile Include="plugin-tray.c" />
     <ClCompile Include="tray-action-model.c" />
+    <ClCompile Include="tray-backend-policy.c" />
     <ClCompile Include="tray-menu-composition.c" />
     <ClCompile Include="plugingui.c" />
     <ClCompile Include="rawlog.c" />

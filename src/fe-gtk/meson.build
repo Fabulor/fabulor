@@ -48,6 +48,7 @@ zoitechat_gtk_sources = [
   'preferences-persistence.c',
   'plugin-tray.c',
   'tray-action-model.c',
+  'tray-backend-policy.c',
   'tray-menu-composition.c',
   'plugin-notification.c',
   'rawlog.c',

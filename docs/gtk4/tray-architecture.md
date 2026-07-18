@@ -1,6 +1,6 @@
 # Tray Architecture
 
-Status: Stage 7 pass 10 complete for GTK4 popover presenter ownership
+Status: Stage 7 pass 11 complete for tray backend selection policy
 
 ## Action Boundary
 
@@ -64,6 +64,20 @@ content nor callable tray/plugin actions. The two namespace strings live in a
 toolkit-neutral shared header used by model generation, legacy menu attachment,
 and the GTK4 presenter.
 
+## Backend Selection
+
+`tray-backend-policy.c` resolves one explicit outcome from the tray preference,
+platform, toolkit generation, and compiled/runtime backend availability. Windows
+selects its native shell path only when supported. Unix-like builds prefer a
+compiled and available StatusNotifier implementation. A legacy `GtkStatusIcon`
+fallback is allowed only for a known pre-GTK4 toolkit; GTK4 and unknown toolkit
+versions return `unavailable` instead of calling removed APIs.
+
+The shipping tray initialization and preference-restart paths use this same
+policy, preserving their current GTK3 behavior while removing duplicated
+preprocessor decisions. Stable backend names provide a future diagnostics
+surface without exposing toolkit objects through the policy.
+
 Typed actions route through the existing visibility, away/back, preferences,
 quit, and preference-update paths. Model updates compare snapshots and avoid
 menu notifications when state is unchanged; only a visibility-label change
@@ -75,4 +89,4 @@ clears its plugin context.
 The shipping GTK3 status icon/AppIndicator and Win32 popup menu remain unchanged
 in this pass. The GTK4 presenter remains in the candidate probe until the GTK4
 frontend has a production anchor or platform tray backend. Native Windows
-shell-icon ownership and GTK4/Unix presenter selection remain separate tasks.
+shell-icon ownership and GTK4/Unix backend implementation remain separate tasks.
