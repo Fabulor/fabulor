@@ -1348,6 +1348,18 @@ runtime roots to fail closed. The production GTK4 target must invoke this
 bootstrap before delay-loaded GTK-family imports; the shipping GTK3 executable
 is unchanged in this pass.
 
+Native import-closure pass 4 (2026-07-18):
+`runtime-import-contract.json` now assigns the 35 packaged PE files to four
+explicit roots: the GTK frontend runtime, SVG image loader, and console/GUI
+spawn helpers. A fail-closed validator inspects every staged DLL and executable
+with MSVC `dumpbin`, resolves all 107 packaged dependency edges, and permits
+only 54 reviewed Windows/UCRT imports. Duplicate basenames, unresolved imports,
+legacy GTK3 or lib-prefixed duplicate GLib-family imports, missing roots, and
+unowned packaged binaries fail validation. Focused rejection tests run in lint
+and the complete candidate graph runs immediately after staging in Windows CI.
+This static closure does not justify trimming dynamically selected modules;
+feature-driven package tests remain required before removal.
+
 Deliverables:
 
 - Make GTK4 the only production frontend dependency in MSVC, Meson, and CI.

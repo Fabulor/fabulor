@@ -93,6 +93,21 @@ safe from the nested directory. At production cutover, GTK-family imports must
 be delay-loaded behind the bootstrap or moved into a module loaded only after
 the bootstrap succeeds. The current GTK3 executable is not changed here.
 
+Stage 8 pass 4 adds `runtime-import-contract.json` and
+`validate_runtime_imports.py`. The contract defines four native ownership roots
+and the reviewed Windows/UCRT import surface. The validator inspects all staged
+PE files, resolves imports case-insensitively to unique packaged basenames or
+the explicit system allowlist, rejects GTK3 and lib-prefixed duplicate
+GLib-family names, and requires every packaged native file to be reachable from
+an ownership root.
+
+The current candidate contains 35 PE files, 107 packaged import edges, and 54
+distinct reviewed system imports. The roots are `gtk-4-1.dll`, the SVG pixbuf
+loader, and both GLib spawn helpers. This proves static native closure and
+package ownership; it does not detect data-driven module loading or make an
+unused-file decision. GIO, pixbuf, icon, locale, font, schema, and typelib
+trimming remains gated on packaged feature tests and module/process evidence.
+
 ## Sources And Provenance
 
 Windows CI currently downloads both GTK3 and GTK4 archives from the
