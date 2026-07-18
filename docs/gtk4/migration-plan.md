@@ -1237,6 +1237,16 @@ Win32 presentation remains unchanged; live plugin binding, dynamic `$TRAY`
 entries, and native shell-icon ownership are later passes. The contract is
 documented in [`tray-architecture.md`](tray-architecture.md).
 
+Tray live-binding pass 8 (2026-07-18):
+the built-in tray plugin now owns the action model from initialization through
+deinitialization, projects live visibility, aggregate away, and blink settings,
+and routes every typed action through the existing application commands.
+Window, settings, and away transitions refresh the model; borrowed menu/action
+accessors refresh on demand. Snapshot comparisons suppress unchanged menu
+notifications, while visibility changes alone rebuild the hide/restore section.
+The model is now part of production MSVC and Meson source lists. Presenter
+replacement and dynamic `$TRAY` composition remain later passes.
+
 Exit criteria:
 
 - Theme switching, restart persistence, tray state, notifications, icons,

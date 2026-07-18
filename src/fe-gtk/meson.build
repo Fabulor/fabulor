@@ -47,6 +47,7 @@ zoitechat_gtk_sources = [
   'pixmaps.c',
   'preferences-persistence.c',
   'plugin-tray.c',
+  'tray-action-model.c',
   'plugin-notification.c',
   'rawlog.c',
   'servlistgui.c',

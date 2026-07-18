@@ -3598,6 +3598,46 @@ Manual checks:
 Scope: tray action and state ownership only. This pass does not replace the
 shipping status icon, AppIndicator, Win32 popup, or tray timers.
 
+### PR: pending - GTK4 Stage 7 Tray Live Binding
+
+Date: 2026-07-18
+
+Migration stage: 7, production tray action-model binding pass 8
+
+Files/workflows converted: production model lifetime; translated label input;
+live visibility/away/blink snapshots; typed command routing; frontend away
+refresh; on-demand presenter access; unchanged-state notification suppression;
+production MSVC and Meson source registration
+
+GTK version: shipping GTK3 frontend plus GTK4 4.22.4 probe
+
+GLib version: shipping Windows runtime plus GTK4 probe 2.88.0
+
+Build configuration: shipping MSVC x64 Release, strict GTK4 MSVC probe, fresh
+MSVC Meson/Ninja probe, and Linux GCC C11 syntax validation
+
+Automated checks:
+
+- [x] shipping frontend compiles and links with 0 warnings and 0 errors
+- [x] strict GTK4 MSVC probe compiles, links, and executes with 0 warnings and 0 errors
+- [x] fresh MSVC Meson/Ninja probe compiles 44 objects with warnings treated as errors
+- [x] independent Meson runtime test passes 1/1
+- [x] Linux GCC C11 syntax check passes with all warnings treated as errors
+- [x] window, settings, and away transitions feed live state into the model
+- [x] every typed action routes to its existing application command or preference
+- [x] repeated identical snapshots emit no menu item changes
+- [x] model and plugin context are released during plugin deinitialization
+- [x] repository diff whitespace validation passes
+
+Manual checks:
+
+- [ ] shipping tray menu remains on its unchanged GTK3/Win32 presentation path
+- [ ] production GTK4 presenter interaction awaits the presentation pass
+- [ ] dynamic `$TRAY` plugin entries await model composition
+
+Scope: live action-model binding only. This pass does not replace tray icon,
+popup presentation, flashing timers, or platform backend selection.
+
 ## Per-PR Record Template
 
 Copy this section for each GTK4 PR:

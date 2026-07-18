@@ -6176,6 +6176,7 @@ fe_set_away (server *serv)
                 }
                 list = list->next;
         }
+        tray_action_model_refresh ();
 }
 
 void

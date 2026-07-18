@@ -30,6 +30,8 @@
 #include "maingui.h"
 #include "menu.h"
 #include "gtkutil.h"
+#include "plugin-tray.h"
+#include "tray-action-model.h"
 
 #include <gio/gio.h>
 #if defined(GTK_DISABLE_DEPRECATED)
@@ -118,7 +120,6 @@ gboolean gtk_status_icon_is_embedded (GtkStatusIcon *status_icon);
 #endif
 #define TIMEOUT 500
 
-void tray_apply_setup (void);
 static gboolean tray_menu_try_restore (void);
 static void tray_cleanup (void);
 static void tray_init (void);
@@ -126,6 +127,11 @@ static void tray_set_icon_state (TrayIcon icon, TrayIconState state);
 static void tray_menu_restore_cb (GtkWidget *item, gpointer userdata);
 static void tray_menu_notify_cb (GObject *tray, GParamSpec *pspec, gpointer user_data);
 static void tray_update_toggle_item_label (void);
+static int tray_find_away_status (void);
+static void tray_foreach_server (GtkWidget *item, char *cmd);
+static void tray_menu_quit_cb (GtkWidget *item, gpointer userdata);
+static void tray_menu_settings (GtkWidget *wid, gpointer none);
+static WinStatus tray_get_window_status (void);
 static gboolean tray_window_state_cb (GtkWidget *widget, GdkEventWindowState *event, gpointer userdata);
 static void tray_window_visibility_cb (GtkWidget *widget, gpointer userdata);
 static void tray_toggle_item_destroy_cb (GtkWidget *widget, gpointer userdata);
@@ -163,6 +169,7 @@ static guint tray_menu_timer;
 static gint64 tray_menu_inactivetime;
 #endif
 static zoitechat_plugin *ph;
+static FabulorTrayActionModel *tray_actions;
 
 static TrayCustomIcon custom_icon1;
 static TrayCustomIcon custom_icon2;
@@ -173,6 +180,115 @@ static int tray_hilight_count = 0;
 static int tray_file_count = 0;
 static int tray_restore_timer = 0;
 static GtkWidget *tray_toggle_item = NULL;
+
+static FabulorTrayAwayState
+tray_action_away_state (void)
+{
+	switch (tray_find_away_status ())
+	{
+	case 1:
+		return FABULOR_TRAY_AWAY_ALL_AWAY;
+	case 2:
+		return FABULOR_TRAY_AWAY_ALL_BACK;
+	default:
+		return FABULOR_TRAY_AWAY_MIXED;
+	}
+}
+
+void
+tray_action_model_refresh (void)
+{
+	FabulorTrayActionState state;
+
+	if (!tray_actions || !ph)
+		return;
+
+	state.window_hidden = tray_get_window_status () == WS_HIDDEN;
+	state.away_state = tray_action_away_state ();
+	state.blink_channel = prefs.hex_input_tray_chans != 0;
+	state.blink_private = prefs.hex_input_tray_priv != 0;
+	state.blink_highlight = prefs.hex_input_tray_hilight != 0;
+	fabulor_tray_action_model_update (tray_actions, &state);
+}
+
+GMenuModel *
+tray_action_menu_model (void)
+{
+	tray_action_model_refresh ();
+	return tray_actions ? fabulor_tray_action_model_get_menu (tray_actions) : NULL;
+}
+
+GActionGroup *
+tray_action_group (void)
+{
+	tray_action_model_refresh ();
+	return tray_actions ? fabulor_tray_action_model_get_actions (tray_actions) : NULL;
+}
+
+static void
+tray_action_activate (FabulorTrayAction action, gboolean state,
+	gpointer user_data)
+{
+	(void)user_data;
+
+	switch (action)
+	{
+	case FABULOR_TRAY_ACTION_TOGGLE_VISIBILITY:
+		tray_toggle_visibility (FALSE);
+		break;
+	case FABULOR_TRAY_ACTION_SET_AWAY:
+		tray_foreach_server (NULL, "away");
+		break;
+	case FABULOR_TRAY_ACTION_SET_BACK:
+		tray_foreach_server (NULL, "back");
+		break;
+	case FABULOR_TRAY_ACTION_BLINK_CHANNEL:
+		prefs.hex_input_tray_chans = state;
+		break;
+	case FABULOR_TRAY_ACTION_BLINK_PRIVATE:
+		prefs.hex_input_tray_priv = state;
+		break;
+	case FABULOR_TRAY_ACTION_BLINK_HIGHLIGHT:
+		prefs.hex_input_tray_hilight = state;
+		break;
+	case FABULOR_TRAY_ACTION_PREFERENCES:
+		tray_menu_settings (NULL, NULL);
+		break;
+	case FABULOR_TRAY_ACTION_QUIT:
+		tray_menu_quit_cb (NULL, NULL);
+		break;
+	default:
+		break;
+	}
+
+	tray_action_model_refresh ();
+}
+
+static void
+tray_action_model_init (void)
+{
+	const FabulorTrayActionLabels labels = {
+		_("_Hide Window"),
+		_("_Restore Window"),
+		_("_Blink on"),
+		_("Channel Message"),
+		_("Private Message"),
+		_("Highlighted Message"),
+		_("_Change status"),
+		_("_Away"),
+		_("_Back"),
+		_("_Preferences"),
+		_("_Quit")
+	};
+	FabulorTrayActionState state = { 0 };
+
+	if (tray_actions)
+		return;
+
+	tray_actions = fabulor_tray_action_model_new (&labels, &state,
+		tray_action_activate, NULL, NULL);
+	tray_action_model_refresh ();
+}
 
 #if HAVE_APPINDICATOR_BACKEND
 static TrayCustomIcon
@@ -902,6 +1018,7 @@ tray_toggle_visibility (gboolean force_hide)
 	}
 
 	tray_update_toggle_item_label ();
+	tray_action_model_refresh ();
 
 	return TRUE;
 }
@@ -1221,6 +1338,7 @@ tray_menu_populate (GtkWidget *menu)
 
 	/* ph may have an invalid context now */
 	zoitechat_set_context (ph, zoitechat_find_context (ph, NULL, NULL));
+	tray_action_model_refresh ();
 
 	tray_toggle_item = tray_make_item (menu, _("_Hide Window"), tray_menu_restore_cb, NULL);
 	g_signal_connect (G_OBJECT (tray_toggle_item), "destroy",
@@ -1322,6 +1440,7 @@ tray_window_state_cb (GtkWidget *widget, GdkEventWindowState *event, gpointer us
 	(void)userdata;
 
 	tray_update_toggle_item_label ();
+	tray_action_model_refresh ();
 
 	return FALSE;
 }
@@ -1333,6 +1452,7 @@ tray_window_visibility_cb (GtkWidget *widget, gpointer userdata)
 	(void)userdata;
 
 	tray_update_toggle_item_label ();
+	tray_action_model_refresh ();
 }
 
 #if !HAVE_APPINDICATOR_BACKEND
@@ -1543,6 +1663,7 @@ tray_cleanup (void)
 void
 tray_apply_setup (void)
 {
+	tray_action_model_refresh ();
 	if (tray_backend_active)
 	{
 		if (!prefs.hex_gui_tray)
@@ -1571,6 +1692,7 @@ tray_plugin_init (zoitechat_plugin *plugin_handle, char **plugin_name,
 	*plugin_name = "Tray";
 	*plugin_desc = "System tray integration";
 	*plugin_version = "";
+	tray_action_model_init ();
 
 	zoitechat_hook_print (ph, "Channel Msg Hilight", -1, tray_hilight_cb, NULL);
 	zoitechat_hook_print (ph, "Channel Action Hilight", -1, tray_hilight_cb, NULL);
@@ -1617,8 +1739,12 @@ tray_plugin_init (zoitechat_plugin *plugin_handle, char **plugin_name,
 int
 tray_plugin_deinit (zoitechat_plugin *plugin_handle)
 {
+	(void)plugin_handle;
 #ifdef WIN32
 	tray_cleanup ();
 #endif
+	fabulor_tray_action_model_free (tray_actions);
+	tray_actions = NULL;
+	ph = NULL;
 	return 1;
 }

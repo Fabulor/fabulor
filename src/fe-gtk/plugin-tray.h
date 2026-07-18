@@ -20,9 +20,14 @@
 #ifndef ZOITECHAT_PLUGIN_TRAY_H
 #define ZOITECHAT_PLUGIN_TRAY_H
 
+#include <gio/gio.h>
+
 int tray_plugin_init (void *, char **, char **, char **, char *);
 int tray_plugin_deinit (void *);
 gboolean tray_toggle_visibility (gboolean force_hide);
 void tray_apply_setup (void);
+void tray_action_model_refresh (void);
+GMenuModel *tray_action_menu_model (void);
+GActionGroup *tray_action_group (void);
 
 #endif

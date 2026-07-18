@@ -1,6 +1,6 @@
 # Tray Architecture
 
-Status: Stage 7 pass 7 complete for tray action and state ownership
+Status: Stage 7 pass 8 complete for tray action ownership and live binding
 
 ## Action Boundary
 
@@ -33,9 +33,19 @@ Windows presenters to consume the same behavior.
 
 ## Deferred Presentation Work
 
-The shipping `plugin-tray.c` GTK3 status icon/AppIndicator and Win32 popup menu
-remain unchanged in this pass. A later binding pass must populate the snapshot
-from live preferences and window/network state, route typed actions to the
-existing commands, and compose dynamic `$TRAY` plugin entries. Native Windows
-shell-icon ownership and GTK4/Unix presenter selection remain separate
-platform tasks.
+`plugin-tray.c` now owns one action model for its complete plugin lifetime. It
+populates snapshots from live window visibility, aggregate away state, and the
+three blink preferences. Window show/hide/state changes, preference application,
+and `fe_set_away` refresh the model. Presenters can request borrowed menu and
+action-group handles; each request first refreshes live state.
+
+Typed actions route through the existing visibility, away/back, preferences,
+quit, and preference-update paths. Model updates compare snapshots and avoid
+menu notifications when state is unchanged; only a visibility-label change
+rebuilds menu sections. Plugin deinitialization releases the action owner and
+clears its plugin context.
+
+The shipping GTK3 status icon/AppIndicator and Win32 popup menu remain unchanged
+in this pass. A later presentation pass must consume the bound model and compose
+dynamic `$TRAY` plugin entries. Native Windows shell-icon ownership and
+GTK4/Unix presenter selection remain separate platform tasks.
