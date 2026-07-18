@@ -216,7 +216,7 @@ jobs:
           if errorlevel 1 exit /b 1
 
           rem Build a separate MSI against the deterministic GTK4 runtime candidate.
-          dotnet build installer\Fabulor.wixproj -c Release /p:Platform=${{ matrix.platform }} /p:GtkRuntimeCandidate=true /p:BuildFabulorBootstrapper=false /p:GtkRuntimeRoot="%GITHUB_WORKSPACE%\build\gtk4-runtime-candidate" /p:FabulorInstallerOutputName=FabulorGtk4RuntimeCandidate /p:FabulorInstallerOutputPath="%GITHUB_WORKSPACE%\build\gtk4-candidate-installer\" /p:FabulorInstallerIntermediateOutputPath="%GITHUB_WORKSPACE%\build\gtk4-candidate-installer-obj\" /verbosity:minimal
+          dotnet build installer\Fabulor.wixproj -c Release /p:Platform=${{ matrix.platform }} /p:GtkRuntimeCandidate=true /p:BuildFabulorBootstrapper=false /p:GtkRuntimeRoot="%GITHUB_WORKSPACE%\build\gtk4-runtime-candidate" /p:FabulorInstallerOutputName=FabulorGtk4RuntimeCandidate /p:FabulorInstallerOutputPath="%GITHUB_WORKSPACE%\build\gtk4-candidate-installer" /p:FabulorInstallerIntermediateOutputPath="%GITHUB_WORKSPACE%\build\gtk4-candidate-installer-obj" /verbosity:minimal
           if errorlevel 1 exit /b 1
 
           python tools\gtk4\validate_candidate_msi.py --wix "%USERPROFILE%\.nuget\packages\wixtoolset.sdk\7.0.0\tools\net472\x64\wix.exe" --msi "%GITHUB_WORKSPACE%\build\gtk4-candidate-installer\FabulorGtk4RuntimeCandidate.msi" --manifest "%GITHUB_WORKSPACE%\build\gtk4-runtime-candidate\runtime-manifest.json"
