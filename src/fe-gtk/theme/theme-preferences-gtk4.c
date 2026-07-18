@@ -286,11 +286,23 @@ gboolean
 theme_preferences_gtk4_refresh (ThemePreferencesGtk4 *preferences,
 	gboolean system_prefers_dark, gboolean high_contrast, GError **error)
 {
+	gboolean previous_system_prefers_dark;
+	gboolean previous_high_contrast;
+	gboolean result;
+
 	g_return_val_if_fail (preferences != NULL, FALSE);
+	previous_system_prefers_dark = preferences->system_prefers_dark;
+	previous_high_contrast = preferences->high_contrast;
 	preferences->system_prefers_dark = system_prefers_dark;
 	preferences->high_contrast = high_contrast;
-	return theme_preferences_gtk4_apply (preferences, preferences->stored_id,
+	result = theme_preferences_gtk4_apply (preferences, preferences->stored_id,
 		preferences->stored_variant, FALSE, error);
+	if (!result)
+	{
+		preferences->system_prefers_dark = previous_system_prefers_dark;
+		preferences->high_contrast = previous_high_contrast;
+	}
+	return result;
 }
 
 const char *

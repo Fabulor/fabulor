@@ -3797,6 +3797,47 @@ Manual checks:
 Scope: candidate GTK4 preference ownership and persistence boundary only. This
 pass does not alter the shipping GTK3 preference page or GTK3 theme service.
 
+### PR: [#122](https://github.com/Fabulor/fabulor/pull/122) - GTK4 Stage 7 Windows Appearance Monitor
+
+Date: 2026-07-18
+
+Migration stage: 7, Windows appearance-monitor pass 13
+
+Files/workflows converted: GTK4 display-scoped Win32 filter; queued and
+coalesced theme signals; Windows registry and high-contrast query; unchanged
+state suppression; controller refresh; failure diagnostics; filter/source
+teardown
+
+GTK version: GTK4 4.22.4 probe
+
+GLib version: GTK4 probe 2.88.0
+
+Build configuration: strict GTK4 MSVC probe, fresh MSVC Meson/Ninja probe, and
+Linux GCC C11 syntax validation
+
+Automated checks:
+
+- [x] strict GTK4 MSVC probe compiles, links, and executes with 0 warnings and 0 errors
+- [x] fresh MSVC Meson/Ninja probe compiles 49 objects with warnings treated as errors
+- [x] independent Meson runtime test passes 1/1
+- [x] Linux GCC C11 syntax check passes with all warnings treated as errors
+- [x] repeated appearance messages coalesce into one queued query
+- [x] unchanged state does not reapply providers
+- [x] follow-system dark state activates the dark provider
+- [x] high contrast removes custom providers without a persistence write
+- [x] query failure retains committed monitor and controller state
+- [x] teardown cancels queued work before releasing callback data
+- [x] repository diff whitespace validation passes
+
+Manual checks:
+
+- [ ] production GTK4 startup ownership awaits frontend cutover
+- [ ] packaged Windows light/dark switching remains pending
+- [ ] packaged Windows high-contrast rendering remains pending
+
+Scope: candidate GTK4 Windows appearance monitoring only. This pass does not
+replace the shipping GTK3 window filter or alter current packaged behavior.
+
 ## Per-PR Record Template
 
 Copy this section for each GTK4 PR:
