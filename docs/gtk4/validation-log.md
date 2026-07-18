@@ -3558,7 +3558,7 @@ Scope: platform notification loading, failure containment, and lifecycle only.
 The shipping GTK3 presentation remains in use and no GTK4 notification UI is
 claimed by this pass.
 
-### PR: pending - GTK4 Stage 7 Tray Action Model
+### PR: [#116 - GTK4 Stage 7 Tray Action Model](https://github.com/Fabulor/fabulor/pull/116)
 
 Date: 2026-07-18
 
