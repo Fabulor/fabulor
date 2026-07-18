@@ -57,6 +57,23 @@ Windows CI materializes this candidate before compiling the GTK4 probe. WiX
 continues to use the transitional component group until candidate feature and
 payload validation is complete.
 
+Stage 8 pass 2 adds an opt-in `GtkRuntimeCandidate=true` WiX composition. It
+selects `Components/GTK4Candidate.wxs`, requires the generated runtime manifest,
+and builds an MSI in an isolated output tree with bootstrapper generation
+disabled. Windows CI runs this only after the normal MSI/bootstrapper build and
+uploads it as `Fabulor GTK4 Runtime Candidate MSI x64`. The candidate package is
+named `FabulorGtk4RuntimeCandidate.msi` for payload inspection; its application
+executable remains the shipping GTK3 build until the production frontend
+cutover.
+
+Candidate component groups own `bin`, `etc/fonts`, `lib/gdk-pixbuf-2.0`, and
+each selected `share` subtree explicitly. This avoids WiX harvest-prefix
+flattening. After the candidate MSI is built, `validate_candidate_msi.py`
+decompiles and extracts it, then requires the installed `Runtime/GTK4` path set
+to equal all 1,431 generated manifest paths plus `runtime-manifest.json`, with
+no missing, unexpected, duplicate, misplaced, size-mismatched, or hash-mismatched
+entry.
+
 ## Sources And Provenance
 
 Windows CI currently downloads both GTK3 and GTK4 archives from the
@@ -194,7 +211,8 @@ DLL boundaries. Before cutover:
 
 ### 3. Parallel Package Validation
 
-- package the GTK4 candidate without removing the shipping GTK3 payload
+- [x] package and publish the GTK4 runtime candidate without replacing the
+  shipping MSI/bootstrapper or removing the GTK3 payload
 - run clean-machine smoke tests against the GTK4 executable
 - compare Process Monitor/module lists against the allowlist
 - identify optional modules through feature tests, not startup alone
