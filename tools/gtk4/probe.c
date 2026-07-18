@@ -2198,6 +2198,9 @@ check_spell_entry_word_policy (void)
 	FabulorSpellWords *words = fabulor_spell_words_new (
 		"alpha caf\303\251 omega", pango_language_from_string ("en"));
 	FabulorSpellWordRange range;
+	const gchar *mixed = "hello <https://example.com/path?q=caf\303\251> \360\237\230\200 world";
+	const gchar *example;
+	guint example_position;
 	gchar *word;
 	gboolean valid;
 
@@ -2219,6 +2222,25 @@ check_spell_entry_word_policy (void)
 		!fabulor_spell_words_get (words, 0, &range) &&
 		!fabulor_spell_words_find_character (words, 0, &range) &&
 		fabulor_spell_words_dup_word (words, 0) == NULL;
+	fabulor_spell_words_free (words);
+
+	words = fabulor_spell_words_new (mixed,
+		pango_language_from_string ("en"));
+	example = strstr (mixed, "example");
+	example_position = example ?
+		(guint) g_utf8_pointer_to_offset (mixed, example) : G_MAXUINT;
+	valid = valid && example != NULL &&
+		fabulor_spell_words_find_character (words, example_position, &range) &&
+		fabulor_spell_words_range_is_uri (words, &range) &&
+		fabulor_spell_words_find_character (words, 1, &range) &&
+		!fabulor_spell_words_range_is_uri (words, &range);
+	fabulor_spell_words_free (words);
+
+	words = fabulor_spell_words_new ("www.example.test/path",
+		pango_language_from_string ("en"));
+	valid = valid &&
+		fabulor_spell_words_find_character (words, 5, &range) &&
+		fabulor_spell_words_range_is_uri (words, &range);
 	fabulor_spell_words_free (words);
 	return valid;
 }

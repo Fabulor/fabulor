@@ -21,6 +21,8 @@ gboolean fabulor_spell_words_get (const FabulorSpellWords *words,
 	guint index, FabulorSpellWordRange *range);
 gboolean fabulor_spell_words_find_character (const FabulorSpellWords *words,
 	guint position, FabulorSpellWordRange *range);
+gboolean fabulor_spell_words_range_is_uri (const FabulorSpellWords *words,
+	const FabulorSpellWordRange *range);
 gchar *fabulor_spell_words_dup_word (const FabulorSpellWords *words,
 	guint index);
 

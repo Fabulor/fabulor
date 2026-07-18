@@ -110,6 +110,48 @@ fabulor_spell_words_find_character (const FabulorSpellWords *words,
 	return FALSE;
 }
 
+gboolean
+fabulor_spell_words_range_is_uri (const FabulorSpellWords *words,
+	const FabulorSpellWordRange *range)
+{
+	const gchar *text_start;
+	const gchar *text_end;
+	const gchar *token_start;
+	const gchar *token_end;
+	const gchar *previous;
+	gchar *token;
+	gchar *candidate;
+	gboolean is_uri;
+
+	if (!words || !range || range->byte_start >= range->byte_end)
+		return FALSE;
+	text_start = words->text;
+	text_end = words->text + strlen (words->text);
+	if (range->byte_end > (guint) (text_end - text_start))
+		return FALSE;
+
+	token_start = text_start + range->byte_start;
+	while ((previous = g_utf8_find_prev_char (text_start, token_start)) != NULL)
+	{
+		if (g_unichar_isspace (g_utf8_get_char (previous)))
+			break;
+		token_start = previous;
+	}
+	token_end = text_start + range->byte_end;
+	while (token_end < text_end &&
+		!g_unichar_isspace (g_utf8_get_char (token_end)))
+		token_end = g_utf8_next_char (token_end);
+
+	token = g_strndup (token_start, token_end - token_start);
+	candidate = token;
+	while (*candidate && strchr ("<([{\"'", (guchar) *candidate))
+		candidate++;
+	is_uri = g_uri_peek_scheme (candidate) != NULL ||
+		g_ascii_strncasecmp (candidate, "www.", 4) == 0;
+	g_free (token);
+	return is_uri;
+}
+
 gchar *
 fabulor_spell_words_dup_word (const FabulorSpellWords *words, guint index)
 {

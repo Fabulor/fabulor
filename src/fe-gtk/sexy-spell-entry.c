@@ -915,7 +915,9 @@ sexy_spell_entry_update_menu (SexySpellEntry *entry)
 
 	if (have_enchant && entry->priv->checked &&
 		get_word_range_from_position (entry, entry->priv->mark_character,
-			&range) && word_misspelled (entry, (gint) range.byte_start,
+			&range) &&
+		!fabulor_spell_words_range_is_uri (entry->priv->words, &range) &&
+		word_misspelled (entry, (gint) range.byte_start,
 			(gint) range.byte_end))
 	{
 		word = gtk_editable_get_chars (GTK_EDITABLE (entry),
@@ -989,6 +991,10 @@ sexy_spell_entry_init(SexySpellEntry *entry)
 	entry->priv = g_new0(SexySpellEntryPriv, 1);
 
 	entry->priv->dict_hash = g_hash_table_new_full(g_str_hash, g_str_equal, g_free, NULL);
+	entry->priv->attr_list = pango_attr_list_new();
+	entry->priv->words = fabulor_spell_words_new ("", NULL);
+	entry->priv->checked = TRUE;
+	entry->priv->parseattr = TRUE;
 
 	if (have_enchant)
 	{
@@ -999,11 +1005,6 @@ sexy_spell_entry_init(SexySpellEntry *entry)
 #endif
 		sexy_spell_entry_activate_default_languages(entry);
 	}
-
-	entry->priv->attr_list = pango_attr_list_new();
-
-	entry->priv->checked = TRUE;
-	entry->priv->parseattr = TRUE;
 
 #if GTK_MAJOR_VERSION < 4
 	g_signal_connect(G_OBJECT(entry), "popup-menu", G_CALLBACK(sexy_spell_entry_popup_menu), entry);
@@ -1180,7 +1181,8 @@ sexy_spell_entry_recheck_all(SexySpellEntry *entry)
 		for (i = 0; i < fabulor_spell_words_count (entry->priv->words); i++)
 		{
 			FabulorSpellWordRange range;
-			if (fabulor_spell_words_get (entry->priv->words, i, &range))
+			if (fabulor_spell_words_get (entry->priv->words, i, &range) &&
+				!fabulor_spell_words_range_is_uri (entry->priv->words, &range))
 				check_word (entry, (gint) range.byte_start,
 					(gint) range.byte_end, &palette);
 		}
@@ -1314,7 +1316,7 @@ get_lang_from_dict_cb(const char * const lang_tag,
 static gchar *
 get_lang_from_dict(struct EnchantDict *dict)
 {
-	gchar *lang;
+	gchar *lang = NULL;
 
 	if (!have_enchant)
 		return NULL;
