@@ -4007,7 +4007,7 @@ Scope: executable-relative Windows loader discovery and fail-closed path policy
 only. Production linking, the shipping GTK3 executable, installer selection,
 and root GTK3 payload remain unchanged.
 
-### PR: pending - GTK4 Stage 8 Native Import Closure
+### PR: [#127](https://github.com/Fabulor/fabulor/pull/127) - GTK4 Stage 8 Native Import Closure
 
 Date: 2026-07-18
 
