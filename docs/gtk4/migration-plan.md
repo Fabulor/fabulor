@@ -1227,6 +1227,16 @@ teardown contract. Production GTK4 presentation and packaged interaction tests
 remain deferred. The boundary is documented in
 [`notification-architecture.md`](notification-architecture.md).
 
+Tray action-model pass 7 (2026-07-18):
+`tray-action-model.c` now owns a toolkit-neutral `GMenuModel` and
+`GActionGroup` for window visibility, away/back, blink preferences, settings,
+and quit. Copied labels, stable action names, snapshot-driven sensitivity and
+state, malformed-away normalization, typed dispatch, and final callback-data
+cleanup are covered by the strict GTK4 probe. Existing GTK3/AppIndicator and
+Win32 presentation remains unchanged; live plugin binding, dynamic `$TRAY`
+entries, and native shell-icon ownership are later passes. The contract is
+documented in [`tray-architecture.md`](tray-architecture.md).
+
 Exit criteria:
 
 - Theme switching, restart persistence, tray state, notifications, icons,

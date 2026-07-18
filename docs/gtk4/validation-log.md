@@ -3558,6 +3558,46 @@ Scope: platform notification loading, failure containment, and lifecycle only.
 The shipping GTK3 presentation remains in use and no GTK4 notification UI is
 claimed by this pass.
 
+### PR: [#116 - GTK4 Stage 7 Tray Action Model](https://github.com/Fabulor/fabulor/pull/116)
+
+Date: 2026-07-18
+
+Migration stage: 7, toolkit-neutral tray action and state pass 7
+
+Files/workflows converted: owned tray labels; stable menu/action namespace;
+hide/restore projection; away/back sensitivity; stateful blink preferences;
+typed activation dispatch; malformed-state normalization; final teardown
+
+GTK version: 4.22.4
+
+GLib version: 2.88.0
+
+Build configuration: strict GTK4 MSVC probe, fresh MSVC Meson/Ninja probe, and
+Linux GCC C11 syntax validation
+
+Automated checks:
+
+- [x] strict GTK4 MSVC probe compiles, links, and executes with 0 warnings and 0 errors
+- [x] fresh MSVC Meson/Ninja probe compiles 44 objects with warnings treated as errors
+- [x] independent Meson runtime test passes 1/1
+- [x] Linux GCC C11 syntax check passes with all warnings treated as errors
+- [x] caller-owned labels can be released or changed after model construction
+- [x] visibility updates switch deterministically between hide and restore labels
+- [x] away/back sensitivity follows all-away, all-back, and mixed snapshots
+- [x] disabled actions do not dispatch and blink actions update state before dispatch
+- [x] malformed away state normalizes to mixed
+- [x] callback data receives exactly one final destroy notification
+- [x] repository diff whitespace validation passes
+
+Manual checks:
+
+- [ ] production GTK4 tray menu presentation awaits a presenter binding
+- [ ] native Windows shell icon and menu behavior remain on the shipping GTK3 path
+- [ ] dynamic `$TRAY` plugin entries await model composition
+
+Scope: tray action and state ownership only. This pass does not replace the
+shipping status icon, AppIndicator, Win32 popup, or tray timers.
+
 ## Per-PR Record Template
 
 Copy this section for each GTK4 PR:

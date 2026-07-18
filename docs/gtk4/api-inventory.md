@@ -439,7 +439,7 @@ drag/drop or transcript content logic.
 | `gdk_window_*` | 48 | 8 | `GdkSurface`, snapshots, controllers, or removal | 4/6 | in progress |
 | `gtk_clipboard_*` | 1 | 1 | `GdkClipboard` and content providers | 4/6 | in progress |
 | `GtkTreeView` | 75 | 18 | choose GTK4 list/model widget per workflow | 5 | in progress; Notify and user model owners converted |
-| `GtkStatusIcon` | 6 | 1 | native Win32 tray or supported external backend | 7 | not started |
+| `GtkStatusIcon` | 6 | 1 | native Win32 tray or supported external backend | 7 | action model complete; presentation not started |
 | screen CSS provider installation | 4 | 3 | display-scoped provider installation | 7 | not started |
 
 ## High-Risk Files

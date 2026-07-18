@@ -11,6 +11,7 @@
 #include "../../src/fe-gtk/emoji-picker.h"
 #include "../../src/fe-gtk/theme/theme-gtk4.h"
 #include "../../src/fe-gtk/theme/theme-gtk4-controller.h"
+#include "../../src/fe-gtk/tray-action-model.h"
 #include "../../src/fe-gtk/ignore-list.h"
 #include "../../src/fe-gtk/ban-list.h"
 #include "../../src/fe-gtk/channel-list.h"
@@ -2536,6 +2537,126 @@ spell_style_has_color (PangoAttrList *attributes, PangoAttrType type,
 	return found;
 }
 
+typedef struct
+{
+	FabulorTrayAction action;
+	gboolean value;
+	guint count;
+	gboolean destroyed;
+} TrayActionRecord;
+
+static void
+tray_action_record (FabulorTrayAction action, gboolean value,
+	gpointer user_data)
+{
+	TrayActionRecord *target = user_data;
+	target->action = action;
+	target->value = value;
+	target->count++;
+}
+
+static void
+tray_action_destroy (gpointer user_data)
+{
+	TrayActionRecord *target = user_data;
+	target->destroyed = TRUE;
+}
+
+static gboolean
+check_tray_action_model (void)
+{
+	char hide_window[] = "_Hide Window";
+	FabulorTrayActionLabels labels = {
+		hide_window,
+		"_Restore Window",
+		"_Blink on",
+		"Channel Message",
+		"Private Message",
+		"Highlighted Message",
+		"_Change status",
+		"_Away",
+		"_Back",
+		"_Preferences",
+		"_Quit"
+	};
+	FabulorTrayActionState state = {
+		FALSE,
+		FABULOR_TRAY_AWAY_MIXED,
+		FALSE,
+		TRUE,
+		FALSE
+	};
+	TrayActionRecord record = { 0 };
+	FabulorTrayActionModel *model;
+	GMenuModel *menu;
+	GMenuModel *section;
+	GActionGroup *actions;
+	GVariant *action_state;
+	char *label = NULL;
+	gboolean passed = TRUE;
+
+	model = fabulor_tray_action_model_new (&labels, &state,
+		tray_action_record, &record, tray_action_destroy);
+	if (!model)
+		return FALSE;
+
+	hide_window[0] = 'X';
+	menu = fabulor_tray_action_model_get_menu (model);
+	actions = fabulor_tray_action_model_get_actions (model);
+	section = g_menu_model_get_item_link (menu, 0, G_MENU_LINK_SECTION);
+	passed = passed && section != NULL;
+	if (section)
+	{
+		g_menu_model_get_item_attribute (section, 0,
+			G_MENU_ATTRIBUTE_LABEL, "s", &label);
+		passed = passed && g_strcmp0 (label, "_Hide Window") == 0;
+		g_free (label);
+		g_object_unref (section);
+	}
+
+	action_state = g_action_group_get_action_state (actions, "blink-private");
+	passed = passed && action_state && g_variant_get_boolean (action_state);
+	g_clear_pointer (&action_state, g_variant_unref);
+
+	state.window_hidden = TRUE;
+	state.away_state = FABULOR_TRAY_AWAY_ALL_AWAY;
+	state.blink_private = FALSE;
+	fabulor_tray_action_model_update (model, &state);
+	passed = passed && !g_action_group_get_action_enabled (actions, "set-away");
+	passed = passed && g_action_group_get_action_enabled (actions, "set-back");
+	section = g_menu_model_get_item_link (menu, 0, G_MENU_LINK_SECTION);
+	if (section)
+	{
+		g_menu_model_get_item_attribute (section, 0,
+			G_MENU_ATTRIBUTE_LABEL, "s", &label);
+		passed = passed && g_strcmp0 (label, "_Restore Window") == 0;
+		g_free (label);
+		g_object_unref (section);
+	}
+	else
+		passed = FALSE;
+
+	g_action_group_activate_action (actions, "set-away", NULL);
+	passed = passed && record.count == 0;
+	g_action_group_activate_action (actions, "set-back", NULL);
+	passed = passed && record.count == 1 &&
+		record.action == FABULOR_TRAY_ACTION_SET_BACK && !record.value;
+	g_action_group_activate_action (actions, "blink-channel", NULL);
+	passed = passed && record.count == 2 &&
+		record.action == FABULOR_TRAY_ACTION_BLINK_CHANNEL && record.value;
+	action_state = g_action_group_get_action_state (actions, "blink-channel");
+	passed = passed && action_state && g_variant_get_boolean (action_state);
+	g_clear_pointer (&action_state, g_variant_unref);
+
+	state.away_state = (FabulorTrayAwayState)99;
+	fabulor_tray_action_model_update (model, &state);
+	passed = passed && g_action_group_get_action_enabled (actions, "set-away") &&
+		g_action_group_get_action_enabled (actions, "set-back");
+
+	fabulor_tray_action_model_free (model);
+	return passed && record.destroyed;
+}
+
 static gboolean
 check_spell_entry_style_policy (void)
 {
@@ -3205,6 +3326,11 @@ main (void)
 	if (!check_gtk4_theme_controller_policy ())
 	{
 		fprintf (stderr, "GTK4 theme controller policy mismatch\n");
+		return 1;
+	}
+	if (!check_tray_action_model ())
+	{
+		fprintf (stderr, "GTK4 tray action model contract mismatch\n");
 		return 1;
 	}
 	if (!check_spell_entry_word_policy ())
