@@ -3963,7 +3963,7 @@ Scope: parallel packaging and exact payload integrity validation only. Default
 WiX harvesting, the shipping bootstrapper, production linking, and root GTK3
 payload remain unchanged.
 
-### PR: pending - GTK4 Stage 8 Executable-Relative Runtime Startup
+### PR: [#126](https://github.com/Fabulor/fabulor/pull/126) - GTK4 Stage 8 Executable-Relative Runtime Startup
 
 Date: 2026-07-18
 
