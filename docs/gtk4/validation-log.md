@@ -3717,7 +3717,7 @@ Manual checks:
 Scope: GTK4 popover ownership and action routing only. This pass does not select
 a platform tray backend, own a shell icon, or replace the shipping popup.
 
-### PR: Pending - GTK4 Stage 7 Tray Backend Selection
+### PR: [#120](https://github.com/Fabulor/fabulor/pull/120) - GTK4 Stage 7 Tray Backend Selection
 
 Date: 2026-07-18
 
