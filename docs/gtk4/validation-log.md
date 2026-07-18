@@ -3945,7 +3945,7 @@ Automated checks:
 - [x] decompiled MSI contains zero missing, unexpected, duplicate, or flattened
   GTK4 paths
 - [x] all extracted candidate GTK4 sizes and SHA-256 hashes match the manifest
-- [x] four candidate path-layout and rejection tests pass
+- [x] five candidate path-layout and rejection tests pass
 - [x] seven staging, eight dependency-root, four theme-contract, nine Python
   capability, and seven manifest-isolation tests pass
 - [x] installer XML, workflow YAML, Python syntax, and diff whitespace checks pass
@@ -3954,7 +3954,7 @@ Manual checks:
 
 - [ ] local ICE validation is unavailable because this session cannot access the
   Windows Installer service; local composition used `SuppressValidation=true`
-- [ ] GitHub candidate build retains normal unsuppressed ICE validation
+- [x] GitHub candidate build retains normal unsuppressed ICE validation
 - [ ] candidate artifact inspection on a clean machine remains pending
 - [ ] the candidate executable remains GTK3 and is not a GTK4 application smoke
   test
@@ -3962,6 +3962,50 @@ Manual checks:
 Scope: parallel packaging and exact payload integrity validation only. Default
 WiX harvesting, the shipping bootstrapper, production linking, and root GTK3
 payload remain unchanged.
+
+### PR: pending - GTK4 Stage 8 Executable-Relative Runtime Startup
+
+Date: 2026-07-18
+
+Migration stage: 8, executable-relative runtime startup pass 3
+
+Files/workflows converted: Win32-only GTK4 runtime bootstrap; standalone loader
+probe; candidate-root staging layout; decoy, missing-root, and reparse-point
+integration validation
+
+GTK version: 4.22.4
+
+GLib version: 2.88.0
+
+Build configuration: Windows x64 MSVC Release bootstrap probe against the
+deterministic 1,431-file candidate root
+
+Automated checks:
+
+- [x] bootstrap and probe compile with warning level 4 and warnings as errors
+- [x] shared `common.vcxproj` rebuild succeeds with the bootstrap source
+- [x] probe imports only Windows/UCRT support DLLs before runtime configuration;
+  it has no GTK or GLib import
+- [x] unrelated-current-directory launch succeeds with ambient GTK paths
+  removed and an invalid `gtk-4-1.dll` decoy present
+- [x] loaded `gtk-4-1.dll` resolves beneath the executable-relative
+  `Runtime/GTK4/bin` directory and reports GTK major version 4
+- [x] repeated bootstrap configuration is idempotent
+- [x] missing runtime and junction-backed runtime roots fail closed
+- [x] candidate staging retains 1,431 files and its source-bound manifest
+- [x] project XML, workflow YAML, Python syntax, and diff whitespace checks pass
+
+Manual checks:
+
+- [ ] clean-machine execution awaits the GitHub Windows candidate run
+- [ ] production `fabulor.exe` remains directly linked to GTK3 and is not tested
+  by this probe
+- [ ] final GTK4 linking must delay-load GTK-family imports or place the frontend
+  behind the bootstrap before this nested runtime can start production code
+
+Scope: executable-relative Windows loader discovery and fail-closed path policy
+only. Production linking, the shipping GTK3 executable, installer selection,
+and root GTK3 payload remain unchanged.
 
 ## Per-PR Record Template
 

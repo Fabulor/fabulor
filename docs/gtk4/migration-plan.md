@@ -1335,6 +1335,19 @@ paths, sizes, and SHA-256 hashes against the generated manifest. This rejects
 missing, unexpected, duplicate, flattened, or content-mismatched payload entries
 before artifact upload.
 
+Executable-relative runtime startup pass 3 (2026-07-18):
+the future Windows GTK4 target now has a Win32-only early bootstrap contract
+that derives `Runtime/GTK4/bin` from the executable path, rejects missing and
+reparse-point runtime directories, replaces current-directory and ambient-PATH
+DLL discovery with application/System32/explicit runtime search roots, and
+retains that root for process lifetime. A standalone probe with no GTK or GLib
+imports proves the boundary before production linking changes: CI runs it from
+an unrelated directory containing a fake GTK DLL, verifies the absolute loaded
+module path and GTK major version, and requires missing and junction-backed
+runtime roots to fail closed. The production GTK4 target must invoke this
+bootstrap before delay-loaded GTK-family imports; the shipping GTK3 executable
+is unchanged in this pass.
+
 Deliverables:
 
 - Make GTK4 the only production frontend dependency in MSVC, Meson, and CI.

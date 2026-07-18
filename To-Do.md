@@ -331,6 +331,7 @@ Detailed planning and evidence live in:
 - [ ] Cut production builds, CI, staging, and WiX packaging over to an allowlisted GTK4 runtime.
   - [x] Establish deterministic candidate staging with a pinned file/tree contract and source-bound SHA-256 manifest.
   - [x] Build and publish a parallel candidate MSI without replacing the shipping installer or bootstrapper.
+  - [x] Establish and adversarially test executable-relative Windows runtime discovery without ambient GTK paths.
   - [ ] Validate the candidate payload, then replace transitional broad WiX harvesting with the allowlist.
 - [ ] Remove GTK3 code, build inputs, runtime files, installer components, and compatibility helpers.
 - [ ] Complete clean-install, upgrade, accessibility, visual, performance, plugin, and packaging validation.
