@@ -3678,7 +3678,7 @@ Manual checks:
 Scope: dynamic menu and action-group ownership only. This pass does not replace
 the tray icon, popup renderer, flashing timers, or platform backend selection.
 
-### PR: Pending - GTK4 Stage 7 Tray Popover Presenter
+### PR: [#119 - GTK4 Stage 7 Tray Popover Presenter](https://github.com/Fabulor/fabulor/pull/119)
 
 Date: 2026-07-18
 
