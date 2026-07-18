@@ -4048,7 +4048,7 @@ Scope: static candidate PE dependency closure and native ownership only.
 Production linking, dynamic feature coverage, payload trimming, installer
 selection, and the shipping GTK3 runtime remain unchanged.
 
-### PR: pending - GTK4 Stage 8 Shipping WiX Allowlist
+### PR: [#128](https://github.com/Fabulor/fabulor/pull/128) - GTK4 Stage 8 Shipping WiX Allowlist
 
 Date: 2026-07-18
 
