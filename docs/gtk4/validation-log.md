@@ -3838,7 +3838,7 @@ Manual checks:
 Scope: candidate GTK4 Windows appearance monitoring only. This pass does not
 replace the shipping GTK3 window filter or alter current packaged behavior.
 
-### PR: Pending - GTK4 Stage 7 Theme Format And Payload Contract
+### PR: [#123](https://github.com/Fabulor/fabulor/pull/123) - GTK4 Stage 7 Theme Format And Payload Contract
 
 Date: 2026-07-18
 
