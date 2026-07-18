@@ -59,6 +59,7 @@ probe = executable(
   '../../src/fe-gtk/theme/theme-gtk4.c',
   '../../src/fe-gtk/theme/theme-gtk4-controller.c',
   '../../src/fe-gtk/theme/theme-preferences-gtk4.c',
+  '../../src/fe-gtk/theme/theme-appearance-monitor-gtk4.c',
   '../../src/fe-gtk/tray-action-model.c',
   '../../src/fe-gtk/tray-backend-policy.c',
   '../../src/fe-gtk/tray-menu-composition.c',

@@ -1286,6 +1286,16 @@ refresh does not produce persistence writes, and teardown disconnects controls
 before unparenting the owned surface. Production preferences-window insertion
 and packaged Windows appearance testing remain deferred until GTK4 cutover.
 
+GTK4 Windows appearance-monitor pass 13 (2026-07-18):
+`theme-appearance-monitor-gtk4.c` now owns a display-scoped GTK4 Win32 message
+filter for `WM_SETTINGCHANGE` and `WM_THEMECHANGED`. Signals coalesce onto the
+main loop before registry and high-contrast state are queried, and unchanged
+state does not reapply providers. Appearance refreshes route through the owned
+preference/controller stack without persistence writes. Query or provider
+failure preserves the last committed appearance, while teardown removes both
+the filter and pending source. Production startup ownership and packaged
+Windows visual testing remain deferred until GTK4 cutover.
+
 Exit criteria:
 
 - Theme switching, restart persistence, tray state, notifications, icons,

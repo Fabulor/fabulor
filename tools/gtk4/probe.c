@@ -12,6 +12,7 @@
 #include "../../src/fe-gtk/theme/theme-gtk4.h"
 #include "../../src/fe-gtk/theme/theme-gtk4-controller.h"
 #include "../../src/fe-gtk/theme/theme-preferences-gtk4.h"
+#include "../../src/fe-gtk/theme/theme-appearance-monitor-gtk4.h"
 #include "../../src/fe-gtk/tray-action-model.h"
 #include "../../src/fe-gtk/tray-backend-policy.h"
 #include "../../src/fe-gtk/tray-menu-composition.h"
@@ -2575,6 +2576,146 @@ check_gtk4_theme_preferences_binding (void)
 	return valid;
 }
 
+typedef struct
+{
+	gboolean prefer_dark;
+	gboolean high_contrast;
+	gboolean succeed;
+	guint count;
+} ProbeThemeAppearanceQuery;
+
+static gboolean
+probe_theme_appearance_query (gboolean *prefer_dark, gboolean *high_contrast,
+	gpointer user_data)
+{
+	ProbeThemeAppearanceQuery *query = user_data;
+
+	query->count++;
+	if (!query->succeed)
+		return FALSE;
+	*prefer_dark = query->prefer_dark;
+	*high_contrast = query->high_contrast;
+	return TRUE;
+}
+
+static void
+probe_run_pending_main_context (void)
+{
+	while (g_main_context_iteration (NULL, FALSE))
+		;
+}
+
+static gboolean
+check_gtk4_theme_appearance_monitor (void)
+{
+	GError *error = NULL;
+	char *temporary = g_dir_make_tmp (
+		"fabulor-gtk4-theme-appearance-XXXXXX", &error);
+	char *profile_root;
+	char *valid_root;
+	GPtrArray *discovered;
+	char *valid_id = NULL;
+	ThemePreferencesGtk4 *preferences;
+	ThemeAppearanceMonitorGtk4 *monitor;
+	ThemeGtk4Controller *controller;
+	ProbeThemePreferencesCommit commit = { 0 };
+	ProbeThemeAppearanceQuery query = { FALSE, FALSE, TRUE, 0 };
+	gboolean valid;
+	guint query_count_before_free;
+	guint i;
+
+	if (!temporary)
+	{
+		g_clear_error (&error);
+		return FALSE;
+	}
+	profile_root = fabulor_gtk4_theme_profile_dir (temporary);
+	g_mkdir_with_parents (profile_root, 0700);
+	valid_root = probe_make_gtk4_theme (profile_root, "valid", "Valid", TRUE);
+	discovered = fabulor_gtk4_theme_discover (temporary);
+	for (i = 0; i < discovered->len; i++)
+	{
+		const FabulorGtk4Theme *theme = g_ptr_array_index (discovered, i);
+
+		if (g_strcmp0 (theme->display_name, "Valid") == 0)
+			valid_id = g_strdup (theme->id);
+	}
+	g_ptr_array_unref (discovered);
+	preferences = theme_preferences_gtk4_new (NULL, temporary, valid_id,
+		FABULOR_GTK4_THEME_VARIANT_FOLLOW_SYSTEM, FALSE, FALSE,
+		probe_theme_preferences_commit, &commit, NULL, &error);
+	monitor = preferences ? theme_appearance_monitor_gtk4_new_with_query (
+		gdk_display_get_default (), preferences, probe_theme_appearance_query,
+		&query, NULL, &error) : NULL;
+	controller = theme_preferences_gtk4_controller (preferences);
+	valid = preferences && monitor && error == NULL && query.count == 1 &&
+		theme_appearance_monitor_gtk4_refresh_count (monitor) == 1 &&
+		!theme_appearance_monitor_gtk4_prefers_dark (monitor) &&
+		!theme_appearance_monitor_gtk4_high_contrast (monitor) &&
+		!theme_appearance_monitor_gtk4_is_pending (monitor) &&
+		commit.count == 0 && theme_gtk4_controller_theme_is_active (controller) &&
+		theme_gtk4_controller_active_provider_count (controller) == 1;
+#ifdef G_OS_WIN32
+	valid = valid && (!gdk_display_get_default () ||
+		theme_appearance_monitor_gtk4_filter_is_installed (monitor));
+#else
+	valid = valid &&
+		!theme_appearance_monitor_gtk4_filter_is_installed (monitor);
+#endif
+
+	query.prefer_dark = TRUE;
+	valid = valid && theme_appearance_monitor_gtk4_queue_refresh (monitor) &&
+		!theme_appearance_monitor_gtk4_queue_refresh (monitor) &&
+		theme_appearance_monitor_gtk4_is_pending (monitor);
+	probe_run_pending_main_context ();
+	valid = valid && query.count == 2 &&
+		theme_appearance_monitor_gtk4_refresh_count (monitor) == 2 &&
+		theme_appearance_monitor_gtk4_prefers_dark (monitor) &&
+		theme_gtk4_controller_active_provider_count (controller) == 2 &&
+		commit.count == 0;
+
+	valid = valid && theme_appearance_monitor_gtk4_queue_refresh (monitor);
+	probe_run_pending_main_context ();
+	valid = valid && query.count == 3 &&
+		theme_appearance_monitor_gtk4_refresh_count (monitor) == 2 &&
+		theme_appearance_monitor_gtk4_last_diagnostic (monitor) == NULL;
+
+	query.high_contrast = TRUE;
+	valid = valid && theme_appearance_monitor_gtk4_queue_refresh (monitor);
+	probe_run_pending_main_context ();
+	valid = valid && query.count == 4 &&
+		theme_appearance_monitor_gtk4_refresh_count (monitor) == 3 &&
+		theme_appearance_monitor_gtk4_high_contrast (monitor) &&
+		!theme_gtk4_controller_theme_is_active (controller) &&
+		commit.count == 0;
+
+	query.succeed = FALSE;
+	valid = valid && theme_appearance_monitor_gtk4_queue_refresh (monitor);
+	probe_run_pending_main_context ();
+	valid = valid && query.count == 5 &&
+		theme_appearance_monitor_gtk4_refresh_count (monitor) == 3 &&
+		theme_appearance_monitor_gtk4_high_contrast (monitor) &&
+		theme_appearance_monitor_gtk4_last_diagnostic (monitor) != NULL;
+
+	query.succeed = TRUE;
+	query.prefer_dark = FALSE;
+	query.high_contrast = FALSE;
+	valid = valid && theme_appearance_monitor_gtk4_queue_refresh (monitor);
+	query_count_before_free = query.count;
+	theme_appearance_monitor_gtk4_free (monitor);
+	probe_run_pending_main_context ();
+	valid = valid && query.count == query_count_before_free;
+	theme_preferences_gtk4_free (preferences);
+
+	g_free (commit.theme_id);
+	g_free (valid_id);
+	g_free (valid_root);
+	g_free (profile_root);
+	probe_remove_tree (temporary);
+	g_free (temporary);
+	return valid;
+}
+
 static gboolean
 probe_spell_mirc_color (gint color_index, FabulorSpellEntryColor *color,
 	gpointer user_data)
@@ -3728,6 +3869,11 @@ main (void)
 	if (!check_gtk4_theme_preferences_binding ())
 	{
 		fprintf (stderr, "GTK4 theme preferences binding mismatch\n");
+		return 1;
+	}
+	if (!check_gtk4_theme_appearance_monitor ())
+	{
+		fprintf (stderr, "GTK4 theme appearance monitor mismatch\n");
 		return 1;
 	}
 	if (!check_tray_action_model ())

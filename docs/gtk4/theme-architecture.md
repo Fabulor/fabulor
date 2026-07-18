@@ -1,6 +1,6 @@
 # GTK4 Theme Architecture
 
-Status: Stage 7 pass 12 complete through GTK4 preference binding
+Status: Stage 7 pass 13 complete through Windows appearance monitoring
 
 ## Scope
 
@@ -138,6 +138,27 @@ The surface remains in the strict GTK4 candidate build until the production
 preferences window itself crosses the GTK4 boundary. Shipping GTK3 preferences
 and their GTK3 theme service are unchanged by this pass.
 
+## Appearance Monitor
+
+`src/fe-gtk/theme/theme-appearance-monitor-gtk4.c` replaces the GTK3 global
+window filter contract with GTK4's display-scoped Win32 message filter. It
+observes only `WM_SETTINGCHANGE` and `WM_THEMECHANGED`, always continues normal
+GDK processing, and coalesces repeated messages into one main-loop refresh.
+The queued callback re-queries `AppsUseLightTheme` with
+`SystemUsesLightTheme` fallback and `SPI_GETHIGHCONTRAST`, then refreshes the
+owned preference/controller stack only when the effective state changed.
+
+If the Windows theme registry values are unavailable, GTK's system-dark
+setting supplies the fallback. Query and provider failures retain the last
+committed monitor and controller state and expose a diagnostic. System-driven
+refresh never invokes the preference persistence callback. Monitor destruction
+cancels pending work, removes the exact display filter, releases its display
+reference, and only then releases callback data; its borrowed preference owner
+must outlive it.
+
+This monitor is in the GTK4 candidate build. The shipping GTK3 filter remains
+unchanged until the production frontend creates this owner during GTK4 startup.
+
 ## Invariants
 
 - GTK3-only layouts are never returned by GTK4 discovery.
@@ -166,14 +187,17 @@ and their GTK3 theme service are unchanged by this pass.
 - Preference callbacks run only after controller application succeeds.
 - Appearance-only refresh never writes persisted theme values.
 - Preference teardown disconnects controls before releasing callback state.
+- Win32 appearance messages are coalesced and applied only on state changes.
+- Appearance-monitor teardown removes its display filter and pending source.
+- Failed system queries cannot displace the last committed appearance.
 - `.hct` and `colors.conf` remain independent Fabulor formats.
 
 ## Planned Passes
 
 1. Insert the owned GTK4 preference surface into the production preferences
    window and connect its commit callback to the reserved configuration keys.
-2. Connect the Windows appearance decision to the production GTK4 runtime and
-   validate light, dark, and high-contrast rendering without a bundled theme.
+2. Create the appearance monitor during production GTK4 startup and validate
+   light, dark, and high-contrast rendering without a bundled theme.
 3. Retire GTK3 discovery, imports, and `%APPDATA%\Fabulor\gtk3-themes` only
    after equivalent GTK4 behavior is proven.
 
@@ -198,3 +222,7 @@ The preference-surface contract verifies successful commit callbacks, invalid
 theme rollback without persistence, system-default selection, high-contrast
 refresh without persistence, missing saved-theme status, and unparented
 teardown after the surface has been attached to a container.
+The appearance-monitor contract verifies initial state, coalesced queueing,
+unchanged-state suppression, follow-system dark application, high-contrast
+provider removal, query-failure rollback, absence of persistence writes, and
+pending-source cancellation during teardown.
