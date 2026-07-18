@@ -3874,6 +3874,51 @@ Scope: source and CI enforcement of supported theme formats and package inputs.
 This pass does not remove the shipping GTK3 theme service or inspect a final
 Stage 8 release payload.
 
+### PR: [#124](https://github.com/Fabulor/fabulor/pull/124) - GTK4 Stage 8 Runtime Staging Contract
+
+Date: 2026-07-18
+
+Migration stage: 8, deterministic runtime-candidate staging pass 1
+
+Files/workflows converted: Windows x64 runtime payload contract; contained
+candidate staging and loader-cache normalization; source-bound SHA-256 output
+manifest; repository lint and Windows build validation
+
+GTK version: 4.22.4
+
+GLib version: 2.88.0
+
+Build configuration: pinned `Runtime/GTK4` source root, Python 3.14 staging and
+negative-path tests, Windows CI candidate materialization before GTK4 probes
+
+Automated checks:
+
+- [x] seven staging contract, failure cleanup, and path-safety tests pass
+- [x] eight pinned GTK4 dependency-root tests pass
+- [x] four theme-format and payload tests pass
+- [x] nine Python capability and seven manifest-isolation tests pass
+- [x] stale Python greeter callback assertion matches the current sample event
+- [x] actual candidate contains 1,431 files and 102,726,736 payload bytes
+- [x] candidate manifest is bound to source archive SHA-256
+  `3910a612083c2a155c5a4a2026990701841c0d7f7de28756b2f0865decb161be`
+- [x] candidate contains no `.pdb`, import library, header, pkg-config, GIR, or
+  Python build artifact selected by the contract
+- [x] GDK pixbuf loader cache contains no build-machine path
+- [x] workflow YAML, Python syntax, and repository diff whitespace checks pass
+
+Manual checks:
+
+- [ ] executable-relative startup against the candidate awaits a production
+  GTK4 frontend target
+- [ ] packaged icons, fonts, emoji, translations, spawn, and SVG behavior await
+  the parallel-package validation pass
+- [ ] WiX remains on its transitional broad harvest until candidate validation
+  is complete
+
+Scope: deterministic generation of the first allowlisted GTK4 runtime candidate.
+This pass does not switch production linking, root staging, or installer harvest
+rules and does not remove the shipping GTK3 payload.
+
 ## Per-PR Record Template
 
 Copy this section for each GTK4 PR:
