@@ -19,6 +19,7 @@
     <ClInclude Include="fabulor-plugin-host.h" />
     <ClInclude Include="fabulor-plugin-manifest-json.h" />
     <ClInclude Include="fabulor-plugin-path-policy.h" />
+    <ClInclude Include="win32-gtk4-runtime.h" />
     <ClInclude Include="fe.h" />
     <ClInclude Include="history.h" />
     <ClInclude Include="ignore.h" />
@@ -65,6 +66,7 @@
     <ClCompile Include="fabulor-plugin-host.c" />
     <ClCompile Include="fabulor-plugin-manifest-json.c" />
     <ClCompile Include="fabulor-plugin-path-policy.c" />
+    <ClCompile Include="win32-gtk4-runtime.c" />
     <ClCompile Include="history.c" />
     <ClCompile Include="plugin-identd.c" />
     <ClCompile Include="ignore.c" />

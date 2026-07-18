@@ -74,6 +74,25 @@ to equal all 1,431 generated manifest paths plus `runtime-manifest.json`, with
 no missing, unexpected, duplicate, misplaced, size-mismatched, or hash-mismatched
 entry.
 
+Stage 8 pass 3 adds `win32-gtk4-runtime.c` as the early loader boundary for the
+future production GTK4 executable. It uses only Win32 APIs before GTK/GLib is
+available, derives `Runtime/GTK4/bin` from the executable path, rejects missing
+or reparse-point path segments, calls `SetDefaultDllDirectories` without the
+current directory, and retains one `AddDllDirectory` registration for the
+packaged runtime. The operation is idempotent for process startup.
+
+Windows CI now stages a complete candidate-root shape and builds a standalone
+bootstrap probe beside `Runtime/GTK4`. The probe has no GTK or GLib imports,
+runs from an unrelated directory with ambient GTK paths removed and an invalid
+current-directory `gtk-4-1.dll`, then verifies that the real module came from
+the packaged absolute path and reports GTK major version 4. Separate negative
+cases require missing and junction-backed runtime roots to fail closed.
+
+This establishes runtime discovery but does not yet make direct GTK imports
+safe from the nested directory. At production cutover, GTK-family imports must
+be delay-loaded behind the bootstrap or moved into a module loaded only after
+the bootstrap succeeds. The current GTK3 executable is not changed here.
+
 ## Sources And Provenance
 
 Windows CI currently downloads both GTK3 and GTK4 archives from the
@@ -207,7 +226,7 @@ DLL boundaries. Before cutover:
 - [x] separate build-only and runtime files through an explicit contract
 - [x] emit a source-bound file manifest with sizes and SHA-256 hashes
 - [ ] add ownership/category metadata after native feature verification
-- validate executable-relative startup without ambient GTK paths
+- [x] validate executable-relative startup without ambient GTK paths
 
 ### 3. Parallel Package Validation
 

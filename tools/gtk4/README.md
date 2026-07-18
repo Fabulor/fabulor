@@ -70,7 +70,7 @@ manifest of every staged file.
 ```powershell
 python tools\gtk4\test_stage_runtime.py
 python tools\gtk4\stage_runtime.py --root C:\fabulor-master\Runtime\GTK4 --validate-only
-python tools\gtk4\stage_runtime.py --root C:\fabulor-master\Runtime\GTK4 --output C:\fabulor-master\build\gtk4-runtime-candidate
+python tools\gtk4\stage_runtime.py --root C:\fabulor-master\Runtime\GTK4 --output C:\fabulor-master\build\gtk4-runtime-candidate-root\Runtime\GTK4
 ```
 
 The output directory must be absent or empty. Candidate mode leaves default WiX
@@ -86,3 +86,18 @@ directory placement and the packaged manifest itself:
 python tools\gtk4\test_validate_candidate_msi.py
 python tools\gtk4\validate_candidate_msi.py --wix C:\path\to\wix.exe --msi C:\path\to\Fabulor.msi --manifest C:\path\to\runtime-manifest.json
 ```
+
+`win32-gtk4-runtime.c` defines the early Windows loader boundary for the future
+production GTK4 target. It derives `Runtime\GTK4\bin` from the executable path,
+rejects missing and reparse-point runtime directories, removes the current
+directory and ambient `PATH` from DLL resolution, and retains only the
+application, System32, and explicitly registered runtime directories.
+
+`runtime-root-probe.vcxproj` builds a Win32-only executable with no GTK or GLib
+imports. Place its output beside `Runtime\GTK4`, then run
+`test_runtime_root_probe.py --candidate-root <root>`. The probe configures the
+runtime boundary, loads GTK4 with the constrained policy, verifies the loaded
+absolute module path, and calls `gtk_get_major_version`. The test removes
+ambient GTK paths, runs from an unrelated directory containing an invalid
+`gtk-4-1.dll`, and verifies that missing or reparse-point runtime roots fail
+closed.
