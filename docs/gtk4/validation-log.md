@@ -3638,7 +3638,7 @@ Manual checks:
 Scope: live action-model binding only. This pass does not replace tray icon,
 popup presentation, flashing timers, or platform backend selection.
 
-### PR: Pending - GTK4 Stage 7 Tray Plugin Composition
+### PR: [#118 - GTK4 Stage 7 Tray Plugin Composition](https://github.com/Fabulor/fabulor/pull/118)
 
 Date: 2026-07-18
 
