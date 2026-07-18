@@ -197,6 +197,7 @@ Detailed planning and evidence live in:
 - [`docs/gtk4/migration-plan.md`](docs/gtk4/migration-plan.md)
 - [`docs/gtk4/api-inventory.md`](docs/gtk4/api-inventory.md)
 - [`docs/gtk4/list-model-architecture.md`](docs/gtk4/list-model-architecture.md)
+- [`docs/gtk4/theme-architecture.md`](docs/gtk4/theme-architecture.md)
 - [`docs/gtk4/runtime-packaging.md`](docs/gtk4/runtime-packaging.md)
 - [`docs/gtk4/validation-log.md`](docs/gtk4/validation-log.md)
 
@@ -311,6 +312,7 @@ Detailed planning and evidence live in:
   - [x] Replace GTK4 spell and formatting popup mutation with an owned dynamic menu model and per-entry actions.
 - [ ] Add the GTK4 theme adapter and validate tray, notifications, icons, fonts, and platform integration.
   - [x] Retire `.zct` registration and mock Windows GTK theme staging, downloads, and installer choices.
+  - [x] Establish deterministic GTK4 desktop/profile discovery metadata without loading CSS.
   - [ ] Discover system GTK4 desktop themes and imported themes under `%APPDATA%\Fabulor\themes`.
   - [ ] Retain `.hct` and `colors.conf` without packaging an optional default Fabulor theme.
   - [ ] Remove GTK3 theme discovery and `%APPDATA%\Fabulor\gtk3-themes` use only after the GTK4 adapter is ready.

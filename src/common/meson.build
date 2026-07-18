@@ -4,6 +4,7 @@ common_sources = [
   'ctcp.c',
   'dcc.c',
   'fabulor-plugin-enable-policy.c',
+  'gtk4-theme-discovery.c',
   'gtk3-theme-service.c',
   'zoitechat.c',
   'history.c',
