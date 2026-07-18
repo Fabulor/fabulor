@@ -7,6 +7,7 @@
 #include "../../src/fe-gtk/gtk-compat.h"
 #include "../../src/fe-gtk/gtk4-list-models.h"
 #include "../../src/common/gtk4-theme-discovery.h"
+#include "../../src/common/gtk4-theme-preferences.h"
 #include "../../src/fe-gtk/emoji-picker.h"
 #include "../../src/fe-gtk/theme/theme-gtk4.h"
 #include "../../src/fe-gtk/ignore-list.h"
@@ -2098,6 +2099,61 @@ check_gtk4_theme_discovery_policy (void)
 }
 
 static gboolean
+check_gtk4_theme_preferences_policy (void)
+{
+	GPtrArray *themes = g_ptr_array_new_with_free_func (
+		(GDestroyNotify) fabulor_gtk4_theme_free);
+	FabulorGtk4Theme *profile = g_new0 (FabulorGtk4Theme, 1);
+	FabulorGtk4Theme *desktop = g_new0 (FabulorGtk4Theme, 1);
+	GPtrArray *choices;
+	FabulorGtk4ThemeChoice *system_choice;
+	FabulorGtk4ThemeChoice *profile_choice;
+	FabulorGtk4ThemeChoice *desktop_choice;
+	gboolean available = FALSE;
+	gboolean valid;
+
+	profile->id = g_strdup ("profile:alpha");
+	profile->display_name = g_strdup ("Alpha");
+	profile->source = FABULOR_GTK4_THEME_SOURCE_PROFILE;
+	desktop->id = g_strdup ("desktop:zulu");
+	desktop->display_name = g_strdup ("Zulu");
+	desktop->dark_css_path = g_strdup ("gtk-dark.css");
+	desktop->source = FABULOR_GTK4_THEME_SOURCE_DESKTOP;
+	g_ptr_array_add (themes, profile);
+	g_ptr_array_add (themes, desktop);
+
+	choices = fabulor_gtk4_theme_preferences_project (themes);
+	g_ptr_array_unref (themes);
+	system_choice = choices->len > 0 ? g_ptr_array_index (choices, 0) : NULL;
+	profile_choice = choices->len > 1 ? g_ptr_array_index (choices, 1) : NULL;
+	desktop_choice = choices->len > 2 ? g_ptr_array_index (choices, 2) : NULL;
+	valid = choices->len == 3 && system_choice && profile_choice && desktop_choice &&
+		system_choice->system_default && system_choice->id[0] == '\0' &&
+		system_choice->display_name == NULL &&
+		!profile_choice->system_default &&
+		g_strcmp0 (profile_choice->id, "profile:alpha") == 0 &&
+		g_strcmp0 (profile_choice->display_name, "Alpha") == 0 &&
+		profile_choice->source == FABULOR_GTK4_THEME_SOURCE_PROFILE &&
+		!profile_choice->has_dark_variant &&
+		desktop_choice->source == FABULOR_GTK4_THEME_SOURCE_DESKTOP &&
+		desktop_choice->has_dark_variant &&
+		fabulor_gtk4_theme_preferences_resolve_index (choices,
+			"desktop:zulu", &available) == 2 && available &&
+		fabulor_gtk4_theme_preferences_resolve_index (choices,
+			"desktop:missing", &available) == 0 && !available &&
+		fabulor_gtk4_theme_preferences_resolve_index (choices,
+			"", &available) == 0 && available &&
+		fabulor_gtk4_theme_preferences_normalize_variant (0) ==
+			FABULOR_GTK4_THEME_VARIANT_FOLLOW_SYSTEM &&
+		fabulor_gtk4_theme_preferences_normalize_variant (2) ==
+			FABULOR_GTK4_THEME_VARIANT_PREFER_DARK &&
+		fabulor_gtk4_theme_preferences_normalize_variant (99) ==
+			FABULOR_GTK4_THEME_VARIANT_FOLLOW_SYSTEM;
+	g_ptr_array_unref (choices);
+	return valid;
+}
+
+static gboolean
 check_gtk4_theme_adapter_policy (void)
 {
 	GError *error = NULL;
@@ -2960,6 +3016,11 @@ main (void)
 	if (!check_gtk4_theme_discovery_policy ())
 	{
 		fprintf (stderr, "GTK4 theme discovery policy mismatch\n");
+		return 1;
+	}
+	if (!check_gtk4_theme_preferences_policy ())
+	{
+		fprintf (stderr, "GTK4 theme preferences policy mismatch\n");
 		return 1;
 	}
 	if (!check_gtk4_theme_adapter_policy ())

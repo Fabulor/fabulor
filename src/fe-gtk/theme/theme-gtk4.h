@@ -4,13 +4,13 @@
 #include <gtk/gtk.h>
 
 #include "../../common/gtk4-theme-discovery.h"
+#include "../../common/gtk4-theme-preferences.h"
 
-typedef enum
-{
-	THEME_GTK4_VARIANT_FOLLOW_SYSTEM = 0,
-	THEME_GTK4_VARIANT_PREFER_LIGHT = 1,
-	THEME_GTK4_VARIANT_PREFER_DARK = 2
-} ThemeGtk4Variant;
+typedef FabulorGtk4ThemeVariant ThemeGtk4Variant;
+
+#define THEME_GTK4_VARIANT_FOLLOW_SYSTEM FABULOR_GTK4_THEME_VARIANT_FOLLOW_SYSTEM
+#define THEME_GTK4_VARIANT_PREFER_LIGHT FABULOR_GTK4_THEME_VARIANT_PREFER_LIGHT
+#define THEME_GTK4_VARIANT_PREFER_DARK FABULOR_GTK4_THEME_VARIANT_PREFER_DARK
 
 typedef struct _ThemeGtk4Adapter ThemeGtk4Adapter;
 

@@ -1184,6 +1184,16 @@ and complete teardown are covered by the strict GTK4 probe. Preferences and
 production discovery integration remain a later pass, and the shipping GTK3
 adapter remains unchanged.
 
+GTK4 theme-preferences pass 3 (2026-07-18):
+`gtk4-theme-preferences.c` now projects discovered themes into an owned,
+toolkit-independent choice list with an explicit system-default entry. Exact
+stable identifiers resolve persisted selections; missing identifiers fall back
+safely while remaining distinguishable from an intentional default selection,
+and invalid variant values normalize to follow-system. Dedicated
+`gui_gtk4_theme` and `gui_gtk4_variant` configuration keys keep GTK4 state
+separate from GTK3. Production GTK4 preference widgets and adapter application
+remain deferred until the frontend cutover boundary is available.
+
 Exit criteria:
 
 - Theme switching, restart persistence, tray state, notifications, icons,

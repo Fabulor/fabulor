@@ -314,6 +314,7 @@ Detailed planning and evidence live in:
   - [x] Retire `.zct` registration and mock Windows GTK theme staging, downloads, and installer choices.
   - [x] Establish deterministic GTK4 desktop/profile discovery metadata without loading CSS.
   - [x] Establish a transactional GTK4 CSS-provider adapter with explicit diagnostics and teardown.
+  - [x] Establish independent GTK4 preference choices and persisted selection/variant keys.
   - [ ] Discover system GTK4 desktop themes and imported themes under `%APPDATA%\Fabulor\themes`.
   - [ ] Retain `.hct` and `colors.conf` without packaging an optional default Fabulor theme.
   - [ ] Remove GTK3 theme discovery and `%APPDATA%\Fabulor\gtk3-themes` use only after the GTK4 adapter is ready.

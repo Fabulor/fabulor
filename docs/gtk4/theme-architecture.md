@@ -1,6 +1,6 @@
 # GTK4 Theme Architecture
 
-Status: Stage 7 pass 2 discovery and CSS-provider ownership boundaries
+Status: Stage 7 pass 3 discovery, provider, and preference-model boundaries
 
 ## Scope
 
@@ -48,9 +48,27 @@ active source identifier, variant policy, and diagnostics. Disable and final
 teardown remove installed providers from the display before releasing them and
 reset all active identity and variant state.
 
-This pass does not connect discovery to production preferences. The shipping
-GTK3 adapter remains unchanged while the GTK4 adapter is exercised through the
-strict probe.
+The provider pass does not itself own preferences. The shipping GTK3 adapter
+remains unchanged while the GTK4 adapter is exercised through the strict probe.
+
+## Preference Projection
+
+`src/common/gtk4-theme-preferences.c` projects discovery results into an owned,
+GTK-independent choice list. The first choice always represents the GTK4
+runtime's system default; subsequent choices copy stable identifiers, display
+names, source identity, and dark-variant availability. The projection owns its
+strings and remains valid after discovery results are released.
+
+Persisted selection is resolved by exact stable identifier. An empty selection
+chooses the system default. A stored identifier that is no longer discovered
+also resolves safely to the system default while reporting that the stored
+selection is unavailable, allowing the production preferences UI to explain or
+replace it deliberately. Unknown variant values normalize to follow-system.
+
+`fabulor.conf` reserves `gui_gtk4_theme` and `gui_gtk4_variant` independently
+from the existing GTK3 keys. This prevents the migration from treating a GTK3
+theme identifier or variant as GTK4-compatible. Production GTK4 widgets and
+adapter application remain a cutover task.
 
 ## Invariants
 
@@ -66,13 +84,17 @@ strict probe.
   provider before releasing its reference.
 - CSS parser errors reject a candidate; parser warnings remain observable and
   nonfatal.
-- Preference persistence is not adapter or discovery ownership.
+- Preference choices own their presentation metadata and never retain borrowed
+  discovery pointers.
+- Missing persisted selections fall back to the system-default choice without
+  being mistaken for a successful match.
+- GTK4 selection and variant keys are independent from their GTK3 predecessors.
 - `.hct` and `colors.conf` remain independent Fabulor formats.
 
 ## Planned Passes
 
-1. Project discovered GTK4 themes into preferences and persist selection and
-   light/dark variant policy.
+1. Bind the preference model to the production GTK4 preferences UI and apply
+   selection changes through the provider adapter.
 2. Validate Windows light, dark, and high-contrast behavior without a bundled
    optional default theme.
 3. Retire GTK3 discovery, imports, and `%APPDATA%\Fabulor\gtk3-themes` only
@@ -88,3 +110,6 @@ base/dark provider ownership, parser-error rejection, transactional rollback,
 missing-file handling, and idempotent teardown. Discovery compiles in the
 shipping common library without introducing a GTK dependency there; the GTK4
 adapter compiles only at the strict GTK4 boundary until production cutover.
+The probe also releases discovery metadata before validating projected choices,
+then verifies system-default fallback, exact persisted identity, source and dark
+metadata, and invalid-variant normalization.
