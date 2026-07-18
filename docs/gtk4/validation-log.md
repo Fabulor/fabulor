@@ -3598,7 +3598,7 @@ Manual checks:
 Scope: tray action and state ownership only. This pass does not replace the
 shipping status icon, AppIndicator, Win32 popup, or tray timers.
 
-### PR: pending - GTK4 Stage 7 Tray Live Binding
+### PR: [#117 - GTK4 Stage 7 Tray Live Binding](https://github.com/Fabulor/fabulor/pull/117)
 
 Date: 2026-07-18
 
