@@ -32,6 +32,7 @@
 #include "gtkutil.h"
 #include "plugin-tray.h"
 #include "tray-action-model.h"
+#include "tray-backend-policy.h"
 #include "tray-menu-composition.h"
 
 #include <gio/gio.h>
@@ -160,6 +161,27 @@ static GtkWidget *tray_menu;
 static GtkStatusIcon *tray_status_icon;
 #endif
 static gboolean tray_backend_active = FALSE;
+
+static FabulorTrayBackendKind
+tray_backend_select_for_window (GtkWindow *window)
+{
+	FabulorTrayBackendEnvironment environment = { 0 };
+
+	environment.enabled = prefs.hex_gui_tray != 0;
+	environment.toolkit_major = GTK_MAJOR_VERSION;
+#ifdef WIN32
+	environment.windows = TRUE;
+	environment.windows_shell_available =
+		gtkutil_tray_icon_supported (window);
+#elif HAVE_APPINDICATOR_BACKEND
+	environment.status_notifier_compiled = TRUE;
+	environment.status_notifier_available = TRUE;
+#else
+	environment.legacy_status_icon_available =
+		gtkutil_tray_icon_supported (window);
+#endif
+	return fabulor_tray_backend_select (&environment);
+}
 
 static gint flash_tag;
 static TrayIconState tray_icon_state;
@@ -1690,6 +1712,8 @@ tray_cleanup (void)
 void
 tray_apply_setup (void)
 {
+	GtkWindow *window;
+
 	tray_action_model_refresh ();
 	if (tray_backend_active)
 	{
@@ -1698,14 +1722,10 @@ tray_apply_setup (void)
 	}
 	else
 	{
-#if HAVE_APPINDICATOR_BACKEND
-		if (prefs.hex_gui_tray)
+		window = GTK_WINDOW (zoitechat_get_info (ph, "gtkwin_ptr"));
+		if (fabulor_tray_backend_is_usable (
+			tray_backend_select_for_window (window)))
 			tray_init ();
-#else
-		GtkWindow *window = GTK_WINDOW(zoitechat_get_info (ph, "gtkwin_ptr"));
-		if (prefs.hex_gui_tray && gtkutil_tray_icon_supported (window))
-			tray_init ();
-#endif
 	}
 }
 
@@ -1753,11 +1773,8 @@ tray_plugin_init (zoitechat_plugin *plugin_handle, char **plugin_name,
 			G_CALLBACK (tray_window_visibility_cb), NULL);
 	}
 
-#if HAVE_APPINDICATOR_BACKEND
-	if (prefs.hex_gui_tray)
-#else
-	if (prefs.hex_gui_tray && gtkutil_tray_icon_supported (window))
-#endif
+	if (fabulor_tray_backend_is_usable (
+		tray_backend_select_for_window (window)))
 		tray_init ();
 
 	return 1;       /* return 1 for success */

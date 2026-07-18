@@ -3717,6 +3717,46 @@ Manual checks:
 Scope: GTK4 popover ownership and action routing only. This pass does not select
 a platform tray backend, own a shell icon, or replace the shipping popup.
 
+### PR: [#120](https://github.com/Fabulor/fabulor/pull/120) - GTK4 Stage 7 Tray Backend Selection
+
+Date: 2026-07-18
+
+Migration stage: 7, tray backend-selection policy pass 11
+
+Files/workflows converted: explicit backend capability environment; disabled,
+Windows shell, StatusNotifier, GTK3 legacy, and unavailable outcomes; shipping
+startup and preference-restart selection; stable backend diagnostics
+
+GTK version: shipping GTK3 frontend plus GTK4 4.22.4 probe
+
+GLib version: shipping Windows runtime plus GTK4 probe 2.88.0
+
+Build configuration: shipping MSVC x64 Release, strict GTK4 MSVC probe, fresh
+MSVC Meson/Ninja probe, and Linux GCC C11 syntax validation
+
+Automated checks:
+
+- [x] shipping frontend compiles and links with 0 warnings and 0 errors
+- [x] strict GTK4 MSVC probe compiles, links, and executes with 0 warnings and 0 errors
+- [x] fresh MSVC Meson/Ninja probe compiles 47 objects with warnings treated as errors
+- [x] independent Meson runtime test passes 1/1
+- [x] Linux GCC C11 syntax check passes with all warnings treated as errors
+- [x] disabled preference overrides every available backend
+- [x] Windows never falls through to a Unix backend
+- [x] available StatusNotifier takes precedence on Unix-like builds
+- [x] GTK3 may use the legacy status-icon fallback when available
+- [x] GTK4 and unknown toolkit versions reject the legacy fallback
+- [x] repository diff whitespace validation passes
+
+Manual checks:
+
+- [ ] shipping Windows tray behavior awaits packaged regression testing
+- [ ] GTK4 StatusNotifier integration awaits a production backend
+- [ ] unavailable-backend diagnostics await a user-facing integration point
+
+Scope: backend selection and shipping decision integration only. This pass does
+not implement a new shell icon, StatusNotifier service, or popup renderer.
+
 ## Per-PR Record Template
 
 Copy this section for each GTK4 PR:

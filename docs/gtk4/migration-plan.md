@@ -1267,6 +1267,15 @@ constants are shared across model generation, legacy attachment, and GTK4
 presentation. Production anchoring and platform tray backend selection remain
 deferred.
 
+Tray backend-selection pass 11 (2026-07-18):
+`tray-backend-policy.c` now selects disabled, Windows shell, StatusNotifier,
+legacy GTK3 status icon, or unavailable from explicit capabilities. Shipping
+initialization and preference restart use the policy without changing current
+GTK3 behavior. GTK4 and unknown toolkit versions cannot select the removed
+legacy status-icon fallback; Unix-like GTK4 builds require an available
+StatusNotifier backend. Stable backend names and the full decision matrix are
+covered by the strict probe. Native backend implementation remains deferred.
+
 Exit criteria:
 
 - Theme switching, restart persistence, tray state, notifications, icons,
