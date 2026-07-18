@@ -16,16 +16,58 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301, USA
  */
 
-#include "zoitechat.h"
-#include "plugin.h"
+#include "config.h"
+#include "notification-backend.h"
 
 #include <gmodule.h>
+#include <glib/gwin32.h>
 #include <windows.h>
 
-void (*winrt_notification_backend_show) (const char *title, const char *text) = NULL;
-int (*winrt_notification_backend_init) (const char **error) = NULL;
-void (*winrt_notification_backend_deinit) (void) = NULL;
-int (*winrt_notification_backend_supported) (void) = NULL;
+typedef void (*NotificationShowFunc) (const char *title, const char *text);
+typedef int (*NotificationInitFunc) (const char **error);
+typedef void (*NotificationDeinitFunc) (void);
+typedef int (*NotificationSupportedFunc) (void);
+
+static GModule *winrt_module;
+static NotificationShowFunc winrt_notification_backend_show;
+static NotificationInitFunc winrt_notification_backend_init;
+static NotificationDeinitFunc winrt_notification_backend_deinit;
+static NotificationSupportedFunc winrt_notification_backend_supported;
+
+static GQuark
+notification_backend_error_quark (void)
+{
+	return g_quark_from_static_string ("fabulor-notification-backend-error");
+}
+
+static void
+notification_backend_clear_exports (void)
+{
+	winrt_notification_backend_show = NULL;
+	winrt_notification_backend_init = NULL;
+	winrt_notification_backend_deinit = NULL;
+	winrt_notification_backend_supported = NULL;
+}
+
+static gboolean
+notification_backend_resolve_exports (GError **error)
+{
+#define RESOLVE_EXPORT(name) \
+	if (!g_module_symbol (winrt_module, #name, (gpointer *) &winrt_##name)) \
+	{ \
+		g_set_error (error, notification_backend_error_quark (), 2, \
+		             "hcnotifications-winrt.dll is missing %s: %s", #name, g_module_error ()); \
+		return FALSE; \
+	}
+
+	RESOLVE_EXPORT (notification_backend_show);
+	RESOLVE_EXPORT (notification_backend_init);
+	RESOLVE_EXPORT (notification_backend_deinit);
+	RESOLVE_EXPORT (notification_backend_supported);
+
+#undef RESOLVE_EXPORT
+	return TRUE;
+}
 
 void
 notification_backend_show (const char *title, const char *text)
@@ -38,50 +80,84 @@ notification_backend_show (const char *title, const char *text)
 	winrt_notification_backend_show (title, text);
 }
 
-int
-notification_backend_init (const char **error)
+gboolean
+notification_backend_init (GError **error)
 {
-	UINT original_error_mode;
-	GModule *module;
+	char *install_root;
+	char *module_path;
+	const char *helper_error = NULL;
+	DWORD original_error_mode = 0;
+	BOOL error_mode_changed;
 
-	/* Temporarily suppress the "DLL could not be loaded" dialog box before trying to load hcnotifications-winrt.dll */
-	original_error_mode = GetErrorMode ();
-	SetErrorMode(SEM_FAILCRITICALERRORS);
-	module = module_load (ZOITECHATLIBDIR "\\hcnotifications-winrt.dll");
-	SetErrorMode (original_error_mode);
+	if (winrt_module)
+		return TRUE;
 
-	if (module == NULL)
+	install_root = g_win32_get_package_installation_directory_of_module (NULL);
+	if (!install_root)
 	{
-		*error = "hcnotifications-winrt not found.";
-		return 0;
+		g_set_error_literal (error, notification_backend_error_quark (), 1,
+		                     "Could not resolve the Fabulor installation directory.");
+		return FALSE;
 	}
 
-	g_module_symbol (module, "notification_backend_show", (gpointer *) &winrt_notification_backend_show);
-	g_module_symbol (module, "notification_backend_init", (gpointer *) &winrt_notification_backend_init);
-	g_module_symbol (module, "notification_backend_deinit", (gpointer *) &winrt_notification_backend_deinit);
-	g_module_symbol (module, "notification_backend_supported", (gpointer *) &winrt_notification_backend_supported);
+	module_path = g_build_filename (install_root, "plugins", "hcnotifications-winrt.dll", NULL);
+	g_free (install_root);
 
-	return winrt_notification_backend_init (error);
+	/* Keep a missing dependency from opening a system dialog on this thread. */
+	error_mode_changed = SetThreadErrorMode (SEM_FAILCRITICALERRORS, &original_error_mode);
+	winrt_module = g_module_open (module_path, G_MODULE_BIND_LAZY | G_MODULE_BIND_LOCAL);
+	if (error_mode_changed)
+		SetThreadErrorMode (original_error_mode, NULL);
+
+	if (!winrt_module)
+	{
+		g_set_error (error, notification_backend_error_quark (), 1,
+		             "Could not load %s: %s", module_path, g_module_error ());
+		g_free (module_path);
+		return FALSE;
+	}
+	g_free (module_path);
+
+	if (!notification_backend_resolve_exports (error))
+		goto fail;
+
+	if (!winrt_notification_backend_init (&helper_error))
+	{
+		g_set_error (error, notification_backend_error_quark (), 3,
+		             "Could not initialize hcnotifications-winrt.dll: %s",
+		             helper_error ? helper_error : "unknown error");
+		goto fail;
+	}
+
+	return TRUE;
+
+fail:
+	notification_backend_clear_exports ();
+	g_module_close (winrt_module);
+	winrt_module = NULL;
+	return FALSE;
 }
 
 void
 notification_backend_deinit (void)
 {
-	if (winrt_notification_backend_deinit == NULL)
-	{
-		return;
-	}
+	GModule *module;
 
-	winrt_notification_backend_deinit ();
+	if (!winrt_module)
+		return;
+
+	if (winrt_notification_backend_deinit)
+		winrt_notification_backend_deinit ();
+
+	module = winrt_module;
+	winrt_module = NULL;
+	notification_backend_clear_exports ();
+	g_module_close (module);
 }
 
-int
+gboolean
 notification_backend_supported (void)
 {
-	if (winrt_notification_backend_supported == NULL)
-	{
-		return 0;
-	}
-
-	return winrt_notification_backend_supported ();
+	return winrt_notification_backend_supported &&
+	       winrt_notification_backend_supported ();
 }

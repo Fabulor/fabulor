@@ -201,7 +201,7 @@ tray_cmd_cb (char *word[], char *word_eol[], gpointer userdata)
 int
 notification_plugin_init (zoitechat_plugin *plugin_handle, char **plugin_name, char **plugin_desc, char **plugin_version, char *arg)
 {
-	const char* error = NULL;
+	GError *error = NULL;
 
 	ph = plugin_handle;
 	*plugin_name = "Notifications";
@@ -211,7 +211,8 @@ notification_plugin_init (zoitechat_plugin *plugin_handle, char **plugin_name, c
 	if (!notification_backend_init (&error))
 	{
 		if (error)
-			g_debug("Failed loading notification plugin: %s\n", error);
+			g_debug ("Failed loading notification plugin: %s", error->message);
+		g_clear_error (&error);
 		return 0;
 	}
 

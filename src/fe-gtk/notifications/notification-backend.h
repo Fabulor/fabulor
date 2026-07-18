@@ -19,9 +19,11 @@
 #ifndef ZOITECHAT_PLUGIN_NOTIFICATION_BACKEND_H
 #define ZOITECHAT_PLUGIN_NOTIFICATION_BACKEND_H
 
-int notification_backend_supported (void);
+#include <glib.h>
+
+gboolean notification_backend_supported (void);
 void notification_backend_show (const char *title, const char *text);
-int notification_backend_init (const char **error);
+gboolean notification_backend_init (GError **error);
 void notification_backend_deinit (void);
 
 #endif
