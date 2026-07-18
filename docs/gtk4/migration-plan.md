@@ -1175,6 +1175,15 @@ GTK3-only layouts. No CSS is parsed or applied in this pass, and the shipping
 GTK3 adapter remains unchanged. The contract is documented in
 [`theme-architecture.md`](theme-architecture.md).
 
+GTK4 CSS-provider pass 2 (2026-07-18):
+`theme/theme-gtk4.c` now owns GTK4 display-scoped CSS providers and explicit
+follow-system, light, and dark variant policy. Candidate providers are parsed
+before active providers are replaced, so missing or invalid CSS leaves the
+current theme intact. Parser diagnostics, provider priority, active identity,
+and complete teardown are covered by the strict GTK4 probe. Preferences and
+production discovery integration remain a later pass, and the shipping GTK3
+adapter remains unchanged.
+
 Exit criteria:
 
 - Theme switching, restart persistence, tray state, notifications, icons,
