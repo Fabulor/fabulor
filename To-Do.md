@@ -315,6 +315,7 @@ Detailed planning and evidence live in:
   - [x] Establish deterministic GTK4 desktop/profile discovery metadata without loading CSS.
   - [x] Establish a transactional GTK4 CSS-provider adapter with explicit diagnostics and teardown.
   - [x] Establish independent GTK4 preference choices and persisted selection/variant keys.
+  - [x] Establish Windows light/dark and high-contrast decisions for GTK4 theme application.
   - [ ] Discover system GTK4 desktop themes and imported themes under `%APPDATA%\Fabulor\themes`.
   - [ ] Retain `.hct` and `colors.conf` without packaging an optional default Fabulor theme.
   - [ ] Remove GTK3 theme discovery and `%APPDATA%\Fabulor\gtk3-themes` use only after the GTK4 adapter is ready.

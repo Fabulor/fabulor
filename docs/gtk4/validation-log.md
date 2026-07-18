@@ -3356,7 +3356,7 @@ Automated checks:
 - [x] strict GTK4 MSVC probe compiles, links, and executes with 0 warnings and 0 errors
 - [x] fresh MSVC Meson/Ninja probe compiles 40 objects with warnings treated as errors
 - [x] independent Meson runtime test passes 1/1
-- [x] Linux GCC C11 syntax check passes with all warnings treated as errors
+- [x] Linux GCC C11 syntax checks pass with all warnings treated as errors
 - [x] profile themes resolve beneath the `themes` directory
 - [x] exact `gtk-4.0/gtk.css` layouts are accepted and GTK3-only layouts are excluded
 - [x] profile/desktop identity, localized names, and dark variant metadata are retained
@@ -3444,6 +3444,42 @@ Manual checks:
 
 Scope: GTK4 preference ownership and persistence schema only. The shipping
 GTK3 preference page remains unchanged and does not expose or apply GTK4 themes.
+
+### PR: [#113 - GTK4 Stage 7 Windows Appearance Policy](https://github.com/Fabulor/fabulor/pull/113)
+
+Date: 2026-07-18
+
+Migration stage: 7, Windows light/dark/high-contrast policy pass 4
+
+Files/workflows converted: resolved custom-theme eligibility; system-default
+Windows following; explicit and automatic variant decisions; high-contrast CSS
+suppression; unavailable-selection containment
+
+GTK version: 4.22.4
+
+GLib version: 2.88.0
+
+Build configuration: MSVC x64 Release and strict GTK4 probe boundary
+
+Automated checks:
+
+- [x] shipping common library compiles with 0 warnings and 0 errors
+- [x] strict GTK4 MSVC probe compiles, links, and executes with 0 warnings and 0 errors
+- [x] Meson/Ninja GTK4 probe rebuilds and passes runtime test 1/1
+- [x] Linux GCC C11 syntax check passes with all warnings treated as errors
+- [x] custom follow-system, explicit light, and explicit dark decisions are deterministic
+- [x] system-default mode follows Windows without enabling a custom provider
+- [x] high contrast suppresses custom providers and dark requests
+- [x] provider decision application removes an already-active custom theme
+- [x] invalid variants normalize before appearance resolution
+
+Manual checks:
+
+- [ ] packaged Windows light/dark switching awaits the production GTK4 frontend
+- [ ] packaged Windows high-contrast rendering awaits the production GTK4 frontend
+
+Scope: GTK4 appearance decision policy only. Existing Win32 signal acquisition
+is unchanged, and the shipping GTK3 frontend does not consume this decision.
 
 ## Per-PR Record Template
 

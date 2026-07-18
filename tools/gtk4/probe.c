@@ -2109,6 +2109,7 @@ check_gtk4_theme_preferences_policy (void)
 	FabulorGtk4ThemeChoice *system_choice;
 	FabulorGtk4ThemeChoice *profile_choice;
 	FabulorGtk4ThemeChoice *desktop_choice;
+	FabulorGtk4ThemeAppearanceDecision appearance;
 	gboolean available = FALSE;
 	gboolean valid;
 
@@ -2149,6 +2150,34 @@ check_gtk4_theme_preferences_policy (void)
 			FABULOR_GTK4_THEME_VARIANT_PREFER_DARK &&
 		fabulor_gtk4_theme_preferences_normalize_variant (99) ==
 			FABULOR_GTK4_THEME_VARIANT_FOLLOW_SYSTEM;
+
+	fabulor_gtk4_theme_preferences_resolve_appearance (
+		TRUE, FABULOR_GTK4_THEME_VARIANT_FOLLOW_SYSTEM,
+		TRUE, FALSE, &appearance);
+	valid = valid && appearance.use_custom_theme && appearance.prefer_dark &&
+		!appearance.high_contrast;
+	fabulor_gtk4_theme_preferences_resolve_appearance (
+		TRUE, FABULOR_GTK4_THEME_VARIANT_PREFER_LIGHT,
+		TRUE, FALSE, &appearance);
+	valid = valid && appearance.use_custom_theme && !appearance.prefer_dark;
+	fabulor_gtk4_theme_preferences_resolve_appearance (
+		TRUE, FABULOR_GTK4_THEME_VARIANT_PREFER_DARK,
+		FALSE, FALSE, &appearance);
+	valid = valid && appearance.use_custom_theme && appearance.prefer_dark;
+	fabulor_gtk4_theme_preferences_resolve_appearance (
+		FALSE, FABULOR_GTK4_THEME_VARIANT_PREFER_LIGHT,
+		TRUE, FALSE, &appearance);
+	valid = valid && !appearance.use_custom_theme && appearance.prefer_dark;
+	fabulor_gtk4_theme_preferences_resolve_appearance (
+		TRUE, FABULOR_GTK4_THEME_VARIANT_PREFER_DARK,
+		TRUE, TRUE, &appearance);
+	valid = valid && appearance.high_contrast &&
+		!appearance.use_custom_theme && !appearance.prefer_dark;
+	fabulor_gtk4_theme_preferences_resolve_appearance (
+		TRUE, 99, TRUE, FALSE, &appearance);
+	valid = valid && appearance.variant ==
+		FABULOR_GTK4_THEME_VARIANT_FOLLOW_SYSTEM &&
+		appearance.use_custom_theme && appearance.prefer_dark;
 	g_ptr_array_unref (choices);
 	return valid;
 }
@@ -2165,6 +2194,7 @@ check_gtk4_theme_adapter_policy (void)
 	FabulorGtk4Theme valid_theme = { 0 };
 	FabulorGtk4Theme invalid_theme = { 0 };
 	FabulorGtk4Theme missing_theme = { 0 };
+	FabulorGtk4ThemeAppearanceDecision appearance;
 	ThemeGtk4Adapter *adapter;
 	gboolean valid;
 
@@ -2225,6 +2255,25 @@ check_gtk4_theme_adapter_policy (void)
 		theme_gtk4_adapter_is_active (adapter) &&
 		theme_gtk4_adapter_active_provider_count (adapter) == 2;
 	g_clear_error (&error);
+	fabulor_gtk4_theme_preferences_resolve_appearance (
+		TRUE, FABULOR_GTK4_THEME_VARIANT_PREFER_DARK,
+		FALSE, FALSE, &appearance);
+	valid = valid && theme_gtk4_adapter_apply_decision (adapter, &valid_theme,
+		&appearance, &error) && error == NULL &&
+		theme_gtk4_adapter_active_provider_count (adapter) == 2;
+	fabulor_gtk4_theme_preferences_resolve_appearance (
+		TRUE, FABULOR_GTK4_THEME_VARIANT_PREFER_DARK,
+		TRUE, TRUE, &appearance);
+	valid = valid && theme_gtk4_adapter_apply_decision (adapter, &valid_theme,
+		&appearance, &error) && error == NULL &&
+		!theme_gtk4_adapter_is_active (adapter);
+	fabulor_gtk4_theme_preferences_resolve_appearance (
+		FALSE, FABULOR_GTK4_THEME_VARIANT_FOLLOW_SYSTEM,
+		TRUE, FALSE, &appearance);
+	valid = valid && theme_gtk4_adapter_apply_decision (adapter, NULL,
+		&appearance, &error) && error == NULL &&
+		!theme_gtk4_adapter_is_active (adapter);
+
 	theme_gtk4_adapter_disable (adapter);
 	valid = valid && !theme_gtk4_adapter_is_active (adapter) &&
 		theme_gtk4_adapter_active_id (adapter) == NULL &&
