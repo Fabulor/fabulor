@@ -3757,7 +3757,7 @@ Manual checks:
 Scope: backend selection and shipping decision integration only. This pass does
 not implement a new shell icon, StatusNotifier service, or popup renderer.
 
-### PR: Pending - GTK4 Stage 7 Theme Preference Binding
+### PR: [#121](https://github.com/Fabulor/fabulor/pull/121) - GTK4 Stage 7 Theme Preference Binding
 
 Date: 2026-07-18
 
