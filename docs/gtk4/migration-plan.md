@@ -1257,6 +1257,16 @@ built-in actions before releasing callback state. Shipping GTK3/AppIndicator
 and Win32 popup rendering remain unchanged until a presenter consumes this
 projection.
 
+GTK4 tray popover-presenter pass 10 (2026-07-18):
+`tray-menu-presenter-gtk4.c` now consumes an immutable projection and both
+action groups behind one candidate `GtkPopoverMenu` owner. Replacement routes
+both `tray` and `fabulor-context` namespaces to the new groups without retaining
+caller references. Teardown closes and unparents the popover, removes the menu
+and both groups, and leaves an externally retained widget inert. Namespace
+constants are shared across model generation, legacy attachment, and GTK4
+presentation. Production anchoring and platform tray backend selection remain
+deferred.
+
 Exit criteria:
 
 - Theme switching, restart persistence, tray state, notifications, icons,

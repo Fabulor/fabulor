@@ -99,6 +99,7 @@ FOR %%I IN ("$(ZoiteChatLib)fabulor.rc") DO IF %%~zI EQU 0 (
     <ClInclude Include="maingui.h" />
     <ClInclude Include="preferences-persistence.h" />
     <ClInclude Include="menu.h" />
+    <ClInclude Include="menu-action-namespaces.h" />
     <ClInclude Include="notifications\notification-backend.h" />
     <ClInclude Include="notifygui.h" />
     <ClInclude Include="palette.h" />

@@ -1,6 +1,6 @@
 # Tray Architecture
 
-Status: Stage 7 pass 9 complete for dynamic plugin-menu composition
+Status: Stage 7 pass 10 complete for GTK4 popover presenter ownership
 
 ## Action Boundary
 
@@ -49,6 +49,21 @@ plugin command metadata. The projection owns its menu links independently of
 the temporary source model. Plugin actions use the stable `fabulor-context`
 namespace and remain separate from the built-in `tray` namespace.
 
+## GTK4 Popover Presenter
+
+`tray-menu-presenter-gtk4.c` owns a candidate `GtkPopoverMenu`, the immutable
+menu projection, and both action groups. Projection replacement updates the
+menu and the `tray` and `fabulor-context` groups together. The presenter keeps
+its own references, so callers can release every projection result immediately
+after binding it.
+
+Presenter teardown first closes the popover, removes its menu and action groups,
+and unparents it when necessary. Only then are retained references released.
+Consequently, a widget retained beyond presenter destruction has neither menu
+content nor callable tray/plugin actions. The two namespace strings live in a
+toolkit-neutral shared header used by model generation, legacy menu attachment,
+and the GTK4 presenter.
+
 Typed actions route through the existing visibility, away/back, preferences,
 quit, and preference-update paths. Model updates compare snapshots and avoid
 menu notifications when state is unchanged; only a visibility-label change
@@ -58,6 +73,6 @@ clears its plugin context.
 ## Deferred Presentation Work
 
 The shipping GTK3 status icon/AppIndicator and Win32 popup menu remain unchanged
-in this pass. A later presentation pass must consume the composed projection.
-Native Windows shell-icon ownership and GTK4/Unix presenter selection remain
-separate platform tasks.
+in this pass. The GTK4 presenter remains in the candidate probe until the GTK4
+frontend has a production anchor or platform tray backend. Native Windows
+shell-icon ownership and GTK4/Unix presenter selection remain separate tasks.

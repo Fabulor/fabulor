@@ -20,7 +20,7 @@
 #ifndef ZOITECHAT_MENU_H
 #define ZOITECHAT_MENU_H
 
-#define FABULOR_PLUGIN_CONTEXT_ACTION_NAMESPACE "fabulor-context"
+#include "menu-action-namespaces.h"
 
 GtkWidget *menu_create_main (void *accel_group, int bar, int away,
 								 int away_sensitive, int disconnect_sensitive,

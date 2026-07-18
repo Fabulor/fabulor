@@ -60,6 +60,9 @@
     <ClInclude Include="menu.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="menu-action-namespaces.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
     <ClInclude Include="notifygui.h">
       <Filter>Header Files</Filter>
     </ClInclude>

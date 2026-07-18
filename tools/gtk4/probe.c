@@ -13,6 +13,7 @@
 #include "../../src/fe-gtk/theme/theme-gtk4-controller.h"
 #include "../../src/fe-gtk/tray-action-model.h"
 #include "../../src/fe-gtk/tray-menu-composition.h"
+#include "../../src/fe-gtk/tray-menu-presenter-gtk4.h"
 #include "../../src/fe-gtk/ignore-list.h"
 #include "../../src/fe-gtk/ban-list.h"
 #include "../../src/fe-gtk/channel-list.h"
@@ -2749,6 +2750,102 @@ check_tray_menu_composition (void)
 	return passed;
 }
 
+static void
+tray_presenter_action_activated (GSimpleAction *action, GVariant *parameter,
+	gpointer user_data)
+{
+	guint *count = user_data;
+
+	(void)action;
+	(void)parameter;
+	(*count)++;
+}
+
+static GActionGroup *
+tray_presenter_action_group_new (const char *name, guint *count)
+{
+	GSimpleActionGroup *group = g_simple_action_group_new ();
+	GSimpleAction *action = g_simple_action_new (name, NULL);
+
+	g_signal_connect (action, "activate",
+		G_CALLBACK (tray_presenter_action_activated), count);
+	g_action_map_add_action (G_ACTION_MAP (group), G_ACTION (action));
+	g_object_unref (action);
+	return G_ACTION_GROUP (group);
+}
+
+static gboolean
+check_tray_menu_presenter_gtk4 (void)
+{
+	GMenu *first_menu = g_menu_new ();
+	GActionGroup *first_built_in;
+	GActionGroup *first_plugin;
+	GMenu *second_menu;
+	GActionGroup *second_built_in;
+	GActionGroup *second_plugin;
+	FabulorTrayMenuPresenterGtk4 *presenter;
+	GtkPopoverMenu *popover;
+	GtkPopoverMenu *retained_popover;
+	guint first_built_in_count = 0;
+	guint first_plugin_count = 0;
+	guint second_built_in_count = 0;
+	guint second_plugin_count = 0;
+	gboolean passed;
+
+	g_menu_append (first_menu, "Built in", "tray.run");
+	g_menu_append (first_menu, "Plugin", "fabulor-context.run");
+	first_built_in = tray_presenter_action_group_new (
+		"run", &first_built_in_count);
+	first_plugin = tray_presenter_action_group_new (
+		"run", &first_plugin_count);
+	presenter = fabulor_tray_menu_presenter_gtk4_new (
+		G_MENU_MODEL (first_menu), first_built_in, first_plugin);
+	g_object_unref (first_menu);
+	g_object_unref (first_built_in);
+	g_object_unref (first_plugin);
+	if (!presenter)
+		return FALSE;
+
+	popover = fabulor_tray_menu_presenter_gtk4_get_popover (presenter);
+	retained_popover = g_object_ref (popover);
+	passed = gtk_popover_menu_get_menu_model (popover) ==
+		fabulor_tray_menu_presenter_gtk4_get_menu (presenter);
+	passed = passed && gtk_widget_activate_action (
+		GTK_WIDGET (popover), "tray.run", NULL);
+	passed = passed && gtk_widget_activate_action (
+		GTK_WIDGET (popover), "fabulor-context.run", NULL);
+	passed = passed && first_built_in_count == 1 && first_plugin_count == 1;
+
+	second_menu = g_menu_new ();
+	g_menu_append (second_menu, "Replacement built in", "tray.run");
+	g_menu_append (second_menu, "Replacement plugin", "fabulor-context.run");
+	second_built_in = tray_presenter_action_group_new (
+		"run", &second_built_in_count);
+	second_plugin = tray_presenter_action_group_new (
+		"run", &second_plugin_count);
+	passed = passed && fabulor_tray_menu_presenter_gtk4_set_projection (
+		presenter, G_MENU_MODEL (second_menu), second_built_in, second_plugin);
+	g_object_unref (second_menu);
+	g_object_unref (second_built_in);
+	g_object_unref (second_plugin);
+	passed = passed && gtk_widget_activate_action (
+		GTK_WIDGET (popover), "tray.run", NULL);
+	passed = passed && gtk_widget_activate_action (
+		GTK_WIDGET (popover), "fabulor-context.run", NULL);
+	passed = passed && first_built_in_count == 1 && first_plugin_count == 1 &&
+		second_built_in_count == 1 && second_plugin_count == 1;
+
+	fabulor_tray_menu_presenter_gtk4_free (presenter);
+	passed = passed &&
+		gtk_popover_menu_get_menu_model (retained_popover) == NULL &&
+		!gtk_widget_activate_action (GTK_WIDGET (retained_popover),
+			"tray.run", NULL) &&
+		!gtk_widget_activate_action (GTK_WIDGET (retained_popover),
+			"fabulor-context.run", NULL);
+	g_object_unref (retained_popover);
+	return passed;
+}
+
 static gboolean
 check_spell_entry_style_policy (void)
 {
@@ -3428,6 +3525,11 @@ main (void)
 	if (!check_tray_menu_composition ())
 	{
 		fprintf (stderr, "GTK4 tray menu composition contract mismatch\n");
+		return 1;
+	}
+	if (gtk_ready && !check_tray_menu_presenter_gtk4 ())
+	{
+		fprintf (stderr, "GTK4 tray menu presenter contract mismatch\n");
 		return 1;
 	}
 	if (!check_spell_entry_word_policy ())
