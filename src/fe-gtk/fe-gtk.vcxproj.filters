@@ -275,6 +275,9 @@
     <ClCompile Include="tray-action-model.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="tray-menu-composition.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
     <ClCompile Include="notifications\notification-windows.c">
       <Filter>Source Files</Filter>
     </ClCompile>

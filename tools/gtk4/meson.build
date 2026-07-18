@@ -59,6 +59,7 @@ probe = executable(
   '../../src/fe-gtk/theme/theme-gtk4.c',
   '../../src/fe-gtk/theme/theme-gtk4-controller.c',
   '../../src/fe-gtk/tray-action-model.c',
+  '../../src/fe-gtk/tray-menu-composition.c',
   '../../src/fe-gtk/spell-entry-words.c',
 	'../../src/fe-gtk/spell-entry-style.c',
 	'../../src/fe-gtk/spell-entry-menu.c',

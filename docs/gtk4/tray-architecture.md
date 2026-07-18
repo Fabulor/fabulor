@@ -1,6 +1,6 @@
 # Tray Architecture
 
-Status: Stage 7 pass 8 complete for tray action ownership and live binding
+Status: Stage 7 pass 9 complete for dynamic plugin-menu composition
 
 ## Action Boundary
 
@@ -16,7 +16,9 @@ presenter receives a borrowed `GMenuModel` and `GActionGroup` under the stable
 
 The owner copies every supplied display label, owns the action group and menu,
 and invokes the caller's destroy notification exactly once. Presenters cannot
-retain caller-owned labels through the model.
+retain caller-owned labels through the model. During teardown, retained action
+groups are disabled and disconnected before the owner is released, so late
+presenter activation cannot call freed plugin state.
 
 ## State Updates
 
@@ -31,13 +33,21 @@ callback. Disabled away or back actions do not dispatch. Menu sections and
 action names are deterministic, allowing GTK4, StatusNotifier, and native
 Windows presenters to consume the same behavior.
 
-## Deferred Presentation Work
+## Dynamic Plugin Composition
 
-`plugin-tray.c` now owns one action model for its complete plugin lifetime. It
-populates snapshots from live window visibility, aggregate away state, and the
-three blink preferences. Window show/hide/state changes, preference application,
-and `fe_set_away` refresh the model. Presenters can request borrowed menu and
-action-group handles; each request first refreshes live state.
+`plugin-tray.c` owns one action model and one dynamic-menu owner for its complete
+plugin lifetime. It populates snapshots from live window visibility, aggregate
+away state, and the three blink preferences. Window show/hide/state changes,
+preference application, and `fe_set_away` refresh the model.
+
+Presenters request one immutable menu projection plus separately owned built-in
+and plugin action-group references. Each request refreshes live state and
+rebuilds the `$TRAY` plugin subtree from the current plugin menu definitions.
+`tray-menu-composition.c` inserts that subtree after the first two built-in
+sections while preserving linked submenus, item attributes, action names, and
+plugin command metadata. The projection owns its menu links independently of
+the temporary source model. Plugin actions use the stable `fabulor-context`
+namespace and remain separate from the built-in `tray` namespace.
 
 Typed actions route through the existing visibility, away/back, preferences,
 quit, and preference-update paths. Model updates compare snapshots and avoid
@@ -45,7 +55,9 @@ menu notifications when state is unchanged; only a visibility-label change
 rebuilds menu sections. Plugin deinitialization releases the action owner and
 clears its plugin context.
 
+## Deferred Presentation Work
+
 The shipping GTK3 status icon/AppIndicator and Win32 popup menu remain unchanged
-in this pass. A later presentation pass must consume the bound model and compose
-dynamic `$TRAY` plugin entries. Native Windows shell-icon ownership and
-GTK4/Unix presenter selection remain separate platform tasks.
+in this pass. A later presentation pass must consume the composed projection.
+Native Windows shell-icon ownership and GTK4/Unix presenter selection remain
+separate platform tasks.

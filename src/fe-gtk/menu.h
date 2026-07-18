@@ -20,6 +20,8 @@
 #ifndef ZOITECHAT_MENU_H
 #define ZOITECHAT_MENU_H
 
+#define FABULOR_PLUGIN_CONTEXT_ACTION_NAMESPACE "fabulor-context"
+
 GtkWidget *menu_create_main (void *accel_group, int bar, int away,
 								 int away_sensitive, int disconnect_sensitive,
 								 int join_sensitive, int toplevel,
@@ -49,6 +51,8 @@ void menu_create (GtkWidget *menu, GSList *list, char *target, int check_path);
 void menu_bar_toggle (void);
 void menu_add_plugin_items (GtkWidget *menu, char *root, char *target);
 void menu_add_plugin_model (GObject *owner, const char *root, const char *target);
+GMenuModel *menu_plugin_context_model (GObject *owner);
+GActionGroup *menu_plugin_context_actions (GObject *owner);
 void menu_change_layout (void);
 void menu_update_quit_accel (void);
 gboolean menu_key_action (const char *name, guint keyval, GdkModifierType state);

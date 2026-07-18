@@ -3638,6 +3638,46 @@ Manual checks:
 Scope: live action-model binding only. This pass does not replace tray icon,
 popup presentation, flashing timers, or platform backend selection.
 
+### PR: Pending - GTK4 Stage 7 Tray Plugin Composition
+
+Date: 2026-07-18
+
+Migration stage: 7, dynamic tray plugin-composition pass 9
+
+Files/workflows converted: retained `$TRAY` plugin model ownership; immutable
+built-in/plugin menu composition; stable action namespaces; caller-owned
+projection references; inert retained-action teardown; production and probe
+source registration
+
+GTK version: shipping GTK3 frontend plus GTK4 4.22.4 probe
+
+GLib version: shipping Windows runtime plus GTK4 probe 2.88.0
+
+Build configuration: shipping MSVC x64 Release, strict GTK4 MSVC probe, fresh
+MSVC Meson/Ninja probe, and Linux GCC C11 syntax validation
+
+Automated checks:
+
+- [x] shipping frontend compiles and links with 0 warnings and 0 errors
+- [x] strict GTK4 MSVC probe compiles, links, and executes with 0 warnings and 0 errors
+- [x] fresh MSVC Meson/Ninja probe compiles 45 objects with warnings treated as errors
+- [x] independent Meson runtime test passes 1/1
+- [x] Linux GCC C11 syntax check passes with all warnings treated as errors
+- [x] plugin section insertion preserves links, actions, and command metadata
+- [x] oversized and zero insertion indices remain within menu bounds
+- [x] composed menus survive source plugin-model release
+- [x] retained built-in actions are disabled and disconnected during teardown
+- [x] repository diff whitespace validation passes
+
+Manual checks:
+
+- [ ] shipping tray presentation remains on its unchanged GTK3/Win32 path
+- [ ] production GTK4 presenter interaction awaits the presentation pass
+- [ ] dynamic plugin command activation awaits a presenter consuming both action groups
+
+Scope: dynamic menu and action-group ownership only. This pass does not replace
+the tray icon, popup renderer, flashing timers, or platform backend selection.
+
 ## Per-PR Record Template
 
 Copy this section for each GTK4 PR:

@@ -59,6 +59,7 @@
 	<ClCompile Include="..\..\src\fe-gtk\theme\theme-gtk4.c" />
 	<ClCompile Include="..\..\src\fe-gtk\theme\theme-gtk4-controller.c" />
 	<ClCompile Include="..\..\src\fe-gtk\tray-action-model.c" />
+	<ClCompile Include="..\..\src\fe-gtk\tray-menu-composition.c" />
 	<ClCompile Include="..\..\src\fe-gtk\spell-entry-words.c" />
 	<ClCompile Include="..\..\src\fe-gtk\spell-entry-style.c" />
 	<ClCompile Include="..\..\src\fe-gtk\spell-entry-menu.c" />

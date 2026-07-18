@@ -1247,6 +1247,16 @@ notifications, while visibility changes alone rebuild the hide/restore section.
 The model is now part of production MSVC and Meson source lists. Presenter
 replacement and dynamic `$TRAY` composition remain later passes.
 
+Tray plugin-composition pass 9 (2026-07-18):
+the tray boundary now rebuilds the dynamic `$TRAY` plugin subtree on demand and
+inserts it into an immutable presenter projection after the first two built-in
+sections. Linked menu structure, action names, and plugin metadata survive
+source-model release. Presenters receive explicit owned references to the menu,
+built-in actions, and plugin actions; teardown disables and disconnects retained
+built-in actions before releasing callback state. Shipping GTK3/AppIndicator
+and Win32 popup rendering remain unchanged until a presenter consumes this
+projection.
+
 Exit criteria:
 
 - Theme switching, restart persistence, tray state, notifications, icons,

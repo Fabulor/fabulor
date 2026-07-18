@@ -4261,7 +4261,7 @@ menu_add_plugin_model (GObject *owner, const char *root_name, const char *target
 	action_group = g_simple_action_group_new ();
 	root = menu_plugin_context_tree_new (root_name);
 	projection.owner = owner;
-	projection.action_namespace = "fabulor-context";
+	projection.action_namespace = FABULOR_PLUGIN_CONTEXT_ACTION_NAMESPACE;
 	projection.root = root_name;
 	projection.target = target;
 	projection.is_main = FALSE;
@@ -4275,6 +4275,20 @@ menu_add_plugin_model (GObject *owner, const char *root_name, const char *target
 						 action_group, g_object_unref);
 	g_object_set_data_full (owner, FABULOR_MENU_CONTEXT_MODEL,
 						 model, g_object_unref);
+}
+
+GMenuModel *
+menu_plugin_context_model (GObject *owner)
+{
+	g_return_val_if_fail (G_IS_OBJECT (owner), NULL);
+	return g_object_get_data (owner, FABULOR_MENU_CONTEXT_MODEL);
+}
+
+GActionGroup *
+menu_plugin_context_actions (GObject *owner)
+{
+	g_return_val_if_fail (G_IS_OBJECT (owner), NULL);
+	return g_object_get_data (owner, FABULOR_MENU_CONTEXT_ACTION_GROUP);
 }
 
 static void
