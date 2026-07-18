@@ -329,6 +329,8 @@ Detailed planning and evidence live in:
   - [x] Retain `.hct` and `colors.conf` without packaging an optional default Fabulor theme.
   - [ ] Remove GTK3 theme discovery and `%APPDATA%\Fabulor\gtk3-themes` use only after the GTK4 adapter is ready.
 - [ ] Cut production builds, CI, staging, and WiX packaging over to an allowlisted GTK4 runtime.
+  - [x] Establish deterministic candidate staging with a pinned file/tree contract and source-bound SHA-256 manifest.
+  - [ ] Validate the candidate payload, then replace transitional broad WiX harvesting with the allowlist.
 - [ ] Remove GTK3 code, build inputs, runtime files, installer components, and compatibility helpers.
 - [ ] Complete clean-install, upgrade, accessibility, visual, performance, plugin, and packaging validation.
 
