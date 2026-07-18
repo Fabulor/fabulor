@@ -3481,6 +3481,43 @@ Manual checks:
 Scope: GTK4 appearance decision policy only. Existing Win32 signal acquisition
 is unchanged, and the shipping GTK3 frontend does not consume this decision.
 
+### PR: [#114 - GTK4 Stage 7 Theme Controller](https://github.com/Fabulor/fabulor/pull/114)
+
+Date: 2026-07-18
+
+Migration stage: 7, GTK4 theme composition and lifecycle pass 5
+
+Files/workflows converted: discovery-to-choice composition; persisted selection
+resolution; appearance-to-provider application; transactional refresh;
+unavailable-selection fallback; controller teardown and diagnostics
+
+GTK version: 4.22.4
+
+GLib version: 2.88.0
+
+Build configuration: MSVC x64 Release and strict GTK4 probe boundary
+
+Automated checks:
+
+- [x] strict GTK4 MSVC probe compiles, links, and executes with 0 warnings and 0 errors
+- [x] fresh MSVC Meson/Ninja probe compiles 43 objects with warnings treated as errors
+- [x] independent Meson runtime test passes 1/1
+- [x] Linux GCC C11 syntax check passes with all warnings treated as errors
+- [x] choices remain valid after borrowed discovery metadata is released
+- [x] invalid CSS preserves active providers and the committed selection
+- [x] unavailable persisted selection commits an observable system-default fallback
+- [x] high contrast removes active providers while retaining preference identity
+- [x] controller destruction owns final provider and choice cleanup
+- [x] repository diff whitespace validation passes
+
+Manual checks:
+
+- [ ] production GTK4 preference interaction and restart persistence await frontend cutover
+- [ ] packaged Windows appearance switching awaits the production GTK4 frontend
+
+Scope: pre-production GTK4 theme composition and lifecycle only. The shipping
+GTK3 frontend remains unchanged and does not instantiate this controller.
+
 ## Per-PR Record Template
 
 Copy this section for each GTK4 PR:

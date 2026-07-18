@@ -1,6 +1,6 @@
 # GTK4 Theme Architecture
 
-Status: Stage 7 pass 4 theme ownership and Windows appearance-policy boundaries
+Status: Stage 7 pass 5 complete pre-production GTK4 theme ownership stack
 
 ## Scope
 
@@ -94,6 +94,30 @@ resolved decision directly, disabling active custom providers whenever the
 decision selects runtime defaults. Production signal/UI hookup and packaged
 visual validation remain pending.
 
+## Lifecycle Controller
+
+`src/fe-gtk/theme/theme-gtk4-controller.c` is the GTK4-only composition owner.
+It discovers themes, projects owned preference choices, resolves the persisted
+selection and Windows appearance decision, and applies that decision through a
+single provider adapter. Production code can refresh from the configured roots;
+tests and import workflows can supply an already-discovered set through the same
+commit path.
+
+Refresh is transactional across provider and preference state. Candidate
+choices and selection are committed only after provider application succeeds.
+Invalid CSS therefore leaves both the active providers and the previously
+committed selection intact. An unavailable persisted identifier is different:
+it is a valid fallback outcome, so the controller commits the system-default
+choice, records that the stored selection was unavailable, and removes custom
+providers. High contrast similarly retains the selected preference but applies
+the runtime-default appearance decision.
+
+The controller owns its choice projection and provider adapter. Discovery
+metadata is borrowed only for the duration of refresh, and shutdown removes
+display-scoped providers before releasing copied preference state. It exposes
+read-only choices, selected state, appearance, active provider identity, and
+diagnostics for the future GTK4 preferences page.
+
 ## Invariants
 
 - GTK3-only layouts are never returned by GTK4 discovery.
@@ -116,12 +140,15 @@ visual validation remain pending.
 - Only a resolved available custom selection can enable a custom provider.
 - High contrast always suppresses custom GTK4 CSS and dark preference requests.
 - The system-default choice follows Windows and never loads Fabulor theme CSS.
+- Controller refresh commits preference state only after provider success.
+- Discovery metadata can be released immediately after controller refresh.
+- Controller destruction removes active providers before releasing its state.
 - `.hct` and `colors.conf` remain independent Fabulor formats.
 
 ## Planned Passes
 
-1. Bind the preference model to the production GTK4 preferences UI and apply
-   selection changes through the provider adapter.
+1. Bind the lifecycle controller to the production GTK4 preferences UI and
+   persisted configuration.
 2. Connect the Windows appearance decision to the production GTK4 runtime and
    validate light, dark, and high-contrast rendering without a bundled theme.
 3. Retire GTK3 discovery, imports, and `%APPDATA%\Fabulor\gtk3-themes` only
@@ -142,3 +169,5 @@ then verifies system-default fallback, exact persisted identity, source and dark
 metadata, and invalid-variant normalization.
 The Windows appearance matrix covers custom follow-system, explicit light,
 explicit dark, system-default, invalid variant, and high-contrast decisions.
+The controller contract verifies copied-choice lifetime, invalid-CSS rollback,
+unavailable-selection fallback, high-contrast teardown, and final cleanup.
