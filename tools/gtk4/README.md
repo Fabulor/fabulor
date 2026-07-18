@@ -57,3 +57,22 @@ The probe also includes `src/fe-gtk/gtk-compat.h` directly and takes the address
 of every compatibility helper. This makes both build systems compile and link
 all GTK4 helper branches without creating a display or changing the production
 frontend target.
+
+## Stage 8 Runtime Candidate
+
+`runtime-payload-contract.json` defines the first production runtime candidate
+as exact files and owned data trees from the pinned dependency root. It excludes
+headers, import libraries, debug symbols, build tools, GIR source, and Python
+build helpers. `stage_runtime.py` copies only that selection, normalizes the GDK
+pixbuf loader cache so it contains no build-machine path, and writes a SHA-256
+manifest of every staged file.
+
+```powershell
+python tools\gtk4\test_stage_runtime.py
+python tools\gtk4\stage_runtime.py --root C:\fabulor-master\Runtime\GTK4 --validate-only
+python tools\gtk4\stage_runtime.py --root C:\fabulor-master\Runtime\GTK4 --output C:\fabulor-master\build\gtk4-runtime-candidate
+```
+
+The output directory must be absent or empty. This pass deliberately does not
+change WiX harvesting; the candidate must pass CI and packaged feature testing
+before it replaces the transitional broad GTK4 component group.

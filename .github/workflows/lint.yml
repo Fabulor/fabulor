@@ -206,6 +206,7 @@ jobs:
 
           python plugins/python/test_capabilities.py
           python plugins/python/test_manifest_isolation.py
+          python tools/gtk4/test_stage_runtime.py
           python tools/validate_theme_contract.py
           python tools/test_validate_theme_contract.py
         shell: powershell

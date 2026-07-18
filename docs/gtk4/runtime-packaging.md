@@ -1,6 +1,6 @@
 # GTK4 Runtime And Packaging
 
-Status: transitional inventory with enforced theme payload policy
+Status: deterministic GTK4 runtime candidate with transitional WiX harvesting
 
 Baseline date: 2026-07-14
 
@@ -46,6 +46,16 @@ runtime-use decision before release trimming.
 The `lib/gio` include currently matches zero files and produces WIX8600. The
 warning should be removed by correcting or deleting the include after the final
 runtime layout is known; it must not be suppressed globally.
+
+Stage 8 pass 1 adds `tools/gtk4/runtime-payload-contract.json` and
+`tools/gtk4/stage_runtime.py`. The contract selects the native dependency
+closure rooted at GTK4 and the SVG pixbuf loader, the two GLib spawn helpers,
+and explicit runtime data trees. Staging rejects missing, escaping, reparse,
+duplicate, or build-only files; normalizes the pixbuf loader cache; and emits a
+deterministic file/size/SHA-256 manifest tied to the pinned source archive.
+Windows CI materializes this candidate before compiling the GTK4 probe. WiX
+continues to use the transitional component group until candidate feature and
+payload validation is complete.
 
 ## Sources And Provenance
 
@@ -176,9 +186,10 @@ DLL boundaries. Before cutover:
 
 ### 2. Build A GTK4 Staging Root
 
-- generate a clean runtime tree from pinned inputs
-- separate build-only and runtime files
-- emit a locked file manifest with hashes and ownership/category metadata
+- [x] generate a clean runtime candidate from pinned inputs
+- [x] separate build-only and runtime files through an explicit contract
+- [x] emit a source-bound file manifest with sizes and SHA-256 hashes
+- [ ] add ownership/category metadata after native feature verification
 - validate executable-relative startup without ambient GTK paths
 
 ### 3. Parallel Package Validation

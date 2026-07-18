@@ -170,6 +170,12 @@ jobs:
           python tools\gtk4\test_validate_root.py
           if errorlevel 1 exit /b 1
 
+          python tools\gtk4\test_stage_runtime.py
+          if errorlevel 1 exit /b 1
+
+          python tools\gtk4\stage_runtime.py --root "%GITHUB_WORKSPACE%\Runtime\GTK4" --output "%GITHUB_WORKSPACE%\build\gtk4-runtime-candidate"
+          if errorlevel 1 exit /b 1
+
           msbuild tools\gtk4\gtk4-probe.vcxproj /m /verbosity:minimal /p:Configuration=Release /p:Platform=${{ matrix.platform }} /p:FabulorGtk4Root="%GITHUB_WORKSPACE%\Runtime\GTK4"
           if errorlevel 1 exit /b 1
 

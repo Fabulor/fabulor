@@ -199,7 +199,8 @@ class CapabilityTests(unittest.TestCase):
             self.assertEqual(callbacks[0][1], 'message')
             self.assertIn('Hello, Tester. Python sample ready.', logs)
             callbacks[0][2]({'event': 'message', 'source': 'PRIVMSG'})
-            self.assertTrue(any('observed its first message' in message for message in logs))
+            self.assertTrue(any(
+                'observed its first incoming message' in message for message in logs))
         finally:
             plugin.close()
             self.plugin_host.zoitechat = None

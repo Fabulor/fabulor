@@ -1313,6 +1313,15 @@ Exit criteria:
 
 ### Stage 8: Production Cutover And Runtime Cleanup
 
+Runtime staging-contract pass 1 (2026-07-18):
+`tools/gtk4/runtime-payload-contract.json` now defines a deterministic Windows
+x64 runtime candidate from exact native files and required data trees in the
+pinned GTK4 root. `stage_runtime.py` rejects unsafe or build-only selections,
+normalizes the GDK pixbuf loader cache, and emits a source-bound SHA-256 file
+manifest. Windows CI stages the candidate before the GTK4 probes. The shipping
+GTK3 payload and transitional WiX GTK4 harvest remain unchanged until this
+candidate passes packaged feature validation.
+
 Deliverables:
 
 - Make GTK4 the only production frontend dependency in MSVC, Meson, and CI.
