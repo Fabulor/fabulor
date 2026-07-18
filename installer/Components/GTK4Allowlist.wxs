@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">
+  <Fragment>
+    <ComponentGroup Id="GTK4Components">
+      <ComponentGroupRef Id="GTK4AllowlistRootComponents" />
+      <ComponentGroupRef Id="GTK4AllowlistBinComponents" />
+      <ComponentGroupRef Id="GTK4AllowlistEtcFontsComponents" />
+      <ComponentGroupRef Id="GTK4AllowlistGdkPixbufComponents" />
+      <ComponentGroupRef Id="GTK4AllowlistShareFontconfigComponents" />
+      <ComponentGroupRef Id="GTK4AllowlistShareGlibSchemasComponents" />
+      <ComponentGroupRef Id="GTK4AllowlistShareGtkComponents" />
+      <ComponentGroupRef Id="GTK4AllowlistShareIconsComponents" />
+      <ComponentGroupRef Id="GTK4AllowlistShareLicensesComponents" />
+      <ComponentGroupRef Id="GTK4AllowlistShareLocaleComponents" />
+      <ComponentGroupRef Id="GTK4AllowlistShareXmlComponents" />
+    </ComponentGroup>
+
+    <ComponentGroup Id="GTK4AllowlistRootComponents" Directory="GTK4DIR">
+      <Files Include="$(var.GtkRuntimeRoot)\runtime-manifest.json" />
+    </ComponentGroup>
+    <ComponentGroup Id="GTK4AllowlistBinComponents" Directory="GTK4BINDIR">
+      <Files Include="$(var.GtkRuntimeRoot)\bin\*.dll" />
+      <Files Include="$(var.GtkRuntimeRoot)\bin\gspawn-win64-helper-console.exe" />
+      <Files Include="$(var.GtkRuntimeRoot)\bin\gspawn-win64-helper.exe" />
+    </ComponentGroup>
+    <ComponentGroup Id="GTK4AllowlistEtcFontsComponents" Directory="GTK4ETCFONTSDIR">
+      <Files Include="$(var.GtkRuntimeRoot)\etc\fonts\**" />
+    </ComponentGroup>
+    <ComponentGroup Id="GTK4AllowlistGdkPixbufComponents" Directory="GTK4GDKPIXBUFDIR">
+      <Files Include="$(var.GtkRuntimeRoot)\lib\gdk-pixbuf-2.0\**" />
+    </ComponentGroup>
+    <ComponentGroup Id="GTK4AllowlistShareFontconfigComponents" Directory="GTK4SHAREFONTCONFIGDIR">
+      <Files Include="$(var.GtkRuntimeRoot)\share\fontconfig\**" />
+    </ComponentGroup>
+    <ComponentGroup Id="GTK4AllowlistShareGlibSchemasComponents" Directory="GTK4SHAREGLIBSCHEMASDIR">
+      <Files Include="$(var.GtkRuntimeRoot)\share\glib-2.0\schemas\**" />
+    </ComponentGroup>
+    <ComponentGroup Id="GTK4AllowlistShareGtkComponents" Directory="GTK4SHAREGTKDIR">
+      <Files Include="$(var.GtkRuntimeRoot)\share\gtk-4.0\**" />
+    </ComponentGroup>
+    <ComponentGroup Id="GTK4AllowlistShareIconsComponents" Directory="GTK4SHAREICONSDIR">
+      <Files Include="$(var.GtkRuntimeRoot)\share\icons\**" />
+    </ComponentGroup>
+    <ComponentGroup Id="GTK4AllowlistShareLicensesComponents" Directory="GTK4SHARELICENSESDIR">
+      <Files Include="$(var.GtkRuntimeRoot)\share\licenses\**" />
+    </ComponentGroup>
+    <ComponentGroup Id="GTK4AllowlistShareLocaleComponents" Directory="GTK4SHARELOCALEDIR">
+      <Files Include="$(var.GtkRuntimeRoot)\share\locale\**" />
+    </ComponentGroup>
+    <ComponentGroup Id="GTK4AllowlistShareXmlComponents" Directory="GTK4SHAREXMLDIR">
+      <Files Include="$(var.GtkRuntimeRoot)\share\xml\**" />
+    </ComponentGroup>
+  </Fragment>
+</Wix>

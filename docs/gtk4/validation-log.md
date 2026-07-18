@@ -4048,6 +4048,46 @@ Scope: static candidate PE dependency closure and native ownership only.
 Production linking, dynamic feature coverage, payload trimming, installer
 selection, and the shipping GTK3 runtime remain unchanged.
 
+### PR: pending - GTK4 Stage 8 Shipping WiX Allowlist
+
+Date: 2026-07-18
+
+Migration stage: 8, shipping WiX allowlist pass 5
+
+Files/workflows converted: normal WiX GTK4 component selection; staged-root
+requirement; shipping MSI payload validation; duplicate candidate build and
+artifact retirement
+
+GTK version: 4.22.4
+
+GLib version: 2.88.0
+
+Build configuration: Windows x64 normal `Fabulor.msi` and `FabulorSetup.exe`
+against the deterministic staged allowlist
+
+Automated checks:
+
+- [x] broad `GTK4.wxs` and its empty `lib/gio` harvest are removed
+- [x] `GTK4Allowlist.wxs` is the sole `GTK4Components` provider
+- [x] normal WiX builds fail closed without `runtime-manifest.json`
+- [x] normal `Fabulor.msi` and `FabulorSetup.exe` build against the staged root
+- [x] shipping MSI contains all 1,431 manifest paths plus the manifest
+- [x] shipping MSI extraction reports zero missing, unexpected, duplicate,
+  flattened, size-mismatched, or hash-mismatched GTK4 entries
+- [x] duplicate candidate MSI build and artifact upload are removed
+- [x] installer XML, workflow YAML, Python syntax, and diff whitespace checks
+  pass
+
+Manual checks:
+
+- [ ] clean-run unsuppressed ICE and bootstrapper evidence awaits GitHub CI
+- [ ] installed clean/upgrade/repair/uninstall tests remain pending
+- [ ] production executable and root payload remain GTK3 in this pass
+
+Scope: shipping WiX GTK4 component selection and exact MSI payload validation.
+Production frontend linking, root GTK3 staging/removal, and installed feature
+validation remain unchanged.
+
 ## Per-PR Record Template
 
 Copy this section for each GTK4 PR:
