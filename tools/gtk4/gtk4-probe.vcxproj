@@ -53,6 +53,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="probe.c" />
+	<ClCompile Include="..\..\src\fe-gtk\emoji-picker.c" />
 	<ClCompile Include="..\..\src\fe-gtk\spell-entry-words.c" />
 	<ClCompile Include="..\..\src\fe-gtk\spell-entry-style.c" />
 	<ClCompile Include="..\..\src\fe-gtk\spell-entry-menu.c" />

@@ -1109,6 +1109,16 @@ words beside wrapped HTTPS URLs, multibyte path/query text, emoji, and `www.`
 links. Interactive emoji, clipboard, shortcut, persistence, accessibility,
 high-DPI, and latency validation remain for the production GTK4 frontend.
 
+Spell-input emoji-picker ownership pass 6 (2026-07-18): `emoji-picker.c` now
+owns one popover reference per edit box, exact GTK3/GTK4 parent teardown,
+one-time lazy-page state, and validated flag/codepoint sequence construction.
+The removed notebook path is replaced by a shared stack and switcher, with
+only the visible category populated. GTK4 flag images use paintables and the
+existing child/reveal adapters; GTK3 behavior remains compiled by the shipping
+frontend. The strict probe exercises page and Unicode policy while compiling
+the exact GTK4 popover lifecycle. Production GTK4 interaction, accessibility,
+high-DPI, asset, and latency checks remain open until the frontend is runnable.
+
 Primary surfaces:
 
 - `xtext.c` / `xtext.h`

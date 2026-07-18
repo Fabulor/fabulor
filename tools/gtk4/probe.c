@@ -5,6 +5,7 @@
 
 #include "../../src/fe-gtk/gtk-compat.h"
 #include "../../src/fe-gtk/gtk4-list-models.h"
+#include "../../src/fe-gtk/emoji-picker.h"
 #include "../../src/fe-gtk/ignore-list.h"
 #include "../../src/fe-gtk/ban-list.h"
 #include "../../src/fe-gtk/channel-list.h"
@@ -1919,6 +1920,52 @@ check_xtext_scroll_copy_policy (void)
 }
 
 static gboolean
+check_emoji_picker_policy (void)
+{
+	static const gunichar items[] = { 0x1F600, 0 };
+	GtkPopover *(*volatile popover_get) (GtkEntry *) =
+		fabulor_emoji_picker_popover_get;
+	GtkPopover *(*volatile popover_ensure) (GtkEntry *) =
+		fabulor_emoji_picker_popover_ensure;
+	FabulorEmojiPickerPage *page;
+	FabulorEmojiPickerPage *flags_page;
+	gchar *eu;
+	gchar *lowercase_eu;
+	gchar *grinning;
+	gboolean valid;
+
+	page = fabulor_emoji_picker_page_new (items, FALSE);
+	flags_page = fabulor_emoji_picker_page_new (NULL, TRUE);
+	eu = fabulor_emoji_picker_flag_sequence ("EU");
+	lowercase_eu = fabulor_emoji_picker_flag_sequence ("eu");
+	grinning = fabulor_emoji_picker_codepoint_sequence (0x1F600);
+	valid = popover_get != NULL && popover_ensure != NULL &&
+		page != NULL && flags_page != NULL &&
+		fabulor_emoji_picker_page_items (page) == items &&
+		!fabulor_emoji_picker_page_has_flags (page) &&
+		fabulor_emoji_picker_page_items (flags_page) == NULL &&
+		fabulor_emoji_picker_page_has_flags (flags_page) &&
+		fabulor_emoji_picker_page_claim_load (page) &&
+		!fabulor_emoji_picker_page_claim_load (page) &&
+		g_strcmp0 (eu, "\xF0\x9F\x87\xAA\xF0\x9F\x87\xBA") == 0 &&
+		g_strcmp0 (lowercase_eu, eu) == 0 &&
+		g_strcmp0 (grinning, "\xF0\x9F\x98\x80") == 0 &&
+		fabulor_emoji_picker_flag_sequence (NULL) == NULL &&
+		fabulor_emoji_picker_flag_sequence ("E") == NULL &&
+		fabulor_emoji_picker_flag_sequence ("EUU") == NULL &&
+		fabulor_emoji_picker_flag_sequence ("E1") == NULL &&
+		fabulor_emoji_picker_codepoint_sequence (0) == NULL &&
+		fabulor_emoji_picker_codepoint_sequence (0xD800) == NULL;
+
+	g_free (eu);
+	g_free (lowercase_eu);
+	g_free (grinning);
+	fabulor_emoji_picker_page_free (page);
+	fabulor_emoji_picker_page_free (flags_page);
+	return valid;
+}
+
+static gboolean
 probe_spell_mirc_color (gint color_index, FabulorSpellEntryColor *color,
 	gpointer user_data)
 {
@@ -2679,6 +2726,11 @@ main (void)
 	if (!check_xtext_scroll_copy_policy ())
 	{
 		fprintf (stderr, "GTK4 transcript scroll-copy policy mismatch\n");
+		return 1;
+	}
+	if (!check_emoji_picker_policy ())
+	{
+		fprintf (stderr, "GTK4 emoji-picker ownership policy mismatch\n");
 		return 1;
 	}
 	if (!check_spell_entry_word_policy ())

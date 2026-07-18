@@ -1,6 +1,6 @@
 # GTK4 Spell Input Architecture
 
-Status: Stage 6 spell-input pass 5 URL and initialization boundary
+Status: Stage 6 spell-input pass 6 emoji-picker ownership and lifecycle boundary
 
 ## Purpose
 
@@ -111,6 +111,27 @@ processing, preserving the edit-box latency boundary. GTK3 retains its existing
 GTK3 removal. GTK4 formatting actions insert directly into the owning editable,
 including replacing the current selection, without using global session state.
 
+## Emoji Picker Ownership
+
+`emoji-picker.c` owns lazy-page state, Unicode sequence construction, and the
+popover reference attached to each edit box. A page can claim its contents
+exactly once, so stack visibility notifications cannot duplicate hundreds of
+buttons or their callbacks. Category item arrays remain immutable borrowed
+data and are released independently from the page owner.
+
+The edit box owns one popover through object data with an explicit destructor.
+GTK4 parents the popover to the entry and unparents it before dropping the
+owned reference; GTK3 retains its relative-widget constructor and destroy
+path. Reopening an existing picker reuses that owner instead of connecting an
+additional entry-destroy handler.
+
+`GtkStack` and `GtkStackSwitcher` replace the removed notebook path on both
+toolkits. Only the visible category is populated, preserving startup and
+first-input latency. GTK4 uses paintables for flag images and shared child and
+reveal adapters; GTK3 retains pixbuf images and its native emoji signal until
+cutover. Flag codes must contain exactly two ASCII letters and Unicode scalar
+values are validated before insertion text is allocated.
+
 ## Invariants
 
 - Pango and Enchant ranges are UTF-8 byte indexed.
@@ -135,12 +156,17 @@ including replacing the current selection, without using global session state.
 - Pointer and Shift+F10/Menu-key paths refresh the same dynamic model.
 - Spell, formatting, and colour commands remain keyboard accessible.
 - Enchant activation cannot recheck uninitialized word or Pango owners.
+- One edit box owns at most one emoji popover and its teardown path.
+- Lazy emoji pages populate at most once and never own static category arrays.
+- Flag insertion accepts exactly two ASCII letters and normalizes their case.
+- Invalid or zero Unicode scalar values cannot become insertion text.
+- The picker uses stack visibility rather than removed notebook page signals.
 
 ## Planned Passes
 
 1. Validate emoji insertion, clipboard, shortcuts, URL paste, Enchant latency,
-   personal-dictionary persistence, accessibility, and high-DPI behavior in
-   the production GTK4 client.
+   personal-dictionary persistence, accessibility, flag assets, and high-DPI
+   behavior in the production GTK4 client.
 
 The custom-widget versus composed-input decision is closed for the current
 port: retaining the subclass preserves native behavior with less ownership
@@ -169,7 +195,13 @@ The strict GTK4 probe verifies:
 - one- and multi-dictionary menus expose stable add, ignore, and replacement
   actions without native pointers;
 - long suggestion lists retain the ten-item `More...` boundary; and
-- all formatting and colour insertion actions remain present.
+- all formatting and colour insertion actions remain present;
+- lazy emoji-page state can be claimed exactly once;
+- category arrays remain borrowed and flags pages are identified explicitly;
+- upper- and lower-case two-letter flags produce the same regional indicators;
+- malformed flag codes and invalid Unicode scalar values are rejected; and
+- the GTK3/GTK4 popover ownership implementations compile against their
+  respective toolkit headers.
 
 Production Enchant behavior remains a manual GTK3 regression check until the
 complete GTK4 input widget is connected.
