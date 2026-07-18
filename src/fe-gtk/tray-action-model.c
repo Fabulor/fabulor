@@ -42,6 +42,7 @@ struct _FabulorTrayActionModel
 	FabulorTrayActionFunc activate;
 	gpointer user_data;
 	GDestroyNotify destroy_notify;
+	gboolean initialized;
 };
 
 static const TrayActionDefinition tray_action_definitions[] = {
@@ -275,32 +276,59 @@ void
 fabulor_tray_action_model_update (FabulorTrayActionModel *model,
 	const FabulorTrayActionState *state)
 {
+	FabulorTrayActionState normalized;
+	FabulorTrayActionState previous;
+	gboolean away_changed;
+	gboolean blink_changed;
+	gboolean window_changed;
 	guint i;
 
 	g_return_if_fail (model != NULL);
 	g_return_if_fail (state != NULL);
 
-	model->state = *state;
-	if (model->state.away_state < FABULOR_TRAY_AWAY_MIXED ||
-	    model->state.away_state > FABULOR_TRAY_AWAY_ALL_BACK)
-		model->state.away_state = FABULOR_TRAY_AWAY_MIXED;
+	normalized = *state;
+	if (normalized.away_state < FABULOR_TRAY_AWAY_MIXED ||
+	    normalized.away_state > FABULOR_TRAY_AWAY_ALL_BACK)
+		normalized.away_state = FABULOR_TRAY_AWAY_MIXED;
 
-	for (i = 0; i < G_N_ELEMENTS (tray_action_definitions); i++)
+	previous = model->state;
+	window_changed = !model->initialized ||
+		previous.window_hidden != normalized.window_hidden;
+	away_changed = !model->initialized ||
+		previous.away_state != normalized.away_state;
+	blink_changed = !model->initialized ||
+		previous.blink_channel != normalized.blink_channel ||
+		previous.blink_private != normalized.blink_private ||
+		previous.blink_highlight != normalized.blink_highlight;
+	if (!window_changed && !away_changed && !blink_changed)
+		return;
+
+	model->state = normalized;
+
+	if (blink_changed)
 	{
-		GSimpleAction *action = tray_action_lookup (
-			model, tray_action_definitions[i].name);
+		for (i = 0; i < G_N_ELEMENTS (tray_action_definitions); i++)
+		{
+			GSimpleAction *action = tray_action_lookup (
+				model, tray_action_definitions[i].name);
 
-		if (tray_action_definitions[i].stateful)
-			g_simple_action_set_state (action, g_variant_new_boolean (
-				tray_action_state_value (&model->state,
-				                         tray_action_definitions[i].action)));
+			if (tray_action_definitions[i].stateful)
+				g_simple_action_set_state (action, g_variant_new_boolean (
+					tray_action_state_value (&model->state,
+					                         tray_action_definitions[i].action)));
+		}
 	}
 
-	g_simple_action_set_enabled (tray_action_lookup (model, "set-away"),
-		model->state.away_state != FABULOR_TRAY_AWAY_ALL_AWAY);
-	g_simple_action_set_enabled (tray_action_lookup (model, "set-back"),
-		model->state.away_state != FABULOR_TRAY_AWAY_ALL_BACK);
-	tray_action_rebuild_menu (model);
+	if (away_changed)
+	{
+		g_simple_action_set_enabled (tray_action_lookup (model, "set-away"),
+			model->state.away_state != FABULOR_TRAY_AWAY_ALL_AWAY);
+		g_simple_action_set_enabled (tray_action_lookup (model, "set-back"),
+			model->state.away_state != FABULOR_TRAY_AWAY_ALL_BACK);
+	}
+	if (window_changed)
+		tray_action_rebuild_menu (model);
+	model->initialized = TRUE;
 }
 
 GMenuModel *

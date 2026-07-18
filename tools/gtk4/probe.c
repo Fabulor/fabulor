@@ -2562,6 +2562,19 @@ tray_action_destroy (gpointer user_data)
 	target->destroyed = TRUE;
 }
 
+static void
+tray_menu_items_changed (GMenuModel *model, gint position,
+	gint removed, gint added, gpointer user_data)
+{
+	guint *changes = user_data;
+
+	(void)model;
+	(void)position;
+	(void)removed;
+	(void)added;
+	(*changes)++;
+}
+
 static gboolean
 check_tray_action_model (void)
 {
@@ -2593,6 +2606,7 @@ check_tray_action_model (void)
 	GActionGroup *actions;
 	GVariant *action_state;
 	char *label = NULL;
+	guint menu_changes = 0;
 	gboolean passed = TRUE;
 
 	model = fabulor_tray_action_model_new (&labels, &state,
@@ -2603,6 +2617,10 @@ check_tray_action_model (void)
 	hide_window[0] = 'X';
 	menu = fabulor_tray_action_model_get_menu (model);
 	actions = fabulor_tray_action_model_get_actions (model);
+	g_signal_connect (menu, "items-changed",
+		G_CALLBACK (tray_menu_items_changed), &menu_changes);
+	fabulor_tray_action_model_update (model, &state);
+	passed = passed && menu_changes == 0;
 	section = g_menu_model_get_item_link (menu, 0, G_MENU_LINK_SECTION);
 	passed = passed && section != NULL;
 	if (section)
@@ -2622,6 +2640,10 @@ check_tray_action_model (void)
 	state.away_state = FABULOR_TRAY_AWAY_ALL_AWAY;
 	state.blink_private = FALSE;
 	fabulor_tray_action_model_update (model, &state);
+	passed = passed && menu_changes > 0;
+	menu_changes = 0;
+	fabulor_tray_action_model_update (model, &state);
+	passed = passed && menu_changes == 0;
 	passed = passed && !g_action_group_get_action_enabled (actions, "set-away");
 	passed = passed && g_action_group_get_action_enabled (actions, "set-back");
 	section = g_menu_model_get_item_link (menu, 0, G_MENU_LINK_SECTION);
