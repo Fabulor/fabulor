@@ -1322,6 +1322,19 @@ manifest. Windows CI stages the candidate before the GTK4 probes. The shipping
 GTK3 payload and transitional WiX GTK4 harvest remain unchanged until this
 candidate passes packaged feature validation.
 
+Parallel candidate-package pass 2 (2026-07-18):
+WiX now has an explicit opt-in candidate component surface that packages only
+the generated GTK4 staging root and its source-bound manifest. Windows CI builds
+and uploads a separate candidate MSI after the unchanged production MSI and
+bootstrapper succeed. Candidate mode requires the manifest, uses isolated
+output and intermediate directories, and suppresses bootstrapper replacement.
+The default installer build continues to harvest the transitional GTK4 root.
+The candidate component groups preserve each runtime directory explicitly, and
+CI decompiles and extracts the MSI to compare all installed `Runtime/GTK4`
+paths, sizes, and SHA-256 hashes against the generated manifest. This rejects
+missing, unexpected, duplicate, flattened, or content-mismatched payload entries
+before artifact upload.
+
 Deliverables:
 
 - Make GTK4 the only production frontend dependency in MSVC, Meson, and CI.

@@ -3919,6 +3919,50 @@ Scope: deterministic generation of the first allowlisted GTK4 runtime candidate.
 This pass does not switch production linking, root staging, or installer harvest
 rules and does not remove the shipping GTK3 payload.
 
+### PR: [#125](https://github.com/Fabulor/fabulor/pull/125) - GTK4 Stage 8 Parallel Candidate MSI
+
+Date: 2026-07-18
+
+Migration stage: 8, parallel candidate-package pass 2
+
+Files/workflows converted: opt-in WiX candidate composition; explicit GTK4
+runtime directory ownership; isolated MSI output; MSI decompile, extraction,
+path, size, and SHA-256 validation; candidate artifact upload
+
+GTK version: 4.22.4
+
+GLib version: 2.88.0
+
+Build configuration: Windows x64 WiX 7 candidate MSI with default production
+MSI/bootstrapper composition retained and built first
+
+Automated checks:
+
+- [x] candidate MSI builds locally with zero warnings and zero errors
+- [x] default MSI and bootstrapper still build with candidate mode disabled
+- [x] candidate is named `FabulorGtk4RuntimeCandidate.msi`
+- [x] candidate installs all 1,431 manifest payload paths plus the manifest
+- [x] decompiled MSI contains zero missing, unexpected, duplicate, or flattened
+  GTK4 paths
+- [x] all extracted candidate GTK4 sizes and SHA-256 hashes match the manifest
+- [x] four candidate path-layout and rejection tests pass
+- [x] seven staging, eight dependency-root, four theme-contract, nine Python
+  capability, and seven manifest-isolation tests pass
+- [x] installer XML, workflow YAML, Python syntax, and diff whitespace checks pass
+
+Manual checks:
+
+- [ ] local ICE validation is unavailable because this session cannot access the
+  Windows Installer service; local composition used `SuppressValidation=true`
+- [ ] GitHub candidate build retains normal unsuppressed ICE validation
+- [ ] candidate artifact inspection on a clean machine remains pending
+- [ ] the candidate executable remains GTK3 and is not a GTK4 application smoke
+  test
+
+Scope: parallel packaging and exact payload integrity validation only. Default
+WiX harvesting, the shipping bootstrapper, production linking, and root GTK3
+payload remain unchanged.
+
 ## Per-PR Record Template
 
 Copy this section for each GTK4 PR:

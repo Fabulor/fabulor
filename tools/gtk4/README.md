@@ -73,6 +73,16 @@ python tools\gtk4\stage_runtime.py --root C:\fabulor-master\Runtime\GTK4 --valid
 python tools\gtk4\stage_runtime.py --root C:\fabulor-master\Runtime\GTK4 --output C:\fabulor-master\build\gtk4-runtime-candidate
 ```
 
-The output directory must be absent or empty. This pass deliberately does not
-change WiX harvesting; the candidate must pass CI and packaged feature testing
-before it replaces the transitional broad GTK4 component group.
+The output directory must be absent or empty. Candidate mode leaves default WiX
+harvesting unchanged; it must pass CI and packaged feature testing before it
+replaces the transitional broad GTK4 component group.
+
+Candidate WiX mode packages that staged root into a separate MSI. The validator
+decompiles and extracts the MSI, then compares every installed path, size, and
+SHA-256 beneath `Runtime\GTK4` against the generated manifest, including
+directory placement and the packaged manifest itself:
+
+```powershell
+python tools\gtk4\test_validate_candidate_msi.py
+python tools\gtk4\validate_candidate_msi.py --wix C:\path\to\wix.exe --msi C:\path\to\Fabulor.msi --manifest C:\path\to\runtime-manifest.json
+```
