@@ -53,6 +53,7 @@ intl_library = cc.find_library('intl', dirs: gtk4_library_dir, required: true)
 probe = executable(
   'fabulor-gtk4-probe',
   'probe.c',
+  '../../src/fe-gtk/emoji-picker.c',
   '../../src/fe-gtk/spell-entry-words.c',
 	'../../src/fe-gtk/spell-entry-style.c',
 	'../../src/fe-gtk/spell-entry-menu.c',

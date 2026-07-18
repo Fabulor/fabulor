@@ -24,6 +24,7 @@ zoitechat_gtk_sources = [
   'dcc-chat-list.c',
   'dcc-transfer-list.c',
   'dccgui.c',
+  'emoji-picker.c',
   'editlist.c',
   'editable-list.c',
   'print-event-list.c',

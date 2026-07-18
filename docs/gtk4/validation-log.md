@@ -3294,6 +3294,46 @@ Scope: URL exclusion and Enchant initialization safety only. The remaining
 interactive production GTK4 checks stay open as the final Stage 6 validation
 target.
 
+### PR: #109 - GTK4 Stage 6 Emoji-Picker Ownership
+
+Date: 2026-07-18
+
+Migration stage: 6, spell-input emoji-picker ownership and lifecycle pass 6
+
+Files/workflows converted: per-entry popover ownership; GTK3/GTK4 parent and
+teardown policy; one-time lazy category loading; notebook replacement; GTK4
+flag paintables; validated regional-indicator and codepoint insertion text
+
+GTK version: 4.22.4
+
+GLib version: 2.88.0
+
+Build configuration: MSVC x64 Release and strict GTK4 probe boundary
+
+Automated checks:
+
+- [x] production GTK3 frontend compiles and links with 0 warnings and 0 errors
+- [x] strict GTK4 MSVC probe compiles, links, and executes with 0 warnings and 0 errors
+- [x] exact GTK3/GTK4 popover parent, teardown, and reuse boundary compiles
+- [x] fresh MSVC Meson/Ninja probe compiles 39 objects with warnings treated as errors
+- [x] independent Meson runtime test passes 1/1
+- [x] lazy category pages accept exactly one load claim
+- [x] static category arrays remain borrowed and flags pages are explicit
+- [x] upper- and lower-case two-letter flag codes produce matching regional indicators
+- [x] malformed flag codes, zero codepoints, and invalid Unicode scalars are rejected
+- [x] repository diff whitespace validation passes
+
+Manual checks:
+
+- [ ] shipping GTK3 picker opens, changes categories, inserts emoji and flags, and reopens cleanly
+- [ ] GTK4 mouse and keyboard opening, focus return, and popover dismissal await the production frontend
+- [ ] GTK4 flag assets, accessibility, high-DPI rendering, and picker latency await the production frontend
+- [ ] GTK4 typing, Enter-to-echo, clipboard, shortcut, and Enchant latency await the production frontend
+
+Scope: emoji-picker ownership and lifecycle containment only. Complete
+production GTK4 input validation remains open until the GTK4 frontend is
+runnable.
+
 ## Per-PR Record Template
 
 Copy this section for each GTK4 PR:
