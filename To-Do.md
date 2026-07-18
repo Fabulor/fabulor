@@ -326,7 +326,7 @@ Detailed planning and evidence live in:
   - [x] Discover system GTK4 desktop themes and imported themes under `%APPDATA%\Fabulor\themes`.
   - [x] Bind discovered GTK4 themes and variant policy to owned preference controls with transactional persistence callbacks.
   - [x] Refresh GTK4 theme appearance from queued Windows light/dark and high-contrast signals without GTK3 window filters.
-  - [ ] Retain `.hct` and `colors.conf` without packaging an optional default Fabulor theme.
+  - [x] Retain `.hct` and `colors.conf` without packaging an optional default Fabulor theme.
   - [ ] Remove GTK3 theme discovery and `%APPDATA%\Fabulor\gtk3-themes` use only after the GTK4 adapter is ready.
 - [ ] Cut production builds, CI, staging, and WiX packaging over to an allowlisted GTK4 runtime.
 - [ ] Remove GTK3 code, build inputs, runtime files, installer components, and compatibility helpers.

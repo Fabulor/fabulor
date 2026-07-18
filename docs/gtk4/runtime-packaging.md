@@ -1,6 +1,6 @@
 # GTK4 Runtime And Packaging
 
-Status: transitional inventory
+Status: transitional inventory with enforced theme payload policy
 
 Baseline date: 2026-07-14
 
@@ -119,6 +119,12 @@ content is not deleted during upgrade, but it stops being discovered after the
 GTK4 adapter replaces the shipping GTK3 theme service. Required GTK runtime
 data and icon assets remain allowlisted runtime dependencies, not optional
 default themes.
+
+`tools/validate_theme_contract.py` enforces this boundary in repository lint.
+It verifies the active associations and import/persistence tokens, then rejects
+repository-authored default-theme files and WiX harvest rules for `.hct`,
+`.zct`, `colors.conf`, or `share/themes`. Isolated tests prove each rejection
+path while preserving the explicit stale `.zct` upgrade cleanup.
 
 ## Required Runtime Categories
 
