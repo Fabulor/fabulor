@@ -320,6 +320,7 @@ Detailed planning and evidence live in:
   - [x] Contain notification backend loading, managed errors, WinRT initialization, and module teardown.
   - [x] Establish a toolkit-neutral tray action model with owned labels, state, dispatch, and teardown.
   - [x] Bind the tray action model to live visibility, away, blink, command, and plugin lifecycle state.
+  - [x] Compose dynamic `$TRAY` plugin entries into an owned tray projection with separate action namespaces and inert teardown.
   - [ ] Discover system GTK4 desktop themes and imported themes under `%APPDATA%\Fabulor\themes`.
   - [ ] Retain `.hct` and `colors.conf` without packaging an optional default Fabulor theme.
   - [ ] Remove GTK3 theme discovery and `%APPDATA%\Fabulor\gtk3-themes` use only after the GTK4 adapter is ready.

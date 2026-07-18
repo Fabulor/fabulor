@@ -11,6 +11,8 @@
 
 #include <string.h>
 
+#define TRAY_ACTION_COUNT 8
+
 typedef struct
 {
 	const char *name;
@@ -43,6 +45,7 @@ struct _FabulorTrayActionModel
 	gpointer user_data;
 	GDestroyNotify destroy_notify;
 	gboolean initialized;
+	gulong action_handler_ids[TRAY_ACTION_COUNT];
 };
 
 static const TrayActionDefinition tray_action_definitions[] = {
@@ -55,6 +58,8 @@ static const TrayActionDefinition tray_action_definitions[] = {
 	{ "preferences", FABULOR_TRAY_ACTION_PREFERENCES, FALSE },
 	{ "quit", FABULOR_TRAY_ACTION_QUIT, FALSE }
 };
+
+G_STATIC_ASSERT (G_N_ELEMENTS (tray_action_definitions) == TRAY_ACTION_COUNT);
 
 static gboolean
 tray_action_state_value (const FabulorTrayActionState *state,
@@ -248,7 +253,7 @@ fabulor_tray_action_model_new (const FabulorTrayActionLabels *labels,
 				NULL, g_variant_new_boolean (FALSE));
 		else
 			action = g_simple_action_new (tray_action_definitions[i].name, NULL);
-		g_signal_connect (action, "activate",
+		model->action_handler_ids[i] = g_signal_connect (action, "activate",
 			G_CALLBACK (tray_action_activate_cb), model);
 		g_action_map_add_action (G_ACTION_MAP (model->actions), G_ACTION (action));
 		g_object_unref (action);
@@ -261,9 +266,20 @@ fabulor_tray_action_model_new (const FabulorTrayActionLabels *labels,
 void
 fabulor_tray_action_model_free (FabulorTrayActionModel *model)
 {
+	guint i;
+
 	if (!model)
 		return;
 
+	for (i = 0; i < G_N_ELEMENTS (tray_action_definitions); i++)
+	{
+		GSimpleAction *action = tray_action_lookup (
+			model, tray_action_definitions[i].name);
+
+		g_simple_action_set_enabled (action, FALSE);
+		if (model->action_handler_ids[i])
+			g_signal_handler_disconnect (action, model->action_handler_ids[i]);
+	}
 	g_clear_object (&model->menu);
 	g_clear_object (&model->actions);
 	tray_labels_clear (&model->labels);

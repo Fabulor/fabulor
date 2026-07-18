@@ -32,6 +32,7 @@
 #include "gtkutil.h"
 #include "plugin-tray.h"
 #include "tray-action-model.h"
+#include "tray-menu-composition.h"
 
 #include <gio/gio.h>
 #if defined(GTK_DISABLE_DEPRECATED)
@@ -170,6 +171,7 @@ static gint64 tray_menu_inactivetime;
 #endif
 static zoitechat_plugin *ph;
 static FabulorTrayActionModel *tray_actions;
+static GObject *tray_plugin_model_owner;
 
 static TrayCustomIcon custom_icon1;
 static TrayCustomIcon custom_icon2;
@@ -211,18 +213,43 @@ tray_action_model_refresh (void)
 	fabulor_tray_action_model_update (tray_actions, &state);
 }
 
-GMenuModel *
-tray_action_menu_model (void)
+gboolean
+tray_action_projection_create (GMenuModel **menu,
+	GActionGroup **built_in_actions, GActionGroup **plugin_actions)
 {
-	tray_action_model_refresh ();
-	return tray_actions ? fabulor_tray_action_model_get_menu (tray_actions) : NULL;
-}
+	GMenuModel *built_in_menu;
+	GMenuModel *plugin_menu;
+	GMenuModel *projection;
 
-GActionGroup *
-tray_action_group (void)
-{
+	if (menu)
+		*menu = NULL;
+	if (built_in_actions)
+		*built_in_actions = NULL;
+	if (plugin_actions)
+		*plugin_actions = NULL;
+
 	tray_action_model_refresh ();
-	return tray_actions ? fabulor_tray_action_model_get_actions (tray_actions) : NULL;
+	if (!tray_actions || !tray_plugin_model_owner)
+		return FALSE;
+
+	menu_add_plugin_model (tray_plugin_model_owner, "\x5$TRAY", NULL);
+	built_in_menu = fabulor_tray_action_model_get_menu (tray_actions);
+	plugin_menu = menu_plugin_context_model (tray_plugin_model_owner);
+	projection = fabulor_tray_menu_compose (built_in_menu,
+		plugin_menu, 2);
+	if (!projection)
+		return FALSE;
+
+	if (menu)
+		*menu = g_object_ref (projection);
+	if (built_in_actions)
+		*built_in_actions = g_object_ref (
+			fabulor_tray_action_model_get_actions (tray_actions));
+	if (plugin_actions)
+		*plugin_actions = g_object_ref (
+			menu_plugin_context_actions (tray_plugin_model_owner));
+	g_object_unref (projection);
+	return TRUE;
 }
 
 static void
@@ -287,6 +314,7 @@ tray_action_model_init (void)
 
 	tray_actions = fabulor_tray_action_model_new (&labels, &state,
 		tray_action_activate, NULL, NULL);
+	tray_plugin_model_owner = g_object_new (G_TYPE_OBJECT, NULL);
 	tray_action_model_refresh ();
 }
 
@@ -1276,15 +1304,15 @@ tray_win32_menu_cb (void)
 	UINT command;
 	HWND hwnd;
 	int away_status;
-	GObject *plugin_model_owner;
+	GMenuModel *projection = NULL;
 
 	zoitechat_set_context (ph, zoitechat_find_context (ph, NULL, NULL));
 
 	menu = CreatePopupMenu ();
 	if (!menu)
 		return;
-	plugin_model_owner = g_object_new (G_TYPE_OBJECT, NULL);
-	menu_add_plugin_model (plugin_model_owner, "\x5$TRAY", NULL);
+	tray_action_projection_create (&projection, NULL, NULL);
+	g_clear_object (&projection);
 
 	away_status = tray_find_away_status ();
 	tray_win32_append_item (menu, TRAY_WIN32_HIDE,
@@ -1325,7 +1353,6 @@ tray_win32_menu_cb (void)
 	default:
 		break;
 	}
-	g_object_unref (plugin_model_owner);
 }
 #endif
 
@@ -1745,6 +1772,7 @@ tray_plugin_deinit (zoitechat_plugin *plugin_handle)
 #endif
 	fabulor_tray_action_model_free (tray_actions);
 	tray_actions = NULL;
+	g_clear_object (&tray_plugin_model_owner);
 	ph = NULL;
 	return 1;
 }

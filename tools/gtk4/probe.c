@@ -12,6 +12,7 @@
 #include "../../src/fe-gtk/theme/theme-gtk4.h"
 #include "../../src/fe-gtk/theme/theme-gtk4-controller.h"
 #include "../../src/fe-gtk/tray-action-model.h"
+#include "../../src/fe-gtk/tray-menu-composition.h"
 #include "../../src/fe-gtk/ignore-list.h"
 #include "../../src/fe-gtk/ban-list.h"
 #include "../../src/fe-gtk/channel-list.h"
@@ -2604,6 +2605,7 @@ check_tray_action_model (void)
 	GMenuModel *menu;
 	GMenuModel *section;
 	GActionGroup *actions;
+	GActionGroup *retained_actions;
 	GVariant *action_state;
 	char *label = NULL;
 	guint menu_changes = 0;
@@ -2617,6 +2619,7 @@ check_tray_action_model (void)
 	hide_window[0] = 'X';
 	menu = fabulor_tray_action_model_get_menu (model);
 	actions = fabulor_tray_action_model_get_actions (model);
+	retained_actions = g_object_ref (actions);
 	g_signal_connect (menu, "items-changed",
 		G_CALLBACK (tray_menu_items_changed), &menu_changes);
 	fabulor_tray_action_model_update (model, &state);
@@ -2676,7 +2679,74 @@ check_tray_action_model (void)
 		g_action_group_get_action_enabled (actions, "set-back");
 
 	fabulor_tray_action_model_free (model);
-	return passed && record.destroyed;
+	passed = passed && record.destroyed &&
+		!g_action_group_get_action_enabled (retained_actions, "quit");
+	g_action_group_activate_action (retained_actions, "quit", NULL);
+	passed = passed && record.count == 2;
+	g_object_unref (retained_actions);
+	return passed;
+}
+
+static gboolean
+check_tray_menu_composition (void)
+{
+	GMenu *built_in = g_menu_new ();
+	GMenu *plugin = g_menu_new ();
+	GMenu *plugin_section = g_menu_new ();
+	GMenuItem *plugin_item;
+	GMenuModel *composed;
+	GMenuModel *section;
+	GMenuModel *without_plugin;
+	GMenuModel *at_start;
+	char *action = NULL;
+	char *kind = NULL;
+	gboolean passed;
+
+	g_menu_append (built_in, "First", "tray.first");
+	g_menu_append (built_in, "Second", "tray.second");
+	g_menu_append (built_in, "Last", "tray.last");
+	plugin_item = g_menu_item_new ("Plugin command",
+		"fabulor-context.plugin-0");
+	g_menu_item_set_attribute (plugin_item, "fabulor-menu-kind", "s", "command");
+	g_menu_append_item (plugin_section, plugin_item);
+	g_object_unref (plugin_item);
+	g_menu_append_section (plugin, NULL, G_MENU_MODEL (plugin_section));
+	g_object_unref (plugin_section);
+
+	composed = fabulor_tray_menu_compose (G_MENU_MODEL (built_in),
+		G_MENU_MODEL (plugin), 2);
+	at_start = fabulor_tray_menu_compose (G_MENU_MODEL (built_in),
+		G_MENU_MODEL (plugin), 0);
+	g_object_unref (plugin);
+	passed = composed && g_menu_model_get_n_items (composed) == 4;
+	passed = passed && at_start &&
+		g_menu_model_get_n_items (at_start) == 4;
+	section = composed ? g_menu_model_get_item_link (
+		composed, 2, G_MENU_LINK_SECTION) : NULL;
+	passed = passed && section != NULL;
+	if (section)
+	{
+		g_menu_model_get_item_attribute (section, 0,
+			G_MENU_ATTRIBUTE_ACTION, "s", &action);
+		g_menu_model_get_item_attribute (section, 0,
+			"fabulor-menu-kind", "s", &kind);
+		passed = passed &&
+			g_strcmp0 (action, "fabulor-context.plugin-0") == 0 &&
+			g_strcmp0 (kind, "command") == 0;
+		g_free (action);
+		g_free (kind);
+		g_object_unref (section);
+	}
+
+	without_plugin = fabulor_tray_menu_compose (G_MENU_MODEL (built_in),
+		NULL, G_MAXUINT);
+	passed = passed && without_plugin &&
+		g_menu_model_get_n_items (without_plugin) == 3;
+	g_clear_object (&at_start);
+	g_clear_object (&without_plugin);
+	g_clear_object (&composed);
+	g_object_unref (built_in);
+	return passed;
 }
 
 static gboolean
@@ -3353,6 +3423,11 @@ main (void)
 	if (!check_tray_action_model ())
 	{
 		fprintf (stderr, "GTK4 tray action model contract mismatch\n");
+		return 1;
+	}
+	if (!check_tray_menu_composition ())
+	{
+		fprintf (stderr, "GTK4 tray menu composition contract mismatch\n");
 		return 1;
 	}
 	if (!check_spell_entry_word_policy ())

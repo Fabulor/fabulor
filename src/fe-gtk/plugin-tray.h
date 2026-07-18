@@ -27,7 +27,8 @@ int tray_plugin_deinit (void *);
 gboolean tray_toggle_visibility (gboolean force_hide);
 void tray_apply_setup (void);
 void tray_action_model_refresh (void);
-GMenuModel *tray_action_menu_model (void);
-GActionGroup *tray_action_group (void);
+/* Each non-NULL result is a new reference owned by the caller. */
+gboolean tray_action_projection_create (GMenuModel **menu,
+	GActionGroup **built_in_actions, GActionGroup **plugin_actions);
 
 #endif
