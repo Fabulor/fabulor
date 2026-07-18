@@ -3518,7 +3518,7 @@ Manual checks:
 Scope: pre-production GTK4 theme composition and lifecycle only. The shipping
 GTK3 frontend remains unchanged and does not instantiate this controller.
 
-### PR: pending - GTK4 Stage 7 Notification Boundary
+### PR: [#115 - GTK4 Stage 7 Notification Boundary](https://github.com/Fabulor/fabulor/pull/115)
 
 Date: 2026-07-18
 
