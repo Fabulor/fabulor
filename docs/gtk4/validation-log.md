@@ -3373,6 +3373,42 @@ Manual checks:
 Scope: GTK4 theme discovery metadata only. GTK3 selection and application
 remain unchanged, and no discovered GTK4 CSS is loaded by this pass.
 
+### PR: [#111 - GTK4 Stage 7 CSS Provider Adapter](https://github.com/Fabulor/fabulor/pull/111)
+
+Date: 2026-07-18
+
+Migration stage: 7, GTK4 CSS-provider ownership pass 2
+
+Files/workflows converted: display-scoped GTK4 provider ownership; base and
+dark variant priority; follow-system/light/dark policy; parser diagnostics;
+transactional replacement; disable and final teardown
+
+GTK version: 4.22.4
+
+GLib version: 2.88.0
+
+Build configuration: MSVC x64 Release and strict GTK4 probe boundary
+
+Automated checks:
+
+- [x] shipping GTK3 frontend compiles and links with 0 warnings and 0 errors
+- [x] strict GTK4 MSVC probe compiles, links, and executes with 0 warnings and 0 errors
+- [x] fresh MSVC Meson/Ninja probe compiles 41 objects with warnings treated as errors
+- [x] independent Meson runtime test passes 1/1
+- [x] light and dark policy install one and two providers respectively
+- [x] invalid and missing candidates preserve the active providers and identity
+- [x] disable removes providers and clears active identity and variant state
+- [x] Linux GCC C11 syntax check passes against GTK 4.8.3 with all warnings treated as errors
+
+Manual checks:
+
+- [ ] production GTK4 preferences and persistence await the next theme pass
+- [ ] Windows light, dark, high-contrast, and custom-theme behavior await the production frontend
+
+Scope: GTK4 CSS-provider ownership and failure containment only. Discovery is
+not yet projected into production preferences, and shipping GTK3 theme behavior
+remains unchanged.
+
 ## Per-PR Record Template
 
 Copy this section for each GTK4 PR:
