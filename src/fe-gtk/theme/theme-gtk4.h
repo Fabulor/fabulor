@@ -19,6 +19,9 @@ void theme_gtk4_adapter_free (ThemeGtk4Adapter *adapter);
 gboolean theme_gtk4_adapter_apply (ThemeGtk4Adapter *adapter,
 	const FabulorGtk4Theme *theme, ThemeGtk4Variant variant,
 	gboolean system_prefers_dark, GError **error);
+gboolean theme_gtk4_adapter_apply_decision (ThemeGtk4Adapter *adapter,
+	const FabulorGtk4Theme *theme,
+	const FabulorGtk4ThemeAppearanceDecision *decision, GError **error);
 void theme_gtk4_adapter_disable (ThemeGtk4Adapter *adapter);
 
 gboolean theme_gtk4_variant_uses_dark (ThemeGtk4Variant variant,

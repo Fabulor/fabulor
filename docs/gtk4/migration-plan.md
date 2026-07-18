@@ -1194,6 +1194,17 @@ and invalid variant values normalize to follow-system. Dedicated
 separate from GTK3. Production GTK4 preference widgets and adapter application
 remain deferred until the frontend cutover boundary is available.
 
+GTK4 Windows appearance-policy pass 4 (2026-07-18):
+the GTK-independent preference owner now resolves whether GTK4 may install a
+custom provider and whether it should prefer dark styling from a post-discovery
+selection, variant policy, Windows application preference, and high-contrast
+state. High contrast suppresses custom CSS and dark requests; the system-default
+choice installs no custom provider and follows Windows. The existing Win32
+registry, `SPI_GETHIGHCONTRAST`, and settings-change notification paths remain
+the platform signal owners. The GTK4 provider adapter consumes the decision and
+removes active custom providers for high-contrast or system-default outcomes.
+Production signal/UI hookup and packaged visual testing remain deferred.
+
 Exit criteria:
 
 - Theme switching, restart persistence, tray state, notifications, icons,

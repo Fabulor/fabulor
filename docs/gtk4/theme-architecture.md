@@ -1,6 +1,6 @@
 # GTK4 Theme Architecture
 
-Status: Stage 7 pass 3 discovery, provider, and preference-model boundaries
+Status: Stage 7 pass 4 theme ownership and Windows appearance-policy boundaries
 
 ## Scope
 
@@ -70,6 +70,30 @@ from the existing GTK3 keys. This prevents the migration from treating a GTK3
 theme identifier or variant as GTK4-compatible. Production GTK4 widgets and
 adapter application remain a cutover task.
 
+## Windows Appearance Policy
+
+The preference owner resolves a `FabulorGtk4ThemeAppearanceDecision` from the
+post-discovery selection state, stored variant, Windows light/dark preference,
+and high-contrast state. It accepts a resolved boolean for custom-theme
+selection rather than a raw stored identifier, so an unavailable persisted
+theme cannot accidentally enable custom CSS.
+
+In normal mode, a resolved custom theme follows its explicit light/dark policy
+or the Windows application preference. With the system-default choice, no
+custom provider is installed and the runtime follows Windows regardless of a
+stale custom-theme variant. In high-contrast mode, custom providers and dark
+requests are both suppressed so GTK runtime defaults can preserve platform
+accessibility. `.hct` and `colors.conf` remain separate and are not overridden
+by this widget-theme decision.
+
+The shipping frontend already reads `AppsUseLightTheme` with
+`SystemUsesLightTheme` fallback, queries `SPI_GETHIGHCONTRAST`, and queues a
+theme refresh for `WM_SETTINGCHANGE` and `WM_THEMECHANGED`. This pass defines
+how those existing signals drive GTK4. The provider adapter consumes the
+resolved decision directly, disabling active custom providers whenever the
+decision selects runtime defaults. Production signal/UI hookup and packaged
+visual validation remain pending.
+
 ## Invariants
 
 - GTK3-only layouts are never returned by GTK4 discovery.
@@ -89,14 +113,17 @@ adapter application remain a cutover task.
 - Missing persisted selections fall back to the system-default choice without
   being mistaken for a successful match.
 - GTK4 selection and variant keys are independent from their GTK3 predecessors.
+- Only a resolved available custom selection can enable a custom provider.
+- High contrast always suppresses custom GTK4 CSS and dark preference requests.
+- The system-default choice follows Windows and never loads Fabulor theme CSS.
 - `.hct` and `colors.conf` remain independent Fabulor formats.
 
 ## Planned Passes
 
 1. Bind the preference model to the production GTK4 preferences UI and apply
    selection changes through the provider adapter.
-2. Validate Windows light, dark, and high-contrast behavior without a bundled
-   optional default theme.
+2. Connect the Windows appearance decision to the production GTK4 runtime and
+   validate light, dark, and high-contrast rendering without a bundled theme.
 3. Retire GTK3 discovery, imports, and `%APPDATA%\Fabulor\gtk3-themes` only
    after equivalent GTK4 behavior is proven.
 
@@ -113,3 +140,5 @@ adapter compiles only at the strict GTK4 boundary until production cutover.
 The probe also releases discovery metadata before validating projected choices,
 then verifies system-default fallback, exact persisted identity, source and dark
 metadata, and invalid-variant normalization.
+The Windows appearance matrix covers custom follow-system, explicit light,
+explicit dark, system-default, invalid variant, and high-contrast decisions.

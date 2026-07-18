@@ -78,3 +78,31 @@ fabulor_gtk4_theme_preferences_normalize_variant (guint stored_variant)
 		return (FabulorGtk4ThemeVariant) stored_variant;
 	return FABULOR_GTK4_THEME_VARIANT_FOLLOW_SYSTEM;
 }
+
+void
+fabulor_gtk4_theme_preferences_resolve_appearance (
+	gboolean custom_theme_selected, guint stored_variant,
+	gboolean system_prefers_dark, gboolean high_contrast,
+	FabulorGtk4ThemeAppearanceDecision *decision)
+{
+	FabulorGtk4ThemeVariant variant;
+
+	g_return_if_fail (decision != NULL);
+	variant = fabulor_gtk4_theme_preferences_normalize_variant (stored_variant);
+	decision->variant = variant;
+	decision->high_contrast = high_contrast ? TRUE : FALSE;
+	decision->use_custom_theme = FALSE;
+	decision->prefer_dark = FALSE;
+	if (decision->high_contrast)
+		return;
+
+	decision->use_custom_theme = custom_theme_selected ? TRUE : FALSE;
+	if (!decision->use_custom_theme ||
+		variant == FABULOR_GTK4_THEME_VARIANT_FOLLOW_SYSTEM)
+	{
+		decision->prefer_dark = system_prefers_dark ? TRUE : FALSE;
+		return;
+	}
+	decision->prefer_dark =
+		variant == FABULOR_GTK4_THEME_VARIANT_PREFER_DARK;
+}

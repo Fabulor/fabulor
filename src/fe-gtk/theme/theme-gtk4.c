@@ -177,6 +177,27 @@ theme_gtk4_adapter_apply (ThemeGtk4Adapter *adapter,
 	return TRUE;
 }
 
+gboolean
+theme_gtk4_adapter_apply_decision (ThemeGtk4Adapter *adapter,
+	const FabulorGtk4Theme *theme,
+	const FabulorGtk4ThemeAppearanceDecision *decision, GError **error)
+{
+	g_return_val_if_fail (adapter != NULL, FALSE);
+	if (!decision)
+	{
+		g_set_error_literal (error, G_FILE_ERROR, G_FILE_ERROR_INVAL,
+			"GTK4 theme application requires an appearance decision.");
+		return FALSE;
+	}
+	if (!decision->use_custom_theme)
+	{
+		theme_gtk4_adapter_disable (adapter);
+		return TRUE;
+	}
+	return theme_gtk4_adapter_apply (adapter, theme, decision->variant,
+		decision->prefer_dark, error);
+}
+
 void
 theme_gtk4_adapter_disable (ThemeGtk4Adapter *adapter)
 {
