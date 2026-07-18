@@ -3797,7 +3797,7 @@ Manual checks:
 Scope: candidate GTK4 preference ownership and persistence boundary only. This
 pass does not alter the shipping GTK3 preference page or GTK3 theme service.
 
-### PR: Pending - GTK4 Stage 7 Windows Appearance Monitor
+### PR: [#122](https://github.com/Fabulor/fabulor/pull/122) - GTK4 Stage 7 Windows Appearance Monitor
 
 Date: 2026-07-18
 
