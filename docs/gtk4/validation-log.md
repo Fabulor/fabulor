@@ -3838,6 +3838,42 @@ Manual checks:
 Scope: candidate GTK4 Windows appearance monitoring only. This pass does not
 replace the shipping GTK3 window filter or alter current packaged behavior.
 
+### PR: Pending - GTK4 Stage 7 Theme Format And Payload Contract
+
+Date: 2026-07-18
+
+Migration stage: 7, theme-format and payload-contract pass 14
+
+Files/workflows converted: active `.hct` association enforcement;
+`colors.conf` import and atomic persistence assertions; `.zct` exclusion with
+stale-install cleanup; repository payload and WiX harvest exclusions; PR lint
+
+Build configuration: Python 3.14 contract validator and isolated unittest
+fixtures on the Windows repository-lint path
+
+Automated checks:
+
+- [x] current repository theme-format and payload contract passes
+- [x] active WiX associations are exactly `.hct`
+- [x] legacy installer template registers `.hct` and not `.zct`
+- [x] stale `.zct` upgrade cleanup remains present
+- [x] active import filters retain `.hct`, `colors.conf`, and `pevents.conf`
+- [x] runtime retains `colors.conf` loading and atomic replacement
+- [x] tracked repository payload roots contain no optional default theme
+- [x] WiX harvest rules contain no default-theme formats or `share/themes`
+- [x] negative test rejects a reintroduced `.zct` association
+- [x] negative tests reject tracked and WiX-harvested default themes
+- [x] Python syntax and repository diff whitespace validation pass
+
+Manual checks:
+
+- [ ] final staged GTK4 payload inspection remains part of Stage 8 cutover
+- [ ] clean-install `.hct` shell-open behavior remains a packaged validation
+
+Scope: source and CI enforcement of supported theme formats and package inputs.
+This pass does not remove the shipping GTK3 theme service or inspect a final
+Stage 8 release payload.
+
 ## Per-PR Record Template
 
 Copy this section for each GTK4 PR:

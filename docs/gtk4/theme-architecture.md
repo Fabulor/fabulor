@@ -1,6 +1,6 @@
 # GTK4 Theme Architecture
 
-Status: Stage 7 pass 13 complete through Windows appearance monitoring
+Status: Stage 7 pass 14 complete through theme-format packaging enforcement
 
 ## Scope
 
@@ -159,6 +159,22 @@ must outlive it.
 This monitor is in the GTK4 candidate build. The shipping GTK3 filter remains
 unchanged until the production frontend creates this owner during GTK4 startup.
 
+## Format And Payload Contract
+
+`tools/validate_theme_contract.py` keeps the Fabulor palette/event formats
+independent from GTK desktop CSS. Active WiX and legacy installer sources may
+associate only `.hct`; `.zct` remains permitted solely in stale-install cleanup.
+The active preferences importer must retain `.hct`, `colors.conf`, and optional
+`pevents.conf`, while the runtime must retain atomic `colors.conf` persistence.
+
+The same validator rejects tracked `.hct`, `.zct`, `colors.conf`, or desktop
+theme directories from repository-authored payload roots. WiX component rules
+cannot harvest those files or a `share/themes` tree. Required GTK runtime data,
+icons, and Fabulor application assets remain valid dependencies and are not
+treated as an optional default theme. Positive and negative fixtures run in
+repository lint so a future packaging change cannot silently reverse this
+policy.
+
 ## Invariants
 
 - GTK3-only layouts are never returned by GTK4 discovery.
@@ -190,6 +206,8 @@ unchanged until the production frontend creates this owner during GTK4 startup.
 - Win32 appearance messages are coalesced and applied only on state changes.
 - Appearance-monitor teardown removes its display filter and pending source.
 - Failed system queries cannot displace the last committed appearance.
+- Active installers associate `.hct` and never `.zct`.
+- Repository and WiX payload rules cannot introduce an optional default theme.
 - `.hct` and `colors.conf` remain independent Fabulor formats.
 
 ## Planned Passes

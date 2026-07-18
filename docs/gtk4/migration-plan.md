@@ -1296,6 +1296,16 @@ failure preserves the last committed appearance, while teardown removes both
 the filter and pending source. Production startup ownership and packaged
 Windows visual testing remain deferred until GTK4 cutover.
 
+Theme-format and payload-contract pass 14 (2026-07-18):
+`tools/validate_theme_contract.py` now enforces `.hct` as the only active theme
+file association, retains `colors.conf` loading and atomic persistence, and
+rejects `.zct` from active installers and import filters while preserving
+upgrade cleanup. It also rejects repository-authored theme payloads and WiX
+harvest rules for `.hct`, `.zct`, `colors.conf`, or `share/themes`, preventing
+an optional default Fabulor theme from entering the package. Repository lint
+runs the validator and isolated negative tests on every PR. GTK runtime data
+and icon assets remain separate allowlisted dependencies.
+
 Exit criteria:
 
 - Theme switching, restart persistence, tray state, notifications, icons,
