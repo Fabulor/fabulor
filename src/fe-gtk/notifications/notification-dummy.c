@@ -16,15 +16,23 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301, USA
  */
 
+#include "notification-backend.h"
+
 void
 notification_backend_show (const char *title, const char *text)
 {
+	(void)title;
+	(void)text;
 }
 
-int
-notification_backend_init (const char **error)
+gboolean
+notification_backend_init (GError **error)
 {
-	return 0;
+	g_set_error_literal (error,
+	                     g_quark_from_static_string ("fabulor-notification-backend-error"),
+	                     1,
+	                     "Desktop notifications are unavailable on this platform.");
+	return FALSE;
 }
 
 void
@@ -32,8 +40,8 @@ notification_backend_deinit (void)
 {
 }
 
-int
+gboolean
 notification_backend_supported (void)
 {
-	return 0;
+	return FALSE;
 }

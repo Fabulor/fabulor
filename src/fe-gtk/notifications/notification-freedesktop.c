@@ -17,6 +17,7 @@
  */
 
 #include "config.h"
+#include "notification-backend.h"
 
 #include <string.h>
 #include <gio/gio.h>
@@ -30,6 +31,8 @@ on_notify_ready (GDBusProxy *proxy, GAsyncResult *res, gpointer user_data)
     GError *error = NULL;
     guint32 notification_id;
     GVariant *response = g_dbus_proxy_call_finish (proxy, res, &error);
+
+    (void)user_data;
     if (error)
     {
         g_info ("Failed to send notification: %s", error->message);
@@ -84,14 +87,18 @@ notification_backend_show (const char *title, const char *text)
         g_free ((char*)text);
 }
 
-int
-notification_backend_init (const char **error)
+gboolean
+notification_backend_init (GError **error)
 {
     GError *err = NULL;
     GVariant *response;
     char **capabilities;
     guint i;
 
+    if (fdo_notifications)
+        return TRUE;
+
+    strip_markup = FALSE;
     fdo_notifications = g_dbus_proxy_new_for_bus_sync (G_BUS_TYPE_SESSION,
                                                        G_DBUS_PROXY_FLAGS_NONE,
                                                        NULL,
@@ -127,21 +134,21 @@ notification_backend_init (const char **error)
 
     g_free (capabilities);
     g_variant_unref (response);
-    return 1;
+    return TRUE;
 
 return_error:
-    *error = g_strdup (err->message);
-    g_error_free (err);
-    return 0;
+    g_propagate_error (error, err);
+    return FALSE;
 }
 
 void
 notification_backend_deinit (void)
 {
     g_clear_object (&fdo_notifications);
+    strip_markup = FALSE;
 }
 
-int
+gboolean
 notification_backend_supported (void)
 {
     return fdo_notifications != NULL;

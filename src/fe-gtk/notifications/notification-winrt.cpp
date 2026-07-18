@@ -31,6 +31,18 @@ using namespace Windows::UI::Notifications;
 using namespace Windows::Data::Xml::Dom;
 
 static ToastNotifier ^ notifier = nullptr;
+static bool foundation_initialized = false;
+
+static void
+reset_backend (void)
+{
+	notifier = nullptr;
+	if (foundation_initialized)
+	{
+		Windows::Foundation::Uninitialize ();
+		foundation_initialized = false;
+	}
+}
 
 static std::wstring
 widen(const std::string & to_widen)
@@ -39,19 +51,14 @@ widen(const std::string & to_widen)
 	return converter.from_bytes(to_widen);
 }
 
-static std::string
-narrow(const std::wstring & to_narrow)
-{
-	std::wstring_convert<std::codecvt_utf8<wchar_t>> converter;
-	return converter.to_bytes(to_narrow);
-}
-
-
 extern "C"
 {
 	__declspec (dllexport) void
 	notification_backend_show (const char *title, const char *text)
 	{
+		if (!notifier)
+			return;
+
 		try
 		{
 			auto toastTemplate = ToastNotificationManager::GetTemplateContent (ToastTemplateType::ToastText02);
@@ -84,30 +91,53 @@ extern "C"
 	__declspec (dllexport) int
 	notification_backend_init (const char **error)
 	{
+		HRESULT result;
+
+		if (notifier)
+			return 1;
+
+		result = Windows::Foundation::Initialize (RO_INIT_SINGLETHREADED);
+		if (FAILED (result))
+		{
+			static char init_message[128];
+			if (SUCCEEDED (StringCchPrintfA (init_message, _countof (init_message),
+			                                "Error initializing Windows::Foundation (0x%08lx).",
+			                                static_cast<unsigned long> (result))))
+				*error = init_message;
+			else
+				*error = "Error initializing Windows::Foundation.";
+			return 0;
+		}
+		foundation_initialized = true;
+
 		try
 		{
-			if (!notifier)
-				notifier = ToastNotificationManager::CreateToastNotifier (L"Fabulor.Desktop.Notify");
+			notifier = ToastNotificationManager::CreateToastNotifier (L"Fabulor.Desktop.Notify");
 		}
 		catch (Platform::Exception ^ ex)
 		{
-			static char exc_message[1024];
-			std::string tmp = narrow(std::wstring(ex->Message->Data()));
-			if (SUCCEEDED(StringCchPrintfA(exc_message, _countof(exc_message), "Error (0x%x): %s", ex->HResult, tmp.c_str())))
+			static char exc_message[128];
+			HRESULT exception_result = ex->HResult;
+			reset_backend ();
+			if (SUCCEEDED(StringCchPrintfA(exc_message, _countof(exc_message),
+			                                "Error creating the toast notifier (0x%08lx).",
+			                                static_cast<unsigned long> (exception_result))))
 				*error = exc_message;
 			else
-				*error = "Exception + error converting exception message.";
+				*error = "Error creating the toast notifier.";
 			return 0;
 		}
 		catch (...)
 		{
 			*error = "Generic c++ exception.";
+			reset_backend ();
 			return 0;
 		}
 
-		if (FAILED (Windows::Foundation::Initialize (RO_INIT_SINGLETHREADED)))
+		if (!notifier)
 		{
-			*error = "Error initializing Windows::Foundation.";
+			*error = "Windows did not create a toast notifier.";
+			reset_backend ();
 			return 0;
 		}
 
@@ -117,8 +147,7 @@ extern "C"
 	__declspec (dllexport) 	void
 	notification_backend_deinit (void)
 	{
-		notifier = nullptr;
-		Windows::Foundation::Uninitialize ();
+		reset_backend ();
 	}
 
 	__declspec (dllexport) int

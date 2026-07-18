@@ -3518,6 +3518,46 @@ Manual checks:
 Scope: pre-production GTK4 theme composition and lifecycle only. The shipping
 GTK3 frontend remains unchanged and does not instantiate this controller.
 
+### PR: pending - GTK4 Stage 7 Notification Boundary
+
+Date: 2026-07-18
+
+Migration stage: 7, notification backend loading and lifecycle pass 6
+
+Files/workflows converted: executable-relative WinRT helper discovery; strict
+export validation; owned module and call-target lifetime; partial-failure
+rollback; WinRT initialization ordering; managed backend errors; freedesktop
+and fallback lifecycle normalization
+
+GTK version: shipping GTK3 frontend boundary; GTK4 production binding deferred
+
+GLib version: shipping Windows runtime and Linux system GLib
+
+Build configuration: MSVC x64 Release helper/frontend and strict Linux GCC C11
+backend checks
+
+Automated checks:
+
+- [x] WinRT notification helper compiles and links with 0 warnings and 0 errors
+- [x] shipping frontend compiles and links with 0 warnings and 0 errors
+- [x] helper DLL exports all four required notification entry points
+- [x] Windows helper path is derived from the executable installation root
+- [x] missing exports and initialization failure unload the retained module
+- [x] normal teardown clears call targets before module unload
+- [x] WinRT initialization precedes notifier construction and is balanced on failure and teardown
+- [x] freedesktop and dummy backends pass strict Linux GCC C11 syntax checks
+- [x] backend initialization diagnostics use managed `GError` ownership
+
+Manual checks:
+
+- [ ] packaged Windows toast delivery and shutdown/restart behavior
+- [ ] launch from an unrelated working directory with notifications enabled
+- [ ] production GTK4 notification preferences and tray interaction await frontend cutover
+
+Scope: platform notification loading, failure containment, and lifecycle only.
+The shipping GTK3 presentation remains in use and no GTK4 notification UI is
+claimed by this pass.
+
 ## Per-PR Record Template
 
 Copy this section for each GTK4 PR:

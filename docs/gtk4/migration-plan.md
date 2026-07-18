@@ -1215,6 +1215,18 @@ removes active custom CSS without discarding the selected preference. Discovery
 metadata can be released after refresh, and controller destruction tears down
 display providers. Production preferences binding remains deferred.
 
+Notification backend containment pass 6 (2026-07-18):
+the built-in notification plugin now owns initialization errors and each
+platform backend has an explicit, repeatable lifecycle. On Windows, the WinRT
+helper resolves only from the executable-relative `plugins` directory, all
+required exports are validated before invocation, partial initialization is
+unwound, and teardown clears call targets before unloading the retained module.
+The WinRT apartment is initialized before notifier creation and balanced only
+when owned. Freedesktop and fallback backends follow the same managed error and
+teardown contract. Production GTK4 presentation and packaged interaction tests
+remain deferred. The boundary is documented in
+[`notification-architecture.md`](notification-architecture.md).
+
 Exit criteria:
 
 - Theme switching, restart persistence, tray state, notifications, icons,
