@@ -1,0 +1,74 @@
+{
+  "schema_version": 1,
+  "roots": [
+    {
+      "path": "bin/gtk-4-1.dll",
+      "category": "frontend-runtime"
+    },
+    {
+      "path": "lib/gdk-pixbuf-2.0/2.10.0/loaders/pixbufloader_svg.dll",
+      "category": "dynamic-image-loader"
+    },
+    {
+      "path": "bin/gspawn-win64-helper.exe",
+      "category": "process-helper"
+    },
+    {
+      "path": "bin/gspawn-win64-helper-console.exe",
+      "category": "process-helper"
+    }
+  ],
+  "system_imports": [
+    "advapi32.dll",
+    "bcrypt.dll",
+    "bcryptprimitives.dll",
+    "comctl32.dll",
+    "comdlg32.dll",
+    "crypt32.dll",
+    "d3d11.dll",
+    "d3d12.dll",
+    "dcomp.dll",
+    "dnsapi.dll",
+    "dwmapi.dll",
+    "dwrite.dll",
+    "dxgi.dll",
+    "fwpuclnt.dll",
+    "gdi32.dll",
+    "hid.dll",
+    "imm32.dll",
+    "iphlpapi.dll",
+    "kernel32.dll",
+    "msimg32.dll",
+    "mswsock.dll",
+    "ntdll.dll",
+    "ole32.dll",
+    "oleaut32.dll",
+    "opengl32.dll",
+    "rpcrt4.dll",
+    "setupapi.dll",
+    "shell32.dll",
+    "shlwapi.dll",
+    "user32.dll",
+    "userenv.dll",
+    "usp10.dll",
+    "vcruntime140.dll",
+    "vcruntime140_1.dll",
+    "windows.networking.dll",
+    "winmm.dll",
+    "ws2_32.dll"
+  ],
+  "system_import_prefixes": [
+    "api-ms-win-",
+    "ext-ms-win-"
+  ],
+  "forbidden_import_prefixes": [
+    "gdk-3",
+    "gtk-3",
+    "libgdk-",
+    "libgio-",
+    "libglib-",
+    "libgmodule-",
+    "libgobject-",
+    "libgtk-"
+  ]
+}

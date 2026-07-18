@@ -4007,6 +4007,47 @@ Scope: executable-relative Windows loader discovery and fail-closed path policy
 only. Production linking, the shipping GTK3 executable, installer selection,
 and root GTK3 payload remain unchanged.
 
+### PR: pending - GTK4 Stage 8 Native Import Closure
+
+Date: 2026-07-18
+
+Migration stage: 8, native import-closure pass 4
+
+Files/workflows converted: versioned native import contract; dumpbin-backed PE
+closure validator; ownership-root reachability; lint rejection tests; full
+candidate graph validation in Windows CI
+
+GTK version: 4.22.4
+
+GLib version: 2.88.0
+
+Build configuration: deterministic Windows x64 candidate root inspected with
+MSVC 14.44 `dumpbin`
+
+Automated checks:
+
+- [x] all 35 staged DLL/executable files have unique case-insensitive basenames
+- [x] four owned roots reach every packaged native file
+- [x] all 107 packaged import edges resolve within the candidate
+- [x] all 54 distinct external imports match the reviewed Windows/UCRT surface
+- [x] no GTK3 or lib-prefixed duplicate GLib-family import is present
+- [x] eight focused missing, forbidden, duplicate, unowned, root, inspection,
+  parser, and valid-closure tests pass
+- [x] CI-equivalent `dumpbin` discovery and candidate validation pass locally
+- [x] contract JSON, workflow YAML, Python syntax, and diff whitespace checks
+  pass
+
+Manual checks:
+
+- [ ] clean-run evidence awaits the GitHub Windows candidate build
+- [ ] dynamically selected modules and runtime data still require packaged
+  feature tests before trimming
+- [ ] production `fabulor.exe` remains GTK3 and is not part of this import graph
+
+Scope: static candidate PE dependency closure and native ownership only.
+Production linking, dynamic feature coverage, payload trimming, installer
+selection, and the shipping GTK3 runtime remain unchanged.
+
 ## Per-PR Record Template
 
 Copy this section for each GTK4 PR:

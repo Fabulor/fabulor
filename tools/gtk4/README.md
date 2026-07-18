@@ -101,3 +101,16 @@ absolute module path, and calls `gtk_get_major_version`. The test removes
 ambient GTK paths, runs from an unrelated directory containing an invalid
 `gtk-4-1.dll`, and verifies that missing or reparse-point runtime roots fail
 closed.
+
+`runtime-import-contract.json` names the native ownership roots and explicitly
+reviewed Windows/UCRT imports. `validate_runtime_imports.py` inspects every
+packaged DLL and executable with MSVC `dumpbin`, then rejects unresolved
+non-system imports, GTK3 or duplicate GLib-family names, duplicate packaged
+basenames, missing roots, and native files that are not reachable from an owned
+root. Unit tests run in repository lint; the full 35-file candidate graph runs
+in the Windows build after staging.
+
+```powershell
+python tools\gtk4\test_validate_runtime_imports.py
+python tools\gtk4\validate_runtime_imports.py --root C:\fabulor-master\build\gtk4-runtime-candidate-root\Runtime\GTK4 --dumpbin dumpbin
+```

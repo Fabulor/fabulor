@@ -177,6 +177,9 @@ jobs:
           python tools\gtk4\stage_runtime.py --root "%GITHUB_WORKSPACE%\Runtime\GTK4" --output "%GTK4_CANDIDATE_ROOT%\Runtime\GTK4"
           if errorlevel 1 exit /b 1
 
+          python tools\gtk4\validate_runtime_imports.py --root "%GTK4_CANDIDATE_ROOT%\Runtime\GTK4" --dumpbin dumpbin
+          if errorlevel 1 exit /b 1
+
           msbuild tools\gtk4\runtime-root-probe.vcxproj /m /verbosity:minimal /p:Configuration=Release /p:Platform=${{ matrix.platform }} /p:FabulorGtk4StartupRoot="%GTK4_CANDIDATE_ROOT%"
           if errorlevel 1 exit /b 1
 
