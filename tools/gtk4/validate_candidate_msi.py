@@ -179,6 +179,8 @@ def decompile_msi(wix, msi, output, extraction_root):
         str(wix),
         "msi",
         "decompile",
+        "-acceptEula",
+        "wix7",
         str(msi),
         "-o",
         str(output),

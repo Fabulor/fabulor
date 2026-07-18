@@ -2,6 +2,7 @@
 
 import unittest
 import xml.etree.ElementTree as ET
+from unittest import mock
 
 import validate_candidate_msi
 
@@ -27,6 +28,20 @@ def candidate_xml(bin_directory=True):
 
 
 class ValidateCandidateMsiTests(unittest.TestCase):
+    @mock.patch("validate_candidate_msi.subprocess.run")
+    def test_decompiler_explicitly_accepts_wix7_eula(self, run):
+        run.return_value.returncode = 0
+
+        validate_candidate_msi.decompile_msi(
+            "wix.exe", "candidate.msi", "candidate.wxs", "files"
+        )
+
+        command = run.call_args.args[0]
+        self.assertEqual(
+            command[:5],
+            ["wix.exe", "msi", "decompile", "-acceptEula", "wix7"],
+        )
+
     def test_matching_directory_layout_passes(self):
         actual = validate_candidate_msi.extract_gtk4_paths(candidate_xml())
         expected = {"bin/gtk-4-1.dll", "runtime-manifest.json"}
