@@ -57,6 +57,7 @@
 	<ClCompile Include="..\..\src\common\gtk4-theme-discovery.c" />
 	<ClCompile Include="..\..\src\common\gtk4-theme-preferences.c" />
 	<ClCompile Include="..\..\src\fe-gtk\theme\theme-gtk4.c" />
+	<ClCompile Include="..\..\src\fe-gtk\theme\theme-gtk4-controller.c" />
 	<ClCompile Include="..\..\src\fe-gtk\spell-entry-words.c" />
 	<ClCompile Include="..\..\src\fe-gtk\spell-entry-style.c" />
 	<ClCompile Include="..\..\src\fe-gtk\spell-entry-menu.c" />

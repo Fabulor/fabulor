@@ -10,6 +10,7 @@
 #include "../../src/common/gtk4-theme-preferences.h"
 #include "../../src/fe-gtk/emoji-picker.h"
 #include "../../src/fe-gtk/theme/theme-gtk4.h"
+#include "../../src/fe-gtk/theme/theme-gtk4-controller.h"
 #include "../../src/fe-gtk/ignore-list.h"
 #include "../../src/fe-gtk/ban-list.h"
 #include "../../src/fe-gtk/channel-list.h"
@@ -2295,6 +2296,130 @@ check_gtk4_theme_adapter_policy (void)
 }
 
 static gboolean
+check_gtk4_theme_controller_policy (void)
+{
+	GError *error = NULL;
+	char *temporary = g_dir_make_tmp (
+		"fabulor-gtk4-controller-probe-XXXXXX", &error);
+	char *valid_root;
+	char *invalid_root;
+	char *invalid_gtk_dir;
+	char *invalid_css;
+	FabulorGtk4Theme *valid_theme;
+	FabulorGtk4Theme *invalid_theme;
+	GPtrArray *themes;
+	ThemeGtk4Controller *controller;
+	const FabulorGtk4ThemeChoice *choice;
+	const FabulorGtk4ThemeAppearanceDecision *appearance;
+	gboolean valid;
+
+	if (!temporary)
+	{
+		g_clear_error (&error);
+		return FALSE;
+	}
+	valid_root = probe_make_gtk4_theme (temporary, "valid", "Valid", TRUE);
+	invalid_root = g_build_filename (temporary, "invalid", NULL);
+	invalid_gtk_dir = g_build_filename (invalid_root, "gtk-4.0", NULL);
+	invalid_css = g_build_filename (invalid_gtk_dir, "gtk.css", NULL);
+	g_mkdir_with_parents (invalid_gtk_dir, 0700);
+	g_file_set_contents (invalid_css,
+		"window { color: definitely-not-a-colour; }\n", -1, NULL);
+
+	valid_theme = g_new0 (FabulorGtk4Theme, 1);
+	valid_theme->id = g_strdup ("profile:valid");
+	valid_theme->display_name = g_strdup ("Valid");
+	valid_theme->path = g_strdup (valid_root);
+	valid_theme->css_path = g_build_filename (
+		valid_root, "gtk-4.0", "gtk.css", NULL);
+	valid_theme->dark_css_path = g_build_filename (
+		valid_root, "gtk-4.0", "gtk-dark.css", NULL);
+	valid_theme->source = FABULOR_GTK4_THEME_SOURCE_PROFILE;
+	invalid_theme = g_new0 (FabulorGtk4Theme, 1);
+	invalid_theme->id = g_strdup ("profile:invalid");
+	invalid_theme->display_name = g_strdup ("Invalid");
+	invalid_theme->path = g_strdup (invalid_root);
+	invalid_theme->css_path = g_build_filename (
+		invalid_root, "gtk-4.0", "gtk.css", NULL);
+	invalid_theme->source = FABULOR_GTK4_THEME_SOURCE_PROFILE;
+	themes = g_ptr_array_new_with_free_func (
+		(GDestroyNotify) fabulor_gtk4_theme_free);
+	g_ptr_array_add (themes, valid_theme);
+	g_ptr_array_add (themes, invalid_theme);
+
+	controller = theme_gtk4_controller_new (NULL);
+	valid = theme_gtk4_controller_refresh_from_themes (controller, themes,
+		"profile:valid", FABULOR_GTK4_THEME_VARIANT_PREFER_DARK,
+		FALSE, FALSE, &error) && error == NULL &&
+		theme_gtk4_controller_theme_is_active (controller) &&
+		g_strcmp0 (theme_gtk4_controller_active_id (controller),
+			"profile:valid") == 0 &&
+		theme_gtk4_controller_active_provider_count (controller) == 2 &&
+		theme_gtk4_controller_stored_selection_available (controller);
+	g_ptr_array_unref (themes);
+	choice = theme_gtk4_controller_selected_choice (controller);
+	valid = valid && choice &&
+		g_strcmp0 (choice->display_name, "Valid") == 0;
+
+	themes = g_ptr_array_new_with_free_func (
+		(GDestroyNotify) fabulor_gtk4_theme_free);
+	valid_theme = g_new0 (FabulorGtk4Theme, 1);
+	valid_theme->id = g_strdup ("profile:valid");
+	valid_theme->display_name = g_strdup ("Valid");
+	valid_theme->css_path = g_build_filename (
+		valid_root, "gtk-4.0", "gtk.css", NULL);
+	valid_theme->dark_css_path = g_build_filename (
+		valid_root, "gtk-4.0", "gtk-dark.css", NULL);
+	valid_theme->source = FABULOR_GTK4_THEME_SOURCE_PROFILE;
+	invalid_theme = g_new0 (FabulorGtk4Theme, 1);
+	invalid_theme->id = g_strdup ("profile:invalid");
+	invalid_theme->display_name = g_strdup ("Invalid");
+	invalid_theme->css_path = g_build_filename (
+		invalid_root, "gtk-4.0", "gtk.css", NULL);
+	invalid_theme->source = FABULOR_GTK4_THEME_SOURCE_PROFILE;
+	g_ptr_array_add (themes, valid_theme);
+	g_ptr_array_add (themes, invalid_theme);
+	valid = valid && !theme_gtk4_controller_refresh_from_themes (controller,
+		themes, "profile:invalid", FABULOR_GTK4_THEME_VARIANT_PREFER_LIGHT,
+		FALSE, FALSE, &error) && error != NULL &&
+		g_strcmp0 (theme_gtk4_controller_active_id (controller),
+			"profile:valid") == 0;
+	g_clear_error (&error);
+	choice = theme_gtk4_controller_selected_choice (controller);
+	valid = valid && choice && g_strcmp0 (choice->id, "profile:valid") == 0;
+
+	valid = valid && theme_gtk4_controller_refresh_from_themes (controller,
+		themes, "profile:valid", FABULOR_GTK4_THEME_VARIANT_PREFER_DARK,
+		TRUE, TRUE, &error) && error == NULL &&
+		!theme_gtk4_controller_theme_is_active (controller);
+	appearance = theme_gtk4_controller_appearance (controller);
+	choice = theme_gtk4_controller_selected_choice (controller);
+	valid = valid && appearance && appearance->high_contrast &&
+		!appearance->use_custom_theme && choice &&
+		g_strcmp0 (choice->id, "profile:valid") == 0;
+	valid = valid && theme_gtk4_controller_refresh_from_themes (controller,
+		themes, "profile:missing", FABULOR_GTK4_THEME_VARIANT_PREFER_DARK,
+		TRUE, FALSE, &error) && error == NULL &&
+		!theme_gtk4_controller_stored_selection_available (controller) &&
+		!theme_gtk4_controller_theme_is_active (controller) &&
+		theme_gtk4_controller_selected_index (controller) == 0;
+	valid = valid && theme_gtk4_controller_refresh_from_themes (controller,
+		themes, "profile:valid", FABULOR_GTK4_THEME_VARIANT_PREFER_LIGHT,
+		FALSE, FALSE, &error) && error == NULL &&
+		theme_gtk4_controller_theme_is_active (controller);
+
+	g_ptr_array_unref (themes);
+	theme_gtk4_controller_free (controller);
+	g_free (invalid_css);
+	g_free (invalid_gtk_dir);
+	g_free (invalid_root);
+	g_free (valid_root);
+	probe_remove_tree (temporary);
+	g_free (temporary);
+	return valid;
+}
+
+static gboolean
 probe_spell_mirc_color (gint color_index, FabulorSpellEntryColor *color,
 	gpointer user_data)
 {
@@ -3075,6 +3200,11 @@ main (void)
 	if (!check_gtk4_theme_adapter_policy ())
 	{
 		fprintf (stderr, "GTK4 theme adapter policy mismatch\n");
+		return 1;
+	}
+	if (!check_gtk4_theme_controller_policy ())
+	{
+		fprintf (stderr, "GTK4 theme controller policy mismatch\n");
 		return 1;
 	}
 	if (!check_spell_entry_word_policy ())

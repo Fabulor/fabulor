@@ -1205,6 +1205,16 @@ the platform signal owners. The GTK4 provider adapter consumes the decision and
 removes active custom providers for high-contrast or system-default outcomes.
 Production signal/UI hookup and packaged visual testing remain deferred.
 
+GTK4 theme-controller pass 5 (2026-07-18):
+`theme/theme-gtk4-controller.c` now composes discovery, owned preference
+projection, persisted selection resolution, Windows appearance decisions, and
+transactional provider application behind one GTK4-only lifecycle owner.
+Invalid CSS preserves the prior provider and committed selection; unavailable
+stored themes commit an observable system-default fallback; high contrast
+removes active custom CSS without discarding the selected preference. Discovery
+metadata can be released after refresh, and controller destruction tears down
+display providers. Production preferences binding remains deferred.
+
 Exit criteria:
 
 - Theme switching, restart persistence, tray state, notifications, icons,
