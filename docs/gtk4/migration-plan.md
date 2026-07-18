@@ -1098,6 +1098,17 @@ targets against the active dictionary table at activation time. The GTK3
 cutover. The strict probe validates disabled, multi-dictionary, no-suggestion,
 long-suggestion, formatting, colour, and action-count contracts.
 
+Spell-input URL and initialization pass 5 (2026-07-18): URL-shaped tokens are
+now identified from the same immutable UTF-8 word snapshot and excluded from
+both live Enchant checks and on-demand suggestion menus. Wrapped absolute URIs
+and `www.` links retain normal editable behavior without generating dictionary
+work. The entry now initializes its Pango attributes, empty word owner, and
+preference state before activating Enchant dictionaries, so startup cannot
+recheck or replace uninitialized owners. The strict probe covers ordinary
+words beside wrapped HTTPS URLs, multibyte path/query text, emoji, and `www.`
+links. Interactive emoji, clipboard, shortcut, persistence, accessibility,
+high-DPI, and latency validation remain for the production GTK4 frontend.
+
 Primary surfaces:
 
 - `xtext.c` / `xtext.h`

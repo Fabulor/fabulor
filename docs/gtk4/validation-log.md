@@ -3252,6 +3252,48 @@ Scope: spelling and formatting context-menu projection, activation ownership,
 and GTK3 containment only. Complete production GTK4 input validation remains
 the final Stage 6 spell-input pass.
 
+### PR: #108 - GTK4 Stage 6 Spell-Input URL And Initialization
+
+Date: 2026-07-18
+
+Migration stage: 6, spell-input URL and initialization pass 5
+
+Files/workflows converted: URI-token classification from immutable word
+snapshots; live-check and suggestion exclusion for URLs; Enchant-safe private
+state initialization; defensive dictionary-language description
+
+GTK version: 4.22.4
+
+GLib version: 2.88.0
+
+Build configuration: MSVC x64 Release and strict GTK4 probe boundary
+
+Automated checks:
+
+- [x] production GTK3 frontend compiles and links with 0 warnings and 0 errors
+- [x] strict GTK4 MSVC probe compiles, links, and executes with 0 warnings and 0 errors
+- [x] complete `sexy-spell-entry.c` source passes an MSVC GTK4 syntax compile
+- [x] fresh Meson/Ninja 1.13.2 probe compiles 38 objects with warnings treated as errors
+- [x] independent Meson runtime test passes 1/1
+- [x] wrapped HTTPS URLs with multibyte query text are identified from inner word ranges
+- [x] adjacent ordinary words remain eligible for Enchant checking
+- [x] `www.` links are identified without requiring a URI scheme
+- [x] emoji adjacent to a URL preserves valid UTF-8 segmentation
+- [x] entry owners and preference state are initialized before Enchant activation
+- [x] dictionary language description fails to null rather than an indeterminate pointer
+- [x] repository diff whitespace validation passes
+
+Manual checks:
+
+- [ ] shipping GTK3 URL paste remains stable with spell checking enabled
+- [ ] shipping GTK3 suggestions and personal-dictionary persistence remain unchanged
+- [ ] GTK4 URL paste, emoji insertion, clipboard, and shortcut behavior await the production frontend
+- [ ] GTK4 accessibility, high-DPI, typing, Enter-to-echo, and context-menu latency await the production frontend
+
+Scope: URL exclusion and Enchant initialization safety only. The remaining
+interactive production GTK4 checks stay open as the final Stage 6 validation
+target.
+
 ## Per-PR Record Template
 
 Copy this section for each GTK4 PR:

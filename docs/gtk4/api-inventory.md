@@ -586,12 +586,14 @@ Status: `in progress`
 
 ### Input: `SexySpellEntry`
 
-The current implementation subclasses `GtkEntry`, overrides draw and button
-events, implements `GtkEditable`, and owns Enchant-backed underline, popup,
-suggestion, personal dictionary, and replacement behaviour.
+The current implementation subclasses `GtkEntry` and owns Enchant-backed
+underline, suggestion, personal dictionary, and replacement behaviour. GTK4
+input controllers, Pango styling, and dynamic menu/action ownership are now
+explicitly contained, and URI-shaped tokens are excluded from Enchant work.
 
-Migration decision required: retain a GTK4-compatible custom entry subclass or
-compose a standard GTK4 text control with spell-check state and controllers.
+Migration decision: retain the GTK4-compatible custom entry subclass and the
+toolkit-owned editable implementation rather than introducing a delegated
+child text control.
 
 Required preserved behaviour:
 
@@ -602,7 +604,7 @@ Required preserved behaviour:
 - active-language handling and nickname exceptions
 - IRC formatting and completion integration
 
-Status: `not started`
+Status: `in progress; Stage 6 spell-input pass 5 URL and initialization boundary`
 
 ## Functional Clusters
 
@@ -610,7 +612,7 @@ Status: `not started`
 |---|---|---|---|
 | Main windows and tabs | `maingui.c`, `chanview*.c` | child ownership, gestures, DnD, focus | in progress |
 | Transcript | `xtext.c`, `xtext.h`, `xtext-render-target.c` | snapshot rendering and event model | in progress; render destination ownership established |
-| Edit box and spell check | `maingui.c`, `sexy-spell-entry.c`, `spell-entry-*.c` | styling attributes and dynamic menus | in progress; word and widget lifecycle boundaries established |
+| Edit box and spell check | `maingui.c`, `sexy-spell-entry.c`, `spell-entry-*.c` | production interaction and latency validation | in progress; word, lifecycle, styling, menu, and URL boundaries established |
 | Menus and commands | `menu.c`, `plugin-tray.c` | actions and menu models | not started |
 | Operational lists | `servlistgui.c`, `chanlist.c`, `userlistgui.c`, `dccgui.c`, `banlist.c`, `notifygui.c`, `ignoregui.c`, `plugingui.c`, `urlgrab.c` | list models, factories, editing | converted; toolkit-specific models and views are contained by cross-version owners |
 | Preferences/editors | `setup.c`, `fkeys.c`, `textgui.c`, `editlist.c` | generic edit list, Print Events, key bindings, sound events, and preference navigation converted | converted |

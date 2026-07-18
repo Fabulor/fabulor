@@ -1,6 +1,6 @@
 # GTK4 Spell Input Architecture
 
-Status: Stage 6 spell-input pass 4 dynamic menu and action boundary
+Status: Stage 6 spell-input pass 5 URL and initialization boundary
 
 ## Purpose
 
@@ -32,6 +32,12 @@ storage. The owner duplicates requested words and releases its text and ranges
 together. Enchant broker, dictionary, suggestion, and persistence ownership
 remain unchanged.
 
+The same owner classifies the whitespace-delimited token surrounding a word.
+Absolute URI schemes are recognized through GLib and `www.` links are handled
+explicitly. Every word range inside such a token is excluded from live Enchant
+checks and context-menu suggestion generation, while selection, insertion,
+copy, paste, and cursor handling remain native `GtkEditable` behavior.
+
 ## Widget Lifecycle
 
 `SexySpellEntry` remains a `GtkEntry` subclass. GTK3 and GTK4 both make
@@ -39,6 +45,11 @@ remain unchanged.
 instead of registering an empty duplicate interface. This also preserves the
 toolkit's native focus, input-method, selection, and cursor behavior without a
 composed editable delegate owned by Fabulor.
+
+Private state is initialized before dictionary activation: the Pango attribute
+list, empty word owner, checked state, and IRC-formatting state all exist before
+Enchant can request a recheck. Dictionary descriptions also default to a null
+language when a provider does not invoke its callback.
 
 The removed GTK3 class virtuals are replaced by explicit boundaries:
 
@@ -105,6 +116,7 @@ including replacing the current selection, without using global session state.
 - Pango and Enchant ranges are UTF-8 byte indexed.
 - GTK editable operations are Unicode character indexed.
 - One word range carries both coordinate systems from the same segmentation.
+- URI-shaped tokens never reach Enchant checking or suggestion generation.
 - Cursor lookup preserves the established inclusive word-end popup behavior.
 - Language and preference refreshes replace one owner instead of manually
   freeing three parallel arrays.
@@ -122,6 +134,7 @@ including replacing the current selection, without using global session state.
 - Suggestions are generated on context-menu demand, not while typing.
 - Pointer and Shift+F10/Menu-key paths refresh the same dynamic model.
 - Spell, formatting, and colour commands remain keyboard accessible.
+- Enchant activation cannot recheck uninitialized word or Pango owners.
 
 ## Planned Passes
 
@@ -142,6 +155,8 @@ The strict GTK4 probe verifies:
 - cursor lookup within and at the end of that word returns the same range;
 - duplicated word text remains valid UTF-8;
 - empty owners reject invalid range, lookup, and duplication requests;
+- ordinary words remain checkable beside wrapped HTTPS and `www.` links while
+  every word inside those URI tokens is excluded from Enchant work;
 - a strict GTK4 `GtkEntry` subclass inherits `GtkEditable`; and
 - pointer/redraw adapter source compiles against the allowlisted GTK4 headers;
 - disabled formatting produces an empty attribute list;
