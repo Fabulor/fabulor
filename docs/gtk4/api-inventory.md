@@ -616,7 +616,7 @@ Status: `in progress; Stage 6 spell-input pass 6 emoji-picker ownership boundary
 | Menus and commands | `menu.c`, `plugin-tray.c` | actions and menu models | not started |
 | Operational lists | `servlistgui.c`, `chanlist.c`, `userlistgui.c`, `dccgui.c`, `banlist.c`, `notifygui.c`, `ignoregui.c`, `plugingui.c`, `urlgrab.c` | list models, factories, editing | converted; toolkit-specific models and views are contained by cross-version owners |
 | Preferences/editors | `setup.c`, `fkeys.c`, `textgui.c`, `editlist.c` | generic edit list, Print Events, key bindings, sound events, and preference navigation converted | converted |
-| Themes | `theme/*.c`, `common/gtk3-theme-service.c`, `common/gtk4-theme-discovery.c` | GTK4 CSS compatibility and adapter policy | in progress; exact GTK4 discovery and transactional provider ownership established |
+| Themes | `theme/*.c`, `common/gtk3-theme-service.c`, `common/gtk4-theme-*.c` | GTK4 CSS compatibility and adapter policy | in progress; discovery, transactional providers, and independent preference persistence established |
 | Platform integration | `fe-gtk.c`, `plugin-tray.c`, notifications | displays, surfaces, icons, native tray | not started |
 
 ## Theme Inventory

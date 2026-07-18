@@ -54,6 +54,7 @@
     <ClInclude Include="theme-service.h" />
     <ClInclude Include="gtk3-theme-service.h" />
     <ClInclude Include="gtk4-theme-discovery.h" />
+    <ClInclude Include="gtk4-theme-preferences.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="cfgfiles.c" />
@@ -92,6 +93,7 @@
     <ClCompile Include="theme-service.c" />
     <ClCompile Include="gtk3-theme-service.c" />
     <ClCompile Include="gtk4-theme-discovery.c" />
+    <ClCompile Include="gtk4-theme-preferences.c" />
   </ItemGroup>
   <ItemGroup>
     <None Include="..\..\win32\config.h.tt" />

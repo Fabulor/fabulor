@@ -3409,6 +3409,42 @@ Scope: GTK4 CSS-provider ownership and failure containment only. Discovery is
 not yet projected into production preferences, and shipping GTK3 theme behavior
 remains unchanged.
 
+### PR: [#112 - GTK4 Stage 7 Theme Preferences](https://github.com/Fabulor/fabulor/pull/112)
+
+Date: 2026-07-18
+
+Migration stage: 7, GTK4 preference-model and persistence pass 3
+
+Files/workflows converted: owned GTK4 theme-choice projection; explicit system
+default; exact persisted-selection resolution; unavailable-selection fallback;
+variant validation; independent GTK4 configuration keys
+
+GTK version: 4.22.4
+
+GLib version: 2.88.0
+
+Build configuration: MSVC x64 Release and strict GTK4 probe boundary
+
+Automated checks:
+
+- [x] shipping common library and full GTK3 frontend compile/link with 0 warnings and 0 errors
+- [x] strict GTK4 MSVC probe compiles, links, and executes with 0 warnings and 0 errors
+- [x] fresh MSVC Meson/Ninja probe compiles 42 objects with warnings treated as errors
+- [x] independent Meson runtime test passes 1/1
+- [x] Linux GCC C11 syntax checks pass with all warnings treated as errors
+- [x] projected choices remain valid after discovery metadata is released
+- [x] exact, missing, and intentional-default selections resolve deterministically
+- [x] invalid stored variants normalize to follow-system
+- [x] GTK4 configuration keys remain separate from GTK3 selection and variant keys
+
+Manual checks:
+
+- [ ] production GTK4 preference interaction and restart persistence await frontend cutover
+- [ ] Windows light, dark, high-contrast, and custom-theme behavior await the production frontend
+
+Scope: GTK4 preference ownership and persistence schema only. The shipping
+GTK3 preference page remains unchanged and does not expose or apply GTK4 themes.
+
 ## Per-PR Record Template
 
 Copy this section for each GTK4 PR:
