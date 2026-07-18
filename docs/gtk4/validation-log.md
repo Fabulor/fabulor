@@ -3678,6 +3678,45 @@ Manual checks:
 Scope: dynamic menu and action-group ownership only. This pass does not replace
 the tray icon, popup renderer, flashing timers, or platform backend selection.
 
+### PR: [#119 - GTK4 Stage 7 Tray Popover Presenter](https://github.com/Fabulor/fabulor/pull/119)
+
+Date: 2026-07-18
+
+Migration stage: 7, GTK4 popover-presenter ownership pass 10
+
+Files/workflows converted: candidate `GtkPopoverMenu` ownership; composed-model
+binding; built-in and plugin action-group attachment; projection replacement;
+popover close/unparent teardown; shared action namespace constants
+
+GTK version: shipping GTK3 frontend plus GTK4 4.22.4 probe
+
+GLib version: shipping Windows runtime plus GTK4 probe 2.88.0
+
+Build configuration: shipping MSVC x64 Release, strict GTK4 MSVC probe, fresh
+MSVC Meson/Ninja probe, and Linux GCC C11 syntax validation
+
+Automated checks:
+
+- [x] shipping frontend compiles and links with 0 warnings and 0 errors
+- [x] strict GTK4 MSVC probe compiles, links, and executes with 0 warnings and 0 errors
+- [x] fresh MSVC Meson/Ninja probe compiles 46 objects with warnings treated as errors
+- [x] independent Meson runtime test passes 1/1
+- [x] Linux GCC C11 syntax check passes with all warnings treated as errors
+- [x] both action namespaces activate through the GTK4 popover
+- [x] projection replacement dispatches only through replacement groups
+- [x] caller menu and action references can be released after presenter binding
+- [x] retained popovers expose no menu or actions after presenter teardown
+- [x] repository diff whitespace validation passes
+
+Manual checks:
+
+- [ ] production GTK4 popover anchoring awaits the frontend cutover boundary
+- [ ] native Windows tray icon and popup behavior remain on the shipping path
+- [ ] GTK4 tray keyboard, high-DPI, and repeated-popup checks await integration
+
+Scope: GTK4 popover ownership and action routing only. This pass does not select
+a platform tray backend, own a shell icon, or replace the shipping popup.
+
 ## Per-PR Record Template
 
 Copy this section for each GTK4 PR:

@@ -4269,7 +4269,8 @@ menu_add_plugin_model (GObject *owner, const char *root_name, const char *target
 									 &action_index, &projection);
 	menu_plugin_node_free (root);
 	if (GTK_IS_WIDGET (owner))
-		gtk_widget_insert_action_group (GTK_WIDGET (owner), "fabulor-context",
+		gtk_widget_insert_action_group (GTK_WIDGET (owner),
+									FABULOR_PLUGIN_CONTEXT_ACTION_NAMESPACE,
 									G_ACTION_GROUP (action_group));
 	g_object_set_data_full (owner, FABULOR_MENU_CONTEXT_ACTION_GROUP,
 						 action_group, g_object_unref);

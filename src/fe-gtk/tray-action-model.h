@@ -11,8 +11,7 @@
 #define FABULOR_TRAY_ACTION_MODEL_H
 
 #include <gio/gio.h>
-
-#define FABULOR_TRAY_ACTION_NAMESPACE "tray"
+#include "menu-action-namespaces.h"
 
 typedef enum
 {
