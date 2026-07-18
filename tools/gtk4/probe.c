@@ -1,10 +1,12 @@
 #include <gtk/gtk.h>
+#include <glib/gstdio.h>
 
 #include <stdio.h>
 #include <string.h>
 
 #include "../../src/fe-gtk/gtk-compat.h"
 #include "../../src/fe-gtk/gtk4-list-models.h"
+#include "../../src/common/gtk4-theme-discovery.h"
 #include "../../src/fe-gtk/emoji-picker.h"
 #include "../../src/fe-gtk/ignore-list.h"
 #include "../../src/fe-gtk/ban-list.h"
@@ -1965,6 +1967,135 @@ check_emoji_picker_policy (void)
 	return valid;
 }
 
+static void
+probe_remove_tree (const char *path)
+{
+	GDir *dir;
+	const char *name;
+
+	if (!path || !g_file_test (path, G_FILE_TEST_EXISTS))
+		return;
+	if (!g_file_test (path, G_FILE_TEST_IS_DIR))
+	{
+		g_remove (path);
+		return;
+	}
+	dir = g_dir_open (path, 0, NULL);
+	if (dir)
+	{
+		while ((name = g_dir_read_name (dir)) != NULL)
+		{
+			char *child = g_build_filename (path, name, NULL);
+			probe_remove_tree (child);
+			g_free (child);
+		}
+		g_dir_close (dir);
+	}
+	g_rmdir (path);
+}
+
+static char *
+probe_make_gtk4_theme (const char *base, const char *directory_name,
+	const char *display_name, gboolean dark)
+{
+	char *root = g_build_filename (base, directory_name, NULL);
+	char *gtk_dir = g_build_filename (root, "gtk-4.0", NULL);
+	char *css = g_build_filename (gtk_dir, "gtk.css", NULL);
+	char *index = g_build_filename (root, "index.theme", NULL);
+	char *index_contents = g_strdup_printf (
+		"[Desktop Entry]\nName=%s\n", display_name);
+
+	g_mkdir_with_parents (gtk_dir, 0700);
+	g_file_set_contents (css, "window { color: #123456; }\n", -1, NULL);
+	g_file_set_contents (index, index_contents, -1, NULL);
+	if (dark)
+	{
+		char *dark_css = g_build_filename (gtk_dir, "gtk-dark.css", NULL);
+		g_file_set_contents (dark_css, "window { color: #eeeeee; }\n", -1, NULL);
+		g_free (dark_css);
+	}
+	g_free (index_contents);
+	g_free (index);
+	g_free (css);
+	g_free (gtk_dir);
+	return root;
+}
+
+static gboolean
+check_gtk4_theme_discovery_policy (void)
+{
+	GError *error = NULL;
+	char *temporary = g_dir_make_tmp ("fabulor-gtk4-theme-probe-XXXXXX", &error);
+	char *desktop_root;
+	char *profile_root;
+	char *config_root;
+	char *profile_from_config;
+	char *desktop_theme;
+	char *profile_theme;
+	char *gtk3_only;
+	char *gtk3_dir;
+	char *gtk3_css;
+	const char *desktop_roots[3];
+	GPtrArray *themes;
+	FabulorGtk4Theme *first;
+	FabulorGtk4Theme *second;
+	gboolean valid;
+
+	if (!temporary)
+	{
+		g_clear_error (&error);
+		return FALSE;
+	}
+	desktop_root = g_build_filename (temporary, "desktop", NULL);
+	profile_root = g_build_filename (temporary, "profile", NULL);
+	config_root = g_build_filename (temporary, "config", NULL);
+	g_mkdir_with_parents (desktop_root, 0700);
+	g_mkdir_with_parents (profile_root, 0700);
+	desktop_theme = probe_make_gtk4_theme (desktop_root, "zulu", "Zulu", TRUE);
+	profile_theme = probe_make_gtk4_theme (profile_root, "alpha", "Alpha", FALSE);
+	gtk3_only = g_build_filename (desktop_root, "legacy", NULL);
+	gtk3_dir = g_build_filename (gtk3_only, "gtk-3.0", NULL);
+	gtk3_css = g_build_filename (gtk3_dir, "gtk.css", NULL);
+	g_mkdir_with_parents (gtk3_dir, 0700);
+	g_file_set_contents (gtk3_css, "window { color: #000000; }\n", -1, NULL);
+
+	desktop_roots[0] = desktop_root;
+	desktop_roots[1] = desktop_root;
+	desktop_roots[2] = NULL;
+	themes = fabulor_gtk4_theme_discover_roots (profile_root, desktop_roots);
+	profile_from_config = fabulor_gtk4_theme_profile_dir (config_root);
+	first = themes->len > 0 ? g_ptr_array_index (themes, 0) : NULL;
+	second = themes->len > 1 ? g_ptr_array_index (themes, 1) : NULL;
+	valid = themes->len == 2 && first && second &&
+		g_strcmp0 (first->display_name, "Alpha") == 0 &&
+		first->source == FABULOR_GTK4_THEME_SOURCE_PROFILE &&
+		g_str_has_prefix (first->id, "profile:") &&
+		g_strcmp0 (first->path, profile_theme) == 0 &&
+		first->dark_css_path == NULL &&
+		g_strcmp0 (second->display_name, "Zulu") == 0 &&
+		second->source == FABULOR_GTK4_THEME_SOURCE_DESKTOP &&
+		g_str_has_prefix (second->id, "desktop:") &&
+		g_strcmp0 (second->path, desktop_theme) == 0 &&
+		second->dark_css_path != NULL &&
+		g_str_has_suffix (second->css_path, "gtk-4.0" G_DIR_SEPARATOR_S "gtk.css") &&
+		g_str_has_suffix (profile_from_config, "config" G_DIR_SEPARATOR_S "themes") &&
+		fabulor_gtk4_theme_profile_dir (NULL) == NULL;
+
+	g_ptr_array_unref (themes);
+	g_free (profile_from_config);
+	g_free (gtk3_css);
+	g_free (gtk3_dir);
+	g_free (gtk3_only);
+	g_free (profile_theme);
+	g_free (desktop_theme);
+	g_free (config_root);
+	g_free (profile_root);
+	g_free (desktop_root);
+	probe_remove_tree (temporary);
+	g_free (temporary);
+	return valid;
+}
+
 static gboolean
 probe_spell_mirc_color (gint color_index, FabulorSpellEntryColor *color,
 	gpointer user_data)
@@ -2731,6 +2862,11 @@ main (void)
 	if (!check_emoji_picker_policy ())
 	{
 		fprintf (stderr, "GTK4 emoji-picker ownership policy mismatch\n");
+		return 1;
+	}
+	if (!check_gtk4_theme_discovery_policy ())
+	{
+		fprintf (stderr, "GTK4 theme discovery policy mismatch\n");
 		return 1;
 	}
 	if (!check_spell_entry_word_policy ())

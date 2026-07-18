@@ -53,6 +53,7 @@
     <ClInclude Include="zoitechatc.h" />
     <ClInclude Include="theme-service.h" />
     <ClInclude Include="gtk3-theme-service.h" />
+    <ClInclude Include="gtk4-theme-discovery.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="cfgfiles.c" />
@@ -90,6 +91,7 @@
     <ClCompile Include="zoitechat.c" />
     <ClCompile Include="theme-service.c" />
     <ClCompile Include="gtk3-theme-service.c" />
+    <ClCompile Include="gtk4-theme-discovery.c" />
   </ItemGroup>
   <ItemGroup>
     <None Include="..\..\win32\config.h.tt" />

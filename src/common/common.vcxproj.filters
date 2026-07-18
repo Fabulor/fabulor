@@ -134,6 +134,9 @@
     <ClInclude Include="gtk3-theme-service.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="gtk4-theme-discovery.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="cfgfiles.c">
@@ -227,6 +230,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="gtk3-theme-service.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="gtk4-theme-discovery.c">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

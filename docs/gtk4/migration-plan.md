@@ -1166,6 +1166,15 @@ Deliverables:
 - Remove GTK3-specific icon-path and theme workarounds only after replacement
   behaviour is proven.
 
+GTK4 theme-discovery pass 1 (2026-07-18):
+`gtk4-theme-discovery.c` now owns toolkit-independent metadata for exact
+`gtk-4.0/gtk.css` layouts found in desktop roots and the Fabulor profile
+`themes` directory. It records source identity, localized display names,
+optional dark CSS and previews, suppresses canonical duplicates, and excludes
+GTK3-only layouts. No CSS is parsed or applied in this pass, and the shipping
+GTK3 adapter remains unchanged. The contract is documented in
+[`theme-architecture.md`](theme-architecture.md).
+
 Exit criteria:
 
 - Theme switching, restart persistence, tray state, notifications, icons,

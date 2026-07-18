@@ -54,6 +54,7 @@ probe = executable(
   'fabulor-gtk4-probe',
   'probe.c',
   '../../src/fe-gtk/emoji-picker.c',
+  '../../src/common/gtk4-theme-discovery.c',
   '../../src/fe-gtk/spell-entry-words.c',
 	'../../src/fe-gtk/spell-entry-style.c',
 	'../../src/fe-gtk/spell-entry-menu.c',

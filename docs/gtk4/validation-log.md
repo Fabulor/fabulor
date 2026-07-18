@@ -3334,6 +3334,45 @@ Scope: emoji-picker ownership and lifecycle containment only. Complete
 production GTK4 input validation remains open until the GTK4 frontend is
 runnable.
 
+### PR: #110 - GTK4 Stage 7 Theme Discovery
+
+Date: 2026-07-18
+
+Migration stage: 7, GTK4 desktop/profile theme-discovery pass 1
+
+Files/workflows converted: exact GTK4 CSS layout recognition; profile and
+desktop root ownership; source-qualified metadata; dark variant and preview
+discovery; canonical duplicate suppression; deterministic result ordering
+
+GTK version: 4.22.4
+
+GLib version: 2.88.0
+
+Build configuration: MSVC x64 Release and strict GTK4 probe boundary
+
+Automated checks:
+
+- [x] shipping common library compiles with 0 warnings and 0 errors
+- [x] strict GTK4 MSVC probe compiles, links, and executes with 0 warnings and 0 errors
+- [x] fresh MSVC Meson/Ninja probe compiles 40 objects with warnings treated as errors
+- [x] independent Meson runtime test passes 1/1
+- [x] Linux GCC C11 syntax check passes with all warnings treated as errors
+- [x] profile themes resolve beneath the `themes` directory
+- [x] exact `gtk-4.0/gtk.css` layouts are accepted and GTK3-only layouts are excluded
+- [x] profile/desktop identity, localized names, and dark variant metadata are retained
+- [x] duplicate desktop roots produce one result and sorting is deterministic
+- [x] repository diff whitespace validation passes
+
+Manual checks:
+
+- [ ] profile theme discovery in the production GTK4 preferences awaits adapter integration
+- [ ] system GTK4 desktop theme discovery awaits production GTK4 runtime integration
+- [ ] CSS parsing, provider application, variant switching, and diagnostics are a later pass
+- [ ] Windows light, dark, high-contrast, and custom-theme behavior await the production frontend
+
+Scope: GTK4 theme discovery metadata only. GTK3 selection and application
+remain unchanged, and no discovered GTK4 CSS is loaded by this pass.
+
 ## Per-PR Record Template
 
 Copy this section for each GTK4 PR:
