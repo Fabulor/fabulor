@@ -333,7 +333,7 @@ Detailed planning and evidence live in:
   - [x] Build and publish a parallel candidate MSI without replacing the shipping installer or bootstrapper.
   - [x] Establish and adversarially test executable-relative Windows runtime discovery without ambient GTK paths.
   - [x] Validate the packaged native import closure against explicit ownership roots and reviewed Windows imports.
-  - [ ] Validate the candidate payload, then replace transitional broad WiX harvesting with the allowlist.
+  - [x] Validate the candidate payload, then replace transitional broad WiX harvesting with the allowlist.
 - [ ] Remove GTK3 code, build inputs, runtime files, installer components, and compatibility helpers.
 - [ ] Complete clean-install, upgrade, accessibility, visual, performance, plugin, and packaging validation.
 

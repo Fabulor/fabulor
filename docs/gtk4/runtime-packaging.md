@@ -1,6 +1,6 @@
 # GTK4 Runtime And Packaging
 
-Status: deterministic GTK4 runtime candidate with transitional WiX harvesting
+Status: allowlisted GTK4 runtime in the shipping WiX package; GTK3 executable retained
 
 Baseline date: 2026-07-14
 
@@ -11,8 +11,8 @@ Fabulor currently has two GTK payload concepts:
 1. The shipping executable is built against a GTK3 gvsbuild dependency root.
    `win32/copy/copy.vcxproj` stages GTK3 DLLs and supporting data into the
    release root beside `fabulor.exe`.
-2. The WiX project also harvests `Runtime/GTK4` into
-   `ProgramFiles/Fabulor/Runtime/GTK4` and requires `bin/gtk-4-1.dll` to exist.
+2. The WiX project packages the deterministic staged allowlist into
+   `ProgramFiles/Fabulor/Runtime/GTK4` and requires its source-bound manifest.
 
 This is a transition state, not the final runtime design. The installed GTK4
 payload does not by itself make the current executable GTK4-compliant.
@@ -38,14 +38,10 @@ Top-level content:
 | `share` | 1,934 | 73,804,309 | selected runtime subtrees |
 | `wheels` | 2 | 366,347 | not packaged |
 
-The current `installer/Components/GTK4.wxs` include rules select approximately
-1,721 files and 198,353,537 bytes. This is still broad and includes development
-metadata such as GIR data and large locale/icon sets that require a deliberate
-runtime-use decision before release trimming.
-
-The `lib/gio` include currently matches zero files and produces WIX8600. The
-warning should be removed by correcting or deleting the include after the final
-runtime layout is known; it must not be suppressed globally.
+Before Stage 8 pass 5, the transitional broad WiX rules selected approximately
+1,721 files and 198,353,537 bytes, including development metadata and an empty
+`lib/gio` harvest that emitted WIX8600. Those rules are now retired. The normal
+MSI and bootstrapper consume the 1,431-file staged allowlist plus its manifest.
 
 Stage 8 pass 1 adds `tools/gtk4/runtime-payload-contract.json` and
 `tools/gtk4/stage_runtime.py`. The contract selects the native dependency
@@ -68,7 +64,7 @@ cutover.
 
 Candidate component groups own `bin`, `etc/fonts`, `lib/gdk-pixbuf-2.0`, and
 each selected `share` subtree explicitly. This avoids WiX harvest-prefix
-flattening. After the candidate MSI is built, `validate_candidate_msi.py`
+flattening. After the candidate MSI is built, the current `validate_runtime_msi.py`
 decompiles and extracts it, then requires the installed `Runtime/GTK4` path set
 to equal all 1,431 generated manifest paths plus `runtime-manifest.json`, with
 no missing, unexpected, duplicate, misplaced, size-mismatched, or hash-mismatched
@@ -107,6 +103,15 @@ loader, and both GLib spawn helpers. This proves static native closure and
 package ownership; it does not detect data-driven module loading or make an
 unused-file decision. GIO, pixbuf, icon, locale, font, schema, and typelib
 trimming remains gated on packaged feature tests and module/process evidence.
+
+Stage 8 pass 5 retires the broad `GTK4.wxs` harvest and candidate-mode switch.
+`GTK4Allowlist.wxs` is now the sole `GTK4Components` provider and the normal
+WiX build requires `runtime-manifest.json`. Windows CI builds the ordinary
+`Fabulor.msi` and `FabulorSetup.exe` against the staged root, then decompiles,
+extracts, and hash-validates the GTK4 payload in that same shipping MSI. The
+duplicate candidate MSI build and artifact are removed. This cuts shipping WiX
+packaging over to the allowlist but deliberately retains the GTK3 executable
+and root payload until production frontend linking and feature validation pass.
 
 ## Sources And Provenance
 

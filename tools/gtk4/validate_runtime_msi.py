@@ -205,7 +205,7 @@ def decompile_msi(wix, msi, output, extraction_root):
 
 def parse_args(argv):
     parser = argparse.ArgumentParser(
-        description="Validate a candidate MSI GTK4 payload against its manifest"
+        description="Validate an MSI GTK4 runtime payload against its manifest"
     )
     parser.add_argument("--wix", type=pathlib.Path, required=True)
     parser.add_argument("--msi", type=pathlib.Path, required=True)
@@ -233,11 +233,11 @@ def main(argv=None):
             validate_paths(expected, actual)
             validate_content(expected_content, sources, extraction_root)
     except (OSError, ET.ParseError, CandidateMsiError) as exc:
-        print(f"GTK4 candidate MSI validation failed: {exc}", file=sys.stderr)
+        print(f"GTK4 runtime MSI validation failed: {exc}", file=sys.stderr)
         return 1
 
     print(
-        "GTK4 candidate MSI validated: "
+        "GTK4 runtime MSI validated: "
         f"manifest_entries={len(expected) - 1}, installed_entries={len(actual)}, "
         "content_hashes=verified"
     )

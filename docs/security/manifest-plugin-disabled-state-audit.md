@@ -503,7 +503,8 @@ Packaging boundaries:
 - `installer/Components/PythonRuntime.wxs` packages `$(var.PythonRuntimeRoot)\**`.
 - `installer/Components/Tcl.wxs` packages Tcl `bin\**` and `lib\**`.
 - `installer/Components/DotNet.wxs` packages the managed plugin host plus `host\fxr\<version>\**` and `shared\Microsoft.NETCore.App\<version>\**`.
-- `installer/Components/GTK4.wxs` packages GTK4 DLLs and broad `etc`, `lib`, and `share` trees.
+- `installer/Components/GTK4Allowlist.wxs` packages only the deterministic,
+  manifest-backed GTK4 runtime allowlist with explicit directory ownership.
 - `installer/Components/Core.wxs` explicitly lists the core native payload DLLs and executables.
 - `installer/Components/Plugins.wxs` explicitly lists built-in plugin DLLs.
 
@@ -511,7 +512,9 @@ Provenance issue:
 
 - The runtime payload is not backed by a checked-in bill of materials with source URL, version, expected hash, and license/provenance status for every harvested binary.
 - The workflows download several third-party payloads by URL, but the reviewed workflow snippets do not verify expected hashes after download.
-- Broad wildcard harvesting means unintended files can enter the installer if runtime directories contain extra files.
+- Broad wildcard harvesting remains for other runtime surfaces such as Python,
+  Tcl, and .NET; the GTK4 surface now rejects files outside its staged allowlist
+  and validates installed paths, sizes, and SHA-256 hashes in the shipping MSI.
 
 Minimum follow-up:
 

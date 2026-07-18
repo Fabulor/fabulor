@@ -8,8 +8,7 @@
     <WixToolsetMajorVersion>7</WixToolsetMajorVersion>
     <WixToolsetVersion>7.0.0</WixToolsetVersion>
     <FabulorPayloadRoot Condition="'$(FabulorPayloadRoot)'==''">$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\..\zoitechat-build\$(Platform)\rel\'))</FabulorPayloadRoot>
-    <GtkRuntimeRoot Condition="'$(GtkRuntimeRoot)'==''">$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\Runtime\GTK4\'))</GtkRuntimeRoot>
-    <GtkRuntimeCandidate Condition="'$(GtkRuntimeCandidate)'==''">false</GtkRuntimeCandidate>
+    <GtkRuntimeRoot Condition="'$(GtkRuntimeRoot)'==''">$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\build\gtk4-runtime-candidate-root\Runtime\GTK4\'))</GtkRuntimeRoot>
     <BuildFabulorBootstrapper Condition="'$(BuildFabulorBootstrapper)'==''">true</BuildFabulorBootstrapper>
     <OutputPath Condition="'$(FabulorInstallerOutputPath)'!=''">$(FabulorInstallerOutputPath)</OutputPath>
     <IntermediateOutputPath Condition="'$(FabulorInstallerIntermediateOutputPath)'!=''">$(FabulorInstallerIntermediateOutputPath)</IntermediateOutputPath>
@@ -34,12 +33,7 @@
 
   <ItemGroup>
     <Compile Include="Product.wxs" />
-    <Compile Include="Components\**\*.wxs"
-             Exclude="Components\GTK4.wxs;Components\GTK4Candidate.wxs" />
-    <Compile Include="Components\GTK4.wxs"
-             Condition="'$(GtkRuntimeCandidate)'!='true'" />
-    <Compile Include="Components\GTK4Candidate.wxs"
-             Condition="'$(GtkRuntimeCandidate)'=='true'" />
+    <Compile Include="Components\**\*.wxs" />
   </ItemGroup>
 
   <Target Name="BuildManagedPluginHost" BeforeTargets="Compile">
@@ -55,7 +49,7 @@
     <Error Condition="!Exists('$(FabulorPayloadRoot)\share\enchant-2\enchant.ordering')" Text="Missing Enchant 2 provider ordering under $(FabulorPayloadRoot)\share\enchant-2. Run tools\build-enchant-msvc.ps1 before packaging." />
     <Error Condition="!Exists('$(FabulorPayloadRoot)\plugins')" Text="Missing plugin payload at $(FabulorPayloadRoot)\plugins. Build win32\zoitechat.sln first so the staged rel payload exists." />
     <Error Condition="!Exists('$(GtkRuntimeRoot)\bin\gtk-4-1.dll')" Text="Missing GTK4 runtime payload at $(GtkRuntimeRoot)." />
-    <Error Condition="'$(GtkRuntimeCandidate)'=='true' and !Exists('$(GtkRuntimeRoot)\runtime-manifest.json')" Text="Missing generated GTK4 runtime manifest at $(GtkRuntimeRoot). Stage the candidate with tools\gtk4\stage_runtime.py before building candidate WiX output." />
+    <Error Condition="!Exists('$(GtkRuntimeRoot)\runtime-manifest.json')" Text="Missing generated GTK4 runtime manifest at $(GtkRuntimeRoot). Stage the allowlisted runtime with tools\gtk4\stage_runtime.py before building WiX output." />
     <Error Condition="!Exists('$(ManagedPluginHostRoot)\Fabulor.PluginHost.runtimeconfig.json')" Text="Missing managed plugin host payload at $(ManagedPluginHostRoot)." />
     <Error Condition="!Exists('$(BundledDotNetRoot)\host\fxr')" Text="Missing .NET hostfxr root at $(BundledDotNetRoot)." />
     <Error Condition="!Exists('$(BundledDotNetRoot)\shared\Microsoft.NETCore.App')" Text="Missing .NET shared runtime payload under $(BundledDotNetRoot)\shared\Microsoft.NETCore.App." />

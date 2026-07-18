@@ -1360,6 +1360,16 @@ and the complete candidate graph runs immediately after staging in Windows CI.
 This static closure does not justify trimming dynamically selected modules;
 feature-driven package tests remain required before removal.
 
+Shipping WiX allowlist pass 5 (2026-07-18):
+the transitional broad GTK4 component surface and `GtkRuntimeCandidate` switch
+are retired. `GTK4Allowlist.wxs` now supplies the normal MSI's sole GTK4
+component group, requires the generated manifest, and preserves explicit
+directory ownership. Windows CI builds the normal `Fabulor.msi` and
+`FabulorSetup.exe` from the staged root, then validates all 1,431 runtime files
+plus the manifest directly in the shipping MSI. The duplicate candidate MSI
+build/upload is removed. Production `fabulor.exe` and the root GTK3 payload are
+unchanged pending frontend linking and packaged feature validation.
+
 Deliverables:
 
 - Make GTK4 the only production frontend dependency in MSVC, Meson, and CI.

@@ -4,7 +4,7 @@ import unittest
 import xml.etree.ElementTree as ET
 from unittest import mock
 
-import validate_candidate_msi
+import validate_runtime_msi
 
 
 def candidate_xml(bin_directory=True):
@@ -28,11 +28,11 @@ def candidate_xml(bin_directory=True):
 
 
 class ValidateCandidateMsiTests(unittest.TestCase):
-    @mock.patch("validate_candidate_msi.subprocess.run")
+    @mock.patch("validate_runtime_msi.subprocess.run")
     def test_decompiler_explicitly_accepts_wix7_eula(self, run):
         run.return_value.returncode = 0
 
-        validate_candidate_msi.decompile_msi(
+        validate_runtime_msi.decompile_msi(
             "wix.exe", "candidate.msi", "candidate.wxs", "files"
         )
 
@@ -43,26 +43,26 @@ class ValidateCandidateMsiTests(unittest.TestCase):
         )
 
     def test_matching_directory_layout_passes(self):
-        actual = validate_candidate_msi.extract_gtk4_paths(candidate_xml())
+        actual = validate_runtime_msi.extract_gtk4_paths(candidate_xml())
         expected = {"bin/gtk-4-1.dll", "runtime-manifest.json"}
-        validate_candidate_msi.validate_paths(expected, actual)
+        validate_runtime_msi.validate_paths(expected, actual)
 
     def test_flattened_bin_directory_is_rejected(self):
-        actual = validate_candidate_msi.extract_gtk4_paths(
+        actual = validate_runtime_msi.extract_gtk4_paths(
             candidate_xml(bin_directory=False)
         )
         expected = {"bin/gtk-4-1.dll", "runtime-manifest.json"}
         with self.assertRaisesRegex(
-                validate_candidate_msi.CandidateMsiError, "differs"):
-            validate_candidate_msi.validate_paths(expected, actual)
+                validate_runtime_msi.CandidateMsiError, "differs"):
+            validate_runtime_msi.validate_paths(expected, actual)
 
     def test_unexpected_payload_is_rejected(self):
-        actual = validate_candidate_msi.extract_gtk4_paths(candidate_xml())
+        actual = validate_runtime_msi.extract_gtk4_paths(candidate_xml())
         actual.add("bin/debug.pdb")
         expected = {"bin/gtk-4-1.dll", "runtime-manifest.json"}
         with self.assertRaisesRegex(
-                validate_candidate_msi.CandidateMsiError, "unexpected"):
-            validate_candidate_msi.validate_paths(expected, actual)
+                validate_runtime_msi.CandidateMsiError, "unexpected"):
+            validate_runtime_msi.validate_paths(expected, actual)
 
     def test_duplicate_installed_path_is_rejected(self):
         root = candidate_xml()
@@ -74,8 +74,8 @@ class ValidateCandidateMsiTests(unittest.TestCase):
         component = ET.SubElement(bin_directory, f"{namespace}Component")
         ET.SubElement(component, f"{namespace}File", Name="gtk-4-1.dll")
         with self.assertRaisesRegex(
-                validate_candidate_msi.CandidateMsiError, "duplicate"):
-            validate_candidate_msi.extract_gtk4_paths(root)
+                validate_runtime_msi.CandidateMsiError, "duplicate"):
+            validate_runtime_msi.extract_gtk4_paths(root)
 
 
 if __name__ == "__main__":
