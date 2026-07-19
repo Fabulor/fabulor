@@ -17,6 +17,7 @@
 #include "../../src/fe-gtk/tray-backend-policy.h"
 #include "../../src/fe-gtk/tray-menu-composition.h"
 #include "../../src/fe-gtk/tray-menu-presenter-gtk4.h"
+#include "../../src/fe-gtk/context-menu-presenter-gtk4.h"
 #include "../../src/fe-gtk/ignore-list.h"
 #include "../../src/fe-gtk/ban-list.h"
 #include "../../src/fe-gtk/channel-list.h"
@@ -3217,6 +3218,60 @@ check_tray_menu_presenter_gtk4 (void)
 }
 
 static gboolean
+check_context_menu_presenter_gtk4 (void)
+{
+	GMenu *menu = g_menu_new ();
+	GActionGroup *built_in;
+	GActionGroup *plugin;
+	GtkWidget *origin = gtk_box_new (GTK_ORIENTATION_VERTICAL, 0);
+	GtkWidget *window = gtk_window_new ();
+	FabulorContextMenuPresenterGtk4 *presenter;
+	GtkPopoverMenu *popover;
+	GdkRectangle point = { 0 };
+	guint built_in_count = 0;
+	guint plugin_count = 0;
+	gboolean passed;
+
+	g_object_ref_sink (origin);
+	g_object_ref_sink (window);
+	gtk_window_set_child (GTK_WINDOW (window), origin);
+	gtk_window_present (GTK_WINDOW (window));
+	g_menu_append (menu, "Built in", "context.run");
+	g_menu_append (menu, "Plugin", "fabulor-context.run");
+	built_in = tray_presenter_action_group_new ("run", &built_in_count);
+	plugin = tray_presenter_action_group_new ("run", &plugin_count);
+	presenter = fabulor_context_menu_presenter_gtk4_new (
+		G_MENU_MODEL (menu), built_in, plugin);
+	g_object_unref (menu);
+	g_object_unref (built_in);
+	g_object_unref (plugin);
+	if (!presenter)
+	{
+		gtk_window_set_child (GTK_WINDOW (window), NULL);
+		g_object_unref (origin);
+		g_object_unref (window);
+		return FALSE;
+	}
+	popover = fabulor_context_menu_presenter_gtk4_get_popover (presenter);
+	passed = fabulor_context_menu_presenter_gtk4_popup_at (
+		presenter, origin, 17.0, 23.0);
+	passed = passed && gtk_widget_get_parent (GTK_WIDGET (popover)) == origin;
+	passed = passed && gtk_popover_get_pointing_to (
+		GTK_POPOVER (popover), &point) && point.x == 17 && point.y == 23;
+	passed = passed && gtk_widget_activate_action (
+		GTK_WIDGET (popover), "context.run", NULL);
+	passed = passed && gtk_widget_activate_action (
+		GTK_WIDGET (popover), "fabulor-context.run", NULL);
+	passed = passed && built_in_count == 1 && plugin_count == 1;
+	fabulor_context_menu_presenter_gtk4_free (presenter);
+	passed = passed && gtk_widget_get_first_child (origin) == NULL;
+	gtk_window_set_child (GTK_WINDOW (window), NULL);
+	g_object_unref (origin);
+	g_object_unref (window);
+	return passed;
+}
+
+static gboolean
 check_spell_entry_style_policy (void)
 {
 	FabulorSpellEntryPalette palette = {
@@ -3915,6 +3970,11 @@ main (void)
 	if (gtk_ready && !check_tray_menu_presenter_gtk4 ())
 	{
 		fprintf (stderr, "GTK4 tray menu presenter contract mismatch\n");
+		return 1;
+	}
+	if (gtk_ready && !check_context_menu_presenter_gtk4 ())
+	{
+		fprintf (stderr, "GTK4 context menu presenter contract mismatch\n");
 		return 1;
 	}
 	if (!check_spell_entry_word_policy ())

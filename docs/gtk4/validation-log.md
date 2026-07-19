@@ -4199,6 +4199,24 @@ Behavior contract:
   presenter before real-time GTK4 menu testing begins.
 - No installer or runtime payload changes are included.
 
+## 2026-07-19 - Stage 8 Context-Menu Presenter
+
+Automated evidence:
+
+- strict MSVC GTK4 probe against GTK 4.22.4 / GLib 2.88.0: pass
+- presenter probe uses a real toplevel origin and verifies coordinate
+  placement, built-in and plugin action activation, and complete detachment
+- MSVC and Meson GTK4 probe manifests include the same presenter source
+- `git diff --check`: pass
+
+Behavior contract:
+
+- the presenter retains its model and both action groups for popup lifetime
+- changing origins first pops down and unparents the existing popover
+- teardown removes both namespaces, clears the model, and unparents the widget
+- legacy context commands are not projected or shown by this foundation pass
+- packaging impact: none
+
 ## Build Matrix
 
 | Check | GTK3 shipping target | GTK4 candidate | Final GTK4 target |
