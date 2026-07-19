@@ -4232,6 +4232,21 @@ Automated evidence:
 Scope: fixed URL actions and plugin composition only. Configurable URL handlers
 and the live GTK4 presenter connection remain open. Packaging impact: none.
 
+## 2026-07-19 - Stage 8 URL Handler Projection
+
+Automated evidence:
+
+- strict MSVC GTK4 probe: pass
+- nested submenu and separator-section projection: pass
+- enabled handlers dispatch once; disabled handlers do not dispatch: pass
+- stateful handlers toggle and dispatch `set <preference> 0|1`: pass
+- action closures retain copied URL-handler commands: pass
+- icon metadata and plugin-section ordering remain model-owned
+- `git diff --check`: pass
+
+Scope: configured URL-handler projection. The live GTK4 presenter adapter
+remains open. The shipping GTK3 menu is unchanged.
+
 ## Build Matrix
 
 | Check | GTK3 shipping target | GTK4 candidate | Final GTK4 target |

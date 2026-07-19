@@ -1427,6 +1427,17 @@ still stops at the documented Strawberry GCC 4.8.3 versus MSVC import-library
 ABI boundary. Configurable `urlhandlers.conf` nesting/path checks and the live
 GTK4 presenter connection remain the next URL pass.
 
+URL handler-projection pass 11 (2026-07-19):
+the retained URL model now recursively projects configured command handlers,
+nested submenus, separator-defined sections, icon hints, and enabled state.
+Every action closure owns a copy of its command, so reloading
+`urlhandlers.conf` cannot invalidate an open popover. Typed activation carries
+the retained URL and exact command to the eventual host adapter. Stateful
+toggle actions emit the same `set <preference> 0|1` command as GTK3. The strict
+probe covers nested structure, disabled-action suppression, toggle state, and
+command lifetime. The live presenter adapter remains open; GTK3 continues to
+display and execute its existing widget menu unchanged.
+
 Deliverables:
 
 - Make GTK4 the only production frontend dependency in MSVC, Meson, and CI.

@@ -3276,19 +3276,24 @@ typedef struct
 {
 	guint open_count;
 	guint copy_count;
+	guint handler_count;
 	const char *last_url;
+	const char *last_command;
 } UrlContextProbe;
 
 static void
 url_context_probe_dispatch (FabulorUrlContextAction action, const char *url,
-	gpointer user_data)
+	const char *command, gpointer user_data)
 {
 	UrlContextProbe *probe = user_data;
 	if (action == FABULOR_URL_CONTEXT_OPEN)
 		probe->open_count++;
 	else if (action == FABULOR_URL_CONTEXT_COPY)
 		probe->copy_count++;
+	else if (action == FABULOR_URL_CONTEXT_HANDLER)
+		probe->handler_count++;
 	probe->last_url = url;
+	probe->last_command = command;
 }
 
 static gboolean
@@ -3298,30 +3303,58 @@ check_url_context_menu_model (void)
 	FabulorUrlContextMenuModel *model;
 	GMenuModel *menu;
 	GMenuModel *commands;
+	GMenuModel *handler_section;
+	GMenuModel *handler_submenu;
 	GActionGroup *actions;
+	FabulorUrlHandler handlers[] = {
+		{ FABULOR_URL_HANDLER_SUBMENU_BEGIN, "Tools", NULL, NULL, TRUE, FALSE },
+		{ FABULOR_URL_HANDLER_COMMAND, "Browser", "exec browser %s", "web", TRUE, FALSE },
+		{ FABULOR_URL_HANDLER_SEPARATOR, NULL, NULL, NULL, TRUE, FALSE },
+		{ FABULOR_URL_HANDLER_COMMAND, "Unavailable", "exec missing %s", NULL, FALSE, FALSE },
+		{ FABULOR_URL_HANDLER_SUBMENU_END, NULL, NULL, NULL, TRUE, FALSE },
+		{ FABULOR_URL_HANDLER_COMMAND, "Inspect", "inspect %s", NULL, TRUE, FALSE },
+		{ FABULOR_URL_HANDLER_TOGGLE, "Toggle", "gui_test", NULL, TRUE, FALSE }
+	};
+	char *reloadable_command = g_strdup ("inspect %s");
 	UrlContextProbe probe = { 0 };
 	char *label = NULL;
 	gboolean passed;
 
 	g_menu_append (plugin, "Plugin", "fabulor-context.run");
-	model = fabulor_url_context_menu_model_new ("ircs://irc.example",
-		"Open", "Connect", "Copy", G_MENU_MODEL (plugin),
+	handlers[5].command = reloadable_command;
+	model = fabulor_url_context_menu_model_new_with_handlers ("ircs://irc.example",
+		"Open", "Connect", "Copy", handlers, G_N_ELEMENTS (handlers),
+		G_MENU_MODEL (plugin),
 		url_context_probe_dispatch, &probe);
+	g_free (reloadable_command);
 	g_object_unref (plugin);
 	if (!model)
 		return FALSE;
 	menu = fabulor_url_context_menu_model_get_menu (model);
 	actions = fabulor_url_context_menu_model_get_actions (model);
-	passed = g_menu_model_get_n_items (menu) == 3;
+	passed = g_menu_model_get_n_items (menu) == 4;
 	commands = g_menu_model_get_item_link (menu, 1, G_MENU_LINK_SECTION);
 	passed = passed && commands && g_menu_model_get_item_attribute (commands, 0,
 		G_MENU_ATTRIBUTE_LABEL, "s", &label) && g_strcmp0 (label, "Connect") == 0;
 	g_free (label);
 	g_clear_object (&commands);
+	handler_section = g_menu_model_get_item_link (menu, 2, G_MENU_LINK_SECTION);
+	handler_submenu = handler_section ? g_menu_model_get_item_link (
+		handler_section, 0, G_MENU_LINK_SUBMENU) : NULL;
+	passed = passed && handler_submenu &&
+		g_menu_model_get_n_items (handler_submenu) == 2;
+	g_clear_object (&handler_submenu);
+	g_clear_object (&handler_section);
 	g_action_group_activate_action (actions, "open", NULL);
 	g_action_group_activate_action (actions, "copy", NULL);
+	g_action_group_activate_action (actions, "handler-0", NULL);
+	g_action_group_activate_action (actions, "handler-1", NULL);
+	g_action_group_activate_action (actions, "handler-2", NULL);
+	g_action_group_activate_action (actions, "handler-3", NULL);
 	passed = passed && probe.open_count == 1 && probe.copy_count == 1 &&
-		g_strcmp0 (probe.last_url, "ircs://irc.example") == 0;
+		probe.handler_count == 3 &&
+		g_strcmp0 (probe.last_url, "ircs://irc.example") == 0 &&
+		g_strcmp0 (probe.last_command, "set gui_test 1") == 0;
 	fabulor_url_context_menu_model_free (model);
 	return passed;
 }
