@@ -1450,6 +1450,17 @@ Connect, Copy, configured commands/toggles, and plugin actions retain their
 existing host dispatch semantics. The isolated full GTK4 inventory accepts the
 new adapter range and continues at older surrounding menu blockers.
 
+Channel context-model pass 13 (2026-07-19):
+the fixed channel context surface now has a toolkit-neutral retained model and
+typed action dispatch. Explicit joined, current-session, network, and Autojoin
+inputs select Join or Focus/Part/Cycle and expose a stateful Autojoin action
+only when a persistent server network exists. The model owns its channel name
+for popup lifetime and appends the existing `$CHAN` plugin projection as a
+separate section. The strict probe activates every joined command, verifies
+the Autojoin transition and copied-channel lifetime, and covers the unjoined,
+networkless Join-only case. The live GTK4 presenter adapter and its server
+lifetime lookup remain open; GTK3 continues to use its existing widget menu.
+
 Deliverables:
 
 - Make GTK4 the only production frontend dependency in MSVC, Meson, and CI.

@@ -4266,6 +4266,27 @@ complete retained URL context path, pending a linkable full frontend for manual
 Open/Connect/Copy, custom-handler, plugin, and repeated-popup testing.
 Packaging impact: none.
 
+## 2026-07-19 - Stage 8 Channel Context Model
+
+Automated evidence:
+
+- strict MSVC GTK4 probe against GTK 4.22.4 / GLib 2.88.0: pass with zero
+  warnings and zero errors
+- joined, non-current model exposes Focus, Part, Cycle, and stateful Autojoin
+- all joined actions dispatch once and Autojoin transitions from false to true
+- model retains a copied channel name after the caller releases its input
+- unjoined, networkless model exposes Join without an Autojoin action
+- plugin-section composition and stable shared action namespaces: pass
+- Meson 1.11.2 / Ninja 1.13.2: all 52 objects compile under `-Werror`, including
+  the channel model and probe
+- local Meson final link: unavailable because Strawberry GCC 4.8.3 cannot link
+  the MSVC GTK4 import libraries; CI remains the supported Meson link path
+- `git diff --check`: pass
+
+Scope: retained channel actions and plugin composition only. The live GTK4
+presenter adapter remains open pending safe server/network lifetime handling.
+The shipping GTK3 menu and packaging are unchanged.
+
 ## Build Matrix
 
 | Check | GTK3 shipping target | GTK4 candidate | Final GTK4 target |

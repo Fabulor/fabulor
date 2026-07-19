@@ -19,6 +19,7 @@
 #include "../../src/fe-gtk/tray-menu-presenter-gtk4.h"
 #include "../../src/fe-gtk/context-menu-presenter-gtk4.h"
 #include "../../src/fe-gtk/url-context-menu-model.h"
+#include "../../src/fe-gtk/channel-context-menu-model.h"
 #include "../../src/fe-gtk/ignore-list.h"
 #include "../../src/fe-gtk/ban-list.h"
 #include "../../src/fe-gtk/channel-list.h"
@@ -3359,6 +3360,93 @@ check_url_context_menu_model (void)
 	return passed;
 }
 
+typedef struct
+{
+	guint counts[5];
+	gboolean autojoin_state;
+	const char *last_channel;
+} ChannelContextProbe;
+
+static void
+channel_context_probe_dispatch (FabulorChannelContextAction action,
+	const char *channel, gboolean state, gpointer user_data)
+{
+	ChannelContextProbe *probe = user_data;
+	if ((guint)action < G_N_ELEMENTS (probe->counts))
+		probe->counts[action]++;
+	if (action == FABULOR_CHANNEL_CONTEXT_AUTOJOIN)
+		probe->autojoin_state = state;
+	probe->last_channel = channel;
+}
+
+static gboolean
+check_channel_context_menu_model (void)
+{
+	GMenu *plugin = g_menu_new ();
+	FabulorChannelContextMenuModel *model;
+	GMenuModel *menu;
+	GMenuModel *commands;
+	GActionGroup *actions;
+	GVariant *state;
+	ChannelContextProbe probe = { { 0 }, FALSE, NULL };
+	char *channel = g_strdup ("#retained");
+	char *label = NULL;
+	gboolean passed;
+
+	g_menu_append (plugin, "Plugin", "fabulor-context.run");
+	model = fabulor_channel_context_menu_model_new (channel, TRUE, FALSE,
+		TRUE, FALSE, "Join", "Focus", "Part", "Cycle", "Autojoin",
+		G_MENU_MODEL (plugin), channel_context_probe_dispatch, &probe);
+	g_free (channel);
+	g_object_unref (plugin);
+	if (!model)
+		return FALSE;
+	menu = fabulor_channel_context_menu_model_get_menu (model);
+	actions = fabulor_channel_context_menu_model_get_actions (model);
+	passed = g_menu_model_get_n_items (menu) == 4;
+	commands = g_menu_model_get_item_link (menu, 1, G_MENU_LINK_SECTION);
+	passed = passed && commands && g_menu_model_get_n_items (commands) == 3 &&
+		g_menu_model_get_item_attribute (commands, 0,
+			G_MENU_ATTRIBUTE_LABEL, "s", &label) &&
+		g_strcmp0 (label, "Focus") == 0;
+	g_free (label);
+	g_clear_object (&commands);
+	g_action_group_activate_action (actions, "focus", NULL);
+	g_action_group_activate_action (actions, "part", NULL);
+	g_action_group_activate_action (actions, "cycle", NULL);
+	g_action_group_activate_action (actions, "autojoin", NULL);
+	state = g_action_group_get_action_state (actions, "autojoin");
+	passed = passed && state && g_variant_get_boolean (state) &&
+		probe.counts[FABULOR_CHANNEL_CONTEXT_FOCUS] == 1 &&
+		probe.counts[FABULOR_CHANNEL_CONTEXT_PART] == 1 &&
+		probe.counts[FABULOR_CHANNEL_CONTEXT_CYCLE] == 1 &&
+		probe.counts[FABULOR_CHANNEL_CONTEXT_AUTOJOIN] == 1 &&
+		probe.autojoin_state &&
+		g_strcmp0 (probe.last_channel, "#retained") == 0;
+	g_clear_pointer (&state, g_variant_unref);
+	fabulor_channel_context_menu_model_free (model);
+
+	memset (&probe, 0, sizeof (probe));
+	model = fabulor_channel_context_menu_model_new ("#new", FALSE, FALSE,
+		FALSE, FALSE, "Join", "Focus", "Part", "Cycle", "Autojoin",
+		NULL, channel_context_probe_dispatch, &probe);
+	if (!model)
+		return FALSE;
+	menu = fabulor_channel_context_menu_model_get_menu (model);
+	actions = fabulor_channel_context_menu_model_get_actions (model);
+	commands = g_menu_model_get_item_link (menu, 1, G_MENU_LINK_SECTION);
+	passed = passed && g_menu_model_get_n_items (menu) == 2 && commands &&
+		g_menu_model_get_n_items (commands) == 1 &&
+		g_action_group_has_action (actions, "join") &&
+		!g_action_group_has_action (actions, "autojoin");
+	g_clear_object (&commands);
+	g_action_group_activate_action (actions, "join", NULL);
+	passed = passed && probe.counts[FABULOR_CHANNEL_CONTEXT_JOIN] == 1 &&
+		g_strcmp0 (probe.last_channel, "#new") == 0;
+	fabulor_channel_context_menu_model_free (model);
+	return passed;
+}
+
 static gboolean
 check_spell_entry_style_policy (void)
 {
@@ -4068,6 +4156,11 @@ main (void)
 	if (!check_url_context_menu_model ())
 	{
 		fprintf (stderr, "GTK4 URL context menu model mismatch\n");
+		return 1;
+	}
+	if (!check_channel_context_menu_model ())
+	{
+		fprintf (stderr, "GTK4 channel context menu model mismatch\n");
 		return 1;
 	}
 	if (!check_spell_entry_word_policy ())
