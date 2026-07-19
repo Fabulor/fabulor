@@ -1485,6 +1485,18 @@ Reply once, and covers a multi-selection heading without a Reply action.
 Recursive `popup.conf` commands, user-info copy actions, WHOIS refresh, and the
 live GTK4 presenter adapter remain separate follow-ups; GTK3 is unchanged.
 
+Nick popup-projection pass 16 (2026-07-19):
+the retained nick model now recursively projects `popup.conf` commands,
+submenus, separator-defined sections, toggle state, enabled state, and icon
+hints before Reply and plugin sections. Each action owns its command copy so a
+configuration reload cannot invalidate an open popover. Ordinary commands
+carry an explicit multi-selection dispatch flag only when more than one nick
+was selected; single-target commands retain the copied nick, while toggles
+emit the existing `set <preference> 0|1` form independent of selection. The
+strict probe covers nesting, disabled suppression, toggle transition, copied
+command lifetime, and both dispatch modes. User-info copy/WHOIS refresh and the
+live presenter connection remain open; GTK3 continues unchanged.
+
 Deliverables:
 
 - Make GTK4 the only production frontend dependency in MSVC, Meson, and CI.

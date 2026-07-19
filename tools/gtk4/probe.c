@@ -3451,17 +3451,25 @@ check_channel_context_menu_model (void)
 typedef struct
 {
 	guint reply_count;
+	guint command_count;
+	gboolean selection_dispatch;
 	const char *last_nick;
+	const char *last_command;
 } NickContextProbe;
 
 static void
 nick_context_probe_dispatch (FabulorNickContextAction action,
-	const char *nick, gpointer user_data)
+	const char *nick, const char *command, gboolean selection_dispatch,
+	gpointer user_data)
 {
 	NickContextProbe *probe = user_data;
 	if (action == FABULOR_NICK_CONTEXT_REPLY)
 		probe->reply_count++;
+	else if (action == FABULOR_NICK_CONTEXT_COMMAND)
+		probe->command_count++;
+	probe->selection_dispatch = selection_dispatch;
 	probe->last_nick = nick;
+	probe->last_command = command;
 }
 
 static gboolean
@@ -3471,30 +3479,66 @@ check_nick_context_menu_model (void)
 	FabulorNickContextMenuModel *model;
 	GMenuModel *menu;
 	GMenuModel *heading;
+	GMenuModel *handler_section;
+	GMenuModel *handler_submenu;
 	GActionGroup *actions;
-	NickContextProbe probe = { 0, NULL };
+	FabulorNickHandler handlers[] = {
+		{ FABULOR_NICK_HANDLER_SUBMENU_BEGIN, "Tools", NULL, NULL, TRUE, FALSE },
+		{ FABULOR_NICK_HANDLER_COMMAND, "Operate", "operate %s", "system-run", TRUE, FALSE },
+		{ FABULOR_NICK_HANDLER_SEPARATOR, NULL, NULL, NULL, TRUE, FALSE },
+		{ FABULOR_NICK_HANDLER_COMMAND, "Unavailable", "missing %s", NULL, FALSE, FALSE },
+		{ FABULOR_NICK_HANDLER_TOGGLE, "Toggle", "gui_test", NULL, TRUE, FALSE },
+		{ FABULOR_NICK_HANDLER_SUBMENU_END, NULL, NULL, NULL, TRUE, FALSE },
+		{ FABULOR_NICK_HANDLER_COMMAND, "Inspect", "inspect %s", NULL, TRUE, FALSE }
+	};
+	NickContextProbe probe = { 0, 0, FALSE, NULL, NULL };
 	char *nick = g_strdup ("RetainedNick");
+	char *reloadable_command = g_strdup ("inspect %s");
 	char *label = NULL;
+	GVariant *state;
 	gboolean passed;
 
 	g_menu_append (plugin, "Plugin", "fabulor-context.run");
-	model = fabulor_nick_context_menu_model_new (nick, "RetainedNick", TRUE,
-		"Reply", G_MENU_MODEL (plugin), nick_context_probe_dispatch, &probe);
+	handlers[6].command = reloadable_command;
+	model = fabulor_nick_context_menu_model_new_with_handlers (nick,
+		"RetainedNick", TRUE, "Reply", TRUE, handlers,
+		G_N_ELEMENTS (handlers), G_MENU_MODEL (plugin),
+		nick_context_probe_dispatch, &probe);
 	g_free (nick);
+	g_free (reloadable_command);
 	g_object_unref (plugin);
 	if (!model)
 		return FALSE;
 	menu = fabulor_nick_context_menu_model_get_menu (model);
 	actions = fabulor_nick_context_menu_model_get_actions (model);
 	heading = g_menu_model_get_item_link (menu, 0, G_MENU_LINK_SECTION);
-	passed = g_menu_model_get_n_items (menu) == 3 && heading &&
+	passed = g_menu_model_get_n_items (menu) == 4 && heading &&
 		g_menu_model_get_item_attribute (heading, 0, G_MENU_ATTRIBUTE_LABEL,
 			"s", &label) && g_strcmp0 (label, "RetainedNick") == 0;
 	g_free (label);
 	g_clear_object (&heading);
+	handler_section = g_menu_model_get_item_link (menu, 1, G_MENU_LINK_SECTION);
+	handler_submenu = handler_section ? g_menu_model_get_item_link (
+		handler_section, 0, G_MENU_LINK_SUBMENU) : NULL;
+	passed = passed && handler_submenu &&
+		g_menu_model_get_n_items (handler_submenu) == 2;
+	g_clear_object (&handler_submenu);
+	g_clear_object (&handler_section);
+	g_action_group_activate_action (actions, "command-0", NULL);
+	g_action_group_activate_action (actions, "command-1", NULL);
+	g_action_group_activate_action (actions, "command-2", NULL);
+	state = g_action_group_get_action_state (actions, "command-2");
+	passed = passed && state && g_variant_get_boolean (state) &&
+		!probe.selection_dispatch &&
+		g_strcmp0 (probe.last_command, "set gui_test 1") == 0;
+	g_clear_pointer (&state, g_variant_unref);
+	g_action_group_activate_action (actions, "command-3", NULL);
+	passed = passed && probe.command_count == 3 && probe.selection_dispatch &&
+		g_strcmp0 (probe.last_command, "inspect %s") == 0;
 	g_action_group_activate_action (actions, "reply", NULL);
-	passed = passed && probe.reply_count == 1 &&
-		g_strcmp0 (probe.last_nick, "RetainedNick") == 0;
+	passed = passed && probe.reply_count == 1 && probe.command_count == 3 &&
+		g_strcmp0 (probe.last_nick, "RetainedNick") == 0 &&
+		probe.last_command == NULL;
 	fabulor_nick_context_menu_model_free (model);
 
 	model = fabulor_nick_context_menu_model_new ("FirstNick",
