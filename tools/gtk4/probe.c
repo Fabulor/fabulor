@@ -23,6 +23,7 @@
 #include "../../src/fe-gtk/nick-context-menu-model.h"
 #include "../../src/fe-gtk/middle-context-menu-model.h"
 #include "../../src/fe-gtk/tab-context-menu-model.h"
+#include "../../src/fe-gtk/window-state.h"
 #include "../../src/fe-gtk/ignore-list.h"
 #include "../../src/fe-gtk/ban-list.h"
 #include "../../src/fe-gtk/channel-list.h"
@@ -4366,6 +4367,64 @@ check_xtext_render_target (void)
 	return valid;
 }
 
+static void
+probe_window_state_cb (GtkWindow *window, const FabulorWindowState *state,
+	gpointer user_data)
+{
+	guint *count = user_data;
+	(void)window;
+	(void)state;
+	(*count)++;
+}
+
+static gboolean
+check_window_state_boundary (gboolean gtk_ready)
+{
+	FabulorWindowState previous = { 0 };
+	FabulorWindowState current = { 0 };
+	guint changed;
+
+	current.maximized = TRUE;
+	current.fullscreen = TRUE;
+	current.focused = TRUE;
+	changed = fabulor_window_state_changes (&previous, &current);
+	if (changed != (FABULOR_WINDOW_STATE_MAXIMIZED |
+		FABULOR_WINDOW_STATE_FULLSCREEN | FABULOR_WINDOW_STATE_FOCUSED))
+		return FALSE;
+	previous = current;
+	current.maximized = FALSE;
+	current.fullscreen = FALSE;
+	current.minimized = TRUE;
+	current.focused = FALSE;
+	changed = fabulor_window_state_changes (&previous, &current);
+	if (changed != (FABULOR_WINDOW_STATE_MINIMIZED |
+		FABULOR_WINDOW_STATE_MAXIMIZED |
+		FABULOR_WINDOW_STATE_FULLSCREEN | FABULOR_WINDOW_STATE_FOCUSED))
+		return FALSE;
+	if (gtk_ready)
+	{
+		GtkWindow *window = GTK_WINDOW (gtk_window_new ());
+		FabulorWindowState state;
+		guint callback_count = 0;
+		fabulor_window_state_get (window, &state);
+		if (state.changed || state.minimized || state.maximized ||
+			state.fullscreen || state.focused)
+		{
+			gtk_window_destroy (window);
+			return FALSE;
+		}
+		fabulor_window_state_watch (window, probe_window_state_cb,
+			&callback_count);
+		fabulor_window_state_watch (window, probe_window_state_cb,
+			&callback_count);
+		fabulor_window_state_allow_autohide_taskbar (window, &state);
+		gtk_window_destroy (window);
+		if (callback_count != 0)
+			return FALSE;
+	}
+	return TRUE;
+}
+
 int
 main (void)
 {
@@ -4375,6 +4434,11 @@ main (void)
 	check_compatibility_helper_signatures ();
 	check_user_list_view_signatures ();
 	check_channel_tree_view_signatures ();
+	if (!check_window_state_boundary (gtk_ready))
+	{
+		fprintf (stderr, "GTK4 window state boundary mismatch\n");
+		return 1;
+	}
 	if (!check_internal_drag_payload ())
 	{
 		fprintf (stderr, "GTK4 internal drag payload format mismatch\n");

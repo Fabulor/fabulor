@@ -42,6 +42,7 @@ zoitechat_gtk_sources = [
   'joind.c',
   'menu.c',
   'maingui.c',
+  'window-state.c',
   'notifygui.c',
   'notify-list.c',
   'pixmaps.c',

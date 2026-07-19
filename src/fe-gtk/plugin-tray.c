@@ -35,6 +35,7 @@
 #include "tray-action-model.h"
 #include "tray-backend-policy.h"
 #include "tray-menu-composition.h"
+#include "window-state.h"
 
 #include <gio/gio.h>
 #if defined(GTK_DISABLE_DEPRECATED)
@@ -55,7 +56,9 @@ typedef struct _GtkStatusIcon GtkStatusIcon;
 #include <unistd.h>
 #else
 #include <windows.h>
+#if GTK_MAJOR_VERSION < 4
 #include <gdk/gdkwin32.h>
+#endif
 #endif
 
 typedef enum	/* current icon status */
@@ -135,7 +138,8 @@ static void tray_foreach_server (GtkWidget *item, char *cmd);
 static void tray_menu_quit_cb (GtkWidget *item, gpointer userdata);
 static void tray_menu_settings (GtkWidget *wid, gpointer none);
 static WinStatus tray_get_window_status (void);
-static gboolean tray_window_state_cb (GtkWidget *widget, GdkEventWindowState *event, gpointer userdata);
+static void tray_window_state_cb (GtkWindow *window,
+	const FabulorWindowState *state, gpointer userdata);
 static void tray_window_visibility_cb (GtkWidget *widget, gpointer userdata);
 static void tray_toggle_item_destroy_cb (GtkWidget *widget, gpointer userdata);
 #if HAVE_APPINDICATOR_BACKEND
@@ -1479,17 +1483,16 @@ tray_menu_show_cb (GtkWidget *menu, gpointer userdata)
 }
 #endif
 
-static gboolean
-tray_window_state_cb (GtkWidget *widget, GdkEventWindowState *event, gpointer userdata)
+static void
+tray_window_state_cb (GtkWindow *window, const FabulorWindowState *state,
+	gpointer userdata)
 {
-	(void)widget;
-	(void)event;
+	(void)window;
+	(void)state;
 	(void)userdata;
 
 	tray_update_toggle_item_label ();
 	tray_action_model_refresh ();
-
-	return FALSE;
 }
 
 static void
@@ -1763,8 +1766,7 @@ tray_plugin_init (zoitechat_plugin *plugin_handle, char **plugin_name,
 	if (window)
 	{
 		window_widget = GTK_WIDGET (window);
-		g_signal_connect (G_OBJECT (window_widget), "window-state-event",
-			G_CALLBACK (tray_window_state_cb), NULL);
+		fabulor_window_state_watch (window, tray_window_state_cb, NULL);
 		g_signal_connect (G_OBJECT (window_widget), "show",
 			G_CALLBACK (tray_window_visibility_cb), NULL);
 		g_signal_connect (G_OBJECT (window_widget), "hide",
