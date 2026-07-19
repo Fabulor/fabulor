@@ -4247,6 +4247,25 @@ Automated evidence:
 Scope: configured URL-handler projection. The live GTK4 presenter adapter
 remains open. The shipping GTK3 menu is unchanged.
 
+## 2026-07-19 - Stage 8 Live URL Context Adapter
+
+Automated evidence:
+
+- strict MSVC GTK4 model/presenter probe: pass
+- default x64 Release GTK3 frontend: pass with zero warnings and zero errors
+- isolated full GTK4 frontend inventory: expected fail at older menu and other
+  frontend blockers; no error in the new URL adapter range
+- source audit: GTK4 snapshots and path-filters `urlhandler_list`, rebuilds the
+  `$URL` plugin projection, and binds one popup owner to the origin widget
+- temporary handler labels/icons are released after the retained model copies
+  action commands and state
+- `git diff --check`: pass
+
+Behavior contract: GTK3 remains on its existing widget menu. GTK4 now has the
+complete retained URL context path, pending a linkable full frontend for manual
+Open/Connect/Copy, custom-handler, plugin, and repeated-popup testing.
+Packaging impact: none.
+
 ## Build Matrix
 
 | Check | GTK3 shipping target | GTK4 candidate | Final GTK4 target |

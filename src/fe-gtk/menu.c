@@ -65,6 +65,10 @@
 #include "userlistgui.h"
 #include "menu.h"
 #include "servlistgui.h"
+#if GTK_MAJOR_VERSION >= 4
+#include "context-menu-presenter-gtk4.h"
+#include "url-context-menu-model.h"
+#endif
 
 #define FABULOR_DOCS_URL "https://github.com/Fabulor/fabulor/tree/main/docs"
 #define FABULOR_README_URL "https://github.com/Fabulor/fabulor/blob/main/README.md"
@@ -1174,10 +1178,152 @@ open_url_cb (GtkWidget *item, char *url)
 	handle_command (current_sess, buf, FALSE);
 }
 
+#if GTK_MAJOR_VERSION >= 4
+#define FABULOR_URL_CONTEXT_POPUP "fabulor-url-context-popup"
+
+typedef struct
+{
+	FabulorUrlContextMenuModel *model;
+	FabulorContextMenuPresenterGtk4 *presenter;
+} FabulorUrlContextPopup;
+
+static void
+menu_url_context_popup_free (gpointer data)
+{
+	FabulorUrlContextPopup *popup = data;
+	if (!popup)
+		return;
+	fabulor_context_menu_presenter_gtk4_free (popup->presenter);
+	fabulor_url_context_menu_model_free (popup->model);
+	g_free (popup);
+}
+
+static void
+menu_url_context_dispatch (FabulorUrlContextAction action, const char *url,
+	const char *command, gpointer user_data)
+{
+	if (action == FABULOR_URL_CONTEXT_COPY)
+	{
+		gtkutil_copy_to_clipboard (GTK_WIDGET (user_data), (char *)url);
+		return;
+	}
+	if (action == FABULOR_URL_CONTEXT_OPEN)
+	{
+		char buf[512];
+		g_snprintf (buf, sizeof (buf), "URL %s", url);
+		if (current_sess)
+			handle_command (current_sess, buf, FALSE);
+		return;
+	}
+	if (!command)
+		return;
+	if (current_sess)
+		nick_command_parse (current_sess, (char *)command, (char *)url,
+			(char *)url);
+	else if (sess_list)
+		nick_command_parse (sess_list->data, (char *)command, (char *)url,
+			(char *)url);
+}
+
+static void
+menu_url_handler_clear (gpointer data)
+{
+	FabulorUrlHandler *handler = data;
+	g_free ((char *)handler->label);
+	g_free ((char *)handler->icon);
+}
+
+static GArray *
+menu_url_handlers_snapshot (void)
+{
+	GArray *handlers = g_array_new (FALSE, FALSE, sizeof (FabulorUrlHandler));
+	GSList *list;
+	g_array_set_clear_func (handlers, menu_url_handler_clear);
+	for (list = urlhandler_list; list; list = list->next)
+	{
+		struct popup *pop = list->data;
+		FabulorUrlHandler handler = { 0 };
+
+		handler.enabled = TRUE;
+		if (!g_ascii_strncasecmp (pop->name, "SUB", 3))
+		{
+			handler.kind = FABULOR_URL_HANDLER_SUBMENU_BEGIN;
+			handler.label = g_strdup (pop->cmd);
+		}
+		else if (!g_ascii_strncasecmp (pop->name, "TOGGLE", 6))
+		{
+			handler.kind = FABULOR_URL_HANDLER_TOGGLE;
+			handler.label = g_strdup (pop->name + 7);
+			handler.command = pop->cmd;
+			handler.active = cfg_get_bool (pop->cmd);
+		}
+		else if (!g_ascii_strncasecmp (pop->name, "ENDSUB", 6))
+			handler.kind = FABULOR_URL_HANDLER_SUBMENU_END;
+		else if (!g_ascii_strncasecmp (pop->name, "SEP", 3))
+			handler.kind = FABULOR_URL_HANDLER_SEPARATOR;
+		else
+		{
+			char *icon;
+			char *label;
+
+			if (pop->cmd[0] == '!' && !is_in_path (pop->cmd))
+				continue;
+			handler.kind = FABULOR_URL_HANDLER_COMMAND;
+			menu_extract_icon (pop->name, &label, &icon);
+			handler.label = label;
+			handler.icon = icon;
+			handler.command = pop->cmd;
+		}
+		g_array_append_val (handlers, handler);
+	}
+	return handlers;
+}
+
+static void
+menu_urlmenu_gtk4 (GtkWidget *origin, gdouble x, gdouble y, char *url)
+{
+	FabulorUrlContextPopup *popup;
+	GActionGroup *plugin_actions;
+	GMenuModel *plugin_model;
+	GArray *handlers;
+
+	menu_add_plugin_model (G_OBJECT (origin), "\x4$URL", url);
+	plugin_model = menu_plugin_context_model (G_OBJECT (origin));
+	plugin_actions = menu_plugin_context_actions (G_OBJECT (origin));
+	handlers = menu_url_handlers_snapshot ();
+	popup = g_new0 (FabulorUrlContextPopup, 1);
+	popup->model = fabulor_url_context_menu_model_new_with_handlers (url,
+		_("Open Link in Browser"), _("Connect"), _("Copy Selected Link"),
+		(FabulorUrlHandler *)handlers->data, handlers->len, plugin_model,
+		menu_url_context_dispatch, origin);
+	g_array_unref (handlers);
+	if (!popup->model)
+	{
+		g_free (popup);
+		return;
+	}
+	popup->presenter = fabulor_context_menu_presenter_gtk4_new (
+		fabulor_url_context_menu_model_get_menu (popup->model),
+		fabulor_url_context_menu_model_get_actions (popup->model), plugin_actions);
+	if (!popup->presenter)
+	{
+		menu_url_context_popup_free (popup);
+		return;
+	}
+	g_object_set_data_full (G_OBJECT (origin), FABULOR_URL_CONTEXT_POPUP,
+		popup, menu_url_context_popup_free);
+	fabulor_context_menu_presenter_gtk4_popup_at (popup->presenter, origin, x, y);
+}
+#endif
+
 void
 menu_urlmenu_at (GtkWidget *origin, gdouble x, gdouble y,
 	GdkModifierType state, char *url)
 {
+#if GTK_MAJOR_VERSION >= 4
+	(void)state;
+	menu_urlmenu_gtk4 (origin, x, y, url);
+#else
 	GtkWidget *menu;
 	char *tmp, *chop;
 
@@ -1211,6 +1357,7 @@ menu_urlmenu_at (GtkWidget *origin, gdouble x, gdouble y,
 	menu_create (menu, urlhandler_list, str_copy, TRUE);
 	menu_add_plugin_items (menu, "\x4$URL", str_copy);
 	menu_popup_at (menu, origin, x, y, state, 3, NULL);
+#endif
 }
 
 static void

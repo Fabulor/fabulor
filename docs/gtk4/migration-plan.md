@@ -1438,6 +1438,18 @@ probe covers nested structure, disabled-action suppression, toggle state, and
 command lifetime. The live presenter adapter remains open; GTK3 continues to
 display and execute its existing widget menu unchanged.
 
+Live URL context-adapter pass 12 (2026-07-19):
+the production URL entry point now selects the retained model/presenter path
+under GTK4 while leaving GTK3 construction unchanged. The adapter snapshots
+the reloadable handler list, applies the existing executable path filter,
+extracts labels and icon hints, captures toggle state, rebuilds the `$URL`
+plugin projection, and releases temporary descriptors after the model has
+copied them. One popup owner attached to the origin widget coordinates model,
+presenter, action-group, replacement, and widget-destruction cleanup. Open,
+Connect, Copy, configured commands/toggles, and plugin actions retain their
+existing host dispatch semantics. The isolated full GTK4 inventory accepts the
+new adapter range and continues at older surrounding menu blockers.
+
 Deliverables:
 
 - Make GTK4 the only production frontend dependency in MSVC, Meson, and CI.
