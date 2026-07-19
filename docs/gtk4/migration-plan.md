@@ -1497,6 +1497,19 @@ strict probe covers nesting, disabled suppression, toggle transition, copied
 command lifetime, and both dispatch modes. User-info copy/WHOIS refresh and the
 live presenter connection remain open; GTK3 continues unchanged.
 
+Nick information-model pass 17 (2026-07-19):
+the retained nick model now projects user-information rows beneath the nick
+heading. Copyable rows own their clipboard values through typed actions, while
+display-only rows such as Last Msg remain actionless. A model-level refresh
+query records incomplete WHOIS information without exposing a visible command
+or retaining `User`, `session`, submenu-widget, or other live IRC pointers.
+Existing constructors and heading/command/Reply/plugin ordering remain
+compatible. The strict probe releases caller-owned labels and values before
+activation, verifies copied clipboard dispatch and display-only rows, and
+covers both refresh states. Live user snapshots, the safe WHOIS request, and
+the production GTK4 presenter connection remain the next contained pass; GTK3
+continues unchanged.
+
 Deliverables:
 
 - Make GTK4 the only production frontend dependency in MSVC, Meson, and CI.

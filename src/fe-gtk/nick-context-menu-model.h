@@ -7,7 +7,8 @@
 typedef enum
 {
 	FABULOR_NICK_CONTEXT_REPLY,
-	FABULOR_NICK_CONTEXT_COMMAND
+	FABULOR_NICK_CONTEXT_COMMAND,
+	FABULOR_NICK_CONTEXT_COPY_INFO
 } FabulorNickContextAction;
 
 typedef void (*FabulorNickContextDispatch) (FabulorNickContextAction action,
@@ -33,6 +34,12 @@ typedef struct
 	gboolean active;
 } FabulorNickHandler;
 
+typedef struct
+{
+	const char *label;
+	const char *value;
+} FabulorNickInfoItem;
+
 typedef struct _FabulorNickContextMenuModel FabulorNickContextMenuModel;
 
 FabulorNickContextMenuModel *fabulor_nick_context_menu_model_new (
@@ -45,10 +52,19 @@ FabulorNickContextMenuModel *fabulor_nick_context_menu_model_new_with_handlers (
 	const FabulorNickHandler *handlers, gsize handler_count,
 	GMenuModel *plugin_model, FabulorNickContextDispatch dispatch,
 	gpointer user_data);
+FabulorNickContextMenuModel *fabulor_nick_context_menu_model_new_with_details (
+	const char *nick, const char *heading, gboolean show_reply,
+	const char *reply_label, gboolean selection_dispatch,
+	const FabulorNickHandler *handlers, gsize handler_count,
+	const FabulorNickInfoItem *info_items, gsize info_count,
+	gboolean info_needs_refresh, GMenuModel *plugin_model,
+	FabulorNickContextDispatch dispatch, gpointer user_data);
 void fabulor_nick_context_menu_model_free (FabulorNickContextMenuModel *model);
 GMenuModel *fabulor_nick_context_menu_model_get_menu (
 	FabulorNickContextMenuModel *model);
 GActionGroup *fabulor_nick_context_menu_model_get_actions (
+	FabulorNickContextMenuModel *model);
+gboolean fabulor_nick_context_menu_model_needs_info_refresh (
 	FabulorNickContextMenuModel *model);
 
 #endif

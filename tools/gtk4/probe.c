@@ -3452,6 +3452,7 @@ typedef struct
 {
 	guint reply_count;
 	guint command_count;
+	guint copy_info_count;
 	gboolean selection_dispatch;
 	const char *last_nick;
 	const char *last_command;
@@ -3467,6 +3468,8 @@ nick_context_probe_dispatch (FabulorNickContextAction action,
 		probe->reply_count++;
 	else if (action == FABULOR_NICK_CONTEXT_COMMAND)
 		probe->command_count++;
+	else if (action == FABULOR_NICK_CONTEXT_COPY_INFO)
+		probe->copy_info_count++;
 	probe->selection_dispatch = selection_dispatch;
 	probe->last_nick = nick;
 	probe->last_command = command;
@@ -3479,6 +3482,7 @@ check_nick_context_menu_model (void)
 	FabulorNickContextMenuModel *model;
 	GMenuModel *menu;
 	GMenuModel *heading;
+	GMenuModel *info_submenu;
 	GMenuModel *handler_section;
 	GMenuModel *handler_submenu;
 	GActionGroup *actions;
@@ -3491,10 +3495,11 @@ check_nick_context_menu_model (void)
 		{ FABULOR_NICK_HANDLER_SUBMENU_END, NULL, NULL, NULL, TRUE, FALSE },
 		{ FABULOR_NICK_HANDLER_COMMAND, "Inspect", "inspect %s", NULL, TRUE, FALSE }
 	};
-	NickContextProbe probe = { 0, 0, FALSE, NULL, NULL };
+	NickContextProbe probe = { 0, 0, 0, FALSE, NULL, NULL };
 	char *nick = g_strdup ("RetainedNick");
 	char *reloadable_command = g_strdup ("inspect %s");
 	char *label = NULL;
+	char *action_name = NULL;
 	GVariant *state;
 	gboolean passed;
 
@@ -3541,6 +3546,56 @@ check_nick_context_menu_model (void)
 		probe.last_command == NULL;
 	fabulor_nick_context_menu_model_free (model);
 
+	{
+		char *real_name_label = g_strdup ("Real Name: Retained Person");
+		char *real_name_value = g_strdup ("Retained Person");
+		char *account_label = g_strdup ("Account: retained-account");
+		char *account_value = g_strdup ("retained-account");
+		FabulorNickInfoItem info_items[] = {
+			{ real_name_label, real_name_value },
+			{ account_label, account_value },
+			{ "Last Msg: 12 seconds ago", NULL }
+		};
+
+		model = fabulor_nick_context_menu_model_new_with_details (
+			"DetailNick", "DetailNick", TRUE, "Reply", FALSE, NULL, 0,
+			info_items, G_N_ELEMENTS (info_items), TRUE, NULL,
+			nick_context_probe_dispatch, &probe);
+		g_free (real_name_label);
+		g_free (real_name_value);
+		g_free (account_label);
+		g_free (account_value);
+	}
+	if (!model)
+		return FALSE;
+	menu = fabulor_nick_context_menu_model_get_menu (model);
+	actions = fabulor_nick_context_menu_model_get_actions (model);
+	heading = g_menu_model_get_item_link (menu, 0, G_MENU_LINK_SECTION);
+	info_submenu = heading ? g_menu_model_get_item_link (heading, 0,
+		G_MENU_LINK_SUBMENU) : NULL;
+	label = NULL;
+	passed = passed && fabulor_nick_context_menu_model_needs_info_refresh (
+		model) && g_menu_model_get_n_items (menu) == 2 && info_submenu &&
+		g_menu_model_get_n_items (info_submenu) == 3 &&
+		g_menu_model_get_item_attribute (info_submenu, 0,
+			G_MENU_ATTRIBUTE_LABEL, "s", &label) &&
+		g_strcmp0 (label, "Real Name: Retained Person") == 0 &&
+		!g_menu_model_get_item_attribute (info_submenu, 2,
+			G_MENU_ATTRIBUTE_ACTION, "s", &action_name);
+	g_free (label);
+	g_free (action_name);
+	g_clear_object (&info_submenu);
+	g_clear_object (&heading);
+	g_action_group_activate_action (actions, "info-0", NULL);
+	passed = passed && probe.copy_info_count == 1 &&
+		g_strcmp0 (probe.last_nick, "DetailNick") == 0 &&
+		g_strcmp0 (probe.last_command, "Retained Person") == 0 &&
+		!probe.selection_dispatch;
+	g_action_group_activate_action (actions, "info-1", NULL);
+	passed = passed && probe.copy_info_count == 2 &&
+		g_strcmp0 (probe.last_command, "retained-account") == 0;
+	fabulor_nick_context_menu_model_free (model);
+
 	model = fabulor_nick_context_menu_model_new ("FirstNick",
 		"3 nicks selected.", FALSE, NULL, NULL, nick_context_probe_dispatch,
 		&probe);
@@ -3549,7 +3604,8 @@ check_nick_context_menu_model (void)
 	menu = fabulor_nick_context_menu_model_get_menu (model);
 	actions = fabulor_nick_context_menu_model_get_actions (model);
 	passed = passed && g_menu_model_get_n_items (menu) == 1 &&
-		!g_action_group_has_action (actions, "reply");
+		!g_action_group_has_action (actions, "reply") &&
+		!fabulor_nick_context_menu_model_needs_info_refresh (model);
 	fabulor_nick_context_menu_model_free (model);
 	return passed;
 }
