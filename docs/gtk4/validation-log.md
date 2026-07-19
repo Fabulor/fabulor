@@ -4448,6 +4448,40 @@ user-command, and `/MENU` testing remains gated on a linkable full GTK4
 frontend. Packaging remains unchanged apart from registering the already
 probed middle model in the GTK4-only frontend source list.
 
+## 2026-07-19 - Stage 8 Live Main Menu Bar
+
+Automated evidence:
+
+- shipping GTK3 MSVC x64 Release frontend: pass with zero warnings and zero
+  errors
+- strict MSVC GTK4 probe against GTK 4.22.4 / GLib 2.88.0: pass with zero
+  compiler warnings, zero errors, and no GTK runtime warning
+- `GtkPopoverMenuBar` model attachment, `fabulor` action activation, retained
+  model replacement, namespace removal, and cleanup: pass
+- isolated full GTK4 frontend inventory: expected fail at older blockers;
+  reduced from 236 errors / 380 warnings to 225 errors / 365 warnings
+- changed `menu_create_main()` and `mg_create_menu()` GTK4 ranges compile
+  without a diagnostic
+- Meson 1.11.2 / Ninja 1.13.2: updated probe compiles under `-Werror`; local
+  final link remains unavailable at the documented Strawberry GCC 4.8.3 versus
+  MSVC import-library boundary
+- source audit: GTK3 menu construction and accelerator registration remain in
+  their original branch
+- source audit: GTK4 state proxies are menu-bar-owned and retain no session or
+  server pointer
+- source audit: user-menu and `/MENU` changes rebuild the retained root and do
+  not invoke GTK3 widget mutation
+- `git diff --check`: pass
+
+Behavior contract: GTK4 creates and attaches a retained popover menu bar with
+Fabulor, View, Server, optional User, Settings, Window, Help, matched plugin,
+and Add-ons roots. Existing action-state updates continue through the shared
+action group. GTK3 retains its widget tree, accelerators, mnemonics, and custom
+font walk. Manual menu opening, every built-in action, toggles, selection
+states, disabled server actions, dynamic user commands, `/MENU` add/update/
+delete, menu hiding, and repeated window lifecycle testing remain gated on a
+linkable full GTK4 frontend.
+
 ## Build Matrix
 
 | Check | GTK3 shipping target | GTK4 candidate | Final GTK4 target |

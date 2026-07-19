@@ -352,6 +352,7 @@ Detailed planning and evidence live in:
           - [x] Snapshot live user information, request missing WHOIS data safely, and connect the complete nick model to the GTK4 presenter.
         - [x] Compose ordered middle-click application-menu sections with matching and unmatched plugin roots in a retained model.
         - [x] Bind the retained middle-click model and main action namespace to an origin-owned GTK4 presenter.
+      - [x] Present the live main menu through a retained GTK4 popover menu bar with dynamic user/plugin refresh and action-state synchronization.
     - [ ] Complete channel-list and channel-view container/lifecycle cutover.
     - [ ] Complete top-level window positioning, visibility, and lifecycle cutover.
       - [x] Contain removed placement hints, saved coordinates, and tray restore placement behind compositor-safe GTK3/GTK4 policy.

@@ -1553,6 +1553,24 @@ cleanup chain. Repeated popups replace that bundle without retaining a
 unchanged accelerator-backed widget-menu branch. This completes the retained
 URL, channel, nick, and middle-click context-action target.
 
+Live main menu-bar pass 21 (2026-07-19):
+`menu_create_main()` now selects a retained `GtkPopoverMenuBar` under GTK4 and
+contains the accelerator-backed widget hierarchy in the GTK3 branch. Main and
+middle-click menus share one projection builder for built-in sections, user
+commands, `/MENU` plugin actions, state, enabled state, and ordering. The GTK4
+menu bar owns lightweight action proxies so existing away, fullscreen,
+disconnect, join, layout, meter, and visibility synchronization continues
+through the shared `GSimpleActionGroup` without retaining removed menu-item
+classes. User-menu and plugin changes rebuild the retained root; GTK4 skips the
+obsolete widget mutation callback that precedes the existing model sync. Since
+popover menu bars require submenu roots, unmatched top-level plugin commands
+are grouped under Add-ons on the menu bar while the middle-click popup retains
+its direct unmatched-root behavior. The strict probe executes creation,
+action activation, model replacement, and cleanup. The full GTK4 inventory
+drops from 236 errors and 380 warnings to 225 errors and 365 warnings. Earlier
+GTK3-only menu helpers and accelerator refresh code remain a separate target;
+shipping GTK3 behavior is unchanged.
+
 Deliverables:
 
 - Make GTK4 the only production frontend dependency in MSVC, Meson, and CI.
