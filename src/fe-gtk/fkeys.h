@@ -22,7 +22,11 @@
 
 /* These are cp'ed from history.c --AGL */
 #define STATE_SHIFT		GDK_SHIFT_MASK
+#if GTK_MAJOR_VERSION >= 4
+#define STATE_ALT		GDK_ALT_MASK
+#else
 #define STATE_ALT		GDK_MOD1_MASK
+#endif
 #define STATE_CTRL		GDK_CONTROL_MASK
 
 typedef struct

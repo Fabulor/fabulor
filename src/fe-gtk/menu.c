@@ -3062,7 +3062,8 @@ menu_key_action (const char *name, guint keyval, GdkModifierType state)
 		menu_close (NULL, NULL);
 		break;
 	case MENU_ACTION_QUIT:
-		if (!prefs.hex_gui_ctrlq_quit && keyval == GDK_KEY_q && (state & (GDK_SHIFT_MASK | GDK_CONTROL_MASK | GDK_MOD1_MASK)) == STATE_CTRL)
+		if (!prefs.hex_gui_ctrlq_quit && keyval == GDK_KEY_q &&
+			(state & (STATE_SHIFT | STATE_CTRL | STATE_ALT)) == STATE_CTRL)
 			return FALSE;
 		menu_quit (NULL, NULL);
 		break;

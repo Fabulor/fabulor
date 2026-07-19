@@ -3423,7 +3423,7 @@ mg_entry_select_all (GtkWidget *entry, guint keyval, GdkModifierType state,
 	(void) user_data;
 
 	if ((state & GDK_CONTROL_MASK) &&
-		!(state & (GDK_SHIFT_MASK | GDK_MOD1_MASK | GDK_META_MASK)) &&
+		!(state & (STATE_SHIFT | STATE_ALT | GDK_META_MASK)) &&
 		(keyval == GDK_KEY_a || keyval == GDK_KEY_A))
 	{
 		gtk_editable_select_region (GTK_EDITABLE (entry), 0, -1);

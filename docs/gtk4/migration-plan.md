@@ -1682,6 +1682,16 @@ inventory improves from 239 errors / 546 warnings to 233 errors / 545 warnings;
 its first remaining `maingui.c` blocker is the independent legacy Alt modifier
 name.
 
+Alt-modifier normalization pass 30 (2026-07-20):
+the existing `STATE_ALT` abstraction now selects GTK4's `GDK_ALT_MASK` and
+GTK3's equivalent `GDK_MOD1_MASK`. Configurable key normalization and legacy
+key-file parsing, menu shortcut dispatch, Ctrl+A modifier exclusion, and
+user-list type-to-input filtering all use the same semantic bit. No accelerator
+serialization or runtime shortcut behavior changes. Strict GTK4 and shipping
+GTK3 builds pass with zero warnings and errors. The complete GTK4 inventory
+improves from 233 errors / 545 warnings to 228 errors / 545 warnings; its first
+remaining `maingui.c` blocker is the independent retired frame-shadow API.
+
 Deliverables:
 
 - Make GTK4 the only production frontend dependency in MSVC, Meson, and CI.

@@ -621,7 +621,7 @@ userlist_key_cb (GtkWidget *widget, guint keyval, GdkModifierType state,
 
 	(void) widget;
 	(void) user_data;
-	if ((state & (GDK_CONTROL_MASK | GDK_MOD1_MASK)) == 0 &&
+	if ((state & (STATE_CTRL | STATE_ALT)) == 0 &&
 		keyval >= GDK_KEY_asterisk && keyval <= GDK_KEY_z &&
 		(character = gdk_keyval_to_unicode (keyval)) != 0)
 	{
