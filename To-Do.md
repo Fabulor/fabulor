@@ -344,7 +344,7 @@ Detailed planning and evidence live in:
         - [x] Project configurable URL handler commands, toggles, nested submenus, separators, icons, disabled path-filtered entries, and copied command lifetime.
         - [x] Connect the complete URL model, configured handlers, and plugin actions to the GTK4 presenter with origin-owned cleanup.
         - [x] Model channel Join/Focus/Part/Cycle, Autojoin state, and plugin sections with retained typed dispatch.
-        - [ ] Connect the channel model and plugin actions to the GTK4 presenter with safe network and popup lifetime handling.
+        - [x] Connect the channel model and plugin actions to the GTK4 presenter with safe network and popup lifetime handling.
     - [ ] Complete channel-list and channel-view container/lifecycle cutover.
     - [ ] Complete top-level window positioning, visibility, and lifecycle cutover.
       - [x] Contain removed placement hints, saved coordinates, and tray restore placement behind compositor-safe GTK3/GTK4 policy.

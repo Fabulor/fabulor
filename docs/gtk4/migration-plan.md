@@ -1461,6 +1461,19 @@ the Autojoin transition and copied-channel lifetime, and covers the unjoined,
 networkless Join-only case. The live GTK4 presenter adapter and its server
 lifetime lookup remain open; GTK3 continues to use its existing widget menu.
 
+Live channel context-adapter pass 14 (2026-07-19):
+the production channel-menu entry point now selects the retained model and
+popover presenter under GTK4 while leaving GTK3 construction unchanged. Join,
+Focus, Part, and Cycle preserve their existing current-session command forms;
+the `$CHAN` plugin model and actions are composed into the same popup. Autojoin
+copies only the network name while the popup is open and resolves the current
+`ircnet` configuration when activated, avoiding retained `server` or `ircnet`
+pointers across disconnect, closure, or network-list edits. One owner attached
+to the origin widget releases the presenter, model, copied network name, and
+plugin references on replacement or destruction. The isolated full GTK4
+inventory compiles the new model and accepts the complete adapter range before
+continuing at older surrounding menu blockers.
+
 Deliverables:
 
 - Make GTK4 the only production frontend dependency in MSVC, Meson, and CI.

@@ -4287,6 +4287,29 @@ Scope: retained channel actions and plugin composition only. The live GTK4
 presenter adapter remains open pending safe server/network lifetime handling.
 The shipping GTK3 menu and packaging are unchanged.
 
+## 2026-07-19 - Stage 8 Live Channel Context Adapter
+
+Automated evidence:
+
+- strict MSVC GTK4 model/presenter probe: pass with zero warnings and zero errors
+- default x64 Release GTK3 frontend: pass with zero warnings and zero errors
+- isolated full GTK4 frontend inventory: expected fail at older frontend
+  blockers; the channel model compiles and the complete live adapter range has
+  no diagnostic
+- source audit: GTK4 projects joined/current/network/Autojoin state, rebuilds
+  the `$CHAN` plugin projection, and binds one popup owner to the origin widget
+- Autojoin retains a copied network name and resolves the current `ircnet` on
+  activation; no raw `server`, `session`, or `ircnet` pointer survives in the
+  popup owner
+- Join, Focus, Part, and Cycle preserve the existing current-session command
+  dispatch forms
+- `git diff --check`: pass
+
+Behavior contract: GTK3 remains on its existing widget menu. GTK4 now has the
+complete retained channel context path, pending a linkable full frontend for
+manual joined/unjoined, current/non-current, Autojoin persistence, plugin,
+network-removal, and repeated-popup testing. Packaging impact: none.
+
 ## Build Matrix
 
 | Check | GTK3 shipping target | GTK4 candidate | Final GTK4 target |
