@@ -36,6 +36,7 @@
 #include "../common/inbound.h"
 #include "../common/plugin.h"
 #include "../common/modes.h"
+#include "../common/servlist.h"
 #include "../common/url.h"
 #include "../common/util.h"
 #include "../common/text.h"
@@ -70,6 +71,7 @@
 #include "plugin-tray.h"
 #include "xtext.h"
 #include "sexy-spell-entry.h"
+#include "servlistgui.h"
 #include "gtkutil.h"
 
 #ifdef G_OS_WIN32
