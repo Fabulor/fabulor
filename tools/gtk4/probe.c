@@ -160,6 +160,10 @@ check_compatibility_helper_signatures (void)
 		fabulor_gtk_widget_add_css_class;
 	void (*volatile button_set_flat) (GtkButton *) =
 		fabulor_gtk_button_set_flat;
+	GtkWidget *(*volatile icon_button_new) (const gchar *) =
+		fabulor_gtk_icon_button_new;
+	void (*volatile widget_set_accessible_label) (GtkWidget *, const gchar *) =
+		fabulor_gtk_widget_set_accessible_label;
 	void (*volatile widget_queue_draw_region) (GtkWidget *, gint, gint,
 		gint, gint) = fabulor_gtk_widget_queue_draw_region;
 	gboolean (*volatile widget_has_toplevel_focus) (GtkWidget *) =
@@ -264,6 +268,8 @@ check_compatibility_helper_signatures (void)
 	(void) copy_text_to_clipboards;
 	(void) widget_add_css_class;
 	(void) button_set_flat;
+	(void) icon_button_new;
+	(void) widget_set_accessible_label;
 	(void) widget_queue_draw_region;
 	(void) widget_has_toplevel_focus;
 	(void) xtext_selection_new;
@@ -343,6 +349,27 @@ check_flat_button (gboolean gtk_ready)
 	g_object_ref_sink (button);
 	fabulor_gtk_button_set_flat (GTK_BUTTON (button));
 	valid = gtk_widget_has_css_class (button, "flat");
+	g_object_unref (button);
+	return valid;
+}
+
+static gboolean
+check_icon_button (gboolean gtk_ready)
+{
+	GtkWidget *button;
+	GtkWidget *child;
+	gboolean valid;
+
+	if (!gtk_ready)
+		return TRUE;
+
+	button = fabulor_gtk_icon_button_new ("go-bottom-symbolic");
+	g_object_ref_sink (button);
+	fabulor_gtk_widget_set_accessible_label (button, "Scroll to bottom");
+	child = gtk_button_get_child (GTK_BUTTON (button));
+	valid = GTK_IS_IMAGE (child) &&
+		g_strcmp0 (gtk_image_get_icon_name (GTK_IMAGE (child)),
+			"go-bottom-symbolic") == 0;
 	g_object_unref (button);
 	return valid;
 }
@@ -4564,6 +4591,11 @@ main (void)
 	if (!check_flat_button (gtk_ready))
 	{
 		fprintf (stderr, "GTK4 flat button contract mismatch\n");
+		return 1;
+	}
+	if (!check_icon_button (gtk_ready))
+	{
+		fprintf (stderr, "GTK4 icon button contract mismatch\n");
 		return 1;
 	}
 	if (!check_frame_presentation (gtk_ready))

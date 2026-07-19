@@ -662,6 +662,12 @@ standard `frame` CSS class for transcript and topic scrollers and lets
 `GtkFrame`'s own CSS node render meter outlines. GTK3 keeps the exact `NONE`,
 `IN`, and `OUT` shadow styles inside the compatibility boundary.
 
+Stage 8 scroll-to-bottom pass 32 replaces the custom drawing area with a real
+themed icon button. The control now owns valid button activation, a
+`go-bottom-symbolic` image, flat presentation, tooltip, and explicit accessible
+label on both toolkit versions. The raw button event mask, app-paintable flag,
+custom Cairo arrow, and invalid drawing-area `clicked` connection are removed.
+
 ## Functional Clusters
 
 | Cluster | Main files | GTK4 concern | Status |

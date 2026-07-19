@@ -4778,6 +4778,36 @@ to the active desktop/profile theme. Manual theme, high-contrast, and scale
 testing remains gated on the linkable full GTK4 frontend. Packaging impact:
 none.
 
+### GTK4 Stage 8 Scroll-To-Bottom Control
+
+Date: 2026-07-20
+
+Files/workflows converted: transcript overlay scroll-to-bottom presentation,
+activation, icon ownership, tooltip, and accessible naming.
+
+Automated evidence:
+
+- shipping GTK3 MSVC x64 Release frontend: pass; zero warnings and zero errors
+- strict MSVC GTK4 probe against GTK 4.22.4 / GLib 2.88.0: compile, link, and
+  execution pass under `/W4 /WX`; zero warnings and zero errors
+- real GTK4 icon-button construction and `go-bottom-symbolic` child identity:
+  pass
+- explicit GTK4 accessible-label update: pass without runtime diagnostics
+- isolated complete GTK4 frontend inventory: expected fail; improved from 225
+  errors / 543 warnings to 224 errors / 541 warnings
+- source audit: the control contains no drawing area, custom Cairo draw
+  callback, app-paintable flag, raw event mask, or direct style-context call
+- first remaining `maingui.c` blockers: retired `GTK_ICON_SIZE_MENU` uses near
+  lines 5324, 5601, 5622, and 5629
+- `git diff --check`: pass
+
+Behavior contract: the control retains its preference, visibility threshold,
+overlay position, compact footprint, tooltip, and adjustment-to-bottom action.
+Its arrow now follows the active icon theme and exposes button semantics plus an
+accessible label. Manual activation, keyboard, screen-reader, theme, and scale
+testing remains gated on the linkable full GTK4 frontend. Packaging impact:
+none.
+
 ## Build Matrix
 
 | Check | GTK3 shipping target | GTK4 candidate | Final GTK4 target |

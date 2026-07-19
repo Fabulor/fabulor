@@ -184,6 +184,33 @@ fabulor_gtk_button_set_flat (GtkButton *button)
 #endif
 }
 
+static inline GtkWidget *
+fabulor_gtk_icon_button_new (const gchar *icon_name)
+{
+	g_return_val_if_fail (icon_name != NULL, NULL);
+
+#if GTK_MAJOR_VERSION >= 4
+	return gtk_button_new_from_icon_name (icon_name);
+#else
+	return gtk_button_new_from_icon_name (icon_name, GTK_ICON_SIZE_BUTTON);
+#endif
+}
+
+static inline void
+fabulor_gtk_widget_set_accessible_label (GtkWidget *widget,
+										 const gchar *label)
+{
+	g_return_if_fail (GTK_IS_WIDGET (widget));
+	g_return_if_fail (label != NULL);
+
+#if GTK_MAJOR_VERSION >= 4
+	gtk_accessible_update_property (GTK_ACCESSIBLE (widget),
+		GTK_ACCESSIBLE_PROPERTY_LABEL, label, -1);
+#else
+	atk_object_set_name (gtk_widget_get_accessible (widget), label);
+#endif
+}
+
 static inline void
 fabulor_gtk_widget_queue_draw_region (GtkWidget *widget, gint x, gint y,
 	gint width, gint height)
