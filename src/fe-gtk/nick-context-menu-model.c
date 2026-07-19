@@ -18,6 +18,7 @@ struct _FabulorNickContextMenuModel
 	char *nick;
 	FabulorNickContextDispatch dispatch;
 	gpointer user_data;
+	gboolean info_needs_refresh;
 };
 
 static void
@@ -153,6 +154,52 @@ nick_model_append_items (GMenu *destination, GMenuModel *source)
 	}
 }
 
+static void
+nick_model_append_heading (FabulorNickContextMenuModel *owner, GMenu *menu,
+	const char *heading, const FabulorNickInfoItem *info_items,
+	gsize info_count)
+{
+	GMenu *heading_section;
+	gsize i;
+
+	if (!heading || !*heading)
+		return;
+	heading_section = g_menu_new ();
+	if (info_count == 0)
+		g_menu_append (heading_section, heading, NULL);
+	else
+	{
+		GMenu *info_menu = g_menu_new ();
+		for (i = 0; i < info_count; i++)
+		{
+			const FabulorNickInfoItem *info = &info_items[i];
+			GMenuItem *item;
+			char *name = NULL;
+			char *detailed = NULL;
+			if (!info->label || !*info->label)
+				continue;
+			if (info->value)
+			{
+				name = g_strdup_printf ("info-%" G_GSIZE_FORMAT, i);
+				detailed = g_strconcat (FABULOR_CONTEXT_ACTION_NAMESPACE,
+					".", name, NULL);
+				nick_action_add (owner, name, FABULOR_NICK_CONTEXT_COPY_INFO,
+					info->value, TRUE, FALSE, FALSE, FALSE);
+			}
+			item = g_menu_item_new (info->label, detailed);
+			g_menu_append_item (info_menu, item);
+			g_object_unref (item);
+			g_free (detailed);
+			g_free (name);
+		}
+		g_menu_append_submenu (heading_section, heading,
+			G_MENU_MODEL (info_menu));
+		g_object_unref (info_menu);
+	}
+	g_menu_append_section (menu, NULL, G_MENU_MODEL (heading_section));
+	g_object_unref (heading_section);
+}
+
 FabulorNickContextMenuModel *
 fabulor_nick_context_menu_model_new (const char *nick, const char *heading,
 	gboolean show_reply, const char *reply_label, GMenuModel *plugin_model,
@@ -170,6 +217,19 @@ fabulor_nick_context_menu_model_new_with_handlers (const char *nick,
 	gsize handler_count, GMenuModel *plugin_model,
 	FabulorNickContextDispatch dispatch, gpointer user_data)
 {
+	return fabulor_nick_context_menu_model_new_with_details (nick, heading,
+		show_reply, reply_label, selection_dispatch, handlers, handler_count,
+		NULL, 0, FALSE, plugin_model, dispatch, user_data);
+}
+
+FabulorNickContextMenuModel *
+fabulor_nick_context_menu_model_new_with_details (const char *nick,
+	const char *heading, gboolean show_reply, const char *reply_label,
+	gboolean selection_dispatch, const FabulorNickHandler *handlers,
+	gsize handler_count, const FabulorNickInfoItem *info_items,
+	gsize info_count, gboolean info_needs_refresh, GMenuModel *plugin_model,
+	FabulorNickContextDispatch dispatch, gpointer user_data)
+{
 	FabulorNickContextMenuModel *result;
 	GMenu *menu = g_menu_new ();
 	GMenuModel *handler_model = NULL;
@@ -179,19 +239,15 @@ fabulor_nick_context_menu_model_new_with_handlers (const char *nick,
 	g_return_val_if_fail (nick && *nick, NULL);
 	g_return_val_if_fail (!show_reply || reply_label, NULL);
 	g_return_val_if_fail (handler_count == 0 || handlers, NULL);
+	g_return_val_if_fail (info_count == 0 || info_items, NULL);
 	g_return_val_if_fail (!plugin_model || G_IS_MENU_MODEL (plugin_model), NULL);
 	result = g_new0 (FabulorNickContextMenuModel, 1);
 	result->nick = g_strdup (nick);
 	result->dispatch = dispatch;
 	result->user_data = user_data;
+	result->info_needs_refresh = info_needs_refresh;
 	result->actions = g_simple_action_group_new ();
-	if (heading && *heading)
-	{
-		GMenu *heading_section = g_menu_new ();
-		g_menu_append (heading_section, heading, NULL);
-		g_menu_append_section (menu, NULL, G_MENU_MODEL (heading_section));
-		g_object_unref (heading_section);
-	}
+	nick_model_append_heading (result, menu, heading, info_items, info_count);
 	if (handler_count > 0)
 	{
 		handler_model = nick_handler_model_new (result, handlers, handler_count,
@@ -237,4 +293,11 @@ GActionGroup *
 fabulor_nick_context_menu_model_get_actions (FabulorNickContextMenuModel *model)
 {
 	return model ? G_ACTION_GROUP (model->actions) : NULL;
+}
+
+gboolean
+fabulor_nick_context_menu_model_needs_info_refresh (
+	FabulorNickContextMenuModel *model)
+{
+	return model && model->info_needs_refresh;
 }

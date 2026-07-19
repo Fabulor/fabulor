@@ -348,6 +348,8 @@ Detailed planning and evidence live in:
         - [x] Model nick selection/user headings, Reply, and plugin sections with copied nick lifetime and typed dispatch.
         - [x] Project recursive `popup.conf` commands and multi-selection behavior into the retained nick model.
         - [ ] Model user-info copy actions and safe WHOIS-driven refresh, then connect the complete nick model to the GTK4 presenter.
+          - [x] Retain copyable user-information rows and expose incomplete-information refresh intent without live IRC pointers.
+          - [ ] Snapshot live user information, request missing WHOIS data safely, and connect the complete nick model to the GTK4 presenter.
     - [ ] Complete channel-list and channel-view container/lifecycle cutover.
     - [ ] Complete top-level window positioning, visibility, and lifecycle cutover.
       - [x] Contain removed placement hints, saved coordinates, and tray restore placement behind compositor-safe GTK3/GTK4 policy.

@@ -4351,6 +4351,26 @@ Scope: recursive `popup.conf` projection and multi-selection policy. User-info
 copy actions, WHOIS refresh, and the live GTK4 presenter adapter remain open.
 The shipping GTK3 menu and packaging are unchanged.
 
+## 2026-07-19 - Stage 8 Nick Information Model
+
+Automated evidence:
+
+- strict MSVC GTK4 probe against GTK 4.22.4 / GLib 2.88.0: pass with zero
+  warnings and zero errors
+- copyable information rows retain caller-released labels and clipboard values
+- display-only Last Msg rows expose no action
+- incomplete and complete information refresh states remain model-owned
+- existing fixed-heading construction and command/Reply/plugin ordering remain
+  compatible
+- Meson 1.11.2 / Ninja 1.13.2: all 53 source objects compile under `-Werror`
+- local Meson final link remains unavailable at the documented Strawberry GCC
+  4.8.3 versus MSVC import-library boundary
+
+Scope: retained user-information rows, typed copy dispatch, and safe refresh
+intent only. Live IRC snapshots, WHOIS dispatch, and the GTK4 presenter adapter
+remain open. No `User`, `session`, server, or widget pointer is retained by the
+model. The shipping GTK3 menu and packaging are unchanged.
+
 ## Build Matrix
 
 | Check | GTK3 shipping target | GTK4 candidate | Final GTK4 target |
