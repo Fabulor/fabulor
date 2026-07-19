@@ -3818,7 +3818,8 @@ mg_create_topicbar (session *sess, GtkWidget *box)
 	gtk_scrolled_window_set_policy (GTK_SCROLLED_WINDOW (topic_scroll),
 		GTK_POLICY_EXTERNAL, GTK_POLICY_NEVER);
 	gtk_scrolled_window_set_propagate_natural_width (GTK_SCROLLED_WINDOW (topic_scroll), FALSE);
-	gtk_scrolled_window_set_shadow_type (GTK_SCROLLED_WINDOW (topic_scroll), GTK_SHADOW_NONE);
+	fabulor_gtk_scrolled_window_set_framed (
+		GTK_SCROLLED_WINDOW (topic_scroll), FALSE);
 	fabulor_gtk_scrolled_window_set_child (GTK_SCROLLED_WINDOW (topic_scroll), topic);
         mg_topicbar_update_height (topic);
 	fabulor_gtk_box_append (GTK_BOX (hbox), topic_scroll, TRUE, TRUE, 0);
@@ -4195,8 +4196,8 @@ mg_create_textarea (session *sess, GtkWidget *box)
         frame = gtk_scrolled_window_new (NULL, NULL);
         gtk_widget_set_hexpand (frame, TRUE);
         gtk_widget_set_vexpand (frame, TRUE);
-        gtk_scrolled_window_set_shadow_type (GTK_SCROLLED_WINDOW (frame),
-                                             GTK_SHADOW_IN);
+        fabulor_gtk_scrolled_window_set_framed (
+                GTK_SCROLLED_WINDOW (frame), TRUE);
         gtk_scrolled_window_set_policy (GTK_SCROLLED_WINDOW (frame),
                                         GTK_POLICY_NEVER, GTK_POLICY_AUTOMATIC);
         fabulor_gtk_overlay_set_child (GTK_OVERLAY (overlay), frame);
@@ -4239,7 +4240,7 @@ mg_create_infoframe (GtkWidget *box)
         GtkWidget *frame, *label, *hbox;
 
         frame = gtk_frame_new (0);
-        gtk_frame_set_shadow_type ((GtkFrame*)frame, GTK_SHADOW_OUT);
+        fabulor_gtk_frame_set_outlined (GTK_FRAME (frame));
         fabulor_gtk_box_append (GTK_BOX (box), frame, TRUE, TRUE, 0);
 
         hbox = mg_box_new (GTK_ORIENTATION_HORIZONTAL, FALSE, 0);

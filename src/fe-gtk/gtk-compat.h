@@ -1787,6 +1787,23 @@ fabulor_gtk_scrolled_window_set_child (GtkScrolledWindow *window,
 }
 
 static inline void
+fabulor_gtk_scrolled_window_set_framed (GtkScrolledWindow *window,
+										gboolean framed)
+{
+	g_return_if_fail (GTK_IS_SCROLLED_WINDOW (window));
+
+#if GTK_MAJOR_VERSION >= 4
+	if (framed)
+		gtk_widget_add_css_class (GTK_WIDGET (window), "frame");
+	else
+		gtk_widget_remove_css_class (GTK_WIDGET (window), "frame");
+#else
+	gtk_scrolled_window_set_shadow_type (window,
+		framed ? GTK_SHADOW_IN : GTK_SHADOW_NONE);
+#endif
+}
+
+static inline void
 fabulor_gtk_paned_set_start_child (GtkPaned *paned, GtkWidget *child,
 								  gboolean resize, gboolean shrink)
 {
@@ -1826,6 +1843,16 @@ fabulor_gtk_frame_set_child (GtkFrame *frame, GtkWidget *child)
 	gtk_frame_set_child (frame, child);
 #else
 	gtk_container_add (GTK_CONTAINER (frame), child);
+#endif
+}
+
+static inline void
+fabulor_gtk_frame_set_outlined (GtkFrame *frame)
+{
+	g_return_if_fail (GTK_IS_FRAME (frame));
+
+#if GTK_MAJOR_VERSION < 4
+	gtk_frame_set_shadow_type (frame, GTK_SHADOW_OUT);
 #endif
 }
 
