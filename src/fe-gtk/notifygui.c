@@ -256,7 +256,7 @@ fe_notify_ask (char *nick, char *networks)
 	theme_manager_attach_window (dialog);
 	if (parent_window)
 		gtk_window_set_transient_for (GTK_WINDOW (dialog), GTK_WINDOW (parent_window));
-	gtk_window_set_position (GTK_WINDOW (dialog), GTK_WIN_POS_MOUSE);
+	fabulor_gtk_window_position_at_pointer (GTK_WINDOW (dialog));
 
 	content_area = gtk_dialog_get_content_area (GTK_DIALOG (dialog));
 	table = gtkutil_grid_new (2, 3, FALSE);

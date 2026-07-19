@@ -116,7 +116,7 @@ ignore_clear_entry_clicked (GtkWidget *widget, gpointer user_data)
 	theme_manager_attach_window (dialog);
 	g_signal_connect (dialog, "response", G_CALLBACK (ignore_clear_cb),
 		user_data);
-	gtk_window_set_position (GTK_WINDOW (dialog), GTK_WIN_POS_MOUSE);
+	fabulor_gtk_window_position_at_pointer (GTK_WINDOW (dialog));
 	gtk_widget_show (dialog);
 }
 

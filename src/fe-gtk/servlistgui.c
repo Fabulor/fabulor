@@ -1299,7 +1299,7 @@ servlist_deletenet_cb (GtkWidget *item, ircnet *net)
 	theme_manager_attach_window (dialog);
 	g_signal_connect (dialog, "response",
 							G_CALLBACK (servlist_deletenetdialog_cb), net);
-	gtk_window_set_position (GTK_WINDOW (dialog), GTK_WIN_POS_MOUSE);
+	fabulor_gtk_window_position_at_pointer (GTK_WINDOW (dialog));
 	gtk_widget_show (dialog);
 }
 

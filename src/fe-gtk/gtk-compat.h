@@ -1643,6 +1643,102 @@ fabulor_gtk_window_set_child (GtkWindow *window, GtkWidget *child)
 #endif
 }
 
+typedef struct
+{
+	gint x;
+	gint y;
+#if GTK_MAJOR_VERSION < 4
+	GdkScreen *screen;
+#endif
+} FabulorGtkWindowPlacement;
+
+static inline void
+fabulor_gtk_window_position_at_pointer (GtkWindow *window)
+{
+	g_return_if_fail (GTK_IS_WINDOW (window));
+
+#if GTK_MAJOR_VERSION < 4
+	gtk_window_set_position (window, GTK_WIN_POS_MOUSE);
+#endif
+}
+
+static inline void
+fabulor_gtk_window_position_center (GtkWindow *window)
+{
+	g_return_if_fail (GTK_IS_WINDOW (window));
+
+#if GTK_MAJOR_VERSION < 4
+	gtk_window_set_position (window, GTK_WIN_POS_CENTER);
+#endif
+}
+
+static inline void
+fabulor_gtk_window_position_center_on_parent (GtkWindow *window)
+{
+	g_return_if_fail (GTK_IS_WINDOW (window));
+
+#if GTK_MAJOR_VERSION < 4
+	gtk_window_set_position (window, GTK_WIN_POS_CENTER_ON_PARENT);
+#endif
+}
+
+static inline void
+fabulor_gtk_window_move (GtkWindow *window, gint x, gint y)
+{
+	g_return_if_fail (GTK_IS_WINDOW (window));
+
+#if GTK_MAJOR_VERSION >= 4
+	(void) x;
+	(void) y;
+#else
+	gtk_window_move (window, x, y);
+#endif
+}
+
+static inline gboolean
+fabulor_gtk_window_get_position (GtkWindow *window, gint *x, gint *y)
+{
+	g_return_val_if_fail (GTK_IS_WINDOW (window), FALSE);
+	g_return_val_if_fail (x != NULL, FALSE);
+	g_return_val_if_fail (y != NULL, FALSE);
+
+#if GTK_MAJOR_VERSION >= 4
+	*x = 0;
+	*y = 0;
+	return FALSE;
+#else
+	gtk_window_get_position (window, x, y);
+	return TRUE;
+#endif
+}
+
+static inline void
+fabulor_gtk_window_placement_capture (GtkWindow *window,
+	FabulorGtkWindowPlacement *placement)
+{
+	g_return_if_fail (GTK_IS_WINDOW (window));
+	g_return_if_fail (placement != NULL);
+
+	fabulor_gtk_window_get_position (window, &placement->x, &placement->y);
+#if GTK_MAJOR_VERSION < 4
+	placement->screen = gtk_window_get_screen (window);
+#endif
+}
+
+static inline void
+fabulor_gtk_window_placement_restore (GtkWindow *window,
+	const FabulorGtkWindowPlacement *placement)
+{
+	g_return_if_fail (GTK_IS_WINDOW (window));
+	g_return_if_fail (placement != NULL);
+
+#if GTK_MAJOR_VERSION < 4
+	if (placement->screen)
+		gtk_window_set_screen (window, placement->screen);
+	gtk_window_move (window, placement->x, placement->y);
+#endif
+}
+
 static inline void
 fabulor_gtk_scrolled_window_set_child (GtkScrolledWindow *window,
 										GtkWidget *child)

@@ -30,6 +30,7 @@
 #include "maingui.h"
 #include "menu.h"
 #include "gtkutil.h"
+#include "gtk-compat.h"
 #include "plugin-tray.h"
 #include "tray-action-model.h"
 #include "tray-backend-policy.h"
@@ -1019,8 +1020,7 @@ fe_tray_set_file (const char *filename)
 gboolean
 tray_toggle_visibility (gboolean force_hide)
 {
-	static int x, y;
-	static GdkScreen *screen;
+	static FabulorGtkWindowPlacement placement;
 	static int maximized;
 	static int fullscreen;
 	GtkWindow *win;
@@ -1046,8 +1046,7 @@ tray_toggle_visibility (gboolean force_hide)
 	{
 		if (prefs.hex_gui_tray_away)
 			zoitechat_command (ph, "ALLSERV AWAY");
-		gtk_window_get_position (win, &x, &y);
-		screen = gtk_window_get_screen (win);
+		fabulor_gtk_window_placement_capture (win, &placement);
 		maximized = prefs.hex_gui_win_state;
 		fullscreen = prefs.hex_gui_win_fullscreen;
 		gtk_widget_hide (GTK_WIDGET (win));
@@ -1056,8 +1055,7 @@ tray_toggle_visibility (gboolean force_hide)
 	{
 		if (prefs.hex_gui_tray_away)
 			zoitechat_command (ph, "ALLSERV BACK");
-		gtk_window_set_screen (win, screen);
-		gtk_window_move (win, x, y);
+		fabulor_gtk_window_placement_restore (win, &placement);
 		if (maximized)
 			gtk_window_maximize (win);
 		if (fullscreen)

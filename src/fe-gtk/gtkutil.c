@@ -572,11 +572,11 @@ fe_get_str (char *msg, char *def, void *callback, void *userdata)
 
 	if (userdata == (void *)1)	/* nick box is usually on the very bottom, make it centered */
 	{
-		gtk_window_set_position (GTK_WINDOW (dialog), GTK_WIN_POS_CENTER);
+		fabulor_gtk_window_position_center (GTK_WINDOW (dialog));
 	}
 	else
 	{
-		gtk_window_set_position (GTK_WINDOW (dialog), GTK_WIN_POS_MOUSE);
+		fabulor_gtk_window_position_at_pointer (GTK_WINDOW (dialog));
 	}
 
 	hbox = gtkutil_box_new (GTK_ORIENTATION_HORIZONTAL, TRUE, 0);
@@ -664,7 +664,7 @@ fe_get_int (char *msg, int def, void *callback, void *userdata)
 	theme_manager_attach_window (dialog);
 	content_area = gtk_dialog_get_content_area (GTK_DIALOG (dialog));
 	gtk_box_set_homogeneous (GTK_BOX (content_area), TRUE);
-	gtk_window_set_position (GTK_WINDOW (dialog), GTK_WIN_POS_MOUSE);
+	fabulor_gtk_window_position_at_pointer (GTK_WINDOW (dialog));
 	gtk_window_set_transient_for (GTK_WINDOW (dialog), GTK_WINDOW (parent_window));
 
 	hbox = gtkutil_box_new (GTK_ORIENTATION_HORIZONTAL, TRUE, 0);
@@ -705,7 +705,7 @@ fe_get_bool (char *title, char *prompt, void *callback, void *userdata)
 	theme_manager_attach_window (dialog);
 	content_area = gtk_dialog_get_content_area (GTK_DIALOG (dialog));
 	gtk_box_set_homogeneous (GTK_BOX (content_area), TRUE);
-	gtk_window_set_position (GTK_WINDOW (dialog), GTK_WIN_POS_MOUSE);
+	fabulor_gtk_window_position_at_pointer (GTK_WINDOW (dialog));
 	gtk_window_set_transient_for (GTK_WINDOW (dialog), GTK_WINDOW (parent_window));
 
 
@@ -811,7 +811,7 @@ gtkutil_window_new (char *title, char *role, int width, int height, int flags)
 	gtk_window_set_default_size (GTK_WINDOW (win), width, height);
 	gtk_window_set_role (GTK_WINDOW (win), role);
 	if (flags & 1)
-		gtk_window_set_position (GTK_WINDOW (win), GTK_WIN_POS_MOUSE);
+		fabulor_gtk_window_position_at_pointer (GTK_WINDOW (win));
 	if ((flags & 2) && parent_window)
 	{
 		gtk_window_set_type_hint (GTK_WINDOW (win), GDK_WINDOW_TYPE_HINT_DIALOG);
@@ -930,6 +930,9 @@ gtkutil_tray_icon_supported (GtkWindow *window)
 {
 #if defined(HAVE_AYATANA_APPINDICATOR) || defined(HAVE_APPINDICATOR)
 	return TRUE;
+#elif GTK_MAJOR_VERSION >= 4
+	(void) window;
+	return FALSE;
 #elif defined(GDK_WINDOWING_X11)
 	GdkScreen *screen = gtk_window_get_screen (window);
 	GdkDisplay *display = gdk_screen_get_display (screen);

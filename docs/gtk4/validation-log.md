@@ -4149,6 +4149,34 @@ Packaging impact: none. CI runs only the green isolated common checkpoint. The
 full frontend target is not referenced by staging, WiX, or the shipping
 solution and cannot overwrite the production executable.
 
+## 2026-07-19 - Stage 8 Compositor-Owned Window Placement
+
+Automated evidence:
+
+- strict MSVC GTK4 probe: pass; helper signatures compile, link, and execute
+- default x64 Release common library: pass
+- default x64 Release GTK3 frontend: pass; shipping `fabulor.exe` produced
+- isolated GTK4 common library: pass
+- complete isolated GTK4 frontend inventory: expected fail at later menu,
+  channel-view, lifecycle, and theme blockers; no direct placement API error
+- Meson/GCC probe: all 49 objects compile; local link is unavailable because
+  Strawberry GCC 4.8.3 cannot consume the MSVC GTK4 import-library ABI
+- source audit: no shared direct `gtk_window_set_position`, `gtk_window_move`,
+  `gtk_window_get_position`, or tray `GdkScreen` placement call remains
+- `git diff --check`: pass
+
+Behavior contract:
+
+- GTK3 pointer, centered, parent-centered, saved-coordinate, and saved-screen
+  behavior remains unchanged behind the compatibility owner.
+- GTK4 preserves transient parents, maximize/fullscreen state, and dimensions,
+  but does not request or persist native coordinates unavailable from GTK4.
+- Legacy X11 status-icon probing remains GTK3-only; GTK4 tray backend selection
+  continues through the existing StatusNotifier/native policy.
+
+Manual GTK4 placement and multi-monitor checks remain deferred until the full
+frontend links. Packaging impact: none.
+
 ## Build Matrix
 
 | Check | GTK3 shipping target | GTK4 candidate | Final GTK4 target |

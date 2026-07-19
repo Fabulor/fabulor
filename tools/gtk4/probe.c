@@ -205,6 +205,20 @@ check_compatibility_helper_signatures (void)
 		fabulor_gtk_widget_on_scroll;
 	void (*volatile window_set_child) (GtkWindow *, GtkWidget *) =
 		fabulor_gtk_window_set_child;
+	void (*volatile window_position_at_pointer) (GtkWindow *) =
+		fabulor_gtk_window_position_at_pointer;
+	void (*volatile window_position_center) (GtkWindow *) =
+		fabulor_gtk_window_position_center;
+	void (*volatile window_position_center_on_parent) (GtkWindow *) =
+		fabulor_gtk_window_position_center_on_parent;
+	void (*volatile window_move) (GtkWindow *, gint, gint) =
+		fabulor_gtk_window_move;
+	gboolean (*volatile window_get_position) (GtkWindow *, gint *, gint *) =
+		fabulor_gtk_window_get_position;
+	void (*volatile window_placement_capture) (GtkWindow *,
+		FabulorGtkWindowPlacement *) = fabulor_gtk_window_placement_capture;
+	void (*volatile window_placement_restore) (GtkWindow *,
+		const FabulorGtkWindowPlacement *) = fabulor_gtk_window_placement_restore;
 	void (*volatile scrolled_window_set_child) (GtkScrolledWindow *, GtkWidget *) =
 		fabulor_gtk_scrolled_window_set_child;
 	void (*volatile paned_set_start_child) (GtkPaned *, GtkWidget *, gboolean,
@@ -257,6 +271,13 @@ check_compatibility_helper_signatures (void)
 	(void) widget_on_focus_leave;
 	(void) widget_on_scroll;
 	(void) window_set_child;
+	(void) window_position_at_pointer;
+	(void) window_position_center;
+	(void) window_position_center_on_parent;
+	(void) window_move;
+	(void) window_get_position;
+	(void) window_placement_capture;
+	(void) window_placement_restore;
 	(void) scrolled_window_set_child;
 	(void) paned_set_start_child;
 	(void) paned_set_end_child;

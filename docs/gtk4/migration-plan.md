@@ -1378,10 +1378,23 @@ non-GTK dependencies. All candidate objects, libraries, resources, PDBs, and
 executables are isolated beneath `build/gtk4-full`; the default remains GTK3
 and still builds the shipping executable. `gtk4-full-frontend.proj` provides a
 green full common-library checkpoint, enforced by Windows CI, and an honest
-complete frontend compile. That compile now identifies the production cutover clusters directly: legacy
-menu event/widget construction, channel-list and channel-view container APIs,
-window positioning/lifecycle calls, and direct GTK3 theme application and
-preferences integration. No partial GTK4 executable is emitted or packaged.
+complete frontend compile. That compile now identifies the production cutover
+clusters directly: legacy menu event/widget construction, channel-list and
+channel-view container APIs, window positioning/lifecycle calls, and direct
+GTK3 theme application and preferences integration. No partial GTK4 executable
+is emitted or packaged.
+
+Compositor-owned window-placement pass 7 (2026-07-19):
+all shared dialog placement hints, saved main/dialog coordinates, startup
+coordinate restoration, and tray hide/restore placement now route through one
+cross-version policy. GTK3 retains its pointer, centered, parent-centered,
+screen, and coordinate behavior. GTK4 deliberately emits no placement request
+because the compositor owns native window positions, and unavailable GTK4
+coordinates no longer overwrite saved profile values; dimensions remain a
+separate lifecycle concern. The strict probe covers every helper, both MSVC
+profiles compile, and the full GTK4 inventory no longer reports placement API
+errors. Theme display/provider ownership and remaining visibility/geometry
+callbacks stay in their dedicated blockers.
 
 Deliverables:
 

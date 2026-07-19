@@ -138,7 +138,7 @@ joind_show_dialog (server *serv)
 	g_snprintf(buf, sizeof(buf), _("Connection Complete - %s"), _(DISPLAY_NAME));
 	gtk_window_set_title (GTK_WINDOW (dialog1), buf);
 	gtk_window_set_type_hint (GTK_WINDOW (dialog1), GDK_WINDOW_TYPE_HINT_DIALOG);
-	gtk_window_set_position (GTK_WINDOW (dialog1), GTK_WIN_POS_CENTER_ON_PARENT);
+	fabulor_gtk_window_position_center_on_parent (GTK_WINDOW (dialog1));
 	gtk_window_set_transient_for (GTK_WINDOW(dialog1), GTK_WINDOW(serv->front_session->gui->window));
 	gtk_window_set_modal (GTK_WINDOW (dialog1), TRUE);
 	gtk_window_set_resizable (GTK_WINDOW (dialog1), FALSE);
