@@ -337,6 +337,8 @@ Detailed planning and evidence live in:
   - [x] Add an opt-in, output-isolated full-project MSVC GTK4 profile and compile the complete common/frontend source inventory.
   - [ ] Remove the full-profile frontend compile blockers before producing a GTK4 executable.
     - [ ] Replace legacy menu event types and widget construction with the retained action/model boundaries.
+      - [x] Remove raw `GdkEventButton` types from the public context-menu API and contain GTK3 event synthesis privately.
+      - [ ] Present built-in URL, channel, nick, and middle-click context actions through a retained GTK4 model.
     - [ ] Complete channel-list and channel-view container/lifecycle cutover.
     - [ ] Complete top-level window positioning, visibility, and lifecycle cutover.
       - [x] Contain removed placement hints, saved coordinates, and tray restore placement behind compositor-safe GTK3/GTK4 policy.

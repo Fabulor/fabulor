@@ -26,18 +26,14 @@ GtkWidget *menu_create_main (void *accel_group, int bar, int away,
 								 int away_sensitive, int disconnect_sensitive,
 								 int join_sensitive, int toplevel,
 								 GtkWidget **menu_widgets);
-void menu_urlmenu (GdkEventButton * event, char *url);
 void menu_urlmenu_at (GtkWidget *origin, gdouble x, gdouble y,
 	GdkModifierType state, char *url);
-void menu_chanmenu (session *sess, GdkEventButton * event, char *chan);
 void menu_chanmenu_at (session *sess, GtkWidget *origin, gdouble x,
 	gdouble y, GdkModifierType state, char *chan);
 void menu_addfavoritemenu (server *serv, GtkWidget *menu, char *channel, gboolean istree);
 void menu_addconnectmenu (server *serv, GtkWidget *menu);
-void menu_nickmenu (session *sess, GdkEventButton * event, char *nick, int num_sel);
 void menu_nickmenu_at (session *sess, GtkWidget *origin, gdouble x,
 	gdouble y, GdkModifierType state, char *nick, int num_sel);
-void menu_middlemenu (session *sess, GdkEventButton *event);
 void menu_middlemenu_at (session *sess, GtkWidget *origin, gdouble x,
 	gdouble y, GdkModifierType state);
 void userlist_button_cb (GtkWidget * button, char *cmd);
