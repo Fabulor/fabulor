@@ -1474,6 +1474,17 @@ plugin references on replacement or destruction. The isolated full GTK4
 inventory compiles the new model and accepts the complete adapter range before
 continuing at older surrounding menu blockers.
 
+Nick context-model pass 15 (2026-07-19):
+the fixed nick context shell now has a toolkit-neutral retained model and typed
+Reply dispatch. The caller supplies the single-user or multi-selection heading
+and explicitly enables Reply only for the applicable selection state. The
+model owns its nick for action lifetime and appends the existing `$NICK` plugin
+projection as a separate section. The strict probe releases the caller's nick
+buffer before activation, verifies heading and plugin ordering, dispatches
+Reply once, and covers a multi-selection heading without a Reply action.
+Recursive `popup.conf` commands, user-info copy actions, WHOIS refresh, and the
+live GTK4 presenter adapter remain separate follow-ups; GTK3 is unchanged.
+
 Deliverables:
 
 - Make GTK4 the only production frontend dependency in MSVC, Meson, and CI.
