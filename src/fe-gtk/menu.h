@@ -22,7 +22,11 @@
 
 #include "menu-action-namespaces.h"
 
-GtkWidget *menu_create_main (void *accel_group, int bar, int away,
+GtkWidget *menu_create_main (
+#if GTK_MAJOR_VERSION < 4
+								 GtkAccelGroup *accel_group,
+#endif
+								 int bar, int away,
 								 int away_sensitive, int disconnect_sensitive,
 								 int join_sensitive, int toplevel,
 								 GtkWidget **menu_widgets);

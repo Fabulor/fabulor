@@ -1571,6 +1571,20 @@ drops from 236 errors and 380 warnings to 225 errors and 365 warnings. Earlier
 GTK3-only menu helpers and accelerator refresh code remain a separate target;
 shipping GTK3 behavior is unchanged.
 
+Main-menu accelerator boundary pass 22 (2026-07-20):
+`menu_create_main()` no longer exposes an untyped accelerator parameter to
+GTK4. Its GTK3 declaration and implementation retain the concrete
+`GtkAccelGroup` owner, while the GTK4 call shape contains only model/action
+state. Legacy icon-menu construction, accelerator attachment, stored key
+metadata, recursive widget traversal, and Ctrl+Q rebinding now compile only in
+the GTK3 branch. GTK4 keeps `menu_update_quit_accel()` as an explicit no-op
+because configurable shortcuts already resolve the current binding table and
+dispatch through canonical `menu_key_action()` identities. The shipping GTK3
+frontend rebuilds without warnings or errors, and the strict GTK4 probe remains
+clean. The full GTK4 inventory drops from 225 errors and 365 warnings to 217
+errors and 363 warnings. Remaining widget-menu helpers belong to the tab/tray
+popup presentation conversions rather than the retained main-menu boundary.
+
 Deliverables:
 
 - Make GTK4 the only production frontend dependency in MSVC, Meson, and CI.

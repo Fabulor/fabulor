@@ -111,6 +111,7 @@ static void menu_middlemenu_gtk4 (session *sess, GtkWidget *origin,
 	gdouble x, gdouble y);
 #endif
 
+#if GTK_MAJOR_VERSION < 4
 static GtkWidget *
 menu_icon_widget_new (const char *icon)
 {
@@ -151,6 +152,7 @@ menu_new (void)
 
 	return menu;
 }
+#endif
 
 enum
 {
@@ -2943,6 +2945,7 @@ menu_get_key_action_name (int index)
 	return mymenu[index].action_name;
 }
 
+#if GTK_MAJOR_VERSION < 4
 static void
 menu_add_keybinding_accel (GtkWidget *item, GtkAccelGroup *accel_group, const char *name)
 {
@@ -2997,10 +3000,12 @@ menu_refresh_keybinding_accels (GtkWidget *widget, gpointer data)
 		g_list_free (children);
 	}
 }
+#endif
 
 void
 menu_update_quit_accel (void)
 {
+#if GTK_MAJOR_VERSION < 4
 	session *sess;
 	GSList *list;
 	GtkAccelGroup *accel_group;
@@ -3017,6 +3022,9 @@ menu_update_quit_accel (void)
 		}
 		list = g_slist_next (list);
 	}
+#else
+	/* GTK4 configurable shortcuts dispatch directly through menu_key_action(). */
+#endif
 }
 
 gboolean
@@ -5214,7 +5222,11 @@ menu_main_model_state_prepare (int away, int away_sensitive,
 }
 
 GtkWidget *
-menu_create_main (void *accel_group, int bar, int away, int away_sensitive,
+menu_create_main (
+#if GTK_MAJOR_VERSION < 4
+				  GtkAccelGroup *accel_group,
+#endif
+				  int bar, int away, int away_sensitive,
 					 int disconnect_sensitive, int join_sensitive, int toplevel,
 					 GtkWidget **menu_widgets)
 {
@@ -5239,7 +5251,6 @@ menu_create_main (void *accel_group, int bar, int away, int away_sensitive,
 		disconnect_sensitive, join_sensitive, toplevel);
 
 #if GTK_MAJOR_VERSION >= 4
-	(void) accel_group;
 	(void) bar;
 	menu_bar = gtk_popover_menu_bar_new_from_model (NULL);
 #else

@@ -5683,7 +5683,7 @@ mg_create_menu (session *sess, GtkWidget *table)
 #endif
 
 #if GTK_MAJOR_VERSION >= 4
-        gui->menu = menu_create_main (NULL, TRUE, sess->server->is_away,
+        gui->menu = menu_create_main (TRUE, sess->server->is_away,
 #else
         gui->menu = menu_create_main (accel_group, TRUE, sess->server->is_away,
 #endif
