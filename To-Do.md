@@ -342,7 +342,7 @@ Detailed planning and evidence live in:
       - [ ] Present built-in URL, channel, nick, and middle-click context actions through a retained GTK4 model.
         - [x] Model URL heading, Open/Connect, Copy, and plugin sections with typed retained dispatch.
         - [x] Project configurable URL handler commands, toggles, nested submenus, separators, icons, disabled path-filtered entries, and copied command lifetime.
-        - [ ] Connect the complete URL model to the GTK4 presenter.
+        - [x] Connect the complete URL model, configured handlers, and plugin actions to the GTK4 presenter with origin-owned cleanup.
     - [ ] Complete channel-list and channel-view container/lifecycle cutover.
     - [ ] Complete top-level window positioning, visibility, and lifecycle cutover.
       - [x] Contain removed placement hints, saved coordinates, and tray restore placement behind compositor-safe GTK3/GTK4 policy.
