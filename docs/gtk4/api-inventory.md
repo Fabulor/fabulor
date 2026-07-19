@@ -632,6 +632,12 @@ Required preserved behaviour:
 
 Status: `in progress; Stage 6 spell-input pass 6 emoji-picker ownership boundary`
 
+Stage 8 dialog icon-sizing pass 27 removes the quit dialog's direct dependency
+on the retired `GTK_ICON_SIZE_DIALOG` enum. GTK4 constructs the named warning
+image and applies an explicit 48-pixel presentation size; GTK3 continues using
+its theme-defined dialog icon size through the compatibility boundary. The
+strict probe verifies both the GTK4 icon identity and pixel-size contract.
+
 ## Functional Clusters
 
 | Cluster | Main files | GTK4 concern | Status |
