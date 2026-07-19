@@ -93,6 +93,8 @@ static GSList *submenu_list;
 #define FABULOR_MENU_ROOT_MODEL "fabulor-menu-root-model"
 #define FABULOR_MENU_USER_MODEL "fabulor-menu-user-model"
 #define FABULOR_MENU_PLUGIN_MODEL "fabulor-menu-plugin-model"
+#define FABULOR_MENU_COMPOSED_MODEL "fabulor-menu-composed-model"
+#define FABULOR_MENU_ACTION_PROXIES "fabulor-menu-action-proxies"
 #define FABULOR_MENU_CONTEXT_MODEL "fabulor-menu-context-model"
 #define FABULOR_MENU_CONTEXT_ACTION_GROUP "fabulor-menu-context-action-group"
 
@@ -104,6 +106,7 @@ static GSList *submenu_list;
 static gboolean menu_action_set_item_state (GtkWidget *item, gboolean state);
 static void menu_usermenu_model_refresh (GtkWidget *menu_bar);
 #if GTK_MAJOR_VERSION >= 4
+static void menu_main_composed_model_refresh (GtkWidget *menu_bar);
 static void menu_middlemenu_gtk4 (session *sess, GtkWidget *origin,
 	gdouble x, gdouble y);
 #endif
@@ -2063,32 +2066,46 @@ usermenu_update (void)
 	int done_main = FALSE;
 	GSList *list = sess_list;
 	session *sess;
+#if GTK_MAJOR_VERSION < 4
 	GtkWidget *menu;
+#endif
 
 	while (list)
 	{
 		sess = list->data;
+#if GTK_MAJOR_VERSION < 4
 		menu = sess->gui->menu_item[MENU_ID_USERMENU];
+#endif
 		if (sess->gui->is_tab)
 		{
 			if (!done_main)
 			{
+#if GTK_MAJOR_VERSION < 4
 				if (menu)
 				{
 					usermenu_destroy (menu);
 					usermenu_create (menu);
 				}
+#endif
 				menu_usermenu_model_refresh (sess->gui->menu);
+#if GTK_MAJOR_VERSION >= 4
+				menu_main_composed_model_refresh (sess->gui->menu);
+#endif
 				done_main = TRUE;
 			}
 		} else
 		{
+#if GTK_MAJOR_VERSION < 4
 			if (menu)
 			{
 				usermenu_destroy (menu);
 				usermenu_create (menu);
 			}
+#endif
 			menu_usermenu_model_refresh (sess->gui->menu);
+#if GTK_MAJOR_VERSION >= 4
+			menu_main_composed_model_refresh (sess->gui->menu);
+#endif
 		}
 		list = list->next;
 	}
@@ -3873,6 +3890,7 @@ menu_set_away (session_gui *gui, int away)
 	if (menu_action_set_item_state (gui->menu_item[MENU_ID_AWAY], away))
 		return;
 
+#if GTK_MAJOR_VERSION < 4
 	if (GTK_IS_CHECK_MENU_ITEM (gui->menu_item[MENU_ID_AWAY]))
 	{
 		GtkCheckMenuItem *item = GTK_CHECK_MENU_ITEM (gui->menu_item[MENU_ID_AWAY]);
@@ -3881,6 +3899,7 @@ menu_set_away (session_gui *gui, int away)
 		gtk_check_menu_item_set_active (item, away);
 		g_signal_handlers_unblock_by_func (G_OBJECT (item), menu_away, NULL);
 	}
+#endif
 }
 
 void
@@ -3916,6 +3935,9 @@ menu_set_join_sensitive (session_gui *gui, int sensitive)
 void
 menu_set_fullscreen (session_gui *gui, int full)
 {
+#if GTK_MAJOR_VERSION >= 4
+	menu_action_set_item_state (gui->menu_item[MENU_ID_FULLSCREEN], full);
+#else
 	GtkCheckMenuItem *item = GTK_CHECK_MENU_ITEM (gui->menu_item[MENU_ID_FULLSCREEN]);
 
 	if (menu_action_set_item_state (GTK_WIDGET (item), full))
@@ -3924,6 +3946,7 @@ menu_set_fullscreen (session_gui *gui, int full)
 	g_signal_handlers_block_by_func (G_OBJECT (item), menu_fullscreen_toggle, NULL);
 	gtk_check_menu_item_set_active (item, full);
 	g_signal_handlers_unblock_by_func (G_OBJECT (item), menu_fullscreen_toggle, NULL);
+#endif
 }
 
 GtkWidget *
@@ -4070,6 +4093,10 @@ menu_find (GtkWidget *menu, char *path, char *label)
 static void
 menu_foreach_gui (menu_entry *me, void (*callback) (GtkWidget *, menu_entry *, char *))
 {
+#if GTK_MAJOR_VERSION >= 4
+	(void) me;
+	(void) callback;
+#else
 	GSList *list = sess_list;
 	int tabdone = FALSE;
 	session *sess;
@@ -4094,6 +4121,7 @@ menu_foreach_gui (menu_entry *me, void (*callback) (GtkWidget *, menu_entry *, c
 		}
 		list = list->next;
 	}
+#endif
 }
 
 static void
@@ -4874,6 +4902,9 @@ menu_plugin_models_refresh (void)
 			continue;
 		g_hash_table_add (seen, sess->gui->menu);
 		menu_plugin_model_refresh (sess->gui->menu);
+#if GTK_MAJOR_VERSION >= 4
+		menu_main_composed_model_refresh (sess->gui->menu);
+#endif
 	}
 	g_hash_table_destroy (seen);
 }
@@ -4950,6 +4981,188 @@ menu_add_plugin_items (GtkWidget *menu, char *root, char *target)
 
 /* === END STUFF FOR /MENU === */
 
+static GSimpleActionGroup *
+menu_main_projection_prepare (GtkWidget *owner)
+{
+	GSimpleActionGroup *action_group;
+	GMenuModel *channel_switcher_model;
+	GMenuModel *fabulor_model;
+	GMenuModel *help_model;
+	GMenuModel *network_meters_model;
+	GMenuModel *new_model;
+	GMenuModel *search_model;
+	GMenuModel *server_model;
+	GMenuModel *settings_model;
+	GMenuModel *view_model;
+	GMenuModel *window_model;
+
+	action_group = menu_action_group_new ();
+	gtk_widget_insert_action_group (owner, "fabulor",
+		G_ACTION_GROUP (action_group));
+	g_object_set_data_full (G_OBJECT (owner), FABULOR_MENU_ACTION_GROUP,
+		action_group, g_object_unref);
+	menu_usermenu_model_refresh (owner);
+	menu_plugin_model_refresh (owner);
+	channel_switcher_model = menu_action_model_new (CHANNEL_SWITCHER_OFFSET,
+		CHANNEL_SWITCHER_ACTION_COUNT);
+	g_object_set_data_full (G_OBJECT (owner),
+		FABULOR_MENU_CHANNEL_SWITCHER_MODEL, channel_switcher_model,
+		g_object_unref);
+	network_meters_model = menu_action_model_new (NETWORK_METERS_OFFSET,
+		NETWORK_METERS_ACTION_COUNT);
+	g_object_set_data_full (G_OBJECT (owner), FABULOR_MENU_NETWORK_METERS_MODEL,
+		network_meters_model, g_object_unref);
+	view_model = menu_view_action_model_new (channel_switcher_model,
+		network_meters_model);
+	g_object_set_data_full (G_OBJECT (owner), FABULOR_MENU_VIEW_MODEL,
+		view_model, g_object_unref);
+	new_model = menu_action_model_new (NEW_OFFSET, NEW_ACTION_COUNT);
+	g_object_set_data_full (G_OBJECT (owner), FABULOR_MENU_NEW_MODEL,
+		new_model, g_object_unref);
+	fabulor_model = menu_fabulor_action_model_new (new_model);
+	g_object_set_data_full (G_OBJECT (owner), FABULOR_MENU_ROOT_MODEL,
+		fabulor_model, g_object_unref);
+	server_model = menu_server_action_model_new ();
+	g_object_set_data_full (G_OBJECT (owner), FABULOR_MENU_SERVER_MODEL,
+		server_model, g_object_unref);
+	settings_model = menu_settings_action_model_new ();
+	g_object_set_data_full (G_OBJECT (owner), FABULOR_MENU_SETTINGS_MODEL,
+		settings_model, g_object_unref);
+	search_model = menu_action_model_new (SEARCH_OFFSET, SEARCH_ACTION_COUNT);
+	g_object_set_data_full (G_OBJECT (owner), FABULOR_MENU_SEARCH_MODEL,
+		search_model, g_object_unref);
+	window_model = menu_window_action_model_new (search_model);
+	g_object_set_data_full (G_OBJECT (owner), FABULOR_MENU_WINDOW_MODEL,
+		window_model, g_object_unref);
+	help_model = menu_action_model_new (HELP_OFFSET, HELP_ACTION_COUNT);
+	g_object_set_data_full (G_OBJECT (owner), FABULOR_MENU_HELP_MODEL,
+		help_model, g_object_unref);
+
+	return action_group;
+}
+
+#if GTK_MAJOR_VERSION >= 4
+static FabulorMiddleContextMenuModel *
+menu_main_composed_model_new (GtkWidget *owner)
+{
+	FabulorMiddleContextSection sections[7];
+	GMenuModel *plugin_model;
+	GMenuModel *user_model;
+	gsize section_count = 0;
+
+	user_model = g_object_get_data (G_OBJECT (owner), FABULOR_MENU_USER_MODEL);
+	plugin_model = g_object_get_data (G_OBJECT (owner),
+		FABULOR_MENU_PLUGIN_MODEL);
+	sections[section_count++] = (FabulorMiddleContextSection) {
+		_(mymenu[0].text), mymenu[0].text,
+		g_object_get_data (G_OBJECT (owner), FABULOR_MENU_ROOT_MODEL)
+	};
+	sections[section_count++] = (FabulorMiddleContextSection) {
+		_(mymenu[MENUBAR_OFFSET - 1].text),
+		mymenu[MENUBAR_OFFSET - 1].text,
+		g_object_get_data (G_OBJECT (owner), FABULOR_MENU_VIEW_MODEL)
+	};
+	sections[section_count++] = (FabulorMiddleContextSection) {
+		_(mymenu[SERVER_OFFSET].text), mymenu[SERVER_OFFSET].text,
+		g_object_get_data (G_OBJECT (owner), FABULOR_MENU_SERVER_MODEL)
+	};
+	if (prefs.hex_gui_usermenu && user_model)
+	{
+		sections[section_count++] = (FabulorMiddleContextSection) {
+			_(mymenu[AWAY_OFFSET + 1].text),
+			mymenu[AWAY_OFFSET + 1].text, user_model
+		};
+	}
+	sections[section_count++] = (FabulorMiddleContextSection) {
+		_(mymenu[SETTINGS_OFFSET].text), mymenu[SETTINGS_OFFSET].text,
+		g_object_get_data (G_OBJECT (owner), FABULOR_MENU_SETTINGS_MODEL)
+	};
+	sections[section_count++] = (FabulorMiddleContextSection) {
+		_(mymenu[WINDOW_OFFSET].text), mymenu[WINDOW_OFFSET].text,
+		g_object_get_data (G_OBJECT (owner), FABULOR_MENU_WINDOW_MODEL)
+	};
+	sections[section_count++] = (FabulorMiddleContextSection) {
+		_(mymenu[HELP_OFFSET].text), mymenu[HELP_OFFSET].text,
+		g_object_get_data (G_OBJECT (owner), FABULOR_MENU_HELP_MODEL)
+	};
+
+	return fabulor_middle_context_menu_model_new (sections, section_count,
+		plugin_model);
+}
+
+static void
+menu_main_composed_model_refresh (GtkWidget *menu_bar)
+{
+	FabulorMiddleContextMenuModel *composition;
+	GMenu *add_ons;
+	GMenu *menu;
+	GMenuModel *source;
+	gint i;
+
+	if (!GTK_IS_POPOVER_MENU_BAR (menu_bar))
+		return;
+	composition = menu_main_composed_model_new (menu_bar);
+	if (!composition)
+		return;
+	source = fabulor_middle_context_menu_model_get_menu (composition);
+	menu = g_menu_new ();
+	add_ons = g_menu_new ();
+	for (i = 0; i < g_menu_model_get_n_items (source); i++)
+	{
+		GMenuItem *item;
+		GMenuModel *submenu;
+
+		item = g_menu_item_new_from_model (source, i);
+		submenu = g_menu_model_get_item_link (source, i, G_MENU_LINK_SUBMENU);
+		if (submenu)
+			g_menu_append_item (menu, item);
+		else
+			g_menu_append_item (add_ons, item);
+		g_clear_object (&submenu);
+		g_object_unref (item);
+	}
+	if (g_menu_model_get_n_items (G_MENU_MODEL (add_ons)) > 0)
+		g_menu_append_submenu (menu, _("Add-ons"), G_MENU_MODEL (add_ons));
+	g_object_unref (add_ons);
+	g_menu_freeze (menu);
+	fabulor_middle_context_menu_model_free (composition);
+	gtk_popover_menu_bar_set_menu_model (GTK_POPOVER_MENU_BAR (menu_bar),
+		G_MENU_MODEL (menu));
+	g_object_set_data_full (G_OBJECT (menu_bar), FABULOR_MENU_COMPOSED_MODEL,
+		G_MENU_MODEL (menu), g_object_unref);
+}
+
+static void
+menu_main_action_proxies_create (GtkWidget *menu_bar,
+	GSimpleActionGroup *action_group, GtkWidget **menu_widgets)
+{
+	GPtrArray *proxies;
+	guint i;
+
+	if (!menu_widgets)
+		return;
+	proxies = g_ptr_array_new_with_free_func (g_object_unref);
+	for (i = 0; i < G_N_ELEMENTS (mymenu); i++)
+	{
+		GtkWidget *proxy;
+
+		if (!mymenu[i].id || !mymenu[i].action_name)
+			continue;
+		proxy = g_object_ref_sink (gtk_box_new (GTK_ORIENTATION_HORIZONTAL, 0));
+		g_object_set_data (G_OBJECT (proxy), FABULOR_MENU_ACTION_GROUP,
+			action_group);
+		g_object_set_data (G_OBJECT (proxy), FABULOR_MENU_ACTION_NAME,
+			(gpointer) mymenu[i].action_name);
+		g_object_set_data (G_OBJECT (proxy), FABULOR_MENU_ACTION_TARGET,
+			(gpointer) mymenu[i].action_target);
+		menu_widgets[mymenu[i].id] = proxy;
+		g_ptr_array_add (proxies, proxy);
+	}
+	g_object_set_data_full (G_OBJECT (menu_bar), FABULOR_MENU_ACTION_PROXIES,
+		proxies, (GDestroyNotify) g_ptr_array_unref);
+}
+#endif
+
 static void
 menu_main_model_state_prepare (int away, int away_sensitive,
 	int disconnect_sensitive, int join_sensitive, int toplevel)
@@ -5005,23 +5218,14 @@ menu_create_main (void *accel_group, int bar, int away, int away_sensitive,
 					 int disconnect_sensitive, int join_sensitive, int toplevel,
 					 GtkWidget **menu_widgets)
 {
+	GSimpleActionGroup *action_group;
+	GtkWidget *menu_bar;
+#if GTK_MAJOR_VERSION < 4
 	int i = 0;
 	gboolean action_bound;
-	GSimpleActionGroup *action_group;
-	GMenuModel *channel_switcher_model;
-	GMenuModel *help_model;
-	GMenuModel *new_model;
-	GMenuModel *network_meters_model;
-	GMenuModel *search_model;
-	GMenuModel *server_model;
-	GMenuModel *settings_model;
-	GMenuModel *window_model;
-	GMenuModel *view_model;
-	GMenuModel *fabulor_model;
 	GtkWidget *item;
 	GtkWidget *menu = 0;
 	GtkWidget *menu_item = 0;
-	GtkWidget *menu_bar;
 	GtkWidget *usermenu = 0;
 	GtkWidget *submenu = 0;
 	int close_mask = STATE_CTRL;
@@ -5029,7 +5233,16 @@ menu_create_main (void *accel_group, int bar, int away, int away_sensitive,
 	char *key_theme = NULL;
 	GtkSettings *settings;
 	GSList *group = NULL;
+#endif
 
+	menu_main_model_state_prepare (away, away_sensitive,
+		disconnect_sensitive, join_sensitive, toplevel);
+
+#if GTK_MAJOR_VERSION >= 4
+	(void) accel_group;
+	(void) bar;
+	menu_bar = gtk_popover_menu_bar_new_from_model (NULL);
+#else
 	if (bar)
 	{
 		menu_bar = gtk_menu_bar_new ();
@@ -5043,9 +5256,6 @@ menu_create_main (void *accel_group, int bar, int away, int away_sensitive,
 
 	g_signal_connect (G_OBJECT (menu_bar), "can-activate-accel",
 							G_CALLBACK (menu_canacaccel), 0);
-
-	menu_main_model_state_prepare (away, away_sensitive,
-		disconnect_sensitive, join_sensitive, toplevel);
 
 	/* change Close binding to ctrl-shift-w when using emacs keys */
 	settings = gtk_widget_get_settings (menu_bar);
@@ -5070,47 +5280,14 @@ menu_create_main (void *accel_group, int bar, int away, int away_sensitive,
 		if (under && (under[1] == 'a' || under[1] == 'A'))
 			away_mask = STATE_ALT | STATE_CTRL;
 	}
+#endif
 
-	action_group = menu_action_group_new ();
-	gtk_widget_insert_action_group (menu_bar, "fabulor",
-								G_ACTION_GROUP (action_group));
-	g_object_set_data_full (G_OBJECT (menu_bar), FABULOR_MENU_ACTION_GROUP,
-						 action_group, g_object_unref);
-	menu_usermenu_model_refresh (menu_bar);
-	menu_plugin_model_refresh (menu_bar);
-	channel_switcher_model = menu_action_model_new (CHANNEL_SWITCHER_OFFSET,
-														CHANNEL_SWITCHER_ACTION_COUNT);
-	g_object_set_data_full (G_OBJECT (menu_bar), FABULOR_MENU_CHANNEL_SWITCHER_MODEL,
-						 channel_switcher_model, g_object_unref);
-	network_meters_model = menu_action_model_new (NETWORK_METERS_OFFSET,
-										NETWORK_METERS_ACTION_COUNT);
-	g_object_set_data_full (G_OBJECT (menu_bar), FABULOR_MENU_NETWORK_METERS_MODEL,
-						 network_meters_model, g_object_unref);
-	view_model = menu_view_action_model_new (channel_switcher_model,
-										 network_meters_model);
-	g_object_set_data_full (G_OBJECT (menu_bar), FABULOR_MENU_VIEW_MODEL,
-						 view_model, g_object_unref);
-	new_model = menu_action_model_new (NEW_OFFSET, NEW_ACTION_COUNT);
-	g_object_set_data_full (G_OBJECT (menu_bar), FABULOR_MENU_NEW_MODEL,
-						 new_model, g_object_unref);
-	fabulor_model = menu_fabulor_action_model_new (new_model);
-	g_object_set_data_full (G_OBJECT (menu_bar), FABULOR_MENU_ROOT_MODEL,
-						 fabulor_model, g_object_unref);
-	server_model = menu_server_action_model_new ();
-	g_object_set_data_full (G_OBJECT (menu_bar), FABULOR_MENU_SERVER_MODEL,
-						 server_model, g_object_unref);
-	settings_model = menu_settings_action_model_new ();
-	g_object_set_data_full (G_OBJECT (menu_bar), FABULOR_MENU_SETTINGS_MODEL,
-						 settings_model, g_object_unref);
-	search_model = menu_action_model_new (SEARCH_OFFSET, SEARCH_ACTION_COUNT);
-	g_object_set_data_full (G_OBJECT (menu_bar), FABULOR_MENU_SEARCH_MODEL,
-						 search_model, g_object_unref);
-	window_model = menu_window_action_model_new (search_model);
-	g_object_set_data_full (G_OBJECT (menu_bar), FABULOR_MENU_WINDOW_MODEL,
-						 window_model, g_object_unref);
-	help_model = menu_action_model_new (HELP_OFFSET, HELP_ACTION_COUNT);
-	g_object_set_data_full (G_OBJECT (menu_bar), FABULOR_MENU_HELP_MODEL,
-						 help_model, g_object_unref);
+	action_group = menu_main_projection_prepare (menu_bar);
+#if GTK_MAJOR_VERSION >= 4
+	menu_main_composed_model_refresh (menu_bar);
+	menu_main_action_proxies_create (menu_bar, action_group, menu_widgets);
+	return menu_bar;
+#else
 
 	while (1)
 	{
@@ -5250,6 +5427,7 @@ togitem:
 
 		i++;
 	}
+#endif
 }
 
 #if GTK_MAJOR_VERSION >= 4
@@ -5279,21 +5457,7 @@ static void
 menu_middlemenu_gtk4 (session *sess, GtkWidget *origin, gdouble x, gdouble y)
 {
 	FabulorMiddleContextPopup *popup;
-	FabulorMiddleContextSection sections[7];
 	GSimpleActionGroup *action_group;
-	GMenuModel *channel_switcher_model;
-	GMenuModel *fabulor_model;
-	GMenuModel *help_model;
-	GMenuModel *network_meters_model;
-	GMenuModel *new_model;
-	GMenuModel *plugin_model;
-	GMenuModel *search_model;
-	GMenuModel *server_model;
-	GMenuModel *settings_model;
-	GMenuModel *user_model;
-	GMenuModel *view_model;
-	GMenuModel *window_model;
-	gsize section_count = 0;
 
 	g_return_if_fail (sess != NULL);
 	g_return_if_fail (sess->server != NULL);
@@ -5309,70 +5473,8 @@ menu_middlemenu_gtk4 (session *sess, GtkWidget *origin, gdouble x, gdouble y)
 	popup = g_new0 (FabulorMiddleContextPopup, 1);
 	popup->projection_owner = g_object_ref_sink (
 		gtk_box_new (GTK_ORIENTATION_HORIZONTAL, 0));
-	action_group = menu_action_group_new ();
-	g_object_set_data_full (G_OBJECT (popup->projection_owner),
-		FABULOR_MENU_ACTION_GROUP, action_group, g_object_unref);
-	menu_usermenu_model_refresh (popup->projection_owner);
-	menu_plugin_model_refresh (popup->projection_owner);
-
-	channel_switcher_model = menu_action_model_new (CHANNEL_SWITCHER_OFFSET,
-		CHANNEL_SWITCHER_ACTION_COUNT);
-	network_meters_model = menu_action_model_new (NETWORK_METERS_OFFSET,
-		NETWORK_METERS_ACTION_COUNT);
-	view_model = menu_view_action_model_new (channel_switcher_model,
-		network_meters_model);
-	new_model = menu_action_model_new (NEW_OFFSET, NEW_ACTION_COUNT);
-	fabulor_model = menu_fabulor_action_model_new (new_model);
-	server_model = menu_server_action_model_new ();
-	settings_model = menu_settings_action_model_new ();
-	search_model = menu_action_model_new (SEARCH_OFFSET, SEARCH_ACTION_COUNT);
-	window_model = menu_window_action_model_new (search_model);
-	help_model = menu_action_model_new (HELP_OFFSET, HELP_ACTION_COUNT);
-	user_model = g_object_get_data (G_OBJECT (popup->projection_owner),
-		FABULOR_MENU_USER_MODEL);
-	plugin_model = g_object_get_data (G_OBJECT (popup->projection_owner),
-		FABULOR_MENU_PLUGIN_MODEL);
-
-	sections[section_count++] = (FabulorMiddleContextSection) {
-		_(mymenu[0].text), mymenu[0].text, fabulor_model
-	};
-	sections[section_count++] = (FabulorMiddleContextSection) {
-		_(mymenu[MENUBAR_OFFSET - 1].text),
-		mymenu[MENUBAR_OFFSET - 1].text, view_model
-	};
-	sections[section_count++] = (FabulorMiddleContextSection) {
-		_(mymenu[SERVER_OFFSET].text), mymenu[SERVER_OFFSET].text, server_model
-	};
-	if (prefs.hex_gui_usermenu && user_model)
-	{
-		sections[section_count++] = (FabulorMiddleContextSection) {
-			_(mymenu[AWAY_OFFSET + 1].text),
-			mymenu[AWAY_OFFSET + 1].text, user_model
-		};
-	}
-	sections[section_count++] = (FabulorMiddleContextSection) {
-		_(mymenu[SETTINGS_OFFSET].text), mymenu[SETTINGS_OFFSET].text,
-		settings_model
-	};
-	sections[section_count++] = (FabulorMiddleContextSection) {
-		_(mymenu[WINDOW_OFFSET].text), mymenu[WINDOW_OFFSET].text, window_model
-	};
-	sections[section_count++] = (FabulorMiddleContextSection) {
-		_(mymenu[HELP_OFFSET].text), mymenu[HELP_OFFSET].text, help_model
-	};
-
-	popup->model = fabulor_middle_context_menu_model_new (sections,
-		section_count, plugin_model);
-	g_object_unref (channel_switcher_model);
-	g_object_unref (network_meters_model);
-	g_object_unref (view_model);
-	g_object_unref (new_model);
-	g_object_unref (fabulor_model);
-	g_object_unref (server_model);
-	g_object_unref (settings_model);
-	g_object_unref (search_model);
-	g_object_unref (window_model);
-	g_object_unref (help_model);
+	action_group = menu_main_projection_prepare (popup->projection_owner);
+	popup->model = menu_main_composed_model_new (popup->projection_owner);
 	if (!popup->model)
 	{
 		menu_middle_context_popup_free (popup);

@@ -3702,6 +3702,58 @@ check_middle_context_menu_model (void)
 }
 
 static gboolean
+check_main_menu_bar_projection_gtk4 (void)
+{
+	GMenu *fabulor = g_menu_new ();
+	GMenu *replacement = g_menu_new ();
+	GMenu *replacement_content = g_menu_new ();
+	GActionGroup *actions;
+	FabulorMiddleContextMenuModel *model;
+	FabulorMiddleContextSection section;
+	GtkWidget *menu_bar;
+	guint activation_count = 0;
+	gboolean passed;
+
+	g_menu_append (fabulor, "Run", "fabulor.run");
+	section.label = "Fabulor";
+	section.plugin_path = "Fabulor";
+	section.model = G_MENU_MODEL (fabulor);
+	model = fabulor_middle_context_menu_model_new (&section, 1, NULL);
+	g_object_unref (fabulor);
+	if (!model)
+		return FALSE;
+
+	menu_bar = gtk_popover_menu_bar_new_from_model (
+		fabulor_middle_context_menu_model_get_menu (model));
+	g_object_ref_sink (menu_bar);
+	actions = tray_presenter_action_group_new ("run", &activation_count);
+	gtk_widget_insert_action_group (menu_bar, "fabulor", actions);
+	g_object_unref (actions);
+	passed = gtk_popover_menu_bar_get_menu_model (
+		GTK_POPOVER_MENU_BAR (menu_bar)) ==
+		fabulor_middle_context_menu_model_get_menu (model) &&
+		gtk_widget_activate_action (menu_bar, "fabulor.run", NULL) &&
+		activation_count == 1;
+
+	g_menu_append (replacement_content, "Run again", "fabulor.run");
+	g_menu_append_submenu (replacement, "Replacement",
+		G_MENU_MODEL (replacement_content));
+	gtk_popover_menu_bar_set_menu_model (GTK_POPOVER_MENU_BAR (menu_bar),
+		G_MENU_MODEL (replacement));
+	passed = passed && gtk_popover_menu_bar_get_menu_model (
+		GTK_POPOVER_MENU_BAR (menu_bar)) == G_MENU_MODEL (replacement) &&
+		gtk_widget_activate_action (menu_bar, "fabulor.run", NULL) &&
+		activation_count == 2;
+	g_object_unref (replacement_content);
+	g_object_unref (replacement);
+	gtk_popover_menu_bar_set_menu_model (GTK_POPOVER_MENU_BAR (menu_bar), NULL);
+	gtk_widget_insert_action_group (menu_bar, "fabulor", NULL);
+	g_object_unref (menu_bar);
+	fabulor_middle_context_menu_model_free (model);
+	return passed;
+}
+
+static gboolean
 check_spell_entry_style_policy (void)
 {
 	FabulorSpellEntryPalette palette = {
@@ -4425,6 +4477,11 @@ main (void)
 	if (!check_middle_context_menu_model ())
 	{
 		fprintf (stderr, "GTK4 middle context menu model mismatch\n");
+		return 1;
+	}
+	if (gtk_ready && !check_main_menu_bar_projection_gtk4 ())
+	{
+		fprintf (stderr, "GTK4 main menu bar projection mismatch\n");
 		return 1;
 	}
 	if (!check_spell_entry_word_policy ())

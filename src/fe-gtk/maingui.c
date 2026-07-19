@@ -5673,14 +5673,20 @@ static void
 mg_create_menu (session *sess, GtkWidget *table)
 {
         session_gui *gui = sess->gui;
+#if GTK_MAJOR_VERSION < 4
         GtkAccelGroup *accel_group;
 
         accel_group = gtk_accel_group_new ();
         gtk_window_add_accel_group (GTK_WINDOW (gtk_widget_get_toplevel (table)),
                                                                                  accel_group);
         g_object_unref (accel_group);
+#endif
 
+#if GTK_MAJOR_VERSION >= 4
+        gui->menu = menu_create_main (NULL, TRUE, sess->server->is_away,
+#else
         gui->menu = menu_create_main (accel_group, TRUE, sess->server->is_away,
+#endif
                                                                                    sess->server->connected,
                                                                                    sess->server->connected || sess->server->recondelay_tag,
                                                                                    sess->server->end_of_motd, !gui->is_tab,
@@ -5690,7 +5696,9 @@ mg_create_menu (session *sess, GtkWidget *table)
         gtk_widget_set_halign (gui->menu, GTK_ALIGN_START);
         gtk_widget_set_valign (gui->menu, GTK_ALIGN_FILL);
         gtk_grid_attach (GTK_GRID (table), gui->menu, 0, 0, 3, 1);
+#if GTK_MAJOR_VERSION < 4
         mg_apply_main_font_menu_tree (gui->menu, input_style ? input_style->font_desc : NULL);
+#endif
 }
 
 static void
