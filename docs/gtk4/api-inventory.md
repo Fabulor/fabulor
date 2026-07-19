@@ -644,6 +644,12 @@ Auto-Connect paths include their owning Server List declarations directly.
 `servlist_save()`, or `servlist_autojoinedit()`. Runtime behavior and ownership
 remain unchanged; this is an explicit compile-boundary correction.
 
+Stage 8 flat-button presentation pass 29 replaces all seven main-window
+`GTK_RELIEF_NONE` call sites with one cross-version semantic helper. GTK4 uses
+the standard `flat` CSS class for channel-mode toggles, emoji choices, search
+controls, reply cancellation, and the nickname button. GTK3 keeps its existing
+relief setting privately inside the compatibility boundary.
+
 ## Functional Clusters
 
 | Cluster | Main files | GTK4 concern | Status |

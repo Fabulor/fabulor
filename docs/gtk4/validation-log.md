@@ -4698,6 +4698,33 @@ unchanged. The retained GTK4 code now names its actual common and frontend
 Server List dependencies instead of relying on GTK3 include side effects.
 Packaging impact: none.
 
+### GTK4 Stage 8 Flat-Button Presentation
+
+Date: 2026-07-20
+
+Files/workflows converted: channel-mode toggles; emoji choices; search
+close/previous/next controls; reply cancellation; nickname command button.
+
+Automated evidence:
+
+- shipping GTK3 MSVC x64 Release frontend: pass; zero warnings and zero errors
+- strict MSVC GTK4 probe against GTK 4.22.4 / GLib 2.88.0: compile, link, and
+  execution pass under `/W4 /WX`; zero warnings and zero errors
+- real GTK4 button construction and standard `flat` CSS class assertion: pass
+- isolated complete GTK4 frontend inventory: expected fail; improved from 239
+  errors / 546 warnings to 233 errors / 545 warnings
+- source audit: `maingui.c` contains no `gtk_button_set_relief` or
+  `GTK_RELIEF_NONE` reference
+- first remaining `maingui.c` blocker: legacy `GDK_MOD1_MASK` name near line
+  3426
+- `git diff --check`: pass
+
+Behavior contract: all seven controls remain visually flat. GTK3 retains its
+existing relief setting; GTK4 uses the toolkit's semantic class so desktop and
+profile themes remain authoritative. Manual light/dark, high-contrast, hover,
+active, and focus appearance testing remains gated on the linkable full GTK4
+frontend. Packaging impact: none.
+
 ## Build Matrix
 
 | Check | GTK3 shipping target | GTK4 candidate | Final GTK4 target |
