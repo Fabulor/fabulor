@@ -66,6 +66,7 @@
 #include "menu.h"
 #include "servlistgui.h"
 #if GTK_MAJOR_VERSION >= 4
+#include "channel-context-menu-model.h"
 #include "context-menu-presenter-gtk4.h"
 #include "url-context-menu-model.h"
 #endif
@@ -1408,10 +1409,110 @@ menu_chan_join (GtkWidget * menu, char *chan)
 	}
 }
 
+#if GTK_MAJOR_VERSION >= 4
+#define FABULOR_CHANNEL_CONTEXT_POPUP "fabulor-channel-context-popup"
+
+typedef struct
+{
+	FabulorChannelContextMenuModel *model;
+	FabulorContextMenuPresenterGtk4 *presenter;
+	char *network_name;
+} FabulorChannelContextPopup;
+
+static void
+menu_channel_context_popup_free (gpointer data)
+{
+	FabulorChannelContextPopup *popup = data;
+	if (!popup)
+		return;
+	fabulor_context_menu_presenter_gtk4_free (popup->presenter);
+	fabulor_channel_context_menu_model_free (popup->model);
+	g_free (popup->network_name);
+	g_free (popup);
+}
+
+static void
+menu_channel_context_dispatch (FabulorChannelContextAction action,
+	const char *channel, gboolean state, gpointer user_data)
+{
+	FabulorChannelContextPopup *popup = user_data;
+	char command[256];
+	ircnet *network;
+
+	if (action == FABULOR_CHANNEL_CONTEXT_AUTOJOIN)
+	{
+		if (!popup->network_name)
+			return;
+		network = servlist_net_find (popup->network_name, NULL,
+			g_ascii_strcasecmp);
+		if (network)
+			servlist_autojoinedit (network, (char *)channel, state);
+		return;
+	}
+	if (!current_sess)
+		return;
+	if (action == FABULOR_CHANNEL_CONTEXT_JOIN)
+		g_snprintf (command, sizeof command, "join %s", channel);
+	else if (action == FABULOR_CHANNEL_CONTEXT_FOCUS)
+		g_snprintf (command, sizeof command, "doat %s gui focus", channel);
+	else if (action == FABULOR_CHANNEL_CONTEXT_PART)
+		g_snprintf (command, sizeof command, "part %s", channel);
+	else if (action == FABULOR_CHANNEL_CONTEXT_CYCLE)
+		g_snprintf (command, sizeof command, "CYCLE %s", channel);
+	else
+		return;
+	handle_command (current_sess, command, FALSE);
+}
+
+static void
+menu_chanmenu_gtk4 (session *sess, GtkWidget *origin, gdouble x, gdouble y,
+	char *channel)
+{
+	FabulorChannelContextPopup *popup;
+	GActionGroup *plugin_actions;
+	GMenuModel *plugin_model;
+	ircnet *network = sess->server->network;
+	session *channel_session = find_channel (sess->server, channel);
+
+	menu_add_plugin_model (G_OBJECT (origin), "\x5$CHAN", channel);
+	plugin_model = menu_plugin_context_model (G_OBJECT (origin));
+	plugin_actions = menu_plugin_context_actions (G_OBJECT (origin));
+	popup = g_new0 (FabulorChannelContextPopup, 1);
+	popup->network_name = g_strdup (network ? network->name : NULL);
+	popup->model = fabulor_channel_context_menu_model_new (channel,
+		channel_session != NULL, channel_session == current_sess,
+		network != NULL, network && joinlist_is_in_list (sess->server, channel),
+		_("Join Channel"), _("Focus Channel"), _("Part Channel"),
+		_("Cycle Channel"), _("Autojoin Channel"), plugin_model,
+		menu_channel_context_dispatch, popup);
+	if (!popup->model)
+	{
+		menu_channel_context_popup_free (popup);
+		return;
+	}
+	popup->presenter = fabulor_context_menu_presenter_gtk4_new (
+		fabulor_channel_context_menu_model_get_menu (popup->model),
+		fabulor_channel_context_menu_model_get_actions (popup->model),
+		plugin_actions);
+	if (!popup->presenter)
+	{
+		menu_channel_context_popup_free (popup);
+		return;
+	}
+	g_object_set_data_full (G_OBJECT (origin), FABULOR_CHANNEL_CONTEXT_POPUP,
+		popup, menu_channel_context_popup_free);
+	fabulor_context_menu_presenter_gtk4_popup_at (popup->presenter, origin, x, y);
+}
+#endif
+
 void
 menu_chanmenu_at (session *sess, GtkWidget *origin, gdouble x, gdouble y,
 	GdkModifierType state, char *chan)
 {
+#if GTK_MAJOR_VERSION >= 4
+	(void)state;
+	menu_chanmenu_gtk4 (sess, origin, x, y, chan);
+#else
 	GtkWidget *menu;
 	int is_joined = FALSE;
 	session * chan_session;
@@ -1447,6 +1548,7 @@ menu_chanmenu_at (session *sess, GtkWidget *origin, gdouble x, gdouble y,
 
 	menu_add_plugin_items (menu, "\x5$CHAN", str_copy);
 	menu_popup_at (menu, origin, x, y, state, 3, NULL);
+#endif
 }
 
 static void
