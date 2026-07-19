@@ -4482,6 +4482,45 @@ states, disabled server actions, dynamic user commands, `/MENU` add/update/
 delete, menu hiding, and repeated window lifecycle testing remain gated on a
 linkable full GTK4 frontend.
 
+### GTK4 Stage 8 Main-Menu Accelerator Boundary
+
+Date: 2026-07-20
+
+Files/workflows converted: version-specific `menu_create_main()` API;
+GTK3-only icon-menu construction, accelerator registration, key metadata, and
+recursive accelerator refresh; GTK4 canonical shortcut refresh policy.
+
+Automated evidence:
+
+- shipping GTK3 MSVC x64 Release frontend: pass; zero warnings and zero errors
+- strict MSVC GTK4 probe against GTK 4.22.4 / GLib 2.88.0: compile, link, and
+  execution pass under `/W4 /WX`; zero warnings and zero errors
+- isolated complete GTK4 frontend inventory: expected fail at later legacy
+  frontend boundaries; reduced from 225 errors / 365 warnings to 217 errors /
+  363 warnings
+- changed GTK4 main-menu constructor and accelerator-refresh ranges: no
+  compiler diagnostic
+- source audit: GTK4 no longer declares or passes `GtkAccelGroup`; GTK3 keeps
+  its existing concrete owner, visible accelerators, Ctrl+Q policy, and menu
+  widget traversal
+- source audit: GTK4 shortcut changes require no widget rebuild because
+  configurable dispatch reads the current binding table through canonical
+  action identities
+- `git diff --check`: pass
+
+Local invocation notes: the sandbox environment exposed duplicate `Path`/`PATH`
+entries to the VS 2022 v143 compiler task, so the strict probe was run through
+the approved unsandboxed build invocation. The shipping project required
+`CL_MPCount=1` after earlier interrupted builds left its shared PDB contended;
+the serial rebuild then completed cleanly. Neither condition required a source
+or project-file change.
+
+Behavior contract: GTK3 retains the displayed menu hierarchy, mnemonics,
+accelerators, custom Ctrl+Q preference behavior, and dynamic rebinding. GTK4
+retains the live popover menu bar and canonical key-action dispatch introduced
+by earlier passes. Manual GTK4 keyboard traversal and displayed shortcut-label
+validation remain gated on the linkable full frontend. Packaging impact: none.
+
 ## Build Matrix
 
 | Check | GTK3 shipping target | GTK4 candidate | Final GTK4 target |

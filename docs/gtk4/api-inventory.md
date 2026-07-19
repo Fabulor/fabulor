@@ -613,7 +613,7 @@ Status: `in progress; Stage 6 spell-input pass 6 emoji-picker ownership boundary
 | Main windows and tabs | `maingui.c`, `chanview*.c` | child ownership, gestures, DnD, focus | in progress |
 | Transcript | `xtext.c`, `xtext.h`, `xtext-render-target.c` | snapshot rendering and event model | in progress; render destination ownership established |
 | Edit box and spell check | `maingui.c`, `emoji-picker.c`, `sexy-spell-entry.c`, `spell-entry-*.c` | production interaction and latency validation | in progress; word, lifecycle, styling, menu, URL, and emoji-picker boundaries established |
-| Menus and commands | `menu.c`, `plugin-tray.c` | actions and menu models | not started |
+| Menus and commands | `menu.c`, `plugin-tray.c` | actions and menu models | in progress; retained main/context presentation and GTK3-only accelerator ownership established |
 | Operational lists | `servlistgui.c`, `chanlist.c`, `userlistgui.c`, `dccgui.c`, `banlist.c`, `notifygui.c`, `ignoregui.c`, `plugingui.c`, `urlgrab.c` | list models, factories, editing | converted; toolkit-specific models and views are contained by cross-version owners |
 | Preferences/editors | `setup.c`, `fkeys.c`, `textgui.c`, `editlist.c` | generic edit list, Print Events, key bindings, sound events, and preference navigation converted | converted |
 | Themes | `theme/*.c`, `common/gtk3-theme-service.c`, `common/gtk4-theme-*.c` | GTK4 CSS compatibility and adapter policy | in progress; pre-production GTK4 theme stack composed behind a lifecycle controller |
