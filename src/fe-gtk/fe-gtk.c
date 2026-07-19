@@ -1092,7 +1092,7 @@ fe_message (char *msg, int flags)
 	g_signal_connect (G_OBJECT (dialog), "response",
 							G_CALLBACK (fabulor_gtk_dialog_destroy_on_response), NULL);
 	gtk_window_set_resizable (GTK_WINDOW (dialog), FALSE);
-	gtk_window_set_position (GTK_WINDOW (dialog), GTK_WIN_POS_MOUSE);
+	fabulor_gtk_window_position_at_pointer (GTK_WINDOW (dialog));
 	gtk_window_set_modal (GTK_WINDOW (dialog), (flags & FE_MSG_MODAL) != 0);
 	gtk_widget_show (dialog);
 }

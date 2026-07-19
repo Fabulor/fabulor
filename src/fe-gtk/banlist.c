@@ -496,7 +496,7 @@ banlist_clear (GtkWidget * wid, banlist_info *banl)
 
 	g_signal_connect (G_OBJECT (dialog), "response",
 							G_CALLBACK (banlist_clear_cb), banl);
-	gtk_window_set_position (GTK_WINDOW (dialog), GTK_WIN_POS_MOUSE);
+	fabulor_gtk_window_position_at_pointer (GTK_WINDOW (dialog));
 	gtk_widget_show (dialog);
 }
 

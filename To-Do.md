@@ -339,6 +339,8 @@ Detailed planning and evidence live in:
     - [ ] Replace legacy menu event types and widget construction with the retained action/model boundaries.
     - [ ] Complete channel-list and channel-view container/lifecycle cutover.
     - [ ] Complete top-level window positioning, visibility, and lifecycle cutover.
+      - [x] Contain removed placement hints, saved coordinates, and tray restore placement behind compositor-safe GTK3/GTK4 policy.
+      - [ ] Convert remaining top-level visibility, geometry sizing, and lifecycle callbacks.
     - [ ] Bind application and preferences integration to the GTK4 theme controller.
 - [ ] Remove GTK3 code, build inputs, runtime files, installer components, and compatibility helpers.
 - [ ] Complete clean-install, upgrade, accessibility, visual, performance, plugin, and packaging validation.

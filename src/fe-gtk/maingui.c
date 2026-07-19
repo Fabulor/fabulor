@@ -1195,16 +1195,17 @@ mg_configure_cb (GtkWidget *wid, GdkEventConfigure *event, session *sess)
                                 int win_width;
                                 int win_height;
 
-                                gtk_window_get_position (GTK_WINDOW (wid), &win_left, &win_top);
+                                gboolean has_position = fabulor_gtk_window_get_position (
+                                        GTK_WINDOW (wid), &win_left, &win_top);
                                 gtk_window_get_size (GTK_WINDOW (wid), &win_width, &win_height);
 
-                                if (prefs.hex_gui_win_left != win_left)
+                                if (has_position && prefs.hex_gui_win_left != win_left)
                                 {
                                         prefs.hex_gui_win_left = win_left;
                                         changed = TRUE;
                                 }
 
-                                if (prefs.hex_gui_win_top != win_top)
+                                if (has_position && prefs.hex_gui_win_top != win_top)
                                 {
                                         prefs.hex_gui_win_top = win_top;
                                         changed = TRUE;
@@ -1231,16 +1232,17 @@ mg_configure_cb (GtkWidget *wid, GdkEventConfigure *event, session *sess)
                 int dialog_width;
                 int dialog_height;
 
-                gtk_window_get_position (GTK_WINDOW (wid), &dialog_left, &dialog_top);
+                gboolean has_position = fabulor_gtk_window_get_position (
+                        GTK_WINDOW (wid), &dialog_left, &dialog_top);
                 gtk_window_get_size (GTK_WINDOW (wid), &dialog_width, &dialog_height);
 
-                if (prefs.hex_gui_dialog_left != dialog_left)
+                if (has_position && prefs.hex_gui_dialog_left != dialog_left)
                 {
                         prefs.hex_gui_dialog_left = dialog_left;
                         changed = TRUE;
                 }
 
-                if (prefs.hex_gui_dialog_top != dialog_top)
+                if (has_position && prefs.hex_gui_dialog_top != dialog_top)
                 {
                         prefs.hex_gui_dialog_top = dialog_top;
                         changed = TRUE;
@@ -1958,11 +1960,11 @@ mg_tab_close (session *sess)
                                                                 G_CALLBACK (mg_tab_close_cb), sess);
                 if (prefs.hex_gui_tab_layout)
                 {
-                        gtk_window_set_position (GTK_WINDOW (dialog), GTK_WIN_POS_MOUSE);
+                        fabulor_gtk_window_position_at_pointer (GTK_WINDOW (dialog));
                 }
                 else
                 {
-                        gtk_window_set_position (GTK_WINDOW (dialog), GTK_WIN_POS_CENTER_ON_PARENT);
+                        fabulor_gtk_window_position_center_on_parent (GTK_WINDOW (dialog));
                 }
                 gtk_widget_show (dialog);
         }
@@ -5913,7 +5915,7 @@ mg_create_tabwindow (session *sess)
         win = gtkutil_window_new (DISPLAY_NAME, NULL, prefs.hex_gui_win_width,
                                                                           prefs.hex_gui_win_height, 0);
         sess->gui->window = win;
-        gtk_window_move (GTK_WINDOW (win), prefs.hex_gui_win_left,
+        fabulor_gtk_window_move (GTK_WINDOW (win), prefs.hex_gui_win_left,
                                                   prefs.hex_gui_win_top);
         if (prefs.hex_gui_win_state)
                 gtk_window_maximize (GTK_WINDOW (win));

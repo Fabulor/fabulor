@@ -1144,7 +1144,7 @@ menu_fullscreen_toggle (GtkWidget *wid, gpointer ud)
 			/* other window managers seem to handle this */
 			gtk_window_resize (GTK_WINDOW (parent_window),
 				prefs.hex_gui_win_width, prefs.hex_gui_win_height);
-			gtk_window_move (GTK_WINDOW (parent_window),
+			fabulor_gtk_window_move (GTK_WINDOW (parent_window),
 				prefs.hex_gui_win_left, prefs.hex_gui_win_top);
 		}
 #endif
@@ -1739,7 +1739,7 @@ menu_join (GtkWidget * wid, gpointer none)
 	theme_manager_attach_window (dialog);
 	content_area = gtk_dialog_get_content_area (GTK_DIALOG (dialog));
 	gtk_box_set_homogeneous (GTK_BOX (content_area), TRUE);
-	gtk_window_set_position (GTK_WINDOW (dialog), GTK_WIN_POS_MOUSE);
+	fabulor_gtk_window_position_at_pointer (GTK_WINDOW (dialog));
 	hbox = gtkutil_box_new (GTK_ORIENTATION_HORIZONTAL, TRUE, 0);
 
 	entry = gtk_entry_new ();
