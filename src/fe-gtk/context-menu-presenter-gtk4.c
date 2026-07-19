@@ -18,6 +18,8 @@ struct _FabulorContextMenuPresenterGtk4
 {
 	GtkPopoverMenu *popover;
 	GMenuModel *menu;
+	char *built_in_namespace;
+	char *plugin_namespace;
 	GActionGroup *built_in_actions;
 	GActionGroup *plugin_actions;
 };
@@ -26,13 +28,28 @@ FabulorContextMenuPresenterGtk4 *
 fabulor_context_menu_presenter_gtk4_new (GMenuModel *menu,
 	GActionGroup *built_in_actions, GActionGroup *plugin_actions)
 {
+	return fabulor_context_menu_presenter_gtk4_new_with_namespaces (menu,
+		FABULOR_CONTEXT_ACTION_NAMESPACE, built_in_actions,
+		FABULOR_PLUGIN_CONTEXT_ACTION_NAMESPACE, plugin_actions);
+}
+
+FabulorContextMenuPresenterGtk4 *
+fabulor_context_menu_presenter_gtk4_new_with_namespaces (GMenuModel *menu,
+	const char *built_in_namespace, GActionGroup *built_in_actions,
+	const char *plugin_namespace, GActionGroup *plugin_actions)
+{
 	FabulorContextMenuPresenterGtk4 *presenter;
 	GtkWidget *popover;
 
 	g_return_val_if_fail (G_IS_MENU_MODEL (menu), NULL);
+	g_return_val_if_fail (built_in_namespace && *built_in_namespace, NULL);
 	g_return_val_if_fail (G_IS_ACTION_GROUP (built_in_actions), NULL);
-	g_return_val_if_fail (G_IS_ACTION_GROUP (plugin_actions), NULL);
+	g_return_val_if_fail ((!plugin_namespace && !plugin_actions) ||
+		(plugin_namespace && *plugin_namespace &&
+		 G_IS_ACTION_GROUP (plugin_actions)), NULL);
 	presenter = g_new0 (FabulorContextMenuPresenterGtk4, 1);
+	presenter->built_in_namespace = g_strdup (built_in_namespace);
+	presenter->plugin_namespace = g_strdup (plugin_namespace);
 	popover = gtk_popover_menu_new_from_model (NULL);
 	presenter->popover = GTK_POPOVER_MENU (g_object_ref_sink (popover));
 	if (!fabulor_context_menu_presenter_gtk4_set_projection (presenter, menu,
@@ -55,15 +72,17 @@ fabulor_context_menu_presenter_gtk4_free (
 	widget = GTK_WIDGET (presenter->popover);
 	gtk_popover_popdown (GTK_POPOVER (presenter->popover));
 	gtk_popover_menu_set_menu_model (presenter->popover, NULL);
-	gtk_widget_insert_action_group (widget, FABULOR_CONTEXT_ACTION_NAMESPACE, NULL);
-	gtk_widget_insert_action_group (widget,
-		FABULOR_PLUGIN_CONTEXT_ACTION_NAMESPACE, NULL);
+	gtk_widget_insert_action_group (widget, presenter->built_in_namespace, NULL);
+	if (presenter->plugin_namespace)
+		gtk_widget_insert_action_group (widget, presenter->plugin_namespace, NULL);
 	if (gtk_widget_get_parent (widget))
 		gtk_widget_unparent (widget);
 	g_clear_object (&presenter->menu);
 	g_clear_object (&presenter->built_in_actions);
 	g_clear_object (&presenter->plugin_actions);
 	g_clear_object (&presenter->popover);
+	g_free (presenter->built_in_namespace);
+	g_free (presenter->plugin_namespace);
 	g_free (presenter);
 }
 
@@ -77,16 +96,18 @@ fabulor_context_menu_presenter_gtk4_set_projection (
 	g_return_val_if_fail (presenter != NULL, FALSE);
 	g_return_val_if_fail (G_IS_MENU_MODEL (menu), FALSE);
 	g_return_val_if_fail (G_IS_ACTION_GROUP (built_in_actions), FALSE);
-	g_return_val_if_fail (G_IS_ACTION_GROUP (plugin_actions), FALSE);
+	g_return_val_if_fail ((!presenter->plugin_namespace && !plugin_actions) ||
+		(presenter->plugin_namespace && G_IS_ACTION_GROUP (plugin_actions)), FALSE);
 	widget = GTK_WIDGET (presenter->popover);
 	g_set_object (&presenter->menu, menu);
 	g_set_object (&presenter->built_in_actions, built_in_actions);
 	g_set_object (&presenter->plugin_actions, plugin_actions);
 	gtk_popover_menu_set_menu_model (presenter->popover, presenter->menu);
-	gtk_widget_insert_action_group (widget, FABULOR_CONTEXT_ACTION_NAMESPACE,
+	gtk_widget_insert_action_group (widget, presenter->built_in_namespace,
 		presenter->built_in_actions);
-	gtk_widget_insert_action_group (widget,
-		FABULOR_PLUGIN_CONTEXT_ACTION_NAMESPACE, presenter->plugin_actions);
+	if (presenter->plugin_namespace)
+		gtk_widget_insert_action_group (widget, presenter->plugin_namespace,
+			presenter->plugin_actions);
 	return TRUE;
 }
 

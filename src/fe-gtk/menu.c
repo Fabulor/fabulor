@@ -68,6 +68,7 @@
 #if GTK_MAJOR_VERSION >= 4
 #include "channel-context-menu-model.h"
 #include "context-menu-presenter-gtk4.h"
+#include "middle-context-menu-model.h"
 #include "nick-context-menu-model.h"
 #include "url-context-menu-model.h"
 #endif
@@ -102,6 +103,10 @@ static GSList *submenu_list;
 
 static gboolean menu_action_set_item_state (GtkWidget *item, gboolean state);
 static void menu_usermenu_model_refresh (GtkWidget *menu_bar);
+#if GTK_MAJOR_VERSION >= 4
+static void menu_middlemenu_gtk4 (session *sess, GtkWidget *origin,
+	gdouble x, gdouble y);
+#endif
 
 static GtkWidget *
 menu_icon_widget_new (const char *icon)
@@ -1534,6 +1539,10 @@ void
 menu_middlemenu_at (session *sess, GtkWidget *origin, gdouble x, gdouble y,
 	GdkModifierType state)
 {
+#if GTK_MAJOR_VERSION >= 4
+	(void) state;
+	menu_middlemenu_gtk4 (sess, origin, x, y);
+#else
 	GtkWidget *menu;
 	GtkAccelGroup *accel_group;
 
@@ -1543,6 +1552,7 @@ menu_middlemenu_at (session *sess, GtkWidget *origin, gdouble x, gdouble y,
 							 sess->server->connected || sess->server->recondelay_tag,
 							 sess->server->end_of_motd, !sess->gui->is_tab, NULL);
 	menu_popup_at (menu, origin, x, y, state, 2, accel_group);
+#endif
 }
 
 static void
@@ -4940,6 +4950,56 @@ menu_add_plugin_items (GtkWidget *menu, char *root, char *target)
 
 /* === END STUFF FOR /MENU === */
 
+static void
+menu_main_model_state_prepare (int away, int away_sensitive,
+	int disconnect_sensitive, int join_sensitive, int toplevel)
+{
+	mymenu[MENUBAR_OFFSET].state = !prefs.hex_gui_hide_menu;
+	mymenu[MENUBAR_OFFSET+1].state = prefs.hex_gui_topicbar;
+	mymenu[MENUBAR_OFFSET+2].state = !prefs.hex_gui_ulist_hide;
+	mymenu[MENUBAR_OFFSET+3].state = prefs.hex_gui_ulist_buttons;
+	mymenu[MENUBAR_OFFSET+4].state = prefs.hex_gui_mode_buttons;
+	mymenu[FULLSCREEN_OFFSET].state = prefs.hex_gui_win_fullscreen;
+
+	mymenu[AWAY_OFFSET].state = away;
+	mymenu[AWAY_OFFSET].sensitive = away_sensitive;
+	mymenu[SERVER_OFFSET+1].sensitive = disconnect_sensitive;
+	mymenu[SERVER_OFFSET+3].sensitive = join_sensitive;
+
+	if (prefs.hex_gui_tab_layout == 0)
+	{
+		mymenu[TABS_OFFSET].state = 1;
+		mymenu[TABS_OFFSET+1].state = 0;
+	}
+	else
+	{
+		mymenu[TABS_OFFSET].state = 0;
+		mymenu[TABS_OFFSET+1].state = 1;
+	}
+
+	mymenu[METRE_OFFSET].state = 0;
+	mymenu[METRE_OFFSET+1].state = 0;
+	mymenu[METRE_OFFSET+2].state = 0;
+	mymenu[METRE_OFFSET+3].state = 0;
+	switch (prefs.hex_gui_lagometer)
+	{
+	case 0:
+		mymenu[METRE_OFFSET].state = 1;
+		break;
+	case 1:
+		mymenu[METRE_OFFSET+1].state = 1;
+		break;
+	case 2:
+		mymenu[METRE_OFFSET+2].state = 1;
+		break;
+	default:
+		mymenu[METRE_OFFSET+3].state = 1;
+	}
+
+	mymenu[DETACH_OFFSET].text = toplevel ? N_("_Attach") : N_("_Detach");
+	mymenu[CLOSE_OFFSET].text = N_("_Close");
+}
+
 GtkWidget *
 menu_create_main (void *accel_group, int bar, int away, int away_sensitive,
 					 int disconnect_sensitive, int join_sensitive, int toplevel,
@@ -4984,48 +5044,8 @@ menu_create_main (void *accel_group, int bar, int away, int away_sensitive,
 	g_signal_connect (G_OBJECT (menu_bar), "can-activate-accel",
 							G_CALLBACK (menu_canacaccel), 0);
 
-	/* set the initial state of toggles */
-	mymenu[MENUBAR_OFFSET].state = !prefs.hex_gui_hide_menu;
-	mymenu[MENUBAR_OFFSET+1].state = prefs.hex_gui_topicbar;
-	mymenu[MENUBAR_OFFSET+2].state = !prefs.hex_gui_ulist_hide;
-	mymenu[MENUBAR_OFFSET+3].state = prefs.hex_gui_ulist_buttons;
-	mymenu[MENUBAR_OFFSET+4].state = prefs.hex_gui_mode_buttons;
-	mymenu[FULLSCREEN_OFFSET].state = prefs.hex_gui_win_fullscreen;
-
-	mymenu[AWAY_OFFSET].state = away;
-	mymenu[AWAY_OFFSET].sensitive = away_sensitive;
-	mymenu[SERVER_OFFSET+1].sensitive = disconnect_sensitive;
-	mymenu[SERVER_OFFSET+3].sensitive = join_sensitive;
-
-	switch (prefs.hex_gui_tab_layout)
-	{
-	case 0:
-		mymenu[TABS_OFFSET].state = 1;
-		mymenu[TABS_OFFSET+1].state = 0;
-		break;
-	default:
-		mymenu[TABS_OFFSET].state = 0;
-		mymenu[TABS_OFFSET+1].state = 1;
-	}
-
-	mymenu[METRE_OFFSET].state = 0;
-	mymenu[METRE_OFFSET+1].state = 0;
-	mymenu[METRE_OFFSET+2].state = 0;
-	mymenu[METRE_OFFSET+3].state = 0;
-	switch (prefs.hex_gui_lagometer)
-	{
-	case 0:
-		mymenu[METRE_OFFSET].state = 1;
-		break;
-	case 1:
-		mymenu[METRE_OFFSET+1].state = 1;
-		break;
-	case 2:
-		mymenu[METRE_OFFSET+2].state = 1;
-		break;
-	default:
-		mymenu[METRE_OFFSET+3].state = 1;
-	}
+	menu_main_model_state_prepare (away, away_sensitive,
+		disconnect_sensitive, join_sensitive, toplevel);
 
 	/* change Close binding to ctrl-shift-w when using emacs keys */
 	settings = gtk_widget_get_settings (menu_bar);
@@ -5049,17 +5069,6 @@ menu_create_main (void *accel_group, int bar, int away, int away_sensitive,
 		char *under = strchr (help, '_');
 		if (under && (under[1] == 'a' || under[1] == 'A'))
 			away_mask = STATE_ALT | STATE_CTRL;
-	}
-
-	if (!toplevel)
-	{
-		mymenu[DETACH_OFFSET].text = N_("_Detach");
-		mymenu[CLOSE_OFFSET].text = N_("_Close");
-	}
-	else
-	{
-		mymenu[DETACH_OFFSET].text = N_("_Attach");
-		mymenu[CLOSE_OFFSET].text = N_("_Close");
 	}
 
 	action_group = menu_action_group_new ();
@@ -5242,3 +5251,147 @@ togitem:
 		i++;
 	}
 }
+
+#if GTK_MAJOR_VERSION >= 4
+#define FABULOR_MIDDLE_CONTEXT_POPUP "fabulor-middle-context-popup"
+
+typedef struct
+{
+	FabulorMiddleContextMenuModel *model;
+	FabulorContextMenuPresenterGtk4 *presenter;
+	GtkWidget *projection_owner;
+} FabulorMiddleContextPopup;
+
+static void
+menu_middle_context_popup_free (gpointer data)
+{
+	FabulorMiddleContextPopup *popup = data;
+
+	if (!popup)
+		return;
+	fabulor_context_menu_presenter_gtk4_free (popup->presenter);
+	fabulor_middle_context_menu_model_free (popup->model);
+	g_clear_object (&popup->projection_owner);
+	g_free (popup);
+}
+
+static void
+menu_middlemenu_gtk4 (session *sess, GtkWidget *origin, gdouble x, gdouble y)
+{
+	FabulorMiddleContextPopup *popup;
+	FabulorMiddleContextSection sections[7];
+	GSimpleActionGroup *action_group;
+	GMenuModel *channel_switcher_model;
+	GMenuModel *fabulor_model;
+	GMenuModel *help_model;
+	GMenuModel *network_meters_model;
+	GMenuModel *new_model;
+	GMenuModel *plugin_model;
+	GMenuModel *search_model;
+	GMenuModel *server_model;
+	GMenuModel *settings_model;
+	GMenuModel *user_model;
+	GMenuModel *view_model;
+	GMenuModel *window_model;
+	gsize section_count = 0;
+
+	g_return_if_fail (sess != NULL);
+	g_return_if_fail (sess->server != NULL);
+	g_return_if_fail (sess->gui != NULL);
+	g_return_if_fail (GTK_IS_WIDGET (origin));
+
+	menu_nick_context_deactivate ();
+	menu_main_model_state_prepare (sess->server->is_away,
+		sess->server->connected,
+		sess->server->connected || sess->server->recondelay_tag,
+		sess->server->end_of_motd, !sess->gui->is_tab);
+
+	popup = g_new0 (FabulorMiddleContextPopup, 1);
+	popup->projection_owner = g_object_ref_sink (
+		gtk_box_new (GTK_ORIENTATION_HORIZONTAL, 0));
+	action_group = menu_action_group_new ();
+	g_object_set_data_full (G_OBJECT (popup->projection_owner),
+		FABULOR_MENU_ACTION_GROUP, action_group, g_object_unref);
+	menu_usermenu_model_refresh (popup->projection_owner);
+	menu_plugin_model_refresh (popup->projection_owner);
+
+	channel_switcher_model = menu_action_model_new (CHANNEL_SWITCHER_OFFSET,
+		CHANNEL_SWITCHER_ACTION_COUNT);
+	network_meters_model = menu_action_model_new (NETWORK_METERS_OFFSET,
+		NETWORK_METERS_ACTION_COUNT);
+	view_model = menu_view_action_model_new (channel_switcher_model,
+		network_meters_model);
+	new_model = menu_action_model_new (NEW_OFFSET, NEW_ACTION_COUNT);
+	fabulor_model = menu_fabulor_action_model_new (new_model);
+	server_model = menu_server_action_model_new ();
+	settings_model = menu_settings_action_model_new ();
+	search_model = menu_action_model_new (SEARCH_OFFSET, SEARCH_ACTION_COUNT);
+	window_model = menu_window_action_model_new (search_model);
+	help_model = menu_action_model_new (HELP_OFFSET, HELP_ACTION_COUNT);
+	user_model = g_object_get_data (G_OBJECT (popup->projection_owner),
+		FABULOR_MENU_USER_MODEL);
+	plugin_model = g_object_get_data (G_OBJECT (popup->projection_owner),
+		FABULOR_MENU_PLUGIN_MODEL);
+
+	sections[section_count++] = (FabulorMiddleContextSection) {
+		_(mymenu[0].text), mymenu[0].text, fabulor_model
+	};
+	sections[section_count++] = (FabulorMiddleContextSection) {
+		_(mymenu[MENUBAR_OFFSET - 1].text),
+		mymenu[MENUBAR_OFFSET - 1].text, view_model
+	};
+	sections[section_count++] = (FabulorMiddleContextSection) {
+		_(mymenu[SERVER_OFFSET].text), mymenu[SERVER_OFFSET].text, server_model
+	};
+	if (prefs.hex_gui_usermenu && user_model)
+	{
+		sections[section_count++] = (FabulorMiddleContextSection) {
+			_(mymenu[AWAY_OFFSET + 1].text),
+			mymenu[AWAY_OFFSET + 1].text, user_model
+		};
+	}
+	sections[section_count++] = (FabulorMiddleContextSection) {
+		_(mymenu[SETTINGS_OFFSET].text), mymenu[SETTINGS_OFFSET].text,
+		settings_model
+	};
+	sections[section_count++] = (FabulorMiddleContextSection) {
+		_(mymenu[WINDOW_OFFSET].text), mymenu[WINDOW_OFFSET].text, window_model
+	};
+	sections[section_count++] = (FabulorMiddleContextSection) {
+		_(mymenu[HELP_OFFSET].text), mymenu[HELP_OFFSET].text, help_model
+	};
+
+	popup->model = fabulor_middle_context_menu_model_new (sections,
+		section_count, plugin_model);
+	g_object_unref (channel_switcher_model);
+	g_object_unref (network_meters_model);
+	g_object_unref (view_model);
+	g_object_unref (new_model);
+	g_object_unref (fabulor_model);
+	g_object_unref (server_model);
+	g_object_unref (settings_model);
+	g_object_unref (search_model);
+	g_object_unref (window_model);
+	g_object_unref (help_model);
+	if (!popup->model)
+	{
+		menu_middle_context_popup_free (popup);
+		return;
+	}
+
+	popup->presenter =
+		fabulor_context_menu_presenter_gtk4_new_with_namespaces (
+			fabulor_middle_context_menu_model_get_menu (popup->model),
+			"fabulor", G_ACTION_GROUP (action_group), NULL, NULL);
+	if (!popup->presenter)
+	{
+		menu_middle_context_popup_free (popup);
+		return;
+	}
+
+	g_object_set_data_full (G_OBJECT (origin), FABULOR_MIDDLE_CONTEXT_POPUP,
+		popup, menu_middle_context_popup_free);
+	fabulor_context_menu_presenter_gtk4_popup_at (popup->presenter, origin,
+		x, y);
+}
+#endif

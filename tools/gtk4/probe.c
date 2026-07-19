@@ -3224,16 +3224,20 @@ check_tray_menu_presenter_gtk4 (void)
 static gboolean
 check_context_menu_presenter_gtk4 (void)
 {
+	GMenu *custom_menu;
+	GActionGroup *custom_actions;
 	GMenu *menu = g_menu_new ();
 	GActionGroup *built_in;
 	GActionGroup *plugin;
 	GtkWidget *origin = gtk_box_new (GTK_ORIENTATION_VERTICAL, 0);
 	GtkWidget *window = gtk_window_new ();
 	FabulorContextMenuPresenterGtk4 *presenter;
+	FabulorContextMenuPresenterGtk4 *custom_presenter;
 	GtkPopoverMenu *popover;
 	GdkRectangle point = { 0 };
 	guint built_in_count = 0;
 	guint plugin_count = 0;
+	guint custom_count = 0;
 	gboolean passed;
 
 	g_object_ref_sink (origin);
@@ -3269,6 +3273,27 @@ check_context_menu_presenter_gtk4 (void)
 	passed = passed && built_in_count == 1 && plugin_count == 1;
 	fabulor_context_menu_presenter_gtk4_free (presenter);
 	passed = passed && gtk_widget_get_first_child (origin) == NULL;
+
+	custom_menu = g_menu_new ();
+	g_menu_append (custom_menu, "Main action", "fabulor.run");
+	custom_actions = tray_presenter_action_group_new ("run", &custom_count);
+	custom_presenter =
+		fabulor_context_menu_presenter_gtk4_new_with_namespaces (
+			G_MENU_MODEL (custom_menu), "fabulor", custom_actions, NULL, NULL);
+	g_object_unref (custom_menu);
+	g_object_unref (custom_actions);
+	passed = passed && custom_presenter != NULL;
+	if (custom_presenter)
+	{
+		passed = passed && fabulor_context_menu_presenter_gtk4_popup_at (
+			custom_presenter, origin, 7.0, 11.0);
+		popover = fabulor_context_menu_presenter_gtk4_get_popover (
+			custom_presenter);
+		passed = passed && gtk_widget_activate_action (GTK_WIDGET (popover),
+			"fabulor.run", NULL) && custom_count == 1;
+		fabulor_context_menu_presenter_gtk4_free (custom_presenter);
+		passed = passed && gtk_widget_get_first_child (origin) == NULL;
+	}
 	gtk_window_set_child (GTK_WINDOW (window), NULL);
 	g_object_unref (origin);
 	g_object_unref (window);

@@ -339,7 +339,7 @@ Detailed planning and evidence live in:
     - [ ] Replace legacy menu event types and widget construction with the retained action/model boundaries.
       - [x] Remove raw `GdkEventButton` types from the public context-menu API and contain GTK3 event synthesis privately.
       - [x] Add a GTK4 popover presenter with retained model/action ownership, coordinate placement, reparenting, and cleanup coverage.
-      - [ ] Present built-in URL, channel, nick, and middle-click context actions through a retained GTK4 model.
+      - [x] Present built-in URL, channel, nick, and middle-click context actions through a retained GTK4 model.
         - [x] Model URL heading, Open/Connect, Copy, and plugin sections with typed retained dispatch.
         - [x] Project configurable URL handler commands, toggles, nested submenus, separators, icons, disabled path-filtered entries, and copied command lifetime.
         - [x] Connect the complete URL model, configured handlers, and plugin actions to the GTK4 presenter with origin-owned cleanup.
@@ -351,7 +351,7 @@ Detailed planning and evidence live in:
           - [x] Retain copyable user-information rows and expose incomplete-information refresh intent without live IRC pointers.
           - [x] Snapshot live user information, request missing WHOIS data safely, and connect the complete nick model to the GTK4 presenter.
         - [x] Compose ordered middle-click application-menu sections with matching and unmatched plugin roots in a retained model.
-        - [ ] Bind the retained middle-click model and main action namespace to an origin-owned GTK4 presenter.
+        - [x] Bind the retained middle-click model and main action namespace to an origin-owned GTK4 presenter.
     - [ ] Complete channel-list and channel-view container/lifecycle cutover.
     - [ ] Complete top-level window positioning, visibility, and lifecycle cutover.
       - [x] Contain removed placement hints, saved coordinates, and tray restore placement behind compositor-safe GTK3/GTK4 policy.
