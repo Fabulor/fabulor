@@ -363,6 +363,7 @@ Detailed planning and evidence live in:
       - [x] Save main-window and detached-dialog dimensions through a typed surface-layout geometry observer.
       - [x] Replace the quit dialog's retired icon-size enum with explicit GTK4 pixel sizing while preserving GTK3 theme sizing.
       - [x] Declare the retained GTK4 tab menu's Server List type and function dependencies explicitly.
+      - [x] Replace main-window button relief with a typed flat-button presentation helper.
       - [ ] Replace the GTK3 per-window Win32 message filter with reviewed GTK4 display-filter ownership.
       - [ ] Convert DCC/Server List geometry plus remaining top-level visibility and lifecycle callbacks.
     - [ ] Bind application and preferences integration to the GTK4 theme controller.

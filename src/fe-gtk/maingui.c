@@ -3322,7 +3322,7 @@ mg_create_flagbutton (char *tip, GtkWidget *box, char *face)
         btn = gtk_toggle_button_new ();
         gtk_widget_set_size_request (btn, -1, 11);
         gtk_widget_set_tooltip_text (btn, tip);
-        gtk_button_set_relief (GTK_BUTTON (btn), GTK_RELIEF_NONE);
+        fabulor_gtk_button_set_flat (GTK_BUTTON (btn));
         mg_apply_compact_mode_css (btn);
         fabulor_gtk_button_set_child (GTK_BUTTON (btn), lbl);
 
@@ -5049,11 +5049,7 @@ mg_emoji_add_button_sized (GtkWidget *grid, GtkEntry *entry, GtkWidget *popover,
         EmojiFlagInsert *insert;
 
         button = gtk_button_new ();
-#if GTK_MAJOR_VERSION >= 4
-        fabulor_gtk_widget_add_css_class (button, "flat");
-#else
-        gtk_button_set_relief (GTK_BUTTON (button), GTK_RELIEF_NONE);
-#endif
+        fabulor_gtk_button_set_flat (GTK_BUTTON (button));
         gtk_widget_set_can_focus (button, FALSE);
         gtk_widget_set_size_request (button, width, height);
         if (tooltip)
@@ -5630,7 +5626,7 @@ mg_create_search(session *sess, GtkWidget *box)
 
         close = gtk_button_new ();
         gtk_button_set_image (GTK_BUTTON (close), gtkutil_image_new_from_stock (ICON_TAB_CLOSE, GTK_ICON_SIZE_MENU));
-        gtk_button_set_relief(GTK_BUTTON(close), GTK_RELIEF_NONE);
+        fabulor_gtk_button_set_flat (GTK_BUTTON (close));
         gtk_widget_set_can_focus (close, FALSE);
         fabulor_gtk_box_append (GTK_BOX (gui->shbox), close, FALSE, FALSE, 0);
         g_signal_connect_swapped(G_OBJECT(close), "clicked", G_CALLBACK(mg_search_toggle), sess);
@@ -5651,14 +5647,14 @@ mg_create_search(session *sess, GtkWidget *box)
 
         previous = gtk_button_new ();
         gtk_button_set_image (GTK_BUTTON (previous), gtkutil_image_new_from_stock (ICON_TAB_PREVIOUS, GTK_ICON_SIZE_MENU));
-        gtk_button_set_relief(GTK_BUTTON(previous), GTK_RELIEF_NONE);
+        fabulor_gtk_button_set_flat (GTK_BUTTON (previous));
         gtk_widget_set_can_focus (previous, FALSE);
         fabulor_gtk_box_append (GTK_BOX (gui->shbox), previous, FALSE, FALSE, 0);
         g_signal_connect(G_OBJECT(previous), "clicked", G_CALLBACK(mg_search_handle_previous), sess);
 
         next = gtk_button_new ();
         gtk_button_set_image (GTK_BUTTON (next), gtkutil_image_new_from_stock (ICON_TAB_NEXT, GTK_ICON_SIZE_MENU));
-        gtk_button_set_relief(GTK_BUTTON(next), GTK_RELIEF_NONE);
+        fabulor_gtk_button_set_flat (GTK_BUTTON (next));
         gtk_widget_set_can_focus (next, FALSE);
         fabulor_gtk_box_append (GTK_BOX (gui->shbox), next, FALSE, FALSE, 0);
         g_signal_connect(G_OBJECT(next), "clicked", G_CALLBACK(mg_search_handle_next), sess);
@@ -5716,7 +5712,7 @@ mg_create_entry (session *sess, GtkWidget *box)
         gtk_label_set_ellipsize (GTK_LABEL (gui->reply_label), PANGO_ELLIPSIZE_END);
         fabulor_gtk_box_append (GTK_BOX (gui->reply_box), gui->reply_label, TRUE, TRUE, 8);
         but = gtk_button_new_with_label ("×");
-        gtk_button_set_relief (GTK_BUTTON (but), GTK_RELIEF_NONE);
+        fabulor_gtk_button_set_flat (GTK_BUTTON (but));
         gtk_widget_set_can_focus (but, FALSE);
         fabulor_gtk_box_append (GTK_BOX (gui->reply_box), but, FALSE, FALSE, 0);
         g_signal_connect (G_OBJECT (but), "clicked", G_CALLBACK (mg_reply_cancel_cb), sess);
@@ -5729,7 +5725,7 @@ mg_create_entry (session *sess, GtkWidget *box)
         fabulor_gtk_box_append (GTK_BOX (hbox), gui->nick_box, FALSE, FALSE, 0);
 
         gui->nick_label = but = gtk_button_new_with_label (sess->server->nick);
-        gtk_button_set_relief (GTK_BUTTON (but), GTK_RELIEF_NONE);
+        fabulor_gtk_button_set_flat (GTK_BUTTON (but));
         gtk_widget_set_can_focus (but, FALSE);
         fabulor_gtk_horizontal_box_append_trailing (GTK_BOX (gui->nick_box), but);
         g_signal_connect (G_OBJECT (but), "clicked",

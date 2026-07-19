@@ -1671,6 +1671,17 @@ complete GTK4 inventory improves from 245 errors / 549 warnings to 239 errors /
 546 warnings; its first remaining `maingui.c` blocker is the independent
 retired button-relief presentation enum.
 
+Flat-button presentation pass 29 (2026-07-20):
+channel-mode toggles, emoji-grid choices, search close/previous/next controls,
+reply cancellation, and the nickname command button now request semantic flat
+presentation through one cross-version helper. GTK4 applies its standard
+`flat` CSS class, while GTK3 keeps `GTK_RELIEF_NONE` private to the helper. The
+strict probe constructs a real GTK4 button and verifies the class. Strict GTK4
+and shipping GTK3 builds pass with zero warnings and errors. The complete GTK4
+inventory improves from 239 errors / 546 warnings to 233 errors / 545 warnings;
+its first remaining `maingui.c` blocker is the independent legacy Alt modifier
+name.
+
 Deliverables:
 
 - Make GTK4 the only production frontend dependency in MSVC, Meson, and CI.

@@ -173,6 +173,18 @@ fabulor_gtk_widget_add_css_class (GtkWidget *widget, const gchar *name)
 }
 
 static inline void
+fabulor_gtk_button_set_flat (GtkButton *button)
+{
+	g_return_if_fail (GTK_IS_BUTTON (button));
+
+#if GTK_MAJOR_VERSION >= 4
+	gtk_widget_add_css_class (GTK_WIDGET (button), "flat");
+#else
+	gtk_button_set_relief (button, GTK_RELIEF_NONE);
+#endif
+}
+
+static inline void
 fabulor_gtk_widget_queue_draw_region (GtkWidget *widget, gint x, gint y,
 	gint width, gint height)
 {

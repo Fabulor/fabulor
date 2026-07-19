@@ -158,6 +158,8 @@ check_compatibility_helper_signatures (void)
 		fabulor_gtk_copy_text_to_clipboards;
 	void (*volatile widget_add_css_class) (GtkWidget *, const gchar *) =
 		fabulor_gtk_widget_add_css_class;
+	void (*volatile button_set_flat) (GtkButton *) =
+		fabulor_gtk_button_set_flat;
 	void (*volatile widget_queue_draw_region) (GtkWidget *, gint, gint,
 		gint, gint) = fabulor_gtk_widget_queue_draw_region;
 	gboolean (*volatile widget_has_toplevel_focus) (GtkWidget *) =
@@ -257,6 +259,7 @@ check_compatibility_helper_signatures (void)
 	(void) box_remove_child;
 	(void) copy_text_to_clipboards;
 	(void) widget_add_css_class;
+	(void) button_set_flat;
 	(void) widget_queue_draw_region;
 	(void) widget_has_toplevel_focus;
 	(void) xtext_selection_new;
@@ -318,6 +321,23 @@ check_dialog_icon (gboolean gtk_ready)
 		g_strcmp0 (gtk_image_get_icon_name (GTK_IMAGE (image)),
 			"dialog-warning") == 0;
 	g_object_unref (image);
+	return valid;
+}
+
+static gboolean
+check_flat_button (gboolean gtk_ready)
+{
+	GtkWidget *button;
+	gboolean valid;
+
+	if (!gtk_ready)
+		return TRUE;
+
+	button = gtk_button_new ();
+	g_object_ref_sink (button);
+	fabulor_gtk_button_set_flat (GTK_BUTTON (button));
+	valid = gtk_widget_has_css_class (button, "flat");
+	g_object_unref (button);
 	return valid;
 }
 
@@ -4507,6 +4527,11 @@ main (void)
 	if (!check_dialog_icon (gtk_ready))
 	{
 		fprintf (stderr, "GTK4 dialog icon contract mismatch\n");
+		return 1;
+	}
+	if (!check_flat_button (gtk_ready))
+	{
+		fprintf (stderr, "GTK4 flat button contract mismatch\n");
 		return 1;
 	}
 	if (!check_window_state_boundary (gtk_ready))
