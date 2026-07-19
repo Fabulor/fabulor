@@ -4371,6 +4371,32 @@ intent only. Live IRC snapshots, WHOIS dispatch, and the GTK4 presenter adapter
 remain open. No `User`, `session`, server, or widget pointer is retained by the
 model. The shipping GTK3 menu and packaging are unchanged.
 
+## 2026-07-19 - Stage 8 Live Nick Context Adapter
+
+Automated evidence:
+
+- shipping GTK3 MSVC x64 Release frontend: pass with zero warnings and zero
+  errors
+- strict MSVC GTK4 probe: pass with zero warnings and zero errors
+- isolated full GTK4 frontend inventory: expected fail at older frontend
+  blockers; the complete live nick-adapter range and nick model compile without
+  a diagnostic
+- source audit: GTK4 snapshots `popup.conf`, user details, Reply, and `$NICK`
+  plugin state before presentation
+- source audit: single-target commands use copied nick storage; multi-selection
+  commands resolve the live user-list selection at activation
+- source audit: incomplete details issue WHOIS only from the valid construction
+  session, and refresh matches a weak origin against copied nick/network identity
+- source audit: popup ownership retains no `User`, `session`, `server`, popup
+  configuration entry, or widget pointer
+- `git diff --check`: pass
+
+Behavior contract: GTK3 remains on its existing widget menu. GTK4 now has the
+complete retained nick context path, pending a linkable full frontend for manual
+single/multi-selection, copy, Reply, notify, plugin, disconnect, WHOIS refresh,
+and repeated-popup testing. Packaging impact: the GTK4-only frontend project
+now includes the nick model; the shipping GTK3 payload is unchanged.
+
 ## Build Matrix
 
 | Check | GTK3 shipping target | GTK4 candidate | Final GTK4 target |
