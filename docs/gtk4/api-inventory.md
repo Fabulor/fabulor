@@ -224,7 +224,15 @@ owns its state-notify lifetime; GTK3 event types and `GdkWindowState` remain in
 the adapter. Main-window preferences, minimize-to-tray behavior, relayout,
 fullscreen action synchronization, tray action refresh, and the Windows
 auto-hide taskbar adjustment consume the same snapshot. GTK4 native Windows
-message filtering and configure-event geometry remain separate work.
+message filtering and non-main-window geometry remain separate work.
+
+Main-window and detached-dialog geometry now crosses one
+`FabulorWindowGeometry` observer. GTK4 owns a realized `GdkSurface` layout
+connection and publishes application-pixel dimensions without coordinates;
+GTK3 keeps configure events, window size reads, and available positions inside
+the owner. Preference persistence and deferred main-window relayout consume the
+same snapshot. DCC and Server List configure callbacks remain for their own
+workflow passes.
 
 Away uses a session-aware boolean `GSimpleAction`. Server-confirmed away/back
 events own its state, while active tab changes and connect/disconnect events
