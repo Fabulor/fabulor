@@ -154,7 +154,7 @@ joind_show_dialog (server *serv)
 	gtk_widget_show (hbox1);
 	fabulor_gtk_box_append (GTK_BOX (vbox1), hbox1, TRUE, TRUE, 0);
 
-	image1 = gtkutil_image_new_from_stock (ICON_JOIND_NETWORK, GTK_ICON_SIZE_LARGE_TOOLBAR);
+	image1 = gtkutil_image_new_from_stock (ICON_JOIND_NETWORK, FABULOR_GTK_ICON_SIZE_LARGE_TOOLBAR);
 	gtk_widget_show (image1);
 	fabulor_gtk_box_append (GTK_BOX (hbox1), image1, FALSE, TRUE, 24);
 	gtk_widget_set_halign (image1, GTK_ALIGN_CENTER);

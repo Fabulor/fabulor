@@ -1715,6 +1715,20 @@ with zero warnings and errors. The complete GTK4 inventory improves from 225
 errors / 543 warnings to 224 errors / 541 warnings; its first remaining
 `maingui.c` blockers are the independent retired menu icon-size enum uses.
 
+Shared icon-size contract pass 33 (2026-07-20):
+the icon resolver and `gtkutil` image boundary now consume Fabulor-owned menu
+and large-toolbar size roles instead of `GtkIconSize`. GTK3 maps those roles to
+its theme-derived menu and toolbar dimensions; GTK4 applies stable 16- and
+24-pixel logical sizes through the current one-argument named-image API.
+Search close/previous/next buttons use cross-version child ownership, and the
+channel-tab close icon joins menu, channel-list, Join, spell, plugin, and pixmap
+consumers on the shared contract. The strict probe verifies both GTK4 pixel
+sizes on real images. Strict GTK4 and shipping GTK3 builds pass with zero
+warnings and errors. The complete GTK4 inventory improves from 224 errors / 541
+warnings to 212 errors / 537 warnings, and `maingui.c` has no remaining compiler
+errors. The first remaining errors are now independent button-box layout,
+channel-view shadow, DCC geometry, and chooser boundaries.
+
 Deliverables:
 
 - Make GTK4 the only production frontend dependency in MSVC, Meson, and CI.

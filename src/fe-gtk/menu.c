@@ -131,11 +131,11 @@ menu_icon_widget_new (const char *icon)
 	}
 	else if (g_str_has_prefix (icon, "zc-menu-") || g_str_has_prefix (icon, "gtk-"))
 	{
-		img = gtkutil_image_new_from_stock (icon, GTK_ICON_SIZE_MENU);
+		img = gtkutil_image_new_from_stock (icon, FABULOR_GTK_ICON_SIZE_MENU);
 	}
 	else
 	{
-		img = gtkutil_image_new_from_stock (icon, GTK_ICON_SIZE_MENU);
+		img = gtkutil_image_new_from_stock (icon, FABULOR_GTK_ICON_SIZE_MENU);
 	}
 
 	g_free (path);
@@ -3968,7 +3968,7 @@ create_icon_menu (char *labeltext, void *stock_name, int is_stock)
 
 	if (is_stock)
 	{
-		img = gtkutil_image_new_from_stock (stock_name, GTK_ICON_SIZE_MENU);
+		img = gtkutil_image_new_from_stock (stock_name, FABULOR_GTK_ICON_SIZE_MENU);
 	}
 	else
 	{

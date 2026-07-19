@@ -5321,7 +5321,7 @@ mg_find_available_icon_name (const char *const *icon_names)
 
                 if (icon_resolver_menu_action_from_name (icon_names[i], &action))
                 {
-                        char *resource_path = icon_resolver_resolve_path (ICON_RESOLVER_ROLE_MENU_ACTION, action, GTK_ICON_SIZE_MENU, "menu", ICON_RESOLVER_THEME_SYSTEM, NULL);
+                        char *resource_path = icon_resolver_resolve_path (ICON_RESOLVER_ROLE_MENU_ACTION, action, FABULOR_GTK_ICON_SIZE_MENU, "menu", ICON_RESOLVER_THEME_SYSTEM, NULL);
 
                         if (resource_path)
                         {
@@ -5598,7 +5598,9 @@ mg_create_search(session *sess, GtkWidget *box)
         fabulor_gtk_box_append (GTK_BOX (box), gui->shbox, FALSE, FALSE, 0);
 
         close = gtk_button_new ();
-        gtk_button_set_image (GTK_BUTTON (close), gtkutil_image_new_from_stock (ICON_TAB_CLOSE, GTK_ICON_SIZE_MENU));
+        fabulor_gtk_button_set_child (GTK_BUTTON (close),
+                gtkutil_image_new_from_stock (ICON_TAB_CLOSE,
+                                              FABULOR_GTK_ICON_SIZE_MENU));
         fabulor_gtk_button_set_flat (GTK_BUTTON (close));
         gtk_widget_set_can_focus (close, FALSE);
         fabulor_gtk_box_append (GTK_BOX (gui->shbox), close, FALSE, FALSE, 0);
@@ -5619,14 +5621,18 @@ mg_create_search(session *sess, GtkWidget *box)
         gtk_entry_set_icon_tooltip_text (GTK_ENTRY (sess->gui->shentry), GTK_ENTRY_ICON_SECONDARY, _("Search hit end or not found."));
 
         previous = gtk_button_new ();
-        gtk_button_set_image (GTK_BUTTON (previous), gtkutil_image_new_from_stock (ICON_TAB_PREVIOUS, GTK_ICON_SIZE_MENU));
+        fabulor_gtk_button_set_child (GTK_BUTTON (previous),
+                gtkutil_image_new_from_stock (ICON_TAB_PREVIOUS,
+                                              FABULOR_GTK_ICON_SIZE_MENU));
         fabulor_gtk_button_set_flat (GTK_BUTTON (previous));
         gtk_widget_set_can_focus (previous, FALSE);
         fabulor_gtk_box_append (GTK_BOX (gui->shbox), previous, FALSE, FALSE, 0);
         g_signal_connect(G_OBJECT(previous), "clicked", G_CALLBACK(mg_search_handle_previous), sess);
 
         next = gtk_button_new ();
-        gtk_button_set_image (GTK_BUTTON (next), gtkutil_image_new_from_stock (ICON_TAB_NEXT, GTK_ICON_SIZE_MENU));
+        fabulor_gtk_button_set_child (GTK_BUTTON (next),
+                gtkutil_image_new_from_stock (ICON_TAB_NEXT,
+                                              FABULOR_GTK_ICON_SIZE_MENU));
         fabulor_gtk_button_set_flat (GTK_BUTTON (next));
         gtk_widget_set_can_focus (next, FALSE);
         fabulor_gtk_box_append (GTK_BOX (gui->shbox), next, FALSE, FALSE, 0);

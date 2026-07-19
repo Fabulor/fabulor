@@ -529,7 +529,8 @@ cv_tabs_add (chanview *cv, chan *ch, char *name, chan *parent)
 	item->label = gtk_label_new (name);
 	item->close_button = gtk_button_new ();
 	gtk_style_context_add_class (gtk_widget_get_style_context (item->close_button), "flat");
-	close_icon = gtk_image_new_from_icon_name ("window-close-symbolic", GTK_ICON_SIZE_MENU);
+	close_icon = fabulor_gtk_image_new_from_icon_name (
+		"window-close-symbolic", FABULOR_GTK_ICON_SIZE_MENU);
 	gtk_image_set_pixel_size (GTK_IMAGE (close_icon), 8);
 	gtk_button_set_always_show_image (GTK_BUTTON (item->close_button), TRUE);
 	gtk_widget_set_can_focus (item->close_button, FALSE);

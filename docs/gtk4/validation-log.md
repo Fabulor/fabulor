@@ -4808,6 +4808,38 @@ accessible label. Manual activation, keyboard, screen-reader, theme, and scale
 testing remains gated on the linkable full GTK4 frontend. Packaging impact:
 none.
 
+### GTK4 Stage 8 Shared Icon Sizes
+
+Date: 2026-07-20
+
+Files/workflows converted: shared icon resolver and image utility; menu and
+toolbar sizing; search controls; channel tab/list icons; Join, spell, plugin,
+menu, and pixmap consumers.
+
+Automated evidence:
+
+- shipping GTK3 MSVC x64 Release frontend: pass; zero warnings and zero errors
+- strict MSVC GTK4 probe against GTK 4.22.4 / GLib 2.88.0: compile, link, and
+  execution pass under `/W4 /WX`; zero warnings and zero errors
+- real GTK4 named-image assertions at 16-pixel menu and 24-pixel large-toolbar
+  sizes: pass
+- isolated complete GTK4 frontend inventory: expected fail; improved from 224
+  errors / 541 warnings to 212 errors / 537 warnings
+- source audit: active callers contain no `GtkIconSize`, `GTK_ICON_SIZE_*`,
+  `gtk_icon_size_lookup()`, or obsolete two-argument GTK4 named-image use;
+  legacy names remain only inside GTK3 compatibility branches
+- source audit: `maingui.c` has no remaining compiler errors in the isolated
+  complete GTK4 inventory
+- next errors: independent button-box layout, channel-view shadow, DCC geometry,
+  and chooser boundaries
+- `git diff --check`: pass
+
+Behavior contract: custom/bundled/system icon resolution order is unchanged.
+GTK3 retains theme-derived icon dimensions; GTK4 receives deterministic logical
+sizes while the active theme still supplies named system images. Manual icon
+clarity, scale, light/dark, high-contrast, and missing-theme fallback testing
+remains gated on the linkable full GTK4 frontend. Packaging impact: none.
+
 ## Build Matrix
 
 | Check | GTK3 shipping target | GTK4 candidate | Final GTK4 target |

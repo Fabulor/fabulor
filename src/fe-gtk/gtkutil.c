@@ -77,7 +77,7 @@ gtkutil_menu_icon_pixbuf_new (const char *icon_name)
 		return NULL;
 
 	resource_path = icon_resolver_resolve_path (ICON_RESOLVER_ROLE_MENU_ACTION, action,
-	                                            GTK_ICON_SIZE_MENU, "menu",
+	                                            FABULOR_GTK_ICON_SIZE_MENU, "menu",
 	                                            ICON_RESOLVER_THEME_SYSTEM,
 	                                            &system_icon_name);
 	if (!resource_path)
@@ -99,12 +99,10 @@ gtkutil_icon_name_from_stock (const char *stock_name)
 }
 
 static GtkWidget *
-gtkutil_menu_icon_image_new (const char *icon_name, GtkIconSize size)
+gtkutil_menu_icon_image_new (const char *icon_name, FabulorGtkIconSize size)
 {
 	GtkWidget *image = NULL;
 	GdkPixbuf *pixbuf;
-	gint width;
-	gint height;
 
 	pixbuf = gtkutil_menu_icon_pixbuf_new (icon_name);
 	if (!pixbuf)
@@ -113,14 +111,14 @@ gtkutil_menu_icon_image_new (const char *icon_name, GtkIconSize size)
 	image = gtk_image_new_from_pixbuf (pixbuf);
 	g_object_unref (pixbuf);
 
-	if (gtk_icon_size_lookup (size, &width, &height))
-		gtk_image_set_pixel_size (GTK_IMAGE (image), MAX (width, height));
+	gtk_image_set_pixel_size (GTK_IMAGE (image),
+		fabulor_gtk_icon_size_get_pixels (size));
 
 	return image;
 }
 
 GtkWidget *
-gtkutil_image_new_from_stock (const char *stock, GtkIconSize size)
+gtkutil_image_new_from_stock (const char *stock, FabulorGtkIconSize size)
 {
 	GtkWidget *image;
 	const char *icon_name;
@@ -141,7 +139,7 @@ gtkutil_image_new_from_stock (const char *stock, GtkIconSize size)
 	if (!resolved_icon_name)
 		resolved_icon_name = icon_name;
 
-	return gtk_image_new_from_icon_name (resolved_icon_name, size);
+	return fabulor_gtk_image_new_from_icon_name (resolved_icon_name, size);
 }
 
 GtkWidget *

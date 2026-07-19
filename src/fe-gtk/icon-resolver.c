@@ -319,7 +319,7 @@ resolve_bundled_neutral (const IconRegistryEntry *entry)
 }
 
 char *
-icon_resolver_resolve_path (IconResolverRole role, int item, GtkIconSize size,
+icon_resolver_resolve_path (IconResolverRole role, int item, FabulorGtkIconSize size,
                             const char *context, IconResolverThemeVariant variant,
                             const char **system_icon_name)
 {

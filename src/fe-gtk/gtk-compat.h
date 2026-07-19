@@ -23,6 +23,56 @@ enum
 	FABULOR_GTK_DIALOG_ICON_PIXEL_SIZE = 48
 };
 
+typedef enum
+{
+	FABULOR_GTK_ICON_SIZE_MENU = 16,
+	FABULOR_GTK_ICON_SIZE_LARGE_TOOLBAR = 24
+} FabulorGtkIconSize;
+
+#if GTK_MAJOR_VERSION < 4
+static inline GtkIconSize
+fabulor_gtk_icon_size_to_gtk3 (FabulorGtkIconSize size)
+{
+	return size == FABULOR_GTK_ICON_SIZE_LARGE_TOOLBAR ?
+		GTK_ICON_SIZE_LARGE_TOOLBAR : GTK_ICON_SIZE_MENU;
+}
+#endif
+
+static inline gint
+fabulor_gtk_icon_size_get_pixels (FabulorGtkIconSize size)
+{
+#if GTK_MAJOR_VERSION >= 4
+	return (gint) size;
+#else
+	gint width;
+	gint height;
+
+	if (gtk_icon_size_lookup (fabulor_gtk_icon_size_to_gtk3 (size),
+		&width, &height))
+		return MAX (width, height);
+	return (gint) size;
+#endif
+}
+
+static inline GtkWidget *
+fabulor_gtk_image_new_from_icon_name (const gchar *icon_name,
+									 FabulorGtkIconSize size)
+{
+	GtkWidget *image;
+
+	g_return_val_if_fail (icon_name != NULL, NULL);
+
+#if GTK_MAJOR_VERSION >= 4
+	image = gtk_image_new_from_icon_name (icon_name);
+	gtk_image_set_pixel_size (GTK_IMAGE (image),
+		fabulor_gtk_icon_size_get_pixels (size));
+#else
+	image = gtk_image_new_from_icon_name (icon_name,
+		fabulor_gtk_icon_size_to_gtk3 (size));
+#endif
+	return image;
+}
+
 static inline GtkWidget *
 fabulor_gtk_dialog_icon_new (const gchar *icon_name)
 {
