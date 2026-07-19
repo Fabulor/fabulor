@@ -4310,6 +4310,26 @@ complete retained channel context path, pending a linkable full frontend for
 manual joined/unjoined, current/non-current, Autojoin persistence, plugin,
 network-removal, and repeated-popup testing. Packaging impact: none.
 
+## 2026-07-19 - Stage 8 Nick Context Model
+
+Automated evidence:
+
+- strict MSVC GTK4 probe against GTK 4.22.4 / GLib 2.88.0: pass with zero
+  warnings and zero errors
+- single-user model preserves heading, Reply, and plugin section ordering
+- Reply dispatches once after the caller releases its nick buffer
+- multi-selection model preserves its supplied heading and omits Reply
+- shared retained context action namespace: pass
+- Meson 1.11.2 / Ninja 1.13.2: all 53 source objects compile under `-Werror`,
+  including the nick model and probe
+- local Meson final link: unavailable because Strawberry GCC 4.8.3 cannot link
+  the MSVC GTK4 import libraries; CI remains the supported Meson link path
+- `git diff --check`: pass
+
+Scope: fixed nick heading, Reply, and plugin composition only. Recursive
+`popup.conf`, user-info/WHOIS refresh, and the live GTK4 presenter connection
+remain open. The shipping GTK3 menu and packaging are unchanged.
+
 ## Build Matrix
 
 | Check | GTK3 shipping target | GTK4 candidate | Final GTK4 target |

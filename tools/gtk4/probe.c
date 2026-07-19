@@ -20,6 +20,7 @@
 #include "../../src/fe-gtk/context-menu-presenter-gtk4.h"
 #include "../../src/fe-gtk/url-context-menu-model.h"
 #include "../../src/fe-gtk/channel-context-menu-model.h"
+#include "../../src/fe-gtk/nick-context-menu-model.h"
 #include "../../src/fe-gtk/ignore-list.h"
 #include "../../src/fe-gtk/ban-list.h"
 #include "../../src/fe-gtk/channel-list.h"
@@ -3447,6 +3448,68 @@ check_channel_context_menu_model (void)
 	return passed;
 }
 
+typedef struct
+{
+	guint reply_count;
+	const char *last_nick;
+} NickContextProbe;
+
+static void
+nick_context_probe_dispatch (FabulorNickContextAction action,
+	const char *nick, gpointer user_data)
+{
+	NickContextProbe *probe = user_data;
+	if (action == FABULOR_NICK_CONTEXT_REPLY)
+		probe->reply_count++;
+	probe->last_nick = nick;
+}
+
+static gboolean
+check_nick_context_menu_model (void)
+{
+	GMenu *plugin = g_menu_new ();
+	FabulorNickContextMenuModel *model;
+	GMenuModel *menu;
+	GMenuModel *heading;
+	GActionGroup *actions;
+	NickContextProbe probe = { 0, NULL };
+	char *nick = g_strdup ("RetainedNick");
+	char *label = NULL;
+	gboolean passed;
+
+	g_menu_append (plugin, "Plugin", "fabulor-context.run");
+	model = fabulor_nick_context_menu_model_new (nick, "RetainedNick", TRUE,
+		"Reply", G_MENU_MODEL (plugin), nick_context_probe_dispatch, &probe);
+	g_free (nick);
+	g_object_unref (plugin);
+	if (!model)
+		return FALSE;
+	menu = fabulor_nick_context_menu_model_get_menu (model);
+	actions = fabulor_nick_context_menu_model_get_actions (model);
+	heading = g_menu_model_get_item_link (menu, 0, G_MENU_LINK_SECTION);
+	passed = g_menu_model_get_n_items (menu) == 3 && heading &&
+		g_menu_model_get_item_attribute (heading, 0, G_MENU_ATTRIBUTE_LABEL,
+			"s", &label) && g_strcmp0 (label, "RetainedNick") == 0;
+	g_free (label);
+	g_clear_object (&heading);
+	g_action_group_activate_action (actions, "reply", NULL);
+	passed = passed && probe.reply_count == 1 &&
+		g_strcmp0 (probe.last_nick, "RetainedNick") == 0;
+	fabulor_nick_context_menu_model_free (model);
+
+	model = fabulor_nick_context_menu_model_new ("FirstNick",
+		"3 nicks selected.", FALSE, NULL, NULL, nick_context_probe_dispatch,
+		&probe);
+	if (!model)
+		return FALSE;
+	menu = fabulor_nick_context_menu_model_get_menu (model);
+	actions = fabulor_nick_context_menu_model_get_actions (model);
+	passed = passed && g_menu_model_get_n_items (menu) == 1 &&
+		!g_action_group_has_action (actions, "reply");
+	fabulor_nick_context_menu_model_free (model);
+	return passed;
+}
+
 static gboolean
 check_spell_entry_style_policy (void)
 {
@@ -4161,6 +4224,11 @@ main (void)
 	if (!check_channel_context_menu_model ())
 	{
 		fprintf (stderr, "GTK4 channel context menu model mismatch\n");
+		return 1;
+	}
+	if (!check_nick_context_menu_model ())
+	{
+		fprintf (stderr, "GTK4 nick context menu model mismatch\n");
 		return 1;
 	}
 	if (!check_spell_entry_word_policy ())
