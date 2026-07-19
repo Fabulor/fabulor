@@ -350,6 +350,8 @@ Detailed planning and evidence live in:
         - [x] Model user-info copy actions and safe WHOIS-driven refresh, then connect the complete nick model to the GTK4 presenter.
           - [x] Retain copyable user-information rows and expose incomplete-information refresh intent without live IRC pointers.
           - [x] Snapshot live user information, request missing WHOIS data safely, and connect the complete nick model to the GTK4 presenter.
+        - [x] Compose ordered middle-click application-menu sections with matching and unmatched plugin roots in a retained model.
+        - [ ] Bind the retained middle-click model and main action namespace to an origin-owned GTK4 presenter.
     - [ ] Complete channel-list and channel-view container/lifecycle cutover.
     - [ ] Complete top-level window positioning, visibility, and lifecycle cutover.
       - [x] Contain removed placement hints, saved coordinates, and tray restore placement behind compositor-safe GTK3/GTK4 policy.

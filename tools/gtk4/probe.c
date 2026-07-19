@@ -21,6 +21,7 @@
 #include "../../src/fe-gtk/url-context-menu-model.h"
 #include "../../src/fe-gtk/channel-context-menu-model.h"
 #include "../../src/fe-gtk/nick-context-menu-model.h"
+#include "../../src/fe-gtk/middle-context-menu-model.h"
 #include "../../src/fe-gtk/ignore-list.h"
 #include "../../src/fe-gtk/ban-list.h"
 #include "../../src/fe-gtk/channel-list.h"
@@ -3611,6 +3612,71 @@ check_nick_context_menu_model (void)
 }
 
 static gboolean
+check_middle_context_menu_model (void)
+{
+	GMenu *fabulor = g_menu_new ();
+	GMenu *view = g_menu_new ();
+	GMenu *plugin_root = g_menu_new ();
+	GMenu *plugin_fabulor = g_menu_new ();
+	GMenu *plugin_tools = g_menu_new ();
+	FabulorMiddleContextMenuModel *model;
+	FabulorMiddleContextSection sections[2];
+	GMenuModel *menu;
+	GMenuModel *fabulor_submenu;
+	GMenuModel *plugin_section;
+	char *fabulor_label = g_strdup ("Fabulor");
+	char *view_label = g_strdup ("View");
+	char *label = NULL;
+	gboolean passed;
+
+	g_menu_append (fabulor, "Networks", "fabulor.networks");
+	g_menu_append (view, "Menu Bar", "fabulor.menu-bar");
+	g_menu_append (plugin_fabulor, "Plugin Command", "fabulor.plugin-0");
+	g_menu_append (plugin_tools, "Tool Command", "fabulor.plugin-1");
+	g_menu_append_submenu (plugin_root, "_Fabulor",
+		G_MENU_MODEL (plugin_fabulor));
+	g_menu_append_submenu (plugin_root, "Tools", G_MENU_MODEL (plugin_tools));
+	sections[0].label = fabulor_label;
+	sections[0].plugin_path = "Fabulor";
+	sections[0].model = G_MENU_MODEL (fabulor);
+	sections[1].label = view_label;
+	sections[1].plugin_path = "View";
+	sections[1].model = G_MENU_MODEL (view);
+	model = fabulor_middle_context_menu_model_new (sections,
+		G_N_ELEMENTS (sections), G_MENU_MODEL (plugin_root));
+	g_free (fabulor_label);
+	g_free (view_label);
+	g_object_unref (fabulor);
+	g_object_unref (view);
+	g_object_unref (plugin_fabulor);
+	g_object_unref (plugin_tools);
+	g_object_unref (plugin_root);
+	if (!model)
+		return FALSE;
+	menu = fabulor_middle_context_menu_model_get_menu (model);
+	fabulor_submenu = g_menu_model_get_item_link (menu, 0,
+		G_MENU_LINK_SUBMENU);
+	plugin_section = fabulor_submenu ? g_menu_model_get_item_link (
+		fabulor_submenu, 1, G_MENU_LINK_SECTION) : NULL;
+	passed = g_menu_model_get_n_items (menu) == 3 && fabulor_submenu &&
+		g_menu_model_get_n_items (fabulor_submenu) == 2 && plugin_section &&
+		g_menu_model_get_n_items (plugin_section) == 1 &&
+		g_menu_model_get_item_attribute (plugin_section, 0,
+			G_MENU_ATTRIBUTE_LABEL, "s", &label) &&
+		g_strcmp0 (label, "Plugin Command") == 0;
+	g_free (label);
+	label = NULL;
+	passed = passed && g_menu_model_get_item_attribute (menu, 2,
+		G_MENU_ATTRIBUTE_LABEL, "s", &label) &&
+		g_strcmp0 (label, "Tools") == 0;
+	g_free (label);
+	g_clear_object (&plugin_section);
+	g_clear_object (&fabulor_submenu);
+	fabulor_middle_context_menu_model_free (model);
+	return passed;
+}
+
+static gboolean
 check_spell_entry_style_policy (void)
 {
 	FabulorSpellEntryPalette palette = {
@@ -4329,6 +4395,11 @@ main (void)
 	if (!check_nick_context_menu_model ())
 	{
 		fprintf (stderr, "GTK4 nick context menu model mismatch\n");
+		return 1;
+	}
+	if (!check_middle_context_menu_model ())
+	{
+		fprintf (stderr, "GTK4 middle context menu model mismatch\n");
 		return 1;
 	}
 	if (!check_spell_entry_word_policy ())
