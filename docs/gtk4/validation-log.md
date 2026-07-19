@@ -4397,6 +4397,27 @@ single/multi-selection, copy, Reply, notify, plugin, disconnect, WHOIS refresh,
 and repeated-popup testing. Packaging impact: the GTK4-only frontend project
 now includes the nick model; the shipping GTK3 payload is unchanged.
 
+## 2026-07-19 - Stage 8 Middle Context Model
+
+Automated evidence:
+
+- strict MSVC GTK4 probe against GTK 4.22.4 / GLib 2.88.0: pass with zero
+  warnings and zero errors
+- ordered built-in top-level section composition: pass
+- caller-released section labels and source models remain retained: pass
+- stable plugin paths match display labels independent of mnemonic underscores
+- matching plugin content remains a separate submenu section: pass
+- unmatched plugin roots remain top-level and ordered after built-in sections
+- Meson 1.11.2 / Ninja 1.13.2: all 54 source objects compile under `-Werror`
+- local Meson final link remains unavailable at the documented Strawberry GCC
+  4.8.3 versus MSVC import-library boundary
+- `git diff --check`: pass
+
+Scope: retained middle-click application-menu composition only. Presenter
+support for the main `fabulor` action namespace and the production middle-click
+adapter remain open. The model owns no action group, widget, session, or server
+state. The shipping GTK3 menu and packaging are unchanged.
+
 ## Build Matrix
 
 | Check | GTK3 shipping target | GTK4 candidate | Final GTK4 target |

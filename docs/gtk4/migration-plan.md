@@ -1525,6 +1525,20 @@ stores no `User`, `session`, `server`, configuration-entry, or widget pointer.
 The fixed notify-item suppression, nested handlers, toggle state, plugin target
 policy, and origin-owned cleanup remain compatible with GTK3 behavior.
 
+Middle context-model pass 19 (2026-07-19):
+a toolkit-neutral retained model now composes the ordered application-menu
+sections needed by the middle-click popup. Callers provide translated display
+labels separately from stable plugin path names, so sparse `/MENU` additions
+merge into the intended top-level submenu without depending on locale or GTK
+mnemonic underscores. Matching plugin content is isolated in a trailing
+section, while unmatched plugin roots remain available at top level. The model
+retains only copied `GMenuModel` content and owns no action group, widget, or
+session state. The strict probe releases every caller model and display-label
+buffer, then verifies ordering, mnemonic-insensitive matching, plugin section
+composition, and unmatched-root preservation. Main-action namespace support
+in the popover presenter and the production middle-click adapter remain the
+next contained pass; GTK3 continues unchanged.
+
 Deliverables:
 
 - Make GTK4 the only production frontend dependency in MSVC, Meson, and CI.
