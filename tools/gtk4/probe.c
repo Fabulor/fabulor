@@ -233,12 +233,16 @@ check_compatibility_helper_signatures (void)
 		const FabulorGtkWindowPlacement *) = fabulor_gtk_window_placement_restore;
 	void (*volatile scrolled_window_set_child) (GtkScrolledWindow *, GtkWidget *) =
 		fabulor_gtk_scrolled_window_set_child;
+	void (*volatile scrolled_window_set_framed) (GtkScrolledWindow *, gboolean) =
+		fabulor_gtk_scrolled_window_set_framed;
 	void (*volatile paned_set_start_child) (GtkPaned *, GtkWidget *, gboolean,
 		gboolean) = fabulor_gtk_paned_set_start_child;
 	void (*volatile paned_set_end_child) (GtkPaned *, GtkWidget *, gboolean,
 		gboolean) = fabulor_gtk_paned_set_end_child;
 	void (*volatile frame_set_child) (GtkFrame *, GtkWidget *) =
 		fabulor_gtk_frame_set_child;
+	void (*volatile frame_set_outlined) (GtkFrame *) =
+		fabulor_gtk_frame_set_outlined;
 	void (*volatile button_set_child) (GtkButton *, GtkWidget *) =
 		fabulor_gtk_button_set_child;
 	void (*volatile overlay_set_child) (GtkOverlay *, GtkWidget *) =
@@ -293,9 +297,11 @@ check_compatibility_helper_signatures (void)
 	(void) window_placement_capture;
 	(void) window_placement_restore;
 	(void) scrolled_window_set_child;
+	(void) scrolled_window_set_framed;
 	(void) paned_set_start_child;
 	(void) paned_set_end_child;
 	(void) frame_set_child;
+	(void) frame_set_outlined;
 	(void) button_set_child;
 	(void) overlay_set_child;
 	(void) popover_set_child;
@@ -338,6 +344,32 @@ check_flat_button (gboolean gtk_ready)
 	fabulor_gtk_button_set_flat (GTK_BUTTON (button));
 	valid = gtk_widget_has_css_class (button, "flat");
 	g_object_unref (button);
+	return valid;
+}
+
+static gboolean
+check_frame_presentation (gboolean gtk_ready)
+{
+	GtkWidget *scroller;
+	GtkWidget *frame;
+	gboolean valid;
+
+	if (!gtk_ready)
+		return TRUE;
+
+	scroller = gtk_scrolled_window_new ();
+	frame = gtk_frame_new (NULL);
+	g_object_ref_sink (scroller);
+	g_object_ref_sink (frame);
+	fabulor_gtk_scrolled_window_set_framed (
+		GTK_SCROLLED_WINDOW (scroller), TRUE);
+	valid = gtk_widget_has_css_class (scroller, "frame");
+	fabulor_gtk_scrolled_window_set_framed (
+		GTK_SCROLLED_WINDOW (scroller), FALSE);
+	valid = valid && !gtk_widget_has_css_class (scroller, "frame");
+	fabulor_gtk_frame_set_outlined (GTK_FRAME (frame));
+	g_object_unref (frame);
+	g_object_unref (scroller);
 	return valid;
 }
 
@@ -4532,6 +4564,11 @@ main (void)
 	if (!check_flat_button (gtk_ready))
 	{
 		fprintf (stderr, "GTK4 flat button contract mismatch\n");
+		return 1;
+	}
+	if (!check_frame_presentation (gtk_ready))
+	{
+		fprintf (stderr, "GTK4 frame presentation contract mismatch\n");
 		return 1;
 	}
 	if (!check_window_state_boundary (gtk_ready))

@@ -656,6 +656,12 @@ loading, menu dispatch, Ctrl+A filtering, and user-list type-to-input behavior
 now consume that shared semantic name. Accelerator text and stored key-binding
 formats remain unchanged.
 
+Stage 8 frame-presentation pass 31 replaces the active main-window shadow-type
+calls with semantic framed-scroller and outlined-frame helpers. GTK4 uses the
+standard `frame` CSS class for transcript and topic scrollers and lets
+`GtkFrame`'s own CSS node render meter outlines. GTK3 keeps the exact `NONE`,
+`IN`, and `OUT` shadow styles inside the compatibility boundary.
+
 ## Functional Clusters
 
 | Cluster | Main files | GTK4 concern | Status |

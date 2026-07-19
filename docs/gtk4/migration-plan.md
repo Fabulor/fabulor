@@ -1692,6 +1692,17 @@ GTK3 builds pass with zero warnings and errors. The complete GTK4 inventory
 improves from 233 errors / 545 warnings to 228 errors / 545 warnings; its first
 remaining `maingui.c` blocker is the independent retired frame-shadow API.
 
+Frame and scrolled-window presentation pass 31 (2026-07-20):
+the topic scroller, transcript scroller, and meter info frames now request
+unframed, framed, and outlined presentation through cross-version helpers.
+GTK4 toggles the standard scrolled-window `frame` CSS class and relies on the
+`GtkFrame` CSS node for its border; GTK3 retains `GTK_SHADOW_NONE`,
+`GTK_SHADOW_IN`, and `GTK_SHADOW_OUT` privately. The strict probe verifies both
+framed and unframed GTK4 class states on a real widget. Strict GTK4 and shipping
+GTK3 builds pass with zero warnings and errors. The complete GTK4 inventory
+improves from 228 errors / 545 warnings to 225 errors / 543 warnings; its first
+remaining `maingui.c` blocker is the independent legacy button event mask.
+
 Deliverables:
 
 - Make GTK4 the only production frontend dependency in MSVC, Meson, and CI.

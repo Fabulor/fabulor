@@ -4751,6 +4751,33 @@ current API name and GTK3 retains its established name. Manual Alt shortcuts,
 Ctrl+A, Ctrl+Q, and type-to-input testing remains gated on the linkable full
 GTK4 frontend. Packaging impact: none.
 
+### GTK4 Stage 8 Frame Presentation
+
+Date: 2026-07-20
+
+Files/workflows converted: topic scroller border suppression; transcript
+scroller frame; lag and throttle meter info-frame outlines.
+
+Automated evidence:
+
+- shipping GTK3 MSVC x64 Release frontend: pass; zero warnings and zero errors
+- strict MSVC GTK4 probe against GTK 4.22.4 / GLib 2.88.0: compile, link, and
+  execution pass under `/W4 /WX`; zero warnings and zero errors
+- real GTK4 scrolled-window `frame` class enable/disable assertions: pass
+- isolated complete GTK4 frontend inventory: expected fail; improved from 228
+  errors / 545 warnings to 225 errors / 543 warnings
+- source audit: `maingui.c` contains no `gtk_scrolled_window_set_shadow_type`,
+  `gtk_frame_set_shadow_type`, or `GTK_SHADOW_*` reference
+- first remaining `maingui.c` blocker: legacy `GDK_BUTTON_PRESS_MASK` near line
+  4153
+- `git diff --check`: pass
+
+Behavior contract: the topic remains unframed, the transcript remains framed,
+and meter labels remain outlined. GTK4 delegates final colours and border shape
+to the active desktop/profile theme. Manual theme, high-contrast, and scale
+testing remains gated on the linkable full GTK4 frontend. Packaging impact:
+none.
+
 ## Build Matrix
 
 | Check | GTK3 shipping target | GTK4 candidate | Final GTK4 target |
