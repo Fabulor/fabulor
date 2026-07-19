@@ -1703,6 +1703,18 @@ GTK3 builds pass with zero warnings and errors. The complete GTK4 inventory
 improves from 228 errors / 545 warnings to 225 errors / 543 warnings; its first
 remaining `maingui.c` blocker is the independent legacy button event mask.
 
+Scroll-to-bottom control pass 32 (2026-07-20):
+the overlay control is now a real themed icon button instead of a custom
+drawing area registered for legacy button events. It uses
+`go-bottom-symbolic`, flat styling, the existing 28-pixel footprint and
+position, ordinary button activation, a tooltip, and an explicit accessible
+label. The custom Cairo arrow, app-paintable setup, raw event mask, draw signal,
+and invalid drawing-area `clicked` connection are removed. Visibility and
+adjustment tracking are unchanged. Strict GTK4 and shipping GTK3 builds pass
+with zero warnings and errors. The complete GTK4 inventory improves from 225
+errors / 543 warnings to 224 errors / 541 warnings; its first remaining
+`maingui.c` blockers are the independent retired menu icon-size enum uses.
+
 Deliverables:
 
 - Make GTK4 the only production frontend dependency in MSVC, Meson, and CI.
