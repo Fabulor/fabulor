@@ -189,6 +189,9 @@ jobs:
           msbuild tools\gtk4\gtk4-probe.vcxproj /m /verbosity:minimal /p:Configuration=Release /p:Platform=${{ matrix.platform }} /p:FabulorGtk4Root="%GITHUB_WORKSPACE%\Runtime\GTK4"
           if errorlevel 1 exit /b 1
 
+          msbuild tools\gtk4\gtk4-full-frontend.proj /t:BuildCommon /m:1 /verbosity:minimal /p:Configuration=Release /p:Platform=${{ matrix.platform }} /p:FabulorGtk4Root="%GITHUB_WORKSPACE%\Runtime\GTK4"
+          if errorlevel 1 exit /b 1
+
           python -m mesonbuild.mesonmain setup --buildtype=release build\gtk4-probe-meson tools\gtk4 "-Dgtk4_root=%GITHUB_WORKSPACE%\Runtime\GTK4"
           if errorlevel 1 exit /b 1
           python -m mesonbuild.mesonmain compile -C build\gtk4-probe-meson

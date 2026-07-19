@@ -1370,6 +1370,19 @@ plus the manifest directly in the shipping MSI. The duplicate candidate MSI
 build/upload is removed. Production `fabulor.exe` and the root GTK3 payload are
 unchanged pending frontend linking and packaged feature validation.
 
+Full-project MSVC build-profile pass 6 (2026-07-19):
+the shared Windows property sheet now has an explicit `FabulorGtkMajor=4`
+profile that resolves GTK, GLib, resource tools, headers, and import libraries
+from the validated GTK4 development root while retaining the existing root for
+non-GTK dependencies. All candidate objects, libraries, resources, PDBs, and
+executables are isolated beneath `build/gtk4-full`; the default remains GTK3
+and still builds the shipping executable. `gtk4-full-frontend.proj` provides a
+green full common-library checkpoint, enforced by Windows CI, and an honest
+complete frontend compile. That compile now identifies the production cutover clusters directly: legacy
+menu event/widget construction, channel-list and channel-view container APIs,
+window positioning/lifecycle calls, and direct GTK3 theme application and
+preferences integration. No partial GTK4 executable is emitted or packaged.
+
 Deliverables:
 
 - Make GTK4 the only production frontend dependency in MSVC, Meson, and CI.

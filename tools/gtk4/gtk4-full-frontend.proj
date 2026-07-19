@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <Configuration Condition="'$(Configuration)'==''">Release</Configuration>
+    <Platform Condition="'$(Platform)'==''">x64</Platform>
+    <FabulorGtk4Root Condition="'$(FabulorGtk4Root)'=='' and '$(FABULOR_GTK4_ROOT)'!=''">$(FABULOR_GTK4_ROOT)</FabulorGtk4Root>
+    <FabulorGtk4Root Condition="'$(FabulorGtk4Root)'==''">$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\..\Runtime\GTK4'))</FabulorGtk4Root>
+    <BuildProperties>Configuration=$(Configuration);Platform=$(Platform);FabulorGtkMajor=4;FabulorGtk4Root=$(FabulorGtk4Root)</BuildProperties>
+  </PropertyGroup>
+
+  <Target Name="BuildCommon">
+    <Message Importance="high" Text="Compiling the isolated full GTK4 common profile against $(FabulorGtk4Root)" />
+    <MSBuild Projects="$(MSBuildThisFileDirectory)..\..\src\common\common.vcxproj" Targets="Build" Properties="$(BuildProperties)" BuildInParallel="false" />
+  </Target>
+
+  <Target Name="Build" DependsOnTargets="BuildCommon">
+    <Message Importance="high" Text="Compiling the isolated full GTK4 frontend profile against $(FabulorGtk4Root)" />
+    <MSBuild Projects="$(MSBuildThisFileDirectory)..\..\src\fe-gtk\fe-gtk.vcxproj" Targets="Build" Properties="$(BuildProperties)" BuildInParallel="false" />
+  </Target>
+
+  <Target Name="Clean">
+    <MSBuild Projects="$(MSBuildThisFileDirectory)..\..\src\fe-gtk\fe-gtk.vcxproj" Targets="Clean" Properties="$(BuildProperties)" BuildInParallel="false" />
+    <MSBuild Projects="$(MSBuildThisFileDirectory)..\..\src\common\common.vcxproj" Targets="Clean" Properties="$(BuildProperties)" BuildInParallel="false" />
+  </Target>
+</Project>

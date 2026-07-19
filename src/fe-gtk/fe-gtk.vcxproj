@@ -30,7 +30,7 @@
       <DisableSpecificWarnings>4244;4267;%(DisableSpecificWarnings)</DisableSpecificWarnings>
     </ClCompile>
     <Link>
-      <AdditionalLibraryDirectories>$(ArchiveLibDir);$(DepsRoot)\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(ArchiveLibDir);$(GtkDepsRoot)\lib;$(DepsRoot)\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalDependencies>$(DepLibs);$(ZoiteChatLib)common.lib;wbemuuid.lib;dwmapi.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <EntryPointSymbol>mainCRTStartup</EntryPointSymbol>
     </Link>
@@ -60,8 +60,8 @@ FOR %%I IN ("$(ZoiteChatLib)fabulor.rc") DO IF %%~zI EQU 0 (
   ECHO Converted resource file is empty: $(ZoiteChatLib)fabulor.rc
   EXIT /B 1
 )
-"$(DepsRoot)\bin\glib-compile-resources.exe" --generate-header --manual-register --sourcedir "$(DataDirForResourceCompilation)" --target "$(ZoiteChatLib)resources.h" "$(DataDirForResourceCompilation)\fabulor.gresource.xml"
-"$(DepsRoot)\bin\glib-compile-resources.exe" --generate-source --manual-register --sourcedir "$(DataDirForResourceCompilation)" --target "$(ZoiteChatLib)resources.c" "$(DataDirForResourceCompilation)\fabulor.gresource.xml"
+"$(GlibCompileResources)" --generate-header --manual-register --sourcedir "$(DataDirForResourceCompilation)" --target "$(ZoiteChatLib)resources.h" "$(DataDirForResourceCompilation)\fabulor.gresource.xml"
+"$(GlibCompileResources)" --generate-source --manual-register --sourcedir "$(DataDirForResourceCompilation)" --target "$(ZoiteChatLib)resources.c" "$(DataDirForResourceCompilation)\fabulor.gresource.xml"
       ]]></Command>
       <Message>Build fabulor.rc and gresource file</Message>
     </PreBuildEvent>

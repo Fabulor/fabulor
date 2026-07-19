@@ -4124,6 +4124,31 @@ Known regressions:
 Follow-up:
 ```
 
+## 2026-07-19 - Stage 8 Full-Project MSVC Build Profile
+
+Automated evidence:
+
+- isolated `BuildCommon` against `Runtime\GTK4`: pass; full `common.lib`
+  produced beneath `build\gtk4-full`
+- isolated complete frontend compile against `Runtime\GTK4`: expected fail;
+  compilation reaches the production frontend and reports the remaining
+  GTK3-only boundaries instead of failing dependency discovery
+- default x64 Release `common.vcxproj`: pass
+- default x64 Release `fe-gtk.vcxproj`: pass; shipping
+  `C:\zoitechat-build\x64\rel\fabulor.exe` produced
+- profile XML and whitespace validation: pass
+
+Current frontend blocker groups:
+
+- raw `GdkEventButton` and legacy menu/widget construction
+- channel-list and channel-view GTK3 container, icon-size, and child APIs
+- removed window position, screen, visibility, and destruction APIs
+- direct GTK3 theme backend use in application and preference integration
+
+Packaging impact: none. CI runs only the green isolated common checkpoint. The
+full frontend target is not referenced by staging, WiX, or the shipping
+solution and cannot overwrite the production executable.
+
 ## Build Matrix
 
 | Check | GTK3 shipping target | GTK4 candidate | Final GTK4 target |
