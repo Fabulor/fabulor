@@ -1510,6 +1510,21 @@ covers both refresh states. Live user snapshots, the safe WHOIS request, and
 the production GTK4 presenter connection remain the next contained pass; GTK3
 continues unchanged.
 
+Live nick context-adapter pass 18 (2026-07-19):
+the production nick-menu entry point now selects the complete retained model
+and popover presenter under GTK4 while preserving the GTK3 widget path. It
+snapshots `popup.conf`, the applicable single-user details, Reply state, and
+the `$NICK` plugin projection before releasing all live source pointers.
+Commands preserve single-target and live multi-selection dispatch, information
+actions copy their retained values, and Reply resolves the current session only
+when activated. Incomplete details submit one hidden WHOIS while the supplied
+session is known valid. Subsequent user updates locate the active origin through
+a weak reference, verify copied nick and network identity, and replace the
+presenter's retained projection from the fresh user snapshot. The popup owner
+stores no `User`, `session`, `server`, configuration-entry, or widget pointer.
+The fixed notify-item suppression, nested handlers, toggle state, plugin target
+policy, and origin-owned cleanup remain compatible with GTK3 behavior.
+
 Deliverables:
 
 - Make GTK4 the only production frontend dependency in MSVC, Meson, and CI.

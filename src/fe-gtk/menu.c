@@ -68,6 +68,7 @@
 #if GTK_MAJOR_VERSION >= 4
 #include "channel-context-menu-model.h"
 #include "context-menu-presenter-gtk4.h"
+#include "nick-context-menu-model.h"
 #include "url-context-menu-model.h"
 #endif
 
@@ -686,7 +687,9 @@ menu_create (GtkWidget *menu, GSList *list, char *target, int check_path)
 }
 
 static char *str_copy = NULL;		/* for all pop-up menus */
+#if GTK_MAJOR_VERSION < 4
 static GtkWidget *nick_submenu = NULL;	/* user info submenu */
+#endif
 
 static void
 menu_destroy (GtkWidget *menu, gpointer objtounref)
@@ -695,7 +698,9 @@ menu_destroy (GtkWidget *menu, gpointer objtounref)
 	g_object_unref (menu);
 	if (objtounref)
 		g_object_unref (G_OBJECT (objtounref));
+#if GTK_MAJOR_VERSION < 4
 	nick_submenu = NULL;
+#endif
 }
 
 #if GTK_MAJOR_VERSION < 4
@@ -747,6 +752,7 @@ menu_popup_at (GtkWidget *menu, GtkWidget *origin, gdouble x, gdouble y,
 }
 #endif
 
+#if GTK_MAJOR_VERSION < 4
 static void
 menu_nickinfo_cb (GtkWidget *menu, session *sess)
 {
@@ -918,11 +924,380 @@ menu_reply_to_latest_cb (GtkWidget *wid, gpointer data)
 	if (current_sess->gui && current_sess->gui->input_box)
 		gtk_widget_grab_focus (current_sess->gui->input_box);
 }
+#endif
+
+#if GTK_MAJOR_VERSION >= 4
+#define FABULOR_NICK_CONTEXT_POPUP "fabulor-nick-context-popup"
+
+typedef struct
+{
+	FabulorNickContextMenuModel *model;
+	FabulorContextMenuPresenterGtk4 *presenter;
+	char *nick;
+	char *network_name;
+	int num_sel;
+	GWeakRef origin;
+} FabulorNickContextPopup;
+
+static GWeakRef *
+menu_nick_context_origin_ref (void)
+{
+	static GWeakRef origin_ref;
+	static gsize initialized;
+
+	if (g_once_init_enter (&initialized))
+	{
+		g_weak_ref_init (&origin_ref, NULL);
+		g_once_init_leave (&initialized, 1);
+	}
+	return &origin_ref;
+}
+
+static void
+menu_nick_context_deactivate (void)
+{
+	g_weak_ref_set (menu_nick_context_origin_ref (), NULL);
+}
+
+static void
+menu_nick_context_popup_free (gpointer data)
+{
+	FabulorNickContextPopup *popup = data;
+	if (!popup)
+		return;
+	fabulor_context_menu_presenter_gtk4_free (popup->presenter);
+	fabulor_nick_context_menu_model_free (popup->model);
+	g_free (popup->nick);
+	g_free (popup->network_name);
+	g_weak_ref_clear (&popup->origin);
+	g_free (popup);
+}
+
+static void
+menu_nick_context_dispatch (FabulorNickContextAction action,
+	const char *nick, const char *command, gboolean selection_dispatch,
+	gpointer user_data)
+{
+	FabulorNickContextPopup *popup = user_data;
+	session *sess;
+
+	if (action == FABULOR_NICK_CONTEXT_COPY_INFO)
+	{
+		if (command)
+		{
+			GObject *origin = g_weak_ref_get (&popup->origin);
+			if (origin)
+			{
+				gtkutil_copy_to_clipboard (GTK_WIDGET (origin), (char *)command);
+				g_object_unref (origin);
+			}
+		}
+		return;
+	}
+	if (action == FABULOR_NICK_CONTEXT_REPLY)
+	{
+		reply_item *item;
+		if (!current_sess)
+			return;
+		item = reply_cache_latest_from (current_sess, nick);
+		if (!item)
+		{
+			PrintText (current_sess, _("No recent message to reply to.\n"));
+			return;
+		}
+		reply_state_set (current_sess, item->msgid, current_sess->channel,
+			item->nick, item->text);
+		mg_reply_update (current_sess);
+		if (current_sess->gui && current_sess->gui->input_box)
+			gtk_widget_grab_focus (current_sess->gui->input_box);
+		return;
+	}
+	if (action != FABULOR_NICK_CONTEXT_COMMAND || !command)
+		return;
+	if (selection_dispatch)
+	{
+		if (current_sess)
+			userlist_button_cb (NULL, (char *)command);
+		return;
+	}
+	sess = current_sess ? current_sess : (sess_list ? sess_list->data : NULL);
+	if (sess)
+		nick_command_parse (sess, (char *)command, (char *)nick, (char *)nick);
+}
+
+static void
+menu_nick_handler_clear (gpointer data)
+{
+	FabulorNickHandler *handler = data;
+	g_free ((char *)handler->label);
+	g_free ((char *)handler->icon);
+}
+
+static GArray *
+menu_nick_handlers_snapshot (session *sess, char *target)
+{
+	GArray *handlers = g_array_new (FALSE, FALSE, sizeof (FabulorNickHandler));
+	GSList *list;
+
+	g_array_set_clear_func (handlers, menu_nick_handler_clear);
+	for (list = popup_list; list; list = list->next)
+	{
+		struct popup *pop = list->data;
+		FabulorNickHandler handler = { 0 };
+
+		handler.enabled = TRUE;
+		if (!g_ascii_strncasecmp (pop->name, "SUB", 3))
+		{
+			handler.kind = FABULOR_NICK_HANDLER_SUBMENU_BEGIN;
+			handler.label = g_strdup (pop->cmd);
+		}
+		else if (!g_ascii_strncasecmp (pop->name, "TOGGLE", 6))
+		{
+			handler.kind = FABULOR_NICK_HANDLER_TOGGLE;
+			handler.label = g_strdup (pop->name + 7);
+			handler.command = pop->cmd;
+			handler.active = cfg_get_bool (pop->cmd);
+		}
+		else if (!g_ascii_strncasecmp (pop->name, "ENDSUB", 6))
+			handler.kind = FABULOR_NICK_HANDLER_SUBMENU_END;
+		else if (!g_ascii_strncasecmp (pop->name, "SEP", 3))
+			handler.kind = FABULOR_NICK_HANDLER_SEPARATOR;
+		else
+		{
+			char *icon;
+			char *label;
+			if (pop->cmd[0] == 'n' &&
+				!strcmp (pop->cmd, "notify -n ASK %s") &&
+				(!target || notify_is_in_list (sess->server, target)))
+				continue;
+			handler.kind = FABULOR_NICK_HANDLER_COMMAND;
+			menu_extract_icon (pop->name, &label, &icon);
+			handler.label = label;
+			handler.icon = icon;
+			handler.command = pop->cmd;
+		}
+		g_array_append_val (handlers, handler);
+	}
+	return handlers;
+}
+
+static void
+menu_nick_info_clear (gpointer data)
+{
+	FabulorNickInfoItem *info = data;
+	g_free ((char *)info->label);
+	g_free ((char *)info->value);
+}
+
+static void
+menu_nick_info_append (GArray *items, const char *name, const char *display,
+	const char *value)
+{
+	FabulorNickInfoItem item;
+	item.label = g_strdup_printf ("%s %s", name, display);
+	item.value = g_strdup (value);
+	g_array_append_val (items, item);
+}
+
+static GArray *
+menu_nick_info_snapshot (session *sess, struct User *user,
+	gboolean *needs_refresh)
+{
+	GArray *items = g_array_new (FALSE, FALSE, sizeof (FabulorNickInfoItem));
+	const char *unknown = _("Unknown");
+	char *real = NULL;
+	char *users_country;
+	char last_message[96];
+	struct away_msg *away;
+
+	g_array_set_clear_func (items, menu_nick_info_clear);
+	*needs_refresh = FALSE;
+	if (!user)
+		return items;
+	if (user->realname)
+		real = strip_color (user->realname, -1, STRIP_ALL | STRIP_ESCMARKUP);
+	menu_nick_info_append (items, _("Real Name:"),
+		real ? real : unknown, user->realname ? user->realname : unknown);
+	g_free (real);
+	menu_nick_info_append (items, _("User:"),
+		user->hostname ? user->hostname : unknown,
+		user->hostname ? user->hostname : unknown);
+	menu_nick_info_append (items, _("Account:"),
+		user->account ? user->account : unknown,
+		user->account ? user->account : unknown);
+	users_country = country (user->hostname);
+	if (users_country)
+		menu_nick_info_append (items, _("Country:"), users_country,
+			users_country);
+	menu_nick_info_append (items, _("Server:"),
+		user->servername ? user->servername : unknown,
+		user->servername ? user->servername : unknown);
+	if (user->lasttalk)
+		g_snprintf (last_message, sizeof last_message, _("%u minutes ago"),
+			(unsigned int)((time (NULL) - user->lasttalk) / 60));
+	else
+		g_strlcpy (last_message, unknown, sizeof last_message);
+	menu_nick_info_append (items, _("Last Msg:"), last_message, NULL);
+	if (user->away)
+	{
+		away = server_away_find_message (sess->server, user->nick);
+		if (away)
+		{
+			char *message = strip_color (away->message ? away->message : unknown,
+				-1, STRIP_ALL | STRIP_ESCMARKUP);
+			menu_nick_info_append (items, _("Away Msg:"), message,
+				away->message ? away->message : unknown);
+			g_free (message);
+		}
+		else
+			*needs_refresh = TRUE;
+	}
+	if (!user->hostname || !user->realname || !user->servername)
+		*needs_refresh = TRUE;
+	return items;
+}
+
+static FabulorNickContextMenuModel *
+menu_nick_context_model_snapshot (FabulorNickContextPopup *popup,
+	session *sess, GtkWidget *origin, struct User *user)
+{
+	GMenuModel *plugin_model = menu_plugin_context_model (G_OBJECT (origin));
+	GArray *handlers;
+	GArray *info_items;
+	char heading[96];
+	const char *heading_text = NULL;
+	char *command_target = popup->num_sel > 1 ? NULL : popup->nick;
+	gboolean needs_refresh = FALSE;
+	FabulorNickContextMenuModel *model;
+
+	if (popup->num_sel > 1)
+	{
+		g_snprintf (heading, sizeof heading, _("%d nicks selected."),
+			popup->num_sel);
+		heading_text = heading;
+	}
+	else if (user)
+		heading_text = popup->nick;
+	handlers = menu_nick_handlers_snapshot (sess, command_target);
+	info_items = menu_nick_info_snapshot (sess, user, &needs_refresh);
+	model = fabulor_nick_context_menu_model_new_with_details (popup->nick,
+		heading_text, popup->num_sel <= 1, _("Reply"), popup->num_sel > 1,
+		(FabulorNickHandler *)handlers->data, handlers->len,
+		(FabulorNickInfoItem *)info_items->data, info_items->len,
+		needs_refresh, plugin_model, menu_nick_context_dispatch, popup);
+	g_array_unref (info_items);
+	g_array_unref (handlers);
+	return model;
+}
+
+static void
+menu_nick_context_refresh (FabulorNickContextPopup *popup, session *sess,
+	GtkWidget *origin, struct User *user)
+{
+	FabulorNickContextMenuModel *model;
+	GActionGroup *plugin_actions;
+
+	model = menu_nick_context_model_snapshot (popup, sess, origin, user);
+	if (!model)
+		return;
+	plugin_actions = menu_plugin_context_actions (G_OBJECT (origin));
+	if (!fabulor_context_menu_presenter_gtk4_set_projection (popup->presenter,
+		fabulor_nick_context_menu_model_get_menu (model),
+		fabulor_nick_context_menu_model_get_actions (model), plugin_actions))
+	{
+		fabulor_nick_context_menu_model_free (model);
+		return;
+	}
+	fabulor_nick_context_menu_model_free (popup->model);
+	popup->model = model;
+}
+
+void
+fe_userlist_update (session *sess, struct User *user)
+{
+	GObject *origin;
+	FabulorNickContextPopup *popup;
+	const char *network_name;
+
+	if (!is_session (sess) || !user)
+		return;
+	origin = g_weak_ref_get (menu_nick_context_origin_ref ());
+	if (!origin)
+		return;
+	popup = g_object_get_data (origin, FABULOR_NICK_CONTEXT_POPUP);
+	network_name = server_get_network (sess->server, TRUE);
+	if (popup && popup->num_sel <= 1 &&
+		!sess->server->p_cmp (user->nick, popup->nick) &&
+		!g_strcmp0 (network_name, popup->network_name))
+		menu_nick_context_refresh (popup, sess, GTK_WIDGET (origin), user);
+	g_object_unref (origin);
+}
+
+static void
+menu_nick_request_info (session *sess, const char *nick)
+{
+	char command[512];
+	if (!is_session (sess))
+		return;
+	g_snprintf (command, sizeof command, "WHOIS %s %s", nick, nick);
+	handle_command (sess, command, FALSE);
+	sess->server->skip_next_whois = 1;
+}
+
+static void
+menu_nickmenu_gtk4 (session *sess, GtkWidget *origin, gdouble x, gdouble y,
+	char *nick, int num_sel)
+{
+	FabulorNickContextPopup *popup;
+	GActionGroup *plugin_actions;
+	struct User *user = NULL;
+
+	if (num_sel <= 1)
+	{
+		user = userlist_find (sess, nick);
+		if (!user)
+			user = userlist_find_global (sess->server, nick);
+	}
+	menu_add_plugin_model (G_OBJECT (origin), "\x5$NICK",
+		num_sel == 0 ? nick : NULL);
+	plugin_actions = menu_plugin_context_actions (G_OBJECT (origin));
+	popup = g_new0 (FabulorNickContextPopup, 1);
+	popup->nick = g_strdup (nick);
+	popup->network_name = g_strdup (server_get_network (sess->server, TRUE));
+	popup->num_sel = num_sel;
+	g_weak_ref_init (&popup->origin, G_OBJECT (origin));
+	popup->model = menu_nick_context_model_snapshot (popup, sess, origin, user);
+	if (!popup->model)
+	{
+		menu_nick_context_popup_free (popup);
+		return;
+	}
+	popup->presenter = fabulor_context_menu_presenter_gtk4_new (
+		fabulor_nick_context_menu_model_get_menu (popup->model),
+		fabulor_nick_context_menu_model_get_actions (popup->model),
+		plugin_actions);
+	if (!popup->presenter)
+	{
+		menu_nick_context_popup_free (popup);
+		return;
+	}
+	g_object_set_data_full (G_OBJECT (origin), FABULOR_NICK_CONTEXT_POPUP,
+		popup, menu_nick_context_popup_free);
+	g_weak_ref_set (menu_nick_context_origin_ref (), G_OBJECT (origin));
+	if (fabulor_nick_context_menu_model_needs_info_refresh (popup->model))
+		menu_nick_request_info (sess, nick);
+	fabulor_context_menu_presenter_gtk4_popup_at (popup->presenter, origin, x, y);
+}
+#endif
 
 void
 menu_nickmenu_at (session *sess, GtkWidget *origin, gdouble x, gdouble y,
 	GdkModifierType state, char *nick, int num_sel)
 {
+#if GTK_MAJOR_VERSION >= 4
+	(void)state;
+	menu_nickmenu_gtk4 (sess, origin, x, y, nick, num_sel);
+#else
 	char buf[512];
 	struct User *user;
 	GtkWidget *submenu, *menu = menu_new ();
@@ -975,6 +1350,7 @@ menu_nickmenu_at (session *sess, GtkWidget *origin, gdouble x, gdouble y,
 		menu_add_plugin_items (menu, "\x5$NICK", NULL);
 
 	menu_popup_at (menu, origin, x, y, state, 3, NULL);
+#endif
 }
 
 /* stuff for the View menu */
@@ -1288,6 +1664,7 @@ menu_urlmenu_gtk4 (GtkWidget *origin, gdouble x, gdouble y, char *url)
 	GMenuModel *plugin_model;
 	GArray *handlers;
 
+	menu_nick_context_deactivate ();
 	menu_add_plugin_model (G_OBJECT (origin), "\x4$URL", url);
 	plugin_model = menu_plugin_context_model (G_OBJECT (origin));
 	plugin_actions = menu_plugin_context_actions (G_OBJECT (origin));
@@ -1474,6 +1851,7 @@ menu_chanmenu_gtk4 (session *sess, GtkWidget *origin, gdouble x, gdouble y,
 	ircnet *network = sess->server->network;
 	session *channel_session = find_channel (sess->server, channel);
 
+	menu_nick_context_deactivate ();
 	menu_add_plugin_model (G_OBJECT (origin), "\x5$CHAN", channel);
 	plugin_model = menu_plugin_context_model (G_OBJECT (origin));
 	plugin_actions = menu_plugin_context_actions (G_OBJECT (origin));
