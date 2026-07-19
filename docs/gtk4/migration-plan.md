@@ -1539,6 +1539,20 @@ composition, and unmatched-root preservation. Main-action namespace support
 in the popover presenter and the production middle-click adapter remain the
 next contained pass; GTK3 continues unchanged.
 
+Live middle context-adapter pass 20 (2026-07-19):
+the shared GTK4 popover presenter now accepts an owned configurable built-in
+action namespace and an optional plugin namespace while its original
+`fabulor-context` contract remains source-compatible. The production
+middle-click entry point builds the retained application sections and dynamic
+user/plugin projection from the same `mymenu` definitions and prepared state as
+the shipping main menu, then presents them through the main `fabulor` action
+group. A private unparented projection widget owns dynamic action data, and the
+clicked origin owns the model, presenter, projection widget, and complete
+cleanup chain. Repeated popups replace that bundle without retaining a
+`session`, `server`, menu entry, or source model. GTK3 continues through its
+unchanged accelerator-backed widget-menu branch. This completes the retained
+URL, channel, nick, and middle-click context-action target.
+
 Deliverables:
 
 - Make GTK4 the only production frontend dependency in MSVC, Meson, and CI.

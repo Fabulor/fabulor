@@ -4418,6 +4418,36 @@ support for the main `fabulor` action namespace and the production middle-click
 adapter remain open. The model owns no action group, widget, session, or server
 state. The shipping GTK3 menu and packaging are unchanged.
 
+## 2026-07-19 - Stage 8 Live Middle Context Adapter
+
+Automated evidence:
+
+- shipping GTK3 MSVC x64 Release frontend: pass with zero warnings and zero
+  errors
+- strict MSVC GTK4 probe against GTK 4.22.4 / GLib 2.88.0: pass with zero
+  warnings and zero errors
+- configurable presenter namespace and nullable plugin namespace: action
+  activation and cleanup pass
+- isolated full GTK4 frontend inventory: expected fail at older frontend
+  blockers; the changed middle-click adapter, presenter, and model ranges add no
+  diagnostic
+- Meson 1.11.2 / Ninja 1.13.2: changed sources compile under `-Werror`; local
+  final link remains unavailable at the documented Strawberry GCC 4.8.3 versus
+  MSVC import-library boundary
+- source audit: the clicked origin owns presenter, model, dynamic action data,
+  and replacement cleanup without retaining a `session` or `server`
+- source audit: built-in, user, and plugin actions share the main `fabulor`
+  namespace and state preparation used by the shipping menu
+- `git diff --check`: pass
+
+Behavior contract: GTK3 remains on its accelerator-backed widget menu. GTK4
+now presents the retained Fabulor, View, Server, optional User, Settings,
+Window, Help, matched plugin, and unmatched plugin sections at the click
+origin. Manual middle-click placement, repeated-popup, toggle, disabled-action,
+user-command, and `/MENU` testing remains gated on a linkable full GTK4
+frontend. Packaging remains unchanged apart from registering the already
+probed middle model in the GTK4-only frontend source list.
+
 ## Build Matrix
 
 | Check | GTK3 shipping target | GTK4 candidate | Final GTK4 target |

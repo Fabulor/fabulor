@@ -17,6 +17,11 @@ typedef struct _FabulorContextMenuPresenterGtk4 FabulorContextMenuPresenterGtk4;
 FabulorContextMenuPresenterGtk4 *fabulor_context_menu_presenter_gtk4_new (
 	GMenuModel *menu, GActionGroup *built_in_actions,
 	GActionGroup *plugin_actions);
+FabulorContextMenuPresenterGtk4 *
+fabulor_context_menu_presenter_gtk4_new_with_namespaces (
+	GMenuModel *menu, const char *built_in_namespace,
+	GActionGroup *built_in_actions, const char *plugin_namespace,
+	GActionGroup *plugin_actions);
 void fabulor_context_menu_presenter_gtk4_free (
 	FabulorContextMenuPresenterGtk4 *presenter);
 gboolean fabulor_context_menu_presenter_gtk4_set_projection (
