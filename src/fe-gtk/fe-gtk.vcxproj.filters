@@ -57,6 +57,9 @@
     <ClInclude Include="window-state.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="window-geometry.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
     <ClInclude Include="preferences-persistence.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -210,6 +213,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="window-state.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="window-geometry.c">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="menu.c">

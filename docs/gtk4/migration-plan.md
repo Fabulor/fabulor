@@ -1634,6 +1634,21 @@ frontend inventory improves from 261 errors / 552 warnings to 257 errors / 552
 warnings; its first `maingui.c` blocker is now the independent
 `GdkEventConfigure` geometry callback.
 
+Main-window geometry observer pass 26 (2026-07-20):
+main and detached-dialog dimension persistence plus resize-triggered relayout
+now consume a typed `FabulorWindowGeometry` snapshot. GTK3 keeps
+`configure-event`, `GdkEventConfigure`, native size reads, and available
+coordinates private to the observer. GTK4 attaches to the realized
+`GdkSurface::layout` signal, reports application-pixel width and height, never
+fabricates compositor-owned coordinates, and releases the surface on
+unrealize/finalization. The strict probe presents a real GTK4 window and
+verifies positive layout callbacks, readable dimensions, absent coordinates,
+and safe teardown. Strict GTK4 and shipping GTK3 builds pass with zero warnings
+and errors. The complete GTK4 frontend inventory improves from 257 errors / 552
+warnings to 248 errors / 550 warnings; `maingui.c` now reaches the independent
+legacy dialog icon-size enum. DCC and Server List configure callbacks remain
+separate workflow conversions that can reuse the observer.
+
 Deliverables:
 
 - Make GTK4 the only production frontend dependency in MSVC, Meson, and CI.

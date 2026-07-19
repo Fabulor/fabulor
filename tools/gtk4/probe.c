@@ -24,6 +24,7 @@
 #include "../../src/fe-gtk/middle-context-menu-model.h"
 #include "../../src/fe-gtk/tab-context-menu-model.h"
 #include "../../src/fe-gtk/window-state.h"
+#include "../../src/fe-gtk/window-geometry.h"
 #include "../../src/fe-gtk/ignore-list.h"
 #include "../../src/fe-gtk/ban-list.h"
 #include "../../src/fe-gtk/channel-list.h"
@@ -4425,6 +4426,52 @@ check_window_state_boundary (gboolean gtk_ready)
 	return TRUE;
 }
 
+typedef struct
+{
+	guint count;
+	FabulorWindowGeometry geometry;
+} ProbeWindowGeometry;
+
+static void
+probe_window_geometry_cb (GtkWindow *window,
+	const FabulorWindowGeometry *geometry, gpointer user_data)
+{
+	ProbeWindowGeometry *probe = user_data;
+	(void)window;
+	probe->count++;
+	probe->geometry = *geometry;
+}
+
+static gboolean
+check_window_geometry_boundary (gboolean gtk_ready)
+{
+	GtkWindow *window;
+	FabulorWindowGeometry geometry;
+	ProbeWindowGeometry probe = { 0 };
+
+	if (!gtk_ready)
+		return TRUE;
+	window = GTK_WINDOW (gtk_window_new ());
+	g_object_ref_sink (window);
+	fabulor_window_geometry_get (window, &geometry);
+	if (geometry.width != 0 || geometry.height != 0 || geometry.has_position)
+	{
+		g_object_unref (window);
+		return FALSE;
+	}
+	fabulor_window_geometry_watch (window, probe_window_geometry_cb, &probe);
+	gtk_window_set_default_size (window, 320, 180);
+	gtk_window_present (window);
+	probe_run_pending_main_context ();
+	fabulor_window_geometry_get (window, &geometry);
+	gtk_window_destroy (window);
+	g_object_unref (window);
+	probe_run_pending_main_context ();
+	return probe.count > 0 && probe.geometry.width > 0 &&
+		probe.geometry.height > 0 && !probe.geometry.has_position &&
+		geometry.width > 0 && geometry.height > 0 && !geometry.has_position;
+}
+
 int
 main (void)
 {
@@ -4437,6 +4484,11 @@ main (void)
 	if (!check_window_state_boundary (gtk_ready))
 	{
 		fprintf (stderr, "GTK4 window state boundary mismatch\n");
+		return 1;
+	}
+	if (!check_window_geometry_boundary (gtk_ready))
+	{
+		fprintf (stderr, "GTK4 window geometry boundary mismatch\n");
 		return 1;
 	}
 	if (!check_internal_drag_payload ())

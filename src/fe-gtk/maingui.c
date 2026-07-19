@@ -60,6 +60,7 @@
 #include "menu.h"
 #include "preferences-persistence.h"
 #include "window-state.h"
+#include "window-geometry.h"
 #include "fkeys.h"
 #include "userlistgui.h"
 #include "user-list-model.h"
@@ -1100,10 +1101,12 @@ mg_windowstate_cb (GtkWindow *wid, const FabulorWindowState *state,
 #endif
 }
 
-static gboolean
-mg_configure_cb (GtkWidget *wid, GdkEventConfigure *event, session *sess)
+static void
+mg_geometry_cb (GtkWindow *wid, const FabulorWindowGeometry *geometry,
+	gpointer user_data)
 {
         gboolean changed = FALSE;
+	session *sess = user_data;
         session *target_sess;
 
         if (sess == NULL)
@@ -1112,36 +1115,31 @@ mg_configure_cb (GtkWidget *wid, GdkEventConfigure *event, session *sess)
                 {
                         if (prefs.hex_gui_win_save && !prefs.hex_gui_win_state && !prefs.hex_gui_win_fullscreen)
                         {
-                                int win_left;
-                                int win_top;
-                                int win_width;
-                                int win_height;
-
-                                gboolean has_position = fabulor_gtk_window_get_position (
-                                        GTK_WINDOW (wid), &win_left, &win_top);
-                                gtk_window_get_size (GTK_WINDOW (wid), &win_width, &win_height);
-
-                                if (has_position && prefs.hex_gui_win_left != win_left)
+                                if (geometry->has_position &&
+					prefs.hex_gui_win_left != geometry->x)
                                 {
-                                        prefs.hex_gui_win_left = win_left;
+                                        prefs.hex_gui_win_left = geometry->x;
                                         changed = TRUE;
                                 }
 
-                                if (has_position && prefs.hex_gui_win_top != win_top)
+                                if (geometry->has_position &&
+					prefs.hex_gui_win_top != geometry->y)
                                 {
-                                        prefs.hex_gui_win_top = win_top;
+                                        prefs.hex_gui_win_top = geometry->y;
                                         changed = TRUE;
                                 }
 
-                                if (prefs.hex_gui_win_width != win_width)
+                                if (geometry->width > 0 &&
+					prefs.hex_gui_win_width != geometry->width)
                                 {
-                                        prefs.hex_gui_win_width = win_width;
+                                        prefs.hex_gui_win_width = geometry->width;
                                         changed = TRUE;
                                 }
 
-                                if (prefs.hex_gui_win_height != win_height)
+                                if (geometry->height > 0 &&
+					prefs.hex_gui_win_height != geometry->height)
                                 {
-                                        prefs.hex_gui_win_height = win_height;
+                                        prefs.hex_gui_win_height = geometry->height;
                                         changed = TRUE;
                                 }
                         }
@@ -1149,36 +1147,31 @@ mg_configure_cb (GtkWidget *wid, GdkEventConfigure *event, session *sess)
         }
         else if (sess->type == SESS_DIALOG && prefs.hex_gui_win_save)
         {
-                int dialog_left;
-                int dialog_top;
-                int dialog_width;
-                int dialog_height;
-
-                gboolean has_position = fabulor_gtk_window_get_position (
-                        GTK_WINDOW (wid), &dialog_left, &dialog_top);
-                gtk_window_get_size (GTK_WINDOW (wid), &dialog_width, &dialog_height);
-
-                if (has_position && prefs.hex_gui_dialog_left != dialog_left)
+                if (geometry->has_position &&
+			prefs.hex_gui_dialog_left != geometry->x)
                 {
-                        prefs.hex_gui_dialog_left = dialog_left;
+                        prefs.hex_gui_dialog_left = geometry->x;
                         changed = TRUE;
                 }
 
-                if (has_position && prefs.hex_gui_dialog_top != dialog_top)
+                if (geometry->has_position &&
+			prefs.hex_gui_dialog_top != geometry->y)
                 {
-                        prefs.hex_gui_dialog_top = dialog_top;
+                        prefs.hex_gui_dialog_top = geometry->y;
                         changed = TRUE;
                 }
 
-                if (prefs.hex_gui_dialog_width != dialog_width)
+                if (geometry->width > 0 &&
+			prefs.hex_gui_dialog_width != geometry->width)
                 {
-                        prefs.hex_gui_dialog_width = dialog_width;
+                        prefs.hex_gui_dialog_width = geometry->width;
                         changed = TRUE;
                 }
 
-                if (prefs.hex_gui_dialog_height != dialog_height)
+                if (geometry->height > 0 &&
+			prefs.hex_gui_dialog_height != geometry->height)
                 {
-                        prefs.hex_gui_dialog_height = dialog_height;
+                        prefs.hex_gui_dialog_height = geometry->height;
                         changed = TRUE;
                 }
         }
@@ -1189,13 +1182,11 @@ mg_configure_cb (GtkWidget *wid, GdkEventConfigure *event, session *sess)
                 mg_schedule_config_save ();
         }
 
-        target_sess = mg_session_from_window (wid);
+	target_sess = mg_session_from_window (GTK_WIDGET (wid));
         if (target_sess && target_sess->gui && GTK_IS_WIDGET (target_sess->gui->window))
                 mg_queue_window_relayout (target_sess->gui->window);
         else
-                mg_queue_window_relayout (wid);
-
-        return FALSE;
+		mg_queue_window_relayout (GTK_WIDGET (wid));
 }
 
 /* move to a non-irc tab */
@@ -5947,8 +5938,7 @@ mg_create_topwindow (session *sess)
         fabulor_gtk_widget_on_focus_enter (win, mg_topwin_focus_cb, sess);
         g_signal_connect (G_OBJECT (win), "destroy",
                                                         G_CALLBACK (mg_topdestroy_cb), sess);
-        g_signal_connect (G_OBJECT (win), "configure-event",
-                                                        G_CALLBACK (mg_configure_cb), sess);
+	fabulor_window_geometry_watch (GTK_WINDOW (win), mg_geometry_cb, sess);
 
 
         table = gtk_grid_new ();
@@ -6145,8 +6135,7 @@ mg_create_tabwindow (session *sess)
         g_signal_connect (G_OBJECT (win), "destroy",
                                                    G_CALLBACK (mg_tabwindow_kill_cb), 0);
         fabulor_gtk_widget_on_focus_enter (win, mg_tabwin_focus_cb, NULL);
-        g_signal_connect (G_OBJECT (win), "configure-event",
-                                                        G_CALLBACK (mg_configure_cb), NULL);
+	fabulor_window_geometry_watch (GTK_WINDOW (win), mg_geometry_cb, NULL);
 		fabulor_window_state_watch (GTK_WINDOW (win), mg_windowstate_cb, NULL);
 
 

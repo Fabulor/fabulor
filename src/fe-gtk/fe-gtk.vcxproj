@@ -98,6 +98,7 @@ FOR %%I IN ("$(ZoiteChatLib)fabulor.rc") DO IF %%~zI EQU 0 (
     <ClInclude Include="joind.h" />
     <ClInclude Include="maingui.h" />
     <ClInclude Include="window-state.h" />
+    <ClInclude Include="window-geometry.h" />
     <ClInclude Include="preferences-persistence.h" />
     <ClInclude Include="menu.h" />
     <ClInclude Include="menu-action-namespaces.h" />
@@ -177,6 +178,7 @@ FOR %%I IN ("$(ZoiteChatLib)fabulor.rc") DO IF %%~zI EQU 0 (
     <ClCompile Include="joind.c" />
     <ClCompile Include="maingui.c" />
     <ClCompile Include="window-state.c" />
+    <ClCompile Include="window-geometry.c" />
     <ClCompile Include="menu.c" />
     <ClCompile Include="context-menu-presenter-gtk4.c" Condition="'$(FabulorGtkMajor)'=='4'" />
       <ClCompile Include="middle-context-menu-model.c" Condition="'$(FabulorGtkMajor)'=='4'" />

@@ -4618,6 +4618,36 @@ keeps the already-converted live widget drag icon and has no native surface
 readback. Manual drag-icon appearance and scale testing remains gated on the
 linkable full GTK4 frontend. Packaging impact: none.
 
+### GTK4 Stage 8 Main-Window Geometry Observer
+
+Date: 2026-07-20
+
+Files/workflows converted: main-window and detached-dialog dimension
+persistence; available GTK3 coordinate persistence; resize-triggered relayout;
+GTK4 surface-layout attachment and teardown.
+
+Automated evidence:
+
+- shipping GTK3 MSVC x64 Release frontend: pass; zero warnings and zero errors
+- strict MSVC GTK4 probe against GTK 4.22.4 / GLib 2.88.0: compile, link, and
+  execution pass under `/W4 /WX`; zero warnings and zero errors
+- real GTK4 window presentation, positive surface-layout callback, readable
+  application-pixel dimensions, absent coordinates, and safe teardown: pass
+- isolated complete GTK4 frontend inventory: expected fail; improved from 257
+  errors / 552 warnings to 248 errors / 550 warnings
+- first remaining `maingui.c` blocker: retired `GTK_ICON_SIZE_DIALOG` use
+- source audit: `maingui.c` contains no `GdkEventConfigure`, direct
+  `configure-event` connection, or direct window-size read
+- source audit: DCC and Server List configure callbacks remain explicitly
+  tracked for their separate workflow conversions
+- `git diff --check`: pass
+
+Behavior contract: GTK3 continues saving main and dialog position and size.
+GTK4 saves valid main/dialog dimensions and queues the same relayout work, but
+does not overwrite saved coordinates it cannot observe. Manual resize,
+maximize/fullscreen exclusion, restart persistence, and detached-dialog testing
+remain gated on the linkable full GTK4 frontend. Packaging impact: none.
+
 ## Build Matrix
 
 | Check | GTK3 shipping target | GTK4 candidate | Final GTK4 target |
