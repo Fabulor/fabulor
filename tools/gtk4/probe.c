@@ -22,6 +22,7 @@
 #include "../../src/fe-gtk/channel-context-menu-model.h"
 #include "../../src/fe-gtk/nick-context-menu-model.h"
 #include "../../src/fe-gtk/middle-context-menu-model.h"
+#include "../../src/fe-gtk/tab-context-menu-model.h"
 #include "../../src/fe-gtk/ignore-list.h"
 #include "../../src/fe-gtk/ban-list.h"
 #include "../../src/fe-gtk/channel-list.h"
@@ -3636,6 +3637,126 @@ check_nick_context_menu_model (void)
 	return passed;
 }
 
+typedef struct
+{
+	guint counts[7];
+	FabulorTabOption last_option;
+	gboolean last_state;
+	const char *last_command;
+} TabContextProbe;
+
+static void
+tab_context_probe_dispatch (FabulorTabContextAction action,
+	FabulorTabOption option, gboolean state, const char *command,
+	gpointer user_data)
+{
+	TabContextProbe *probe = user_data;
+	if ((guint)action < G_N_ELEMENTS (probe->counts))
+		probe->counts[action]++;
+	probe->last_option = option;
+	probe->last_state = state;
+	probe->last_command = command;
+}
+
+static gboolean
+check_tab_context_menu_model (void)
+{
+	FabulorTabContextLabels labels = {
+		"Alerts", "Settings", "Notify", "Beep", "Tray", "Taskbar",
+		"Logging", "Scrollback", "Strip colors", "Hide joins",
+		"Autojoin", "Auto-connect", "Detach", "Close"
+	};
+	FabulorTabContextState state = { 0 };
+	FabulorTabConfiguredItem configured[] = {
+		{ FABULOR_TAB_CONFIG_COMMAND, "Who", "WHO $NICK", "system-search", FALSE },
+		{ FABULOR_TAB_CONFIG_SUBMENU_BEGIN, "Tools", NULL, NULL, FALSE },
+		{ FABULOR_TAB_CONFIG_TOGGLE, "Muted", "quiet", NULL, TRUE },
+		{ FABULOR_TAB_CONFIG_SUBMENU_END, NULL, NULL, NULL, FALSE },
+		{ FABULOR_TAB_CONFIG_SEPARATOR, NULL, NULL, NULL, FALSE },
+		{ FABULOR_TAB_CONFIG_COMMAND, "Cycle", "CYCLE", NULL, FALSE }
+	};
+	GMenu *plugin = g_menu_new ();
+	FabulorTabContextMenuModel *model;
+	GMenuModel *menu;
+	GMenuModel *option_section;
+	GMenuModel *alerts;
+	GActionGroup *actions;
+	GVariant *value;
+	TabContextProbe probe = { { 0 }, FABULOR_TAB_OPTION_COUNT, FALSE, NULL };
+	char *label = NULL;
+	gboolean passed;
+
+	state.has_session = TRUE;
+	state.is_channel = TRUE;
+	state.has_network = TRUE;
+	state.autojoin = FALSE;
+	state.options[FABULOR_TAB_OPTION_NOTIFICATION] = TRUE;
+	state.options[FABULOR_TAB_OPTION_LOGGING] = TRUE;
+	g_menu_append (plugin, "Plugin", "fabulor-context.run");
+	model = fabulor_tab_context_menu_model_new ("#retained", &state, &labels,
+		configured, G_N_ELEMENTS (configured), G_MENU_MODEL (plugin),
+		tab_context_probe_dispatch, &probe);
+	g_object_unref (plugin);
+	if (!model)
+		return FALSE;
+	menu = fabulor_tab_context_menu_model_get_menu (model);
+	actions = fabulor_tab_context_menu_model_get_actions (model);
+	option_section = g_menu_model_get_item_link (menu, 1, G_MENU_LINK_SECTION);
+	alerts = option_section ? g_menu_model_get_item_link (option_section, 0,
+		G_MENU_LINK_SUBMENU) : NULL;
+	passed = g_menu_model_get_n_items (menu) == 7 && option_section && alerts &&
+		g_menu_model_get_n_items (option_section) == 2 &&
+		g_menu_model_get_n_items (alerts) == 4 &&
+		g_menu_model_get_item_attribute (alerts, 0, G_MENU_ATTRIBUTE_LABEL,
+			"s", &label) && g_strcmp0 (label, "Notify") == 0 &&
+		g_action_group_has_action (actions, "option-0") &&
+		g_action_group_has_action (actions, "autojoin") &&
+		g_action_group_has_action (actions, "detach") &&
+		g_action_group_has_action (actions, "close") &&
+		g_action_group_has_action (actions, "configured-0") &&
+		g_action_group_has_action (actions, "configured-1");
+	g_free (label);
+	g_clear_object (&alerts);
+	g_clear_object (&option_section);
+	g_action_group_activate_action (actions, "option-0", NULL);
+	value = g_action_group_get_action_state (actions, "option-0");
+	passed = passed && value && !g_variant_get_boolean (value) &&
+		probe.counts[FABULOR_TAB_CONTEXT_OPTION] == 1 &&
+		probe.last_option == FABULOR_TAB_OPTION_NOTIFICATION &&
+		!probe.last_state;
+	g_clear_pointer (&value, g_variant_unref);
+	g_action_group_activate_action (actions, "autojoin", NULL);
+	g_action_group_activate_action (actions, "detach", NULL);
+	g_action_group_activate_action (actions, "close", NULL);
+	g_action_group_activate_action (actions, "configured-0", NULL);
+	passed = passed && probe.counts[FABULOR_TAB_CONTEXT_AUTOJOIN] == 1 &&
+		probe.counts[FABULOR_TAB_CONTEXT_DETACH] == 1 &&
+		probe.counts[FABULOR_TAB_CONTEXT_CLOSE] == 1 &&
+		probe.counts[FABULOR_TAB_CONTEXT_COMMAND] == 1 &&
+		g_strcmp0 (probe.last_command, "WHO $NICK") == 0;
+	g_action_group_activate_action (actions, "configured-1", NULL);
+	passed = passed && probe.counts[FABULOR_TAB_CONTEXT_TOGGLE] == 1 &&
+		!probe.last_state && g_strcmp0 (probe.last_command, "quiet") == 0;
+	fabulor_tab_context_menu_model_free (model);
+
+	memset (&state, 0, sizeof (state));
+	memset (&probe, 0, sizeof (probe));
+	model = fabulor_tab_context_menu_model_new (NULL, &state, &labels,
+		NULL, 0, NULL, tab_context_probe_dispatch, &probe);
+	if (!model)
+		return FALSE;
+	menu = fabulor_tab_context_menu_model_get_menu (model);
+	actions = fabulor_tab_context_menu_model_get_actions (model);
+	passed = passed && g_menu_model_get_n_items (menu) == 1 &&
+		g_action_group_has_action (actions, "detach") &&
+		g_action_group_has_action (actions, "close") &&
+		!g_action_group_has_action (actions, "option-0");
+	g_action_group_activate_action (actions, "detach", NULL);
+	passed = passed && probe.counts[FABULOR_TAB_CONTEXT_DETACH] == 1;
+	fabulor_tab_context_menu_model_free (model);
+	return passed;
+}
+
 static gboolean
 check_middle_context_menu_model (void)
 {
@@ -4467,6 +4588,11 @@ main (void)
 	if (!check_channel_context_menu_model ())
 	{
 		fprintf (stderr, "GTK4 channel context menu model mismatch\n");
+		return 1;
+	}
+	if (!check_tab_context_menu_model ())
+	{
+		fprintf (stderr, "GTK4 tab context menu model mismatch\n");
 		return 1;
 	}
 	if (!check_nick_context_menu_model ())

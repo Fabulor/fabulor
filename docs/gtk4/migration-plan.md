@@ -1585,6 +1585,26 @@ clean. The full GTK4 inventory drops from 225 errors and 365 warnings to 217
 errors and 363 warnings. Remaining widget-menu helpers belong to the tab/tray
 popup presentation conversions rather than the retained main-menu boundary.
 
+Tab context-menu presentation pass 23 (2026-07-20):
+the channel-view tab popup now selects a retained model and the shared GTK4
+popover presenter while its complete widget-menu implementation remains in the
+GTK3 branch. The model snapshots effective alert, logging, scrollback, colour,
+join/part, Autojoin, and Auto-Connect state; recursively copies `tabmenu.conf`
+commands, toggles, submenus, separators, and icon hints; and composes the
+existing `$TAB` plugin projection. Actions preserve channel-option persistence,
+logging lifecycle, network-list persistence, configured command dispatch,
+Detach, and Close behavior. The clicked tab owns the model, presenter, selected
+session/tab context, and plugin actions; replacement or source destruction
+queues cleanup for the next main-loop turn so an action cannot release its own
+dispatch state. Session actions validate that the selected session is still
+live before dereferencing it. The strict GTK4 probe and shipping GTK3 frontend
+both compile and run with zero warnings and errors. The isolated full GTK4
+inventory remains at 217 errors and 363 warnings because `maingui.c` reaches
+the older Win32 window-state header before this adapter. The local Meson/Ninja
+attempt became idle before compilation and was terminated without leaving a
+build process. Utility tabs retain their Detach/Close-only surface, and GTK3
+presentation and behavior are unchanged.
+
 Deliverables:
 
 - Make GTK4 the only production frontend dependency in MSVC, Meson, and CI.
