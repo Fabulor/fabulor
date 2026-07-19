@@ -4521,6 +4521,42 @@ retains the live popover menu bar and canonical key-action dispatch introduced
 by earlier passes. Manual GTK4 keyboard traversal and displayed shortcut-label
 validation remain gated on the linkable full frontend. Packaging impact: none.
 
+### GTK4 Stage 8 Tab Context-Menu Presentation
+
+Date: 2026-07-20
+
+Files/workflows converted: channel-view tab popup model and live GTK4
+presentation; per-session alert/settings state; Autojoin and Auto-Connect;
+recursive `tabmenu.conf` commands and toggles; `$TAB` plugin composition;
+Detach/Close and popup replacement/destruction ownership.
+
+Automated evidence:
+
+- shipping GTK3 MSVC x64 Release frontend: pass; zero warnings and zero errors
+- strict MSVC GTK4 probe against GTK 4.22.4 / GLib 2.88.0: compile, link, and
+  execution pass under `/W4 /WX`; zero warnings and zero errors
+- retained model structure, option state transition, Autojoin, Detach, Close,
+  recursive configured command/toggle ownership, plugin section, and utility
+  tab surface: pass
+- isolated complete GTK4 frontend inventory: expected fail at the older Win32
+  window-state header before the new `maingui.c` adapter; unchanged at 217
+  errors / 363 warnings
+- source audit: model actions own copied commands and labels; source-owned
+  teardown is deferred beyond active action dispatch; session actions validate
+  live session membership before dereference
+- source audit: GTK3 keeps its existing tab widget menu, option callbacks,
+  pointer placement, and accelerator behavior
+- Meson 1.11.2 / Ninja 1.13.2: local attempt became idle with no compiler or
+  linker child and was terminated; the strict MSVC probe supplies executable
+  evidence for this isolated model
+- `git diff --check`: pass
+
+Behavior contract: GTK4 presents the same tab heading, alert and settings
+submenus, network toggle, Detach/Close commands, configured tab commands, and
+plugin entries at the click coordinates. Utility tabs expose only Detach and
+Close. Manual repeated-popup placement and live command testing remain gated
+on the linkable full GTK4 frontend. Packaging impact: none.
+
 ## Build Matrix
 
 | Check | GTK3 shipping target | GTK4 candidate | Final GTK4 target |

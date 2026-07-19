@@ -246,6 +246,7 @@ Detailed planning and evidence live in:
       - [x] Project the dynamic Usermenu into a retained nested model with command, toggle, separator, icon-hint, edit, and refresh ownership.
       - [x] Project finalized main-menu `/MENU` mutation into a retained nested overlay with copied action ownership and recursive-delete cleanup.
       - [x] Convert contextual `$NICK`, `$URL`, `$CHAN`, `$TAB`, and `$TRAY` popup model ownership.
+      - [x] Present the tab context menu through a retained GTK4 model with per-session options, configured commands, plugin composition, and source-owned cleanup.
   - [x] Replace blocking dialog runs with response-driven lifecycle handling.
     - [x] Convert theme-preference acknowledgement and import-result dialogs without changing message content or modality.
     - [x] Convert the theme colour-manager lifecycle while preserving reset, live preview, staged changes, and nested picker cleanup.

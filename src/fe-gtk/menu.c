@@ -579,12 +579,12 @@ is_in_path (char *cmd)
 
 /* syntax: "LABEL~ICON~STUFF~ADDED~LATER~" */
 
-static void
-menu_extract_icon (char *name, char **label, char **icon)
+void
+menu_parse_icon_label (const char *name, char **label, char **icon)
 {
-	char *p = name;
-	char *start = NULL;
-	char *end = NULL;
+	const char *p = name;
+	const char *start = NULL;
+	const char *end = NULL;
 
 	while (*p)
 	{
@@ -672,7 +672,7 @@ menu_create (GtkWidget *menu, GSList *list, char *target, int check_path)
 				}
 			}
 
-			menu_extract_icon (pop->name, &label, &icon);
+			menu_parse_icon_label (pop->name, &label, &icon);
 
 			if (!check_path || pop->cmd[0] != '!')
 			{
@@ -1081,7 +1081,7 @@ menu_nick_handlers_snapshot (session *sess, char *target)
 				(!target || notify_is_in_list (sess->server, target)))
 				continue;
 			handler.kind = FABULOR_NICK_HANDLER_COMMAND;
-			menu_extract_icon (pop->name, &label, &icon);
+			menu_parse_icon_label (pop->name, &label, &icon);
 			handler.label = label;
 			handler.icon = icon;
 			handler.command = pop->cmd;
@@ -1661,7 +1661,7 @@ menu_url_handlers_snapshot (void)
 			if (pop->cmd[0] == '!' && !is_in_path (pop->cmd))
 				continue;
 			handler.kind = FABULOR_URL_HANDLER_COMMAND;
-			menu_extract_icon (pop->name, &label, &icon);
+			menu_parse_icon_label (pop->name, &label, &icon);
 			handler.label = label;
 			handler.icon = icon;
 			handler.command = pop->cmd;
@@ -3724,7 +3724,7 @@ menu_usermenu_model_build (GSList **cursor, GActionMap *action_map,
 			char *icon;
 			char *label;
 
-			menu_extract_icon (pop->name, &label, &icon);
+			menu_parse_icon_label (pop->name, &label, &icon);
 			item = g_menu_item_new (label, NULL);
 			if (pop->cmd && pop->cmd[0])
 				g_menu_item_set_action_and_target (item,

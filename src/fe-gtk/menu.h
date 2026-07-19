@@ -56,6 +56,7 @@ GActionGroup *menu_plugin_context_actions (GObject *owner);
 void menu_change_layout (void);
 void menu_update_quit_accel (void);
 gboolean menu_key_action (const char *name, guint keyval, GdkModifierType state);
+void menu_parse_icon_label (const char *name, char **label, char **icon);
 
 void menu_set_away (session_gui *gui, int away);
 void menu_set_away_sensitive (session_gui *gui, int sensitive);

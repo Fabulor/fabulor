@@ -46,6 +46,10 @@
 #include "theme/theme-css.h"
 #include "banlist.h"
 #include "gtkutil.h"
+#if GTK_MAJOR_VERSION >= 4
+#include "context-menu-presenter-gtk4.h"
+#include "tab-context-menu-model.h"
+#endif
 #include "gtk-compat.h"
 #include "emoji-picker.h"
 #include "icon-resolver.h"
@@ -2400,6 +2404,7 @@ mg_create_color_menu (GtkWidget *menu, session *sess)
 }
 #endif
 
+#if GTK_MAJOR_VERSION < 4
 static void
 mg_set_guint8 (GtkCheckMenuItem *item, guint8 *setting)
 {
@@ -2543,14 +2548,291 @@ mg_create_tabmenu (session *sess, GtkWidget *source, chan *ch)
                         GDK_GRAVITY_SOUTH_WEST, GDK_GRAVITY_NORTH_WEST, NULL);
         }
 }
+#else
+#define FABULOR_TAB_CONTEXT_POPUP "fabulor-tab-context-popup"
+
+typedef struct
+{
+	FabulorTabContextMenuModel *model;
+	FabulorContextMenuPresenterGtk4 *presenter;
+	session *sess;
+	chan *ch;
+} FabulorTabContextPopup;
+
+static gboolean
+mg_tab_context_popup_free_idle (gpointer data)
+{
+	FabulorTabContextPopup *popup = data;
+	fabulor_context_menu_presenter_gtk4_free (popup->presenter);
+	fabulor_tab_context_menu_model_free (popup->model);
+	g_free (popup);
+	return G_SOURCE_REMOVE;
+}
+
+static void
+mg_tab_context_popup_release (gpointer data)
+{
+	g_idle_add (mg_tab_context_popup_free_idle, data);
+}
+
+static gboolean
+mg_tab_option_active (guint8 value, guint global)
+{
+	return (value == SET_DEFAULT ? global : value) != SET_OFF;
+}
+
+static guint8 *
+mg_tab_option_setting (session *sess, FabulorTabOption option)
+{
+	switch (option)
+	{
+	case FABULOR_TAB_OPTION_NOTIFICATION: return &sess->alert_balloon;
+	case FABULOR_TAB_OPTION_BEEP: return &sess->alert_beep;
+	case FABULOR_TAB_OPTION_TRAY: return &sess->alert_tray;
+	case FABULOR_TAB_OPTION_TASKBAR: return &sess->alert_taskbar;
+	case FABULOR_TAB_OPTION_LOGGING: return &sess->text_logging;
+	case FABULOR_TAB_OPTION_SCROLLBACK: return &sess->text_scrollback;
+	case FABULOR_TAB_OPTION_STRIP_COLORS: return &sess->text_strip;
+	case FABULOR_TAB_OPTION_HIDE_JOIN_PART: return &sess->text_hidejoinpart;
+	default: return NULL;
+	}
+}
+
+static void
+mg_tab_context_dispatch (FabulorTabContextAction action,
+	FabulorTabOption option, gboolean state, const char *command,
+	gpointer user_data)
+{
+	FabulorTabContextPopup *popup = user_data;
+	session *sess = is_session (popup->sess) ? popup->sess : NULL;
+
+	if (action == FABULOR_TAB_CONTEXT_DETACH)
+	{
+		mg_detach_tab_cb (NULL, popup->ch);
+		return;
+	}
+	if (action == FABULOR_TAB_CONTEXT_CLOSE)
+	{
+		mg_destroy_tab_cb (NULL, popup->ch);
+		return;
+	}
+	if (!sess)
+		return;
+	if (action == FABULOR_TAB_CONTEXT_OPTION)
+	{
+		guint8 *setting = mg_tab_option_setting (sess, option);
+		guint8 logging = sess->text_logging;
+		if (!setting)
+			return;
+		*setting = state ? SET_ON : SET_OFF;
+		if (logging != sess->text_logging)
+			log_open_or_close (sess);
+		chanopt_save (sess);
+		chanopt_save_all (FALSE);
+		return;
+	}
+	if (action == FABULOR_TAB_CONTEXT_AUTOJOIN && sess->server->network)
+	{
+		servlist_autojoinedit (sess->server->network, sess->channel, state);
+		return;
+	}
+	if (action == FABULOR_TAB_CONTEXT_AUTOCONNECT && sess->server->network)
+	{
+		if (state)
+			((ircnet *)sess->server->network)->flags |= FLAG_AUTO_CONNECT;
+		else
+			((ircnet *)sess->server->network)->flags &= ~FLAG_AUTO_CONNECT;
+		servlist_save ();
+		return;
+	}
+	if (action == FABULOR_TAB_CONTEXT_TOGGLE && command)
+	{
+		char buffer[256];
+		g_snprintf (buffer, sizeof (buffer), "set %s %d", command, state);
+		handle_command (sess, buffer, FALSE);
+		return;
+	}
+	if (action == FABULOR_TAB_CONTEXT_COMMAND && command)
+		nick_command_parse (sess, (char *)command, sess->channel, sess->channel);
+}
+
+static void
+mg_tab_configured_clear (gpointer data)
+{
+	FabulorTabConfiguredItem *item = data;
+	g_free ((char *)item->label);
+	g_free ((char *)item->icon);
+}
+
+static GArray *
+mg_tab_configured_snapshot (void)
+{
+	GArray *items = g_array_new (FALSE, FALSE,
+		sizeof (FabulorTabConfiguredItem));
+	GSList *list;
+	g_array_set_clear_func (items, mg_tab_configured_clear);
+	for (list = tabmenu_list; list; list = list->next)
+	{
+		struct popup *pop = list->data;
+		FabulorTabConfiguredItem item = { 0 };
+		if (!g_ascii_strncasecmp (pop->name, "SUB", 3))
+		{
+			item.kind = FABULOR_TAB_CONFIG_SUBMENU_BEGIN;
+			item.label = g_strdup (pop->cmd);
+		}
+		else if (!g_ascii_strncasecmp (pop->name, "TOGGLE", 6))
+		{
+			item.kind = FABULOR_TAB_CONFIG_TOGGLE;
+			item.label = g_strdup (pop->name + 7);
+			item.command = pop->cmd;
+			item.active = cfg_get_bool (pop->cmd);
+		}
+		else if (!g_ascii_strncasecmp (pop->name, "ENDSUB", 6))
+			item.kind = FABULOR_TAB_CONFIG_SUBMENU_END;
+		else if (!g_ascii_strncasecmp (pop->name, "SEP", 3))
+			item.kind = FABULOR_TAB_CONFIG_SEPARATOR;
+		else
+		{
+			char *icon;
+			char *label;
+
+			item.kind = FABULOR_TAB_CONFIG_COMMAND;
+			menu_parse_icon_label (pop->name, &label, &icon);
+			item.label = label;
+			item.icon = icon;
+			item.command = pop->cmd;
+		}
+		g_array_append_val (items, item);
+	}
+	return items;
+}
+
+static void
+mg_tab_context_state_snapshot (session *sess, FabulorTabContextState *state)
+{
+	guint notification;
+	guint beep;
+	guint tray;
+	guint taskbar;
+
+	memset (state, 0, sizeof (*state));
+	if (!sess)
+		return;
+	state->has_session = TRUE;
+	state->is_channel = sess->type == SESS_CHANNEL;
+	state->is_server = sess->type == SESS_SERVER;
+	state->has_network = sess->server->network != NULL;
+	if (sess->type == SESS_DIALOG)
+	{
+		notification = prefs.hex_input_balloon_priv;
+		beep = prefs.hex_input_beep_priv;
+		tray = prefs.hex_input_tray_priv;
+		taskbar = prefs.hex_input_flash_priv;
+	}
+	else
+	{
+		notification = prefs.hex_input_balloon_chans;
+		beep = prefs.hex_input_beep_chans;
+		tray = prefs.hex_input_tray_chans;
+		taskbar = prefs.hex_input_flash_chans;
+	}
+	state->options[FABULOR_TAB_OPTION_NOTIFICATION] =
+		mg_tab_option_active (sess->alert_balloon, notification);
+	state->options[FABULOR_TAB_OPTION_BEEP] =
+		mg_tab_option_active (sess->alert_beep, beep);
+	state->options[FABULOR_TAB_OPTION_TRAY] =
+		mg_tab_option_active (sess->alert_tray, tray);
+	state->options[FABULOR_TAB_OPTION_TASKBAR] =
+		mg_tab_option_active (sess->alert_taskbar, taskbar);
+	state->options[FABULOR_TAB_OPTION_LOGGING] =
+		mg_tab_option_active (sess->text_logging, prefs.hex_irc_logging);
+	state->options[FABULOR_TAB_OPTION_SCROLLBACK] =
+		mg_tab_option_active (sess->text_scrollback, prefs.hex_text_replay);
+	state->options[FABULOR_TAB_OPTION_STRIP_COLORS] =
+		mg_tab_option_active (sess->text_strip, prefs.hex_text_stripcolor_msg);
+	state->options[FABULOR_TAB_OPTION_HIDE_JOIN_PART] =
+		mg_tab_option_active (sess->text_hidejoinpart, prefs.hex_irc_conf_mode);
+	if (state->is_channel && state->has_network)
+		state->autojoin = joinlist_is_in_list (sess->server, sess->channel);
+	if (state->is_server && state->has_network)
+		state->autoconnect =
+			(((ircnet *)sess->server->network)->flags & FLAG_AUTO_CONNECT) != 0;
+}
+
+static void
+mg_create_tabmenu (session *sess, GtkWidget *source, chan *ch,
+	gdouble x, gdouble y)
+{
+	FabulorTabContextLabels labels = {
+		_("_Extra Alerts"), _("_Settings"), _("Show Notifications"),
+		_("Beep on _Message"), _("Blink Tray _Icon"),
+		_("Blink Task _Bar"), _("_Log to Disk"),
+		_("_Reload Scrollback"), _("Strip _Colors"),
+		_("_Hide Join/Part Messages"), _("_Autojoin"),
+		_("_Auto-Connect"), _("_Detach"), _("_Close")
+	};
+	FabulorTabContextPopup *popup;
+	FabulorTabContextState state;
+	GActionGroup *plugin_actions = NULL;
+	GMenuModel *plugin_model = NULL;
+	GArray *configured;
+	const char *heading = NULL;
+
+	mg_tab_context_state_snapshot (sess, &state);
+	configured = sess ? mg_tab_configured_snapshot () :
+		g_array_new (FALSE, FALSE, sizeof (FabulorTabConfiguredItem));
+	if (sess)
+	{
+		heading = sess->channel[0] ? sess->channel : _("<none>");
+		menu_add_plugin_model (G_OBJECT (source), "\x4$TAB", sess->channel);
+		plugin_model = menu_plugin_context_model (G_OBJECT (source));
+		plugin_actions = menu_plugin_context_actions (G_OBJECT (source));
+	}
+	popup = g_new0 (FabulorTabContextPopup, 1);
+	popup->sess = sess;
+	popup->ch = ch;
+	popup->model = fabulor_tab_context_menu_model_new (heading, &state, &labels,
+		(FabulorTabConfiguredItem *)configured->data, configured->len,
+		plugin_model, mg_tab_context_dispatch, popup);
+	g_array_unref (configured);
+	if (!popup->model)
+	{
+		g_free (popup);
+		return;
+	}
+	if (plugin_actions)
+		popup->presenter = fabulor_context_menu_presenter_gtk4_new (
+			fabulor_tab_context_menu_model_get_menu (popup->model),
+			fabulor_tab_context_menu_model_get_actions (popup->model),
+			plugin_actions);
+	else
+		popup->presenter =
+			fabulor_context_menu_presenter_gtk4_new_with_namespaces (
+				fabulor_tab_context_menu_model_get_menu (popup->model),
+				FABULOR_CONTEXT_ACTION_NAMESPACE,
+				fabulor_tab_context_menu_model_get_actions (popup->model),
+				NULL, NULL);
+	if (!popup->presenter)
+	{
+		fabulor_tab_context_menu_model_free (popup->model);
+		g_free (popup);
+		return;
+	}
+	g_object_set_data_full (G_OBJECT (source), FABULOR_TAB_CONTEXT_POPUP,
+		popup, mg_tab_context_popup_release);
+	fabulor_context_menu_presenter_gtk4_popup_at (popup->presenter, source, x, y);
+}
+#endif
 
 static gboolean
 mg_tab_contextmenu_cb (chanview *cv, chan *ch, int tag, gpointer ud,
         GtkWidget *source, guint button, gdouble x, gdouble y,
         GdkModifierType state)
 {
-        (void) x;
-        (void) y;
+#if GTK_MAJOR_VERSION < 4
+	(void) x;
+	(void) y;
+#endif
         (void) state;
         /* middle-click to close a tab */
         if (prefs.hex_gui_tab_middleclose && button == 2)
@@ -2563,9 +2845,17 @@ mg_tab_contextmenu_cb (chanview *cv, chan *ch, int tag, gpointer ud,
                 return FALSE;
 
         if (tag == TAG_IRC)
-                mg_create_tabmenu (ud, source, ch);
+                mg_create_tabmenu (ud, source, ch
+#if GTK_MAJOR_VERSION >= 4
+                        , x, y
+#endif
+                );
         else
-                mg_create_tabmenu (NULL, source, ch);
+                mg_create_tabmenu (NULL, source, ch
+#if GTK_MAJOR_VERSION >= 4
+                        , x, y
+#endif
+                );
 
         return TRUE;
 }
