@@ -338,6 +338,7 @@ Detailed planning and evidence live in:
   - [ ] Remove the full-profile frontend compile blockers before producing a GTK4 executable.
     - [ ] Replace legacy menu event types and widget construction with the retained action/model boundaries.
       - [x] Remove raw `GdkEventButton` types from the public context-menu API and contain GTK3 event synthesis privately.
+      - [x] Add a GTK4 popover presenter with retained model/action ownership, coordinate placement, reparenting, and cleanup coverage.
       - [ ] Present built-in URL, channel, nick, and middle-click context actions through a retained GTK4 model.
     - [ ] Complete channel-list and channel-view container/lifecycle cutover.
     - [ ] Complete top-level window positioning, visibility, and lifecycle cutover.

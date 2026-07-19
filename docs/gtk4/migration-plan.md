@@ -1407,6 +1407,16 @@ to move from legacy `GtkMenu` construction to the retained action/model
 presenter before the frontend can provide these menus. Plugin context models
 remain available as the starting boundary for that follow-up.
 
+Context-menu presenter pass 9 (2026-07-19):
+a dedicated GTK4 popover presenter now owns the composed context model and its
+built-in and plugin action groups. It attaches to the current origin widget,
+reparents safely when the origin changes, points at local click coordinates,
+and detaches its model, actions, and widget parent during teardown. The strict
+runtime probe mounts the origin in a real toplevel, activates both namespaces,
+checks the pointer rectangle, and verifies cleanup. This establishes the GTK4
+presentation lifecycle without yet projecting the legacy URL, channel, nick,
+or middle-click commands into retained models.
+
 Deliverables:
 
 - Make GTK4 the only production frontend dependency in MSVC, Meson, and CI.
