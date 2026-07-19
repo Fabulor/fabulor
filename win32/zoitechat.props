@@ -14,13 +14,18 @@
 
 		<!-- Force x64 only -->
 		<ZoiteChatPlatform>x64</ZoiteChatPlatform>
+		<FabulorGtkMajor Condition="'$(FabulorGtkMajor)'==''">3</FabulorGtkMajor>
 
 		<!-- G_DISABLE_DEPRECATED is unfeasible due to g_completion_* -->
 		<!-- must be buildable with GSEAL_ENABLE in the future, xtext, setup, and chanview-tabs stand in the way -->
 		<OwnFlags>GTK_DISABLE_DEPRECATED;GDK_PIXBUF_DISABLE_DEPRECATED;G_DISABLE_SINGLE_INCLUDES;GDK_PIXBUF_DISABLE_SINGLE_INCLUDES;GTK_DISABLE_SINGLE_INCLUDES;HAVE_X509_GET_SIGNATURE_NID;HAVE_SSL_CTX_GET_SSL_METHOD;DEFAULT_CERT_FILE="cert.pem";HAVE_STRTOULL;strtoull=_strtoui64;strcasecmp=stricmp;strncasecmp=strnicmp;__inline__=__inline</OwnFlags>
 
 		<!-- FIXME: Add ability to use debug builds -->
-		<DepsRoot>$(YourDepsPath)\$(ZoiteChatPlatform)\release</DepsRoot>
+		<DepsRoot Condition="'$(DepsRoot)'==''">$(YourDepsPath)\$(ZoiteChatPlatform)\release</DepsRoot>
+		<FabulorGtk4Root Condition="'$(FabulorGtk4Root)'=='' and '$(FABULOR_GTK4_ROOT)'!=''">$(FABULOR_GTK4_ROOT)</FabulorGtk4Root>
+		<FabulorGtk4Root Condition="'$(FabulorGtk4Root)'==''">$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\Runtime\GTK4'))</FabulorGtk4Root>
+		<GtkDepsRoot Condition="'$(FabulorGtkMajor)'=='4'">$(FabulorGtk4Root)</GtkDepsRoot>
+		<GtkDepsRoot Condition="'$(GtkDepsRoot)'==''">$(DepsRoot)</GtkDepsRoot>
 		<GendefPath>$(YourGendefPath)</GendefPath>
 		<WinSparklePath Condition="Exists('$(YourWinSparklePath)\$(ZoiteChatPlatform)\WinSparkle.dll') or Exists('$(YourWinSparklePath)\$(ZoiteChatPlatform)\WinSparkle.lib') or Exists('$(YourWinSparklePath)\$(ZoiteChatPlatform)\winsparkle.h')">$(YourWinSparklePath)\$(ZoiteChatPlatform)</WinSparklePath>
 		<WinSparklePath Condition="'$(WinSparklePath)'=='' and (Exists('$(YourWinSparklePath)\WinSparkle.dll') or Exists('$(YourWinSparklePath)\WinSparkle.lib') or Exists('$(YourWinSparklePath)\winsparkle.h'))">$(YourWinSparklePath)</WinSparklePath>
@@ -68,12 +73,15 @@
 		<GlibGenMarshal Condition="Exists('$(DepsRoot)\bin\glib-genmarshal.exe')">"$(DepsRoot)\bin\glib-genmarshal.exe"</GlibGenMarshal>
 		<GlibGenMarshal Condition="'$(GlibGenMarshal)'=='' and Exists('$(DepsRoot)\bin\glib-genmarshal') and Exists('$(Python3Path)\python.exe')">"$(Python3Path)\python.exe" "$(DepsRoot)\bin\glib-genmarshal"</GlibGenMarshal>
 
-		<Glib>$(DepsRoot)\include\glib-2.0;$(DepsRoot)\lib\glib-2.0\include;$(DepsRoot)\include\libxml2</Glib>
+		<Glib>$(GtkDepsRoot)\include\glib-2.0;$(GtkDepsRoot)\lib\glib-2.0\include;$(DepsRoot)\include\libxml2</Glib>
 
-		<UsingGtk3 Condition="Exists('$(DepsRoot)\\include\\gtk-3.0\\gtk\\gtk.h')">true</UsingGtk3>
-		<Gtk3>$(DepsRoot)\include\gtk-3.0;$(DepsRoot)\lib\gtk-3.0\include</Gtk3>
-		<GtkCommon>$(DepsRoot)\include\atk-1.0;$(DepsRoot)\include\cairo;$(DepsRoot)\include\pango-1.0;$(DepsRoot)\include\gdk-pixbuf-2.0;$(DepsRoot)\include\harfbuzz</GtkCommon>
-		<Gtk>$(Gtk3);$(GtkCommon)</Gtk>
+		<UsingGtk3 Condition="'$(FabulorGtkMajor)'=='3' and Exists('$(GtkDepsRoot)\\include\\gtk-3.0\\gtk\\gtk.h')">true</UsingGtk3>
+		<Gtk3 Condition="'$(FabulorGtkMajor)'=='3'">$(GtkDepsRoot)\include\gtk-3.0;$(GtkDepsRoot)\lib\gtk-3.0\include</Gtk3>
+		<Gtk4 Condition="'$(FabulorGtkMajor)'=='4'">$(GtkDepsRoot)\include;$(GtkDepsRoot)\include\gtk-4.0;$(GtkDepsRoot)\include\graphene-1.0;$(GtkDepsRoot)\lib\graphene-1.0\include</Gtk4>
+		<GtkCommon Condition="'$(FabulorGtkMajor)'=='3'">$(GtkDepsRoot)\include\atk-1.0;$(GtkDepsRoot)\include\cairo;$(GtkDepsRoot)\include\pango-1.0;$(GtkDepsRoot)\include\gdk-pixbuf-2.0;$(GtkDepsRoot)\include\harfbuzz</GtkCommon>
+		<GtkCommon Condition="'$(FabulorGtkMajor)'=='4'">$(GtkDepsRoot)\include\cairo;$(GtkDepsRoot)\include\pango-1.0;$(GtkDepsRoot)\include\gdk-pixbuf-2.0;$(GtkDepsRoot)\include\harfbuzz</GtkCommon>
+		<Gtk>$(Gtk3);$(Gtk4);$(GtkCommon)</Gtk>
+		<GlibCompileResources Condition="Exists('$(GtkDepsRoot)\bin\glib-compile-resources.exe')">$(GtkDepsRoot)\bin\glib-compile-resources.exe</GlibCompileResources>
 
 		<SslLegacyLib Condition="Exists('$(DepsRoot)\\lib\\ssleay32.lib')">ssleay32.lib</SslLegacyLib>
 		<CryptoLegacyLib Condition="Exists('$(DepsRoot)\\lib\\libeay32.lib')">libeay32.lib</CryptoLegacyLib>
@@ -85,15 +93,15 @@
 		<OpenSslInclude Condition="Exists('$(DepsRoot)\\include\\openssl\\ssl.h')">$(DepsRoot)\include</OpenSslInclude>
 
 		<!-- Resolve library names across dependency bundles -->
-		<Gtk3Lib Condition="Exists('$(DepsRoot)\lib\gtk-3.lib')">gtk-3.lib</Gtk3Lib>
-		<Gtk3Lib Condition="'$(Gtk3Lib)'=='' and Exists('$(DepsRoot)\lib\gtk-3.0.lib')">gtk-3.0.lib</Gtk3Lib>
-		<Gtk3Lib Condition="'$(Gtk3Lib)'=='' and Exists('$(DepsRoot)\lib\libgtk-3.lib')">libgtk-3.lib</Gtk3Lib>
-		<Gtk3Lib Condition="'$(Gtk3Lib)'=='' and Exists('$(DepsRoot)\lib\libgtk-3.0.lib')">libgtk-3.0.lib</Gtk3Lib>
+		<Gtk3Lib Condition="'$(FabulorGtkMajor)'=='3' and Exists('$(DepsRoot)\lib\gtk-3.lib')">gtk-3.lib</Gtk3Lib>
+		<Gtk3Lib Condition="'$(FabulorGtkMajor)'=='3' and '$(Gtk3Lib)'=='' and Exists('$(DepsRoot)\lib\gtk-3.0.lib')">gtk-3.0.lib</Gtk3Lib>
+		<Gtk3Lib Condition="'$(FabulorGtkMajor)'=='3' and '$(Gtk3Lib)'=='' and Exists('$(DepsRoot)\lib\libgtk-3.lib')">libgtk-3.lib</Gtk3Lib>
+		<Gtk3Lib Condition="'$(FabulorGtkMajor)'=='3' and '$(Gtk3Lib)'=='' and Exists('$(DepsRoot)\lib\libgtk-3.0.lib')">libgtk-3.0.lib</Gtk3Lib>
 
-		<Gdk3Lib Condition="Exists('$(DepsRoot)\lib\gdk-3.lib')">gdk-3.lib</Gdk3Lib>
-		<Gdk3Lib Condition="'$(Gdk3Lib)'=='' and Exists('$(DepsRoot)\lib\gdk-3.0.lib')">gdk-3.0.lib</Gdk3Lib>
-		<Gdk3Lib Condition="'$(Gdk3Lib)'=='' and Exists('$(DepsRoot)\lib\libgdk-3.lib')">libgdk-3.lib</Gdk3Lib>
-		<Gdk3Lib Condition="'$(Gdk3Lib)'=='' and Exists('$(DepsRoot)\lib\libgdk-3.0.lib')">libgdk-3.0.lib</Gdk3Lib>
+		<Gdk3Lib Condition="'$(FabulorGtkMajor)'=='3' and Exists('$(DepsRoot)\lib\gdk-3.lib')">gdk-3.lib</Gdk3Lib>
+		<Gdk3Lib Condition="'$(FabulorGtkMajor)'=='3' and '$(Gdk3Lib)'=='' and Exists('$(DepsRoot)\lib\gdk-3.0.lib')">gdk-3.0.lib</Gdk3Lib>
+		<Gdk3Lib Condition="'$(FabulorGtkMajor)'=='3' and '$(Gdk3Lib)'=='' and Exists('$(DepsRoot)\lib\libgdk-3.lib')">libgdk-3.lib</Gdk3Lib>
+		<Gdk3Lib Condition="'$(FabulorGtkMajor)'=='3' and '$(Gdk3Lib)'=='' and Exists('$(DepsRoot)\lib\libgdk-3.0.lib')">libgdk-3.0.lib</Gdk3Lib>
 
 		<IntlLib Condition="Exists('$(DepsRoot)\lib\intl.lib')">intl.lib</IntlLib>
 		<IntlLib Condition="'$(IntlLib)'=='' and Exists('$(DepsRoot)\lib\libintl.lib')">libintl.lib</IntlLib>
@@ -133,10 +141,12 @@
 		<ArchiveDefs Condition="'$(ArchiveInclude)'!='' and '$(ArchiveLib)'!=''">HAVE_LIBARCHIVE</ArchiveDefs>
 		<ArchiveDefs Condition="'$(ArchiveInclude)'!='' and ('$(ArchiveLib)'=='archive_static.lib' or '$(ArchiveLib)'=='libarchive_static.lib')">$(ArchiveDefs);LIBARCHIVE_STATIC</ArchiveDefs>
 
-		<DepLibs>$(Gtk3Lib);$(Gdk3Lib);wininet.lib;winmm.lib;ws2_32.lib;advapi32.lib;atk-1.0.lib;gio-2.0.lib;gdk_pixbuf-2.0.lib;pangowin32-1.0.lib;pangocairo-1.0.lib;pango-1.0.lib;cairo.lib;gobject-2.0.lib;gmodule-2.0.lib;glib-2.0.lib;$(IntlLib);$(IconvLib);$(ZlibLib);$(Xml2Lib);$(JpegLib);$(PngLib);$(ArchiveLib);$(OpenSslLibs)</DepLibs>
+		<DepLibs Condition="'$(FabulorGtkMajor)'=='3'">$(Gtk3Lib);$(Gdk3Lib);wininet.lib;winmm.lib;ws2_32.lib;advapi32.lib;atk-1.0.lib;gio-2.0.lib;gdk_pixbuf-2.0.lib;pangowin32-1.0.lib;pangocairo-1.0.lib;pango-1.0.lib;cairo.lib;gobject-2.0.lib;gmodule-2.0.lib;glib-2.0.lib;$(IntlLib);$(IconvLib);$(ZlibLib);$(Xml2Lib);$(JpegLib);$(PngLib);$(ArchiveLib);$(OpenSslLibs)</DepLibs>
+		<DepLibs Condition="'$(FabulorGtkMajor)'=='4'">gtk-4.lib;wininet.lib;winmm.lib;ws2_32.lib;advapi32.lib;gio-2.0.lib;gdk_pixbuf-2.0.lib;pangowin32-1.0.lib;pangocairo-1.0.lib;pango-1.0.lib;cairo.lib;graphene-1.0.lib;gobject-2.0.lib;gmodule-2.0.lib;glib-2.0.lib;intl.lib;$(IconvLib);$(ZlibLib);$(Xml2Lib);$(JpegLib);$(PngLib);$(ArchiveLib);$(OpenSslLibs)</DepLibs>
 
 		<DataDir>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\data\'))</DataDir>
-		<ZoiteChatBuild>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\..\zoitechat-build'))</ZoiteChatBuild>
+		<ZoiteChatBuild Condition="'$(ZoiteChatBuild)'=='' and '$(FabulorGtkMajor)'=='4'">$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\build\gtk4-full'))</ZoiteChatBuild>
+		<ZoiteChatBuild Condition="'$(ZoiteChatBuild)'==''">$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\..\zoitechat-build'))</ZoiteChatBuild>
 		<ZoiteChatBin>$(ZoiteChatBuild)\$(ZoiteChatPlatform)\bin\</ZoiteChatBin>
 		<ZoiteChatObj>$(ZoiteChatBuild)\$(ZoiteChatPlatform)\obj\</ZoiteChatObj>
 		<ZoiteChatLib>$(ZoiteChatBuild)\$(ZoiteChatPlatform)\lib\</ZoiteChatLib>
@@ -153,6 +163,11 @@
 	</PropertyGroup>
 	<Target Name="ZoiteChatPropsEnforceX64" BeforeTargets="PrepareForBuild" Condition="'$(_ZoiteChatPlatformMismatch)'=='true'">
 		<Error Text="zoitechat.props is configured for x64 only. Set the Solution/Project Platform to x64." />
+	</Target>
+	<Target Name="FabulorValidateGtkProfile" BeforeTargets="PrepareForBuild">
+		<Error Condition="'$(FabulorGtkMajor)'!='3' and '$(FabulorGtkMajor)'!='4'" Text="FabulorGtkMajor must be 3 or 4." />
+		<Error Condition="'$(FabulorGtkMajor)'=='4' and !Exists('$(FabulorGtk4Root)\include\gtk-4.0\gtk\gtk.h')" Text="The GTK4 build profile requires a development root at FabulorGtk4Root ($(FabulorGtk4Root))." />
+		<Error Condition="'$(FabulorGtkMajor)'=='4' and !Exists('$(GlibCompileResources)')" Text="The GTK4 build profile requires glib-compile-resources.exe beneath FabulorGtk4Root." />
 	</Target>
 
 	<PropertyGroup>

@@ -334,6 +334,12 @@ Detailed planning and evidence live in:
   - [x] Establish and adversarially test executable-relative Windows runtime discovery without ambient GTK paths.
   - [x] Validate the packaged native import closure against explicit ownership roots and reviewed Windows imports.
   - [x] Validate the candidate payload, then replace transitional broad WiX harvesting with the allowlist.
+  - [x] Add an opt-in, output-isolated full-project MSVC GTK4 profile and compile the complete common/frontend source inventory.
+  - [ ] Remove the full-profile frontend compile blockers before producing a GTK4 executable.
+    - [ ] Replace legacy menu event types and widget construction with the retained action/model boundaries.
+    - [ ] Complete channel-list and channel-view container/lifecycle cutover.
+    - [ ] Complete top-level window positioning, visibility, and lifecycle cutover.
+    - [ ] Bind application and preferences integration to the GTK4 theme controller.
 - [ ] Remove GTK3 code, build inputs, runtime files, installer components, and compatibility helpers.
 - [ ] Complete clean-install, upgrade, accessibility, visual, performance, plugin, and packaging validation.
 

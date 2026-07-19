@@ -58,6 +58,26 @@ of every compatibility helper. This makes both build systems compile and link
 all GTK4 helper branches without creating a display or changing the production
 frontend target.
 
+## Full MSVC Frontend Profile
+
+`gtk4-full-frontend.proj` applies the same validated GTK4 root to the production
+common and frontend projects while keeping all outputs beneath
+`build\gtk4-full`. It is an opt-in conversion target: the normal project and
+solution build still default to GTK3 and the existing external output root.
+
+Run the common-library checkpoint or attempt the complete frontend from an x64
+Visual Studio developer shell:
+
+```powershell
+msbuild tools\gtk4\gtk4-full-frontend.proj /t:BuildCommon /m:1
+msbuild tools\gtk4\gtk4-full-frontend.proj /t:Build /m:1
+```
+
+`BuildCommon` is required by Windows CI. `Build` intentionally compiles the
+whole frontend and currently stops at the remaining GTK3-only source
+boundaries; it is the authoritative error inventory during cutover and does
+not produce a shipping executable until those boundaries are removed.
+
 ## Stage 8 Runtime Candidate
 
 `runtime-payload-contract.json` defines the first production runtime candidate
