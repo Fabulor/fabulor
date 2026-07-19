@@ -4648,6 +4648,32 @@ does not overwrite saved coordinates it cannot observe. Manual resize,
 maximize/fullscreen exclusion, restart persistence, and detached-dialog testing
 remain gated on the linkable full GTK4 frontend. Packaging impact: none.
 
+### GTK4 Stage 8 Quit-Dialog Icon Sizing
+
+Date: 2026-07-20
+
+Files/workflows converted: quit confirmation warning-image construction;
+cross-version dialog icon-size presentation; strict GTK4 image contract.
+
+Automated evidence:
+
+- shipping GTK3 MSVC x64 Release frontend: pass; zero warnings and zero errors
+- strict MSVC GTK4 probe against GTK 4.22.4 / GLib 2.88.0: compile, link, and
+  execution pass under `/W4 /WX`; zero warnings and zero errors
+- real GTK4 image construction: `dialog-warning` identity and explicit
+  48-pixel presentation size pass
+- isolated complete GTK4 frontend inventory: expected fail; improved from 248
+  errors / 550 warnings to 245 errors / 549 warnings
+- first remaining `maingui.c` errors: legacy drag-target declaration near line
+  2551
+- source audit: `maingui.c` contains no `GTK_ICON_SIZE_DIALOG` reference
+- `git diff --check`: pass
+
+Behavior contract: GTK3 keeps its theme-defined dialog warning size. GTK4 uses
+a stable 48-pixel warning image without depending on removed icon-size enums.
+Manual quit-dialog appearance and high-DPI testing remain gated on the linkable
+full GTK4 frontend. Packaging impact: none.
+
 ## Build Matrix
 
 | Check | GTK3 shipping target | GTK4 candidate | Final GTK4 target |

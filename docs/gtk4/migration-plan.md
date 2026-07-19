@@ -1649,6 +1649,17 @@ warnings to 248 errors / 550 warnings; `maingui.c` now reaches the independent
 legacy dialog icon-size enum. DCC and Server List configure callbacks remain
 separate workflow conversions that can reuse the observer.
 
+Quit-dialog icon sizing pass 27 (2026-07-20):
+the quit workflow now creates its warning image through a cross-version
+presentation helper instead of passing the removed `GTK_ICON_SIZE_DIALOG` enum
+from `maingui.c`. GTK4 requests the named symbolic image and assigns a stable
+48-pixel size, while GTK3 retains its theme-selected dialog size. The strict
+GTK4 probe validates icon identity and pixel sizing against a real image object,
+and the shipping GTK3 frontend builds without warnings or errors. The complete
+GTK4 inventory improves from 248 errors / 550 warnings to 245 errors / 549
+warnings; its first remaining `maingui.c` errors are the independent legacy
+drag-target declaration near line 2551.
+
 Deliverables:
 
 - Make GTK4 the only production frontend dependency in MSVC, Meson, and CI.

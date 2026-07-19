@@ -2025,7 +2025,7 @@ mg_open_quit_dialog (gboolean minimize_button)
         gtk_grid_set_row_spacing (GTK_GRID (table1), 12);
         gtk_grid_set_column_spacing (GTK_GRID (table1), 12);
 
-        image = gtk_image_new_from_icon_name ("dialog-warning", GTK_ICON_SIZE_DIALOG);
+        image = fabulor_gtk_dialog_icon_new ("dialog-warning");
         gtk_widget_show (image);
         gtk_widget_set_hexpand (image, FALSE);
         gtk_widget_set_vexpand (image, FALSE);

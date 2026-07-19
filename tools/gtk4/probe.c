@@ -142,6 +142,8 @@ fabulor_probe_xtext_widget_init (FabulorProbeXTextWidget *widget)
 static void
 check_compatibility_helper_signatures (void)
 {
+	GtkWidget *(*volatile dialog_icon_new) (const gchar *) =
+		fabulor_gtk_dialog_icon_new;
 	void (*volatile box_append) (GtkBox *, GtkWidget *, gboolean, gboolean, guint) =
 		fabulor_gtk_box_append;
 	void (*volatile horizontal_box_append_trailing) (GtkBox *, GtkWidget *) =
@@ -247,6 +249,7 @@ check_compatibility_helper_signatures (void)
 	void (*volatile dialog_destroy_on_response) (GtkDialog *, gint, gpointer) =
 		fabulor_gtk_dialog_destroy_on_response;
 
+	(void) dialog_icon_new;
 	(void) box_append;
 	(void) horizontal_box_append_trailing;
 	(void) box_insert_before_trailing;
@@ -296,6 +299,26 @@ check_compatibility_helper_signatures (void)
 	(void) widget_reveal_tree;
 	(void) window_destroy;
 	(void) dialog_destroy_on_response;
+}
+
+static gboolean
+check_dialog_icon (gboolean gtk_ready)
+{
+	GtkWidget *image;
+	gboolean valid;
+
+	if (!gtk_ready)
+		return TRUE;
+
+	image = fabulor_gtk_dialog_icon_new ("dialog-warning");
+	g_object_ref_sink (image);
+	valid = GTK_IS_IMAGE (image) &&
+		gtk_image_get_pixel_size (GTK_IMAGE (image)) ==
+			FABULOR_GTK_DIALOG_ICON_PIXEL_SIZE &&
+		g_strcmp0 (gtk_image_get_icon_name (GTK_IMAGE (image)),
+			"dialog-warning") == 0;
+	g_object_unref (image);
+	return valid;
 }
 
 static void
@@ -4481,6 +4504,11 @@ main (void)
 	check_compatibility_helper_signatures ();
 	check_user_list_view_signatures ();
 	check_channel_tree_view_signatures ();
+	if (!check_dialog_icon (gtk_ready))
+	{
+		fprintf (stderr, "GTK4 dialog icon contract mismatch\n");
+		return 1;
+	}
 	if (!check_window_state_boundary (gtk_ready))
 	{
 		fprintf (stderr, "GTK4 window state boundary mismatch\n");

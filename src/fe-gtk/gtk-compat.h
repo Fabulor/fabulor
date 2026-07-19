@@ -18,6 +18,27 @@
 
 G_BEGIN_DECLS
 
+enum
+{
+	FABULOR_GTK_DIALOG_ICON_PIXEL_SIZE = 48
+};
+
+static inline GtkWidget *
+fabulor_gtk_dialog_icon_new (const gchar *icon_name)
+{
+	g_return_val_if_fail (icon_name != NULL, NULL);
+
+#if GTK_MAJOR_VERSION >= 4
+	GtkWidget *image = gtk_image_new_from_icon_name (icon_name);
+
+	gtk_image_set_pixel_size (GTK_IMAGE (image),
+		FABULOR_GTK_DIALOG_ICON_PIXEL_SIZE);
+	return image;
+#else
+	return gtk_image_new_from_icon_name (icon_name, GTK_ICON_SIZE_DIALOG);
+#endif
+}
+
 #if GTK_MAJOR_VERSION >= 4
 static inline gint
 fabulor_gtk_margin_with_padding (gint margin, guint padding)
