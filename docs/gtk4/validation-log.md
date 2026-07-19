@@ -4664,8 +4664,8 @@ Automated evidence:
   48-pixel presentation size pass
 - isolated complete GTK4 frontend inventory: expected fail; improved from 248
   errors / 550 warnings to 245 errors / 549 warnings
-- first remaining `maingui.c` errors: legacy drag-target declaration near line
-  2551
+- first remaining `maingui.c` errors: missing explicit Server List type and
+  function dependencies in the retained GTK4 tab-menu path
 - source audit: `maingui.c` contains no `GTK_ICON_SIZE_DIALOG` reference
 - `git diff --check`: pass
 
@@ -4673,6 +4673,30 @@ Behavior contract: GTK3 keeps its theme-defined dialog warning size. GTK4 uses
 a stable 48-pixel warning image without depending on removed icon-size enums.
 Manual quit-dialog appearance and high-DPI testing remain gated on the linkable
 full GTK4 frontend. Packaging impact: none.
+
+### GTK4 Stage 8 Tab-Menu Server List Dependencies
+
+Date: 2026-07-20
+
+Files/workflows converted: retained tab-menu Autojoin and Auto-Connect compile
+dependencies; Server List model, persistence, and frontend edit declarations.
+
+Automated evidence:
+
+- shipping GTK3 MSVC x64 Release frontend: pass; zero warnings and zero errors
+- strict MSVC GTK4 probe against GTK 4.22.4 / GLib 2.88.0: compile, link, and
+  execution pass under `/W4 /WX`; zero warnings and zero errors
+- isolated complete GTK4 frontend inventory: expected fail; improved from 245
+  errors / 549 warnings to 239 errors / 546 warnings
+- all six former `ircnet` parse errors and three dependent warnings are absent
+- first remaining `maingui.c` blocker: retired `GTK_RELIEF_NONE` presentation
+  enum near line 3325
+- `git diff --check`: pass
+
+Behavior contract: Autojoin and Auto-Connect dispatch and persistence remain
+unchanged. The retained GTK4 code now names its actual common and frontend
+Server List dependencies instead of relying on GTK3 include side effects.
+Packaging impact: none.
 
 ## Build Matrix
 

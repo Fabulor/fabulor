@@ -638,6 +638,12 @@ image and applies an explicit 48-pixel presentation size; GTK3 continues using
 its theme-defined dialog icon size through the compatibility boundary. The
 strict probe verifies both the GTK4 icon identity and pixel-size contract.
 
+Stage 8 tab-menu dependency pass 28 makes the retained GTK4 Autojoin and
+Auto-Connect paths include their owning Server List declarations directly.
+`maingui.c` no longer relies on unrelated GTK3 include chains for `ircnet`,
+`servlist_save()`, or `servlist_autojoinedit()`. Runtime behavior and ownership
+remain unchanged; this is an explicit compile-boundary correction.
+
 ## Functional Clusters
 
 | Cluster | Main files | GTK4 concern | Status |

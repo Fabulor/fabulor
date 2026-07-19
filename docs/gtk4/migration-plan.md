@@ -1657,8 +1657,19 @@ from `maingui.c`. GTK4 requests the named symbolic image and assigns a stable
 GTK4 probe validates icon identity and pixel sizing against a real image object,
 and the shipping GTK3 frontend builds without warnings or errors. The complete
 GTK4 inventory improves from 248 errors / 550 warnings to 245 errors / 549
-warnings; its first remaining `maingui.c` errors are the independent legacy
-drag-target declaration near line 2551.
+warnings; its first remaining `maingui.c` errors are missing explicit Server
+List type and function dependencies in the retained GTK4 tab-menu path.
+
+Tab-menu Server List dependency pass 28 (2026-07-20):
+the retained GTK4 tab context workflow now includes the common Server List
+model and frontend Server List declarations that own `ircnet`, persistence,
+and Autojoin editing. The GTK4-only code no longer compiles accidentally only
+when a legacy include chain exposes those declarations. Autojoin and
+Auto-Connect dispatch, flag persistence, and GTK3 behavior are unchanged.
+Strict GTK4 and shipping GTK3 builds pass with zero warnings and errors. The
+complete GTK4 inventory improves from 245 errors / 549 warnings to 239 errors /
+546 warnings; its first remaining `maingui.c` blocker is the independent
+retired button-relief presentation enum.
 
 Deliverables:
 
