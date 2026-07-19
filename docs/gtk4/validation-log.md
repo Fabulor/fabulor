@@ -4592,6 +4592,32 @@ or window types to either consumer. Live minimize/maximize/fullscreen, focus,
 auto-hide taskbar, and tray testing remains gated on the linkable full GTK4
 frontend. Packaging impact: none.
 
+### GTK4 Stage 8 Internal Drag-Icon Capture
+
+Date: 2026-07-20
+
+Files/workflows converted: channel-view and user-list internal drag icon
+capture; native `GdkWindow` readback; GTK4 widget-paintable ownership.
+
+Automated evidence:
+
+- shipping GTK3 MSVC x64 Release frontend: pass; zero warnings and zero errors
+- strict MSVC GTK4 probe against GTK 4.22.4 / GLib 2.88.0: compile, link, and
+  execution pass under `/W4 /WX`; zero warnings and zero errors
+- isolated complete GTK4 frontend inventory: expected fail; improved from 261
+  errors / 552 warnings to 257 errors / 552 warnings
+- first remaining `maingui.c` blocker: `GdkEventConfigure` geometry ownership
+- source audit: GTK3 retains native capture, ARGB conversion, scaling, and
+  `GdkPixbuf` drag icons
+- source audit: GTK4 internal drag begin uses a live `GtkWidgetPaintable` and
+  never invokes the legacy capture callback
+- `git diff --check`: pass
+
+Behavior contract: GTK3 keeps the existing scaled snapshot drag icon. GTK4
+keeps the already-converted live widget drag icon and has no native surface
+readback. Manual drag-icon appearance and scale testing remains gated on the
+linkable full GTK4 frontend. Packaging impact: none.
+
 ## Build Matrix
 
 | Check | GTK3 shipping target | GTK4 candidate | Final GTK4 target |
