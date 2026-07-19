@@ -4330,6 +4330,27 @@ Scope: fixed nick heading, Reply, and plugin composition only. Recursive
 `popup.conf`, user-info/WHOIS refresh, and the live GTK4 presenter connection
 remain open. The shipping GTK3 menu and packaging are unchanged.
 
+## 2026-07-19 - Stage 8 Nick Popup Projection
+
+Automated evidence:
+
+- strict MSVC GTK4 probe: pass with zero warnings and zero errors
+- recursive submenu and separator-section projection: pass
+- enabled commands dispatch; disabled commands remain suppressed: pass
+- stateful toggle transitions and dispatches `set <preference> 0|1`: pass
+- command actions retain copied storage after the caller releases its buffer
+- ordinary multi-nick commands carry selection dispatch; toggles do not
+- icon metadata and heading/command/Reply/plugin section ordering remain
+  model-owned
+- Meson 1.11.2 / Ninja 1.13.2: all 53 source objects compile under `-Werror`
+- local Meson final link remains unavailable at the documented Strawberry GCC
+  4.8.3 versus MSVC import-library boundary
+- `git diff --check`: pass
+
+Scope: recursive `popup.conf` projection and multi-selection policy. User-info
+copy actions, WHOIS refresh, and the live GTK4 presenter adapter remain open.
+The shipping GTK3 menu and packaging are unchanged.
+
 ## Build Matrix
 
 | Check | GTK3 shipping target | GTK4 candidate | Final GTK4 target |

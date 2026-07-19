@@ -346,7 +346,7 @@ Detailed planning and evidence live in:
         - [x] Model channel Join/Focus/Part/Cycle, Autojoin state, and plugin sections with retained typed dispatch.
         - [x] Connect the channel model and plugin actions to the GTK4 presenter with safe network and popup lifetime handling.
         - [x] Model nick selection/user headings, Reply, and plugin sections with copied nick lifetime and typed dispatch.
-        - [ ] Project recursive `popup.conf` commands and multi-selection behavior into the retained nick model.
+        - [x] Project recursive `popup.conf` commands and multi-selection behavior into the retained nick model.
         - [ ] Model user-info copy actions and safe WHOIS-driven refresh, then connect the complete nick model to the GTK4 presenter.
     - [ ] Complete channel-list and channel-view container/lifecycle cutover.
     - [ ] Complete top-level window positioning, visibility, and lifecycle cutover.
