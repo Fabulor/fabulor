@@ -265,6 +265,7 @@ Detailed planning and evidence live in:
   - [x] Convert topic URL hover, cursor leave, and modified left-click activation to GTK4 motion and click controllers.
   - [x] Convert private-dialog and user-list external file drops to a typed GTK4 `GdkFileList` boundary.
   - [x] Convert internal channel-view, user-list, scrollbar, and pane-position drag operations to typed GTK4 source/drop controllers.
+    - [x] Keep native window capture only for the GTK3 drag icon while GTK4 uses a live `GtkWidgetPaintable`.
 - [x] Convert tree/list models, cell renderers, channel navigation, and operational lists.
   - [x] Establish tested GTK4 flat and hierarchical model stacks with explicit sorting, selection, identity, and ownership contracts.
   - [x] Convert the Notify List to a cross-version owner with GTK4 column factories, identity-based refresh, and single-selection actions.

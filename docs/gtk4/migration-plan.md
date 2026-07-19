@@ -1622,6 +1622,18 @@ and configure-event geometry paths becoming the first main-window blockers.
 The per-window Win32 native-message filter is explicitly confined to GTK3 and
 remains a tracked GTK4 display-filter follow-up.
 
+Internal drag-icon capture pass 25 (2026-07-20):
+the native `GdkWindow` to Cairo image to `GdkPixbuf` capture pipeline now
+compiles only for GTK3, where channel-view and user-list drags retain their
+scaled snapshot icon. GTK4 continues through the Stage 4 drag controller's
+live `GtkWidgetPaintable`, so no native surface readback or replacement
+screenshot path is required. The public drag callback remains inert on GTK4
+for source compatibility and is not invoked by the controller. Strict GTK4 and
+shipping GTK3 builds pass with zero warnings and errors. The complete GTK4
+frontend inventory improves from 261 errors / 552 warnings to 257 errors / 552
+warnings; its first `maingui.c` blocker is now the independent
+`GdkEventConfigure` geometry callback.
+
 Deliverables:
 
 - Make GTK4 the only production frontend dependency in MSVC, Meson, and CI.

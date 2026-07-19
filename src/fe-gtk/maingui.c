@@ -279,6 +279,7 @@ mg_box_new (GtkOrientation orientation, gboolean homogeneous, gint spacing)
 	return box;
 }
 
+#if GTK_MAJOR_VERSION < 4
 static void
 mg_pixbuf_destroy (guchar *pixels, gpointer data)
 {
@@ -391,6 +392,7 @@ mg_pixbuf_from_window (GdkWindow *window, int width, int height)
 
 	return pixbuf;
 }
+#endif
 
 static void mg_create_entry (session *sess, GtkWidget *box);
 static void mg_create_search (session *sess, GtkWidget *box);

@@ -427,6 +427,9 @@ and pane-placement consumers. GTK4 uses local pointer content with
 `GtkDragSource` and preloaded `GtkDropTarget`; GTK3 exact-target decoding and
 same-application restrictions remain in `gtk-compat.h`. User-list file and
 internal hover share typed row selection and deterministic leave/drop cleanup.
+GTK4 drag icons are live `GtkWidgetPaintable` instances owned by the drag
+source. The legacy native-window capture, Cairo readback, pixel conversion, and
+scaled `GdkPixbuf` icon compile only for GTK3.
 The former action-code identity and stale leading-character target test are
 removed. The remaining consumer-side `GtkSelectionData` reference is contained
 inside the GTK3 branch of the Stage 6 transcript selection adapter, not
