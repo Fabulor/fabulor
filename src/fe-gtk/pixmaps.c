@@ -198,7 +198,7 @@ load_pixmap (IconResolverRole role, int item)
 	char *path;
 	const char *system_icon_name = NULL;
 
-	path = icon_resolver_resolve_path (role, item, GTK_ICON_SIZE_MENU, "pixmap",
+	path = icon_resolver_resolve_path (role, item, FABULOR_GTK_ICON_SIZE_MENU, "pixmap",
 	                                   ICON_RESOLVER_THEME_SYSTEM, &system_icon_name);
 	if (path)
 	{

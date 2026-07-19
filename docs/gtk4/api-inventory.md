@@ -668,6 +668,12 @@ themed icon button. The control now owns valid button activation, a
 label on both toolkit versions. The raw button event mask, app-paintable flag,
 custom Cairo arrow, and invalid drawing-area `clicked` connection are removed.
 
+Stage 8 icon-size pass 33 removes `GtkIconSize` from the shared resolver and
+image utility contract. Fabulor now owns semantic 16-pixel menu and 24-pixel
+large-toolbar roles. GTK3 maps those roles to theme-defined toolkit sizes;
+GTK4 applies explicit logical pixels to named images. Search controls, channel
+tabs/lists, menus, Join, spell, plugin, and pixmap consumers use the same type.
+
 ## Functional Clusters
 
 | Cluster | Main files | GTK4 concern | Status |

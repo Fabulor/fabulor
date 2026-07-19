@@ -22,6 +22,7 @@
 
 #include <gtk/gtk.h>
 #include "../common/fe.h"
+#include "gtk-compat.h"
 #include "theme/theme-gtk.h"
 
 typedef void (*filereqcallback) (void *, char *file);
@@ -39,7 +40,7 @@ void gtkutil_destroy (GtkWidget * igad, GtkWidget * dgad);
 void gtkutil_destroy_on_esc (GtkWidget *win);
 GtkWidget *gtkutil_button (GtkWidget *box, char *stock, char *tip, void *callback,
 				 void *userdata, char *labeltext);
-GtkWidget *gtkutil_image_new_from_stock (const char *stock, GtkIconSize size);
+GtkWidget *gtkutil_image_new_from_stock (const char *stock, FabulorGtkIconSize size);
 GtkWidget *gtkutil_button_new_from_stock (const char *stock, const char *label);
 const char *gtkutil_icon_name_from_stock (const char *stock_name);
 void gtkutil_label_new (char *text, GtkWidget * box);

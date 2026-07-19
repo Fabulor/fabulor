@@ -126,7 +126,7 @@ chanlist_icon_button (const char *label, const char *icon_name,
 	GtkWidget *image;
 
 	button = gtk_button_new_with_mnemonic (label);
-	image = gtkutil_image_new_from_stock (icon_name, GTK_ICON_SIZE_MENU);
+	image = gtkutil_image_new_from_stock (icon_name, FABULOR_GTK_ICON_SIZE_MENU);
 	gtk_button_set_image (GTK_BUTTON (button), image);
 	gtk_button_set_use_underline (GTK_BUTTON (button), TRUE);
 	g_signal_connect (G_OBJECT (button), "clicked", callback, userdata);
@@ -146,7 +146,7 @@ chanlist_icon_menu_item (const char *label, const char *icon_name,
 
 	item = gtk_menu_item_new ();
 	box = gtk_box_new (GTK_ORIENTATION_HORIZONTAL, 6);
-	image = icon_name ? gtkutil_image_new_from_stock (icon_name, GTK_ICON_SIZE_MENU) : NULL;
+	image = icon_name ? gtkutil_image_new_from_stock (icon_name, FABULOR_GTK_ICON_SIZE_MENU) : NULL;
 	label_widget = gtk_label_new_with_mnemonic (label);
 	if (image)
 		gtk_box_pack_start (GTK_BOX (box), image, FALSE, FALSE, 0);

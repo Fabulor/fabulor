@@ -2,6 +2,7 @@
 #define ZOITECHAT_ICON_RESOLVER_H
 
 #include <gtk/gtk.h>
+#include "gtk-compat.h"
 
 typedef enum
 {
@@ -84,7 +85,7 @@ gboolean icon_resolver_menu_action_from_custom (const char *custom_icon_name, in
 gboolean icon_resolver_menu_action_from_name (const char *name, int *action_out);
 const char *icon_resolver_system_icon_name (IconResolverRole role, int item);
 IconResolverThemeVariant icon_resolver_detect_theme_variant (void);
-char *icon_resolver_resolve_path (IconResolverRole role, int item, GtkIconSize size,
+char *icon_resolver_resolve_path (IconResolverRole role, int item, FabulorGtkIconSize size,
                                   const char *context, IconResolverThemeVariant variant,
                                   const char **system_icon_name);
 

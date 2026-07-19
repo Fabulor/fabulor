@@ -144,6 +144,10 @@ check_compatibility_helper_signatures (void)
 {
 	GtkWidget *(*volatile dialog_icon_new) (const gchar *) =
 		fabulor_gtk_dialog_icon_new;
+	gint (*volatile icon_size_get_pixels) (FabulorGtkIconSize) =
+		fabulor_gtk_icon_size_get_pixels;
+	GtkWidget *(*volatile image_new_from_icon_name) (const gchar *,
+		FabulorGtkIconSize) = fabulor_gtk_image_new_from_icon_name;
 	void (*volatile box_append) (GtkBox *, GtkWidget *, gboolean, gboolean, guint) =
 		fabulor_gtk_box_append;
 	void (*volatile horizontal_box_append_trailing) (GtkBox *, GtkWidget *) =
@@ -260,6 +264,8 @@ check_compatibility_helper_signatures (void)
 		fabulor_gtk_dialog_destroy_on_response;
 
 	(void) dialog_icon_new;
+	(void) icon_size_get_pixels;
+	(void) image_new_from_icon_name;
 	(void) box_append;
 	(void) horizontal_box_append_trailing;
 	(void) box_insert_before_trailing;
@@ -333,6 +339,32 @@ check_dialog_icon (gboolean gtk_ready)
 		g_strcmp0 (gtk_image_get_icon_name (GTK_IMAGE (image)),
 			"dialog-warning") == 0;
 	g_object_unref (image);
+	return valid;
+}
+
+static gboolean
+check_icon_sizes (gboolean gtk_ready)
+{
+	GtkWidget *menu_image;
+	GtkWidget *toolbar_image;
+	gboolean valid;
+
+	if (!gtk_ready)
+		return TRUE;
+
+	menu_image = fabulor_gtk_image_new_from_icon_name (
+		"window-close-symbolic", FABULOR_GTK_ICON_SIZE_MENU);
+	toolbar_image = fabulor_gtk_image_new_from_icon_name (
+		"network-workgroup", FABULOR_GTK_ICON_SIZE_LARGE_TOOLBAR);
+	g_object_ref_sink (menu_image);
+	g_object_ref_sink (toolbar_image);
+	valid = gtk_image_get_pixel_size (GTK_IMAGE (menu_image)) == 16 &&
+		gtk_image_get_pixel_size (GTK_IMAGE (toolbar_image)) == 24 &&
+		fabulor_gtk_icon_size_get_pixels (FABULOR_GTK_ICON_SIZE_MENU) == 16 &&
+		fabulor_gtk_icon_size_get_pixels (
+			FABULOR_GTK_ICON_SIZE_LARGE_TOOLBAR) == 24;
+	g_object_unref (toolbar_image);
+	g_object_unref (menu_image);
 	return valid;
 }
 
@@ -4586,6 +4618,11 @@ main (void)
 	if (!check_dialog_icon (gtk_ready))
 	{
 		fprintf (stderr, "GTK4 dialog icon contract mismatch\n");
+		return 1;
+	}
+	if (!check_icon_sizes (gtk_ready))
+	{
+		fprintf (stderr, "GTK4 icon size contract mismatch\n");
 		return 1;
 	}
 	if (!check_flat_button (gtk_ready))
