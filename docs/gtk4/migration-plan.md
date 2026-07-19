@@ -1605,6 +1605,23 @@ attempt became idle before compilation and was terminated without leaving a
 build process. Utility tabs retain their Detach/Close-only surface, and GTK3
 presentation and behavior are unchanged.
 
+Top-level window-state boundary pass 24 (2026-07-20):
+main-window preference persistence, minimize-to-tray behavior, fullscreen menu
+state, relayout, tray action refresh, and the Windows auto-hide taskbar
+adjustment now consume one typed minimized/maximized/fullscreen/focused state
+snapshot. GTK3 keeps `window-state-event` and `GdkWindowState` private to the
+owner. GTK4 observes the realized `GdkToplevel` `state` property, detects exact
+transitions, preserves pre-realization maximize/fullscreen requests, and
+releases its retained surface when the window unrealizes or is finalized. The
+Windows native handle is resolved from `GdkSurface` only inside the platform
+adapter. Strict GTK4 `/W4 /WX` and shipping GTK3 builds pass with zero warnings
+and errors. Removing the obsolete top-level GTK4 Win32 header lets the complete
+frontend inventory proceed through `maingui.c`; its authoritative summary is
+now 261 errors and 552 warnings, with the separate GTK3 window-to-pixbuf capture
+and configure-event geometry paths becoming the first main-window blockers.
+The per-window Win32 native-message filter is explicitly confined to GTK3 and
+remains a tracked GTK4 display-filter follow-up.
+
 Deliverables:
 
 - Make GTK4 the only production frontend dependency in MSVC, Meson, and CI.

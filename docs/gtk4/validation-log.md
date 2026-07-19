@@ -4557,6 +4557,41 @@ plugin entries at the click coordinates. Utility tabs expose only Detach and
 Close. Manual repeated-popup placement and live command testing remain gated
 on the linkable full GTK4 frontend. Packaging impact: none.
 
+### GTK4 Stage 8 Top-Level Window-State Boundary
+
+Date: 2026-07-20
+
+Files/workflows converted: minimized, maximized, fullscreen, and focused
+top-level observation; main-window state persistence and relayout;
+minimize-to-tray and tray action refresh; fullscreen action synchronization;
+Windows auto-hide taskbar adjustment and native handle resolution.
+
+Automated evidence:
+
+- shipping GTK3 MSVC x64 Release frontend: pass; zero warnings and zero errors
+- strict MSVC GTK4 probe against GTK 4.22.4 / GLib 2.88.0: compile, link, and
+  execution pass under `/W4 /WX`; zero warnings and zero errors
+- state-difference flags, unrealized-window snapshot, multiple observer
+  ownership, safe destruction, and unavailable-native-handle behavior: pass
+- isolated complete GTK4 frontend inventory: expected fail with 261 errors /
+  552 warnings; the former Win32 header and raw window-state callback no longer
+  stop `maingui.c`
+- first remaining `maingui.c` blockers: GTK3 window-to-pixbuf capture, then
+  configure-event geometry ownership
+- source audit: focus transitions continue to refresh tray state; requested
+  maximize/fullscreen state is observed when the GTK4 surface realizes
+- source audit: GTK3 retains its event semantics and Windows taskbar behavior;
+  GTK4 resolves the `HWND` only from a live Win32 `GdkSurface`
+- source audit: the legacy per-window Win32 message filter is GTK3-only and is
+  tracked for conversion to GTK4 display-filter ownership
+- `git diff --check`: pass
+
+Behavior contract: GTK3 top-level and tray behavior remains unchanged. GTK4
+now supplies equivalent typed state transitions without exposing removed event
+or window types to either consumer. Live minimize/maximize/fullscreen, focus,
+auto-hide taskbar, and tray testing remains gated on the linkable full GTK4
+frontend. Packaging impact: none.
+
 ## Build Matrix
 
 | Check | GTK3 shipping target | GTK4 candidate | Final GTK4 target |

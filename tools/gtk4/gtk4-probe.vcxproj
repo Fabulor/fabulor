@@ -70,6 +70,7 @@
 	<ClCompile Include="..\..\src\fe-gtk\nick-context-menu-model.c" />
 	<ClCompile Include="..\..\src\fe-gtk\middle-context-menu-model.c" />
 	<ClCompile Include="..\..\src\fe-gtk\tab-context-menu-model.c" />
+	<ClCompile Include="..\..\src\fe-gtk\window-state.c" />
 	<ClCompile Include="..\..\src\fe-gtk\spell-entry-words.c" />
 	<ClCompile Include="..\..\src\fe-gtk\spell-entry-style.c" />
 	<ClCompile Include="..\..\src\fe-gtk\spell-entry-menu.c" />

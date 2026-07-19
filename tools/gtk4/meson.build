@@ -70,6 +70,7 @@ probe = executable(
   '../../src/fe-gtk/nick-context-menu-model.c',
   '../../src/fe-gtk/middle-context-menu-model.c',
   '../../src/fe-gtk/tab-context-menu-model.c',
+  '../../src/fe-gtk/window-state.c',
   '../../src/fe-gtk/spell-entry-words.c',
 	'../../src/fe-gtk/spell-entry-style.c',
 	'../../src/fe-gtk/spell-entry-menu.c',

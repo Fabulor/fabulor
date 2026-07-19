@@ -59,6 +59,7 @@
 #include "maingui.h"
 #include "menu.h"
 #include "preferences-persistence.h"
+#include "window-state.h"
 #include "fkeys.h"
 #include "userlistgui.h"
 #include "user-list-model.h"
@@ -72,88 +73,10 @@
 
 #ifdef G_OS_WIN32
 #include <windows.h>
-#include <shellapi.h>
+#if GTK_MAJOR_VERSION < 4
 #include <gdk/gdkwin32.h>
+#endif
 #include <glib/gwin32.h>
-
-static void
-mg_win32_allow_autohide_taskbar (GtkWindow *window, GdkEventWindowState *event)
-{
-	GdkWindow *gdk_window;
-	HWND hwnd;
-
-	if (!window || !event)
-		return;
-
-	if ((event->new_window_state & GDK_WINDOW_STATE_FULLSCREEN) != 0)
-		return;
-
-	gdk_window = gtk_widget_get_window (GTK_WIDGET (window));
-	if (!gdk_window)
-		return;
-
-	hwnd = gdk_win32_window_get_handle (gdk_window);
-	if (!hwnd)
-		return;
-
-	if (event->new_window_state & GDK_WINDOW_STATE_MAXIMIZED)
-	{
-		APPBARDATA appbar_data;
-		RECT work_area;
-
-		ZeroMemory (&appbar_data, sizeof (APPBARDATA));
-		appbar_data.cbSize = sizeof (APPBARDATA);
-
-		if ((SHAppBarMessage (ABM_GETSTATE, &appbar_data) & ABS_AUTOHIDE) != 0 &&
-			SHAppBarMessage (ABM_GETTASKBARPOS, &appbar_data) != 0)
-		{
-			HMONITOR monitor;
-			MONITORINFO monitor_info;
-
-			monitor = MonitorFromWindow (hwnd, MONITOR_DEFAULTTONEAREST);
-			ZeroMemory (&monitor_info, sizeof (MONITORINFO));
-			monitor_info.cbSize = sizeof (MONITORINFO);
-
-			if (monitor && GetMonitorInfo (monitor, &monitor_info))
-			{
-				work_area = monitor_info.rcMonitor;
-
-				switch (appbar_data.uEdge)
-				{
-				case ABE_LEFT:
-					work_area.left += 1;
-					break;
-				case ABE_TOP:
-					work_area.top += 1;
-					break;
-				case ABE_RIGHT:
-					work_area.right -= 1;
-					break;
-				case ABE_BOTTOM:
-				default:
-					work_area.bottom -= 1;
-					break;
-				}
-
-				SetWindowPos (hwnd,
-				              NULL,
-				              work_area.left,
-				              work_area.top,
-				              work_area.right - work_area.left,
-				              work_area.bottom - work_area.top,
-				              SWP_NOACTIVATE | SWP_NOOWNERZORDER | SWP_NOZORDER);
-			}
-		}
-	}
-
-	SetWindowPos (hwnd,
-	              HWND_NOTOPMOST,
-	              0,
-	              0,
-	              0,
-	              0,
-	              SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE | SWP_NOOWNERZORDER);
-}
 #endif
 
 #define ICON_TAB_DETACH "zc-menu-detach"
@@ -471,7 +394,7 @@ mg_pixbuf_from_window (GdkWindow *window, int width, int height)
 
 static void mg_create_entry (session *sess, GtkWidget *box);
 static void mg_create_search (session *sess, GtkWidget *box);
-#ifdef G_OS_WIN32
+#if defined(G_OS_WIN32) && GTK_MAJOR_VERSION < 4
 static GdkFilterReturn mg_win32_filter (GdkXEvent *xevent, GdkEvent *event, gpointer data);
 #endif
 static void mg_link_irctab (session *sess, int focus);
@@ -1117,16 +1040,16 @@ mg_queue_window_relayout (GtkWidget *window)
                            GUINT_TO_POINTER (source_id));
 }
 
-static gboolean
-mg_windowstate_cb (GtkWindow *wid, GdkEventWindowState *event, gpointer userdata)
+static void
+mg_windowstate_cb (GtkWindow *wid, const FabulorWindowState *state,
+	gpointer userdata)
 {
 	guint win_state;
 	guint win_fullscreen;
 	gboolean changed = FALSE;
         session *sess;
 
-	if ((event->changed_mask & GDK_WINDOW_STATE_ICONIFIED) &&
-		 (event->new_window_state & GDK_WINDOW_STATE_ICONIFIED) &&
+	if ((state->changed & FABULOR_WINDOW_STATE_MINIMIZED) && state->minimized &&
 		 prefs.hex_gui_tray_minimize && prefs.hex_gui_tray &&
 		 gtkutil_tray_icon_supported (wid)
 #ifndef WIN32
@@ -1138,13 +1061,8 @@ mg_windowstate_cb (GtkWindow *wid, GdkEventWindowState *event, gpointer userdata
 		tray_toggle_visibility (TRUE);
 	}
 
-	win_state = 0;
-	if (event->new_window_state & GDK_WINDOW_STATE_MAXIMIZED)
-		win_state = 1;
-
-	win_fullscreen = 0;
-	if (event->new_window_state & GDK_WINDOW_STATE_FULLSCREEN)
-		win_fullscreen = 1;
+	win_state = state->maximized ? 1 : 0;
+	win_fullscreen = state->fullscreen ? 1 : 0;
 
 	if (prefs.hex_gui_win_state != win_state)
 	{
@@ -1174,12 +1092,10 @@ mg_windowstate_cb (GtkWindow *wid, GdkEventWindowState *event, gpointer userdata
                 menu_set_fullscreen (current_sess->gui, prefs.hex_gui_win_fullscreen);
 
 #ifdef G_OS_WIN32
-	if (event->changed_mask &
-	    (GDK_WINDOW_STATE_MAXIMIZED | GDK_WINDOW_STATE_FULLSCREEN))
-		mg_win32_allow_autohide_taskbar (wid, event);
+	if (state->changed &
+		(FABULOR_WINDOW_STATE_MAXIMIZED | FABULOR_WINDOW_STATE_FULLSCREEN))
+		fabulor_window_state_allow_autohide_taskbar (wid, state);
 #endif
-
-        return FALSE;
 }
 
 static gboolean
@@ -6011,7 +5927,7 @@ mg_create_topwindow (session *sess)
 {
 	GtkWidget *win;
 	GtkWidget *table;
-#ifdef G_OS_WIN32
+#if defined(G_OS_WIN32) && GTK_MAJOR_VERSION < 4
 	GdkWindow *parent_win;
 #endif
 
@@ -6091,7 +6007,7 @@ mg_create_topwindow (session *sess)
 	g_signal_connect (G_OBJECT (win), "destroy", G_CALLBACK (mg_theme_window_destroy_cb), sess->gui);
 	theme_manager_attach_window (win);
 
-#ifdef G_OS_WIN32
+#if defined(G_OS_WIN32) && GTK_MAJOR_VERSION < 4
 	parent_win = gtk_widget_get_window (win);
 	gdk_window_add_filter (parent_win, mg_win32_filter, NULL);
 #endif
@@ -6121,7 +6037,7 @@ mg_tabwindow_de_cb (GtkWidget *widget, GdkEvent *event, gpointer user_data)
         return TRUE;
 }
 
-#ifdef G_OS_WIN32
+#if defined(G_OS_WIN32) && GTK_MAJOR_VERSION < 4
 static GdkFilterReturn
 mg_win32_filter (GdkXEvent *xevent, GdkEvent *event, gpointer data)
 {
@@ -6206,7 +6122,7 @@ mg_create_tabwindow (session *sess)
 {
         GtkWidget *win;
         GtkWidget *table;
-#ifdef G_OS_WIN32
+#if defined(G_OS_WIN32) && GTK_MAJOR_VERSION < 4
         GdkWindow *parent_win;
 #endif
 
@@ -6229,8 +6145,7 @@ mg_create_tabwindow (session *sess)
         fabulor_gtk_widget_on_focus_enter (win, mg_tabwin_focus_cb, NULL);
         g_signal_connect (G_OBJECT (win), "configure-event",
                                                         G_CALLBACK (mg_configure_cb), NULL);
-        g_signal_connect (G_OBJECT (win), "window-state-event",
-                                                        G_CALLBACK (mg_windowstate_cb), NULL);
+		fabulor_window_state_watch (GTK_WINDOW (win), mg_windowstate_cb, NULL);
 
 
         sess->gui->main_table = table = gtk_grid_new ();
@@ -6275,7 +6190,7 @@ mg_create_tabwindow (session *sess)
         g_signal_connect (G_OBJECT (win), "destroy", G_CALLBACK (mg_theme_window_destroy_cb), sess->gui);
         theme_manager_attach_window (win);
 
-#ifdef G_OS_WIN32
+#if defined(G_OS_WIN32) && GTK_MAJOR_VERSION < 4
 	parent_win = gtk_widget_get_window (win);
 	gdk_window_add_filter (parent_win, mg_win32_filter, NULL);
 #endif

@@ -215,8 +215,16 @@ use the canonical dispatcher.
 
 Menu-bar visibility, user-list visibility, and fullscreen now use boolean
 `GSimpleAction` state. Shared preference updates synchronize every window's
-corresponding action, and the window-state event remains authoritative for
-correcting fullscreen state after a platform transition.
+corresponding action, and the typed top-level state observer remains
+authoritative for correcting fullscreen state after a platform transition.
+
+Top-level minimized, maximized, fullscreen, and focused transitions now cross
+one `FabulorWindowState` boundary. GTK4 observes a realized `GdkToplevel` and
+owns its state-notify lifetime; GTK3 event types and `GdkWindowState` remain in
+the adapter. Main-window preferences, minimize-to-tray behavior, relayout,
+fullscreen action synchronization, tray action refresh, and the Windows
+auto-hide taskbar adjustment consume the same snapshot. GTK4 native Windows
+message filtering and configure-event geometry remain separate work.
 
 Away uses a session-aware boolean `GSimpleAction`. Server-confirmed away/back
 events own its state, while active tab changes and connect/disconnect events
@@ -443,7 +451,7 @@ drag/drop or transcript content logic.
 | `GdkEvent` | 69 | 20 | event controllers and gestures | 4 | in progress |
 | `GdkDragContext` / `GtkSelectionData` | 11 | 2 | `GtkDragSource`, `GtkDropTarget`, and typed content | 4/6 | in progress; drag/drop contained |
 | `gtk_widget_get_window` | 31 | 6 | surface/native access only where unavoidable | 4/6 | in progress |
-| `gdk_window_*` | 48 | 8 | `GdkSurface`, snapshots, controllers, or removal | 4/6 | in progress |
+| `gdk_window_*` | 32 | 8 | `GdkSurface`, snapshots, controllers, or removal | 4/6 | in progress; top-level state contained |
 | `gtk_clipboard_*` | 1 | 1 | `GdkClipboard` and content providers | 4/6 | in progress |
 | `GtkTreeView` | 75 | 18 | choose GTK4 list/model widget per workflow | 5 | in progress; Notify and user model owners converted |
 | `GtkStatusIcon` | 6 | 1 | native Win32 tray or supported external backend | 7 | action model complete; presentation not started |

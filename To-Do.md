@@ -358,6 +358,8 @@ Detailed planning and evidence live in:
     - [ ] Complete channel-list and channel-view container/lifecycle cutover.
     - [ ] Complete top-level window positioning, visibility, and lifecycle cutover.
       - [x] Contain removed placement hints, saved coordinates, and tray restore placement behind compositor-safe GTK3/GTK4 policy.
+      - [x] Observe minimized, maximized, fullscreen, and focused top-level state through a typed GTK3/GTK4 boundary.
+      - [ ] Replace the GTK3 per-window Win32 message filter with reviewed GTK4 display-filter ownership.
       - [ ] Convert remaining top-level visibility, geometry sizing, and lifecycle callbacks.
     - [ ] Bind application and preferences integration to the GTK4 theme controller.
 - [ ] Remove GTK3 code, build inputs, runtime files, installer components, and compatibility helpers.
