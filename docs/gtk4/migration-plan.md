@@ -1417,6 +1417,16 @@ checks the pointer rectangle, and verifies cleanup. This establishes the GTK4
 presentation lifecycle without yet projecting the legacy URL, channel, nick,
 or middle-click commands into retained models.
 
+URL context-model pass 10 (2026-07-19):
+the fixed URL context surface now has a toolkit-neutral retained model and
+typed action dispatch. It owns the URL for action lifetime, selects Connect for
+IRC schemes and Open otherwise, exposes Copy, and appends the existing plugin
+projection as a separate section. MSVC compiles, links, and runs the strict
+probe. Meson with Ninja 1.13.2 compiles all 51 objects; the local final link
+still stops at the documented Strawberry GCC 4.8.3 versus MSVC import-library
+ABI boundary. Configurable `urlhandlers.conf` nesting/path checks and the live
+GTK4 presenter connection remain the next URL pass.
+
 Deliverables:
 
 - Make GTK4 the only production frontend dependency in MSVC, Meson, and CI.

@@ -4217,6 +4217,21 @@ Behavior contract:
 - legacy context commands are not projected or shown by this foundation pass
 - packaging impact: none
 
+## 2026-07-19 - Stage 8 URL Context Model
+
+Automated evidence:
+
+- strict MSVC GTK4 probe against GTK 4.22.4 / GLib 2.88.0: pass
+- URL model probe: IRC Connect label, Open and Copy typed dispatch, retained URL,
+  and plugin-section composition pass
+- Meson 1.11.2 / Ninja 1.13.2: all 51 objects compile, including the URL model
+- local Meson final link: unavailable because Strawberry GCC 4.8.3 cannot link
+  the MSVC GTK4 import libraries; CI remains the supported Meson link path
+- `git diff --check`: pass
+
+Scope: fixed URL actions and plugin composition only. Configurable URL handlers
+and the live GTK4 presenter connection remain open. Packaging impact: none.
+
 ## Build Matrix
 
 | Check | GTK3 shipping target | GTK4 candidate | Final GTK4 target |

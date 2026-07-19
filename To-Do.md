@@ -340,6 +340,8 @@ Detailed planning and evidence live in:
       - [x] Remove raw `GdkEventButton` types from the public context-menu API and contain GTK3 event synthesis privately.
       - [x] Add a GTK4 popover presenter with retained model/action ownership, coordinate placement, reparenting, and cleanup coverage.
       - [ ] Present built-in URL, channel, nick, and middle-click context actions through a retained GTK4 model.
+        - [x] Model URL heading, Open/Connect, Copy, and plugin sections with typed retained dispatch.
+        - [ ] Project configurable URL handlers and connect the URL model to the GTK4 presenter.
     - [ ] Complete channel-list and channel-view container/lifecycle cutover.
     - [ ] Complete top-level window positioning, visibility, and lifecycle cutover.
       - [x] Contain removed placement hints, saved coordinates, and tray restore placement behind compositor-safe GTK3/GTK4 policy.

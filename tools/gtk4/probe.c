@@ -18,6 +18,7 @@
 #include "../../src/fe-gtk/tray-menu-composition.h"
 #include "../../src/fe-gtk/tray-menu-presenter-gtk4.h"
 #include "../../src/fe-gtk/context-menu-presenter-gtk4.h"
+#include "../../src/fe-gtk/url-context-menu-model.h"
 #include "../../src/fe-gtk/ignore-list.h"
 #include "../../src/fe-gtk/ban-list.h"
 #include "../../src/fe-gtk/channel-list.h"
@@ -3271,6 +3272,60 @@ check_context_menu_presenter_gtk4 (void)
 	return passed;
 }
 
+typedef struct
+{
+	guint open_count;
+	guint copy_count;
+	const char *last_url;
+} UrlContextProbe;
+
+static void
+url_context_probe_dispatch (FabulorUrlContextAction action, const char *url,
+	gpointer user_data)
+{
+	UrlContextProbe *probe = user_data;
+	if (action == FABULOR_URL_CONTEXT_OPEN)
+		probe->open_count++;
+	else if (action == FABULOR_URL_CONTEXT_COPY)
+		probe->copy_count++;
+	probe->last_url = url;
+}
+
+static gboolean
+check_url_context_menu_model (void)
+{
+	GMenu *plugin = g_menu_new ();
+	FabulorUrlContextMenuModel *model;
+	GMenuModel *menu;
+	GMenuModel *commands;
+	GActionGroup *actions;
+	UrlContextProbe probe = { 0 };
+	char *label = NULL;
+	gboolean passed;
+
+	g_menu_append (plugin, "Plugin", "fabulor-context.run");
+	model = fabulor_url_context_menu_model_new ("ircs://irc.example",
+		"Open", "Connect", "Copy", G_MENU_MODEL (plugin),
+		url_context_probe_dispatch, &probe);
+	g_object_unref (plugin);
+	if (!model)
+		return FALSE;
+	menu = fabulor_url_context_menu_model_get_menu (model);
+	actions = fabulor_url_context_menu_model_get_actions (model);
+	passed = g_menu_model_get_n_items (menu) == 3;
+	commands = g_menu_model_get_item_link (menu, 1, G_MENU_LINK_SECTION);
+	passed = passed && commands && g_menu_model_get_item_attribute (commands, 0,
+		G_MENU_ATTRIBUTE_LABEL, "s", &label) && g_strcmp0 (label, "Connect") == 0;
+	g_free (label);
+	g_clear_object (&commands);
+	g_action_group_activate_action (actions, "open", NULL);
+	g_action_group_activate_action (actions, "copy", NULL);
+	passed = passed && probe.open_count == 1 && probe.copy_count == 1 &&
+		g_strcmp0 (probe.last_url, "ircs://irc.example") == 0;
+	fabulor_url_context_menu_model_free (model);
+	return passed;
+}
+
 static gboolean
 check_spell_entry_style_policy (void)
 {
@@ -3975,6 +4030,11 @@ main (void)
 	if (gtk_ready && !check_context_menu_presenter_gtk4 ())
 	{
 		fprintf (stderr, "GTK4 context menu presenter contract mismatch\n");
+		return 1;
+	}
+	if (!check_url_context_menu_model ())
+	{
+		fprintf (stderr, "GTK4 URL context menu model mismatch\n");
 		return 1;
 	}
 	if (!check_spell_entry_word_policy ())
