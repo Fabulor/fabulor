@@ -496,7 +496,7 @@ key_free (gpointer data)
 static inline GdkModifierType
 key_modifier_get_valid (GdkModifierType mod)
 {
-	return mod & (GDK_SHIFT_MASK | GDK_CONTROL_MASK | GDK_MOD1_MASK);
+	return mod & (STATE_SHIFT | STATE_CTRL | STATE_ALT);
 }
 
 gboolean
@@ -986,7 +986,7 @@ key_load_kbs_helper_mod (char *buf, GdkModifierType *out)
 			mod |= GDK_CONTROL_MASK;
 			break;
 		case 'A':
-			mod |= GDK_MOD1_MASK;
+			mod |= STATE_ALT;
 			break;
 		case 'S':
 			mod |= GDK_SHIFT_MASK;

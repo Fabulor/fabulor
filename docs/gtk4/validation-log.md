@@ -4725,6 +4725,32 @@ profile themes remain authoritative. Manual light/dark, high-contrast, hover,
 active, and focus appearance testing remains gated on the linkable full GTK4
 frontend. Packaging impact: none.
 
+### GTK4 Stage 8 Alt-Modifier Normalization
+
+Date: 2026-07-20
+
+Files/workflows converted: configurable key filtering and legacy key loading;
+menu shortcut dispatch; Ctrl+A selection guard; user-list type-to-input guard.
+
+Automated evidence:
+
+- shipping GTK3 MSVC x64 Release frontend: pass; zero warnings and zero errors
+- strict MSVC GTK4 probe against GTK 4.22.4 / GLib 2.88.0: compile, link, and
+  execution pass under `/W4 /WX`; zero warnings and zero errors
+- isolated complete GTK4 frontend inventory: expected fail; improved from 233
+  errors / 545 warnings to 228 errors / 545 warnings
+- source audit: all active consumers use `STATE_ALT`; `GDK_MOD1_MASK` remains
+  only in the GTK3 branch of that definition
+- first remaining `maingui.c` blocker: retired `GTK_SHADOW_NONE` presentation
+  near line 3821
+- `git diff --check`: pass
+
+Behavior contract: Alt combinations retain the same modifier bit, configurable
+key comparison, menu handling, and key-file representation. GTK4 uses its
+current API name and GTK3 retains its established name. Manual Alt shortcuts,
+Ctrl+A, Ctrl+Q, and type-to-input testing remains gated on the linkable full
+GTK4 frontend. Packaging impact: none.
+
 ## Build Matrix
 
 | Check | GTK3 shipping target | GTK4 candidate | Final GTK4 target |

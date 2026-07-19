@@ -650,6 +650,12 @@ the standard `flat` CSS class for channel-mode toggles, emoji choices, search
 controls, reply cancellation, and the nickname button. GTK3 keeps its existing
 relief setting privately inside the compatibility boundary.
 
+Stage 8 Alt-modifier pass 30 makes the existing `STATE_ALT` boundary resolve
+to GTK4's `GDK_ALT_MASK` or GTK3's `GDK_MOD1_MASK`. Key normalization and
+loading, menu dispatch, Ctrl+A filtering, and user-list type-to-input behavior
+now consume that shared semantic name. Accelerator text and stored key-binding
+formats remain unchanged.
+
 ## Functional Clusters
 
 | Cluster | Main files | GTK4 concern | Status |
