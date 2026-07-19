@@ -4177,6 +4177,28 @@ Behavior contract:
 Manual GTK4 placement and multi-monitor checks remain deferred until the full
 frontend links. Packaging impact: none.
 
+## 2026-07-19 - Stage 8 Context-Menu Event Boundary
+
+Automated evidence:
+
+- strict MSVC GTK4 probe against GTK 4.22.4 / GLib 2.88.0: pass
+- default x64 Release GTK3 frontend: pass with zero warnings and zero errors;
+  shipping `C:\zoitechat-build\x64\rel\fabulor.exe` produced
+- isolated complete GTK4 frontend inventory: expected fail at later legacy
+  channel-view, dialog, lifecycle, and theme boundaries
+- source audit: `menu.h` exposes no `GdkEventButton`; `menu.c` retains one
+  synthetic button event inside its private GTK3-only popup presenter
+- `git diff --check`: pass
+
+Behavior contract:
+
+- GTK3 URL, channel, nick, user-list, transcript, and middle-click menus retain
+  their existing pointer-relative coordinates, modifier state, and button.
+- GTK4 does not claim built-in context-menu support in this pass. The remaining
+  legacy menu construction must be projected into the retained action/model
+  presenter before real-time GTK4 menu testing begins.
+- No installer or runtime payload changes are included.
+
 ## Build Matrix
 
 | Check | GTK3 shipping target | GTK4 candidate | Final GTK4 target |

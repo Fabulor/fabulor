@@ -1396,6 +1396,17 @@ profiles compile, and the full GTK4 inventory no longer reports placement API
 errors. Theme display/provider ownership and remaining visibility/geometry
 callbacks stay in their dedicated blockers.
 
+Context-menu event-boundary pass 8 (2026-07-19):
+the public URL, channel, nick, and middle-click context-menu entry points now
+accept only an origin widget, local coordinates, modifier state, and domain
+data. Their duplicate raw-event entry points and adapters are removed. GTK3
+preserves pointer-relative popup placement by synthesizing its button event in
+one private, version-guarded presenter. GTK4 no longer inherits
+`GdkEventButton` through `menu.h`; its built-in contextual commands still need
+to move from legacy `GtkMenu` construction to the retained action/model
+presenter before the frontend can provide these menus. Plugin context models
+remain available as the starting boundary for that follow-up.
+
 Deliverables:
 
 - Make GTK4 the only production frontend dependency in MSVC, Meson, and CI.

@@ -693,33 +693,54 @@ menu_destroy (GtkWidget *menu, gpointer objtounref)
 	nick_submenu = NULL;
 }
 
+#if GTK_MAJOR_VERSION < 4
 static void
-menu_popup (GtkWidget *menu, GdkEventButton *event, gpointer objtounref)
+menu_popup_at (GtkWidget *menu, GtkWidget *origin, gdouble x, gdouble y,
+	GdkModifierType state, guint button, gpointer objtounref)
 {
-	if (event && event->window)
-		gtk_menu_set_screen (GTK_MENU (menu), gdk_window_get_screen (event->window));
+	GdkEventButton event;
+	gint origin_x = 0;
+	gint origin_y = 0;
+
+	memset (&event, 0, sizeof (event));
+	event.type = GDK_BUTTON_PRESS;
+	event.window = origin ? gtk_widget_get_window (origin) : NULL;
+	event.send_event = TRUE;
+	event.time = GDK_CURRENT_TIME;
+	event.x = x;
+	event.y = y;
+	event.state = state;
+	event.button = button;
+	if (event.window)
+	{
+		gdk_window_get_origin (event.window, &origin_x, &origin_y);
+		gtk_menu_set_screen (GTK_MENU (menu), gdk_window_get_screen (event.window));
+	}
+	event.x_root = origin_x + x;
+	event.y_root = origin_y + y;
 
 	g_object_ref (menu);
 	g_object_ref_sink (menu);
 	g_object_unref (menu);
 	g_signal_connect (G_OBJECT (menu), "selection-done",
 							G_CALLBACK (menu_destroy), objtounref);
-	if (event)
-	{
-		gtk_menu_popup_at_pointer (GTK_MENU (menu), (GdkEvent *)event);
-	}
-	else if (parent_window)
-	{
-		gtk_menu_popup_at_widget (GTK_MENU (menu), GTK_WIDGET (parent_window),
-										  GDK_GRAVITY_SOUTH_WEST,
-										  GDK_GRAVITY_NORTH_WEST,
-										  NULL);
-	}
-	else
-	{
-		gtk_menu_popup_at_pointer (GTK_MENU (menu), NULL);
-	}
+	gtk_menu_popup_at_pointer (GTK_MENU (menu), (GdkEvent *)&event);
 }
+#else
+static void
+menu_popup_at (GtkWidget *menu, GtkWidget *origin, gdouble x, gdouble y,
+	GdkModifierType state, guint button, gpointer objtounref)
+{
+	(void)menu;
+	(void)origin;
+	(void)x;
+	(void)y;
+	(void)state;
+	(void)button;
+	(void)objtounref;
+	g_warning ("GTK4 context menu presenter is not implemented");
+}
+#endif
 
 static void
 menu_nickinfo_cb (GtkWidget *menu, session *sess)
@@ -894,7 +915,8 @@ menu_reply_to_latest_cb (GtkWidget *wid, gpointer data)
 }
 
 void
-menu_nickmenu (session *sess, GdkEventButton *event, char *nick, int num_sel)
+menu_nickmenu_at (session *sess, GtkWidget *origin, gdouble x, gdouble y,
+	GdkModifierType state, char *nick, int num_sel)
 {
 	char buf[512];
 	struct User *user;
@@ -947,31 +969,7 @@ menu_nickmenu (session *sess, GdkEventButton *event, char *nick, int num_sel)
 	else	/* userlist treeview click */
 		menu_add_plugin_items (menu, "\x5$NICK", NULL);
 
-	menu_popup (menu, event, NULL);
-}
-
-void
-menu_nickmenu_at (session *sess, GtkWidget *origin, gdouble x, gdouble y,
-	GdkModifierType state, char *nick, int num_sel)
-{
-	GdkEventButton event;
-	gint origin_x = 0;
-	gint origin_y = 0;
-
-	memset (&event, 0, sizeof (event));
-	event.type = GDK_BUTTON_PRESS;
-	event.window = gtk_widget_get_window (origin);
-	event.send_event = TRUE;
-	event.time = GDK_CURRENT_TIME;
-	event.x = x;
-	event.y = y;
-	event.state = state;
-	event.button = 3;
-	if (event.window)
-		gdk_window_get_origin (event.window, &origin_x, &origin_y);
-	event.x_root = origin_x + x;
-	event.y_root = origin_y + y;
-	menu_nickmenu (sess, &event, nick, num_sel);
+	menu_popup_at (menu, origin, x, y, state, 3, NULL);
 }
 
 /* stuff for the View menu */
@@ -1152,7 +1150,8 @@ menu_fullscreen_toggle (GtkWidget *wid, gpointer ud)
 }
 
 void
-menu_middlemenu (session *sess, GdkEventButton *event)
+menu_middlemenu_at (session *sess, GtkWidget *origin, gdouble x, gdouble y,
+	GdkModifierType state)
 {
 	GtkWidget *menu;
 	GtkAccelGroup *accel_group;
@@ -1162,31 +1161,7 @@ menu_middlemenu (session *sess, GdkEventButton *event)
 							 sess->server->connected,
 							 sess->server->connected || sess->server->recondelay_tag,
 							 sess->server->end_of_motd, !sess->gui->is_tab, NULL);
-	menu_popup (menu, event, accel_group);
-}
-
-void
-menu_middlemenu_at (session *sess, GtkWidget *origin, gdouble x, gdouble y,
-	GdkModifierType state)
-{
-	GdkEventButton event;
-	gint origin_x = 0;
-	gint origin_y = 0;
-
-	memset (&event, 0, sizeof (event));
-	event.type = GDK_BUTTON_PRESS;
-	event.window = gtk_widget_get_window (origin);
-	event.send_event = TRUE;
-	event.time = GDK_CURRENT_TIME;
-	event.x = x;
-	event.y = y;
-	event.state = state;
-	event.button = 2;
-	if (event.window)
-		gdk_window_get_origin (event.window, &origin_x, &origin_y);
-	event.x_root = origin_x + x;
-	event.y_root = origin_y + y;
-	menu_middlemenu (sess, &event);
+	menu_popup_at (menu, origin, x, y, state, 2, accel_group);
 }
 
 static void
@@ -1200,7 +1175,8 @@ open_url_cb (GtkWidget *item, char *url)
 }
 
 void
-menu_urlmenu (GdkEventButton *event, char *url)
+menu_urlmenu_at (GtkWidget *origin, gdouble x, gdouble y,
+	GdkModifierType state, char *url)
 {
 	GtkWidget *menu;
 	char *tmp, *chop;
@@ -1234,31 +1210,7 @@ menu_urlmenu (GdkEventButton *event, char *url)
 	/* custom ones from urlhandlers.conf */
 	menu_create (menu, urlhandler_list, str_copy, TRUE);
 	menu_add_plugin_items (menu, "\x4$URL", str_copy);
-	menu_popup (menu, event, NULL);
-}
-
-void
-menu_urlmenu_at (GtkWidget *origin, gdouble x, gdouble y,
-	GdkModifierType state, char *url)
-{
-	GdkEventButton event;
-	gint origin_x = 0;
-	gint origin_y = 0;
-
-	memset (&event, 0, sizeof (event));
-	event.type = GDK_BUTTON_PRESS;
-	event.window = gtk_widget_get_window (origin);
-	event.send_event = TRUE;
-	event.time = GDK_CURRENT_TIME;
-	event.x = x;
-	event.y = y;
-	event.state = state;
-	event.button = 3;
-	if (event.window)
-		gdk_window_get_origin (event.window, &origin_x, &origin_y);
-	event.x_root = origin_x + x;
-	event.y_root = origin_y + y;
-	menu_urlmenu (&event, url);
+	menu_popup_at (menu, origin, x, y, state, 3, NULL);
 }
 
 static void
@@ -1310,7 +1262,8 @@ menu_chan_join (GtkWidget * menu, char *chan)
 }
 
 void
-menu_chanmenu (struct session *sess, GdkEventButton * event, char *chan)
+menu_chanmenu_at (session *sess, GtkWidget *origin, gdouble x, gdouble y,
+	GdkModifierType state, char *chan)
 {
 	GtkWidget *menu;
 	int is_joined = FALSE;
@@ -1346,31 +1299,7 @@ menu_chanmenu (struct session *sess, GdkEventButton * event, char *chan)
 	menu_addfavoritemenu (sess->server, menu, str_copy, FALSE);
 
 	menu_add_plugin_items (menu, "\x5$CHAN", str_copy);
-	menu_popup (menu, event, NULL);
-}
-
-void
-menu_chanmenu_at (session *sess, GtkWidget *origin, gdouble x, gdouble y,
-	GdkModifierType state, char *chan)
-{
-	GdkEventButton event;
-	gint origin_x = 0;
-	gint origin_y = 0;
-
-	memset (&event, 0, sizeof (event));
-	event.type = GDK_BUTTON_PRESS;
-	event.window = gtk_widget_get_window (origin);
-	event.send_event = TRUE;
-	event.time = GDK_CURRENT_TIME;
-	event.x = x;
-	event.y = y;
-	event.state = state;
-	event.button = 3;
-	if (event.window)
-		gdk_window_get_origin (event.window, &origin_x, &origin_y);
-	event.x_root = origin_x + x;
-	event.y_root = origin_y + y;
-	menu_chanmenu (sess, &event, chan);
+	menu_popup_at (menu, origin, x, y, state, 3, NULL);
 }
 
 static void
