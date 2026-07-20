@@ -356,6 +356,7 @@ Detailed planning and evidence live in:
         - [x] Bind the retained middle-click model and main action namespace to an origin-owned GTK4 presenter.
       - [x] Present the live main menu through a retained GTK4 popover menu bar with dynamic user/plugin refresh and action-state synchronization.
       - [x] Remove `GtkAccelGroup` from the GTK4 main-menu API and contain legacy accelerator refresh and menu constructors in GTK3.
+      - [x] Contain the generic GTK3 popup widget builder after typed GTK4 context-model replacement.
     - [ ] Complete channel-list and channel-view container/lifecycle cutover.
     - [ ] Complete top-level window positioning, visibility, and lifecycle cutover.
       - [x] Contain removed placement hints, saved coordinates, and tray restore placement behind compositor-safe GTK3/GTK4 policy.

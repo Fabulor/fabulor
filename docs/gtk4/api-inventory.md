@@ -730,6 +730,14 @@ their existing title, role, size, transient, modal, theme, and destruction
 configuration. The two remaining literal constructors are confined to GTK3
 theme tests and are not part of the GTK4 frontend profile.
 
+Stage 8 legacy popup-builder pass 41 removes the generic GTK3 menu-widget
+builder from the GTK4 compilation surface. Check items, quick items, nested
+submenus, configured popup-list expansion, and legacy popup destruction remain
+available only to GTK3 callers; GTK4 context workflows already use their typed
+`GMenuModel` owners and popover presenter. Icon-label parsing and executable
+path filtering remain shared because GTK4 model projection still consumes
+them. The legacy builder declarations are likewise GTK3-private in `menu.h`.
+
 ## Functional Clusters
 
 | Cluster | Main files | GTK4 concern | Status |

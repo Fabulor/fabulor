@@ -43,11 +43,13 @@ void menu_middlemenu_at (session *sess, GtkWidget *origin, gdouble x,
 void userlist_button_cb (GtkWidget * button, char *cmd);
 void nick_command_parse (session *sess, char *cmd, char *nick, char *allnick);
 void usermenu_update (void);
+#if GTK_MAJOR_VERSION < 4
 GtkWidget *menu_toggle_item (char *label, GtkWidget *menu, void *callback, void *userdata, int state);
 GtkWidget *menu_quick_item (char *cmd, char *label, GtkWidget * menu, int flags, gpointer userdata, char *icon);
 GtkWidget *menu_quick_sub (char *name, GtkWidget *menu, GtkWidget **sub_item_ret, int flags, int pos);
-GtkWidget *create_icon_menu (char *labeltext, void *stock_name, int is_stock);
 void menu_create (GtkWidget *menu, GSList *list, char *target, int check_path);
+#endif
+GtkWidget *create_icon_menu (char *labeltext, void *stock_name, int is_stock);
 void menu_bar_toggle (void);
 void menu_add_plugin_items (GtkWidget *menu, char *root, char *target);
 void menu_add_plugin_model (GObject *owner, const char *root, const char *target);

@@ -1807,6 +1807,17 @@ zero warnings and errors. The complete GTK4 inventory improves from 174 errors /
 392 warnings to 171 errors / 389 warnings. The first remaining errors are now
 the retained `menu.c` GTK3 type and constructor boundaries.
 
+Legacy popup-builder containment pass 41 (2026-07-20):
+the generic GTK3 popup widget builder and its public declarations are now
+compiled only for GTK3. This includes check items, quick items, nested submenus,
+configured popup lists, and legacy popup destruction/presentation. GTK4 keeps
+the already-converted URL, channel, nick, middle-click, and tab context models
+and presenters; shared icon-label parsing and command path filtering remain
+toolkit-neutral. Full strict GTK4 and shipping GTK3 rebuilds pass with zero
+warnings and errors. The complete GTK4 inventory improves from 171 errors / 389
+warnings to 169 errors / 372 warnings. The first remaining error is the legacy
+Away check-menu callback, followed by the GTK3 `/MENU` widget mutation owner.
+
 Deliverables:
 
 - Make GTK4 the only production frontend dependency in MSVC, Meson, and CI.
