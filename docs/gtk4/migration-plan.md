@@ -1914,6 +1914,17 @@ GTK4 inventory improves from 66 errors / 379 warnings to 64 errors / 373
 warnings, with no hard `setup.c` diagnostics. User-list framing is now the
 first remaining error, followed by the theme API boundary.
 
+User-list framing pass 50 (2026-07-20):
+the main user-list scroller now uses the shared cross-version constructor and
+semantic frame helper, while its typed list view retains explicit child
+ownership. Expansion, automatic policies, minimum width, user-model identity,
+selection, drag/drop, pointer input, and keyboard forwarding are unchanged.
+Strict GTK4 and shipping GTK3 rebuilds pass with zero warnings and errors. The
+clean complete GTK4 inventory improves from 64 errors / 373 warnings to 63
+errors / 371 warnings, with no hard `userlistgui.c` diagnostics. All 63
+remaining hard errors are now confined to `theme/`; the theme API boundary is
+the next contained target.
+
 Deliverables:
 
 - Make GTK4 the only production frontend dependency in MSVC, Meson, and CI.
