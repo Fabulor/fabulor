@@ -383,7 +383,8 @@ Detailed planning and evidence live in:
       - [ ] Replace the GTK3 per-window Win32 message filter with reviewed GTK4 display-filter ownership.
       - [ ] Convert DCC/Server List geometry plus remaining top-level visibility and lifecycle callbacks.
         - [x] Convert detached DCC transfer size persistence to the shared surface-layout observer.
-        - [ ] Convert Server List geometry and remaining top-level visibility/lifecycle callbacks.
+        - [x] Convert Server List and network-editor close/save handling and size persistence to typed GTK3/GTK4 callbacks.
+        - [ ] Convert the remaining top-level visibility and lifecycle callbacks.
     - [ ] Bind application and preferences integration to the GTK4 theme controller.
 - [ ] Remove GTK3 code, build inputs, runtime files, installer components, and compatibility helpers.
 - [ ] Complete clean-install, upgrade, accessibility, visual, performance, plugin, and packaging validation.

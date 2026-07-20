@@ -1877,6 +1877,20 @@ The clean complete GTK4 inventory improves from 106 errors / 409 warnings to
 105 errors / 407 warnings, with no Raw Log diagnostics. Server List lifecycle
 and geometry callbacks are now the first remaining errors.
 
+Server List lifecycle and geometry pass 47 (2026-07-20):
+the main Server List and network editor now observe size changes through the
+shared surface-layout geometry owner. Typed GTK4 `close-request` callbacks
+preserve the two distinct close contracts: the editor saves pending network
+fields and performs its own destruction, while the main list saves global
+configuration and retains startup-exit behavior before normal destruction.
+GTK3 keeps `delete-event` privately. Entry reads used by close-time saving and
+validation now cross the existing borrowed-text boundary. Strict GTK4 and
+shipping GTK3 rebuilds pass with zero warnings and errors. The clean complete
+GTK4 inventory improves from 105 errors / 407 warnings to 70 errors / 384
+warnings; the large reduction includes the parser cascade previously caused by
+retired event structures. Server List framed-scroller construction is now the
+first remaining error family.
+
 Deliverables:
 
 - Make GTK4 the only production frontend dependency in MSVC, Meson, and CI.

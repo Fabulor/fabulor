@@ -36,6 +36,7 @@
 #include "gtkutil.h"
 #include "gtk-compat.h"
 #include "file-chooser-path.h"
+#include "window-geometry.h"
 #include "server-network-list.h"
 #include "server-entry-list.h"
 #include "menu.h"
@@ -154,7 +155,7 @@ servlist_display_password (ircnet *net)
 	if (!net)
 		return NULL;
 	if (edit_pass_changed)
-		return g_strdup (gtk_entry_get_text (GTK_ENTRY (edit_entry_pass)));
+		return g_strdup (fabulor_gtk_entry_get_text (GTK_ENTRY (edit_entry_pass)));
 	if (edit_loaded_password)
 		return g_strdup (edit_loaded_password);
 	if (net->flags & FLAG_USE_KEYRING)
@@ -201,7 +202,7 @@ static void
 servlist_password_changed_cb (GtkEditable *editable, gpointer userdata)
 {
 	edit_pass_changed = 1;
-	if (edit_loaded_password && strcmp (gtk_entry_get_text (GTK_ENTRY (editable)), "***"))
+	if (edit_loaded_password && strcmp (fabulor_gtk_entry_get_text (GTK_ENTRY (editable)), "***"))
 	{
 		memset (edit_loaded_password, 0, strlen (edit_loaded_password));
 		g_free (edit_loaded_password);
@@ -1121,10 +1122,10 @@ servlist_update_from_entry (char **str, GtkWidget *entry)
 {
 	g_free (*str);
 
-	if (gtk_entry_get_text (GTK_ENTRY (entry))[0] == 0)
+	if (fabulor_gtk_entry_get_text (GTK_ENTRY (entry))[0] == 0)
 		*str = NULL;
 	else
-		*str = g_strdup (gtk_entry_get_text (GTK_ENTRY (entry)));
+		*str = g_strdup (fabulor_gtk_entry_get_text (GTK_ENTRY (entry)));
 }
 
 static char *
@@ -1154,7 +1155,7 @@ servlist_edit_update (ircnet *net)
 		if (!edit_pass_changed && !keyring_changed)
 			return;
 		if (edit_pass_changed)
-			password = g_strdup (gtk_entry_get_text (GTK_ENTRY (edit_entry_pass)));
+			password = g_strdup (fabulor_gtk_entry_get_text (GTK_ENTRY (edit_entry_pass)));
 		else
 			password = servlist_edit_current_password (net);
 		if (use_keyring)
@@ -1235,27 +1236,45 @@ servlist_edit_destroy_cb (GtkWidget *window, gpointer user_data)
 	}
 }
 
-static gint
+#if GTK_MAJOR_VERSION >= 4
+static gboolean
+servlist_editwin_close_request_cb (GtkWindow *win, gpointer none)
+#else
+static gboolean
 servlist_editwin_delete_cb (GtkWidget *win, GdkEventAny *event, gpointer none)
+#endif
 {
+	(void) win;
+#if GTK_MAJOR_VERSION < 4
+	(void) event;
+#endif
+	(void) none;
 	servlist_edit_close_cb (NULL, NULL);
-	return FALSE;
+	return TRUE;
 }
 
-static gboolean
-servlist_configure_cb (GtkWindow *win, GdkEventConfigure *event, gpointer none)
+static void
+servlist_geometry_cb (GtkWindow *win, const FabulorWindowGeometry *geometry,
+	gpointer none)
 {
-	/* remember the window size */
-	gtk_window_get_size (win, &netlist_win_width, &netlist_win_height);
-	return FALSE;
+	(void) win;
+	(void) none;
+	if (geometry->width > 0)
+		netlist_win_width = geometry->width;
+	if (geometry->height > 0)
+		netlist_win_height = geometry->height;
 }
 
-static gboolean
-servlist_edit_configure_cb (GtkWindow *win, GdkEventConfigure *event, gpointer none)
+static void
+servlist_edit_geometry_cb (GtkWindow *win,
+	const FabulorWindowGeometry *geometry, gpointer none)
 {
-	/* remember the window size */
-	gtk_window_get_size (win, &netedit_win_width, &netedit_win_height);
-	return FALSE;
+	(void) win;
+	(void) none;
+	if (geometry->width > 0)
+		netedit_win_width = geometry->width;
+	if (geometry->height > 0)
+		netedit_win_height = geometry->height;
 }
 
 static void
@@ -1273,10 +1292,15 @@ servlist_edit_cb (GtkWidget *but, gpointer none)
 	servlist_servers_populate (selected_net);
 	servlist_channels_populate (selected_net);
 	servlist_commands_populate (selected_net);
+#if GTK_MAJOR_VERSION >= 4
+	g_signal_connect (G_OBJECT (edit_win), "close-request",
+							G_CALLBACK (servlist_editwin_close_request_cb), NULL);
+#else
 	g_signal_connect (G_OBJECT (edit_win), "delete-event",
-						 	G_CALLBACK (servlist_editwin_delete_cb), 0);
-	g_signal_connect (G_OBJECT (edit_win), "configure-event",
-							G_CALLBACK (servlist_edit_configure_cb), 0);
+							G_CALLBACK (servlist_editwin_delete_cb), NULL);
+#endif
+	fabulor_window_geometry_watch (GTK_WINDOW (edit_win),
+		servlist_edit_geometry_cb, NULL);
 	gtk_widget_show (edit_win);
 }
 
@@ -1391,14 +1415,14 @@ servlist_savegui (void)
 	const char *nick1, *nick2;
 
 	/* check for blank username, ircd will not allow this */
-	if (gtk_entry_get_text (GTK_ENTRY (entry_guser))[0] == 0)
+	if (fabulor_gtk_entry_get_text (GTK_ENTRY (entry_guser))[0] == 0)
 		return 1;
 
 	/* if (gtk_entry_get_text (GTK_ENTRY (entry_greal))[0] == 0)
 		return 1; */
 
-	nick1 = gtk_entry_get_text (GTK_ENTRY (entry_nick1));
-	nick2 = gtk_entry_get_text (GTK_ENTRY (entry_nick2));
+	nick1 = fabulor_gtk_entry_get_text (GTK_ENTRY (entry_nick1));
+	nick2 = fabulor_gtk_entry_get_text (GTK_ENTRY (entry_nick2));
 
 	/* ensure unique nicknames */
 	if (!rfc_casecmp (nick1, nick2))
@@ -1406,8 +1430,8 @@ servlist_savegui (void)
 
 	safe_strcpy (prefs.hex_irc_nick1, nick1, sizeof(prefs.hex_irc_nick1));
 	safe_strcpy (prefs.hex_irc_nick2, nick2, sizeof(prefs.hex_irc_nick2));
-	safe_strcpy (prefs.hex_irc_nick3, gtk_entry_get_text (GTK_ENTRY (entry_nick3)), sizeof(prefs.hex_irc_nick3));
-	safe_strcpy (prefs.hex_irc_user_name, gtk_entry_get_text (GTK_ENTRY (entry_guser)), sizeof(prefs.hex_irc_user_name));
+	safe_strcpy (prefs.hex_irc_nick3, fabulor_gtk_entry_get_text (GTK_ENTRY (entry_nick3)), sizeof(prefs.hex_irc_nick3));
+	safe_strcpy (prefs.hex_irc_user_name, fabulor_gtk_entry_get_text (GTK_ENTRY (entry_guser)), sizeof(prefs.hex_irc_user_name));
 	sp = strchr (prefs.hex_irc_user_name, ' ');
 	if (sp)
 		sp[0] = 0;	/* spaces will break the login */
@@ -1769,9 +1793,19 @@ servlist_network_list_destroy_cb (GtkWidget *widget, gpointer user_data)
 	servlist_network_list_release ();
 }
 
-static gint
+#if GTK_MAJOR_VERSION >= 4
+static gboolean
+servlist_delete_cb (GtkWindow *win, gpointer userdata)
+#else
+static gboolean
 servlist_delete_cb (GtkWidget *win, GdkEventAny *event, gpointer userdata)
+#endif
 {
+	(void) win;
+#if GTK_MAJOR_VERSION < 4
+	(void) event;
+#endif
+	(void) userdata;
 	servlist_savegui ();
 	serverlist_win = NULL;
 	selected_net = NULL;
@@ -1911,7 +1945,7 @@ servlist_combo_cb (GtkEntry *entry, gpointer userdata)
 		return;
 
 	g_free (selected_net->encoding);
-	selected_net->encoding = g_strdup (gtk_entry_get_text (entry));
+	selected_net->encoding = g_strdup (fabulor_gtk_entry_get_text (entry));
 }
 
 /* Fills up the network's authentication type so that it's guaranteed to be either NULL or a valid value. */
@@ -1952,7 +1986,7 @@ servlist_username_changed_cb (GtkEntry *entry, gpointer userdata)
 {
 	GtkWidget *connect_btn = GTK_WIDGET (userdata);
 
-	if (gtk_entry_get_text (entry)[0] == 0)
+	if (fabulor_gtk_entry_get_text (entry)[0] == 0)
 	{
 		gtk_entry_set_icon_from_icon_name (entry, GTK_ENTRY_ICON_SECONDARY, ICON_SERVLIST_ERROR);
 		gtk_entry_set_icon_tooltip_text (entry, GTK_ENTRY_ICON_SECONDARY,
@@ -1970,8 +2004,8 @@ static void
 servlist_nick_changed_cb (GtkEntry *entry, gpointer userdata)
 {
 	GtkWidget *connect_btn = GTK_WIDGET (userdata);
-	const gchar *nick1 = gtk_entry_get_text (GTK_ENTRY (entry_nick1));
-	const gchar *nick2 = gtk_entry_get_text (GTK_ENTRY (entry_nick2));
+	const gchar *nick1 = fabulor_gtk_entry_get_text (GTK_ENTRY (entry_nick1));
+	const gchar *nick2 = fabulor_gtk_entry_get_text (GTK_ENTRY (entry_nick2));
 
 	if (!nick1[0] || !nick2[0])
 	{
@@ -2692,10 +2726,15 @@ fe_serverlist_open (session *sess)
 
 	servlist_networks_populate (network_list);
 
+#if GTK_MAJOR_VERSION >= 4
+	g_signal_connect (G_OBJECT (serverlist_win), "close-request",
+							G_CALLBACK (servlist_delete_cb), NULL);
+#else
 	g_signal_connect (G_OBJECT (serverlist_win), "delete-event",
-						 	G_CALLBACK (servlist_delete_cb), 0);
-	g_signal_connect (G_OBJECT (serverlist_win), "configure-event",
-							G_CALLBACK (servlist_configure_cb), 0);
+							G_CALLBACK (servlist_delete_cb), NULL);
+#endif
+	fabulor_window_geometry_watch (GTK_WINDOW (serverlist_win),
+		servlist_geometry_cb, NULL);
 	g_signal_connect (G_OBJECT (serverlist_win), "destroy",
 							G_CALLBACK (servlist_network_list_destroy_cb), NULL);
 	fabulor_gtk_widget_on_key_pressed (networks_tree,

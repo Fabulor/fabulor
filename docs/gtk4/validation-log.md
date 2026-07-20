@@ -5214,6 +5214,35 @@ theme-derived colours, selection copying, clear/save actions, and close
 lifecycle are unchanged. GTK3 retains the inset appearance and GTK4 uses the
 standard framed-scroller presentation. Packaging impact: none.
 
+### GTK4 Stage 8 Server List Lifecycle and Geometry
+
+Date: 2026-07-20
+
+Files/workflows converted: main Server List and network-editor close handling,
+size persistence, and close-time entry text reads.
+
+Automated evidence:
+
+- shipping MSVC GTK3 frontend rebuild: pass; zero warnings and zero errors
+- strict MSVC GTK4 probe against GTK 4.22.4 / GLib 2.88.0: compile, link, and
+  execution pass under `/W4 /WX`; zero warnings and zero errors
+- clean isolated complete GTK4 frontend comparison: expected fail; improves
+  from 105 errors / 407 warnings to 70 errors / 384 warnings
+- source audit: no active Server List callback exposes `GdkEventAny` or
+  `GdkEventConfigure` to GTK4; both windows use the shared geometry observer
+- source audit: editor close still saves pending network fields before explicit
+  destruction; main-list close still saves global configuration and preserves
+  startup-exit behavior
+- source audit: Server List entry reads use the borrowed GTK3/GTK4 text helper
+- next errors: Server List editor and main-list framed-scroller construction
+- `git diff --check`: pass
+
+Behavior contract: pending network edits, password handling, global identity
+validation, configuration persistence, startup cancellation, and remembered
+main/editor dimensions are unchanged. GTK3 retains private delete-event
+handling; GTK4 uses close-request without duplicate editor destruction.
+Packaging impact: none.
+
 ## Build Matrix
 
 | Check | GTK3 shipping target | GTK4 candidate | Final GTK4 target |
