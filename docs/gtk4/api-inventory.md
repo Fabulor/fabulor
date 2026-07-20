@@ -722,6 +722,14 @@ is isolated in `file-chooser-path.c` under a narrow deprecation scope pending
 the later asynchronous `GtkFileDialog` cutover. No deprecation suppression
 reaches callers or the general compatibility header.
 
+Stage 8 top-level constructor pass 40 replaces all three active
+`gtk_window_new(GTK_WINDOW_TOPLEVEL)` calls with one typed constructor. GTK4
+uses its argument-free top-level constructor; GTK3 retains the explicit window
+type privately. Shared utility windows, Server Editor, and Server List retain
+their existing title, role, size, transient, modal, theme, and destruction
+configuration. The two remaining literal constructors are confined to GTK3
+theme tests and are not part of the GTK4 frontend profile.
+
 ## Functional Clusters
 
 | Cluster | Main files | GTK4 concern | Status |

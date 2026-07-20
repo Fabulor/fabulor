@@ -5018,6 +5018,34 @@ passed to path-only callbacks. Manual open/save/folder selection and import
 workflows remain gated on the linkable full GTK4 frontend. Packaging impact:
 none.
 
+### GTK4 Stage 8 Top-Level Window Constructor
+
+Date: 2026-07-20
+
+Files/workflows converted: shared utility windows; Server Editor; Server List.
+
+Automated evidence:
+
+- full shipping GTK3 MSVC x64 Release rebuild: pass; zero warnings and zero
+  errors
+- full strict MSVC GTK4 probe against GTK 4.22.4 / GLib 2.88.0: compile, link,
+  and execution pass under `/W4 /WX`; zero warnings and zero errors
+- helper signature and real GTK4 window construction through the shared
+  geometry probe: pass
+- isolated complete GTK4 frontend inventory: expected fail; improved from 174
+  errors / 392 warnings to 171 errors / 389 warnings
+- source audit: active frontend callers contain no direct
+  `gtk_window_new(GTK_WINDOW_TOPLEVEL)`; two remaining literals are confined to
+  GTK3-only theme tests
+- next errors: retained `menu.c` GTK3 item types, callbacks, and constructors
+- `git diff --check`: pass
+
+Behavior contract: utility, Server Editor, and Server List windows retain their
+existing title, role, default size, theme attachment, transient parent,
+modality, pointer placement, and parent-destruction behavior. Manual open,
+close, focus, stacking, and repeated Server List/Editor lifecycle validation
+remain gated on the linkable full GTK4 frontend. Packaging impact: none.
+
 ## Build Matrix
 
 | Check | GTK3 shipping target | GTK4 candidate | Final GTK4 target |

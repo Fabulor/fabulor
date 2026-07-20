@@ -1796,6 +1796,16 @@ fabulor_gtk_widget_on_scroll (GtkWidget *widget,
 #endif
 }
 
+static inline GtkWidget *
+fabulor_gtk_window_new (void)
+{
+#if GTK_MAJOR_VERSION >= 4
+	return gtk_window_new ();
+#else
+	return gtk_window_new (GTK_WINDOW_TOPLEVEL);
+#endif
+}
+
 static inline void
 fabulor_gtk_window_set_child (GtkWindow *window, GtkWidget *child)
 {

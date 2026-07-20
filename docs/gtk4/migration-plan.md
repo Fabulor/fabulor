@@ -1797,6 +1797,16 @@ improves from 181 errors / 474 warnings to 174 errors / 392 warnings. The first
 remaining error is the shared top-level window constructor, followed by
 retained menu ownership.
 
+Top-level window constructor pass 40 (2026-07-20):
+shared utility windows, Server Editor, and Server List now use one cross-version
+top-level constructor. GTK4 uses the current argument-free API while GTK3 keeps
+`GTK_WINDOW_TOPLEVEL` inside the compatibility boundary. Existing role, title,
+default size, transient parent, modality, theme attachment, and destruction
+semantics are unchanged. Full strict GTK4 and shipping GTK3 rebuilds pass with
+zero warnings and errors. The complete GTK4 inventory improves from 174 errors /
+392 warnings to 171 errors / 389 warnings. The first remaining errors are now
+the retained `menu.c` GTK3 type and constructor boundaries.
+
 Deliverables:
 
 - Make GTK4 the only production frontend dependency in MSVC, Meson, and CI.

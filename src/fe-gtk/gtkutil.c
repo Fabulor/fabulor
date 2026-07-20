@@ -806,7 +806,7 @@ gtkutil_window_new (char *title, char *role, int width, int height, int flags)
 {
 	GtkWidget *win;
 
-	win = gtk_window_new (GTK_WINDOW_TOPLEVEL);
+	win = fabulor_gtk_window_new ();
 	theme_manager_attach_window (win);
 	gtkutil_set_icon (win);
 #ifdef WIN32
