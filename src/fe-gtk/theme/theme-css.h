@@ -25,14 +25,17 @@
 
 /**
  * theme_css_apply_app_provider/theme_css_remove_app_provider:
- * Use for CSS providers that should apply to the entire application screen.
+ * Use for CSS providers that should apply to the entire application display.
  *
  * theme_css_apply_widget_provider:
  * Use for widget-local CSS providers attached to a specific widget context.
  */
 void theme_css_apply_app_provider (GtkStyleProvider *provider);
+gboolean theme_css_apply_app_provider_at_priority (GtkStyleProvider *provider,
+	guint priority);
 void theme_css_remove_app_provider (GtkStyleProvider *provider);
 void theme_css_apply_widget_provider (GtkWidget *widget, GtkStyleProvider *provider);
+void theme_css_provider_load_string (GtkCssProvider *provider, const char *css);
 void theme_css_reload_input_style (gboolean enabled, const PangoFontDescription *font_desc);
 void theme_css_apply_palette_widget (GtkWidget *widget, const GdkRGBA *bg, const GdkRGBA *fg,
                                      const PangoFontDescription *font_desc);

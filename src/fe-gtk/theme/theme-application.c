@@ -49,7 +49,6 @@ theme_application_apply_toplevel_theme (gboolean dark)
 	GtkSettings *settings = gtk_settings_get_default ();
 	static GtkCssProvider *theme_provider = NULL;
 	static gboolean theme_provider_installed = FALSE;
-	GdkScreen *screen;
 	gboolean prefer_dark = dark;
 	char *css;
 
@@ -65,24 +64,17 @@ theme_application_apply_toplevel_theme (gboolean dark)
 	                                              "gtk-application-prefer-dark-theme"))
 		g_object_set (settings, "gtk-application-prefer-dark-theme", prefer_dark, NULL);
 
-	screen = gdk_screen_get_default ();
-	if (!screen)
-		return;
-
 	if (!theme_provider)
 		theme_provider = gtk_css_provider_new ();
 
 	css = theme_application_build_toplevel_css ();
-	gtk_css_provider_load_from_data (theme_provider, css, -1, NULL);
+	theme_css_provider_load_string (theme_provider, css);
 	g_free (css);
 
 	if (!theme_provider_installed)
-	{
-		gtk_style_context_add_provider_for_screen (screen,
+		theme_provider_installed = theme_css_apply_app_provider_at_priority (
 			GTK_STYLE_PROVIDER (theme_provider),
 			GTK_STYLE_PROVIDER_PRIORITY_APPLICATION + 1);
-		theme_provider_installed = TRUE;
-	}
 }
 
 gboolean
