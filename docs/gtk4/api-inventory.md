@@ -856,6 +856,15 @@ time. Link closure currently reports 89 unique unresolved symbols across 238
 diagnostic lines; the missing shared GTK4 list-model implementation is the
 first build-input target.
 
+Stage 8 GTK4 list-model link-input pass 56 adds the converted shared flat and
+tree model-stack implementation to the production MSVC project only when the
+GTK4 profile is selected. GTK3 does not compile or link the GTK4-only source.
+The strict probe continues to exercise model construction, sorting, selection,
+mutation, and cleanup from the same implementation. The complete GTK4 linker
+inventory drops from 89 to 76 unique unresolved symbols and from 238 to 166
+repeated unresolved-symbol diagnostics, closing all 13 shared list-model
+symbols without changing the 336-warning compile inventory.
+
 ## Functional Clusters
 
 | Cluster | Main files | GTK4 concern | Status |
@@ -864,7 +873,7 @@ first build-input target.
 | Transcript | `xtext.c`, `xtext.h`, `xtext-render-target.c` | snapshot rendering and event model | in progress; render destination ownership established and private Win32 GDK header retired |
 | Edit box and spell check | `maingui.c`, `emoji-picker.c`, `sexy-spell-entry.c`, `spell-entry-*.c` | production interaction and latency validation | in progress; word, lifecycle, styling, menu, URL, and emoji-picker boundaries established |
 | Menus and commands | `menu.c`, `maingui.c`, `plugin-tray.c` | actions and menu models | in progress; retained main/context/tab presentation and GTK3-only accelerator ownership established |
-| Operational lists | `servlistgui.c`, `chanlist.c`, `userlistgui.c`, `dccgui.c`, `banlist.c`, `notifygui.c`, `ignoregui.c`, `plugingui.c`, `urlgrab.c` | list models, factories, editing | converted; toolkit-specific models and views are contained by cross-version owners |
+| Operational lists | `servlistgui.c`, `chanlist.c`, `userlistgui.c`, `dccgui.c`, `banlist.c`, `notifygui.c`, `ignoregui.c`, `plugingui.c`, `urlgrab.c` | list models, factories, editing | converted; toolkit-specific models and views are contained and the shared GTK4 model stack is a production candidate input |
 | Preferences/editors | `setup.c`, `fkeys.c`, `textgui.c`, `editlist.c` | generic edit list, Print Events, key bindings, sound events, and preference navigation converted | converted |
 | Themes | `theme/*.c`, `common/gtk3-theme-service.c`, `common/gtk4-theme-*.c` | GTK4 CSS compatibility and adapter policy | in progress; pre-production GTK4 theme stack composed behind a lifecycle controller |
 | Platform integration | `fe-gtk.c`, `plugin-tray.c`, notifications | displays, surfaces, icons, native tray | not started |

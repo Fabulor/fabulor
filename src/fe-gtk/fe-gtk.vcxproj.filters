@@ -48,6 +48,9 @@
     <ClInclude Include="gtkutil.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="gtk4-list-models.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
     <ClInclude Include="icon-resolver.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -177,6 +180,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="channel-model.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="gtk4-list-models.c">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="channel-tree-view.c">
