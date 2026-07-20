@@ -76,7 +76,9 @@
 #define FABULOR_DOCS_URL "https://github.com/Fabulor/fabulor/tree/main/docs"
 #define FABULOR_README_URL "https://github.com/Fabulor/fabulor/blob/main/README.md"
 
+#if GTK_MAJOR_VERSION < 4
 static GSList *submenu_list;
+#endif
 
 #define FABULOR_MENU_ACTION_GROUP "fabulor-menu-action-group"
 #define FABULOR_MENU_ACTION_NAME "fabulor-menu-action-name"
@@ -372,6 +374,7 @@ userlist_button_cb (GtkWidget * button, char *cmd)
 
 /* a popup-menu-item has been selected */
 
+#if GTK_MAJOR_VERSION < 4
 static void
 popup_menu_cb (GtkWidget * item, char *cmd)
 {
@@ -546,6 +549,7 @@ toggle_cb (GtkWidget *item, char *pref_name)
 
 	handle_command (current_sess, buf, FALSE);
 }
+#endif
 
 static int
 is_in_path (char *cmd)
@@ -619,6 +623,7 @@ menu_parse_icon_label (const char *name, char **label, char **icon)
 
 /* append items to "menu" using the (struct popup*) list provided */
 
+#if GTK_MAJOR_VERSION < 4
 void
 menu_create (GtkWidget *menu, GSList *list, char *target, int check_path)
 {
@@ -695,11 +700,11 @@ menu_create (GtkWidget *menu, GSList *list, char *target, int check_path)
 	while (submenu_list)
 		submenu_list = g_slist_remove (submenu_list, submenu_list->data);
 }
+#endif
 
 static char *str_copy = NULL;		/* for all pop-up menus */
 #if GTK_MAJOR_VERSION < 4
 static GtkWidget *nick_submenu = NULL;	/* user info submenu */
-#endif
 
 static void
 menu_destroy (GtkWidget *menu, gpointer objtounref)
@@ -708,12 +713,9 @@ menu_destroy (GtkWidget *menu, gpointer objtounref)
 	g_object_unref (menu);
 	if (objtounref)
 		g_object_unref (G_OBJECT (objtounref));
-#if GTK_MAJOR_VERSION < 4
 	nick_submenu = NULL;
-#endif
 }
 
-#if GTK_MAJOR_VERSION < 4
 static void
 menu_popup_at (GtkWidget *menu, GtkWidget *origin, gdouble x, gdouble y,
 	GdkModifierType state, guint button, gpointer objtounref)
