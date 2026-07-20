@@ -1989,6 +1989,18 @@ symbols over 238 repeated linker diagnostics. Adding the omitted GTK4
 list-model implementation to the production GTK4 build inputs is the next
 contained target before retiring the remaining linked GTK3 compatibility calls.
 
+GTK4 list-model link-input pass 56 (2026-07-21):
+the production MSVC frontend project now compiles `gtk4-list-models.c` only for
+the isolated GTK4 profile. The shipping GTK3 build does not consume the source,
+while the strict GTK4 probe continues to compile and exercise the identical
+implementation under `/W4 /WX`. Shipping GTK3 and strict GTK4 validation pass
+with zero errors and warnings. The clean complete GTK4 profile still compiles
+every source with zero C compiler errors and 336 warnings; its expected link
+failure improves from 89 to 76 unique unresolved symbols and from 238 to 166
+repeated linker diagnostics. All 13 converted shared flat/tree model-stack
+symbols are now resolved. The next link-closure target is the remaining legacy
+GTK3 compatibility-call surface.
+
 Deliverables:
 
 - Make GTK4 the only production frontend dependency in MSVC, Meson, and CI.

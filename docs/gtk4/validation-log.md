@@ -5475,6 +5475,33 @@ Behavior contract: transcript rendering, selection, scrolling, export, flag
 lookup, and background rendering are unchanged. This is compile-time header
 containment only. Packaging impact: none.
 
+### GTK4 Stage 8 List-Model Link Input
+
+Date: 2026-07-21
+
+Files/workflows converted: production GTK4 MSVC source ownership for the shared
+flat and tree list-model stacks.
+
+Automated evidence:
+
+- shipping MSVC GTK3 frontend rebuild: pass; zero warnings and zero errors
+- strict MSVC GTK4 probe against GTK 4.22.4 / GLib 2.88.0: compile, link, and
+  execution pass under `/W4 /WX`; zero warnings and zero errors
+- clean isolated complete GTK4 frontend compilation: zero C compiler errors and
+  336 warnings; every production source reaches link
+- expected complete GTK4 link failure improves from 89 to 76 unique unresolved
+  symbols and from 238 to 166 repeated unresolved-symbol diagnostics
+- all 13 `fabulor_gtk4_flat_model_stack_*` and
+  `fabulor_gtk4_tree_model_stack_*` symbols are resolved
+- project-condition audit: `gtk4-list-models.c` is included only when
+  `FabulorGtkMajor` is `4`; the GTK3 shipping source set is unchanged
+- next target: remaining legacy GTK3 compatibility-call link surface
+- `git diff --check`: pass
+
+Behavior contract: converted list construction, sorting, selection, mutation,
+and cleanup are unchanged and remain covered by the strict probe. Shipping GTK3
+does not consume this GTK4-only implementation. Packaging impact: none.
+
 ## Build Matrix
 
 | Check | GTK3 shipping target | GTK4 candidate | Final GTK4 target |
