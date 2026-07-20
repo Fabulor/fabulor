@@ -5270,6 +5270,33 @@ retain their existing scroll policies, typed list ownership, selection,
 editing, notebook placement, and command tooltip. GTK3 retains inset shadows;
 GTK4 uses the standard frame CSS presentation. Packaging impact: none.
 
+### GTK4 Stage 8 Preferences Framing
+
+Date: 2026-07-20
+
+Files/workflows converted: Preferences page scroller construction, frame
+presentation, and page-content ownership.
+
+Automated evidence:
+
+- shipping MSVC GTK3 frontend rebuild: pass; zero warnings and zero errors
+- strict MSVC GTK4 probe against GTK 4.22.4 / GLib 2.88.0: compile, link, and
+  execution pass under `/W4 /WX`; zero warnings and zero errors
+- clean isolated complete GTK4 frontend comparison: expected fail; improves
+  from 66 errors / 379 warnings to 64 errors / 373 warnings
+- changed `setup.c` has no hard errors in the complete GTK4 inventory
+- source audit: GTK4 Preferences code uses the shared constructor, frame, and
+  child APIs without `GtkBin`, `GtkViewport`, or shadow enums
+- source audit: GTK3 privately clears its auto-created viewport shadow after
+  attaching non-scrollable page content
+- next errors: user-list framing, then the theme API boundary
+- `git diff --check`: pass
+
+Behavior contract: Preferences labels, page order, vertical scrolling, lazy
+page creation, notebook ownership, and settings controls are unchanged. GTK3
+retains one inset border without a nested viewport shadow; GTK4 uses the
+standard scroller frame CSS class. Packaging impact: none.
+
 ## Build Matrix
 
 | Check | GTK3 shipping target | GTK4 candidate | Final GTK4 target |
