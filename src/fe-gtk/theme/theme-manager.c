@@ -50,7 +50,9 @@ static GHashTable *theme_manager_listeners;
 static guint theme_manager_next_listener_id = 1;
 static guint theme_manager_setup_listener_id;
 static const char theme_manager_window_destroy_handler_key[] = "theme-manager-window-destroy-handler";
+#if GTK_MAJOR_VERSION < 4
 static const char theme_manager_window_csd_headerbar_key[] = "theme-manager-window-csd-headerbar";
+#endif
 
 typedef struct
 {
@@ -400,6 +402,7 @@ theme_manager_handle_theme_applied (void)
 }
 
 
+#if GTK_MAJOR_VERSION < 4
 static gboolean
 theme_manager_is_kde_wayland (void)
 {
@@ -510,17 +513,19 @@ theme_manager_apply_wayland_kde_csd (GtkWidget *window)
 			gtk_style_context_reset_widgets (screen);
 	}
 }
+#endif
 
 static void
 theme_manager_apply_platform_window_theme (GtkWidget *window)
 {
+#if GTK_MAJOR_VERSION < 4
 	GtkStyleContext *context;
+#endif
 	gboolean dark;
 
 	if (!window)
 		return;
 
-	context = gtk_widget_get_style_context (window);
 	if (theme_gtk3_is_active ())
 	{
 		dark = prefs.hex_gui_gtk3_variant == THEME_GTK3_VARIANT_PREFER_DARK;
@@ -529,16 +534,27 @@ theme_manager_apply_platform_window_theme (GtkWidget *window)
 	}
 	else
 		dark = theme_runtime_is_dark_active ();
+
+#if GTK_MAJOR_VERSION >= 4
+	gtk_widget_remove_css_class (window, "zoitechat-dark");
+	gtk_widget_remove_css_class (window, "zoitechat-light");
+	gtk_widget_add_css_class (window,
+		dark ? "zoitechat-dark" : "zoitechat-light");
+#else
+	context = gtk_widget_get_style_context (window);
 	if (context)
 	{
 		gtk_style_context_remove_class (context, "zoitechat-dark");
 		gtk_style_context_remove_class (context, "zoitechat-light");
 		gtk_style_context_add_class (context, dark ? "zoitechat-dark" : "zoitechat-light");
 	}
+#endif
 #ifdef G_OS_WIN32
 	fe_win32_apply_native_titlebar (window, dark);
 #else
+#if GTK_MAJOR_VERSION < 4
 	theme_manager_apply_wayland_kde_csd (window);
+#endif
 #endif
 }
 

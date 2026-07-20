@@ -1925,6 +1925,18 @@ errors / 371 warnings, with no hard `userlistgui.c` diagnostics. All 63
 remaining hard errors are now confined to `theme/`; the theme API boundary is
 the next contained target.
 
+Theme window-ownership pass 51 (2026-07-20):
+the KDE/Wayland client-side decoration workaround and `GdkScreen` widget reset
+are now explicitly GTK3-only. GTK4 retains compositor-managed decorations and
+sets the existing dark/light top-level markers through widget-owned CSS
+classes rather than a legacy style context. Windows native-titlebar dispatch,
+theme-mode resolution, attached-window cleanup, and change propagation are
+unchanged. Strict GTK4 and shipping GTK3 rebuilds pass with zero warnings and
+errors. The clean complete GTK4 inventory improves from 63 errors / 371
+warnings to 53 errors / 365 warnings, with no `theme-manager.c` diagnostics.
+Application and CSS provider display ownership is now the first remaining
+theme boundary.
+
 Deliverables:
 
 - Make GTK4 the only production frontend dependency in MSVC, Meson, and CI.

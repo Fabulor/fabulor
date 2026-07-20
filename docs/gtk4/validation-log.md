@@ -5326,6 +5326,35 @@ identity, selection, drag/drop, file drops, pointer activation, and keyboard
 forwarding are unchanged. GTK3 retains its inset shadow; GTK4 uses the standard
 frame CSS class. Packaging impact: none.
 
+### GTK4 Stage 8 Theme Window Ownership
+
+Date: 2026-07-20
+
+Files/workflows converted: top-level dark/light class presentation and the
+GTK3 KDE/Wayland client-side decoration workaround boundary.
+
+Automated evidence:
+
+- shipping MSVC GTK3 frontend rebuild: pass; zero warnings and zero errors
+- strict MSVC GTK4 probe against GTK 4.22.4 / GLib 2.88.0: compile, link, and
+  execution pass under `/W4 /WX`; zero warnings and zero errors
+- clean isolated complete GTK4 frontend comparison: expected fail; improves
+  from 63 errors / 371 warnings to 53 errors / 365 warnings
+- changed `theme-manager.c` has no errors or warnings in the complete GTK4
+  inventory
+- source audit: `GdkScreen`, legacy header-bar sizing/title APIs, and widget
+  style reset are confined to the GTK3 KDE/Wayland CSD branch
+- source audit: GTK4 applies exactly one existing top-level dark/light class
+  through widget CSS ownership and leaves CSD to the compositor
+- next errors: theme application and CSS provider display ownership, style
+  access, then the private GTK3 adapter
+- `git diff --check`: pass
+
+Behavior contract: resolved dark/light mode, top-level CSS selectors, Windows
+native-titlebar updates, GTK3 KDE/Wayland decorations, attached-window
+lifetime, and theme-change dispatch are unchanged. GTK4 deliberately does not
+recreate a GTK3-only KDE decoration workaround. Packaging impact: none.
+
 ## Build Matrix
 
 | Check | GTK3 shipping target | GTK4 candidate | Final GTK4 target |
