@@ -800,6 +800,14 @@ single inset border is preserved rather than doubled. Page labels, vertical
 scroll policy, notebook ownership, lazy creation, and page content are
 unchanged. The complete GTK4 inventory now reports no hard errors in `setup.c`.
 
+Stage 8 user-list framing pass 50 moves the main user-list scroller to the
+shared cross-version constructor and semantic frame helper. Its typed list view
+continues to attach through the explicit scroller child boundary. Expansion,
+automatic scrolling, minimum content width, drag/drop, pointer and keyboard
+input, model ownership, and selection behavior are unchanged. The complete
+GTK4 inventory now reports no hard errors in `userlistgui.c`; every remaining
+hard frontend error is within the theme compatibility boundary.
+
 ## Functional Clusters
 
 | Cluster | Main files | GTK4 concern | Status |

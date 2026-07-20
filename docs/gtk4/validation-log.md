@@ -5297,6 +5297,35 @@ page creation, notebook ownership, and settings controls are unchanged. GTK3
 retains one inset border without a nested viewport shadow; GTK4 uses the
 standard scroller frame CSS class. Packaging impact: none.
 
+### GTK4 Stage 8 User-List Framing
+
+Date: 2026-07-20
+
+Files/workflows converted: main user-list scroller construction and frame
+presentation.
+
+Automated evidence:
+
+- shipping MSVC GTK3 frontend rebuild: pass; zero warnings and zero errors
+- strict MSVC GTK4 probe against GTK 4.22.4 / GLib 2.88.0: compile, link, and
+  execution pass under `/W4 /WX`; zero warnings and zero errors
+- clean isolated complete GTK4 frontend comparison: expected fail; improves
+  from 64 errors / 373 warnings to 63 errors / 371 warnings
+- changed `userlistgui.c` has no hard errors in the complete GTK4 inventory
+- source audit: no direct scrolled-window constructor, shadow setter, or
+  `GTK_SHADOW_IN` reference remains in `userlistgui.c`
+- source audit: the typed user-list view still attaches through the explicit
+  cross-version scroller child owner
+- error grouping: all 63 remaining hard frontend errors are under `theme/`
+- next errors: theme manager display/provider ownership, theme application and
+  CSS provider ownership, style access, then the private GTK3 adapter
+- `git diff --check`: pass
+
+Behavior contract: user-list expansion, scroll policies, minimum width, model
+identity, selection, drag/drop, file drops, pointer activation, and keyboard
+forwarding are unchanged. GTK3 retains its inset shadow; GTK4 uses the standard
+frame CSS class. Packaging impact: none.
+
 ## Build Matrix
 
 | Check | GTK3 shipping target | GTK4 candidate | Final GTK4 target |
