@@ -2160,9 +2160,9 @@ servlist_open_edit (GtkWidget *parent, ircnet *net)
 	hbox1 = gtkutil_box_new (GTK_ORIENTATION_HORIZONTAL, FALSE, 0);
 	gtk_box_pack_start (GTK_BOX (vbox5), hbox1, TRUE, TRUE, 4);
 
-	scrolledwindow2 = gtk_scrolled_window_new (NULL, NULL);
-	scrolledwindow4 = gtk_scrolled_window_new (NULL, NULL);
-	scrolledwindow5 = gtk_scrolled_window_new (NULL, NULL);
+	scrolledwindow2 = fabulor_gtk_scrolled_window_new ();
+	scrolledwindow4 = fabulor_gtk_scrolled_window_new ();
+	scrolledwindow5 = fabulor_gtk_scrolled_window_new ();
 
 	notebook = gtk_notebook_new ();
 	gtk_notebook_append_page (GTK_NOTEBOOK (notebook), scrolledwindow2, gtk_label_new (_("Servers")));
@@ -2172,13 +2172,13 @@ servlist_open_edit (GtkWidget *parent, ircnet *net)
 	gtk_box_pack_start (GTK_BOX (hbox1), notebook, TRUE, TRUE, SERVLIST_X_PADDING);
 
 	gtk_scrolled_window_set_policy (GTK_SCROLLED_WINDOW (scrolledwindow2), GTK_POLICY_NEVER, GTK_POLICY_AUTOMATIC);
-	gtk_scrolled_window_set_shadow_type (GTK_SCROLLED_WINDOW (scrolledwindow2), GTK_SHADOW_IN);
+	fabulor_gtk_scrolled_window_set_framed (GTK_SCROLLED_WINDOW (scrolledwindow2), TRUE);
 
 	gtk_scrolled_window_set_policy (GTK_SCROLLED_WINDOW (scrolledwindow4), GTK_POLICY_NEVER, GTK_POLICY_AUTOMATIC);
-	gtk_scrolled_window_set_shadow_type (GTK_SCROLLED_WINDOW (scrolledwindow4),	GTK_SHADOW_IN);
+	fabulor_gtk_scrolled_window_set_framed (GTK_SCROLLED_WINDOW (scrolledwindow4), TRUE);
 
 	gtk_scrolled_window_set_policy (GTK_SCROLLED_WINDOW (scrolledwindow5), GTK_POLICY_NEVER, GTK_POLICY_AUTOMATIC);
-	gtk_scrolled_window_set_shadow_type (GTK_SCROLLED_WINDOW (scrolledwindow5), GTK_SHADOW_IN);
+	fabulor_gtk_scrolled_window_set_framed (GTK_SCROLLED_WINDOW (scrolledwindow5), TRUE);
 	gtk_widget_set_tooltip_text (scrolledwindow5, _("%n=Nick name\n%p=Password\n%r=Real name\n%u=User name"));
 
 
@@ -2581,7 +2581,7 @@ servlist_open_networks (void)
 	gtk_grid_set_row_spacing (GTK_GRID (table4), 2);
 	gtk_grid_set_column_spacing (GTK_GRID (table4), 3);
 
-	scrolledwindow3 = gtk_scrolled_window_new (NULL, NULL);
+	scrolledwindow3 = fabulor_gtk_scrolled_window_new ();
 	gtk_widget_show (scrolledwindow3);
 	servlist_table_attach (table4, scrolledwindow3, 0, 1, 0, 1,
 						   TRUE, TRUE,
@@ -2589,8 +2589,8 @@ servlist_open_networks (void)
 						   0, 0);
 	gtk_scrolled_window_set_policy (GTK_SCROLLED_WINDOW (scrolledwindow3),
 											  GTK_POLICY_NEVER, GTK_POLICY_ALWAYS);
-	gtk_scrolled_window_set_shadow_type (GTK_SCROLLED_WINDOW (scrolledwindow3),
-													 GTK_SHADOW_IN);
+	fabulor_gtk_scrolled_window_set_framed (GTK_SCROLLED_WINDOW (scrolledwindow3),
+		TRUE);
 
 	network_list_view = fabulor_server_network_list_new (
 		servlist_network_row_cb, servlist_network_edit_cb, NULL);

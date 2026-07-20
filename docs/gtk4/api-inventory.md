@@ -784,6 +784,14 @@ through the borrowed cross-version helper. Legacy GTK3 event structures and
 direct window-size reads no longer enter this workflow. Detailed editor and
 main-list scroller construction remains the next contained Server List target.
 
+Stage 8 Server List scroller pass 48 moves the three network-editor list
+scrollers and the main network-list scroller onto the established cross-version
+constructor and semantic frame helper. GTK4 uses the argument-free constructor
+and standard `frame` CSS class; GTK3 retains null adjustments and inset shadow
+presentation privately. Existing scroll policies, notebook ownership,
+tooltips, typed list views, and selection behavior are unchanged. The complete
+GTK4 inventory now reports no hard errors in `servlistgui.c`.
+
 ## Functional Clusters
 
 | Cluster | Main files | GTK4 concern | Status |

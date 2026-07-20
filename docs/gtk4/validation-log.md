@@ -5243,6 +5243,33 @@ main/editor dimensions are unchanged. GTK3 retains private delete-event
 handling; GTK4 uses close-request without duplicate editor destruction.
 Packaging impact: none.
 
+### GTK4 Stage 8 Server List Scrollers
+
+Date: 2026-07-20
+
+Files/workflows converted: three network-editor list scrollers and the main
+network-list scroller.
+
+Automated evidence:
+
+- shipping MSVC GTK3 frontend rebuild: pass; zero warnings and zero errors
+- strict MSVC GTK4 probe against GTK 4.22.4 / GLib 2.88.0: compile, link, and
+  execution pass under `/W4 /WX`; zero warnings and zero errors
+- clean isolated complete GTK4 frontend comparison: expected fail; improves
+  from 70 errors / 384 warnings to 66 errors / 379 warnings
+- changed `servlistgui.c` has no hard errors in the complete GTK4 inventory
+- source audit: no direct scrolled-window constructor, shadow setter, or
+  `GTK_SHADOW_IN` reference remains in `servlistgui.c`
+- source audit: typed server-entry and network-list owners still attach their
+  views through `fabulor_gtk_scrolled_window_set_child()`
+- next errors: Preferences framed-scroller state, then user-list framing
+- `git diff --check`: pass
+
+Behavior contract: Servers, Autojoin channels, Connect commands, and Networks
+retain their existing scroll policies, typed list ownership, selection,
+editing, notebook placement, and command tooltip. GTK3 retains inset shadows;
+GTK4 uses the standard frame CSS presentation. Packaging impact: none.
+
 ## Build Matrix
 
 | Check | GTK3 shipping target | GTK4 candidate | Final GTK4 target |
