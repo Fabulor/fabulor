@@ -670,9 +670,11 @@ custom Cairo arrow, and invalid drawing-area `clicked` connection are removed.
 
 Stage 8 icon-size pass 33 removes `GtkIconSize` from the shared resolver and
 image utility contract. Fabulor now owns semantic 16-pixel menu and 24-pixel
-large-toolbar roles. GTK3 maps those roles to theme-defined toolkit sizes;
-GTK4 applies explicit logical pixels to named images. Search controls, channel
-tabs/lists, menus, Join, spell, plugin, and pixmap consumers use the same type.
+large-toolbar roles. GTK3 maps those roles to native toolkit icon roles for
+named images; GTK4 applies explicit logical pixels. Resolved pixbuf assets use
+the owned 16- and 24-pixel values without deprecated size lookup. Search
+controls, channel tabs/lists, menus, Join, spell, plugin, and pixmap consumers
+use the same type.
 
 Stage 8 button-box layout pass 34 replaces all active button-box construction
 with a Fabulor-owned start, end, and spread contract. GTK3 retains native
@@ -688,6 +690,14 @@ window-geometry observer. GTK3 continues reading configure-event dimensions
 inside that owner; GTK4 observes `GdkSurface::layout`. Width and height are
 still retained only for detached utility windows, while tabbed DCC utilities
 continue to leave the saved detached size unchanged.
+
+Stage 8 channel-view presentation pass 36 routes the tab strip's unframed
+scroller and the tree switcher's inset-framed scroller through the existing
+semantic presentation helper. GTK4 toggles the standard `frame` CSS class;
+GTK3 retains `GTK_SHADOW_NONE` and `GTK_SHADOW_IN` inside the compatibility
+boundary. A full shipping rebuild also removed the deprecated GTK3 icon-size
+lookup exposed by `GTK_DISABLE_DEPRECATED`, using Fabulor's existing 16- and
+24-pixel roles for resolved pixbuf assets.
 
 ## Functional Clusters
 

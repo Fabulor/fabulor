@@ -95,17 +95,7 @@ fabulor_gtk_icon_size_to_gtk3 (FabulorGtkIconSize size)
 static inline gint
 fabulor_gtk_icon_size_get_pixels (FabulorGtkIconSize size)
 {
-#if GTK_MAJOR_VERSION >= 4
 	return (gint) size;
-#else
-	gint width;
-	gint height;
-
-	if (gtk_icon_size_lookup (fabulor_gtk_icon_size_to_gtk3 (size),
-		&width, &height))
-		return MAX (width, height);
-	return (gint) size;
-#endif
 }
 
 static inline GtkWidget *

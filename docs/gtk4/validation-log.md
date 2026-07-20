@@ -4835,10 +4835,11 @@ Automated evidence:
 - `git diff --check`: pass
 
 Behavior contract: custom/bundled/system icon resolution order is unchanged.
-GTK3 retains theme-derived icon dimensions; GTK4 receives deterministic logical
-sizes while the active theme still supplies named system images. Manual icon
-clarity, scale, light/dark, high-contrast, and missing-theme fallback testing
-remains gated on the linkable full GTK4 frontend. Packaging impact: none.
+GTK3 named images retain native theme roles; resolved pixbufs and GTK4 images
+receive deterministic logical sizes while the active theme still supplies
+named system images. Manual icon clarity, scale, light/dark, high-contrast, and
+missing-theme fallback testing remains gated on the linkable full GTK4
+frontend. Packaging impact: none.
 
 ### GTK4 Stage 8 Button-Box Layout
 
@@ -4895,6 +4896,35 @@ Behavior contract: detached DCC transfers retain their latest positive size
 for the next reopen. Tabbed utilities still do not overwrite that detached
 size. Manual detached resize/reopen and tabbed-mode switching remain gated on
 the linkable full GTK4 frontend. Packaging impact: none.
+
+### GTK4 Stage 8 Channel-View Frame Presentation
+
+Date: 2026-07-20
+
+Files/workflows converted: scrollable horizontal/vertical tab strips; framed
+tree channel switcher; deprecated resolved-pixbuf size lookup cleanup.
+
+Automated evidence:
+
+- full shipping GTK3 MSVC x64 Release rebuild: pass; zero warnings and zero
+  errors, including explicit `chanview.c` recompilation
+- strict MSVC GTK4 probe against GTK 4.22.4 / GLib 2.88.0: full compile, link,
+  and execution pass under `/W4 /WX`; zero warnings and zero errors
+- real GTK4 scrolled-window `frame` class enable/disable assertions: pass
+- isolated complete GTK4 frontend inventory: expected fail; improved from 188
+  errors / 484 warnings to 186 errors / 483 warnings
+- source audit: `chanview-tabs.c` and `chanview-tree.c` contain no direct
+  shadow-type call or `GTK_SHADOW_*` value
+- source audit: active code contains no `gtk_icon_size_lookup()` call
+- next errors: Join window type hints, chooser ownership, channel-list indexing,
+  and retained menu ownership
+- `git diff --check`: pass
+
+Behavior contract: tab strips remain unframed and the tree switcher remains
+visually framed. Named GTK3 images retain native icon roles; resolved pixbufs
+use the established semantic pixel values. Manual tab/tree switching, themes,
+high contrast, and scale testing remain gated on the linkable full GTK4
+frontend. Packaging impact: none.
 
 ## Build Matrix
 

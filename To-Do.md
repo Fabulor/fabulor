@@ -366,6 +366,7 @@ Detailed planning and evidence live in:
       - [x] Replace main-window button relief with a typed flat-button presentation helper.
       - [x] Normalize Alt-modifier handling across GTK3 and GTK4 key workflows.
       - [x] Replace main-window shadow types with semantic framed and outlined presentation helpers.
+      - [x] Route tab-strip and tree-switcher frame presentation through the shared scroller helper.
       - [x] Convert the scroll-to-bottom drawing surface into a themed accessible icon button.
       - [x] Replace shared `GtkIconSize` flow with Fabulor-owned menu and toolbar size roles.
       - [x] Replace retired button-box layout construction with Fabulor-owned spread, start, and end semantics.
