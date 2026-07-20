@@ -4926,6 +4926,35 @@ use the established semantic pixel values. Manual tab/tree switching, themes,
 high contrast, and scale testing remain gated on the linkable full GTK4
 frontend. Packaging impact: none.
 
+### GTK4 Stage 8 Dialog-Window Hints
+
+Date: 2026-07-20
+
+Files/workflows converted: Join dialog; shared transient utility windows;
+Server Editor; Network List dialog-window classification.
+
+Automated evidence:
+
+- full shipping GTK3 MSVC x64 Release rebuild: pass; zero warnings and zero
+  errors
+- full strict MSVC GTK4 probe against GTK 4.22.4 / GLib 2.88.0: compile, link,
+  and execution pass under `/W4 /WX`; zero warnings and zero errors
+- compatibility helper signature and GTK4 compilation without the retired GDK
+  enum: pass
+- isolated complete GTK4 frontend inventory: expected fail; improved from 186
+  errors / 483 warnings to 182 errors / 480 warnings
+- source audit: active callers contain no direct `gtk_window_set_type_hint()`
+  or `GDK_WINDOW_TYPE_HINT_DIALOG`; both remain GTK3-private in the helper
+- next errors: channel-list indexing, chooser ownership, shared top-level
+  construction, and retained menu ownership
+- `git diff --check`: pass
+
+Behavior contract: Join remains a modal transient dialog; shared utility and
+Server List windows retain their existing parent, modal, role, and destruction
+relationships. GTK3 additionally keeps its window-manager dialog hint. Manual
+parent stacking, focus, modality, and close behavior remain gated on the
+linkable full GTK4 frontend. Packaging impact: none.
+
 ## Build Matrix
 
 | Check | GTK3 shipping target | GTK4 candidate | Final GTK4 target |

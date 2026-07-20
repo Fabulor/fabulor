@@ -1867,6 +1867,16 @@ fabulor_gtk_window_get_position (GtkWindow *window, gint *x, gint *y)
 }
 
 static inline void
+fabulor_gtk_window_set_dialog_hint (GtkWindow *window)
+{
+	g_return_if_fail (GTK_IS_WINDOW (window));
+
+#if GTK_MAJOR_VERSION < 4
+	gtk_window_set_type_hint (window, GDK_WINDOW_TYPE_HINT_DIALOG);
+#endif
+}
+
+static inline void
 fabulor_gtk_window_placement_capture (GtkWindow *window,
 	FabulorGtkWindowPlacement *placement)
 {

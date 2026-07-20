@@ -1763,6 +1763,16 @@ pass with zero warnings and errors. The complete GTK4 inventory improves from
 error is the Join dialog's retired window type hint, followed by chooser,
 channel-list indexing, and retained menu boundaries.
 
+Dialog-window hint pass 37 (2026-07-20):
+Join, shared utility windows, Server Editor, and Network List now request their
+GTK3 dialog window-manager hint through one semantic compatibility helper.
+GTK4 keeps the concrete `GtkDialog` identity and established transient/modal
+relationships without the removed GDK hint enum. Full strict GTK4 and shipping
+GTK3 rebuilds pass with zero warnings and errors. The complete GTK4 inventory
+improves from 186 errors / 483 warnings to 182 errors / 480 warnings. The first
+remaining error is channel-list indexing, followed by chooser ownership, the
+shared top-level constructor, and retained menu boundaries.
+
 Deliverables:
 
 - Make GTK4 the only production frontend dependency in MSVC, Meson, and CI.

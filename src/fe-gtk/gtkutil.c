@@ -812,7 +812,7 @@ gtkutil_window_new (char *title, char *role, int width, int height, int flags)
 		fabulor_gtk_window_position_at_pointer (GTK_WINDOW (win));
 	if ((flags & 2) && parent_window)
 	{
-		gtk_window_set_type_hint (GTK_WINDOW (win), GDK_WINDOW_TYPE_HINT_DIALOG);
+		fabulor_gtk_window_set_dialog_hint (GTK_WINDOW (win));
 		gtk_window_set_transient_for (GTK_WINDOW (win), GTK_WINDOW (parent_window));
 		gtk_window_set_destroy_with_parent (GTK_WINDOW (win), TRUE);
 	}
