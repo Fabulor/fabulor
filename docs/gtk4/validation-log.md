@@ -5059,8 +5059,9 @@ Automated evidence:
   errors
 - full strict MSVC GTK4 probe against GTK 4.22.4 / GLib 2.88.0: compile, link,
   and execution pass under `/W4 /WX`; zero warnings and zero errors
-- isolated complete GTK4 frontend inventory: expected fail; improved from 171
-  errors / 389 warnings to 169 errors / 372 warnings
+- isolated complete GTK4 frontend inventory: expected fail; subsequent clean
+  `/t:Rebuild` rebaseline is 169 errors / 435 warnings; the earlier 169 / 372
+  incremental count is superseded
 - source audit: the generic menu-widget builder, submenu ownership list, popup
   destroy/presentation owner, and public declarations are GTK3-private
 - shared `menu_parse_icon_label()` and executable path filtering remain
@@ -5072,6 +5073,33 @@ Behavior contract: GTK3 configured popup labels, icons, toggles, separators,
 submenus, commands, path filtering, sensitivity, ordering, popup placement, and
 cleanup are unchanged. GTK4 continues using the previously validated typed
 context models and retained popover presenter. Packaging impact: none.
+
+### GTK4 Stage 8 Away Check-Item Callback
+
+Date: 2026-07-20
+
+Files/workflows converted: Away/Back action dispatch and GTK3 menu-state
+synchronization boundary.
+
+Automated evidence:
+
+- full shipping GTK3 MSVC x64 Release rebuild: pass; zero warnings and zero
+  errors
+- full strict MSVC GTK4 probe against GTK 4.22.4 / GLib 2.88.0: compile, link,
+  and execution pass under `/W4 /WX`; zero warnings and zero errors
+- clean isolated complete GTK4 frontend comparison: expected fail; moves from
+  169 errors / 435 warnings to 171 errors / 438 warnings because six invalid
+  callback parse errors are removed and eight downstream `/MENU` errors become
+  visible
+- source audit: `GtkCheckMenuItem` and its active-state getter in `menu_away()`
+  are GTK3-private; GTK4 uses `MENU_ACTION_AWAY_TOGGLE`
+- next errors: GTK3 `/MENU` item lookup, mutation callbacks, and constructors
+- `git diff --check`: pass
+
+Behavior contract: GTK4 and GTK3 continue selecting `away` or `back` from the
+current server state through the shared action path. GTK3 retains its existing
+check-item synchronization fallback without emitting commands during blocked
+programmatic state changes. Packaging impact: none.
 
 ## Build Matrix
 
