@@ -744,6 +744,14 @@ action through the shared action descriptor and command handler. The GTK3
 fallback retains its exact active-state read and signal-blocking identity for
 programmatic synchronization; no removed check-menu type reaches GTK4.
 
+Stage 8 `/MENU` widget-mutation pass 43 makes GTK3 menu-item lookup, path
+walking, add/delete/update callbacks, radio and toggle constructors,
+accelerator attachment, ordering, and popup injection GTK3-private. The shared
+plugin tree, copied action data, `GMenuModel` projection, label normalization,
+and `fe_menu_sync()` refresh remain active for GTK4. Core `/MENU` add, delete,
+and update paths already finish with that refresh, so GTK4 rebuilds retained
+main and contextual models instead of mutating retired widget trees.
+
 ## Functional Clusters
 
 | Cluster | Main files | GTK4 concern | Status |

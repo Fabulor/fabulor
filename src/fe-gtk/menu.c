@@ -3962,6 +3962,7 @@ menu_set_fullscreen (session_gui *gui, int full)
 #endif
 }
 
+#if GTK_MAJOR_VERSION < 4
 GtkWidget *
 create_icon_menu (char *labeltext, void *stock_name, int is_stock)
 {
@@ -4334,6 +4335,7 @@ menu_add_cb (GtkWidget *menu, menu_entry *me, char *target)
 		}
 	}
 }
+#endif
 
 typedef struct menu_plugin_node
 {
@@ -4636,7 +4638,9 @@ menu_plugin_action_activate (GSimpleAction *action, GVariant *parameter,
 				!strcmp (peer->group, me->group))
 			{
 				peer->state = peer == me;
+#if GTK_MAJOR_VERSION < 4
 				menu_foreach_gui (peer, menu_update_cb);
+#endif
 			}
 		}
 		command = me->cmd;
@@ -4646,7 +4650,9 @@ menu_plugin_action_activate (GSimpleAction *action, GVariant *parameter,
 	else if (me->ucmd)
 	{
 		me->state = !me->state;
+#if GTK_MAJOR_VERSION < 4
 		menu_foreach_gui (me, menu_update_cb);
+#endif
 		command = me->state ? me->cmd : me->ucmd;
 		if (is_main)
 			menu_plugin_models_refresh ();
@@ -4927,7 +4933,9 @@ fe_menu_add (menu_entry *me)
 {
 	char *text;
 
+#if GTK_MAJOR_VERSION < 4
 	menu_foreach_gui (me, menu_add_cb);
+#endif
 
 	if (!me->markup)
 		return NULL;
@@ -4942,13 +4950,21 @@ fe_menu_add (menu_entry *me)
 void
 fe_menu_del (menu_entry *me)
 {
+#if GTK_MAJOR_VERSION < 4
 	menu_foreach_gui (me, menu_del_cb);
+#else
+	(void) me;
+#endif
 }
 
 void
 fe_menu_update (menu_entry *me)
 {
+#if GTK_MAJOR_VERSION < 4
 	menu_foreach_gui (me, menu_update_cb);
+#else
+	(void) me;
+#endif
 }
 
 void
@@ -4959,6 +4975,7 @@ fe_menu_sync (void)
 
 /* used to add custom menus to the right-click menu */
 
+#if GTK_MAJOR_VERSION < 4
 static void
 menu_add_plugin_mainmenu_items (GtkWidget *menu)
 {
@@ -4991,6 +5008,7 @@ menu_add_plugin_items (GtkWidget *menu, char *root, char *target)
 	}
 	menu_add_plugin_model (G_OBJECT (menu), root, target);
 }
+#endif
 
 /* === END STUFF FOR /MENU === */
 
