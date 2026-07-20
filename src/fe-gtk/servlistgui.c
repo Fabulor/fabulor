@@ -35,6 +35,7 @@
 #include "fe-gtk.h"
 #include "gtkutil.h"
 #include "gtk-compat.h"
+#include "file-chooser-path.h"
 #include "server-network-list.h"
 #include "server-entry-list.h"
 #include "menu.h"
@@ -375,7 +376,8 @@ servlist_cert_import_response_cb (GtkNativeDialog *dialog, gint response_id,
 
 	if (parent && response_id == GTK_RESPONSE_ACCEPT)
 	{
-		source_file = gtk_file_chooser_get_filename (GTK_FILE_CHOOSER (dialog));
+		source_file = fabulor_gtk_file_chooser_dup_filename (
+			GTK_FILE_CHOOSER (dialog));
 		if (source_file)
 		{
 			if (g_mkdir_with_parents (data->cert_dir, 0700) == 0 &&

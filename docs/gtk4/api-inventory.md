@@ -713,6 +713,15 @@ Wildcard presence, glob matching, case-insensitive matching, and regular
 expression compilation continue to consume the same widget-owned UTF-8 text
 without allocating or changing its lifetime.
 
+Stage 8 file-chooser path pass 39 replaces direct filename, filename-list, and
+current-folder path APIs with one local-path owner. Both toolkit versions now
+cross the chooser boundary through `GFile`; callers receive duplicated local
+filesystem paths with explicit ownership, and multiple-selection order is
+preserved. GTK 4.10 deprecated `GtkFileChooser` itself, so that temporary API
+is isolated in `file-chooser-path.c` under a narrow deprecation scope pending
+the later asynchronous `GtkFileDialog` cutover. No deprecation suppression
+reaches callers or the general compatibility header.
+
 ## Functional Clusters
 
 | Cluster | Main files | GTK4 concern | Status |

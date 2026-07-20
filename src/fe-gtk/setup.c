@@ -38,6 +38,7 @@
 #include "theme/theme-preferences.h"
 #include "gtkutil.h"
 #include "gtk-compat.h"
+#include "file-chooser-path.h"
 #include "preferences-category-list.h"
 #include "sound-event-list.h"
 #include "maingui.h"
@@ -1294,7 +1295,8 @@ setup_browsefile_response_cb (GtkNativeDialog *dialog, gint response, gpointer u
 
         if (response == GTK_RESPONSE_ACCEPT)
         {
-                char *file = gtk_file_chooser_get_filename (GTK_FILE_CHOOSER (dialog));
+                char *file = fabulor_gtk_file_chooser_dup_filename (
+                        GTK_FILE_CHOOSER (dialog));
                 setup_filereq_cb (entry, file);
                 g_free (file);
         }
@@ -1323,9 +1325,11 @@ setup_browsefile_cb (GtkWidget *button, GtkWidget *entry)
         {
                 dirname = g_path_get_dirname (current);
                 if (dirname && dirname[0] && g_file_test (dirname, G_FILE_TEST_IS_DIR))
-                        gtk_file_chooser_set_current_folder (GTK_FILE_CHOOSER (dialog), dirname);
+                        fabulor_gtk_file_chooser_set_current_folder_path (
+                                GTK_FILE_CHOOSER (dialog), dirname);
                 else if (g_file_test (current, G_FILE_TEST_IS_DIR))
-                        gtk_file_chooser_set_current_folder (GTK_FILE_CHOOSER (dialog), current);
+                        fabulor_gtk_file_chooser_set_current_folder_path (
+                                GTK_FILE_CHOOSER (dialog), current);
                 g_free (dirname);
         }
 

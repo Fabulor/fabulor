@@ -53,10 +53,11 @@ The MSVC and Meson probes compile, link, and execute the same `probe.c`. The
 program does not initialise a display; it verifies that the loaded GTK/GLib
 runtime versions match the headers used at compile time.
 
-The probe also includes `src/fe-gtk/gtk-compat.h` directly and takes the address
-of every compatibility helper. This makes both build systems compile and link
-all GTK4 helper branches without creating a display or changing the production
-frontend target.
+The probe includes `src/fe-gtk/gtk-compat.h` and the dedicated compatibility
+owner headers directly, then takes the address of every helper. The probe build
+also compiles source-owned adapters such as `file-chooser-path.c`. This makes
+both build systems compile and link all GTK4 helper branches without creating a
+display or changing the production frontend target.
 
 ## Full MSVC Frontend Profile
 

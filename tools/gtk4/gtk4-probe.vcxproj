@@ -53,6 +53,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="probe.c" />
+	<ClCompile Include="..\..\src\fe-gtk\file-chooser-path.c" />
 	<ClCompile Include="..\..\src\fe-gtk\emoji-picker.c" />
 	<ClCompile Include="..\..\src\common\gtk4-theme-discovery.c" />
 	<ClCompile Include="..\..\src\common\gtk4-theme-preferences.c" />
