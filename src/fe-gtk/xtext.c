@@ -58,16 +58,12 @@
 #define charlen(str) g_utf8_skip[*(guchar *)(str)]
 
 #ifdef WIN32
-#include <windows.h>
 #include <io.h>
-#include <gdk/gdk.h>
-#include <gdk/gdkcairo.h>
-#include <gdk/gdkwin32.h>
 #include <glib/gwin32.h>
 #else
 #include <unistd.h>
-#include <gdk/gdkcairo.h>
 #endif
+#include <gdk/gdkcairo.h>
 #include <gdk-pixbuf/gdk-pixbuf.h>
 #include <pango/pangocairo.h>
 

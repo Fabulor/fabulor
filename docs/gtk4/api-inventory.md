@@ -845,12 +845,23 @@ contract. The clean complete GTK4 inventory advances from 37 ordinary errors /
 351 warnings to zero ordinary errors / 336 warnings before stopping at the
 retired `gdk/gdkwin32.h` include in `xtext.c`.
 
+Stage 8 Xtext Win32-header containment pass 55 removes the transcript's unused
+private GTK3 Win32 GDK include together with redundant direct Windows and GDK
+headers. The Windows transcript-export path retains its required CRT file
+descriptor declarations, executable-relative flag lookup still uses GLib's
+public Win32 helper, and Cairo integration remains on the public GDK header.
+The clean complete GTK4 profile now compiles every production frontend source
+with zero C compiler errors and 336 warnings, then reaches link for the first
+time. Link closure currently reports 89 unique unresolved symbols across 238
+diagnostic lines; the missing shared GTK4 list-model implementation is the
+first build-input target.
+
 ## Functional Clusters
 
 | Cluster | Main files | GTK4 concern | Status |
 |---|---|---|---|
 | Main windows and tabs | `maingui.c`, `chanview*.c` | child ownership, gestures, DnD, focus | in progress |
-| Transcript | `xtext.c`, `xtext.h`, `xtext-render-target.c` | snapshot rendering and event model | in progress; render destination ownership established |
+| Transcript | `xtext.c`, `xtext.h`, `xtext-render-target.c` | snapshot rendering and event model | in progress; render destination ownership established and private Win32 GDK header retired |
 | Edit box and spell check | `maingui.c`, `emoji-picker.c`, `sexy-spell-entry.c`, `spell-entry-*.c` | production interaction and latency validation | in progress; word, lifecycle, styling, menu, URL, and emoji-picker boundaries established |
 | Menus and commands | `menu.c`, `maingui.c`, `plugin-tray.c` | actions and menu models | in progress; retained main/context/tab presentation and GTK3-only accelerator ownership established |
 | Operational lists | `servlistgui.c`, `chanlist.c`, `userlistgui.c`, `dccgui.c`, `banlist.c`, `notifygui.c`, `ignoregui.c`, `plugingui.c`, `urlgrab.c` | list models, factories, editing | converted; toolkit-specific models and views are contained by cross-version owners |

@@ -364,6 +364,7 @@ Detailed planning and evidence live in:
     - [x] Move Server List editor and main-list scrollers to cross-version construction and semantic framing.
     - [x] Move Preferences page scrollers and content ownership to cross-version framing semantics.
     - [x] Move the main user-list scroller to cross-version construction and semantic framing.
+    - [x] Remove Xtext's stale private GTK3 Win32 header dependency and reach the full-profile linker.
     - [ ] Complete channel-list and channel-view container/lifecycle cutover.
     - [ ] Complete top-level window positioning, visibility, and lifecycle cutover.
       - [x] Contain removed placement hints, saved coordinates, and tray restore placement behind compositor-safe GTK3/GTK4 policy.
