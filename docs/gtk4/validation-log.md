@@ -4869,6 +4869,33 @@ ordinary boxes and toolkit-supported allocation/alignment. Manual dialog width,
 long-label, keyboard order, theme, and scale testing remains gated on the
 linkable full GTK4 frontend. Packaging impact: none.
 
+### GTK4 Stage 8 DCC Geometry
+
+Date: 2026-07-20
+
+Files/workflows converted: detached DCC transfer window resize observation and
+remembered reopen dimensions.
+
+Automated evidence:
+
+- shipping GTK3 MSVC x64 Release frontend: pass; zero warnings and zero errors
+- strict MSVC GTK4 probe against GTK 4.22.4 / GLib 2.88.0: compile, link, and
+  execution pass under `/W4 /WX`; zero warnings and zero errors
+- shared real-window geometry probe: positive surface-layout dimensions and
+  automatic observer cleanup pass
+- isolated complete GTK4 frontend inventory: expected fail; improved from 196
+  errors / 485 warnings to 188 errors / 484 warnings
+- source audit: `dccgui.c` contains no raw configure-event connection,
+  `GdkEventConfigure`, or direct `gtk_window_get_size()` call
+- next errors: channel-view shadow presentation, channel-list indexing, Join
+  window type hints, and retained menu ownership
+- `git diff --check`: pass
+
+Behavior contract: detached DCC transfers retain their latest positive size
+for the next reopen. Tabbed utilities still do not overwrite that detached
+size. Manual detached resize/reopen and tabbed-mode switching remain gated on
+the linkable full GTK4 frontend. Packaging impact: none.
+
 ## Build Matrix
 
 | Check | GTK3 shipping target | GTK4 candidate | Final GTK4 target |

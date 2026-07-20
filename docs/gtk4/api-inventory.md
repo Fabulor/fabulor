@@ -682,6 +682,13 @@ axis alignment for start/end groups. Ban, DCC, editor, key-binding, Ignore,
 Notify, Add-ons, Raw Log, Server List, Preferences, Print Events, and URL
 History workflows no longer construct the removed widget directly.
 
+Stage 8 DCC geometry pass 35 replaces the detached transfer window's raw
+`configure-event` callback and `GdkEventConfigure` dependency with the shared
+window-geometry observer. GTK3 continues reading configure-event dimensions
+inside that owner; GTK4 observes `GdkSurface::layout`. Width and height are
+still retained only for detached utility windows, while tabbed DCC utilities
+continue to leave the saved detached size unchanged.
+
 ## Functional Clusters
 
 | Cluster | Main files | GTK4 concern | Status |

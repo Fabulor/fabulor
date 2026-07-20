@@ -371,6 +371,8 @@ Detailed planning and evidence live in:
       - [x] Replace retired button-box layout construction with Fabulor-owned spread, start, and end semantics.
       - [ ] Replace the GTK3 per-window Win32 message filter with reviewed GTK4 display-filter ownership.
       - [ ] Convert DCC/Server List geometry plus remaining top-level visibility and lifecycle callbacks.
+        - [x] Convert detached DCC transfer size persistence to the shared surface-layout observer.
+        - [ ] Convert Server List geometry and remaining top-level visibility/lifecycle callbacks.
     - [ ] Bind application and preferences integration to the GTK4 theme controller.
 - [ ] Remove GTK3 code, build inputs, runtime files, installer components, and compatibility helpers.
 - [ ] Complete clean-install, upgrade, accessibility, visual, performance, plugin, and packaging validation.
