@@ -674,6 +674,14 @@ large-toolbar roles. GTK3 maps those roles to theme-defined toolkit sizes;
 GTK4 applies explicit logical pixels to named images. Search controls, channel
 tabs/lists, menus, Join, spell, plugin, and pixmap consumers use the same type.
 
+Stage 8 button-box layout pass 34 replaces all active button-box construction
+with a Fabulor-owned start, end, and spread contract. GTK3 retains native
+`GtkButtonBox` layout and spacing behind the compatibility boundary. GTK4 uses
+ordinary oriented boxes, homogeneous allocation for spread rows, and explicit
+axis alignment for start/end groups. Ban, DCC, editor, key-binding, Ignore,
+Notify, Add-ons, Raw Log, Server List, Preferences, Print Events, and URL
+History workflows no longer construct the removed widget directly.
+
 ## Functional Clusters
 
 | Cluster | Main files | GTK4 concern | Status |

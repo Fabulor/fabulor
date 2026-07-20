@@ -624,8 +624,8 @@ banlist_opengui (struct session *sess)
 				     GTKUTIL_ATTACH_FILL, GTKUTIL_ATTACH_FILL, 0, 0);
 	}
 
-	bbox = gtk_button_box_new (GTK_ORIENTATION_HORIZONTAL);
-	gtk_button_box_set_layout (GTK_BUTTON_BOX (bbox), GTK_BUTTONBOX_SPREAD);
+	bbox = fabulor_gtk_button_box_new (GTK_ORIENTATION_HORIZONTAL,
+		FABULOR_GTK_BUTTON_BOX_SPREAD, 0);
 	gtk_container_set_border_width (GTK_CONTAINER (bbox), 5);
 	fabulor_gtk_box_append (GTK_BOX (vbox), bbox, FALSE, FALSE, 0);
 	gtk_widget_show (bbox);

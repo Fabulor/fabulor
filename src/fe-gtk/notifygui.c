@@ -331,8 +331,8 @@ notify_opengui (void)
 	g_object_set_data_full (G_OBJECT (notify_window), "notify-list",
 		notify_gui_list, (GDestroyNotify) fabulor_notify_list_free);
   
-	bbox = gtk_button_box_new (GTK_ORIENTATION_HORIZONTAL);
-	gtk_button_box_set_layout (GTK_BUTTON_BOX (bbox), GTK_BUTTONBOX_SPREAD);
+	bbox = fabulor_gtk_button_box_new (GTK_ORIENTATION_HORIZONTAL,
+		FABULOR_GTK_BUTTON_BOX_SPREAD, 0);
 	gtk_container_set_border_width (GTK_CONTAINER (bbox), 5);
 	fabulor_gtk_box_append (GTK_BOX (vbox), bbox, FALSE, FALSE, 0);
 	gtk_widget_show (bbox);

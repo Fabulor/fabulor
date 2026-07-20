@@ -396,8 +396,8 @@ pevent_dialog_show ()
 				   GUINT_TO_POINTER (theme_listener_register ("textgui.events", pevent_dialog_theme_changed, pevent_dialog)));
 	g_signal_connect (G_OBJECT (pevent_dialog), "destroy", G_CALLBACK (pevent_dialog_theme_destroy_cb), NULL);
 
-	hbox = gtk_button_box_new (GTK_ORIENTATION_HORIZONTAL);
-	gtk_button_box_set_layout (GTK_BUTTON_BOX (hbox), GTK_BUTTONBOX_SPREAD);
+	hbox = fabulor_gtk_button_box_new (GTK_ORIENTATION_HORIZONTAL,
+		FABULOR_GTK_BUTTON_BOX_SPREAD, 0);
 	fabulor_gtk_box_append (GTK_BOX (vbox), hbox, FALSE, FALSE, 4);
 	gtkutil_button (hbox, ICON_TEXTEVENT_SAVE_AS, NULL, pevent_save_cb,
 						 (void *) 1, _("Save As..."));

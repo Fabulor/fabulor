@@ -148,6 +148,8 @@ check_compatibility_helper_signatures (void)
 		fabulor_gtk_icon_size_get_pixels;
 	GtkWidget *(*volatile image_new_from_icon_name) (const gchar *,
 		FabulorGtkIconSize) = fabulor_gtk_image_new_from_icon_name;
+	GtkWidget *(*volatile button_box_new) (GtkOrientation,
+		FabulorGtkButtonBoxLayout, gint) = fabulor_gtk_button_box_new;
 	void (*volatile box_append) (GtkBox *, GtkWidget *, gboolean, gboolean, guint) =
 		fabulor_gtk_box_append;
 	void (*volatile horizontal_box_append_trailing) (GtkBox *, GtkWidget *) =
@@ -266,6 +268,7 @@ check_compatibility_helper_signatures (void)
 	(void) dialog_icon_new;
 	(void) icon_size_get_pixels;
 	(void) image_new_from_icon_name;
+	(void) button_box_new;
 	(void) box_append;
 	(void) horizontal_box_append_trailing;
 	(void) box_insert_before_trailing;
@@ -365,6 +368,45 @@ check_icon_sizes (gboolean gtk_ready)
 			FABULOR_GTK_ICON_SIZE_LARGE_TOOLBAR) == 24;
 	g_object_unref (toolbar_image);
 	g_object_unref (menu_image);
+	return valid;
+}
+
+static gboolean
+check_button_box_layouts (gboolean gtk_ready)
+{
+	GtkWidget *spread;
+	GtkWidget *end;
+	GtkWidget *start;
+	gboolean valid;
+
+	if (!gtk_ready)
+		return TRUE;
+
+	spread = fabulor_gtk_button_box_new (GTK_ORIENTATION_HORIZONTAL,
+		FABULOR_GTK_BUTTON_BOX_SPREAD, 4);
+	end = fabulor_gtk_button_box_new (GTK_ORIENTATION_HORIZONTAL,
+		FABULOR_GTK_BUTTON_BOX_END, 3);
+	start = fabulor_gtk_button_box_new (GTK_ORIENTATION_VERTICAL,
+		FABULOR_GTK_BUTTON_BOX_START, 2);
+	g_object_ref_sink (spread);
+	g_object_ref_sink (end);
+	g_object_ref_sink (start);
+
+	valid = GTK_IS_BOX (spread) && GTK_IS_BOX (end) && GTK_IS_BOX (start) &&
+		gtk_orientable_get_orientation (GTK_ORIENTABLE (spread)) ==
+			GTK_ORIENTATION_HORIZONTAL &&
+		gtk_box_get_homogeneous (GTK_BOX (spread)) &&
+		gtk_box_get_spacing (GTK_BOX (spread)) == 4 &&
+		gtk_widget_get_halign (end) == GTK_ALIGN_END &&
+		gtk_box_get_spacing (GTK_BOX (end)) == 3 &&
+		gtk_orientable_get_orientation (GTK_ORIENTABLE (start)) ==
+			GTK_ORIENTATION_VERTICAL &&
+		gtk_widget_get_valign (start) == GTK_ALIGN_START &&
+		gtk_box_get_spacing (GTK_BOX (start)) == 2;
+
+	g_object_unref (start);
+	g_object_unref (end);
+	g_object_unref (spread);
 	return valid;
 }
 
@@ -4623,6 +4665,11 @@ main (void)
 	if (!check_icon_sizes (gtk_ready))
 	{
 		fprintf (stderr, "GTK4 icon size contract mismatch\n");
+		return 1;
+	}
+	if (!check_button_box_layouts (gtk_ready))
+	{
+		fprintf (stderr, "GTK4 button box layout contract mismatch\n");
 		return 1;
 	}
 	if (!check_flat_button (gtk_ready))

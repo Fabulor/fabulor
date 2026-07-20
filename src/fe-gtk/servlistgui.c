@@ -2187,9 +2187,8 @@ servlist_open_edit (GtkWidget *parent, ircnet *net)
 		servlist_keypress_cb, notebook);
 	gtk_widget_set_size_request (treeview_servers, -1, 80);
 	/* Button Box */
-	vbuttonbox1 = gtk_button_box_new (GTK_ORIENTATION_VERTICAL);
-	gtk_box_set_spacing (GTK_BOX (vbuttonbox1), 3);
-	gtk_button_box_set_layout (GTK_BUTTON_BOX (vbuttonbox1), GTK_BUTTONBOX_START);
+	vbuttonbox1 = fabulor_gtk_button_box_new (GTK_ORIENTATION_VERTICAL,
+		FABULOR_GTK_BUTTON_BOX_START, 3);
 	gtk_box_pack_start (GTK_BOX (hbox1), vbuttonbox1, FALSE, FALSE, 3);
 
 	buttonadd = servlist_icon_button_new (_("_Add"), ICON_SERVLIST_ADD);
@@ -2357,8 +2356,8 @@ servlist_open_edit (GtkWidget *parent, ircnet *net)
 	hseparator2 = gtk_separator_new (GTK_ORIENTATION_HORIZONTAL);
 	gtk_box_pack_start (GTK_BOX (vbox5), hseparator2, FALSE, FALSE, 8);
 
-	hbuttonbox4 = gtk_button_box_new (GTK_ORIENTATION_HORIZONTAL);
-	gtk_button_box_set_layout (GTK_BUTTON_BOX (hbuttonbox4), GTK_BUTTONBOX_END);
+	hbuttonbox4 = fabulor_gtk_button_box_new (GTK_ORIENTATION_HORIZONTAL,
+		FABULOR_GTK_BUTTON_BOX_END, 0);
 	gtk_box_pack_start (GTK_BOX (vbox5), hbuttonbox4, FALSE, FALSE, 0);
 
 	button10 = servlist_icon_button_new (_("_Close"), ICON_SERVLIST_CLOSE);
@@ -2588,9 +2587,8 @@ servlist_open_networks (void)
 							G_CALLBACK (fav_servlist), 0);
 	gtk_widget_show (checkbutton_fav);
 
-	vbuttonbox2 = gtk_button_box_new (GTK_ORIENTATION_VERTICAL);
-	gtk_box_set_spacing (GTK_BOX (vbuttonbox2), 3);
-	gtk_button_box_set_layout (GTK_BUTTON_BOX (vbuttonbox2), GTK_BUTTONBOX_START);
+	vbuttonbox2 = fabulor_gtk_button_box_new (GTK_ORIENTATION_VERTICAL,
+		FABULOR_GTK_BUTTON_BOX_START, 3);
 	gtk_widget_show (vbuttonbox2);
 	servlist_table_attach (table4, vbuttonbox2, 1, 2, 0, 1,
 						   FALSE, FALSE,
@@ -2639,8 +2637,8 @@ servlist_open_networks (void)
 	gtk_widget_show (hseparator1);
 	gtk_box_pack_start (GTK_BOX (vbox1), hseparator1, FALSE, TRUE, 4);
 
-	hbuttonbox1 = gtk_button_box_new (GTK_ORIENTATION_HORIZONTAL);
-	gtk_button_box_set_layout (GTK_BUTTON_BOX (hbuttonbox1), GTK_BUTTONBOX_SPREAD);
+	hbuttonbox1 = fabulor_gtk_button_box_new (GTK_ORIENTATION_HORIZONTAL,
+		FABULOR_GTK_BUTTON_BOX_SPREAD, 0);
 	gtk_widget_show (hbuttonbox1);
 	gtk_box_pack_start (GTK_BOX (vbox1), hbuttonbox1, FALSE, TRUE, 0);
 	gtk_container_set_border_width (GTK_CONTAINER (hbuttonbox1), 8);
