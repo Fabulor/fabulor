@@ -1829,6 +1829,18 @@ six invalid callback parse errors are removed and the compiler exposes eight
 additional errors in the following GTK3 `/MENU` widget mutation owner. That
 owner is now the first remaining `menu.c` blocker.
 
+`/MENU` widget-mutation containment pass 43 (2026-07-20):
+the GTK3 widget-tree implementation for `/MENU` lookup, insertion, deletion,
+state updates, radio/toggle callbacks, ordering, accelerators, and popup
+injection is now compiled only for GTK3. GTK4 retains the toolkit-neutral
+plugin tree and action projection; every core mutation continues through
+`fe_menu_sync()`, which rebuilds live main and contextual menu models. Markup
+label normalization remains shared. Full strict GTK4 and shipping GTK3 rebuilds
+pass with zero warnings and errors. The clean complete GTK4 inventory improves
+from 171 errors / 438 warnings to 118 errors / 405 warnings, with no remaining
+`menu.c` errors. The first remaining error is the retired icon lookup flag in
+`pixmaps.c`, followed by legacy tray window-state ownership.
+
 Deliverables:
 
 - Make GTK4 the only production frontend dependency in MSVC, Meson, and CI.

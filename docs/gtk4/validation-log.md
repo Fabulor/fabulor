@@ -5101,6 +5101,37 @@ current server state through the shared action path. GTK3 retains its existing
 check-item synchronization fallback without emitting commands during blocked
 programmatic state changes. Packaging impact: none.
 
+### GTK4 Stage 8 `/MENU` Widget-Mutation Containment
+
+Date: 2026-07-20
+
+Files/workflows converted: dynamic `/MENU` item lookup, add/delete/update,
+radio and toggle state changes, ordering, accelerators, and contextual popup
+injection.
+
+Automated evidence:
+
+- full shipping GTK3 MSVC x64 Release rebuild: pass; zero warnings and zero
+  errors
+- full strict MSVC GTK4 probe against GTK 4.22.4 / GLib 2.88.0: compile, link,
+  and execution pass under `/W4 /WX`; zero warnings and zero errors
+- clean isolated complete GTK4 frontend comparison: expected fail; improves
+  from 171 errors / 438 warnings to 118 errors / 405 warnings
+- source audit: GTK3 owns menu-widget lookup and mutation; GTK4 owns retained
+  plugin trees, copied action data, action groups, and `GMenuModel` projection
+- source audit: core add, delete, and update paths call `fe_menu_sync()` after
+  mutation, rebuilding live GTK4 main and contextual menu projections
+- no `menu.c` errors remain in the complete GTK4 frontend inventory
+- next errors: retired icon lookup sizing flag in `pixmaps.c`, then legacy tray
+  window-state ownership
+- `git diff --check`: pass
+
+Behavior contract: GTK3 `/MENU` labels, markup normalization, icons, commands,
+radio/toggle state, sensitivity, ordering, accelerators, and popup placement are
+unchanged. GTK4 add, delete, update, dispatch, and synchronization continue
+through the previously validated retained menu models without GTK3 widget-tree
+mutation. Packaging impact: none.
+
 ## Build Matrix
 
 | Check | GTK3 shipping target | GTK4 candidate | Final GTK4 target |
