@@ -706,6 +706,13 @@ Editor, and Network List windows. GTK4 relies on each workflow's concrete
 dialog type plus existing transient and modal relationships; no removed hint
 enum reaches active GTK4 code.
 
+Stage 8 Channel List entry-text pass 38 replaces its four removed
+`gtk_entry_get_text()` calls with a typed borrowed-text helper. GTK4 reads the
+entry through `GtkEditable`; GTK3 retains its native entry getter privately.
+Wildcard presence, glob matching, case-insensitive matching, and regular
+expression compilation continue to consume the same widget-owned UTF-8 text
+without allocating or changing its lifetime.
+
 ## Functional Clusters
 
 | Cluster | Main files | GTK4 concern | Status |
