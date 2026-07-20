@@ -5132,6 +5132,33 @@ unchanged. GTK4 add, delete, update, dispatch, and synchronization continue
 through the previously validated retained menu models without GTK3 widget-tree
 mutation. Packaging impact: none.
 
+### GTK4 Stage 8 System-Icon Pixbuf Boundary
+
+Date: 2026-07-20
+
+Files/workflows converted: system-theme fallback loading for user-list, tray,
+channel-tree, book, and application pixbuf roles.
+
+Automated evidence:
+
+- full shipping GTK3 MSVC x64 Release rebuild: pass; zero warnings and zero
+  errors after clearing a stale MSVC program-database service lock
+- full strict MSVC GTK4 probe against GTK 4.22.4 / GLib 2.88.0: compile, link,
+  and execution pass under `/W4 /WX`; zero warnings and zero errors
+- clean isolated complete GTK4 frontend comparison: expected fail; improves
+  from 118 errors / 405 warnings to 117 errors / 401 warnings
+- changed `pixmaps.c` compiles in the complete GTK4 frontend inventory with no
+  diagnostics
+- source audit: GTK4 paintable, borrowed file, owned stream, and owned pixbuf
+  lifetimes are explicit; GTK3 forced-size loading remains private
+- next errors: legacy tray `GdkWindow` minimized-state reads
+- `git diff --check`: pass
+
+Behavior contract: embedded resource and configured file icons still take
+precedence over system-theme fallback. The fallback result remains an owned
+16-pixel menu-role pixbuf before the existing `GDK_SCALE` multiplication, and
+missing icons retain the existing warning path. Packaging impact: none.
+
 ## Build Matrix
 
 | Check | GTK3 shipping target | GTK4 candidate | Final GTK4 target |

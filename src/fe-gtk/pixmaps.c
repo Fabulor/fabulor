@@ -187,6 +187,44 @@ pixmap_load_from_file (char *filename)
 	return pix;
 }
 
+static GdkPixbuf *
+load_system_icon_pixbuf (const char *icon_name, FabulorGtkIconSize size)
+{
+	const int pixels = fabulor_gtk_icon_size_get_pixels (size);
+
+#if GTK_MAJOR_VERSION >= 4
+	GdkDisplay *display = gdk_display_get_default ();
+	GdkPixbuf *pixbuf = NULL;
+	GFile *file;
+	GInputStream *stream = NULL;
+	GtkIconPaintable *paintable;
+	GtkIconTheme *theme;
+
+	if (!display)
+		return NULL;
+	theme = gtk_icon_theme_get_for_display (display);
+	paintable = gtk_icon_theme_lookup_icon (theme, icon_name, NULL, pixels, 1,
+		GTK_TEXT_DIR_NONE, (GtkIconLookupFlags) 0);
+	if (!paintable)
+		return NULL;
+	file = gtk_icon_paintable_get_file (paintable);
+	if (file)
+		stream = G_INPUT_STREAM (g_file_read (file, NULL, NULL));
+	if (stream)
+		pixbuf = gdk_pixbuf_new_from_stream_at_scale (stream, pixels, pixels,
+			TRUE, NULL, NULL);
+	g_clear_object (&stream);
+	g_object_unref (paintable);
+
+	return pixbuf;
+#else
+	GtkIconTheme *theme = gtk_icon_theme_get_default ();
+
+	return theme ? gtk_icon_theme_load_icon (theme, icon_name, pixels,
+		GTK_ICON_LOOKUP_FORCE_SIZE, NULL) : NULL;
+#endif
+}
+
 /* load custom icons from <config>/icons, don't mess in system folders */
 static GdkPixbuf *
 load_pixmap (IconResolverRole role, int item)
@@ -210,11 +248,8 @@ load_pixmap (IconResolverRole role, int item)
 	}
 
 	if (!pixbuf && system_icon_name)
-	{
-		GtkIconTheme *theme = gtk_icon_theme_get_default ();
-		if (theme)
-			pixbuf = gtk_icon_theme_load_icon (theme, system_icon_name, 16, GTK_ICON_LOOKUP_FORCE_SIZE, NULL);
-	}
+		pixbuf = load_system_icon_pixbuf (system_icon_name,
+			FABULOR_GTK_ICON_SIZE_MENU);
 
 
 	scale = g_getenv ("GDK_SCALE");

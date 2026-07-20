@@ -752,6 +752,13 @@ and `fe_menu_sync()` refresh remain active for GTK4. Core `/MENU` add, delete,
 and update paths already finish with that refresh, so GTK4 rebuilds retained
 main and contextual models instead of mutating retired widget trees.
 
+Stage 8 system-icon pixbuf pass 44 replaces `gtk_icon_theme_load_icon()` and
+`GTK_ICON_LOOKUP_FORCE_SIZE` in shared pixmap fallback loading. GTK4 looks up a
+`GtkIconPaintable` from the current display, borrows its `GFile`, opens an owned
+stream, and decodes an owned `GdkPixbuf` at Fabulor's menu pixel role. GTK3
+retains its native forced-size loader privately. Existing resource/file
+precedence and subsequent `GDK_SCALE` handling are unchanged.
+
 ## Functional Clusters
 
 | Cluster | Main files | GTK4 concern | Status |

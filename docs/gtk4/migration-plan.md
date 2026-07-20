@@ -1841,6 +1841,18 @@ from 171 errors / 438 warnings to 118 errors / 405 warnings, with no remaining
 `menu.c` errors. The first remaining error is the retired icon lookup flag in
 `pixmaps.c`, followed by legacy tray window-state ownership.
 
+System-icon pixbuf pass 44 (2026-07-20):
+shared pixmap fallback loading now has explicit GTK3 and GTK4 icon-theme owners.
+GTK4 resolves a display-scoped `GtkIconPaintable`, reads its backing `GFile`
+through an owned stream, and decodes the existing `GdkPixbuf` result at
+Fabulor's 16-pixel menu role. GTK3 retains `gtk_icon_theme_load_icon()` and its
+forced-size flag privately. Resource and filesystem icon precedence, warning
+behavior, and later `GDK_SCALE` multiplication remain unchanged. Full strict
+GTK4 and shipping GTK3 rebuilds pass with zero warnings and errors. The clean
+complete GTK4 inventory improves from 118 errors / 405 warnings to 117 errors /
+401 warnings, with no `pixmaps.c` diagnostics. The first remaining errors are
+the legacy tray `GdkWindow` minimized-state reads.
+
 Deliverables:
 
 - Make GTK4 the only production frontend dependency in MSVC, Meson, and CI.
