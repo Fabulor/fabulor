@@ -40,6 +40,7 @@
 #include "dcc-chat-list.h"
 #include "dcc-transfer-list.h"
 #include "theme/theme-access.h"
+#include "window-geometry.h"
 
 #define ICON_DCC_CANCEL "dialog-cancel"
 #define ICON_DCC_ACCEPT "dialog-apply"
@@ -600,12 +601,16 @@ dcc_toggle (GtkWidget *item, gpointer data)
 	}
 }
 
-static gboolean
-dcc_configure_cb (GtkWindow *win, GdkEventConfigure *event, gpointer data)
+static void
+dcc_geometry_cb (GtkWindow *window, const FabulorWindowGeometry *geometry,
+				 gpointer user_data)
 {
-	/* remember the window size */
-	gtk_window_get_size (win, &win_width, &win_height);
-	return FALSE;
+	(void)window;
+	(void)user_data;
+	if (geometry->width > 0)
+		win_width = geometry->width;
+	if (geometry->height > 0)
+		win_height = geometry->height;
 }
 
 int
@@ -643,8 +648,8 @@ fe_dcc_open_recv_win (int passive)
 	view_mode = VIEW_BOTH;
 
 	if (!prefs.hex_gui_tab_utils)
-		g_signal_connect (G_OBJECT (dccfwin.window), "configure-event",
-								G_CALLBACK (dcc_configure_cb), 0);
+		fabulor_window_geometry_watch (GTK_WINDOW (dccfwin.window),
+			dcc_geometry_cb, NULL);
 
 	table = gtk_grid_new ();
 	gtk_grid_set_column_spacing (GTK_GRID (table), 16);

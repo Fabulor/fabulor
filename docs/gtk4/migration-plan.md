@@ -1740,6 +1740,16 @@ complete GTK4 inventory improves from 212 errors / 537 warnings to 196 errors /
 configure-event geometry boundary, followed by channel-view shadow
 presentation and file-chooser ownership.
 
+DCC geometry pass 35 (2026-07-20):
+the detached transfer window now records positive width and height through the
+shared cross-version surface-layout observer instead of a raw GTK3 configure
+event. The existing detached-only preference condition, initial dimensions,
+and reopen behavior are unchanged. Strict GTK4 and shipping GTK3 builds pass
+with zero warnings and errors. The complete GTK4 inventory improves from 196
+errors / 485 warnings to 188 errors / 484 warnings. Its first remaining errors
+are the independent channel-view shadow presentation sites, followed by
+channel-list indexing and retained menu ownership.
+
 Deliverables:
 
 - Make GTK4 the only production frontend dependency in MSVC, Meson, and CI.
