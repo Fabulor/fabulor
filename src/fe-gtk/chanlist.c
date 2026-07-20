@@ -165,14 +165,16 @@ chanlist_match (server *serv, const char *str)
 	switch (serv->gui->chanlist_search_type)
 	{
 	case 1:
-		return match (gtk_entry_get_text (GTK_ENTRY (serv->gui->chanlist_wild)), str);
+		return match (fabulor_gtk_entry_get_text (
+			GTK_ENTRY (serv->gui->chanlist_wild)), str);
 	case 2:
 		if (!serv->gui->have_regex)
 			return 0;
 
 		return g_regex_match (serv->gui->chanlist_match_regex, str, 0, NULL);
 	default:	/* case 0: */
-		return nocasestrstr (str, gtk_entry_get_text (GTK_ENTRY (serv->gui->chanlist_wild))) ? 1 : 0;
+		return nocasestrstr (str, fabulor_gtk_entry_get_text (
+			GTK_ENTRY (serv->gui->chanlist_wild))) ? 1 : 0;
 	}
 }
 
@@ -310,7 +312,8 @@ chanlist_place_row_in_gui (server *serv, chanlistrow *next_row, gboolean force)
 		return;
 	}
 
-	if (gtk_entry_get_text (GTK_ENTRY (serv->gui->chanlist_wild))[0])
+	if (fabulor_gtk_entry_get_text (
+		GTK_ENTRY (serv->gui->chanlist_wild))[0])
 	{
 		/* Check what the user wants to match. If both buttons or _neither_
 		 * button is checked, look for match in both by default. 
@@ -488,7 +491,7 @@ chanlist_search_pressed (GtkButton * button, server *serv)
 static void
 chanlist_find_cb (GtkWidget * wid, server *serv)
 {
-	const char *pattern = gtk_entry_get_text (GTK_ENTRY (wid));
+	const char *pattern = fabulor_gtk_entry_get_text (GTK_ENTRY (wid));
 
 	/* recompile the regular expression. */
 	if (serv->gui->have_regex)

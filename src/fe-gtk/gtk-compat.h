@@ -117,6 +117,18 @@ fabulor_gtk_image_new_from_icon_name (const gchar *icon_name,
 	return image;
 }
 
+static inline const gchar *
+fabulor_gtk_entry_get_text (GtkEntry *entry)
+{
+	g_return_val_if_fail (GTK_IS_ENTRY (entry), NULL);
+
+#if GTK_MAJOR_VERSION >= 4
+	return gtk_editable_get_text (GTK_EDITABLE (entry));
+#else
+	return gtk_entry_get_text (entry);
+#endif
+}
+
 static inline GtkWidget *
 fabulor_gtk_dialog_icon_new (const gchar *icon_name)
 {

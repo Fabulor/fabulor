@@ -1773,6 +1773,17 @@ improves from 186 errors / 483 warnings to 182 errors / 480 warnings. The first
 remaining error is channel-list indexing, followed by chooser ownership, the
 shared top-level constructor, and retained menu boundaries.
 
+Channel List entry-text pass 38 (2026-07-20):
+the search workflow now reads its borrowed pattern through a typed
+cross-version entry helper. GTK4 uses `GtkEditable` text ownership and GTK3
+retains `gtk_entry_get_text()` inside the compatibility boundary. Empty-pattern
+detection, glob and plain-text matching, and regex compilation are unchanged.
+Full strict GTK4 and shipping GTK3 rebuilds pass with zero warnings and errors.
+The complete GTK4 inventory improves from 182 errors / 480 warnings to 181
+errors / 474 warnings. The first remaining errors are the shared file-chooser
+folder API, followed by top-level window construction and retained menu
+boundaries.
+
 Deliverables:
 
 - Make GTK4 the only production frontend dependency in MSVC, Meson, and CI.

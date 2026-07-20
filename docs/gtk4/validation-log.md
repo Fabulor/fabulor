@@ -4955,6 +4955,32 @@ relationships. GTK3 additionally keeps its window-manager dialog hint. Manual
 parent stacking, focus, modality, and close behavior remain gated on the
 linkable full GTK4 frontend. Packaging impact: none.
 
+### GTK4 Stage 8 Channel List Entry Text
+
+Date: 2026-07-20
+
+Files/workflows converted: Channel List empty-search detection; glob search;
+plain case-insensitive search; regex compilation input.
+
+Automated evidence:
+
+- full shipping GTK3 MSVC x64 Release rebuild: pass; zero warnings and zero
+  errors
+- full strict MSVC GTK4 probe against GTK 4.22.4 / GLib 2.88.0: compile, link,
+  and execution pass under `/W4 /WX`; zero warnings and zero errors
+- real GTK4 entry set/read assertion through the compatibility helper: pass
+- isolated complete GTK4 frontend inventory: expected fail; improved from 182
+  errors / 480 warnings to 181 errors / 474 warnings
+- source audit: `chanlist.c` contains no direct `gtk_entry_get_text()` call
+- next errors: shared file-chooser folder ownership, shared top-level window
+  construction, and retained menu ownership
+- `git diff --check`: pass
+
+Behavior contract: search pattern contents and widget-owned lifetime remain
+unchanged across empty, glob, plain-text, and regex modes. Manual incremental
+search, Search button, refresh, and large-list filtering remain gated on the
+linkable full GTK4 frontend. Packaging impact: none.
+
 ## Build Matrix
 
 | Check | GTK3 shipping target | GTK4 candidate | Final GTK4 target |
