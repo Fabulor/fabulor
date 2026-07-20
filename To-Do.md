@@ -359,6 +359,7 @@ Detailed planning and evidence live in:
       - [x] Contain the generic GTK3 popup widget builder after typed GTK4 context-model replacement.
       - [x] Contain the GTK3 Away check-item synchronization callback behind shared action dispatch.
       - [x] Contain GTK3 `/MENU` widget lookup and mutation while refreshing retained GTK4 menu models after changes.
+      - [x] Replace the retired system-icon forced-size lookup with an owned GTK4 paintable-to-pixbuf path.
     - [ ] Complete channel-list and channel-view container/lifecycle cutover.
     - [ ] Complete top-level window positioning, visibility, and lifecycle cutover.
       - [x] Contain removed placement hints, saved coordinates, and tray restore placement behind compositor-safe GTK3/GTK4 policy.
