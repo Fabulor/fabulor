@@ -5187,6 +5187,33 @@ menus, plugin native pointers, dark titlebars, and taskbar adjustment still use
 the realized main-window handle. GTK3 restore still deiconifies explicitly;
 GTK4 uses show and present. Packaging impact: none.
 
+### GTK4 Stage 8 Raw Log Framing
+
+Date: 2026-07-20
+
+Files/workflows converted: Raw Log scroller construction and inset-frame
+presentation.
+
+Automated evidence:
+
+- full shipping GTK3 MSVC x64 Release rebuild: pass; zero warnings and zero
+  errors after proactively clearing the stale MSVC program-database service
+- full strict MSVC GTK4 probe against GTK 4.22.4 / GLib 2.88.0: compile, link,
+  and execution pass under `/W4 /WX`; zero warnings and zero errors
+- clean isolated complete GTK4 frontend comparison: expected fail; improves
+  from 106 errors / 409 warnings to 105 errors / 407 warnings
+- changed `rawlog.c` compiles in the complete GTK4 frontend inventory with no
+  diagnostics
+- source audit: GTK4 constructor and CSS frame semantics are active; GTK3 null
+  adjustments and inset shadow remain private to the compatibility helper
+- next errors: Server List lifecycle and geometry callbacks
+- `git diff --check`: pass
+
+Behavior contract: Raw Log scroll policies, expansion, transcript widget,
+theme-derived colours, selection copying, clear/save actions, and close
+lifecycle are unchanged. GTK3 retains the inset appearance and GTK4 uses the
+standard framed-scroller presentation. Packaging impact: none.
+
 ## Build Matrix
 
 | Check | GTK3 shipping target | GTK4 candidate | Final GTK4 target |

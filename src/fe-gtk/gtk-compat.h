@@ -1925,6 +1925,16 @@ fabulor_gtk_window_placement_restore (GtkWindow *window,
 #endif
 }
 
+static inline GtkWidget *
+fabulor_gtk_scrolled_window_new (void)
+{
+#if GTK_MAJOR_VERSION >= 4
+	return gtk_scrolled_window_new ();
+#else
+	return gtk_scrolled_window_new (NULL, NULL);
+#endif
+}
+
 static inline void
 fabulor_gtk_scrolled_window_set_child (GtkScrolledWindow *window,
 										GtkWidget *child)

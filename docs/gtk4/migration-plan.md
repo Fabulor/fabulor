@@ -1866,6 +1866,17 @@ are removed and eight downstream warnings become visible. The first remaining
 error is Raw Log's retired inset-shadow enum, followed by Server List lifecycle
 callbacks.
 
+Raw Log framing pass 46 (2026-07-20):
+the Raw Log scroller now uses one cross-version constructor and the existing
+semantic framed-scroller helper. GTK4 uses its argument-free constructor and
+standard `frame` CSS class; GTK3 privately retains null adjustments and
+`GTK_SHADOW_IN`. Existing policies, expansion, transcript child ownership,
+theme colour sampling, keyboard copying, and action buttons are unchanged.
+Full strict GTK4 and shipping GTK3 rebuilds pass with zero warnings and errors.
+The clean complete GTK4 inventory improves from 106 errors / 409 warnings to
+105 errors / 407 warnings, with no Raw Log diagnostics. Server List lifecycle
+and geometry callbacks are now the first remaining errors.
+
 Deliverables:
 
 - Make GTK4 the only production frontend dependency in MSVC, Meson, and CI.
