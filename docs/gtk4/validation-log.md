@@ -5446,6 +5446,35 @@ Behavior contract: GTK3 theme discovery, CSS loading, provider lifecycle,
 settings monitoring, variant resolution, and refresh behavior are unchanged.
 GTK4 cannot load or activate the GTK3 adapter. Packaging impact: none.
 
+### GTK4 Stage 8 Xtext Win32 Header Containment
+
+Date: 2026-07-21
+
+Files/workflows converted: transcript platform-header ownership and complete
+GTK4 frontend compilation through the first link inventory.
+
+Automated evidence:
+
+- shipping MSVC GTK3 frontend rebuild: pass; zero warnings and zero errors
+- strict MSVC GTK4 regression probe against GTK 4.22.4 / GLib 2.88.0: compile,
+  link, and execution pass under `/W4 /WX`; zero warnings and zero errors
+- clean isolated complete GTK4 frontend compilation: all production sources
+  compile; zero C compiler errors and 336 warnings
+- complete GTK4 frontend reaches link for the first time; expected link failure
+  reports 89 unique unresolved symbols over 238 diagnostic lines and ends with
+  `LNK1120`
+- changed `xtext.c` has no errors or warnings in the complete GTK4 inventory
+- source audit: no native GDK Win32 handle or surface API is used by Xtext
+- source audit: Windows transcript export retains `io.h`; flag lookup retains
+  `glib/gwin32.h`; GDK/Cairo uses the public cross-platform header
+- next target: production GTK4 link-input closure, beginning with
+  `gtk4-list-models.c`
+- `git diff --check`: pass
+
+Behavior contract: transcript rendering, selection, scrolling, export, flag
+lookup, and background rendering are unchanged. This is compile-time header
+containment only. Packaging impact: none.
+
 ## Build Matrix
 
 | Check | GTK3 shipping target | GTK4 candidate | Final GTK4 target |

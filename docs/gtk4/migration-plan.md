@@ -1976,6 +1976,19 @@ warnings to zero ordinary errors / 336 warnings, then stops in `xtext.c` because
 GTK4 no longer supplies `gdk/gdkwin32.h`. Xtext Win32 GDK surface/header
 containment is the next target.
 
+Xtext Win32-header containment pass 55 (2026-07-21):
+the transcript no longer includes the private GTK3 `gdk/gdkwin32.h` header or
+unused direct Windows/GDK headers. Its Windows-specific dependencies are now
+limited to the CRT file-descriptor declarations used by transcript export and
+GLib's public executable-relative path helper; GDK/Cairo remains public and
+cross-platform. Shipping GTK3 and the strict GTK4 regression probe pass with
+zero errors and warnings. The clean complete GTK4 profile compiles every
+production frontend source with zero C compiler errors and 336 warnings, then
+reaches link for the first time. Link closure reports 89 unique unresolved
+symbols over 238 repeated linker diagnostics. Adding the omitted GTK4
+list-model implementation to the production GTK4 build inputs is the next
+contained target before retiring the remaining linked GTK3 compatibility calls.
+
 Deliverables:
 
 - Make GTK4 the only production frontend dependency in MSVC, Meson, and CI.
