@@ -826,6 +826,15 @@ palette providers retain user priority and existing lifetimes. The complete
 GTK4 inventory now reports no diagnostics in `theme-application.c` or
 `theme-css.c`.
 
+Stage 8 theme style-access pass 53 makes widget style-context palette sampling
+an explicit GTK3 adapter path. GTK3 custom themes retain foreground,
+background, selection, and link-accent sampling across their historical state
+flags. GTK4 does not call removed style/background accessors and continues to
+resolve transcript and widget colors through the semantic runtime palette.
+Default IRC colors, user overrides, dark/light mode selection, and RGB16
+conversion are unchanged. The complete GTK4 inventory now reports no
+diagnostics in `theme-access.c`.
+
 ## Functional Clusters
 
 | Cluster | Main files | GTK4 concern | Status |
