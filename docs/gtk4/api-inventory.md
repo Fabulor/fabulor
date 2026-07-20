@@ -774,6 +774,16 @@ its null-adjustment constructor and `GTK_SHADOW_IN` presentation privately.
 Expansion, scroll policies, transcript ownership, theme sampling, buttons, and
 keyboard copying are unchanged.
 
+Stage 8 Server List lifecycle and geometry pass 47 moves both Server List
+window sizes to the shared surface-layout observer and gives the main list and
+network editor typed close callbacks. The editor preserves its save-before-
+destroy contract and consumes the close request after destroying itself; the
+main list preserves configuration saving, startup-exit behavior, and normal
+window destruction. Server List save and validation paths now read entry text
+through the borrowed cross-version helper. Legacy GTK3 event structures and
+direct window-size reads no longer enter this workflow. Detailed editor and
+main-list scroller construction remains the next contained Server List target.
+
 ## Functional Clusters
 
 | Cluster | Main files | GTK4 concern | Status |
