@@ -5387,6 +5387,37 @@ style fingerprints, palette providers, provider priority, retry behavior,
 removal, and object lifetime are unchanged. GTK4 scopes application providers
 to the display; GTK3 retains screen scope. Packaging impact: none.
 
+### GTK4 Stage 8 Theme Style Access
+
+Date: 2026-07-20
+
+Files/workflows converted: widget style-context palette sampling and GTK4
+semantic runtime fallback routing.
+
+Automated evidence:
+
+- shipping MSVC GTK3 frontend rebuild: pass; zero warnings and zero errors
+- strict MSVC GTK4 probe against GTK 4.22.4 / GLib 2.88.0: compile, link, and
+  execution pass under `/W4 /WX`; zero warnings and zero errors
+- dedicated Meson Theme Access Routing Test: not run; WSL does not provide
+  `gtk+-3.0` development metadata
+- clean isolated complete GTK4 frontend comparison: expected fail; improves
+  from 38 errors / 354 warnings to 37 errors / 351 warnings
+- changed `theme-access.c` has no errors or warnings in the complete GTK4
+  inventory
+- source audit: GTK3 custom-theme palette sampling retains normal, selected,
+  link, foreground, and background state queries
+- source audit: GTK4 cannot enter the GTK3 sampler and resolves widget/transcript
+  values through `theme_runtime_get_widget_style_values()`
+- error grouping: all 37 remaining hard frontend errors are in `theme-gtk3.c`
+- next errors: private GTK3 adapter containment
+- `git diff --check`: pass
+
+Behavior contract: semantic colors, default IRC colors, user overrides,
+dark/light palette selection, transcript marker colors, and RGB16 conversion
+are unchanged. GTK3 custom themes retain style-derived palette mapping; GTK4
+uses the semantic runtime palette. Packaging impact: none.
+
 ## Build Matrix
 
 | Check | GTK3 shipping target | GTK4 candidate | Final GTK4 target |

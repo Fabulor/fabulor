@@ -1952,6 +1952,18 @@ warnings, with no diagnostics in `theme-application.c` or `theme-css.c`.
 Theme style access is now the first remaining error, followed by the private
 GTK3 adapter containment.
 
+Theme style-access pass 53 (2026-07-20):
+widget style-context palette sampling is now explicitly GTK3-only. Active GTK3
+custom themes preserve normal, selected, link, foreground, and background
+queries; GTK4 continues through the semantic runtime palette that already owns
+its widget and transcript colors. Default IRC colors, user overrides,
+dark/light resolution, marker colors, and RGB16 conversion are unchanged.
+Strict GTK4 and shipping GTK3 rebuilds pass with zero warnings and errors. The
+dedicated Meson routing test was unavailable because the WSL environment lacks
+GTK3 development metadata. The clean complete GTK4 inventory improves from 38
+errors / 354 warnings to 37 errors / 351 warnings, with no `theme-access.c`
+diagnostics. Every remaining hard error is now in the private GTK3 adapter.
+
 Deliverables:
 
 - Make GTK4 the only production frontend dependency in MSVC, Meson, and CI.
