@@ -738,6 +738,12 @@ available only to GTK3 callers; GTK4 context workflows already use their typed
 path filtering remain shared because GTK4 model projection still consumes
 them. The legacy builder declarations are likewise GTK3-private in `menu.h`.
 
+Stage 8 Away callback pass 42 makes the old `GtkCheckMenuItem` synchronization
+callback GTK3-private. GTK4 continues dispatching the stateful `away-toggle`
+action through the shared action descriptor and command handler. The GTK3
+fallback retains its exact active-state read and signal-blocking identity for
+programmatic synchronization; no removed check-menu type reaches GTK4.
+
 ## Functional Clusters
 
 | Cluster | Main files | GTK4 concern | Status |

@@ -2348,11 +2348,13 @@ menu_join (GtkWidget * wid, gpointer none)
 	gtk_editable_set_position (GTK_EDITABLE (entry), 1);
 }
 
+#if GTK_MAJOR_VERSION < 4
 static void
 menu_away (GtkCheckMenuItem *item, gpointer none)
 {
 	handle_command (current_sess, gtk_check_menu_item_get_active (item) ? "away" : "back", FALSE);
 }
+#endif
 
 static void
 menu_away_toggle (GtkWidget *item, gpointer none)

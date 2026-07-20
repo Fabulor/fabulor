@@ -1814,9 +1814,20 @@ configured popup lists, and legacy popup destruction/presentation. GTK4 keeps
 the already-converted URL, channel, nick, middle-click, and tab context models
 and presenters; shared icon-label parsing and command path filtering remain
 toolkit-neutral. Full strict GTK4 and shipping GTK3 rebuilds pass with zero
-warnings and errors. The complete GTK4 inventory improves from 171 errors / 389
-warnings to 169 errors / 372 warnings. The first remaining error is the legacy
-Away check-menu callback, followed by the GTK3 `/MENU` widget mutation owner.
+warnings and errors. A subsequent clean `/t:Rebuild` rebaseline records 169
+errors / 435 warnings; the earlier 169 / 372 incremental count is superseded.
+The first remaining error is the legacy Away check-menu callback, followed by
+the GTK3 `/MENU` widget mutation owner.
+
+Away check-item callback pass 42 (2026-07-20):
+the legacy `GtkCheckMenuItem` callback used by GTK3 state synchronization is now
+GTK3-private. GTK4 retains the stateful `away-toggle` action and dispatches the
+same Away/Back commands through `menu_away_toggle()`. Full strict GTK4 and
+shipping GTK3 rebuilds pass with zero warnings and errors. Clean full-profile
+comparison moves from 169 errors / 435 warnings to 171 errors / 438 warnings:
+six invalid callback parse errors are removed and the compiler exposes eight
+additional errors in the following GTK3 `/MENU` widget mutation owner. That
+owner is now the first remaining `menu.c` blocker.
 
 Deliverables:
 
