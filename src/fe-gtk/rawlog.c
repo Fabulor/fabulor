@@ -186,8 +186,8 @@ open_rawlog (struct server *serv)
 	GTK_XTEXT (serv->gui->rawlog_textlist)->ignore_hidden = 1;
 	g_object_set_data (G_OBJECT (serv->gui->rawlog_window), "rawlog-xtext", serv->gui->rawlog_textlist);
 
-	bbox = gtk_button_box_new (GTK_ORIENTATION_HORIZONTAL);
-	gtk_button_box_set_layout (GTK_BUTTON_BOX (bbox), GTK_BUTTONBOX_SPREAD);
+	bbox = fabulor_gtk_button_box_new (GTK_ORIENTATION_HORIZONTAL,
+		FABULOR_GTK_BUTTON_BOX_SPREAD, 0);
 	fabulor_gtk_box_append (GTK_BOX (vbox), bbox, FALSE, FALSE, 4);
 
 	gtkutil_button (bbox, ICON_RAWLOG_CLEAR, NULL, rawlog_clearbutton,

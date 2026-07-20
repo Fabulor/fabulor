@@ -1729,6 +1729,17 @@ warnings to 212 errors / 537 warnings, and `maingui.c` has no remaining compiler
 errors. The first remaining errors are now independent button-box layout,
 channel-view shadow, DCC geometry, and chooser boundaries.
 
+Button-box layout pass 34 (2026-07-20):
+all active button-box constructors and layout setters now use a Fabulor-owned
+start, end, or spread role. GTK3 delegates those roles to native
+`GtkButtonBox` behavior; GTK4 creates ordinary oriented boxes with retained
+spacing, homogeneous spread allocation, and explicit start/end alignment.
+Strict GTK4 and shipping GTK3 builds pass with zero warnings and errors. The
+complete GTK4 inventory improves from 212 errors / 537 warnings to 196 errors /
+485 warnings. The first remaining compiler errors are the independent DCC
+configure-event geometry boundary, followed by channel-view shadow
+presentation and file-chooser ownership.
+
 Deliverables:
 
 - Make GTK4 the only production frontend dependency in MSVC, Meson, and CI.

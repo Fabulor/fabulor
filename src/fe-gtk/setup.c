@@ -2391,9 +2391,8 @@ setup_window_open (void)
         fabulor_gtk_box_append (GTK_BOX (hbox), book, TRUE, TRUE, 0);
 
         /* prepare the button box */
-        hbbox = gtk_button_box_new (GTK_ORIENTATION_HORIZONTAL);
-        gtk_button_box_set_layout (GTK_BUTTON_BOX (hbbox), GTK_BUTTONBOX_END);
-        gtk_box_set_spacing (GTK_BOX (hbbox), 4);
+        hbbox = fabulor_gtk_button_box_new (GTK_ORIENTATION_HORIZONTAL,
+                FABULOR_GTK_BUTTON_BOX_END, 4);
         fabulor_gtk_box_append (GTK_BOX (vbox), hbbox, FALSE, FALSE, 0);
 
         cancel_button = wid = gtkutil_button_new_from_stock ("gtk-cancel", _("_Cancel"));

@@ -425,8 +425,8 @@ plugingui_open (void)
 		plugin_list_view, (GDestroyNotify) fabulor_addon_list_free);
 
 
-	hbox = gtk_button_box_new (GTK_ORIENTATION_HORIZONTAL);
-	gtk_button_box_set_layout (GTK_BUTTON_BOX (hbox), GTK_BUTTONBOX_SPREAD);
+	hbox = fabulor_gtk_button_box_new (GTK_ORIENTATION_HORIZONTAL,
+		FABULOR_GTK_BUTTON_BOX_SPREAD, 0);
 	gtk_container_set_border_width (GTK_CONTAINER (hbox), 5);
 	fabulor_gtk_box_append (GTK_BOX (vbox), hbox, FALSE, FALSE, 0);
 

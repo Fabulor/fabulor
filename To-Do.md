@@ -368,6 +368,7 @@ Detailed planning and evidence live in:
       - [x] Replace main-window shadow types with semantic framed and outlined presentation helpers.
       - [x] Convert the scroll-to-bottom drawing surface into a themed accessible icon button.
       - [x] Replace shared `GtkIconSize` flow with Fabulor-owned menu and toolbar size roles.
+      - [x] Replace retired button-box layout construction with Fabulor-owned spread, start, and end semantics.
       - [ ] Replace the GTK3 per-window Win32 message filter with reviewed GTK4 display-filter ownership.
       - [ ] Convert DCC/Server List geometry plus remaining top-level visibility and lifecycle callbacks.
     - [ ] Bind application and preferences integration to the GTK4 theme controller.

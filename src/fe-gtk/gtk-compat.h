@@ -29,6 +29,60 @@ typedef enum
 	FABULOR_GTK_ICON_SIZE_LARGE_TOOLBAR = 24
 } FabulorGtkIconSize;
 
+typedef enum
+{
+	FABULOR_GTK_BUTTON_BOX_START,
+	FABULOR_GTK_BUTTON_BOX_END,
+	FABULOR_GTK_BUTTON_BOX_SPREAD
+} FabulorGtkButtonBoxLayout;
+
+static inline GtkWidget *
+fabulor_gtk_button_box_new (GtkOrientation orientation,
+							FabulorGtkButtonBoxLayout layout,
+							gint spacing)
+{
+	g_return_val_if_fail (orientation == GTK_ORIENTATION_HORIZONTAL ||
+		orientation == GTK_ORIENTATION_VERTICAL, NULL);
+	g_return_val_if_fail (layout >= FABULOR_GTK_BUTTON_BOX_START &&
+		layout <= FABULOR_GTK_BUTTON_BOX_SPREAD, NULL);
+	g_return_val_if_fail (spacing >= 0, NULL);
+
+#if GTK_MAJOR_VERSION >= 4
+	GtkWidget *box = gtk_box_new (orientation, spacing);
+
+	if (layout == FABULOR_GTK_BUTTON_BOX_SPREAD)
+		gtk_box_set_homogeneous (GTK_BOX (box), TRUE);
+	else if (orientation == GTK_ORIENTATION_HORIZONTAL)
+		gtk_widget_set_halign (box, layout == FABULOR_GTK_BUTTON_BOX_END ?
+			GTK_ALIGN_END : GTK_ALIGN_START);
+	else
+		gtk_widget_set_valign (box, layout == FABULOR_GTK_BUTTON_BOX_END ?
+			GTK_ALIGN_END : GTK_ALIGN_START);
+
+	return box;
+#else
+	GtkWidget *box = gtk_button_box_new (orientation);
+	GtkButtonBoxStyle gtk_layout;
+
+	switch (layout)
+	{
+	case FABULOR_GTK_BUTTON_BOX_START:
+		gtk_layout = GTK_BUTTONBOX_START;
+		break;
+	case FABULOR_GTK_BUTTON_BOX_END:
+		gtk_layout = GTK_BUTTONBOX_END;
+		break;
+	default:
+		gtk_layout = GTK_BUTTONBOX_SPREAD;
+		break;
+	}
+
+	gtk_button_box_set_layout (GTK_BUTTON_BOX (box), gtk_layout);
+	gtk_box_set_spacing (GTK_BOX (box), spacing);
+	return box;
+#endif
+}
+
 #if GTK_MAJOR_VERSION < 4
 static inline GtkIconSize
 fabulor_gtk_icon_size_to_gtk3 (FabulorGtkIconSize size)

@@ -882,8 +882,8 @@ key_dialog_show ()
 				   GUINT_TO_POINTER (theme_listener_register ("fkeys.window", key_dialog_theme_changed, key_dialog)));
 	g_signal_connect (G_OBJECT (key_dialog), "destroy", G_CALLBACK (key_dialog_theme_destroy_cb), NULL);
 
-	box = gtk_button_box_new (GTK_ORIENTATION_HORIZONTAL);
-	gtk_button_box_set_layout (GTK_BUTTON_BOX (box), GTK_BUTTONBOX_SPREAD);
+	box = fabulor_gtk_button_box_new (GTK_ORIENTATION_HORIZONTAL,
+		FABULOR_GTK_BUTTON_BOX_SPREAD, 0);
 	fabulor_gtk_box_append (GTK_BOX (vbox), box, FALSE, FALSE, 2);
 	gtk_container_set_border_width (GTK_CONTAINER (box), 5);
 

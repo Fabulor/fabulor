@@ -4840,6 +4840,35 @@ sizes while the active theme still supplies named system images. Manual icon
 clarity, scale, light/dark, high-contrast, and missing-theme fallback testing
 remains gated on the linkable full GTK4 frontend. Packaging impact: none.
 
+### GTK4 Stage 8 Button-Box Layout
+
+Date: 2026-07-20
+
+Files/workflows converted: Ban List, DCC transfers and chats, generic editor,
+key bindings, Ignore List, Notify List, Add-ons, Raw Log, Server List,
+Preferences actions, Print Events, and URL History button groups.
+
+Automated evidence:
+
+- shipping GTK3 MSVC x64 Release frontend: pass; zero warnings and zero errors
+- strict MSVC GTK4 probe against GTK 4.22.4 / GLib 2.88.0: compile, link, and
+  execution pass under `/W4 /WX`; zero warnings and zero errors
+- real GTK4 horizontal spread, horizontal end, and vertical start layout,
+  orientation, spacing, homogeneity, and alignment assertions: pass
+- isolated complete GTK4 frontend inventory: expected fail; improved from 212
+  errors / 537 warnings to 196 errors / 485 warnings
+- source audit: active frontend code contains no direct `gtk_button_box_new()`
+  or `gtk_button_box_set_layout()` call outside the GTK3 compatibility branch
+- next errors: DCC configure-event geometry, channel-view shadow presentation,
+  channel-list indexing, and file-chooser boundaries
+- `git diff --check`: pass
+
+Behavior contract: button order, orientation, spacing, and start/end/spread
+intent are unchanged. GTK3 retains its native button-box behavior; GTK4 uses
+ordinary boxes and toolkit-supported allocation/alignment. Manual dialog width,
+long-label, keyboard order, theme, and scale testing remains gated on the
+linkable full GTK4 frontend. Packaging impact: none.
+
 ## Build Matrix
 
 | Check | GTK3 shipping target | GTK4 candidate | Final GTK4 target |
