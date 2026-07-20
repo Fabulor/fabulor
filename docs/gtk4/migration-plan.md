@@ -1718,13 +1718,14 @@ errors / 543 warnings to 224 errors / 541 warnings; its first remaining
 Shared icon-size contract pass 33 (2026-07-20):
 the icon resolver and `gtkutil` image boundary now consume Fabulor-owned menu
 and large-toolbar size roles instead of `GtkIconSize`. GTK3 maps those roles to
-its theme-derived menu and toolbar dimensions; GTK4 applies stable 16- and
+native toolkit icon roles for named images; GTK4 applies stable 16- and
 24-pixel logical sizes through the current one-argument named-image API.
 Search close/previous/next buttons use cross-version child ownership, and the
 channel-tab close icon joins menu, channel-list, Join, spell, plugin, and pixmap
-consumers on the shared contract. The strict probe verifies both GTK4 pixel
-sizes on real images. Strict GTK4 and shipping GTK3 builds pass with zero
-warnings and errors. The complete GTK4 inventory improves from 224 errors / 541
+consumers on the shared contract. Resolved pixbuf assets use the owned logical
+values. The strict probe verifies both GTK4 pixel sizes on real images. Strict
+GTK4 and shipping GTK3 builds pass with zero warnings and errors. The complete
+GTK4 inventory improves from 224 errors / 541
 warnings to 212 errors / 537 warnings, and `maingui.c` has no remaining compiler
 errors. The first remaining errors are now independent button-box layout,
 channel-view shadow, DCC geometry, and chooser boundaries.
@@ -1749,6 +1750,18 @@ with zero warnings and errors. The complete GTK4 inventory improves from 196
 errors / 485 warnings to 188 errors / 484 warnings. Its first remaining errors
 are the independent channel-view shadow presentation sites, followed by
 channel-list indexing and retained menu ownership.
+
+Channel-view frame presentation pass 36 (2026-07-20):
+the scrollable tab strip now requests unframed presentation and the tree
+switcher requests framed presentation through the existing cross-version
+scroller helper. GTK3 retains its exact `NONE` and `IN` shadow styles; GTK4
+uses the standard `frame` CSS class. A full rebuild also replaced the hidden
+deprecated GTK3 icon-size lookup with Fabulor's already-owned 16- and 24-pixel
+values for resolved pixbuf assets. Strict GTK4 and full shipping GTK3 rebuilds
+pass with zero warnings and errors. The complete GTK4 inventory improves from
+188 errors / 484 warnings to 186 errors / 483 warnings. The first remaining
+error is the Join dialog's retired window type hint, followed by chooser,
+channel-list indexing, and retained menu boundaries.
 
 Deliverables:
 

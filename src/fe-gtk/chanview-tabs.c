@@ -313,7 +313,8 @@ cv_tabs_init (chanview *cv)
 	gtk_widget_show (outer);
 
 	viewport = gtk_scrolled_window_new (0, 0);
-	gtk_scrolled_window_set_shadow_type (GTK_SCROLLED_WINDOW (viewport), GTK_SHADOW_NONE);
+	fabulor_gtk_scrolled_window_set_framed (
+		GTK_SCROLLED_WINDOW (viewport), FALSE);
 	if (cv->vertical)
 		gtk_scrolled_window_set_policy (GTK_SCROLLED_WINDOW (viewport),
 												  GTK_POLICY_NEVER, GTK_POLICY_AUTOMATIC);

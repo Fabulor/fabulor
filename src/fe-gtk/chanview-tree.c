@@ -93,8 +93,7 @@ cv_tree_init (chanview *cv)
 
 	gtk_widget_set_hexpand (win, TRUE);
 	gtk_widget_set_vexpand (win, TRUE);
-	gtk_scrolled_window_set_shadow_type (GTK_SCROLLED_WINDOW (win),
-		GTK_SHADOW_IN);
+	fabulor_gtk_scrolled_window_set_framed (GTK_SCROLLED_WINDOW (win), TRUE);
 	gtk_scrolled_window_set_policy (GTK_SCROLLED_WINDOW (win),
 		GTK_POLICY_NEVER, GTK_POLICY_AUTOMATIC);
 	gtk_scrolled_window_set_min_content_width (GTK_SCROLLED_WINDOW (win), 1);
