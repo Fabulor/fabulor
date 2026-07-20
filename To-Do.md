@@ -364,6 +364,7 @@ Detailed planning and evidence live in:
     - [ ] Complete top-level window positioning, visibility, and lifecycle cutover.
       - [x] Contain removed placement hints, saved coordinates, and tray restore placement behind compositor-safe GTK3/GTK4 policy.
       - [x] Observe minimized, maximized, fullscreen, and focused top-level state through a typed GTK3/GTK4 boundary.
+      - [x] Route tray and plugin status plus Win32 native-handle reads through the shared window-state owner.
       - [x] Save main-window and detached-dialog dimensions through a typed surface-layout geometry observer.
       - [x] Replace the quit dialog's retired icon-size enum with explicit GTK4 pixel sizing while preserving GTK3 theme sizing.
       - [x] Declare the retained GTK4 tab menu's Server List type and function dependencies explicitly.

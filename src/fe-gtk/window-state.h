@@ -29,6 +29,7 @@ guint fabulor_window_state_changes (const FabulorWindowState *previous,
 void fabulor_window_state_get (GtkWindow *window, FabulorWindowState *state);
 void fabulor_window_state_watch (GtkWindow *window,
 	FabulorWindowStateCallback callback, gpointer user_data);
+gpointer fabulor_window_native_handle (GtkWindow *window);
 void fabulor_window_state_allow_autohide_taskbar (GtkWindow *window,
 	const FabulorWindowState *state);
 

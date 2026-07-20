@@ -56,9 +56,6 @@ typedef struct _GtkStatusIcon GtkStatusIcon;
 #include <unistd.h>
 #else
 #include <windows.h>
-#if GTK_MAJOR_VERSION < 4
-#include <gdk/gdkwin32.h>
-#endif
 #endif
 
 typedef enum	/* current icon status */
@@ -761,9 +758,9 @@ tray_backend_cleanup (void)
 static WinStatus
 tray_get_window_status (void)
 {
+	FabulorWindowState window_state;
 	GtkWindow *win;
 	GtkWidget *widget;
-	GdkWindow *gdk_win;
 	const char *st;
 
 	win = GTK_WINDOW (zoitechat_get_info (ph, "gtkwin_ptr"));
@@ -773,8 +770,8 @@ tray_get_window_status (void)
 		if (!gtk_widget_get_visible (widget))
 			return WS_HIDDEN;
 
-		gdk_win = gtk_widget_get_window (widget);
-		if (gdk_win && (gdk_window_get_state (gdk_win) & GDK_WINDOW_STATE_ICONIFIED))
+		fabulor_window_state_get (win, &window_state);
+		if (window_state.minimized)
 			return WS_HIDDEN;
 	}
 
@@ -1064,7 +1061,9 @@ tray_toggle_visibility (gboolean force_hide)
 			gtk_window_maximize (win);
 		if (fullscreen)
 			gtk_window_fullscreen (win);
+#if GTK_MAJOR_VERSION < 4
 		gtk_window_deiconify (win);
+#endif
 		gtk_widget_show (GTK_WIDGET (win));
 		gtk_window_present (win);
 	}
@@ -1306,18 +1305,15 @@ tray_win32_append_item (HMENU menu, UINT id, const char *label, gboolean enabled
 static HWND
 tray_win32_get_hwnd (void)
 {
+	HWND hwnd;
 	GtkWindow *win;
-	GdkWindow *gdk_win;
 
 	win = GTK_WINDOW (zoitechat_get_info (ph, "gtkwin_ptr"));
 	if (!win)
 		return GetActiveWindow ();
 
-	gdk_win = gtk_widget_get_window (GTK_WIDGET (win));
-	if (!gdk_win)
-		return GetActiveWindow ();
-
-	return gdk_win32_window_get_handle (gdk_win);
+	hwnd = (HWND) fabulor_window_native_handle (win);
+	return hwnd ? hwnd : GetActiveWindow ();
 }
 
 static void

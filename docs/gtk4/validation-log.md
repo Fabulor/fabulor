@@ -5159,6 +5159,34 @@ precedence over system-theme fallback. The fallback result remains an owned
 16-pixel menu-role pixbuf before the existing `GDK_SCALE` multiplication, and
 missing icons retain the existing warning path. Packaging impact: none.
 
+### GTK4 Stage 8 Window-Surface Ownership
+
+Date: 2026-07-20
+
+Files/workflows converted: tray hidden/minimized decisions; plugin window
+status and native pointer queries; Win32 tray popup ownership; native titlebar
+styling; autohide-taskbar adjustment; tray restore.
+
+Automated evidence:
+
+- full shipping GTK3 MSVC x64 Release rebuild: pass; zero warnings and zero
+  errors after clearing the recurring stale MSVC program-database service lock
+- full strict MSVC GTK4 probe against GTK 4.22.4 / GLib 2.88.0: compile, link,
+  and execution pass under `/W4 /WX`; zero warnings and zero errors
+- clean isolated complete GTK4 frontend comparison: expected fail; moves from
+  117 errors / 401 warnings to 106 errors / 409 warnings as 11 direct surface
+  errors are removed and eight downstream warnings become visible
+- source audit: all converted GTK3 `GdkWindow` state and Win32 handle access is
+  private to `window-state.c`; GTK4 uses `GdkToplevel` and `GdkWin32Surface`
+- next errors: Raw Log inset framing, then Server List lifecycle callbacks
+- `git diff --check`: pass
+
+Behavior contract: invisible or minimized windows remain hidden to tray and
+plugin status consumers; focused and normal results are unchanged. Win32 tray
+menus, plugin native pointers, dark titlebars, and taskbar adjustment still use
+the realized main-window handle. GTK3 restore still deiconifies explicitly;
+GTK4 uses show and present. Packaging impact: none.
+
 ## Build Matrix
 
 | Check | GTK3 shipping target | GTK4 candidate | Final GTK4 target |
