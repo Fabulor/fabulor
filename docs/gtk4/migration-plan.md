@@ -1784,6 +1784,19 @@ errors / 474 warnings. The first remaining errors are the shared file-chooser
 folder API, followed by top-level window construction and retained menu
 boundaries.
 
+Shared file-chooser path pass 39 (2026-07-20):
+all shared chooser results and initial-folder requests now cross one `GFile`
+boundary that duplicates local filesystem paths for existing callbacks. Single
+selection, multiple selection, current-folder selection, initial folders, and
+selected-file ordering retain their existing behavior and explicit cleanup.
+GTK 4.10 deprecated `GtkFileChooser` as a whole, so its temporary use is
+contained in one source owner with narrowly scoped diagnostics until the later
+asynchronous `GtkFileDialog` conversion. Full strict GTK4 and shipping GTK3
+rebuilds pass with zero warnings and errors. The complete GTK4 inventory
+improves from 181 errors / 474 warnings to 174 errors / 392 warnings. The first
+remaining error is the shared top-level window constructor, followed by
+retained menu ownership.
+
 Deliverables:
 
 - Make GTK4 the only production frontend dependency in MSVC, Meson, and CI.

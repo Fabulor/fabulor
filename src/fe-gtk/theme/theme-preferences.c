@@ -29,6 +29,7 @@
 
 #include "../gtkutil.h"
 #include "../gtk-compat.h"
+#include "../file-chooser-path.h"
 #include "../../common/fe.h"
 #include "../../common/cfgfiles.h"
 #include "../../common/util.h"
@@ -1259,7 +1260,8 @@ theme_preferences_import_colors_conf_response_cb (GtkNativeDialog *dialog,
         button = theme_preferences_native_import_acquire_owner (data);
         if (button && response_id == GTK_RESPONSE_ACCEPT)
         {
-                path = gtk_file_chooser_get_filename (GTK_FILE_CHOOSER (dialog));
+                path = fabulor_gtk_file_chooser_dup_filename (
+                        GTK_FILE_CHOOSER (dialog));
                 color_change_flag = g_object_get_data (
                         G_OBJECT (button), "fabulor-theme-colors-import-context");
                 if (path)
@@ -1773,7 +1775,8 @@ theme_preferences_gtk3_import_response_cb (GtkNativeDialog *dialog,
         button = theme_preferences_native_import_acquire_owner (data);
         if (button && response_id == GTK_RESPONSE_ACCEPT)
         {
-                path = gtk_file_chooser_get_filename (GTK_FILE_CHOOSER (dialog));
+                path = fabulor_gtk_file_chooser_dup_filename (
+                        GTK_FILE_CHOOSER (dialog));
                 ui = g_object_get_data (G_OBJECT (button), "fabulor-theme-gtk3-import-context");
                 if (path && ui)
                         theme_preferences_gtk3_import_path (ui, path);

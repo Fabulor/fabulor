@@ -43,6 +43,7 @@
 #include "../common/typedef.h"
 #include "gtkutil.h"
 #include "gtk-compat.h"
+#include "file-chooser-path.h"
 #include "icon-resolver.h"
 #include "pixmaps.h"
 #include "theme/theme-manager.h"
@@ -351,7 +352,7 @@ gtkutil_file_req_done_chooser (GtkFileChooser *fs, struct file_req *freq)
 
 	if (freq->flags & FRF_MULTIPLE)
 	{
-		files = cur = gtk_file_chooser_get_filenames (fs);
+		files = cur = fabulor_gtk_file_chooser_dup_filenames (fs);
 		while (cur)
 		{
 			gtkutil_check_file (cur->data, freq);
@@ -365,13 +366,14 @@ gtkutil_file_req_done_chooser (GtkFileChooser *fs, struct file_req *freq)
 	{
 		if (freq->flags & FRF_CHOOSEFOLDER)
 		{
-			gchar *filename = gtk_file_chooser_get_current_folder (fs);
+			gchar *filename =
+				fabulor_gtk_file_chooser_dup_current_folder_path (fs);
 			gtkutil_check_file (filename, freq);
 			g_free (filename);
 		}
 		else
 		{
-			gchar *filename = gtk_file_chooser_get_filename (fs);
+			gchar *filename = fabulor_gtk_file_chooser_dup_filename (fs);
 			if (filename != NULL)
 			{
 				gtkutil_check_file (filename, freq);
@@ -455,23 +457,28 @@ gtkutil_file_req (GtkWindow *parent, const char *title, void *callback, void *us
 				char temp[1024];
 				path_part (filter, temp, sizeof (temp));
 				if (temp[0] && g_file_test (temp, G_FILE_TEST_IS_DIR))
-					gtk_file_chooser_set_current_folder (native_chooser, temp);
+					fabulor_gtk_file_chooser_set_current_folder_path (
+						native_chooser, temp);
 				else if (xdir && xdir[0] && g_file_test (xdir, G_FILE_TEST_IS_DIR))
-					gtk_file_chooser_set_current_folder (native_chooser, xdir);
+					fabulor_gtk_file_chooser_set_current_folder_path (
+						native_chooser, xdir);
 				gtk_file_chooser_set_current_name (native_chooser, file_part (filter));
 			}
 			else
 			{
 				if (g_file_test (filter, G_FILE_TEST_IS_DIR))
-					gtk_file_chooser_set_current_folder (native_chooser, filter);
+					fabulor_gtk_file_chooser_set_current_folder_path (
+						native_chooser, filter);
 				else if (xdir && xdir[0] && g_file_test (xdir, G_FILE_TEST_IS_DIR))
-					gtk_file_chooser_set_current_folder (native_chooser, xdir);
+					fabulor_gtk_file_chooser_set_current_folder_path (
+						native_chooser, xdir);
 			}
 		}
 		else if (!(flags & FRF_RECENTLYUSED))
 		{
 			if (xdir && xdir[0] && g_file_test (xdir, G_FILE_TEST_IS_DIR))
-				gtk_file_chooser_set_current_folder (native_chooser, xdir);
+				fabulor_gtk_file_chooser_set_current_folder_path (
+					native_chooser, xdir);
 		}
 
 		freq = g_new (struct file_req, 1);

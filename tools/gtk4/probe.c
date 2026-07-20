@@ -5,6 +5,7 @@
 #include <string.h>
 
 #include "../../src/fe-gtk/gtk-compat.h"
+#include "../../src/fe-gtk/file-chooser-path.h"
 #include "../../src/fe-gtk/gtk4-list-models.h"
 #include "../../src/common/gtk4-theme-discovery.h"
 #include "../../src/common/gtk4-theme-preferences.h"
@@ -150,6 +151,14 @@ check_compatibility_helper_signatures (void)
 		FabulorGtkIconSize) = fabulor_gtk_image_new_from_icon_name;
 	const gchar *(*volatile entry_get_text) (GtkEntry *) =
 		fabulor_gtk_entry_get_text;
+	gboolean (*volatile file_chooser_set_current_folder_path) (GtkFileChooser *,
+		const gchar *) = fabulor_gtk_file_chooser_set_current_folder_path;
+	gchar *(*volatile file_chooser_dup_filename) (GtkFileChooser *) =
+		fabulor_gtk_file_chooser_dup_filename;
+	gchar *(*volatile file_chooser_dup_current_folder_path) (GtkFileChooser *) =
+		fabulor_gtk_file_chooser_dup_current_folder_path;
+	GSList *(*volatile file_chooser_dup_filenames) (GtkFileChooser *) =
+		fabulor_gtk_file_chooser_dup_filenames;
 	GtkWidget *(*volatile button_box_new) (GtkOrientation,
 		FabulorGtkButtonBoxLayout, gint) = fabulor_gtk_button_box_new;
 	void (*volatile box_append) (GtkBox *, GtkWidget *, gboolean, gboolean, guint) =
@@ -273,6 +282,10 @@ check_compatibility_helper_signatures (void)
 	(void) icon_size_get_pixels;
 	(void) image_new_from_icon_name;
 	(void) entry_get_text;
+	(void) file_chooser_set_current_folder_path;
+	(void) file_chooser_dup_filename;
+	(void) file_chooser_dup_current_folder_path;
+	(void) file_chooser_dup_filenames;
 	(void) button_box_new;
 	(void) box_append;
 	(void) horizontal_box_append_trailing;

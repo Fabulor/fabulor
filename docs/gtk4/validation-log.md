@@ -4981,6 +4981,43 @@ unchanged across empty, glob, plain-text, and regex modes. Manual incremental
 search, Search button, refresh, and large-list filtering remain gated on the
 linkable full GTK4 frontend. Packaging impact: none.
 
+### GTK4 Stage 8 Shared File-Chooser Paths
+
+Date: 2026-07-20
+
+Files/workflows converted: shared open/save/folder requests; Server List import;
+Preferences sound-file selection; colors.conf and legacy GTK3-theme import.
+
+Automated evidence:
+
+- full shipping GTK3 MSVC x64 Release rebuild: pass; zero warnings and zero
+  errors
+- full strict MSVC GTK4 probe against GTK 4.22.4 / GLib 2.88.0: compile, link,
+  and execution pass under `/W4 /WX`; zero warnings and zero errors
+- function-signature and source-owner compilation coverage for single-file,
+  multiple-file, current-folder, and initial-folder adapters: pass
+- Meson source path: all 58 objects, including `file-chooser-path.c`, compile;
+  local link remains unavailable because ambient Strawberry GCC 4.8 cannot
+  link the MSVC-built GTK4 import libraries
+- isolated complete GTK4 frontend inventory: expected fail; improved from 181
+  errors / 474 warnings to 174 errors / 392 warnings
+- source audit: production callers contain no direct
+  `gtk_file_chooser_get_filename()`, `gtk_file_chooser_get_filenames()`,
+  `gtk_file_chooser_get_current_folder()`, or path-based
+  `gtk_file_chooser_set_current_folder()` call
+- GTK 4.10 `GtkFileChooser` deprecation is isolated to
+  `file-chooser-path.c`; the general compatibility header and callers have no
+  suppression
+- next errors: shared top-level window construction and retained menu ownership
+- `git diff --check`: pass
+
+Behavior contract: chooser callbacks continue receiving owned local paths;
+multi-selection order, folder validation, suggested names, filters, response
+handling, and cleanup remain unchanged. Non-local `GFile` selections are not
+passed to path-only callbacks. Manual open/save/folder selection and import
+workflows remain gated on the linkable full GTK4 frontend. Packaging impact:
+none.
+
 ## Build Matrix
 
 | Check | GTK3 shipping target | GTK4 candidate | Final GTK4 target |

@@ -35,6 +35,7 @@ zoitechat_gtk_sources = [
   'server-entry-list.c',
   'fe-gtk.c',
   'fkeys.c',
+  'file-chooser-path.c',
   'gtkutil.c',
   'icon-resolver.c',
   'ignore-list.c',
