@@ -1937,6 +1937,21 @@ warnings to 53 errors / 365 warnings, with no `theme-manager.c` diagnostics.
 Application and CSS provider display ownership is now the first remaining
 theme boundary.
 
+Theme provider-ownership pass 52 (2026-07-20):
+application-wide CSS installation and removal now use one cross-version owner.
+GTK4 applies providers to the default `GdkDisplay`; GTK3 privately retains its
+default `GdkScreen`. The owner accepts the caller's reviewed priority and
+reports whether installation succeeded, so the top-level application provider
+keeps application priority plus one and retries if no display is available.
+CSS string loading also crosses one typed boundary, preserving GTK3's data
+loader and using GTK4's string loader. Input and palette provider identity,
+fingerprints, removal, and user priority are unchanged. Strict GTK4 and
+shipping GTK3 rebuilds pass with zero warnings and errors. The clean complete
+GTK4 inventory improves from 53 errors / 365 warnings to 38 errors / 354
+warnings, with no diagnostics in `theme-application.c` or `theme-css.c`.
+Theme style access is now the first remaining error, followed by the private
+GTK3 adapter containment.
+
 Deliverables:
 
 - Make GTK4 the only production frontend dependency in MSVC, Meson, and CI.

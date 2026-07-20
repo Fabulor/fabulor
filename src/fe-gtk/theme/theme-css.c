@@ -65,31 +65,77 @@ static ThemeCssInputFingerprint theme_css_input_fp;
 void
 theme_css_apply_app_provider (GtkStyleProvider *provider)
 {
+	theme_css_apply_app_provider_at_priority (provider,
+		theme_css_provider_priority);
+}
+
+gboolean
+theme_css_apply_app_provider_at_priority (GtkStyleProvider *provider,
+	guint priority)
+{
+#if GTK_MAJOR_VERSION >= 4
+	GdkDisplay *display;
+#else
 	GdkScreen *screen;
+#endif
 
 	if (!provider)
-		return;
+		return FALSE;
 
+#if GTK_MAJOR_VERSION >= 4
+	display = gdk_display_get_default ();
+	if (!display)
+		return FALSE;
+
+	gtk_style_context_add_provider_for_display (display, provider, priority);
+#else
 	screen = gdk_screen_get_default ();
 	if (!screen)
-		return;
+		return FALSE;
 
-	gtk_style_context_add_provider_for_screen (screen, provider, theme_css_provider_priority);
+	gtk_style_context_add_provider_for_screen (screen, provider, priority);
+#endif
+	return TRUE;
 }
 
 void
 theme_css_remove_app_provider (GtkStyleProvider *provider)
 {
+#if GTK_MAJOR_VERSION >= 4
+	GdkDisplay *display;
+#else
 	GdkScreen *screen;
+#endif
 
 	if (!provider)
 		return;
 
+#if GTK_MAJOR_VERSION >= 4
+	display = gdk_display_get_default ();
+	if (!display)
+		return;
+
+	gtk_style_context_remove_provider_for_display (display, provider);
+#else
 	screen = gdk_screen_get_default ();
 	if (!screen)
 		return;
 
 	gtk_style_context_remove_provider_for_screen (screen, provider);
+#endif
+}
+
+void
+theme_css_provider_load_string (GtkCssProvider *provider, const char *css)
+{
+	if (!provider || !css)
+		return;
+
+#if GTK_MAJOR_VERSION >= 4
+	gtk_css_provider_load_from_string (provider, css);
+#else
+	gtk_css_provider_load_from_data (provider, css, -1, NULL);
+#endif
 }
 
 void
@@ -251,7 +297,7 @@ theme_css_reload_input_style (gboolean enabled, const PangoFontDescription *font
 			next.bg_red, next.bg_green, next.bg_blue,
 			next.sel_fg_red, next.sel_fg_green, next.sel_fg_blue,
 			next.sel_bg_red, next.sel_bg_green, next.sel_bg_blue);
-		gtk_css_provider_load_from_data (theme_css_input_provider, css, -1, NULL);
+		theme_css_provider_load_string (theme_css_input_provider, css);
 		g_free (css);
 		theme_css_apply_app_provider (GTK_STYLE_PROVIDER (theme_css_input_provider));
 
@@ -347,7 +393,7 @@ theme_css_apply_palette_widget (GtkWidget *widget, const GdkRGBA *bg, const GdkR
 		g_string_append (css, " color: @theme_selected_fg_color;");
 	g_string_append (css, " }");
 
-	gtk_css_provider_load_from_data (provider, css->str, -1, NULL);
+	theme_css_provider_load_string (provider, css->str);
 	if (new_provider)
 		theme_css_apply_widget_provider (widget, GTK_STYLE_PROVIDER (provider));
 	gtk_style_context_add_class (gtk_widget_get_style_context (widget), theme_css_selector_palette_class);

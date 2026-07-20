@@ -816,6 +816,16 @@ GTK4 keeps compositor-managed CSD and applies the existing `zoitechat-dark` or
 title-bar dispatch and attached-window lifetime are unchanged. The complete
 GTK4 inventory now reports no diagnostics in `theme-manager.c`.
 
+Stage 8 theme provider-ownership pass 52 centralizes application-wide CSS
+provider installation and removal in `theme-css`. GTK4 resolves the default
+`GdkDisplay` and uses display-scoped provider APIs; GTK3 privately retains the
+default `GdkScreen` path. Callers may preserve their reviewed priority, and a
+shared CSS string loader owns the GTK3/GTK4 signature difference. Top-level
+application CSS remains at application priority plus one, while input and
+palette providers retain user priority and existing lifetimes. The complete
+GTK4 inventory now reports no diagnostics in `theme-application.c` or
+`theme-css.c`.
+
 ## Functional Clusters
 
 | Cluster | Main files | GTK4 concern | Status |

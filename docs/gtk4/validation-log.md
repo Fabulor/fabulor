@@ -5355,6 +5355,38 @@ native-titlebar updates, GTK3 KDE/Wayland decorations, attached-window
 lifetime, and theme-change dispatch are unchanged. GTK4 deliberately does not
 recreate a GTK3-only KDE decoration workaround. Packaging impact: none.
 
+### GTK4 Stage 8 Theme Provider Ownership
+
+Date: 2026-07-20
+
+Files/workflows converted: application-wide CSS provider installation,
+removal, priority selection, and CSS string loading.
+
+Automated evidence:
+
+- shipping MSVC GTK3 frontend rebuild: pass; zero warnings and zero errors
+- strict MSVC GTK4 probe against GTK 4.22.4 / GLib 2.88.0: compile, link, and
+  execution pass under `/W4 /WX`; zero warnings and zero errors
+- clean isolated complete GTK4 frontend comparison: expected fail; improves
+  from 53 errors / 365 warnings to 38 errors / 354 warnings
+- changed `theme-application.c` and `theme-css.c` have no errors or warnings in
+  the complete GTK4 inventory
+- source audit: application providers resolve exactly one default screen or
+  display and use the matching scoped add/remove API
+- source audit: top-level CSS retains application priority plus one; input and
+  palette CSS retain user priority and existing provider identity
+- source audit: CSS strings use one guarded loader rather than version-specific
+  call signatures at each producer
+- strict probe: GTK4 theme-controller provider application, variant changes,
+  diagnostics, and removal remain covered
+- next errors: theme style access, then the private GTK3 adapter
+- `git diff --check`: pass
+
+Behavior contract: dark-mode preference, top-level selector generation, input
+style fingerprints, palette providers, provider priority, retry behavior,
+removal, and object lifetime are unchanged. GTK4 scopes application providers
+to the display; GTK3 retains screen scope. Packaging impact: none.
+
 ## Build Matrix
 
 | Check | GTK3 shipping target | GTK4 candidate | Final GTK4 target |
