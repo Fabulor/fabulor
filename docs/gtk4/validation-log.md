@@ -5502,6 +5502,35 @@ Behavior contract: converted list construction, sorting, selection, mutation,
 and cleanup are unchanged and remain covered by the strict probe. Shipping GTK3
 does not consume this GTK4-only implementation. Packaging impact: none.
 
+### GTK4 Stage 8 Entry Compatibility Link Closure
+
+Date: 2026-07-21
+
+Files/workflows converted: entry text reads, text replacement, width requests,
+and spell-entry text macros.
+
+Automated evidence:
+
+- shipping MSVC GTK3 frontend rebuild: pass; zero warnings and zero errors
+- strict MSVC GTK4 probe against GTK 4.22.4 / GLib 2.88.0: compile, link, and
+  execution pass under `/W4 /WX`; zero warnings and zero errors
+- Meson MSVC GTK4 probe: regenerate, compile, link, and execution pass
+- strict runtime check: helper text replacement is returned by the typed reader
+  and the width request is visible through `GtkEditable`
+- clean isolated complete GTK4 frontend compilation: zero C compiler errors and
+  278 warnings, improved from 336 warnings
+- expected complete GTK4 link failure improves from 76 to 73 unique unresolved
+  symbols and from 166 to 144 repeated unresolved-symbol diagnostics
+- `gtk_entry_get_text`, `gtk_entry_set_text`, and
+  `gtk_entry_set_width_chars` no longer appear in the GTK4 link inventory
+- next target: legacy GTK3 container/child ownership link surface
+- `git diff --check`: pass
+
+Behavior contract: entry contents, borrowed-text lifetime, cursor behavior,
+configured character widths, spell-entry operations, and persistence are
+unchanged. GTK3 retains native entry APIs; GTK4 uses editable ownership.
+Packaging impact: none.
+
 ## Build Matrix
 
 | Check | GTK3 shipping target | GTK4 candidate | Final GTK4 target |

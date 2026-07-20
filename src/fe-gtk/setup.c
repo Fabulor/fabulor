@@ -1284,7 +1284,7 @@ setup_filereq_cb (GtkWidget *entry, char *file)
         if (file)
         {
                 if (file[0])
-                        gtk_entry_set_text (GTK_ENTRY (entry), file);
+                        fabulor_gtk_entry_set_text (GTK_ENTRY (entry), file);
         }
 }
 
@@ -1320,7 +1320,7 @@ setup_browsefile_cb (GtkWidget *button, GtkWidget *entry)
                                               _("_Cancel"));
         gtk_native_dialog_set_modal (GTK_NATIVE_DIALOG (dialog), TRUE);
 
-        current = gtk_entry_get_text (GTK_ENTRY (entry));
+        current = fabulor_gtk_entry_get_text (GTK_ENTRY (entry));
         if (current && current[0])
         {
                 dirname = g_path_get_dirname (current);
@@ -1362,7 +1362,7 @@ setup_fontchooser_response (GtkDialog *dialog, gint response, GtkWidget *entry)
                 font_name = gtk_font_chooser_get_font (GTK_FONT_CHOOSER (dialog));
                 if (font_name)
                 {
-                        gtk_entry_set_text (GTK_ENTRY (entry), font_name);
+                        fabulor_gtk_entry_set_text (GTK_ENTRY (entry), font_name);
                         g_free (font_name);
                 }
         }
@@ -1374,7 +1374,7 @@ setup_fontchooser_response (GtkDialog *dialog, gint response, GtkWidget *entry)
 static void
 setup_browsefolder_cb (GtkWidget *button, GtkEntry *entry)
 {
-        gtkutil_file_req (GTK_WINDOW (setup_window), _("Select Download Folder"), setup_filereq_cb, entry, (char*)gtk_entry_get_text (entry), NULL, FRF_CHOOSEFOLDER|FRF_MODAL);
+        gtkutil_file_req (GTK_WINDOW (setup_window), _("Select Download Folder"), setup_filereq_cb, entry, (char*)fabulor_gtk_entry_get_text (entry), NULL, FRF_CHOOSEFOLDER|FRF_MODAL);
 }
 
 static void
@@ -1389,7 +1389,7 @@ setup_browsefont_cb (GtkWidget *button, GtkWidget *entry)
 
         gtk_window_set_modal (GTK_WINDOW (dialog), TRUE);
 
-        font_name = gtk_entry_get_text (GTK_ENTRY (entry));
+        font_name = fabulor_gtk_entry_get_text (GTK_ENTRY (entry));
         if (font_name[0])
                 gtk_font_chooser_set_font (GTK_FONT_CHOOSER (dialog), font_name);
 
@@ -1404,7 +1404,7 @@ setup_entry_cb (GtkEntry *entry, setting *set)
 {
         int size;
         int pos;
-        unsigned char *p = (unsigned char*)gtk_entry_get_text (entry);
+        unsigned char *p = (unsigned char*)fabulor_gtk_entry_get_text (entry);
         size_t len = strlen ((const char *) p);
 
         /* need to truncate? */
@@ -1427,7 +1427,7 @@ setup_entry_cb (GtkEntry *entry, setting *set)
         }
         else
         {
-                setup_set_str (&setup_prefs, set, gtk_entry_get_text (entry));
+                setup_set_str (&setup_prefs, set, fabulor_gtk_entry_get_text (entry));
         }
 }
 
@@ -1459,7 +1459,7 @@ setup_create_entry (GtkWidget *table, int row, const setting *set)
         if (set->tooltip)
                 gtk_widget_set_tooltip_text (wid, _(set->tooltip));
         gtk_entry_set_max_length (GTK_ENTRY (wid), set->extra - 1);
-        gtk_entry_set_text (GTK_ENTRY (wid), setup_get_str (&setup_prefs, set));
+        fabulor_gtk_entry_set_text (GTK_ENTRY (wid), setup_get_str (&setup_prefs, set));
         g_signal_connect (G_OBJECT (wid), "changed",
                                                         G_CALLBACK (setup_entry_cb), (gpointer)set);
 
@@ -1699,9 +1699,9 @@ setup_snd_row_cb (gint n, gpointer user_data)
 
         ignore_changed = TRUE;
         if (sound_files[n])
-                gtk_entry_set_text (GTK_ENTRY (sndfile_entry), sound_files[n]);
+                fabulor_gtk_entry_set_text (GTK_ENTRY (sndfile_entry), sound_files[n]);
         else
-                gtk_entry_set_text (GTK_ENTRY (sndfile_entry), "");
+                fabulor_gtk_entry_set_text (GTK_ENTRY (sndfile_entry), "");
         ignore_changed = FALSE;
 }
 
@@ -1717,11 +1717,11 @@ setup_snd_filereq_cb (GtkWidget *entry, char *file)
                          */
                         if (!strcmp (g_path_get_dirname (file), g_build_filename (get_xdir (), ZOITECHAT_SOUND_DIR, NULL)))
                         {
-                                gtk_entry_set_text (GTK_ENTRY (entry), g_path_get_basename (file));
+                                fabulor_gtk_entry_set_text (GTK_ENTRY (entry), g_path_get_basename (file));
                         }
                         else
                         {
-                                gtk_entry_set_text (GTK_ENTRY (entry), file);
+                                fabulor_gtk_entry_set_text (GTK_ENTRY (entry), file);
                         }
                 }
         }
@@ -1749,7 +1749,7 @@ setup_snd_browse_cb (GtkWidget *button, GtkEntry *entry)
 static void
 setup_snd_play_cb (GtkWidget *button, GtkEntry *entry)
 {
-        sound_play (gtk_entry_get_text (entry), FALSE);
+        sound_play (fabulor_gtk_entry_get_text (entry), FALSE);
 }
 
 static void
@@ -1768,7 +1768,7 @@ setup_snd_changed_cb (GtkEntry *ent, gpointer user_data)
 
         /* get the new sound file */
         g_free (sound_files[n]);
-        sound_files[n] = g_strdup (gtk_entry_get_text (GTK_ENTRY (ent)));
+        sound_files[n] = g_strdup (fabulor_gtk_entry_get_text (GTK_ENTRY (ent)));
 
         fabulor_sound_event_list_update_file (sound_event_list, n,
                                               sound_files[n]);

@@ -865,13 +865,21 @@ inventory drops from 89 to 76 unique unresolved symbols and from 238 to 166
 repeated unresolved-symbol diagnostics, closing all 13 shared list-model
 symbols without changing the 336-warning compile inventory.
 
+Stage 8 entry compatibility link-closure pass 57 completes the typed entry
+helper family for borrowed text reads, text replacement, and width requests.
+GTK4 routes all three operations through `GtkEditable`; GTK3 privately retains
+the corresponding `GtkEntry` calls. Active frontend callers and spell-entry
+macros now use that boundary. The complete GTK4 linker inventory drops from 76
+to 73 unique unresolved symbols and from 166 to 144 repeated diagnostics, while
+the warning inventory falls from 336 to 278 with zero C compiler errors.
+
 ## Functional Clusters
 
 | Cluster | Main files | GTK4 concern | Status |
 |---|---|---|---|
 | Main windows and tabs | `maingui.c`, `chanview*.c` | child ownership, gestures, DnD, focus | in progress |
 | Transcript | `xtext.c`, `xtext.h`, `xtext-render-target.c` | snapshot rendering and event model | in progress; render destination ownership established and private Win32 GDK header retired |
-| Edit box and spell check | `maingui.c`, `emoji-picker.c`, `sexy-spell-entry.c`, `spell-entry-*.c` | production interaction and latency validation | in progress; word, lifecycle, styling, menu, URL, and emoji-picker boundaries established |
+| Edit box and spell check | `maingui.c`, `emoji-picker.c`, `sexy-spell-entry.c`, `spell-entry-*.c` | production interaction and latency validation | in progress; typed entry text/width, word, lifecycle, styling, menu, URL, and emoji-picker boundaries established |
 | Menus and commands | `menu.c`, `maingui.c`, `plugin-tray.c` | actions and menu models | in progress; retained main/context/tab presentation and GTK3-only accelerator ownership established |
 | Operational lists | `servlistgui.c`, `chanlist.c`, `userlistgui.c`, `dccgui.c`, `banlist.c`, `notifygui.c`, `ignoregui.c`, `plugingui.c`, `urlgrab.c` | list models, factories, editing | converted; toolkit-specific models and views are contained and the shared GTK4 model stack is a production candidate input |
 | Preferences/editors | `setup.c`, `fkeys.c`, `textgui.c`, `editlist.c` | generic edit list, Print Events, key bindings, sound events, and preference navigation converted | converted |

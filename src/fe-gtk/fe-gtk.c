@@ -1175,7 +1175,7 @@ fe_update_mode_entry (session *sess, GtkWidget *entry, char **text, char *new_te
 	if (!sess->gui->is_tab || sess == current_tab)
 	{
 		if (sess->gui->flag_wid[0])	/* channel mode buttons enabled? */
-			gtk_entry_set_text (GTK_ENTRY (entry), new_text);
+			fabulor_gtk_entry_set_text (GTK_ENTRY (entry), new_text);
 	} else
 	{
 		if (sess->gui->is_tab)

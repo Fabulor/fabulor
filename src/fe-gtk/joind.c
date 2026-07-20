@@ -91,7 +91,7 @@ joind_ok_cb (GtkWidget *ok, server *serv)
 
 	if (gtk_toggle_button_get_active (GTK_TOGGLE_BUTTON (serv->gui->joind_radio2)))
 	{
-		char *text = (char *)gtk_entry_get_text (GTK_ENTRY (serv->gui->joind_entry));
+		char *text = (char *)fabulor_gtk_entry_get_text (GTK_ENTRY (serv->gui->joind_entry));
 		if (strlen (text) < 1)
 		{
 			fe_message (_("Channel name too short, try again."), FE_MSG_ERROR);
@@ -205,7 +205,7 @@ joind_show_dialog (server *serv)
 	radiobutton1_group = gtk_radio_button_get_group (GTK_RADIO_BUTTON (radiobutton2));
 
 	serv->gui->joind_entry = entry1 = gtk_entry_new ();
-	gtk_entry_set_text (GTK_ENTRY (entry1), "#");
+	fabulor_gtk_entry_set_text (GTK_ENTRY (entry1), "#");
 	gtk_widget_show (entry1);
 	fabulor_gtk_box_append (GTK_BOX (hbox2), entry1, TRUE, TRUE, 8);
 
@@ -256,7 +256,7 @@ joind_show_dialog (server *serv)
 	if (serv->network)
 		if (g_ascii_strcasecmp(((ircnet*)serv->network)->name, "Zoite") == 0)
 		{
-			gtk_entry_set_text (GTK_ENTRY (entry1), "#zoitechat");
+			fabulor_gtk_entry_set_text (GTK_ENTRY (entry1), "#zoitechat");
 		}
 
 	gtk_widget_grab_focus (okbutton1);
