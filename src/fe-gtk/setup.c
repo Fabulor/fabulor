@@ -1871,7 +1871,10 @@ setup_page_from_sound (const setting *settings)
 static void
 setup_add_page (const char *title, GtkWidget *book, GtkWidget *tab)
 {
-        GtkWidget *label, *vvbox, *viewport;
+        GtkWidget *label, *vvbox;
+#if GTK_MAJOR_VERSION < 4
+        GtkWidget *viewport;
+#endif
         GtkScrolledWindow *sw;
         char buf[128];
 
@@ -1891,13 +1894,15 @@ setup_add_page (const char *title, GtkWidget *book, GtkWidget *tab)
 
         fabulor_gtk_box_append (GTK_BOX (vvbox), tab, TRUE, TRUE, 0);
 
-        sw = GTK_SCROLLED_WINDOW(gtk_scrolled_window_new (NULL, NULL));
-        gtk_scrolled_window_set_shadow_type (sw, GTK_SHADOW_IN);
+        sw = GTK_SCROLLED_WINDOW (fabulor_gtk_scrolled_window_new ());
+        fabulor_gtk_scrolled_window_set_framed (sw, TRUE);
         gtk_scrolled_window_set_policy (sw, GTK_POLICY_NEVER, GTK_POLICY_AUTOMATIC);
-        gtk_container_add (GTK_CONTAINER (sw), vvbox);
+        fabulor_gtk_scrolled_window_set_child (sw, vvbox);
 
-        viewport = gtk_bin_get_child (GTK_BIN(sw));
-        gtk_viewport_set_shadow_type (GTK_VIEWPORT(viewport), GTK_SHADOW_NONE);
+#if GTK_MAJOR_VERSION < 4
+        viewport = gtk_bin_get_child (GTK_BIN (sw));
+        gtk_viewport_set_shadow_type (GTK_VIEWPORT (viewport), GTK_SHADOW_NONE);
+#endif
 
         gtk_notebook_append_page (GTK_NOTEBOOK (book), GTK_WIDGET(sw), NULL);
 }

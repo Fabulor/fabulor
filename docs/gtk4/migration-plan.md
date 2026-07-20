@@ -1902,6 +1902,18 @@ clean complete GTK4 inventory improves from 70 errors / 384 warnings to 66
 errors / 379 warnings, with no hard `servlistgui.c` diagnostics. Preferences
 framing is now the first remaining error family, followed by user-list framing.
 
+Preferences framing pass 49 (2026-07-20):
+the lazily populated Preferences pages now use the shared cross-version
+scroller constructor, semantic frame helper, and explicit child owner. GTK4
+does not inspect internal scroller children. GTK3 privately retains the
+shadowless auto-created viewport that prevents a doubled inset frame around
+non-scrollable page content. Labels, vertical scroll policy, notebook pages,
+lazy page creation, and preference controls are unchanged. Strict GTK4 and
+shipping GTK3 rebuilds pass with zero warnings and errors. The clean complete
+GTK4 inventory improves from 66 errors / 379 warnings to 64 errors / 373
+warnings, with no hard `setup.c` diagnostics. User-list framing is now the
+first remaining error, followed by the theme API boundary.
+
 Deliverables:
 
 - Make GTK4 the only production frontend dependency in MSVC, Meson, and CI.

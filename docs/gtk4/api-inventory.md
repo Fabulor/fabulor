@@ -792,6 +792,14 @@ presentation privately. Existing scroll policies, notebook ownership,
 tooltips, typed list views, and selection behavior are unchanged. The complete
 GTK4 inventory now reports no hard errors in `servlistgui.c`.
 
+Stage 8 Preferences framing pass 49 moves each lazily populated Preferences
+page scroller to the shared constructor, semantic frame presentation, and
+explicit child owner. GTK4 no longer inspects an internal bin or viewport.
+GTK3 privately retains its shadowless auto-created viewport so the existing
+single inset border is preserved rather than doubled. Page labels, vertical
+scroll policy, notebook ownership, lazy creation, and page content are
+unchanged. The complete GTK4 inventory now reports no hard errors in `setup.c`.
+
 ## Functional Clusters
 
 | Cluster | Main files | GTK4 concern | Status |
