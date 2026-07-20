@@ -171,9 +171,10 @@ open_rawlog (struct server *serv)
 							 640, 320, &vbox, serv);
 	gtkutil_destroy_on_esc (serv->gui->rawlog_window);
 
-	scrolledwindow = gtk_scrolled_window_new (NULL, NULL);
+	scrolledwindow = fabulor_gtk_scrolled_window_new ();
 	gtk_scrolled_window_set_policy (GTK_SCROLLED_WINDOW (scrolledwindow), GTK_POLICY_NEVER, GTK_POLICY_ALWAYS);
-	gtk_scrolled_window_set_shadow_type (GTK_SCROLLED_WINDOW (scrolledwindow), GTK_SHADOW_IN);
+	fabulor_gtk_scrolled_window_set_framed (
+		GTK_SCROLLED_WINDOW (scrolledwindow), TRUE);
 	gtk_widget_set_hexpand (scrolledwindow, TRUE);
 	gtk_widget_set_vexpand (scrolledwindow, TRUE);
 	fabulor_gtk_box_append (GTK_BOX (vbox), scrolledwindow, TRUE, TRUE, 0);

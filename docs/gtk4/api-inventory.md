@@ -767,6 +767,13 @@ reads minimized state from `GdkToplevel` and native handles from a Win32
 Restoring a GTK4 window relies on the shared show/present sequence, while GTK3
 keeps its explicit deiconify call.
 
+Stage 8 Raw Log framing pass 46 adds a cross-version scrolled-window
+constructor beside the existing semantic frame helper. Raw Log now uses GTK4's
+argument-free constructor and standard `frame` CSS class, while GTK3 retains
+its null-adjustment constructor and `GTK_SHADOW_IN` presentation privately.
+Expansion, scroll policies, transcript ownership, theme sampling, buttons, and
+keyboard copying are unchanged.
+
 ## Functional Clusters
 
 | Cluster | Main files | GTK4 concern | Status |
