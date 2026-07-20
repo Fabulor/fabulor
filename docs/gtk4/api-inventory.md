@@ -808,6 +808,14 @@ input, model ownership, and selection behavior are unchanged. The complete
 GTK4 inventory now reports no hard errors in `userlistgui.c`; every remaining
 hard frontend error is within the theme compatibility boundary.
 
+Stage 8 theme window-ownership pass 51 separates the GTK3 KDE/Wayland CSD
+workaround from GTK4 top-level presentation. GTK3 privately retains its
+header-bar sizing, icon, title synchronization, and `GdkScreen` style reset.
+GTK4 keeps compositor-managed CSD and applies the existing `zoitechat-dark` or
+`zoitechat-light` marker directly through widget CSS classes. Native Windows
+title-bar dispatch and attached-window lifetime are unchanged. The complete
+GTK4 inventory now reports no diagnostics in `theme-manager.c`.
+
 ## Functional Clusters
 
 | Cluster | Main files | GTK4 concern | Status |

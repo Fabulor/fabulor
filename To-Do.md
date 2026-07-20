@@ -389,6 +389,7 @@ Detailed planning and evidence live in:
         - [x] Convert Server List and network-editor close/save handling and size persistence to typed GTK3/GTK4 callbacks.
         - [ ] Convert the remaining top-level visibility and lifecycle callbacks.
     - [ ] Bind application and preferences integration to the GTK4 theme controller.
+      - [x] Separate GTK3 KDE/Wayland CSD reset ownership from GTK4 top-level theme classes.
 - [ ] Remove GTK3 code, build inputs, runtime files, installer components, and compatibility helpers.
 - [ ] Complete clean-install, upgrade, accessibility, visual, performance, plugin, and packaging validation.
 
