@@ -151,6 +151,7 @@ check_compatibility_helper_signatures (void)
 		FabulorGtkIconSize) = fabulor_gtk_image_new_from_icon_name;
 	const gchar *(*volatile entry_get_text) (GtkEntry *) =
 		fabulor_gtk_entry_get_text;
+	GtkWidget *(*volatile window_new) (void) = fabulor_gtk_window_new;
 	gboolean (*volatile file_chooser_set_current_folder_path) (GtkFileChooser *,
 		const gchar *) = fabulor_gtk_file_chooser_set_current_folder_path;
 	gchar *(*volatile file_chooser_dup_filename) (GtkFileChooser *) =
@@ -282,6 +283,7 @@ check_compatibility_helper_signatures (void)
 	(void) icon_size_get_pixels;
 	(void) image_new_from_icon_name;
 	(void) entry_get_text;
+	(void) window_new;
 	(void) file_chooser_set_current_folder_path;
 	(void) file_chooser_dup_filename;
 	(void) file_chooser_dup_current_folder_path;
@@ -4664,7 +4666,7 @@ check_window_geometry_boundary (gboolean gtk_ready)
 
 	if (!gtk_ready)
 		return TRUE;
-	window = GTK_WINDOW (gtk_window_new ());
+	window = GTK_WINDOW (fabulor_gtk_window_new ());
 	g_object_ref_sink (window);
 	fabulor_window_geometry_get (window, &geometry);
 	if (geometry.width != 0 || geometry.height != 0 || geometry.has_position)

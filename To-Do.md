@@ -373,6 +373,7 @@ Detailed planning and evidence live in:
       - [x] Contain GTK3 dialog window-manager hints while retaining GTK4 transient and modal relationships.
       - [x] Move Channel List search text reads to a typed borrowed-entry-text boundary.
       - [x] Move shared file-chooser file and folder paths to an owned local-path boundary.
+      - [x] Replace active GTK3 top-level window constructors with one cross-version constructor.
       - [ ] Replace the GTK3 per-window Win32 message filter with reviewed GTK4 display-filter ownership.
       - [ ] Convert DCC/Server List geometry plus remaining top-level visibility and lifecycle callbacks.
         - [x] Convert detached DCC transfer size persistence to the shared surface-layout observer.

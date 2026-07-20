@@ -2107,7 +2107,7 @@ servlist_open_edit (GtkWidget *parent, ircnet *net)
 	GtkWidget *notebook;
 	char buf[128];
 
-	editwindow = gtk_window_new (GTK_WINDOW_TOPLEVEL);
+	editwindow = fabulor_gtk_window_new ();
 	theme_manager_attach_window (editwindow);
 	gtk_container_set_border_width (GTK_CONTAINER (editwindow), 4);
 	g_snprintf (buf, sizeof (buf), _("Edit %s - %s"), net->name, _(DISPLAY_NAME));
@@ -2426,7 +2426,7 @@ servlist_open_networks (void)
 	GtkWidget *button_close;
 	char buf[128];
 
-	servlist = gtk_window_new (GTK_WINDOW_TOPLEVEL);
+	servlist = fabulor_gtk_window_new ();
 	theme_manager_attach_window (servlist);
 	gtk_container_set_border_width (GTK_CONTAINER (servlist), 4);
 	g_snprintf(buf, sizeof(buf), _("Network List - %s"), _(DISPLAY_NAME));
