@@ -361,6 +361,7 @@ Detailed planning and evidence live in:
       - [x] Contain GTK3 `/MENU` widget lookup and mutation while refreshing retained GTK4 menu models after changes.
       - [x] Replace the retired system-icon forced-size lookup with an owned GTK4 paintable-to-pixbuf path.
     - [x] Move Raw Log scroller construction and inset framing to cross-version compatibility semantics.
+    - [x] Move Server List editor and main-list scrollers to cross-version construction and semantic framing.
     - [ ] Complete channel-list and channel-view container/lifecycle cutover.
     - [ ] Complete top-level window positioning, visibility, and lifecycle cutover.
       - [x] Contain removed placement hints, saved coordinates, and tray restore placement behind compositor-safe GTK3/GTK4 policy.

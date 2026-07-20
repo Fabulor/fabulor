@@ -1891,6 +1891,17 @@ warnings; the large reduction includes the parser cascade previously caused by
 retired event structures. Server List framed-scroller construction is now the
 first remaining error family.
 
+Server List scroller pass 48 (2026-07-20):
+all four Server List scrollers now use the shared cross-version constructor and
+semantic frame helper. GTK4 receives its argument-free constructor and
+standard `frame` CSS class, while GTK3 privately retains null adjustments and
+`GTK_SHADOW_IN`. Scroll policies, network-editor notebook pages, command
+tooltip text, typed list child ownership, and selection behavior are unchanged.
+Strict GTK4 and shipping GTK3 rebuilds pass with zero warnings and errors. The
+clean complete GTK4 inventory improves from 70 errors / 384 warnings to 66
+errors / 379 warnings, with no hard `servlistgui.c` diagnostics. Preferences
+framing is now the first remaining error family, followed by user-list framing.
+
 Deliverables:
 
 - Make GTK4 the only production frontend dependency in MSVC, Meson, and CI.
