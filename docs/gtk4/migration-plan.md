@@ -1964,6 +1964,18 @@ GTK3 development metadata. The clean complete GTK4 inventory improves from 38
 errors / 354 warnings to 37 errors / 351 warnings, with no `theme-access.c`
 diagnostics. Every remaining hard error is now in the private GTK3 adapter.
 
+GTK3 theme-adapter containment pass 54 (2026-07-21):
+the production GTK3 theme adapter now compiles its legacy CSS, settings,
+provider, and filesystem implementation only for GTK3. GTK4 retains a small
+inert contract in the same translation unit so callers can be migrated without
+activating or loading a GTK3 theme provider. The strict MSVC and Meson GTK4
+probes compile and execute that production contract under `/W4 /WX`, and the
+shipping GTK3 frontend rebuild remains clean. The complete GTK4 frontend does
+not yet link: its clean inventory improves from 37 ordinary errors / 351
+warnings to zero ordinary errors / 336 warnings, then stops in `xtext.c` because
+GTK4 no longer supplies `gdk/gdkwin32.h`. Xtext Win32 GDK surface/header
+containment is the next target.
+
 Deliverables:
 
 - Make GTK4 the only production frontend dependency in MSVC, Meson, and CI.

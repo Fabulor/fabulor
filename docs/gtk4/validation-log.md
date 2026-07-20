@@ -5418,6 +5418,34 @@ dark/light palette selection, transcript marker colors, and RGB16 conversion
 are unchanged. GTK3 custom themes retain style-derived palette mapping; GTK4
 uses the semantic runtime palette. Packaging impact: none.
 
+### GTK4 Stage 8 GTK3 Theme Adapter Containment
+
+Date: 2026-07-21
+
+Files/workflows converted: production GTK3 theme-adapter compilation boundary
+and its inert GTK4 compatibility contract.
+
+Automated evidence:
+
+- shipping MSVC GTK3 frontend rebuild: pass; zero warnings and zero errors
+- strict MSVC GTK4 probe against GTK 4.22.4 / GLib 2.88.0: compile, link, and
+  execution pass under `/W4 /WX`; zero warnings and zero errors
+- fresh Meson MSVC GTK4 probe: configure, compile, link, and execution pass;
+  production `theme-gtk3.c` is compiled and its containment check executes
+- clean isolated complete GTK4 frontend comparison: expected fail; improves
+  from 37 ordinary errors / 351 warnings to zero ordinary errors / 336 warnings
+- complete GTK4 frontend does not reach link: compilation stops at
+  `xtext.c(65)` because GTK4 does not provide `gdk/gdkwin32.h`
+- source audit: GTK3 retains the complete legacy adapter implementation
+- source audit: GTK4 setup/apply/refresh calls are harmless, the adapter never
+  becomes active, and variant probing returns the established light default
+- next error: Xtext Win32 GDK surface/header containment
+- `git diff --check`: pass
+
+Behavior contract: GTK3 theme discovery, CSS loading, provider lifecycle,
+settings monitoring, variant resolution, and refresh behavior are unchanged.
+GTK4 cannot load or activate the GTK3 adapter. Packaging impact: none.
+
 ## Build Matrix
 
 | Check | GTK3 shipping target | GTK4 candidate | Final GTK4 target |
