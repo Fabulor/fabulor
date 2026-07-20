@@ -835,6 +835,16 @@ Default IRC colors, user overrides, dark/light mode selection, and RGB16
 conversion are unchanged. The complete GTK4 inventory now reports no
 diagnostics in `theme-access.c`.
 
+Stage 8 GTK3 theme-adapter containment pass 54 compiles the legacy CSS,
+settings, and provider implementation only for GTK3. GTK4 builds the same
+production source through an inert compatibility contract: setup and refresh
+calls succeed harmlessly, the adapter never reports itself active, and theme
+variant probing returns the established light default without loading a GTK3
+provider. Both strict MSVC and Meson GTK4 probes compile and execute that
+contract. The clean complete GTK4 inventory advances from 37 ordinary errors /
+351 warnings to zero ordinary errors / 336 warnings before stopping at the
+retired `gdk/gdkwin32.h` include in `xtext.c`.
+
 ## Functional Clusters
 
 | Cluster | Main files | GTK4 concern | Status |
@@ -853,8 +863,9 @@ diagnostics in `theme-access.c`.
 - `theme/theme-manager.c`, `theme-policy.c`, `theme-runtime.c`,
   `theme-application.c`, and `theme-css.c` should remain toolkit-neutral where
   practical.
-- `theme/theme-gtk3.c` is the explicit GTK3 adapter and should not be renamed in
-  place until a GTK4 adapter has equivalent tests.
+- `theme/theme-gtk3.c` is the explicit GTK3 adapter. Its implementation is
+  compiled only for GTK3; its tested GTK4 branch is inert compatibility code
+  pending final removal with the rest of the GTK3 frontend.
 - `common/gtk3-theme-service.c` discovers/imports GTK3 CSS directories such as
   `gtk-3.0` and `gtk-3.24`. GTK3 CSS is not assumed to be valid GTK4 CSS.
 - Existing extraction containment protections remain mandatory regardless of

@@ -57,6 +57,7 @@ probe = executable(
   '../../src/fe-gtk/emoji-picker.c',
   '../../src/common/gtk4-theme-discovery.c',
   '../../src/common/gtk4-theme-preferences.c',
+  '../../src/fe-gtk/theme/theme-gtk3.c',
   '../../src/fe-gtk/theme/theme-gtk4.c',
   '../../src/fe-gtk/theme/theme-gtk4-controller.c',
   '../../src/fe-gtk/theme/theme-preferences-gtk4.c',

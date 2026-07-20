@@ -392,6 +392,7 @@ Detailed planning and evidence live in:
       - [x] Separate GTK3 KDE/Wayland CSD reset ownership from GTK4 top-level theme classes.
       - [x] Route application CSS provider installation, removal, priority, and string loading through one GTK3/GTK4 owner.
       - [x] Keep GTK3 widget-style palette sampling private while GTK4 uses the semantic runtime palette.
+      - [x] Compile the legacy GTK3 theme adapter only for GTK3 and provide a tested inert GTK4 contract.
 - [ ] Remove GTK3 code, build inputs, runtime files, installer components, and compatibility helpers.
 - [ ] Complete clean-install, upgrade, accessibility, visual, performance, plugin, and packaging validation.
 
