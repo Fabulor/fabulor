@@ -206,27 +206,40 @@ fabulor_window_state_watch (GtkWindow *window,
 #endif
 }
 
+gpointer
+fabulor_window_native_handle (GtkWindow *window)
+{
+#ifdef G_OS_WIN32
+	if (!GTK_IS_WINDOW (window))
+		return NULL;
+#if GTK_MAJOR_VERSION >= 4
+	{
+		GdkSurface *surface = gtk_native_get_surface (GTK_NATIVE (window));
+		return GDK_IS_WIN32_SURFACE (surface) ?
+			(gpointer) gdk_win32_surface_get_handle (surface) : NULL;
+	}
+#else
+	{
+		GdkWindow *gdk_window = gtk_widget_get_window (GTK_WIDGET (window));
+		return gdk_window ?
+			(gpointer) gdk_win32_window_get_handle (gdk_window) : NULL;
+	}
+#endif
+#else
+	(void)window;
+	return NULL;
+#endif
+}
+
 void
 fabulor_window_state_allow_autohide_taskbar (GtkWindow *window,
 	const FabulorWindowState *state)
 {
 #ifdef G_OS_WIN32
-	HWND hwnd = NULL;
+	HWND hwnd;
 	if (!GTK_IS_WINDOW (window) || !state || state->fullscreen)
 		return;
-#if GTK_MAJOR_VERSION >= 4
-	{
-		GdkSurface *surface = gtk_native_get_surface (GTK_NATIVE (window));
-		if (GDK_IS_WIN32_SURFACE (surface))
-			hwnd = gdk_win32_surface_get_handle (surface);
-	}
-#else
-	{
-		GdkWindow *gdk_window = gtk_widget_get_window (GTK_WIDGET (window));
-		if (gdk_window)
-			hwnd = gdk_win32_window_get_handle (gdk_window);
-	}
-#endif
+	hwnd = (HWND) fabulor_window_native_handle (window);
 	if (!hwnd)
 		return;
 	if (state->maximized)

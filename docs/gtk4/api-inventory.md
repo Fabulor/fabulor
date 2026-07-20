@@ -759,6 +759,14 @@ stream, and decodes an owned `GdkPixbuf` at Fabulor's menu pixel role. GTK3
 retains its native forced-size loader privately. Existing resource/file
 precedence and subsequent `GDK_SCALE` handling are unchanged.
 
+Stage 8 window-surface ownership pass 45 routes tray visibility decisions,
+plugin `win_status`, plugin native-window pointers, Win32 tray-menu ownership,
+native titlebar styling, and taskbar adjustment through `window-state`. GTK4
+reads minimized state from `GdkToplevel` and native handles from a Win32
+`GdkSurface`; GTK3 retains `GdkWindow` state and handle access privately.
+Restoring a GTK4 window relies on the shared show/present sequence, while GTK3
+keeps its explicit deiconify call.
+
 ## Functional Clusters
 
 | Cluster | Main files | GTK4 concern | Status |

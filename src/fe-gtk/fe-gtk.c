@@ -22,10 +22,6 @@
 
 #include "fe-gtk.h"
 
-#ifdef GDK_WINDOWING_WIN32
-#include <gdk/gdkwin32.h>
-#endif
-
 #ifdef WIN32
 #include <windows.h>
 #include <dwmapi.h>
@@ -63,6 +59,7 @@
 #include "theme/theme-manager.h"
 #include "theme/theme-application.h"
 #include "preferences-persistence.h"
+#include "window-state.h"
 
 #ifdef USE_LIBCANBERRA
 #include <canberra.h>
@@ -871,7 +868,7 @@ fe_win32_apply_native_titlebar (GtkWidget *window, gboolean dark_mode)
 	if (!window || !gtk_widget_get_realized (window))
 		return;
 
-	hwnd = gdk_win32_window_get_handle (gtk_widget_get_window (window));
+	hwnd = (HWND) fabulor_window_native_handle (GTK_WINDOW (window));
 	if (!hwnd)
 		return;
 
@@ -1527,6 +1524,8 @@ fe_confirm (const char *message, void (*yesproc)(void *), void (*noproc)(void *)
 int
 fe_gui_info (session *sess, int info_type)
 {
+	FabulorWindowState state;
+
 	switch (info_type)
 	{
 	case 0:	/* window status */
@@ -1535,11 +1534,9 @@ fe_gui_info (session *sess, int info_type)
 			return 2;	/* hidden (iconified or systray) */
 		}
 
-		{
-			GdkWindow *gdk_win = gtk_widget_get_window (GTK_WIDGET (sess->gui->window));
-			if (gdk_win && (gdk_window_get_state (gdk_win) & GDK_WINDOW_STATE_ICONIFIED))
-				return 2;
-		}
+		fabulor_window_state_get (GTK_WINDOW (sess->gui->window), &state);
+		if (state.minimized)
+			return 2;
 
 		if (gtk_window_is_active (GTK_WINDOW (sess->gui->window)))
 		{
@@ -1559,7 +1556,7 @@ fe_gui_info_ptr (session *sess, int info_type)
 	{
 	case 0:	/* native window pointer (for plugins) */
 #ifdef GDK_WINDOWING_WIN32
-		return gdk_win32_window_get_handle (gtk_widget_get_window (sess->gui->window));
+		return fabulor_window_native_handle (GTK_WINDOW (sess->gui->window));
 #else
 		return sess->gui->window;
 #endif

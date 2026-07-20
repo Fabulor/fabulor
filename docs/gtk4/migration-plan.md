@@ -1853,6 +1853,19 @@ complete GTK4 inventory improves from 118 errors / 405 warnings to 117 errors /
 401 warnings, with no `pixmaps.c` diagnostics. The first remaining errors are
 the legacy tray `GdkWindow` minimized-state reads.
 
+Window-surface ownership pass 45 (2026-07-20):
+tray and plugin window status now use the existing cross-version state snapshot,
+and one opaque native-handle accessor owns Win32 surface conversion for tray
+menus, plugin pointers, titlebar styling, and taskbar adjustment. GTK4 reads
+`GdkToplevelState` and `GdkWin32Surface`; GTK3 retains all `GdkWindow` access
+inside `window-state.c`. GTK4 restore uses show/present, while GTK3 preserves
+its explicit deiconify call. Full strict GTK4 and shipping GTK3 rebuilds pass
+with zero warnings and errors. The clean complete GTK4 inventory moves from
+117 errors / 401 warnings to 106 errors / 409 warnings: 11 hard surface errors
+are removed and eight downstream warnings become visible. The first remaining
+error is Raw Log's retired inset-shadow enum, followed by Server List lifecycle
+callbacks.
+
 Deliverables:
 
 - Make GTK4 the only production frontend dependency in MSVC, Meson, and CI.
