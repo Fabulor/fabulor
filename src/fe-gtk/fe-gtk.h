@@ -33,6 +33,7 @@
 #include <cairo.h>
 
 #include "banlist.h"
+#include "gtk-compat.h"
 
 #define flag_c flag_wid[0]
 #define flag_n flag_wid[1]
@@ -195,8 +196,8 @@ gboolean fe_win32_try_get_system_dark (gboolean *prefer_dark);
 #endif
 void fe_win32_apply_native_titlebar (GtkWidget *window, gboolean dark_mode);
 
-#define SPELL_ENTRY_GET_TEXT(e) ((char *)(gtk_entry_get_text (GTK_ENTRY(e))))
-#define SPELL_ENTRY_SET_TEXT(e,txt) gtk_entry_set_text(GTK_ENTRY(e),txt)
+#define SPELL_ENTRY_GET_TEXT(e) ((char *)(fabulor_gtk_entry_get_text (GTK_ENTRY(e))))
+#define SPELL_ENTRY_SET_TEXT(e,txt) fabulor_gtk_entry_set_text(GTK_ENTRY(e),txt)
 #define SPELL_ENTRY_SET_EDITABLE(e,v) gtk_editable_set_editable(GTK_EDITABLE(e),v)
 #define SPELL_ENTRY_GET_POS(e) gtk_editable_get_position(GTK_EDITABLE(e))
 #define SPELL_ENTRY_SET_POS(e,p) gtk_editable_set_position(GTK_EDITABLE(e),p);

@@ -145,7 +145,7 @@ static void
 servlist_entry_set_text_silent (GtkWidget *entry, const char *text)
 {
 	g_signal_handlers_block_by_func (G_OBJECT (entry), G_CALLBACK (servlist_password_changed_cb), NULL);
-	gtk_entry_set_text (GTK_ENTRY (entry), text);
+	fabulor_gtk_entry_set_text (GTK_ENTRY (entry), text);
 	g_signal_handlers_unblock_by_func (G_OBJECT (entry), G_CALLBACK (servlist_password_changed_cb), NULL);
 }
 
@@ -1766,7 +1766,7 @@ servlist_create_entry (GtkWidget *table, char *labeltext, int row,
 	entry = gtk_entry_new ();
 	gtk_widget_set_tooltip_text (entry, tip);
 	gtk_widget_show (entry);
-	gtk_entry_set_text (GTK_ENTRY (entry), def ? def : "");
+	fabulor_gtk_entry_set_text (GTK_ENTRY (entry), def ? def : "");
 	gtk_label_set_mnemonic_widget (GTK_LABEL (label), entry);
 
 	servlist_table_attach (table, entry, 1, 2, row, row + 1,
@@ -2044,7 +2044,7 @@ servlist_create_charsetcombo (void)
 		i++;
 	}
 
-	gtk_entry_set_text (GTK_ENTRY (gtk_bin_get_child (GTK_BIN(cb))), selected_net->encoding ? selected_net->encoding : pages[0]);
+	fabulor_gtk_entry_set_text (GTK_ENTRY (gtk_bin_get_child (GTK_BIN(cb))), selected_net->encoding ? selected_net->encoding : pages[0]);
 	
 	g_signal_connect (G_OBJECT (gtk_bin_get_child (GTK_BIN (cb))), "changed",
 							G_CALLBACK (servlist_combo_cb), NULL);
@@ -2529,7 +2529,7 @@ servlist_open_networks (void)
 	*/
 
 	entry_nick1 = entry1 = gtk_entry_new ();
-	gtk_entry_set_text (GTK_ENTRY (entry1), prefs.hex_irc_nick1);
+	fabulor_gtk_entry_set_text (GTK_ENTRY (entry1), prefs.hex_irc_nick1);
 	gtk_widget_show (entry1);
 	servlist_table_attach (table1, entry1, 1, 2, 0, 1,
 						   TRUE, FALSE,
@@ -2537,7 +2537,7 @@ servlist_open_networks (void)
 						   0, 0);
 
 	entry_nick2 = entry2 = gtk_entry_new ();
-	gtk_entry_set_text (GTK_ENTRY (entry2), prefs.hex_irc_nick2);
+	fabulor_gtk_entry_set_text (GTK_ENTRY (entry2), prefs.hex_irc_nick2);
 	gtk_widget_show (entry2);
 	servlist_table_attach (table1, entry2, 1, 2, 1, 2,
 						   TRUE, FALSE,
@@ -2545,7 +2545,7 @@ servlist_open_networks (void)
 						   0, 0);
 
 	entry_nick3 = entry3 = gtk_entry_new ();
-	gtk_entry_set_text (GTK_ENTRY (entry3), prefs.hex_irc_nick3);
+	fabulor_gtk_entry_set_text (GTK_ENTRY (entry3), prefs.hex_irc_nick3);
 	gtk_widget_show (entry3);
 	servlist_table_attach (table1, entry3, 1, 2, 2, 3,
 						   TRUE, FALSE,
@@ -2553,7 +2553,7 @@ servlist_open_networks (void)
 						   0, 0);
 
 	entry_guser = entry4 = gtk_entry_new ();
-	gtk_entry_set_text (GTK_ENTRY (entry4), prefs.hex_irc_user_name);
+	fabulor_gtk_entry_set_text (GTK_ENTRY (entry4), prefs.hex_irc_user_name);
 	gtk_widget_show (entry4);
 	servlist_table_attach (table1, entry4, 1, 2, 3, 4,
 						   TRUE, FALSE,
@@ -2561,7 +2561,7 @@ servlist_open_networks (void)
 						   0, 0);
 
 	/* entry_greal = entry5 = gtk_entry_new ();
-	gtk_entry_set_text (GTK_ENTRY (entry5), prefs.hex_irc_real_name);
+	fabulor_gtk_entry_set_text (GTK_ENTRY (entry5), prefs.hex_irc_real_name);
 	gtk_widget_show (entry5);
 	gtk_table_attach (GTK_TABLE (table1), entry5, 1, 2, 4, 5,
 							(GtkAttachOptions) (GTK_EXPAND | GTK_FILL),

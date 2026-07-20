@@ -218,10 +218,10 @@ notifygui_add_cb (GtkDialog *dialog, gint response, gpointer entry)
 	char *networks;
 	char *text;
 
-	text = (char *)gtk_entry_get_text (GTK_ENTRY (entry));
+	text = (char *)fabulor_gtk_entry_get_text (GTK_ENTRY (entry));
 	if (text[0] && response == GTK_RESPONSE_ACCEPT)
 	{
-		networks = (char*)gtk_entry_get_text (GTK_ENTRY (g_object_get_data (G_OBJECT (entry), "net")));
+		networks = (char*)fabulor_gtk_entry_get_text (GTK_ENTRY (g_object_get_data (G_OBJECT (entry), "net")));
 		if (g_ascii_strcasecmp (networks, "ALL") == 0 || networks[0] == 0)
 			notify_adduser (text, NULL);
 		else
@@ -269,7 +269,7 @@ fe_notify_ask (char *nick, char *networks)
 	gtkutil_grid_attach_defaults (table, label, 0, 1, 0, 1);
 
 	entry = gtk_entry_new ();
-	gtk_entry_set_text (GTK_ENTRY (entry), nick);
+	fabulor_gtk_entry_set_text (GTK_ENTRY (entry), nick);
 	g_signal_connect (G_OBJECT (entry), "activate",
 						 	G_CALLBACK (notifygui_add_enter), dialog);
 	gtkutil_grid_attach_defaults (table, entry, 1, 2, 0, 1);
@@ -284,7 +284,7 @@ fe_notify_ask (char *nick, char *networks)
 	g_object_set_data (G_OBJECT (entry), "net", wid);
 	g_signal_connect (G_OBJECT (wid), "activate",
 						 	G_CALLBACK (notifygui_add_enter), dialog);
-	gtk_entry_set_text (GTK_ENTRY (wid), networks ? networks : "ALL");
+	fabulor_gtk_entry_set_text (GTK_ENTRY (wid), networks ? networks : "ALL");
 	gtkutil_grid_attach_defaults (table, wid, 1, 2, 2, 3);
 
 	label = gtk_label_new (NULL);

@@ -149,7 +149,7 @@ ignore_stats_entry (GtkWidget *box, char *label, int value)
 	gtk_widget_set_size_request (entry, 30, -1);
 	gtk_editable_set_editable (GTK_EDITABLE (entry), FALSE);
 	gtk_widget_set_sensitive (entry, FALSE);
-	gtk_entry_set_text (GTK_ENTRY (entry), buf);
+	fabulor_gtk_entry_set_text (GTK_ENTRY (entry), buf);
 	return entry;
 }
 
@@ -227,7 +227,7 @@ fe_ignore_update (int level)
 		return;
 #define UPDATE_IGNORE_STAT(widget, value) \
 	do { g_snprintf (buf, sizeof (buf), "%d", (value)); \
-	gtk_entry_set_text (GTK_ENTRY (widget), buf); } while (0)
+	fabulor_gtk_entry_set_text (GTK_ENTRY (widget), buf); } while (0)
 	UPDATE_IGNORE_STAT (num_ctcp, ignored_ctcp);
 	UPDATE_IGNORE_STAT (num_noti, ignored_noti);
 	UPDATE_IGNORE_STAT (num_chan, ignored_chan);

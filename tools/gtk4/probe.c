@@ -152,6 +152,10 @@ check_compatibility_helper_signatures (void)
 		FabulorGtkIconSize) = fabulor_gtk_image_new_from_icon_name;
 	const gchar *(*volatile entry_get_text) (GtkEntry *) =
 		fabulor_gtk_entry_get_text;
+	void (*volatile entry_set_text) (GtkEntry *, const gchar *) =
+		fabulor_gtk_entry_set_text;
+	void (*volatile entry_set_width_chars) (GtkEntry *, gint) =
+		fabulor_gtk_entry_set_width_chars;
 	GtkWidget *(*volatile window_new) (void) = fabulor_gtk_window_new;
 	gboolean (*volatile file_chooser_set_current_folder_path) (GtkFileChooser *,
 		const gchar *) = fabulor_gtk_file_chooser_set_current_folder_path;
@@ -284,6 +288,8 @@ check_compatibility_helper_signatures (void)
 	(void) icon_size_get_pixels;
 	(void) image_new_from_icon_name;
 	(void) entry_get_text;
+	(void) entry_set_text;
+	(void) entry_set_width_chars;
 	(void) window_new;
 	(void) file_chooser_set_current_folder_path;
 	(void) file_chooser_dup_filename;
@@ -443,9 +449,11 @@ check_entry_text (gboolean gtk_ready)
 
 	entry = gtk_entry_new ();
 	g_object_ref_sink (entry);
-	gtk_editable_set_text (GTK_EDITABLE (entry), "channel search");
+	fabulor_gtk_entry_set_text (GTK_ENTRY (entry), "channel search");
+	fabulor_gtk_entry_set_width_chars (GTK_ENTRY (entry), 12);
 	valid = g_strcmp0 (fabulor_gtk_entry_get_text (GTK_ENTRY (entry)),
-		"channel search") == 0;
+		"channel search") == 0 &&
+		gtk_editable_get_width_chars (GTK_EDITABLE (entry)) == 12;
 	g_object_unref (entry);
 	return valid;
 }

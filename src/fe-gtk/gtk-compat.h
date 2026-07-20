@@ -129,6 +129,32 @@ fabulor_gtk_entry_get_text (GtkEntry *entry)
 #endif
 }
 
+static inline void
+fabulor_gtk_entry_set_text (GtkEntry *entry, const gchar *text)
+{
+	g_return_if_fail (GTK_IS_ENTRY (entry));
+	g_return_if_fail (text != NULL);
+
+#if GTK_MAJOR_VERSION >= 4
+	gtk_editable_set_text (GTK_EDITABLE (entry), text);
+#else
+	gtk_entry_set_text (entry, text);
+#endif
+}
+
+static inline void
+fabulor_gtk_entry_set_width_chars (GtkEntry *entry, gint width_chars)
+{
+	g_return_if_fail (GTK_IS_ENTRY (entry));
+	g_return_if_fail (width_chars >= -1);
+
+#if GTK_MAJOR_VERSION >= 4
+	gtk_editable_set_width_chars (GTK_EDITABLE (entry), width_chars);
+#else
+	gtk_entry_set_width_chars (entry, width_chars);
+#endif
+}
+
 static inline GtkWidget *
 fabulor_gtk_dialog_icon_new (const gchar *icon_name)
 {

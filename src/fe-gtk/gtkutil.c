@@ -532,7 +532,7 @@ gtkutil_get_str_response (GtkDialog *dialog, gint arg1, gpointer entry)
 	char *text;
 	void *user_data;
 
-	text = (char *) gtk_entry_get_text (GTK_ENTRY (entry));
+	text = (char *) fabulor_gtk_entry_get_text (GTK_ENTRY (entry));
 	callback = g_object_get_data (G_OBJECT (dialog), "cb");
 	user_data = g_object_get_data (G_OBJECT (dialog), "ud");
 
@@ -592,7 +592,7 @@ fe_get_str (char *msg, char *def, void *callback, void *userdata)
 	entry = gtk_entry_new ();
 	g_signal_connect (G_OBJECT (entry), "activate",
 						 	G_CALLBACK (gtkutil_str_enter), dialog);
-	gtk_entry_set_text (GTK_ENTRY (entry), def);
+	fabulor_gtk_entry_set_text (GTK_ENTRY (entry), def);
 
 	label = gtk_label_new (msg);
 	fabulor_gtk_box_append_trailing_pair (GTK_BOX (hbox), label, entry);

@@ -827,7 +827,7 @@ mg_inputbox_changed (GtkEditable *editable, session_gui *gui)
 {
         key_check_replace_on_change (editable, NULL);
         if (current_sess && current_sess->gui == gui)
-                mg_typing_update (current_sess, gtk_entry_get_text (GTK_ENTRY (editable)));
+                mg_typing_update (current_sess, fabulor_gtk_entry_get_text (GTK_ENTRY (editable)));
 }
 
 void
@@ -1306,8 +1306,8 @@ mg_unpopulate (session *sess)
         topic_buffer = gtk_text_view_get_buffer (GTK_TEXT_VIEW (gui->topic_entry));
         gtk_text_buffer_get_bounds (topic_buffer, &start, &end);
         res->topic_text = gtk_text_buffer_get_text (topic_buffer, &start, &end, FALSE);
-        res->limit_text = g_strdup (gtk_entry_get_text (GTK_ENTRY (gui->limit_entry)));
-        res->key_text = g_strdup (gtk_entry_get_text (GTK_ENTRY (gui->key_entry)));
+        res->limit_text = g_strdup (fabulor_gtk_entry_get_text (GTK_ENTRY (gui->limit_entry)));
+        res->key_text = g_strdup (fabulor_gtk_entry_get_text (GTK_ENTRY (gui->key_entry)));
         if (gui->laginfo)
                 res->lag_text = g_strdup (gtk_label_get_text (GTK_LABEL (gui->laginfo)));
         if (gui->throttleinfo)
@@ -1353,12 +1353,12 @@ mg_restore_entry (GtkWidget *entry, char **text)
 {
         if (*text)
         {
-                gtk_entry_set_text (GTK_ENTRY (entry), *text);
+                fabulor_gtk_entry_set_text (GTK_ENTRY (entry), *text);
                 g_free (*text);
                 *text = NULL;
         } else
         {
-                gtk_entry_set_text (GTK_ENTRY (entry), "");
+                fabulor_gtk_entry_set_text (GTK_ENTRY (entry), "");
         }
         gtk_editable_set_position (GTK_EDITABLE (entry), -1);
 }
@@ -3244,11 +3244,11 @@ flagl_hit (GtkWidget * wid, struct session *sess)
         {
                 if (serv->connected && sess->channel[0])
                 {
-                        limit_str = gtk_entry_get_text (GTK_ENTRY (sess->gui->limit_entry));
+                        limit_str = fabulor_gtk_entry_get_text (GTK_ENTRY (sess->gui->limit_entry));
                         if (check_is_number ((char *)limit_str) == FALSE)
                         {
                                 fe_message (_("User limit must be a number!\n"), FE_MSG_ERROR);
-                                gtk_entry_set_text (GTK_ENTRY (sess->gui->limit_entry), "");
+                                fabulor_gtk_entry_set_text (GTK_ENTRY (sess->gui->limit_entry), "");
                                 gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (wid), FALSE);
                                 return;
                         }
@@ -3269,7 +3269,7 @@ flagk_hit (GtkWidget * wid, struct session *sess)
         if (serv->connected && sess->channel[0])
         {
                 g_snprintf (modes, sizeof (modes), "-k %s", 
-                          gtk_entry_get_text (GTK_ENTRY (sess->gui->key_entry)));
+                          fabulor_gtk_entry_get_text (GTK_ENTRY (sess->gui->key_entry)));
 
                 if (gtk_toggle_button_get_active (GTK_TOGGLE_BUTTON (wid)))
                         modes[0] = '+';
@@ -3344,7 +3344,7 @@ mg_key_entry_cb (GtkWidget * igad, gpointer userdata)
         if (serv->connected && sess->channel[0])
         {
                 g_snprintf (modes, sizeof (modes), "+k %s",
-                                gtk_entry_get_text (GTK_ENTRY (igad)));
+                                fabulor_gtk_entry_get_text (GTK_ENTRY (igad)));
                 serv->p_mode (serv, sess->channel, modes);
                 serv->p_join_info (serv, sess->channel);
         }
@@ -3359,15 +3359,15 @@ mg_limit_entry_cb (GtkWidget * igad, gpointer userdata)
 
         if (serv->connected && sess->channel[0])
         {
-                if (check_is_number ((char *)gtk_entry_get_text (GTK_ENTRY (igad))) == FALSE)
+                if (check_is_number ((char *)fabulor_gtk_entry_get_text (GTK_ENTRY (igad))) == FALSE)
                 {
-                        gtk_entry_set_text (GTK_ENTRY (igad), "");
+                        fabulor_gtk_entry_set_text (GTK_ENTRY (igad), "");
                         fe_message (_("User limit must be a number!\n"), FE_MSG_ERROR);
                         gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (sess->gui->flag_l), FALSE);
                         return;
                 }
                 g_snprintf (modes, sizeof(modes), "+l %d", 
-                                atoi (gtk_entry_get_text (GTK_ENTRY (igad))));
+                                atoi (fabulor_gtk_entry_get_text (GTK_ENTRY (igad))));
                 serv->p_mode (serv, sess->channel, modes);
                 serv->p_join_info (serv, sess->channel);
         }
@@ -3464,7 +3464,7 @@ mg_create_chanmodebuttons (session_gui *gui, GtkWidget *box)
         gui->limit_entry = gtk_entry_new ();
         gtk_widget_set_name (gui->limit_entry, "zoitechat-inputbox");
         gtk_entry_set_max_length (GTK_ENTRY (gui->limit_entry), 10);
-	gtk_entry_set_width_chars (GTK_ENTRY (gui->limit_entry), 5);
+	fabulor_gtk_entry_set_width_chars (GTK_ENTRY (gui->limit_entry), 5);
         gtk_widget_set_size_request (gui->limit_entry, 45, 11);
         fabulor_gtk_box_append (GTK_BOX (box), gui->limit_entry, FALSE, FALSE, 0);
         mg_apply_emoji_fallback_widget (gui->limit_entry);
@@ -5463,7 +5463,7 @@ search_handle_event(int search_type, session *sess)
                                 (prefs.hex_text_search_regexp == 1? regexp: 0));
 
         if (search_type != SEARCH_REFRESH)
-                text = gtk_entry_get_text (GTK_ENTRY(sess->gui->shentry));
+                text = fabulor_gtk_entry_get_text (GTK_ENTRY(sess->gui->shentry));
 
         if (gtk_toggle_button_get_active (GTK_TOGGLE_BUTTON (sess->gui->shchan)))
         {
@@ -5560,7 +5560,7 @@ mg_search_toggle(session *sess)
         {
                 gtk_widget_hide(sess->gui->shbox);
                 gtk_widget_grab_focus(sess->gui->input_box);
-                gtk_entry_set_text(GTK_ENTRY(sess->gui->shentry), "");
+                fabulor_gtk_entry_set_text(GTK_ENTRY(sess->gui->shentry), "");
         }
         else
         {

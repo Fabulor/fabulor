@@ -2001,6 +2001,18 @@ repeated linker diagnostics. All 13 converted shared flat/tree model-stack
 symbols are now resolved. The next link-closure target is the remaining legacy
 GTK3 compatibility-call surface.
 
+Entry compatibility link-closure pass 57 (2026-07-21):
+the existing typed entry-text reader now has matching text-replacement and
+width-request helpers. GTK4 uses the `GtkEditable` API that owns these
+properties; GTK3 retains its original `GtkEntry` calls. Active frontend entry
+workflows and spell-entry macros route through the shared boundary. Shipping
+GTK3, strict MSVC GTK4, and Meson GTK4 probe validation pass with zero errors
+and warnings, including runtime text and width checks. The clean complete GTK4
+profile retains zero C compiler errors, improves from 76 to 73 unique unresolved
+symbols and from 166 to 144 repeated linker diagnostics, and reduces warnings
+from 336 to 278. The next link-closure target remains the legacy GTK3
+container/child ownership surface.
+
 Deliverables:
 
 - Make GTK4 the only production frontend dependency in MSVC, Meson, and CI.

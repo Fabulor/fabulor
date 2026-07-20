@@ -2294,7 +2294,7 @@ menu_join_cb (GtkDialog *dialog, gint response, GtkEntry *entry)
 	switch (response)
 	{
 	case GTK_RESPONSE_ACCEPT:
-		menu_chan_join (NULL, (char *)gtk_entry_get_text (GTK_ENTRY (entry)));
+		menu_chan_join (NULL, (char *)fabulor_gtk_entry_get_text (GTK_ENTRY (entry)));
 		break;
 
 	case GTK_RESPONSE_HELP:
@@ -2331,7 +2331,7 @@ menu_join (GtkWidget * wid, gpointer none)
 
 	entry = gtk_entry_new ();
 	gtk_editable_set_editable (GTK_EDITABLE (entry), FALSE);	/* avoid auto-selection */
-	gtk_entry_set_text (GTK_ENTRY (entry), "#");
+	fabulor_gtk_entry_set_text (GTK_ENTRY (entry), "#");
 	g_signal_connect (G_OBJECT (entry), "activate",
 						 	G_CALLBACK (menu_join_entry_cb), dialog);
 	label = gtk_label_new (_("Enter Channel to Join:"));

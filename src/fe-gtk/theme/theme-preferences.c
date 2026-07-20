@@ -660,7 +660,7 @@ theme_preferences_manager_row_apply (theme_color_manager_row *row, const GdkRGBA
         theme_preferences_color_button_apply (row->button, rgba);
         gtkutil_apply_palette (row->preview, rgba, NULL, NULL);
         hex = theme_preferences_format_hex (rgba);
-        gtk_entry_set_text (GTK_ENTRY (row->entry), hex);
+        fabulor_gtk_entry_set_text (GTK_ENTRY (row->entry), hex);
         g_free (hex);
 }
 
@@ -676,7 +676,7 @@ static void
 theme_preferences_manager_entry_commit (theme_color_manager_row *row)
 {
         GdkRGBA rgba;
-        const char *text = gtk_entry_get_text (GTK_ENTRY (row->entry));
+        const char *text = fabulor_gtk_entry_get_text (GTK_ENTRY (row->entry));
 
         if (!gdk_rgba_parse (&rgba, text))
         {
@@ -776,7 +776,7 @@ theme_preferences_manager_search_changed_cb (GtkEditable *editable, gpointer use
         char *needle_lower;
         size_t i;
 
-        needle_lower = g_utf8_strdown (gtk_entry_get_text (GTK_ENTRY (editable)), -1);
+        needle_lower = g_utf8_strdown (fabulor_gtk_entry_get_text (GTK_ENTRY (editable)), -1);
         for (i = 0; i < ui->rows->len; i++)
         {
                 theme_color_manager_row *row = g_ptr_array_index (ui->rows, i);
@@ -960,7 +960,7 @@ theme_preferences_create_color_manager_dialog (GtkWindow *parent, gboolean *colo
                 fabulor_gtk_box_append (GTK_BOX (hbox), button, FALSE, FALSE, 0);
 
                 entry = gtk_entry_new ();
-                gtk_entry_set_width_chars (GTK_ENTRY (entry), 9);
+                fabulor_gtk_entry_set_width_chars (GTK_ENTRY (entry), 9);
                 gtk_entry_set_max_length (GTK_ENTRY (entry), 9);
                 fabulor_gtk_box_append (GTK_BOX (hbox), entry, FALSE, FALSE, 0);
 
