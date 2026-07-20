@@ -699,6 +699,13 @@ boundary. A full shipping rebuild also removed the deprecated GTK3 icon-size
 lookup exposed by `GTK_DISABLE_DEPRECATED`, using Fabulor's existing 16- and
 24-pixel roles for resolved pixbuf assets.
 
+Stage 8 dialog-window hint pass 37 moves all active
+`GDK_WINDOW_TYPE_HINT_DIALOG` use behind a semantic compatibility helper. GTK3
+continues applying the window-manager hint to Join, shared utility, Server
+Editor, and Network List windows. GTK4 relies on each workflow's concrete
+dialog type plus existing transient and modal relationships; no removed hint
+enum reaches active GTK4 code.
+
 ## Functional Clusters
 
 | Cluster | Main files | GTK4 concern | Status |

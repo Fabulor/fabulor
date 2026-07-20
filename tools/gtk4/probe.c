@@ -237,6 +237,8 @@ check_compatibility_helper_signatures (void)
 		fabulor_gtk_window_move;
 	gboolean (*volatile window_get_position) (GtkWindow *, gint *, gint *) =
 		fabulor_gtk_window_get_position;
+	void (*volatile window_set_dialog_hint) (GtkWindow *) =
+		fabulor_gtk_window_set_dialog_hint;
 	void (*volatile window_placement_capture) (GtkWindow *,
 		FabulorGtkWindowPlacement *) = fabulor_gtk_window_placement_capture;
 	void (*volatile window_placement_restore) (GtkWindow *,
@@ -309,6 +311,7 @@ check_compatibility_helper_signatures (void)
 	(void) window_position_center_on_parent;
 	(void) window_move;
 	(void) window_get_position;
+	(void) window_set_dialog_hint;
 	(void) window_placement_capture;
 	(void) window_placement_restore;
 	(void) scrolled_window_set_child;

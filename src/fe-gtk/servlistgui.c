@@ -2113,7 +2113,7 @@ servlist_open_edit (GtkWidget *parent, ircnet *net)
 	gtk_window_set_default_size (GTK_WINDOW (editwindow), netedit_win_width, netedit_win_height);
 	gtk_window_set_transient_for (GTK_WINDOW (editwindow), GTK_WINDOW (parent));
 	gtk_window_set_modal (GTK_WINDOW (editwindow), TRUE);
-	gtk_window_set_type_hint (GTK_WINDOW (editwindow), GDK_WINDOW_TYPE_HINT_DIALOG);
+	fabulor_gtk_window_set_dialog_hint (GTK_WINDOW (editwindow));
 	gtk_window_set_role (GTK_WINDOW (editwindow), "editserv");
 
 	vbox5 = gtkutil_box_new (GTK_ORIENTATION_VERTICAL, FALSE, 0);
@@ -2431,7 +2431,7 @@ servlist_open_networks (void)
 	gtk_window_set_title (GTK_WINDOW (servlist), buf);
 	gtk_window_set_default_size (GTK_WINDOW (servlist), netlist_win_width, netlist_win_height);
 	gtk_window_set_role (GTK_WINDOW (servlist), "servlist");
-	gtk_window_set_type_hint (GTK_WINDOW (servlist), GDK_WINDOW_TYPE_HINT_DIALOG);
+	fabulor_gtk_window_set_dialog_hint (GTK_WINDOW (servlist));
 	if (current_sess)
 		gtk_window_set_transient_for (GTK_WINDOW (servlist), GTK_WINDOW (current_sess->gui->window));
 
