@@ -54,6 +54,7 @@ struct server_gui
 {
 	GtkWidget *rawlog_window;
 	GtkWidget *rawlog_textlist;
+	guint rawlog_theme_listener_id;
 
 	/* join dialog */
 	GtkWidget *joind_win;

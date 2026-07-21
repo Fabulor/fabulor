@@ -6004,6 +6004,50 @@ listeners are removed first; tray hiding does not finalize a live window; and
 temporary detach/reattach destruction cannot invoke stale or duplicate session
 cleanup. GTK3 callback behavior is retained. Packaging impact: none.
 
+### GTK4 Stage 8 Auxiliary Finalization Ownership
+
+Date: 2026-07-21
+
+Files/workflows converted: quit and fatal-font dialog pointer clearing, main
+user-list theme-listener lifetime, generic detached/embedded utility cleanup,
+Channel List timer/model cleanup, and Raw Log, Keyboard Shortcuts, and Print
+Events theme-listener ownership.
+
+Automated evidence:
+
+- shipping MSVC GTK3 frontend rebuild: pass; zero warnings and zero errors
+- strict MSVC GTK4 probe against GTK 4.22.4 / GLib 2.88.0: build and execution
+  pass under `/W4 /WX`; zero warnings and errors
+- Meson MSVC GTK4 probe: build and execution pass
+- repository GTK4 Python validation: 28 tests pass
+- source audit: `mg_create_generic_tab` accepts `GDestroyNotify`; all non-null
+  callers implement the exact one-argument cleanup signature
+- source audit: GTK4 generic tabs and user lists use weak finalization, while
+  quit and fatal-font globals use weak pointer clearing
+- source audit: Channel List, Raw Log, Keyboard Shortcuts, and Print Events no
+  longer register a second widget `destroy` cleanup callback
+- clean isolated complete GTK4 frontend compilation: zero C compiler errors and
+  173 warnings, unchanged from pass 72
+- expected complete GTK4 link failure retains 52 unique unresolved symbols and
+  62 repeated unresolved-symbol diagnostics
+- inventory log: `build/gtk4-full/auxiliary-finalization-pass73.log`
+- next target: Server List and Preferences top-level finalization callbacks
+- `git diff --check`: pass
+
+Manual checks deferred until the full GTK4 frontend links:
+
+- [ ] cancel and reopen the quit dialog without retaining a stale pointer
+- [ ] close and reopen each utility as a detached window and an embedded tab
+- [ ] close Channel List during refresh and verify timers stop and widths save
+- [ ] close Raw Log, Keyboard Shortcuts, and Print Events after a theme change
+- [ ] cancel Edit List and Keyboard Shortcuts without duplicate model cleanup
+- [ ] detach/reattach sessions and switch themes after user-list reconstruction
+
+Behavior contract: every generic utility cleanup runs once; close commands do
+not recursively finalize their model; theme listeners and Channel List sources
+cannot retain closed UI state; and GTK3 utility behavior remains unchanged.
+Packaging impact: none.
+
 ## Build Matrix
 
 | Check | GTK3 shipping target | GTK4 candidate | Final GTK4 target |

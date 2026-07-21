@@ -149,8 +149,7 @@ static int key_action_reopen_closed_tab (GtkWidget *wid,
 
 
 static GSList *keybind_list = NULL;
-
-#define KEY_DIALOG_THEME_LISTENER_ID_KEY "fkeys.theme-listener-id"
+static guint key_dialog_theme_listener_id;
 
 static void
 key_dialog_theme_apply (GtkWidget *window)
@@ -180,21 +179,6 @@ key_dialog_theme_changed (const ThemeChangedEvent *event, gpointer userdata)
 		return;
 
 	key_dialog_theme_apply (window);
-}
-
-static void
-key_dialog_theme_destroy_cb (GtkWidget *widget, gpointer userdata)
-{
-	guint listener_id;
-
-	(void) userdata;
-
-	listener_id = GPOINTER_TO_UINT (g_object_get_data (G_OBJECT (widget), KEY_DIALOG_THEME_LISTENER_ID_KEY));
-	if (listener_id)
-	{
-		theme_listener_unregister (listener_id);
-		g_object_set_data (G_OBJECT (widget), KEY_DIALOG_THEME_LISTENER_ID_KEY, NULL);
-	}
 }
 
 static gsize
@@ -641,12 +625,26 @@ key_dialog_normalize_modifiers (GdkModifierType modifiers, gpointer userdata)
 }
 
 static void
-key_dialog_close (GtkWidget *wid, gpointer userdata)
+key_dialog_finalize (gpointer userdata)
 {
-	fabulor_gtk_window_destroy (GTK_WINDOW (key_dialog));
+	(void) userdata;
+	if (key_dialog_theme_listener_id)
+	{
+		theme_listener_unregister (key_dialog_theme_listener_id);
+		key_dialog_theme_listener_id = 0;
+	}
 	key_dialog = NULL;
 	fabulor_key_binding_list_free (key_dialog_list);
 	key_dialog_list = NULL;
+}
+
+static void
+key_dialog_close (GtkWidget *wid, gpointer userdata)
+{
+	(void) wid;
+	(void) userdata;
+	if (key_dialog)
+		fabulor_gtk_window_destroy (GTK_WINDOW (key_dialog));
 }
 
 static void
@@ -839,7 +837,7 @@ key_dialog_show ()
 	}
 
 	g_snprintf(buf, sizeof(buf), _("Keyboard Shortcuts - %s"), _(DISPLAY_NAME));
-	key_dialog = mg_create_generic_tab ("editkeys", buf, TRUE, FALSE, key_dialog_close,
+	key_dialog = mg_create_generic_tab ("editkeys", buf, TRUE, FALSE, key_dialog_finalize,
 									NULL, 600, 360, &vbox, 0);
 
 	for (i = 0; i <= KEY_MAX_ACTIONS; i++)
@@ -878,9 +876,8 @@ key_dialog_show ()
 	gtk_xtext_set_font (GTK_XTEXT (xtext), prefs.hex_text_font);
 
 	g_object_set_data (G_OBJECT (key_dialog), "xtext", xtext);
-	g_object_set_data (G_OBJECT (key_dialog), KEY_DIALOG_THEME_LISTENER_ID_KEY,
-				   GUINT_TO_POINTER (theme_listener_register ("fkeys.window", key_dialog_theme_changed, key_dialog)));
-	g_signal_connect (G_OBJECT (key_dialog), "destroy", G_CALLBACK (key_dialog_theme_destroy_cb), NULL);
+	key_dialog_theme_listener_id = theme_listener_register (
+		"fkeys.window", key_dialog_theme_changed, key_dialog);
 
 	box = fabulor_gtk_button_box_new (GTK_ORIENTATION_HORIZONTAL,
 		FABULOR_GTK_BUTTON_BOX_SPREAD, 0);

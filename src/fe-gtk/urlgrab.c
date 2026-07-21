@@ -73,8 +73,9 @@ url_list_clicked_cb (GtkWidget *view, guint button, guint n_press, gdouble x,
 }
 
 static void
-url_closegui (GtkWidget *wid, gpointer userdata)
+url_closegui (gpointer userdata)
 {
+	(void) userdata;
 	urlgrabberwindow = 0;
 	urlgrabberlist = NULL;
 }

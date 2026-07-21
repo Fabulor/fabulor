@@ -132,8 +132,9 @@ plugingui_icon_button (GtkWidget *box, const char *label,
 
 
 static void
-plugingui_close (GtkWidget * wid, gpointer a)
+plugingui_close (gpointer userdata)
 {
+	(void) userdata;
 	plugin_window = NULL;
 	plugin_list_view = NULL;
 }

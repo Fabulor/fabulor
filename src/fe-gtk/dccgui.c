@@ -249,8 +249,9 @@ dcc_update_send (struct DCC *dcc)
 }
 
 static void
-close_dcc_file_window (GtkWindow *win, gpointer data)
+close_dcc_file_window (gpointer data)
 {
+	(void) data;
 	fabulor_dcc_transfer_list_free (dccfwin.transfers);
 	dccfwin.transfers = NULL;
 	dccfwin.window = NULL;
@@ -766,8 +767,9 @@ abort_chat_clicked (GtkWidget * wid, gpointer none)
 }
 
 static void
-dcc_chat_close_cb (void)
+dcc_chat_close_cb (gpointer userdata)
 {
+	(void) userdata;
 	fabulor_dcc_chat_list_free (dcccwin.chats);
 	dcccwin.chats = NULL;
 	dcccwin.window = NULL;

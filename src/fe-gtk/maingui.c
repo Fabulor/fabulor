@@ -1941,6 +1941,7 @@ mg_count_dccs (void)
         return dccs;
 }
 
+#if GTK_MAJOR_VERSION < 4
 static void
 mg_quit_dialog_destroy (GtkWidget *widget, gpointer user_data)
 {
@@ -1948,6 +1949,7 @@ mg_quit_dialog_destroy (GtkWidget *widget, gpointer user_data)
         if (quit_dialog == widget)
                 quit_dialog = NULL;
 }
+#endif
 
 static void
 mg_quit_dialog_response (GtkDialog *dialog, gint response_id,
@@ -2085,8 +2087,12 @@ mg_open_quit_dialog (gboolean minimize_button)
 
         g_signal_connect (G_OBJECT (dialog), "response",
                           G_CALLBACK (mg_quit_dialog_response), checkbutton1);
+#if GTK_MAJOR_VERSION >= 4
+        g_object_add_weak_pointer (G_OBJECT (dialog), (gpointer *) &quit_dialog);
+#else
         g_signal_connect (G_OBJECT (dialog), "destroy",
                           G_CALLBACK (mg_quit_dialog_destroy), NULL);
+#endif
         gtk_widget_show (dialog);
 }
 
@@ -3976,6 +3982,7 @@ mg_word_clicked (GtkWidget *xtext, const FabulorXTextHit *hit,
         }
 }
 
+#if GTK_MAJOR_VERSION < 4
 static void
 mg_font_error_dialog_destroy (GtkWidget *widget, gpointer user_data)
 {
@@ -3983,6 +3990,7 @@ mg_font_error_dialog_destroy (GtkWidget *widget, gpointer user_data)
         if (font_error_dialog == widget)
                 font_error_dialog = NULL;
 }
+#endif
 
 static void
 mg_font_error_dialog_response (GtkDialog *dialog, gint response_id,
@@ -4015,8 +4023,13 @@ mg_show_font_error (GtkWidget *xtext)
         gtk_window_set_resizable (GTK_WINDOW (font_error_dialog), FALSE);
         g_signal_connect (G_OBJECT (font_error_dialog), "response",
                           G_CALLBACK (mg_font_error_dialog_response), NULL);
+#if GTK_MAJOR_VERSION >= 4
+        g_object_add_weak_pointer (G_OBJECT (font_error_dialog),
+                                   (gpointer *) &font_error_dialog);
+#else
         g_signal_connect (G_OBJECT (font_error_dialog), "destroy",
                           G_CALLBACK (mg_font_error_dialog_destroy), NULL);
+#endif
         gtk_widget_show (font_error_dialog);
 }
 
@@ -4387,11 +4400,8 @@ mg_theme_window_changed (const ThemeChangedEvent *event, gpointer userdata)
 }
 
 static void
-mg_theme_userlist_destroy_cb (GtkWidget *widget, gpointer userdata)
+mg_theme_userlist_cleanup (session_gui *gui)
 {
-	session_gui *gui = userdata;
-
-	(void) widget;
 	if (!gui)
 		return;
 	if (gui->theme_userlist_listener_id)
@@ -4401,11 +4411,62 @@ mg_theme_userlist_destroy_cb (GtkWidget *widget, gpointer userdata)
 	}
 }
 
+#if GTK_MAJOR_VERSION >= 4
+static void
+mg_theme_userlist_finalized_cb (gpointer userdata, GObject *widget)
+{
+	session_gui *gui = userdata;
+
+	if ((gpointer) gui->user_tree == (gpointer) widget)
+		gui->user_tree = NULL;
+	mg_theme_userlist_cleanup (gui);
+}
+#else
+static void
+mg_theme_userlist_destroy_cb (GtkWidget *widget, session_gui *gui)
+{
+	if (gui->user_tree == widget)
+		gui->user_tree = NULL;
+	mg_theme_userlist_cleanup (gui);
+}
+#endif
+
+static void
+mg_theme_userlist_lifecycle_connect (session_gui *gui)
+{
+	if (!gui || !gui->user_tree)
+		return;
+#if GTK_MAJOR_VERSION >= 4
+	g_object_weak_ref (G_OBJECT (gui->user_tree),
+		mg_theme_userlist_finalized_cb, gui);
+#else
+	g_signal_connect (G_OBJECT (gui->user_tree), "destroy",
+		G_CALLBACK (mg_theme_userlist_destroy_cb), gui);
+#endif
+}
+
+static void
+mg_theme_userlist_lifecycle_disconnect (session_gui *gui)
+{
+	if (!gui || !gui->user_tree)
+		return;
+#if GTK_MAJOR_VERSION >= 4
+	g_object_weak_unref (G_OBJECT (gui->user_tree),
+		mg_theme_userlist_finalized_cb, gui);
+#else
+	g_signal_handlers_disconnect_by_func (G_OBJECT (gui->user_tree),
+		mg_theme_userlist_destroy_cb, gui);
+#endif
+	gui->user_tree = NULL;
+	mg_theme_userlist_cleanup (gui);
+}
+
 static void
 mg_theme_window_cleanup (GtkWidget *window, session_gui *gui)
 {
 	if (!gui)
 		return;
+	mg_theme_userlist_lifecycle_disconnect (gui);
 	if (window)
 		theme_manager_detach_window (window);
 	if (gui->theme_window_listener_id)
@@ -4519,7 +4580,7 @@ mg_create_userlist (session_gui *gui, GtkWidget *box)
 
         if (!gui->theme_userlist_listener_id)
                 gui->theme_userlist_listener_id = theme_listener_register ("maingui.userlist", mg_theme_userlist_changed, gui);
-        g_signal_connect (G_OBJECT (ulist), "destroy", G_CALLBACK (mg_theme_userlist_destroy_cb), gui);
+        mg_theme_userlist_lifecycle_connect (gui);
         mg_theme_apply_userlist_style (gui);
 
         gui->button_box_parent = vbox;
@@ -6543,10 +6604,62 @@ mg_changui_new (session *sess, restore_gui *res, int tab, int focus)
                 chan_focus (res->tab);
 }
 
+typedef struct
+{
+        GDestroyNotify callback;
+        gpointer userdata;
+} MgGenericTabLifecycle;
+
+static void
+mg_generic_tab_lifecycle_invoke (MgGenericTabLifecycle *lifecycle)
+{
+        lifecycle->callback (lifecycle->userdata);
+        g_free (lifecycle);
+}
+
+#if GTK_MAJOR_VERSION >= 4
+static void
+mg_generic_tab_finalized_cb (gpointer userdata, GObject *widget)
+{
+        (void) widget;
+        mg_generic_tab_lifecycle_invoke (userdata);
+}
+#else
+static void
+mg_generic_tab_destroy_cb (GtkWidget *widget, gpointer userdata)
+{
+        (void) widget;
+        mg_generic_tab_lifecycle_invoke (userdata);
+}
+#endif
+
+static void
+mg_generic_tab_lifecycle_connect (GtkWidget *widget,
+                                  GDestroyNotify callback,
+                                  gpointer userdata)
+{
+        MgGenericTabLifecycle *lifecycle;
+
+        if (!callback)
+                return;
+
+        lifecycle = g_new (MgGenericTabLifecycle, 1);
+        lifecycle->callback = callback;
+        lifecycle->userdata = userdata;
+#if GTK_MAJOR_VERSION >= 4
+        g_object_weak_ref (G_OBJECT (widget), mg_generic_tab_finalized_cb,
+                           lifecycle);
+#else
+        g_signal_connect (G_OBJECT (widget), "destroy",
+                          G_CALLBACK (mg_generic_tab_destroy_cb), lifecycle);
+#endif
+}
+
 GtkWidget *
 mg_create_generic_tab (char *name, char *title, int force_toplevel,
                                                           int link_buttons,
-                                                          void *close_callback, void *userdata,
+                                                          GDestroyNotify close_callback,
+                                                          gpointer userdata,
                                                           int width, int height, GtkWidget **vbox_ret,
                                                           void *family)
 {
@@ -6562,9 +6675,7 @@ mg_create_generic_tab (char *name, char *title, int force_toplevel,
                 *vbox_ret = vbox;
                 fabulor_gtk_window_set_child (GTK_WINDOW (win), vbox);
                 gtk_widget_show (vbox);
-                if (close_callback)
-                        g_signal_connect (G_OBJECT (win), "destroy",
-                                                                        G_CALLBACK (close_callback), userdata);
+                mg_generic_tab_lifecycle_connect (win, close_callback, userdata);
                 return win;
         }
 
@@ -6574,9 +6685,7 @@ mg_create_generic_tab (char *name, char *title, int force_toplevel,
         fabulor_gtk_container_set_uniform_inset (vbox, 3);
         *vbox_ret = vbox;
 
-        if (close_callback)
-                g_signal_connect (G_OBJECT (vbox), "destroy",
-                                                                G_CALLBACK (close_callback), userdata);
+        mg_generic_tab_lifecycle_connect (vbox, close_callback, userdata);
 
         mg_add_generic_tab (name, title, family, vbox);
 

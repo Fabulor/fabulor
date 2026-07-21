@@ -532,16 +532,21 @@ banlist_toggle (GtkWidget *item, gpointer data)
 }
 
 static void
-banlist_closegui (GtkWidget *wid, banlist_info *banl)
+banlist_closegui (gpointer userdata)
 {
+	banlist_info *banl = userdata;
 	session *sess = banl->sess;
 
-	if (sess->res->banlist == banl)
+	if (is_session (sess) && sess->res->banlist == banl)
 	{
 		fabulor_ban_list_free (banl->list);
 		g_free (banl);
 		sess->res->banlist = NULL;
+		return;
 	}
+
+	fabulor_ban_list_free (banl->list);
+	g_free (banl);
 }
 
 static GtkWidget *
