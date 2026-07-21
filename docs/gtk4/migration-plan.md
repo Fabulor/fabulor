@@ -2256,6 +2256,21 @@ from 173 to 166 warnings, from 52 to 50 unique unresolved symbols, and from 62
 to 59 repeated diagnostics, with zero compiler errors. Remaining Server List
 GTK3 widget/layout calls are the next contained target.
 
+Server List widget boundary pass 76 (2026-07-21):
+the network editor now resolves its editable character-set entry through one
+typed combo child adapter, and the login-method signal no longer relies on an
+unnecessary `GtkBin` cast. Server List and network-editor box attachment uses
+the shared expansion, fill, and padding boundary. Window roles remain active
+for GTK3 and are deliberately inert under GTK4, while default-button ownership
+uses GTK4's window default widget and preserves GTK3 can-default/grab-default
+behavior. The transitional GTK4 editable combo accessor is locally covered by
+the existing deprecation containment policy pending final `GtkDropDown`
+replacement. Shipping GTK3, strict MSVC and Meson GTK4 probes, and all 28
+repository tests remain clean. The complete GTK4 profile improves from 166 to
+156 warnings, from 50 to 46 unique unresolved symbols, and from 59 to 52
+repeated diagnostics, with zero compiler errors. Main-window label/icon child
+access and pane-layout queries are the next contained target.
+
 Deliverables:
 
 - Make GTK4 the only production frontend dependency in MSVC, Meson, and CI.

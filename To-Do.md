@@ -408,6 +408,7 @@ Detailed planning and evidence live in:
         - [x] Move auxiliary dialog pointers, user-list theme cleanup, and generic utility-tab cleanup to typed GTK3/GTK4 finalization.
         - [x] Move Server List, network-editor, certificate chooser, Preferences, and font-chooser cleanup to typed GTK3/GTK4 finalization.
         - [x] Move theme-import native choosers to weak GTK4 parent ownership and shared local-path projection.
+        - [x] Route Server List editable-combo child access, box attachment, window roles, and default-button ownership through typed GTK3/GTK4 boundaries.
         - [ ] Convert the remaining top-level visibility and lifecycle callbacks.
     - [ ] Bind application and preferences integration to the GTK4 theme controller.
       - [x] Separate GTK3 KDE/Wayland CSD reset ownership from GTK4 top-level theme classes.

@@ -814,7 +814,7 @@ gtkutil_window_new (char *title, char *role, int width, int height, int flags)
 #endif
 	gtk_window_set_title (GTK_WINDOW (win), title);
 	gtk_window_set_default_size (GTK_WINDOW (win), width, height);
-	gtk_window_set_role (GTK_WINDOW (win), role);
+	fabulor_gtk_window_set_role (GTK_WINDOW (win), role);
 	if (flags & 1)
 		fabulor_gtk_window_position_at_pointer (GTK_WINDOW (win));
 	if ((flags & 2) && parent_window)

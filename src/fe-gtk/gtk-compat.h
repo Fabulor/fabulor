@@ -213,6 +213,28 @@ fabulor_gtk_combo_box_set_single_column (GtkComboBox *combo_box)
 #endif
 }
 
+#if GTK_MAJOR_VERSION >= 4
+G_GNUC_BEGIN_IGNORE_DEPRECATIONS
+#endif
+static inline GtkEntry *
+fabulor_gtk_combo_box_get_entry (GtkComboBox *combo_box)
+{
+	GtkWidget *child;
+
+	g_return_val_if_fail (GTK_IS_COMBO_BOX (combo_box), NULL);
+
+#if GTK_MAJOR_VERSION >= 4
+	child = gtk_combo_box_get_child (combo_box);
+#else
+	child = gtk_bin_get_child (GTK_BIN (combo_box));
+#endif
+
+	return GTK_IS_ENTRY (child) ? GTK_ENTRY (child) : NULL;
+}
+#if GTK_MAJOR_VERSION >= 4
+G_GNUC_END_IGNORE_DEPRECATIONS
+#endif
+
 static inline void
 fabulor_gtk_label_set_wrap (GtkLabel *label, gboolean wrap)
 {
@@ -2107,6 +2129,45 @@ fabulor_gtk_window_set_child (GtkWindow *window, GtkWidget *child)
 		fabulor_gtk_widget_set_uniform_margin (child, *inset);
 #else
 	gtk_container_add (GTK_CONTAINER (window), child);
+#endif
+}
+
+static inline void
+fabulor_gtk_window_set_role (GtkWindow *window, const gchar *role)
+{
+	g_return_if_fail (GTK_IS_WINDOW (window));
+	g_return_if_fail (role != NULL);
+
+#if GTK_MAJOR_VERSION >= 4
+	(void) role;
+#else
+	gtk_window_set_role (window, role);
+#endif
+}
+
+static inline void
+fabulor_gtk_widget_set_can_default (GtkWidget *widget, gboolean can_default)
+{
+	g_return_if_fail (GTK_IS_WIDGET (widget));
+
+#if GTK_MAJOR_VERSION >= 4
+	(void) can_default;
+#else
+	gtk_widget_set_can_default (widget, can_default);
+#endif
+}
+
+static inline void
+fabulor_gtk_window_set_default_widget (GtkWindow *window, GtkWidget *widget)
+{
+	g_return_if_fail (GTK_IS_WINDOW (window));
+	g_return_if_fail (GTK_IS_WIDGET (widget));
+
+#if GTK_MAJOR_VERSION >= 4
+	gtk_window_set_default_widget (window, widget);
+#else
+	gtk_widget_set_can_default (widget, TRUE);
+	gtk_widget_grab_default (widget);
 #endif
 }
 
