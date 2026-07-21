@@ -1445,7 +1445,7 @@ theme_preferences_create_color_page (GtkWindow *parent,
         fabulor_gtk_container_set_uniform_inset (tab, 6);
         gtk_grid_set_row_spacing (GTK_GRID (tab), 2);
         gtk_grid_set_column_spacing (GTK_GRID (tab), 3);
-        gtk_container_add (GTK_CONTAINER (box), tab);
+        fabulor_gtk_box_append (GTK_BOX (box), tab, FALSE, TRUE, 0);
 
         theme_preferences_create_header (tab, 0, N_("Text Colors"));
 

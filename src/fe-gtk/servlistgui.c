@@ -2230,19 +2230,19 @@ servlist_open_edit (GtkWidget *parent, ircnet *net)
 	buttonadd = servlist_icon_button_new (_("_Add"), ICON_SERVLIST_ADD);
 	g_signal_connect (G_OBJECT (buttonadd), "clicked",
 							G_CALLBACK (servlist_addbutton_cb), notebook);
-	gtk_container_add (GTK_CONTAINER (vbuttonbox1), buttonadd);
+	fabulor_gtk_box_append (GTK_BOX (vbuttonbox1), buttonadd, FALSE, TRUE, 0);
 	gtk_widget_set_can_default (buttonadd, TRUE);
 
 	buttonremove = servlist_icon_button_new (_("_Remove"), ICON_SERVLIST_REMOVE);
 	g_signal_connect (G_OBJECT (buttonremove), "clicked",
 							G_CALLBACK (servlist_deletebutton_cb), notebook);
-	gtk_container_add (GTK_CONTAINER (vbuttonbox1), buttonremove);
+	fabulor_gtk_box_append (GTK_BOX (vbuttonbox1), buttonremove, FALSE, TRUE, 0);
 	gtk_widget_set_can_default (buttonremove, TRUE);
 
 	buttonedit = gtk_button_new_with_mnemonic (_("_Edit"));
 	g_signal_connect (G_OBJECT (buttonedit), "clicked",
 							G_CALLBACK (servlist_editbutton_cb), notebook);
-	gtk_container_add (GTK_CONTAINER (vbuttonbox1), buttonedit);
+	fabulor_gtk_box_append (GTK_BOX (vbuttonbox1), buttonedit, FALSE, TRUE, 0);
 	gtk_widget_set_can_default (buttonedit, TRUE);
 
 
@@ -2399,7 +2399,7 @@ servlist_open_edit (GtkWidget *parent, ircnet *net)
 	button10 = servlist_icon_button_new (_("_Close"), ICON_SERVLIST_CLOSE);
 	g_signal_connect (G_OBJECT (button10), "clicked",
 							G_CALLBACK (servlist_edit_close_cb), 0);
-	gtk_container_add (GTK_CONTAINER (hbuttonbox4), button10);
+	fabulor_gtk_box_append (GTK_BOX (hbuttonbox4), button10, FALSE, TRUE, 0);
 	gtk_widget_set_can_default (button10, TRUE);
 
 	if (net->flags & FLAG_USE_GLOBAL)
@@ -2609,7 +2609,7 @@ servlist_open_networks (void)
 		gtk_check_button_new_with_mnemonic (_("Skip network list on startup"));
 	gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (checkbutton_skip),
 											prefs.hex_gui_slist_skip);
-	gtk_container_add (GTK_CONTAINER (hbox), checkbutton_skip);
+	fabulor_gtk_box_append (GTK_BOX (hbox), checkbutton_skip, FALSE, TRUE, 0);
 	g_signal_connect (G_OBJECT (checkbutton_skip), "toggled",
 							G_CALLBACK (no_servlist), 0);
 	gtk_widget_show (checkbutton_skip);
@@ -2618,7 +2618,7 @@ servlist_open_networks (void)
 		gtk_check_button_new_with_mnemonic (_("Show favorites only"));
 	gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (checkbutton_fav),
 											prefs.hex_gui_slist_fav);
-	gtk_container_add (GTK_CONTAINER (hbox), checkbutton_fav);
+	fabulor_gtk_box_append (GTK_BOX (hbox), checkbutton_fav, FALSE, TRUE, 0);
 	g_signal_connect (G_OBJECT (checkbutton_fav), "toggled",
 							G_CALLBACK (fav_servlist), 0);
 	gtk_widget_show (checkbutton_fav);
@@ -2635,21 +2635,21 @@ servlist_open_networks (void)
 	g_signal_connect (G_OBJECT (button_add), "clicked",
 							G_CALLBACK (servlist_addnet_cb), networks_tree);
 	gtk_widget_show (button_add);
-	gtk_container_add (GTK_CONTAINER (vbuttonbox2), button_add);
+	fabulor_gtk_box_append (GTK_BOX (vbuttonbox2), button_add, FALSE, TRUE, 0);
 	gtk_widget_set_can_default (button_add, TRUE);
 
 	button_remove = servlist_icon_button_new (_("_Remove"), ICON_SERVLIST_REMOVE);
 	g_signal_connect (G_OBJECT (button_remove), "clicked",
 							G_CALLBACK (servlist_deletenet_cb), 0);
 	gtk_widget_show (button_remove);
-	gtk_container_add (GTK_CONTAINER (vbuttonbox2), button_remove);
+	fabulor_gtk_box_append (GTK_BOX (vbuttonbox2), button_remove, FALSE, TRUE, 0);
 	gtk_widget_set_can_default (button_remove, TRUE);
 
 	button_edit = gtk_button_new_with_mnemonic (_("_Edit..."));
 	g_signal_connect (G_OBJECT (button_edit), "clicked",
 							G_CALLBACK (servlist_edit_cb), 0);
 	gtk_widget_show (button_edit);
-	gtk_container_add (GTK_CONTAINER (vbuttonbox2), button_edit);
+	fabulor_gtk_box_append (GTK_BOX (vbuttonbox2), button_edit, FALSE, TRUE, 0);
 	gtk_widget_set_can_default (button_edit, TRUE);
 
 	button_sort = gtk_button_new_with_mnemonic (_("_Sort"));
@@ -2658,7 +2658,7 @@ servlist_open_networks (void)
 	g_signal_connect (G_OBJECT (button_sort), "clicked",
 							G_CALLBACK (servlist_sort), 0);
 	gtk_widget_show (button_sort);
-	gtk_container_add (GTK_CONTAINER (vbuttonbox2), button_sort);
+	fabulor_gtk_box_append (GTK_BOX (vbuttonbox2), button_sort, FALSE, TRUE, 0);
 	gtk_widget_set_can_default (button_sort, TRUE);
 
 	button_sort = gtk_button_new_with_mnemonic (_("_Favor"));
@@ -2666,7 +2666,7 @@ servlist_open_networks (void)
 	g_signal_connect (G_OBJECT (button_sort), "clicked",
 							G_CALLBACK (servlist_favor), 0);
 	gtk_widget_show (button_sort);
-	gtk_container_add (GTK_CONTAINER (vbuttonbox2), button_sort);
+	fabulor_gtk_box_append (GTK_BOX (vbuttonbox2), button_sort, FALSE, TRUE, 0);
 	gtk_widget_set_can_default (button_sort, TRUE);
 
 	hseparator1 = gtk_separator_new (GTK_ORIENTATION_HORIZONTAL);
@@ -2683,7 +2683,7 @@ servlist_open_networks (void)
 	gtk_widget_show (button_close);
 	g_signal_connect (G_OBJECT (button_close), "clicked",
 							G_CALLBACK (servlist_close_cb), 0);
-	gtk_container_add (GTK_CONTAINER (hbuttonbox1), button_close);
+	fabulor_gtk_box_append (GTK_BOX (hbuttonbox1), button_close, FALSE, TRUE, 0);
 	gtk_widget_set_can_default (button_close, TRUE);
 
 button_connect = gtkutil_button (hbuttonbox1, ICON_SERVLIST_CONNECT, NULL,
