@@ -5642,6 +5642,35 @@ Behavior contract: Preferences pages remain lazy and each page factory runs at
 most once per Preferences window registry. Page order, scrolling, visibility,
 and factory selection are unchanged. Packaging impact: none.
 
+### GTK4 Stage 8 Layout Reparent Ownership
+
+Date: 2026-07-21
+
+Files/workflows converted: initial pane hierarchy construction and channel-view
+or user-list movement between pane and grid positions.
+
+Automated evidence:
+
+- shipping MSVC GTK3 frontend rebuild: pass; zero errors
+- strict MSVC GTK4 probe against GTK 4.22.4 / GLib 2.88.0: compile, link, and
+  execution pass under `/W4 /WX`; zero warnings and zero errors
+- Meson MSVC GTK4 probe: compile, link, and execution pass
+- strict runtime checks: pane and grid children survive typed detachment, have
+  no parent while retained, reattach to the requested owner, and release their
+  temporary reference; an unparented child reports no detach
+- clean isolated complete GTK4 frontend compilation: zero C compiler errors and
+  225 warnings, improved from 228 warnings
+- expected complete GTK4 link failure improves from 69 to 66 unique unresolved
+  symbols and from 100 to 97 repeated unresolved-symbol diagnostics
+- `gtk_container_remove`, `gtk_paned_pack1`, and `gtk_paned_pack2` no longer
+  appear in the GTK4 link inventory
+- next target: channel-list menu item construction ownership
+- `git diff --check`: pass
+
+Behavior contract: layout positions, hidden attachment, pane-divider settings,
+and temporary child lifetime are unchanged. GTK3 retains its resize and shrink
+flags; GTK4 uses explicit pane slots and grid removal. Packaging impact: none.
+
 ## Build Matrix
 
 | Check | GTK3 shipping target | GTK4 candidate | Final GTK4 target |

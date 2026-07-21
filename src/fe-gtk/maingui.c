@@ -4521,25 +4521,32 @@ mg_create_center (session *sess, session_gui *gui, GtkWidget *box)
 
         if (prefs.hex_gui_win_swap)
         {
-                gtk_paned_pack2 (GTK_PANED (gui->hpane_left), gui->vpane_left, FALSE, FALSE);
-			    gtk_paned_pack1 (GTK_PANED (gui->hpane_left), gui->hpane_right, TRUE, TRUE);
+                fabulor_gtk_paned_set_end_child (GTK_PANED (gui->hpane_left),
+                        gui->vpane_left, FALSE, FALSE);
+                fabulor_gtk_paned_set_start_child (GTK_PANED (gui->hpane_left),
+                        gui->hpane_right, TRUE, TRUE);
         }
         else
         {
-                gtk_paned_pack1 (GTK_PANED (gui->hpane_left), gui->vpane_left, FALSE, FALSE);
-			    gtk_paned_pack2 (GTK_PANED (gui->hpane_left), gui->hpane_right, TRUE, TRUE);
+                fabulor_gtk_paned_set_start_child (GTK_PANED (gui->hpane_left),
+                        gui->vpane_left, FALSE, FALSE);
+                fabulor_gtk_paned_set_end_child (GTK_PANED (gui->hpane_left),
+                        gui->hpane_right, TRUE, TRUE);
         }
-        gtk_paned_pack2 (GTK_PANED (gui->hpane_right), gui->vpane_right, FALSE, TRUE);
+        fabulor_gtk_paned_set_end_child (GTK_PANED (gui->hpane_right),
+                gui->vpane_right, FALSE, TRUE);
 
         fabulor_gtk_box_append (GTK_BOX (box), gui->hpane_left, TRUE, TRUE, 0);
 
         gui->note_book = book = gtk_notebook_new ();
         gtk_notebook_set_show_tabs (GTK_NOTEBOOK (book), FALSE);
         gtk_notebook_set_show_border (GTK_NOTEBOOK (book), FALSE);
-        gtk_paned_pack1 (GTK_PANED (gui->hpane_right), book, TRUE, TRUE);
+        fabulor_gtk_paned_set_start_child (GTK_PANED (gui->hpane_right),
+                book, TRUE, TRUE);
 
         hbox = mg_box_new (GTK_ORIENTATION_HORIZONTAL, FALSE, 0);
-        gtk_paned_pack1 (GTK_PANED (gui->vpane_right), hbox, FALSE, TRUE);
+        fabulor_gtk_paned_set_start_child (GTK_PANED (gui->vpane_right),
+                hbox, FALSE, TRUE);
         mg_create_userlist (gui, hbox);
 
         gui->user_box = hbox;
@@ -4611,23 +4618,17 @@ mg_sanitize_positions (int *cv, int *ul)
 static void
 mg_place_userlist_and_chanview_real (session_gui *gui, GtkWidget *userlist, GtkWidget *chanview)
 {
-        int unref_userlist = FALSE;
-        int unref_chanview = FALSE;
+        gboolean unref_userlist = FALSE;
+        gboolean unref_chanview = FALSE;
 
         /* first, remove userlist/treeview from their containers */
-        if (userlist && gtk_widget_get_parent (userlist))
-        {
-                g_object_ref (userlist);
-                gtk_container_remove (GTK_CONTAINER (gtk_widget_get_parent (userlist)), userlist);
-                unref_userlist = TRUE;
-        }
+        if (userlist)
+                unref_userlist =
+                        fabulor_gtk_layout_retain_and_detach_child (userlist);
 
-        if (chanview && gtk_widget_get_parent (chanview))
-        {
-                g_object_ref (chanview);
-                gtk_container_remove (GTK_CONTAINER (gtk_widget_get_parent (chanview)), chanview);
-                unref_chanview = TRUE;
-        }
+        if (chanview)
+                unref_chanview =
+                        fabulor_gtk_layout_retain_and_detach_child (chanview);
 
         if (chanview)
         {
@@ -4641,16 +4642,20 @@ mg_place_userlist_and_chanview_real (session_gui *gui, GtkWidget *userlist, GtkW
                 switch (prefs.hex_gui_tab_pos)
                 {
                 case POS_TOPLEFT:
-                        gtk_paned_pack1 (GTK_PANED (gui->vpane_left), chanview, FALSE, TRUE);
+                        fabulor_gtk_paned_set_start_child (
+                                GTK_PANED (gui->vpane_left), chanview, FALSE, TRUE);
                         break;
                 case POS_BOTTOMLEFT:
-                        gtk_paned_pack2 (GTK_PANED (gui->vpane_left), chanview, FALSE, TRUE);
+                        fabulor_gtk_paned_set_end_child (
+                                GTK_PANED (gui->vpane_left), chanview, FALSE, TRUE);
                         break;
                 case POS_TOPRIGHT:
-                        gtk_paned_pack1 (GTK_PANED (gui->vpane_right), chanview, FALSE, TRUE);
+                        fabulor_gtk_paned_set_start_child (
+                                GTK_PANED (gui->vpane_right), chanview, FALSE, TRUE);
                         break;
                 case POS_BOTTOMRIGHT:
-                        gtk_paned_pack2 (GTK_PANED (gui->vpane_right), chanview, FALSE, TRUE);
+                        fabulor_gtk_paned_set_end_child (
+                                GTK_PANED (gui->vpane_right), chanview, FALSE, TRUE);
                         break;
                 case POS_TOP:
                         gtk_widget_set_margin_bottom (chanview, GUI_SPACING - 1);
@@ -4700,18 +4705,22 @@ mg_place_userlist_and_chanview_real (session_gui *gui, GtkWidget *userlist, GtkW
                 switch (prefs.hex_gui_ulist_pos)
                 {
                 case POS_TOPLEFT:
-                        gtk_paned_pack1 (GTK_PANED (gui->vpane_left), userlist, FALSE, TRUE);
+                        fabulor_gtk_paned_set_start_child (
+                                GTK_PANED (gui->vpane_left), userlist, FALSE, TRUE);
                         break;
                 case POS_BOTTOMLEFT:
-                        gtk_paned_pack2 (GTK_PANED (gui->vpane_left), userlist, FALSE, TRUE);
+                        fabulor_gtk_paned_set_end_child (
+                                GTK_PANED (gui->vpane_left), userlist, FALSE, TRUE);
                         break;
                 case POS_BOTTOMRIGHT:
-                        gtk_paned_pack2 (GTK_PANED (gui->vpane_right), userlist, FALSE, TRUE);
+                        fabulor_gtk_paned_set_end_child (
+                                GTK_PANED (gui->vpane_right), userlist, FALSE, TRUE);
                         break;
                 /*case POS_HIDDEN:
                         break;*/        /* Hide using the VIEW menu instead */
                 default:/* POS_TOPRIGHT */
-                        gtk_paned_pack1 (GTK_PANED (gui->vpane_right), userlist, FALSE, TRUE);
+                        fabulor_gtk_paned_set_start_child (
+                                GTK_PANED (gui->vpane_right), userlist, FALSE, TRUE);
                 }
         }
 

@@ -2061,6 +2061,20 @@ warnings, and reduces repeated unresolved diagnostics from 104 to 100.
 `setup.c` no longer contributes generic child enumeration, attachment, or
 `show_all` calls. Typed child reparenting/removal is next.
 
+Layout reparent ownership pass 62 (2026-07-21):
+the main channel-view and user-list roots now retain themselves while detaching
+from their known pane or grid owner, then reattach through typed pane/grid APIs
+before releasing the temporary reference. Initial main-window pane construction
+uses the same start/end helpers. GTK3 privately preserves generic removal and
+pack resize/shrink arguments; GTK4 clears the matching pane slot or removes the
+grid child. Strict MSVC and Meson probes verify pane/grid detach, lifetime,
+reattachment, and an unparented no-op, and shipping GTK3 remains clean. The
+complete GTK4 profile retains zero compiler errors while improving from 228 to
+225 warnings, from 100 to 97 repeated diagnostics, and from 69 to 66 unique
+unresolved symbols. The GTK4 link boundary no longer contains
+`gtk_container_remove`, `gtk_paned_pack1`, or `gtk_paned_pack2`. Channel-list
+menu item construction is the next remaining generic child-ownership target.
+
 Deliverables:
 
 - Make GTK4 the only production frontend dependency in MSVC, Meson, and CI.

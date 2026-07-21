@@ -278,6 +278,8 @@ check_compatibility_helper_signatures (void)
 		gboolean) = fabulor_gtk_paned_set_start_child;
 	void (*volatile paned_set_end_child) (GtkPaned *, GtkWidget *, gboolean,
 		gboolean) = fabulor_gtk_paned_set_end_child;
+	gboolean (*volatile layout_retain_and_detach_child) (GtkWidget *) =
+		fabulor_gtk_layout_retain_and_detach_child;
 	void (*volatile frame_set_child) (GtkFrame *, GtkWidget *) =
 		fabulor_gtk_frame_set_child;
 	void (*volatile frame_set_outlined) (GtkFrame *) =
@@ -358,6 +360,7 @@ check_compatibility_helper_signatures (void)
 	(void) scrolled_window_set_framed;
 	(void) paned_set_start_child;
 	(void) paned_set_end_child;
+	(void) layout_retain_and_detach_child;
 	(void) frame_set_child;
 	(void) frame_set_outlined;
 	(void) button_set_child;
@@ -552,6 +555,52 @@ check_content_and_list_ownership (gboolean gtk_ready)
 		row_child && gtk_widget_get_parent (row) == list &&
 		gtk_widget_get_first_child (list) == row;
 	g_object_unref (list);
+	return valid;
+}
+
+static gboolean
+check_layout_reparent_ownership (gboolean gtk_ready)
+{
+	GtkWidget *paned;
+	GtkWidget *paned_child;
+	GtkWidget *grid;
+	GtkWidget *grid_child;
+	GtkWidget *unparented;
+	gboolean valid;
+
+	if (!gtk_ready)
+		return TRUE;
+
+	paned = gtk_paned_new (GTK_ORIENTATION_HORIZONTAL);
+	paned_child = gtk_label_new ("paned child");
+	g_object_ref_sink (paned);
+	fabulor_gtk_paned_set_start_child (GTK_PANED (paned), paned_child,
+		FALSE, TRUE);
+	valid = fabulor_gtk_layout_retain_and_detach_child (paned_child) &&
+		gtk_widget_get_parent (paned_child) == NULL;
+	fabulor_gtk_paned_set_end_child (GTK_PANED (paned), paned_child,
+		FALSE, TRUE);
+	valid = valid && gtk_widget_get_parent (paned_child) == paned;
+	g_object_unref (paned_child);
+	g_object_unref (paned);
+
+	grid = gtk_grid_new ();
+	grid_child = gtk_label_new ("grid child");
+	g_object_ref_sink (grid);
+	gtk_grid_attach (GTK_GRID (grid), grid_child, 0, 0, 1, 1);
+	valid = valid &&
+		fabulor_gtk_layout_retain_and_detach_child (grid_child) &&
+		gtk_widget_get_parent (grid_child) == NULL;
+	gtk_grid_attach (GTK_GRID (grid), grid_child, 0, 0, 1, 1);
+	valid = valid && gtk_widget_get_parent (grid_child) == grid;
+	g_object_unref (grid_child);
+	g_object_unref (grid);
+
+	unparented = gtk_label_new ("unparented");
+	g_object_ref_sink (unparented);
+	valid = valid &&
+		!fabulor_gtk_layout_retain_and_detach_child (unparented);
+	g_object_unref (unparented);
 	return valid;
 }
 
@@ -4848,6 +4897,11 @@ main (void)
 	if (!check_content_and_list_ownership (gtk_ready))
 	{
 		fprintf (stderr, "GTK4 content or list ownership mismatch\n");
+		return 1;
+	}
+	if (!check_layout_reparent_ownership (gtk_ready))
+	{
+		fprintf (stderr, "GTK4 layout reparent ownership mismatch\n");
 		return 1;
 	}
 	if (!check_entry_text (gtk_ready))

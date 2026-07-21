@@ -909,6 +909,17 @@ symbols while improving from 233 to 228 warnings and from 104 to 100 repeated
 linker diagnostics. `setup.c` no longer calls `gtk_container_get_children`,
 `gtk_container_add`, or `gtk_widget_show_all`.
 
+Stage 8 layout reparent ownership pass 62 gives movable channel-view and user-
+list roots a retain-and-detach boundary restricted to their known `GtkPaned` or
+`GtkGrid` owners. GTK4 clears the matching pane slot or removes the grid child;
+GTK3 privately retains generic container removal. Initial and subsequent pane
+attachment now use the typed start/end helpers. Strict MSVC and Meson runtime
+checks cover pane and grid detach, temporary lifetime, reattachment, and the
+unparented case. The complete GTK4 inventory retains zero C compiler errors
+while improving from 228 to 225 warnings, from 100 to 97 repeated diagnostics,
+and from 69 to 66 unique unresolved symbols. `gtk_container_remove`,
+`gtk_paned_pack1`, and `gtk_paned_pack2` are closed from the GTK4 link boundary.
+
 ## Functional Clusters
 
 | Cluster | Main files | GTK4 concern | Status |
