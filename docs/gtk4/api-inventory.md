@@ -1089,6 +1089,17 @@ to zero compiler errors, 156 warnings, 46 unique unresolved symbols, and 52
 repeated diagnostics. `servlistgui.c` contributes no remaining GTK4 compiler
 diagnostics.
 
+Stage 8 main-window child and pane boundary pass 77 removes active `GtkBin`,
+image-pixbuf inspection, legacy paned child queries, and style-property handle
+reads from `maingui.c`. The nickname button uses typed child lookup. Access
+icons retain an owned source pixbuf for identity comparison while GTK4 renders
+through `GdkTexture`. Shared paned accessors map start/end ownership, and
+divider size derives from allocated GTK4 pane geometry while preserving GTK3's
+style property. Right-pane restoration no longer connects GTK4 to the removed
+`size-allocate` signal; a one-shot frame callback waits for complete child
+allocation. The full GTK4 inventory improves to zero compiler errors, 142
+warnings, 40 unique unresolved symbols, and 46 repeated diagnostics.
+
 ## Functional Clusters
 
 | Cluster | Main files | GTK4 concern | Status |

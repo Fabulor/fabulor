@@ -117,6 +117,38 @@ fabulor_gtk_image_new_from_icon_name (const gchar *icon_name,
 	return image;
 }
 
+#define FABULOR_GTK_IMAGE_SOURCE_PIXBUF_DATA "fabulor-gtk-image-source-pixbuf"
+
+static inline GtkWidget *
+fabulor_gtk_image_new_from_pixbuf (GdkPixbuf *pixbuf)
+{
+	GtkWidget *image;
+
+	g_return_val_if_fail (GDK_IS_PIXBUF (pixbuf), NULL);
+
+#if GTK_MAJOR_VERSION >= 4
+	GdkTexture *texture = gdk_texture_new_for_pixbuf (pixbuf);
+
+	image = gtk_image_new_from_paintable (GDK_PAINTABLE (texture));
+	g_object_unref (texture);
+#else
+	image = gtk_image_new_from_pixbuf (pixbuf);
+#endif
+	g_object_set_data_full (G_OBJECT (image),
+		FABULOR_GTK_IMAGE_SOURCE_PIXBUF_DATA, g_object_ref (pixbuf),
+		(GDestroyNotify) g_object_unref);
+	return image;
+}
+
+static inline GdkPixbuf *
+fabulor_gtk_image_get_source_pixbuf (GtkImage *image)
+{
+	g_return_val_if_fail (GTK_IS_IMAGE (image), NULL);
+
+	return g_object_get_data (G_OBJECT (image),
+		FABULOR_GTK_IMAGE_SOURCE_PIXBUF_DATA);
+}
+
 static inline GtkWidget *
 fabulor_gtk_button_new_with_icon_and_mnemonic (const gchar *label,
 											   const gchar *icon_name,
@@ -2348,6 +2380,77 @@ fabulor_gtk_paned_set_end_child (GtkPaned *paned, GtkWidget *child,
 #endif
 }
 
+static inline GtkWidget *
+fabulor_gtk_paned_get_start_child (GtkPaned *paned)
+{
+	g_return_val_if_fail (GTK_IS_PANED (paned), NULL);
+
+#if GTK_MAJOR_VERSION >= 4
+	return gtk_paned_get_start_child (paned);
+#else
+	return gtk_paned_get_child1 (paned);
+#endif
+}
+
+static inline GtkWidget *
+fabulor_gtk_paned_get_end_child (GtkPaned *paned)
+{
+	g_return_val_if_fail (GTK_IS_PANED (paned), NULL);
+
+#if GTK_MAJOR_VERSION >= 4
+	return gtk_paned_get_end_child (paned);
+#else
+	return gtk_paned_get_child2 (paned);
+#endif
+}
+
+static inline gint
+fabulor_gtk_paned_get_handle_size (GtkPaned *paned)
+{
+	g_return_val_if_fail (GTK_IS_PANED (paned), 0);
+
+#if GTK_MAJOR_VERSION >= 4
+	GtkWidget *end_child = gtk_paned_get_end_child (paned);
+	gint handle_size;
+
+	if (!end_child)
+		return 0;
+
+	if (gtk_orientable_get_orientation (GTK_ORIENTABLE (paned)) ==
+		GTK_ORIENTATION_HORIZONTAL)
+	{
+		handle_size = gtk_widget_get_width (GTK_WIDGET (paned)) -
+			gtk_paned_get_position (paned) - gtk_widget_get_width (end_child);
+	}
+	else
+	{
+		handle_size = gtk_widget_get_height (GTK_WIDGET (paned)) -
+			gtk_paned_get_position (paned) - gtk_widget_get_height (end_child);
+	}
+	return MAX (handle_size, 0);
+#else
+	gint handle_size = 0;
+
+	gtk_widget_style_get (GTK_WIDGET (paned), "handle-size", &handle_size, NULL);
+	return handle_size;
+#endif
+}
+
+static inline gint
+fabulor_gtk_widget_get_allocated_width (GtkWidget *widget)
+{
+	g_return_val_if_fail (GTK_IS_WIDGET (widget), 0);
+
+#if GTK_MAJOR_VERSION >= 4
+	return gtk_widget_get_width (widget);
+#else
+	GtkAllocation allocation;
+
+	gtk_widget_get_allocation (widget, &allocation);
+	return allocation.width;
+#endif
+}
+
 static inline gboolean
 fabulor_gtk_layout_retain_and_detach_child (GtkWidget *child)
 {
@@ -2427,6 +2530,18 @@ fabulor_gtk_button_set_child (GtkButton *button, GtkWidget *child)
 	gtk_button_set_child (button, child);
 #else
 	gtk_container_add (GTK_CONTAINER (button), child);
+#endif
+}
+
+static inline GtkWidget *
+fabulor_gtk_button_get_child (GtkButton *button)
+{
+	g_return_val_if_fail (GTK_IS_BUTTON (button), NULL);
+
+#if GTK_MAJOR_VERSION >= 4
+	return gtk_button_get_child (button);
+#else
+	return gtk_bin_get_child (GTK_BIN (button));
 #endif
 }
 
