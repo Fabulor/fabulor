@@ -2145,6 +2145,19 @@ to 183 warnings and from 72 to 69 repeated diagnostics. `dccgui.obj` is clean,
 and Preferences is now the sole remaining retired radio-button caller and the
 next contained target.
 
+Preferences grouped-choice pass 68 (2026-07-21):
+the Appearance page's Tabs and Tree switcher choices now use the shared typed
+grouped-control constructor and checked-state access. The intentionally blank
+list entry still reserves preference index 1, so Tabs and Tree retain indices
+0 and 2 and existing configuration remains compatible. GTK3 keeps native radio
+buttons, while GTK4 uses grouped check buttons without importing GTK3 group
+lists or invalid toggle casts. Strict MSVC and Meson probes and the shipping
+GTK3 build remain clean. The complete GTK4 profile retains zero compiler errors
+while improving from 183 to 178 warnings, from 69 to 66 repeated diagnostics,
+and from 56 to 53 unique unresolved symbols. The retired radio-button family
+is now contained wholly inside the GTK3 compatibility branch. Preferences
+ordinary check-button state access is the next contained target.
+
 Deliverables:
 
 - Make GTK4 the only production frontend dependency in MSVC, Meson, and CI.
