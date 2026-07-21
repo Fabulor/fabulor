@@ -357,6 +357,7 @@ Detailed planning and evidence live in:
       - [x] Present the live main menu through a retained GTK4 popover menu bar with dynamic user/plugin refresh and action-state synchronization.
       - [x] Remove `GtkAccelGroup` from the GTK4 main-menu API and contain legacy accelerator refresh and menu constructors in GTK3.
       - [x] Contain the generic GTK3 popup widget builder after typed GTK4 context-model replacement.
+      - [x] Compile residual main-window and tray widget-menu constructors only for GTK3 after retained/native GTK4 replacement.
       - [x] Contain the GTK3 Away check-item synchronization callback behind shared action dispatch.
       - [x] Contain GTK3 `/MENU` widget lookup and mutation while refreshing retained GTK4 menu models after changes.
       - [x] Replace the retired system-icon forced-size lookup with an owned GTK4 paintable-to-pixbuf path.

@@ -1171,6 +1171,7 @@ tray_foreach_server (GtkWidget *item, char *cmd)
 	}
 }
 
+#if GTK_MAJOR_VERSION < 4
 static GtkWidget *
 tray_make_item (GtkWidget *menu, char *label, void *callback, void *userdata)
 {
@@ -1201,8 +1202,9 @@ blink_item (unsigned int *setting, GtkWidget *menu, char *label)
 	menu_toggle_item (label, menu, tray_toggle_cb, setting, *setting);
 }
 #endif
+#endif
 
-#if !HAVE_APPINDICATOR_BACKEND
+#if !HAVE_APPINDICATOR_BACKEND && GTK_MAJOR_VERSION < 4
 static void
 tray_menu_destroy (GtkWidget *menu, gpointer userdata)
 {
@@ -1221,7 +1223,7 @@ tray_menu_destroy (GtkWidget *menu, gpointer userdata)
 }
 #endif
 
-#ifdef WIN32
+#if defined(WIN32) && GTK_MAJOR_VERSION < 4
 static gboolean
 tray_menu_enter_cb (GtkWidget *menu)
 {
@@ -1376,6 +1378,7 @@ tray_win32_menu_cb (void)
 }
 #endif
 
+#if GTK_MAJOR_VERSION < 4
 static void
 tray_menu_populate (GtkWidget *menu)
 {
@@ -1420,6 +1423,7 @@ tray_menu_populate (GtkWidget *menu)
 	tray_make_item (menu, NULL, tray_menu_quit_cb, NULL);
 	mg_create_icon_item (_("_Quit"), ICON_TRAY_QUIT, menu, tray_menu_quit_cb, NULL);
 }
+#endif
 
 #if !defined(WIN32)
 static void
@@ -1449,6 +1453,9 @@ tray_toggle_item_destroy_cb (GtkWidget *widget, gpointer userdata)
 static void
 tray_update_toggle_item_label (void)
 {
+#if GTK_MAJOR_VERSION >= 4
+	tray_toggle_item = NULL;
+#else
 	const char *label;
 
 	if (!tray_toggle_item)
@@ -1466,6 +1473,7 @@ tray_update_toggle_item_label (void)
 
 	gtk_menu_item_set_label (GTK_MENU_ITEM (tray_toggle_item), label);
 	gtk_menu_item_set_use_underline (GTK_MENU_ITEM (tray_toggle_item), TRUE);
+#endif
 }
 
 #if !defined(WIN32)

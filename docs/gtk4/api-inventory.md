@@ -1109,6 +1109,15 @@ container iteration private. The full GTK4 inventory improves to zero compiler
 errors, 140 warnings, 38 unique unresolved symbols, and 44 repeated
 diagnostics.
 
+Stage 8 legacy widget-menu constructor containment pass 79 makes the shared
+main-window icon/submenu declarations and implementations GTK3-only, together
+with tray widget-menu item creation, population, destruction, Win32 hover
+tracking, and mutable item-label updates. GTK4 retains its tab context menu
+model/presenter and the native Windows tray popup. The full GTK4 inventory
+improves to zero compiler errors, 123 warnings, 33 unique unresolved symbols,
+and 37 repeated diagnostics; `plugin-tray.c` contributes no compiler warnings
+from legacy widget-menu construction.
+
 ## Functional Clusters
 
 | Cluster | Main files | GTK4 concern | Status |

@@ -1887,6 +1887,7 @@ mg_tab_close (session *sess)
         }
 }
 
+#if GTK_MAJOR_VERSION < 4
 static void
 mg_menu_destroy (GtkWidget *menu, gpointer userdata)
 {
@@ -1906,6 +1907,7 @@ mg_create_icon_item (char *label, char *stock, GtkWidget *menu,
                                                         userdata);
         gtk_widget_show (item);
 }
+#endif
 
 static int
 mg_count_networks (void)

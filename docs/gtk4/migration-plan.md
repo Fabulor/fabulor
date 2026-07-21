@@ -2299,6 +2299,19 @@ from 142 to 140 warnings, from 40 to 38 unique unresolved symbols, and from 46
 to 44 repeated diagnostics, with zero compiler errors. Residual main-window
 GTK3 popup/menu constructor containment is the next target.
 
+Legacy widget-menu constructor containment pass 79 (2026-07-21):
+the main-window icon-item constructor, submenu helper declaration, popup
+release callback, and the tray's widget-menu population helpers now compile
+only for GTK3. GTK3 tab context menus and optional legacy tray backends retain
+their existing icon, submenu, activation, and destruction behavior. GTK4 keeps
+the retained tab context model/presenter and native Windows tray menu; stale
+GTK menu-item creation, population, Win32 hover timer, and label mutation are
+not present in that profile. Shipping GTK3, strict MSVC and Meson GTK4 probes,
+and all 28 repository tests remain clean. The complete GTK4 profile improves
+from 140 to 123 warnings, from 38 to 33 unique unresolved symbols, and from 44
+to 37 repeated diagnostics, with zero compiler errors. Legacy GTK status-icon
+backend isolation is the next contained target.
+
 Deliverables:
 
 - Make GTK4 the only production frontend dependency in MSVC, Meson, and CI.
