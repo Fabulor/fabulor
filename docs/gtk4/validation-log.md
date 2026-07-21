@@ -6340,6 +6340,45 @@ the active session. Right-pane width is measured from the window's right edge,
 includes the live divider width, and is restored only after complete layout.
 GTK3 geometry behavior is unchanged.
 
+### GTK4 Stage 8 Reply-Bar Visibility Boundary
+
+Date: 2026-07-21
+
+Files/workflows converted: main-window reply-bar initial visibility, explicit
+child reveal, reply-state activation, cancellation, and post-send hiding.
+
+Automated evidence:
+
+- shipping MSVC GTK3 frontend build: pass; zero warnings and zero errors
+- strict MSVC GTK4 probe against GTK 4.22.4 / GLib 2.88.0: build and execution
+  pass under `/W4 /WX`; zero warnings and errors
+- Meson MSVC GTK4 probe: clean configure, build, and execution pass
+- repository GTK4 Python validation: 28 tests pass
+- source audit: `maingui.c` no longer calls `gtk_container_foreach()` or
+  `gtk_widget_set_no_show_all()`
+- source audit: GTK3 keeps recursive-show exclusion inside the compatibility
+  helper; GTK4 uses explicit visibility and sibling traversal
+- clean isolated complete GTK4 frontend compilation: zero C compiler errors
+  and 140 warnings, down from 142 in pass 77
+- expected complete GTK4 link failure improves from 40 to 38 unique unresolved
+  symbols and from 46 to 44 repeated unresolved-symbol diagnostics
+- inventory log: `build/gtk4-full/reply-bar-visibility-pass78.log`
+- next target: residual main-window GTK3 popup/menu constructor containment
+- `git diff --check`: pass
+
+Manual checks deferred until the full GTK4 frontend links:
+
+- [ ] open a channel with no reply selected and confirm the reply bar is hidden
+- [ ] select Reply and confirm the label and close button appear together
+- [ ] cancel a reply and confirm the bar hides without changing edit-box text
+- [ ] send a tagged reply and confirm the bar hides after dispatch
+- [ ] switch tabs with different reply state and confirm visibility follows the
+  active session
+
+Behavior contract: an inactive reply bar is never exposed by initial window
+reveal. Active reply state reveals the complete bar atomically, and clearing
+reply state hides the bar without changing its children or input state.
+
 ## Stage Completion Rule
 
 A stage can move to complete in `migration-plan.md` only when:

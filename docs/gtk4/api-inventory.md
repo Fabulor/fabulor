@@ -1100,6 +1100,15 @@ style property. Right-pane restoration no longer connects GTK4 to the removed
 allocation. The full GTK4 inventory improves to zero compiler errors, 142
 warnings, 40 unique unresolved symbols, and 46 repeated diagnostics.
 
+Stage 8 reply-bar visibility boundary pass 78 removes active
+`gtk_container_foreach()` and `gtk_widget_set_no_show_all()` use from
+`maingui.c`. A shared hidden-until-explicitly-shown helper preserves GTK3's
+recursive `show_all()` exclusion and maps GTK4 to direct visibility. A typed
+immediate-child reveal helper uses GTK4 sibling traversal and keeps GTK3
+container iteration private. The full GTK4 inventory improves to zero compiler
+errors, 140 warnings, 38 unique unresolved symbols, and 44 repeated
+diagnostics.
+
 ## Functional Clusters
 
 | Cluster | Main files | GTK4 concern | Status |
