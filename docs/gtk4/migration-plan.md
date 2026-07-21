@@ -2211,6 +2211,22 @@ unresolved symbols, and 62 repeated diagnostics. Remaining auxiliary
 main-window dialog, user-list, and generic-tab finalization callbacks are the
 next contained lifecycle target.
 
+Auxiliary finalization pass 73 (2026-07-21):
+the generic utility-tab constructor now accepts one typed `GDestroyNotify`
+cleanup contract. GTK4 owns it through weak finalization and GTK3 invokes it
+from a single destroy bridge, removing incompatible zero-, one-, and two-
+argument callback casts. Utility model release, theme-listener removal,
+Channel List timer/configuration cleanup, and global pointer clearing now run
+once under that owner. Edit List and Keyboard Shortcuts close commands only
+request window destruction and no longer recursively clean a window already
+closing. Quit and fatal-font dialogs use weak pointer clearing in GTK4, while
+the main user-list listener has an explicit disconnect path before GUI release.
+Shipping GTK3, strict MSVC and Meson GTK4 probes, and repository validation
+remain clean. The full GTK4 profile remains at zero compiler errors, 173
+warnings, 52 unique unresolved symbols, and 62 repeated diagnostics. Server
+List and Preferences top-level finalization are the next contained lifecycle
+target.
+
 Deliverables:
 
 - Make GTK4 the only production frontend dependency in MSVC, Meson, and CI.

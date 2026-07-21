@@ -47,8 +47,6 @@
 #define ICON_RAWLOG_CLEAR "zc-menu-clear"
 #define ICON_RAWLOG_SAVE_AS "zc-menu-save-as"
 
-#define RAWLOG_THEME_LISTENER_ID_KEY "rawlog.theme-listener-id"
-
 static void
 rawlog_theme_apply (GtkWidget *window)
 {
@@ -80,25 +78,19 @@ rawlog_theme_changed (const ThemeChangedEvent *event, gpointer userdata)
 }
 
 static void
-rawlog_theme_destroy_cb (GtkWidget *widget, gpointer userdata)
+close_rawlog (gpointer userdata)
 {
-	guint listener_id;
+	server *serv = userdata;
 
-	(void) userdata;
-
-	listener_id = GPOINTER_TO_UINT (g_object_get_data (G_OBJECT (widget), RAWLOG_THEME_LISTENER_ID_KEY));
-	if (listener_id)
-	{
-		theme_listener_unregister (listener_id);
-		g_object_set_data (G_OBJECT (widget), RAWLOG_THEME_LISTENER_ID_KEY, NULL);
-	}
-}
-
-static void
-close_rawlog (GtkWidget *wid, server *serv)
-{
 	if (is_server (serv))
+	{
+		if (serv->gui->rawlog_theme_listener_id)
+		{
+			theme_listener_unregister (serv->gui->rawlog_theme_listener_id);
+			serv->gui->rawlog_theme_listener_id = 0;
+		}
 		serv->gui->rawlog_window = 0;
+	}
 }
 
 static void
@@ -200,9 +192,8 @@ open_rawlog (struct server *serv)
 	/* Copy selection to clipboard when Ctrl+Shift+C is pressed AND text auto-copy is disabled */
 	fabulor_gtk_widget_on_key_pressed (serv->gui->rawlog_window,
 									rawlog_key_cb, serv->gui->rawlog_textlist);
-	g_object_set_data (G_OBJECT (serv->gui->rawlog_window), RAWLOG_THEME_LISTENER_ID_KEY,
-				   GUINT_TO_POINTER (theme_listener_register ("rawlog.window", rawlog_theme_changed, serv->gui->rawlog_window)));
-	g_signal_connect (G_OBJECT (serv->gui->rawlog_window), "destroy", G_CALLBACK (rawlog_theme_destroy_cb), NULL);
+	serv->gui->rawlog_theme_listener_id = theme_listener_register (
+		"rawlog.window", rawlog_theme_changed, serv->gui->rawlog_window);
 
 	fabulor_gtk_widget_reveal_tree (serv->gui->rawlog_window);
 	rawlog_theme_apply (serv->gui->rawlog_window);

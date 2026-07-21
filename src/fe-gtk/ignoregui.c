@@ -130,8 +130,9 @@ ignore_new_entry_clicked (GtkWidget *widget, gpointer user_data)
 }
 
 static void
-close_ignore_gui_callback (void)
+close_ignore_gui_callback (gpointer userdata)
 {
+	(void) userdata;
 	ignore_save ();
 	ignorewin = NULL;
 	ignore_view = NULL;

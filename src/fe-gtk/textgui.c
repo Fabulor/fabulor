@@ -51,8 +51,7 @@ extern char *pntevts[];
 
 static GtkWidget *pevent_dialog = NULL, *pevent_dialog_twid;
 static FabulorPrintEventList *pevent_dialog_lists;
-
-#define PEVENT_THEME_LISTENER_ID_KEY "textgui.theme-listener-id"
+static guint pevent_theme_listener_id;
 
 /* this is only used in xtext.c for indented timestamping */
 int
@@ -141,8 +140,14 @@ PrintTextRaw (void *xtbuf, unsigned char *text, int indent, time_t stamp)
 }
 
 static void
-pevent_dialog_close (GtkWidget *wid, gpointer arg)
+pevent_dialog_close (gpointer userdata)
 {
+	(void) userdata;
+	if (pevent_theme_listener_id)
+	{
+		theme_listener_unregister (pevent_theme_listener_id);
+		pevent_theme_listener_id = 0;
+	}
 	fabulor_print_event_list_free (pevent_dialog_lists);
 	pevent_dialog_lists = NULL;
 	pevent_dialog = NULL;
@@ -177,21 +182,6 @@ pevent_dialog_theme_changed (const ThemeChangedEvent *event, gpointer userdata)
 		return;
 
 	pevent_dialog_theme_apply (window);
-}
-
-static void
-pevent_dialog_theme_destroy_cb (GtkWidget *widget, gpointer userdata)
-{
-	guint listener_id;
-
-	(void) userdata;
-
-	listener_id = GPOINTER_TO_UINT (g_object_get_data (G_OBJECT (widget), PEVENT_THEME_LISTENER_ID_KEY));
-	if (listener_id)
-	{
-		theme_listener_unregister (listener_id);
-		g_object_set_data (G_OBJECT (widget), PEVENT_THEME_LISTENER_ID_KEY, NULL);
-	}
 }
 
 static gboolean
@@ -392,9 +382,8 @@ pevent_dialog_show ()
 	fabulor_gtk_scrolled_window_set_child (GTK_SCROLLED_WINDOW (wid), pevent_dialog_twid);
 	gtk_xtext_set_font (GTK_XTEXT (pevent_dialog_twid), prefs.hex_text_font);
 	g_object_set_data (G_OBJECT (pevent_dialog), "xtext", pevent_dialog_twid);
-	g_object_set_data (G_OBJECT (pevent_dialog), PEVENT_THEME_LISTENER_ID_KEY,
-				   GUINT_TO_POINTER (theme_listener_register ("textgui.events", pevent_dialog_theme_changed, pevent_dialog)));
-	g_signal_connect (G_OBJECT (pevent_dialog), "destroy", G_CALLBACK (pevent_dialog_theme_destroy_cb), NULL);
+	pevent_theme_listener_id = theme_listener_register (
+		"textgui.events", pevent_dialog_theme_changed, pevent_dialog);
 
 	hbox = fabulor_gtk_button_box_new (GTK_ORIENTATION_HORIZONTAL,
 		FABULOR_GTK_BUTTON_BOX_SPREAD, 0);

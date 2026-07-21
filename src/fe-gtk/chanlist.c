@@ -911,7 +911,7 @@ chanlist_button_cb (GtkWidget *view, guint button, guint n_press,
 }
 
 static void
-chanlist_destroy_widget (GtkWidget *wid, server *serv)
+chanlist_cleanup (server *serv)
 {
 	int channel_width, users_width, topic_width;
 
@@ -951,10 +951,15 @@ chanlist_destroy_widget (GtkWidget *wid, server *serv)
 }
 
 static void
-chanlist_closegui (GtkWidget *wid, server *serv)
+chanlist_closegui (gpointer userdata)
 {
+	server *serv = userdata;
+
 	if (is_server (serv))
+	{
+		chanlist_cleanup (serv);
 		serv->gui->chanlist_window = NULL;
+	}
 }
 
 static void
@@ -1202,9 +1207,6 @@ chanlist_opengui (server *serv, int do_refresh)
 	chanlist_grid_attach (table, wid, 2, 0, 1, 5, FALSE, FALSE,
 						  GTK_ALIGN_FILL, GTK_ALIGN_FILL);
 	gtk_widget_show (wid);
-
-	g_signal_connect (G_OBJECT (serv->gui->chanlist_window), "destroy",
-							G_CALLBACK (chanlist_destroy_widget), serv);
 
 	/* reset the counters. */
 	chanlist_reset_counters (serv);

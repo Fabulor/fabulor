@@ -54,8 +54,9 @@ static FabulorNotifyList *notify_gui_list;
 
 
 static void
-notify_closegui (void)
+notify_closegui (gpointer userdata)
 {
+	(void) userdata;
 	notify_window = 0;
 	notify_gui_list = NULL;
 	notify_button_opendialog = NULL;

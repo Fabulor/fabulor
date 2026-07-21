@@ -155,12 +155,21 @@ editlist_add (GtkWidget *wid, gpointer userdata)
 }
 
 static void
-editlist_close (GtkWidget *wid, gpointer userdata)
+editlist_finalize (gpointer userdata)
 {
-	fabulor_gtk_window_destroy (GTK_WINDOW (editlist_win));
+	(void) userdata;
 	editlist_win = NULL;
 	fabulor_editable_list_free (editlist_model);
 	editlist_model = NULL;
+}
+
+static void
+editlist_close (GtkWidget *wid, gpointer userdata)
+{
+	(void) wid;
+	(void) userdata;
+	if (editlist_win)
+		fabulor_gtk_window_destroy (GTK_WINDOW (editlist_win));
 }
 
 static gboolean
@@ -199,7 +208,7 @@ editlist_gui_open (char *title1, char *title2, GSList *list, char *title, char *
 	}
 
 	editlist_win = mg_create_generic_tab (wmclass, title, TRUE, FALSE,
-												editlist_close, NULL, 450, 250, &vbox, 0);
+										editlist_finalize, NULL, 450, 250, &vbox, 0);
 
 	editlist_list = list;
 	editlist_model = fabulor_editable_list_new ();

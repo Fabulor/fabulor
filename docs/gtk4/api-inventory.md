@@ -1040,6 +1040,19 @@ inventory is unchanged at zero compiler errors, 173 warnings, 52 unique
 unresolved symbols, and 62 repeated diagnostics because this pass changes
 runtime callback ownership rather than linked API families.
 
+Stage 8 auxiliary finalization pass 73 replaces the generic utility-tab API's
+untyped close callback with `GDestroyNotify`. GTK4 invokes one owned cleanup at
+object finalization; GTK3 retains one bridged `destroy` callback. Ban List,
+Channel List, transfers, DCC chat, editable lists, keyboard shortcuts, Ignore,
+Plugins and Scripts, Friends, Raw Log, Print Events, and URL Grabber now share
+that exact callback contract. Theme listeners, Channel List timers and model
+state, and utility models are released by the same owner instead of separate
+signal handlers. Quit and fatal-font dialog pointers use GTK4 weak pointers,
+and the main user-list listener is disconnected before its `session_gui` can
+be freed. Shipping GTK3 and strict probes remain clean. The complete GTK4
+inventory remains at zero compiler errors, 173 warnings, 52 unique unresolved
+symbols, and 62 repeated diagnostics.
+
 ## Functional Clusters
 
 | Cluster | Main files | GTK4 concern | Status |
