@@ -2090,6 +2090,19 @@ improving from 225 to 213 warnings, from 97 to 87 repeated diagnostics, and from
 GTK4 link boundary. Remaining Channel List button image and window lifecycle
 compatibility are the next contained target.
 
+Icon/mnemonic button and Channel List lifecycle pass 64 (2026-07-21):
+Channel List and plugin-manager command buttons now use one typed constructor.
+GTK4 owns an explicit horizontal image/label child, preserves the mnemonic's
+association with its button, and applies the Fabulor menu icon size; GTK3
+retains its native image-button behavior. Channel List construction failures
+now close through the shared window lifecycle helper. Strict MSVC and Meson
+probes verify the GTK4 child tree, icon, size, label, and mnemonic target, while
+shipping GTK3 remains clean. The complete GTK4 profile retains zero compiler
+errors while improving from 213 to 210 warnings, from 87 to 84 repeated
+diagnostics, and from 61 to 60 unique unresolved symbols.
+`gtk_button_set_image` leaves the GTK4 link boundary. Remaining Channel View
+button presentation and lifecycle calls are the next contained target.
+
 Deliverables:
 
 - Make GTK4 the only production frontend dependency in MSVC, Meson, and CI.

@@ -5701,6 +5701,37 @@ separated channel/topic copying, icons, and Autojoin state are retained. GTK4
 actions use an owned selection snapshot; GTK3 behavior is unchanged. Packaging
 impact: one GTK4-only model source is added to frontend and probe build inputs.
 
+### GTK4 Stage 8 Icon/Mnemonic Button And Channel List Lifecycle
+
+Date: 2026-07-21
+
+Files/workflows converted: Channel List and plugin-manager icon/mnemonic button
+construction plus Channel List model/view construction-failure cleanup.
+
+Automated evidence:
+
+- shipping MSVC GTK3 frontend rebuild: pass; zero errors
+- strict MSVC GTK4 probe against GTK 4.22.4 / GLib 2.88.0: compile, link, and
+  execution pass under `/W4 /WX`; zero warnings and zero errors
+- Meson MSVC GTK4 probe: compile, link, and execution pass
+- strict runtime checks: the button owns an image followed by one mnemonic
+  label; icon identity and 16-pixel menu sizing are retained; displayed label
+  text omits the mnemonic marker and targets the containing button
+- clean isolated complete GTK4 frontend compilation: zero C compiler errors and
+  210 warnings, improved from 213 warnings
+- expected complete GTK4 link failure improves from 61 to 60 unique unresolved
+  symbols and from 87 to 84 repeated unresolved-symbol diagnostics
+- closed symbol: `gtk_button_set_image`; both direct Channel List
+  `gtk_widget_destroy` calls are removed
+- inventory log: `build/gtk4-full/channel-list-button-lifecycle-final.log`
+- next target: Channel View button presentation and lifecycle compatibility
+- `git diff --check`: pass
+
+Behavior contract: button labels, icons, mnemonics, click callbacks, and GTK3
+presentation are unchanged. Channel List construction failures retain their
+existing close behavior through a typed GTK3/GTK4 helper. Packaging impact:
+none.
+
 ## Build Matrix
 
 | Check | GTK3 shipping target | GTK4 candidate | Final GTK4 target |

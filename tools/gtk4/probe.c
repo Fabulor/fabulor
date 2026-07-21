@@ -151,6 +151,9 @@ check_compatibility_helper_signatures (void)
 		fabulor_gtk_icon_size_get_pixels;
 	GtkWidget *(*volatile image_new_from_icon_name) (const gchar *,
 		FabulorGtkIconSize) = fabulor_gtk_image_new_from_icon_name;
+	GtkWidget *(*volatile button_new_with_icon_and_mnemonic) (const gchar *,
+		const gchar *, FabulorGtkIconSize) =
+		fabulor_gtk_button_new_with_icon_and_mnemonic;
 	const gchar *(*volatile entry_get_text) (GtkEntry *) =
 		fabulor_gtk_entry_get_text;
 	void (*volatile entry_set_text) (GtkEntry *, const gchar *) =
@@ -300,6 +303,7 @@ check_compatibility_helper_signatures (void)
 	(void) dialog_icon_new;
 	(void) icon_size_get_pixels;
 	(void) image_new_from_icon_name;
+	(void) button_new_with_icon_and_mnemonic;
 	(void) entry_get_text;
 	(void) entry_set_text;
 	(void) entry_set_width_chars;
@@ -639,6 +643,36 @@ check_icon_button (gboolean gtk_ready)
 	valid = GTK_IS_IMAGE (child) &&
 		g_strcmp0 (gtk_image_get_icon_name (GTK_IMAGE (child)),
 			"go-bottom-symbolic") == 0;
+	g_object_unref (button);
+	return valid;
+}
+
+static gboolean
+check_icon_mnemonic_button (gboolean gtk_ready)
+{
+	GtkWidget *button;
+	GtkWidget *box;
+	GtkWidget *image;
+	GtkWidget *label;
+	gboolean valid;
+
+	if (!gtk_ready)
+		return TRUE;
+
+	button = fabulor_gtk_button_new_with_icon_and_mnemonic ("Go _Now",
+		"go-bottom-symbolic", FABULOR_GTK_ICON_SIZE_MENU);
+	g_object_ref_sink (button);
+	box = gtk_button_get_child (GTK_BUTTON (button));
+	image = GTK_IS_BOX (box) ? gtk_widget_get_first_child (box) : NULL;
+	label = image ? gtk_widget_get_next_sibling (image) : NULL;
+	valid = GTK_IS_IMAGE (image) && GTK_IS_LABEL (label) &&
+		gtk_widget_get_next_sibling (label) == NULL &&
+		g_strcmp0 (gtk_image_get_icon_name (GTK_IMAGE (image)),
+			"go-bottom-symbolic") == 0 &&
+		gtk_image_get_pixel_size (GTK_IMAGE (image)) ==
+			FABULOR_GTK_ICON_SIZE_MENU &&
+		g_strcmp0 (gtk_label_get_text (GTK_LABEL (label)), "Go Now") == 0 &&
+		gtk_label_get_mnemonic_widget (GTK_LABEL (label)) == button;
 	g_object_unref (button);
 	return valid;
 }
@@ -5003,6 +5037,11 @@ main (void)
 	if (!check_icon_button (gtk_ready))
 	{
 		fprintf (stderr, "GTK4 icon button contract mismatch\n");
+		return 1;
+	}
+	if (!check_icon_mnemonic_button (gtk_ready))
+	{
+		fprintf (stderr, "GTK4 icon mnemonic button contract mismatch\n");
 		return 1;
 	}
 	if (!check_frame_presentation (gtk_ready))

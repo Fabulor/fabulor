@@ -117,6 +117,39 @@ fabulor_gtk_image_new_from_icon_name (const gchar *icon_name,
 	return image;
 }
 
+static inline GtkWidget *
+fabulor_gtk_button_new_with_icon_and_mnemonic (const gchar *label,
+											   const gchar *icon_name,
+											   FabulorGtkIconSize size)
+{
+	GtkWidget *button;
+	GtkWidget *image;
+
+	g_return_val_if_fail (label != NULL, NULL);
+	g_return_val_if_fail (icon_name != NULL, NULL);
+
+#if GTK_MAJOR_VERSION >= 4
+	GtkWidget *box;
+	GtkWidget *label_widget;
+
+	button = gtk_button_new ();
+	box = gtk_box_new (GTK_ORIENTATION_HORIZONTAL, 6);
+	image = fabulor_gtk_image_new_from_icon_name (icon_name, size);
+	label_widget = gtk_label_new_with_mnemonic (label);
+	gtk_label_set_mnemonic_widget (GTK_LABEL (label_widget), button);
+	gtk_box_append (GTK_BOX (box), image);
+	gtk_box_append (GTK_BOX (box), label_widget);
+	gtk_button_set_child (GTK_BUTTON (button), box);
+#else
+	button = gtk_button_new_with_mnemonic (label);
+	image = fabulor_gtk_image_new_from_icon_name (icon_name, size);
+	gtk_button_set_image (GTK_BUTTON (button), image);
+	gtk_button_set_use_underline (GTK_BUTTON (button), TRUE);
+#endif
+
+	return button;
+}
+
 static inline const gchar *
 fabulor_gtk_entry_get_text (GtkEntry *entry)
 {

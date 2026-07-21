@@ -374,6 +374,7 @@ Detailed planning and evidence live in:
       - [x] Give lazy Preferences pages explicit creation state and typed box ownership.
       - [x] Retain and detach movable channel/user layout children through typed pane and grid owners.
       - [x] Replace the Channel List GTK3 popup with an owned GTK4 multi-selection action model and popover.
+      - [x] Compose Channel List and plugin-manager icon/mnemonic buttons through typed GTK3/GTK4 ownership and close Channel List failures through the window lifecycle boundary.
     - [ ] Complete top-level window positioning, visibility, and lifecycle cutover.
       - [x] Contain removed placement hints, saved coordinates, and tray restore placement behind compositor-safe GTK3/GTK4 policy.
       - [x] Observe minimized, maximized, fullscreen, and focused top-level state through a typed GTK3/GTK4 boundary.

@@ -932,6 +932,17 @@ improving from 225 to 213 warnings, from 97 to 87 repeated diagnostics, and from
 `gtk_menu_item_new`, `gtk_menu_new`, and `gtk_menu_popup_at_pointer` are closed
 from the GTK4 link boundary.
 
+Stage 8 icon/mnemonic button and Channel List lifecycle pass 64 composes each
+GTK4 image and mnemonic label as the explicit child of its button while GTK3
+retains native image-button presentation. Channel List and the plugin manager
+share the typed constructor, and Channel List construction failures now close
+through the cross-version window lifecycle helper. Strict MSVC and Meson tests
+verify child order, icon identity and size, visible mnemonic text, and mnemonic
+association. The complete GTK4 inventory retains zero C compiler errors while
+improving from 213 to 210 warnings, from 87 to 84 repeated diagnostics, and
+from 61 to 60 unique unresolved symbols. `gtk_button_set_image` is closed from
+the GTK4 link boundary.
+
 ## Functional Clusters
 
 | Cluster | Main files | GTK4 concern | Status |
