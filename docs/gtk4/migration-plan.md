@@ -2286,6 +2286,19 @@ symbols, and from 52 to 46 repeated diagnostics, with zero compiler errors.
 Main-window reply-bar child reveal and hidden-until-used semantics are the next
 contained target.
 
+Reply-bar visibility boundary pass 78 (2026-07-21):
+the reply bar now starts hidden through one typed visibility contract. GTK3
+retains `no-show-all` so ancestor recursive reveal cannot expose an inactive
+reply, while GTK4 uses explicit visibility and therefore does not depend on
+removed recursive-show behavior. Activating reply state reveals immediate
+children through versioned child iteration before showing the bar; clearing or
+sending the reply hides only the bar. The local GTK3 container callback is no
+longer part of `maingui.c`. Shipping GTK3, strict MSVC and Meson GTK4 probes,
+and all 28 repository tests remain clean. The complete GTK4 profile improves
+from 142 to 140 warnings, from 40 to 38 unique unresolved symbols, and from 46
+to 44 repeated diagnostics, with zero compiler errors. Residual main-window
+GTK3 popup/menu constructor containment is the next target.
+
 Deliverables:
 
 - Make GTK4 the only production frontend dependency in MSVC, Meson, and CI.

@@ -110,8 +110,6 @@ enum
 static void mg_apply_emoji_fallback_widget (GtkWidget *widget);
 static void mg_inputbox_insert_emoji_cb (GtkEntry *entry, gpointer user_data);
 static void mg_inputbox_icon_release_cb (GtkEntry *entry, GtkEntryIconPosition icon_pos, GdkEvent *event, gpointer user_data);
-static void mg_reply_show_child (GtkWidget *widget, gpointer data);
-
 #define MG_CONFIG_SAVE_DEBOUNCE_MS 250
 
 static guint mg_config_save_source_id = 0;
@@ -762,12 +760,6 @@ mg_typing_update (session *sess, const char *text)
 }
 
 
-static void
-mg_reply_show_child (GtkWidget *widget, gpointer data)
-{
-	gtk_widget_show (widget);
-}
-
 void
 mg_reply_update (session *sess)
 {
@@ -788,7 +780,7 @@ mg_reply_update (session *sess)
 	text = g_markup_escape_text (sess->reply_text ? sess->reply_text : _("Original message unavailable"), -1);
 	markup = g_strdup_printf ("<span foreground='#7d8790'>↪ Replying to <b>%s</b> · %.160s</span>", nick, text);
 	gtk_label_set_markup (GTK_LABEL (sess->gui->reply_label), markup);
-	gtk_container_foreach (GTK_CONTAINER (sess->gui->reply_box), mg_reply_show_child, NULL);
+	fabulor_gtk_widget_reveal_children (sess->gui->reply_box);
 	gtk_widget_show (sess->gui->reply_box);
 	g_free (markup);
 	g_free (text);
@@ -5883,7 +5875,7 @@ mg_create_entry (session *sess, GtkWidget *box)
 
         gui->reply_box = mg_box_new (GTK_ORIENTATION_HORIZONTAL, FALSE, 6);
         gtk_widget_set_name (gui->reply_box, "zoitechat-replybar");
-        gtk_widget_set_no_show_all (gui->reply_box, TRUE);
+        fabulor_gtk_widget_hide_until_explicitly_shown (gui->reply_box);
         fabulor_gtk_box_append (GTK_BOX (box), gui->reply_box, FALSE, FALSE, 0);
         gui->reply_label = gtk_label_new ("");
         gtk_label_set_ellipsize (GTK_LABEL (gui->reply_label), PANGO_ELLIPSIZE_END);
@@ -5893,7 +5885,6 @@ mg_create_entry (session *sess, GtkWidget *box)
         gtk_widget_set_can_focus (but, FALSE);
         fabulor_gtk_box_append (GTK_BOX (gui->reply_box), but, FALSE, FALSE, 0);
         g_signal_connect (G_OBJECT (but), "clicked", G_CALLBACK (mg_reply_cancel_cb), sess);
-        gtk_widget_hide (gui->reply_box);
 
         hbox = mg_box_new (GTK_ORIENTATION_HORIZONTAL, FALSE, 0);
         fabulor_gtk_box_append (GTK_BOX (box), hbox, FALSE, FALSE, 0);

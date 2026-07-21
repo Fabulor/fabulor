@@ -2585,6 +2585,48 @@ fabulor_gtk_widget_reveal_tree (GtkWidget *widget)
 }
 
 static inline void
+fabulor_gtk_widget_hide_until_explicitly_shown (GtkWidget *widget)
+{
+	g_return_if_fail (GTK_IS_WIDGET (widget));
+
+#if GTK_MAJOR_VERSION >= 4
+	gtk_widget_set_visible (widget, FALSE);
+#else
+	gtk_widget_set_no_show_all (widget, TRUE);
+	gtk_widget_hide (widget);
+#endif
+}
+
+#if GTK_MAJOR_VERSION < 4
+static inline void
+fabulor_gtk_widget_reveal_child_cb (GtkWidget *child, gpointer user_data)
+{
+	(void) user_data;
+	gtk_widget_show (child);
+}
+#endif
+
+static inline void
+fabulor_gtk_widget_reveal_children (GtkWidget *widget)
+{
+	g_return_if_fail (GTK_IS_WIDGET (widget));
+
+#if GTK_MAJOR_VERSION >= 4
+	GtkWidget *child;
+
+	for (child = gtk_widget_get_first_child (widget); child;
+		 child = gtk_widget_get_next_sibling (child))
+	{
+		gtk_widget_set_visible (child, TRUE);
+	}
+#else
+	g_return_if_fail (GTK_IS_CONTAINER (widget));
+	gtk_container_foreach (GTK_CONTAINER (widget),
+		fabulor_gtk_widget_reveal_child_cb, NULL);
+#endif
+}
+
+static inline void
 fabulor_gtk_window_destroy (GtkWindow *window)
 {
 	g_return_if_fail (GTK_IS_WINDOW (window));
