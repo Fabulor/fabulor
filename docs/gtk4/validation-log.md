@@ -5962,6 +5962,48 @@ main window when it was last; refreshed meters and controls remain visible;
 tray-close still hides when supported; and closing the final tabbed window still
 opens quit confirmation. Packaging impact: none.
 
+### GTK4 Stage 8 Main-Window Finalization Ownership
+
+Date: 2026-07-21
+
+Files/workflows converted: detached IRC window finalization, shared tab-window
+finalization, theme-listener cleanup ordering, detach/reattach callback
+suppression, and shared theme-manager window ownership.
+
+Automated evidence:
+
+- shipping MSVC GTK3 frontend rebuild: pass; zero warnings and zero errors
+- strict MSVC GTK4 probe against GTK 4.22.4 / GLib 2.88.0: build and execution
+  pass under `/W4 /WX`; zero warnings and errors
+- Meson MSVC GTK4 probe: build and execution pass
+- repository GTK4 Python validation: 28 tests pass
+- source audit: active GTK4 main-window and theme-manager ownership uses
+  `g_object_weak_ref`/`g_object_weak_unref`; GTK3 retains `destroy` callbacks
+- source audit: detach/reattach disconnects the lifecycle owner and unregisters
+  the obsolete GUI's theme listener before that GUI can be freed
+- clean isolated complete GTK4 frontend compilation: zero C compiler errors and
+  173 warnings, unchanged from pass 71
+- expected complete GTK4 link failure retains 52 unique unresolved symbols and
+  62 repeated unresolved-symbol diagnostics
+- `maingui.obj` retains 20 unresolved diagnostics
+- inventory log: `build/gtk4-full/main-window-finalization-pass72.log`
+- next target: auxiliary main-window dialog, user-list, and generic-tab
+  finalization callbacks
+- `git diff --check`: pass
+
+Manual checks deferred until the full GTK4 frontend links:
+
+- [ ] close a detached IRC window and verify only its session is released
+- [ ] close the shared tab window with and without detached windows remaining
+- [ ] hide through tray-close and verify the live window still receives themes
+- [ ] detach and reattach the first, middle, last, and only IRC tab
+- [ ] switch themes after reattachment and then exit without duplicate cleanup
+
+Behavior contract: session release still follows native window closure; theme
+listeners are removed first; tray hiding does not finalize a live window; and
+temporary detach/reattach destruction cannot invoke stale or duplicate session
+cleanup. GTK3 callback behavior is retained. Packaging impact: none.
+
 ## Build Matrix
 
 | Check | GTK3 shipping target | GTK4 candidate | Final GTK4 target |

@@ -404,6 +404,7 @@ Detailed planning and evidence live in:
         - [x] Convert Join Channel choice controls, root lookup, default response, wrapping, and pointer cleanup to typed GTK3/GTK4 lifecycle ownership.
         - [x] Convert DCC transfer filter choices to typed grouped controls with preserved default selection.
         - [x] Convert main-window root lookup, recursive reveal, child removal, and close-request dispatch to typed GTK3/GTK4 ownership.
+        - [x] Order main/tab window theme cleanup before session release and move GTK4 window ownership to weak finalization.
         - [ ] Convert the remaining top-level visibility and lifecycle callbacks.
     - [ ] Bind application and preferences integration to the GTK4 theme controller.
       - [x] Separate GTK3 KDE/Wayland CSD reset ownership from GTK4 top-level theme classes.

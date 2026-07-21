@@ -2196,6 +2196,21 @@ symbols while improving from 177 to 173 warnings and from 65 to 62 repeated
 diagnostics. Main-window finalization callbacks and cleanup ordering are the
 next contained lifecycle target.
 
+Main-window finalization pass 72 (2026-07-21):
+detached and shared tabbed IRC windows now have one ordered lifecycle callback.
+GTK4 releases them through `GWeakNotify`; GTK3 retains the widget `destroy`
+signal. Both unregister the per-window theme listener before session cleanup,
+preventing callbacks from retaining a freed `session_gui`. The detach/reattach
+path removes the lifecycle owner before rebuilding, explicitly cleans the old
+window when required, and reconnects only when the shared tab window remains
+alive. GTK4 theme-manager attachment is now idempotent weak ownership instead
+of a connection to the removed widget `destroy` signal. Shipping GTK3, strict
+MSVC and Meson GTK4 probes, and repository validation remain clean. The full
+GTK4 profile remains at zero compiler errors, 173 warnings, 52 unique
+unresolved symbols, and 62 repeated diagnostics. Remaining auxiliary
+main-window dialog, user-list, and generic-tab finalization callbacks are the
+next contained lifecycle target.
+
 Deliverables:
 
 - Make GTK4 the only production frontend dependency in MSVC, Meson, and CI.
