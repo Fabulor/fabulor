@@ -2125,6 +2125,52 @@ fabulor_gtk_paned_set_end_child (GtkPaned *paned, GtkWidget *child,
 #endif
 }
 
+static inline gboolean
+fabulor_gtk_layout_retain_and_detach_child (GtkWidget *child)
+{
+	GtkWidget *parent;
+
+	g_return_val_if_fail (GTK_IS_WIDGET (child), FALSE);
+
+	parent = gtk_widget_get_parent (child);
+	if (!parent)
+		return FALSE;
+	g_return_val_if_fail (GTK_IS_PANED (parent) || GTK_IS_GRID (parent),
+		FALSE);
+
+#if GTK_MAJOR_VERSION >= 4
+	if (GTK_IS_PANED (parent))
+	{
+		GtkPaned *paned = GTK_PANED (parent);
+
+		if (gtk_paned_get_start_child (paned) == child)
+		{
+			g_object_ref (child);
+			gtk_paned_set_start_child (paned, NULL);
+		}
+		else if (gtk_paned_get_end_child (paned) == child)
+		{
+			g_object_ref (child);
+			gtk_paned_set_end_child (paned, NULL);
+		}
+		else
+		{
+			g_return_val_if_reached (FALSE);
+		}
+	}
+	else
+	{
+		g_object_ref (child);
+		gtk_grid_remove (GTK_GRID (parent), child);
+	}
+#else
+	g_object_ref (child);
+	gtk_container_remove (GTK_CONTAINER (parent), child);
+#endif
+
+	return TRUE;
+}
+
 static inline void
 fabulor_gtk_frame_set_child (GtkFrame *frame, GtkWidget *child)
 {
