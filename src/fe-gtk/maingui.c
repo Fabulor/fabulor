@@ -618,8 +618,10 @@ fe_set_tab_color (struct session *sess, tabcolor col)
 static void
 mg_set_myself_away (session_gui *gui, gboolean away)
 {
-        gtk_label_set_attributes (GTK_LABEL (gtk_bin_get_child (GTK_BIN (gui->nick_label))),
-                                                                          away ? away_list : NULL);
+        GtkWidget *label = fabulor_gtk_button_get_child (GTK_BUTTON (gui->nick_label));
+
+        if (GTK_IS_LABEL (label))
+                gtk_label_set_attributes (GTK_LABEL (label), away ? away_list : NULL);
 }
 
 /* change the little icon to the left of your nickname */
@@ -629,7 +631,7 @@ mg_set_access_icon (session_gui *gui, GdkPixbuf *pix, gboolean away)
 {
         if (gui->op_xpm)
         {
-                if (pix == gtk_image_get_pixbuf (GTK_IMAGE (gui->op_xpm))) /* no change? */
+                if (pix == fabulor_gtk_image_get_source_pixbuf (GTK_IMAGE (gui->op_xpm)))
                 {
                         mg_set_myself_away (gui, away);
                         return;
@@ -641,7 +643,7 @@ mg_set_access_icon (session_gui *gui, GdkPixbuf *pix, gboolean away)
 
         if (pix && prefs.hex_gui_input_icon)
         {
-                gui->op_xpm = gtk_image_new_from_pixbuf (pix);
+                gui->op_xpm = fabulor_gtk_image_new_from_pixbuf (pix);
                 fabulor_gtk_box_insert_before_trailing (GTK_BOX (gui->nick_box),
                                                        gui->op_xpm, gui->nick_label);
                 gtk_widget_show (gui->op_xpm);
@@ -1418,8 +1420,11 @@ mg_set_topic_tip (session *sess)
 static void
 mg_hide_empty_pane (GtkPaned *pane)
 {
-        if ((gtk_paned_get_child1 (pane) == NULL || !gtk_widget_get_visible (gtk_paned_get_child1 (pane))) &&
-                (gtk_paned_get_child2 (pane) == NULL || !gtk_widget_get_visible (gtk_paned_get_child2 (pane))))
+        GtkWidget *start_child = fabulor_gtk_paned_get_start_child (pane);
+        GtkWidget *end_child = fabulor_gtk_paned_get_end_child (pane);
+
+        if ((start_child == NULL || !gtk_widget_get_visible (start_child)) &&
+                (end_child == NULL || !gtk_widget_get_visible (end_child)))
         {
                 gtk_widget_hide (GTK_WIDGET (pane));
                 return;
@@ -1443,7 +1448,7 @@ mg_userlist_showhide (session *sess, int show)
         int handle_size;
         int right_size;
         int min_right_size;
-        GtkAllocation allocation;
+        int pane_width;
 
         gtk_widget_get_size_request (gui->user_box, &min_right_size, NULL);
         if (min_right_size < 1)
@@ -1456,9 +1461,12 @@ mg_userlist_showhide (session *sess, int show)
                 gtk_widget_show (gui->user_box);
                 gui->ul_hidden = 0;
 
-                gtk_widget_get_allocation (gui->hpane_right, &allocation);
-                gtk_widget_style_get (GTK_WIDGET (gui->hpane_right), "handle-size", &handle_size, NULL);
-                gtk_paned_set_position (GTK_PANED (gui->hpane_right), allocation.width - (right_size + handle_size));
+                pane_width = fabulor_gtk_widget_get_allocated_width (
+                        gui->hpane_right);
+                handle_size = fabulor_gtk_paned_get_handle_size (
+                        GTK_PANED (gui->hpane_right));
+                gtk_paned_set_position (GTK_PANED (gui->hpane_right),
+                        pane_width - (right_size + handle_size));
         }
         else
         {
@@ -4604,30 +4612,56 @@ static void
 mg_rightpane_cb (GtkPaned *pane, GParamSpec *param, session_gui *gui)
 {
         int handle_size;
-        GtkAllocation allocation;
+        int pane_width;
 
-        gtk_widget_style_get (GTK_WIDGET (pane), "handle-size", &handle_size, NULL);
+        handle_size = fabulor_gtk_paned_get_handle_size (pane);
         /* record the position from the RIGHT side */
-        gtk_widget_get_allocation (GTK_WIDGET(pane), &allocation);
-        prefs.hex_gui_pane_right_size = allocation.width - gtk_paned_get_position (pane) - handle_size;
+        pane_width = fabulor_gtk_widget_get_allocated_width (GTK_WIDGET (pane));
+        prefs.hex_gui_pane_right_size = pane_width -
+                gtk_paned_get_position (pane) - handle_size;
 }
 
 static void
-mg_restore_rightpane_cb (GtkWidget *widget, GtkAllocation *allocation, gpointer data)
+mg_restore_rightpane (GtkPaned *pane, int pane_width, gpointer data)
 {
         int handle_size;
         int saved_size;
-        /* only restore once, then disconnect */
-        g_signal_handlers_disconnect_by_func (widget, mg_restore_rightpane_cb, data);
         /* use the value captured at connect time, since notify::position may
-         * have already overwritten prefs.hex_gui_pane_right_size during the
-         * initial layout pass */
+         * have already overwritten prefs.hex_gui_pane_right_size during layout */
         saved_size = GPOINTER_TO_INT (data);
         if (saved_size < 1)
                 return;
-        gtk_widget_style_get (widget, "handle-size", &handle_size, NULL);
-        gtk_paned_set_position (GTK_PANED (widget), allocation->width - saved_size - handle_size);
+        handle_size = fabulor_gtk_paned_get_handle_size (pane);
+        gtk_paned_set_position (pane, pane_width - saved_size - handle_size);
 }
+
+#if GTK_MAJOR_VERSION >= 4
+static gboolean
+mg_restore_rightpane_tick_cb (GtkWidget *widget, GdkFrameClock *frame_clock,
+                              gpointer data)
+{
+        GtkPaned *pane = GTK_PANED (widget);
+        GtkWidget *end_child = fabulor_gtk_paned_get_end_child (pane);
+        int pane_width = fabulor_gtk_widget_get_allocated_width (widget);
+
+        (void) frame_clock;
+        if (pane_width < 1 || !end_child ||
+                fabulor_gtk_widget_get_allocated_width (end_child) < 1)
+                return G_SOURCE_CONTINUE;
+
+        mg_restore_rightpane (pane, pane_width, data);
+        return G_SOURCE_REMOVE;
+}
+#else
+static void
+mg_restore_rightpane_cb (GtkWidget *widget, GtkAllocation *allocation,
+                         gpointer data)
+{
+        g_signal_handlers_disconnect_by_func (widget,
+                mg_restore_rightpane_cb, data);
+        mg_restore_rightpane (GTK_PANED (widget), allocation->width, data);
+}
+#endif
 
 static gboolean
 mg_add_pane_signals (session_gui *gui)
@@ -4662,12 +4696,17 @@ mg_create_center (session *sess, session_gui *gui, GtkWidget *box)
 	/* sep between xtext and right side */
 	gui->hpane_right = gtk_paned_new (GTK_ORIENTATION_HORIZONTAL);
 
-	/* restore right pane position after first allocation (needs widget width).
-	 * capture the saved size now because notify::position will overwrite the
-	 * pref during the initial layout before size-allocate fires. */
+	/* Restore after the first complete allocation. Capture the saved size before
+	 * notify::position can overwrite it during initial layout. */
+#if GTK_MAJOR_VERSION >= 4
+	gtk_widget_add_tick_callback (gui->hpane_right,
+		mg_restore_rightpane_tick_cb,
+		GINT_TO_POINTER (prefs.hex_gui_pane_right_size), NULL);
+#else
 	g_signal_connect (gui->hpane_right, "size-allocate",
 	                  G_CALLBACK (mg_restore_rightpane_cb),
 	                  GINT_TO_POINTER (prefs.hex_gui_pane_right_size));
+#endif
 
         if (prefs.hex_gui_win_swap)
         {

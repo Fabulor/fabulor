@@ -2271,6 +2271,21 @@ repository tests remain clean. The complete GTK4 profile improves from 166 to
 repeated diagnostics, with zero compiler errors. Main-window label/icon child
 access and pane-layout queries are the next contained target.
 
+Main-window child and pane boundary pass 77 (2026-07-21):
+the nickname button resolves its label through typed button-child ownership,
+and access icons retain their source pixbuf identity independently of toolkit
+image internals. GTK4 creates those images through a native `GdkTexture`
+paintable while GTK3 retains pixbuf image construction. Paned start/end child
+queries and divider geometry now use shared versioned boundaries. GTK4 restores
+the saved right-pane width from a one-shot frame callback after both pane and
+end child have real allocations; GTK3 retains its one-shot `size-allocate`
+signal and style-derived handle width. Shipping GTK3, strict MSVC and Meson
+GTK4 probes, and all 28 repository tests remain clean. The complete GTK4
+profile improves from 156 to 142 warnings, from 46 to 40 unique unresolved
+symbols, and from 52 to 46 repeated diagnostics, with zero compiler errors.
+Main-window reply-bar child reveal and hidden-until-used semantics are the next
+contained target.
+
 Deliverables:
 
 - Make GTK4 the only production frontend dependency in MSVC, Meson, and CI.

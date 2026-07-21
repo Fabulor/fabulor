@@ -6293,6 +6293,53 @@ padding, and focus behavior. GTK3 keeps its window-manager roles and default
 button mechanics; GTK4 assigns the default through the owning window. The
 editable character-set control continues to emit changes from its entry child.
 
+### GTK4 Stage 8 Main-Window Child And Pane Boundary
+
+Date: 2026-07-21
+
+Files/workflows converted: main-window nickname label lookup, access-icon
+identity and rendering, empty-pane visibility, right-pane sizing, persistence,
+and initial restoration.
+
+Automated evidence:
+
+- shipping MSVC GTK3 frontend build: pass; zero warnings and zero errors
+- strict MSVC GTK4 probe against GTK 4.22.4 / GLib 2.88.0: build and execution
+  pass under `/W4 /WX`; zero warnings and errors
+- Meson MSVC GTK4 probe: clean configure, build, and execution pass
+- repository GTK4 Python validation: 28 tests pass
+- source audit: active GTK4 main-window paths no longer call `GTK_BIN`,
+  `gtk_bin_get_child()`, `gtk_image_get_pixbuf()`,
+  `gtk_paned_get_child1()`, `gtk_paned_get_child2()`, or
+  `gtk_widget_style_get()`
+- source audit: GTK4 right-pane restoration waits for allocated pane and end
+  child widths through a one-shot frame callback; GTK3 retains one
+  `size-allocate` callback
+- clean isolated complete GTK4 frontend compilation: zero C compiler errors
+  and 142 warnings, down from 156 in pass 76
+- expected complete GTK4 link failure improves from 46 to 40 unique unresolved
+  symbols and from 52 to 46 repeated unresolved-symbol diagnostics
+- inventory log: `build/gtk4-full/main-window-child-pane-boundary-pass77.log`
+- next target: main-window reply-bar child reveal and hidden-until-used
+  semantics
+- `git diff --check`: pass
+
+Manual checks deferred until the full GTK4 frontend links:
+
+- [ ] change away state and confirm nickname label styling updates
+- [ ] change channel privilege and confirm the access icon updates only when
+  its source changes
+- [ ] hide and show the user list while preserving its configured width
+- [ ] restart with a saved right-pane width and confirm first layout restores
+  it without a visible jump
+- [ ] hide both children of either vertical pane and confirm its divider is
+  not left visible
+
+Behavior contract: nickname styling and access-icon identity remain tied to
+the active session. Right-pane width is measured from the window's right edge,
+includes the live divider width, and is restored only after complete layout.
+GTK3 geometry behavior is unchanged.
+
 ## Stage Completion Rule
 
 A stage can move to complete in `migration-plan.md` only when:
