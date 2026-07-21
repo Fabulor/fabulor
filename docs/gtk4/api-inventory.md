@@ -943,6 +943,19 @@ improving from 213 to 210 warnings, from 87 to 84 repeated diagnostics, and
 from 61 to 60 unique unresolved symbols. `gtk_button_set_image` is closed from
 the GTK4 link boundary.
 
+Stage 8 Channel View ownership and lifecycle pass 65 moves tab and tree
+scrollers to the shared constructor, translates position-based family/tab
+ordering to GTK4 sibling ownership, and keeps close-button image policy private
+to GTK3. Tab, family, tree, and implementation roots are removed through their
+known box owners; recursive reveal uses the shared tree boundary. GTK3 retains
+its root `destroy` callback, while GTK4 releases Channel View state when the
+main-window-owned root is finalized. Strict probes verify first, middle, and
+last box ordering. The complete GTK4 inventory retains zero C compiler errors
+while improving from 210 to 204 warnings, from 84 to 80 repeated diagnostics,
+and from 60 to 58 unique unresolved symbols. `gtk_box_reorder_child` and
+`gtk_button_set_always_show_image` are closed, and `chanview.obj` contributes no
+remaining GTK4 warning or unresolved diagnostic.
+
 ## Functional Clusters
 
 | Cluster | Main files | GTK4 concern | Status |

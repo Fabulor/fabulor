@@ -353,6 +353,34 @@ fabulor_gtk_box_append_trailing_pair (GtkBox *box, GtkWidget *leading,
 }
 
 static inline void
+fabulor_gtk_box_reorder_child (GtkBox *box, GtkWidget *child, gint position)
+{
+	g_return_if_fail (GTK_IS_BOX (box));
+	g_return_if_fail (GTK_IS_WIDGET (child));
+	g_return_if_fail (gtk_widget_get_parent (child) == GTK_WIDGET (box));
+	g_return_if_fail (position >= 0);
+
+#if GTK_MAJOR_VERSION >= 4
+	GtkWidget *sibling = NULL;
+	GtkWidget *candidate;
+	gint index = 0;
+
+	for (candidate = gtk_widget_get_first_child (GTK_WIDGET (box)); candidate;
+		 candidate = gtk_widget_get_next_sibling (candidate))
+	{
+		if (candidate == child)
+			continue;
+		if (index++ >= position)
+			break;
+		sibling = candidate;
+	}
+	gtk_box_reorder_child_after (box, child, sibling);
+#else
+	gtk_box_reorder_child (box, child, position);
+#endif
+}
+
+static inline void
 fabulor_gtk_box_remove_child (GtkBox *box, GtkWidget *child)
 {
 	g_return_if_fail (GTK_IS_BOX (box));
@@ -444,6 +472,18 @@ fabulor_gtk_button_set_flat (GtkButton *button)
 	gtk_widget_add_css_class (GTK_WIDGET (button), "flat");
 #else
 	gtk_button_set_relief (button, GTK_RELIEF_NONE);
+#endif
+}
+
+static inline void
+fabulor_gtk_button_set_always_show_image (GtkButton *button, gboolean always)
+{
+	g_return_if_fail (GTK_IS_BUTTON (button));
+
+#if GTK_MAJOR_VERSION >= 4
+	(void) always;
+#else
+	gtk_button_set_always_show_image (button, always);
 #endif
 }
 

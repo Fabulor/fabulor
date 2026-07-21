@@ -312,7 +312,7 @@ cv_tabs_init (chanview *cv)
 	tabs->outer = outer;
 	gtk_widget_show (outer);
 
-	viewport = gtk_scrolled_window_new (0, 0);
+	viewport = fabulor_gtk_scrolled_window_new ();
 	fabulor_gtk_scrolled_window_set_framed (
 		GTK_SCROLLED_WINDOW (viewport), FALSE);
 	if (cv->vertical)
@@ -408,7 +408,7 @@ tab_add_real (chanview *cv, GtkWidget *tab, chan *ch, chan *parent)
 		fabulor_gtk_box_append (GTK_BOX (family->box), tab,
 			FALSE, FALSE, 0);
 		/* The server tab occupies position zero in each family box. */
-		gtk_box_reorder_child (GTK_BOX (family->box), tab,
+		fabulor_gtk_box_reorder_child (GTK_BOX (family->box), tab,
 			(gint) position + 1);
 	}
 	gtk_widget_show (tab);
@@ -529,11 +529,12 @@ cv_tabs_add (chanview *cv, chan *ch, char *name, chan *parent)
 	hbox = gtk_box_new (GTK_ORIENTATION_HORIZONTAL, 2);
 	item->label = gtk_label_new (name);
 	item->close_button = gtk_button_new ();
-	gtk_style_context_add_class (gtk_widget_get_style_context (item->close_button), "flat");
+	fabulor_gtk_button_set_flat (GTK_BUTTON (item->close_button));
 	close_icon = fabulor_gtk_image_new_from_icon_name (
 		"window-close-symbolic", FABULOR_GTK_ICON_SIZE_MENU);
 	gtk_image_set_pixel_size (GTK_IMAGE (close_icon), 8);
-	gtk_button_set_always_show_image (GTK_BUTTON (item->close_button), TRUE);
+	fabulor_gtk_button_set_always_show_image (
+		GTK_BUTTON (item->close_button), TRUE);
 	gtk_widget_set_can_focus (item->close_button, FALSE);
 	fabulor_gtk_button_set_child (GTK_BUTTON (item->close_button), close_icon);
 	fabulor_gtk_box_append (GTK_BOX (hbox), item->label, TRUE, TRUE, 0);
@@ -551,7 +552,7 @@ cv_tabs_add (chanview *cv, chan *ch, char *name, chan *parent)
 	/* for keyboard */
 	g_signal_connect (G_OBJECT (item->tab), "toggled",
 						 	G_CALLBACK (tab_toggled_cb), ch);
-	gtk_widget_show_all (hbox);
+	fabulor_gtk_widget_reveal_tree (hbox);
 	if (!prefs.hex_gui_tab_closebuttons)
 		gtk_widget_hide (item->close_button);
 
@@ -607,16 +608,19 @@ cv_tabs_remove (chan *ch)
 	chan *parent = fabulor_channel_model_get_parent (ch->cv->model, ch);
 	tab_family *family;
 
-	gtk_widget_destroy (item ? item->tab : ch->impl);
+	family = g_hash_table_lookup (tabs->state->families,
+		parent ? parent : ch);
+	g_return_if_fail (family != NULL);
+	fabulor_gtk_box_remove_child (GTK_BOX (family->box),
+		item ? item->tab : ch->impl);
 	g_hash_table_remove (tabs->state->items, ch);
 	ch->impl = NULL;
 	if (parent)
 		return;
 
-	family = g_hash_table_lookup (tabs->state->families, ch);
 	if (family)
 	{
-		gtk_widget_destroy (family->box);
+		fabulor_gtk_box_remove_child (GTK_BOX (tabs->inner), family->box);
 		g_hash_table_remove (tabs->state->families, ch);
 	}
 }
@@ -646,7 +650,7 @@ cv_tabs_move (chan *ch, int delta)
 			position) == ch)
 		{
 			/* The server tab occupies position zero in each family box. */
-			gtk_box_reorder_child (GTK_BOX (family->box),
+			fabulor_gtk_box_reorder_child (GTK_BOX (family->box),
 				ch->impl, (gint) position + 1);
 			return;
 		}
@@ -670,7 +674,7 @@ cv_tabs_move_family (chan *ch, int delta)
 	for (position = 0; position < count; position++)
 		if (fabulor_channel_model_get_root_at (ch->cv->model, position) == root)
 		{
-			gtk_box_reorder_child (GTK_BOX (tabs->inner), family->box,
+			fabulor_gtk_box_reorder_child (GTK_BOX (tabs->inner), family->box,
 				(gint) position);
 			return;
 		}
@@ -683,8 +687,8 @@ cv_tabs_cleanup (chanview *cv)
 
 	tab_scroll_animation_cancel (&tabs->backward_animation);
 	tab_scroll_animation_cancel (&tabs->forward_animation);
-	if (cv->box)
-		gtk_widget_destroy (tabs->outer);
+	if (cv->box && tabs->outer)
+		fabulor_gtk_box_remove_child (GTK_BOX (cv->box), tabs->outer);
 	if (tabs->state)
 	{
 		g_hash_table_destroy (tabs->state->items);
