@@ -2133,6 +2133,7 @@ static GtkWidget *
 servlist_create_charsetcombo (void)
 {
 	GtkWidget *cb;
+	GtkEntry *entry;
 	int i;
 
 	cb = gtk_combo_box_text_new_with_entry ();
@@ -2143,10 +2144,14 @@ servlist_create_charsetcombo (void)
 		i++;
 	}
 
-	fabulor_gtk_entry_set_text (GTK_ENTRY (gtk_bin_get_child (GTK_BIN(cb))), selected_net->encoding ? selected_net->encoding : pages[0]);
-	
-	g_signal_connect (G_OBJECT (gtk_bin_get_child (GTK_BIN (cb))), "changed",
-							G_CALLBACK (servlist_combo_cb), NULL);
+	entry = fabulor_gtk_combo_box_get_entry (GTK_COMBO_BOX (cb));
+	if (entry)
+	{
+		fabulor_gtk_entry_set_text (entry,
+			selected_net->encoding ? selected_net->encoding : pages[0]);
+		g_signal_connect (G_OBJECT (entry), "changed",
+			G_CALLBACK (servlist_combo_cb), NULL);
+	}
 
 	return cb;
 }
@@ -2170,7 +2175,8 @@ servlist_create_logintypecombo (GtkWidget *data)
 	gtk_combo_box_set_active (GTK_COMBO_BOX (cb), servlist_get_login_desc_index (selected_net->logintype));
 
 	gtk_widget_set_tooltip_text (cb, _("The way you identify yourself to the server. For custom login methods use connect commands."));
-	g_signal_connect (G_OBJECT (GTK_BIN (cb)), "changed", G_CALLBACK (servlist_logintypecombo_cb), data);
+	g_signal_connect (G_OBJECT (cb), "changed",
+		G_CALLBACK (servlist_logintypecombo_cb), data);
 
 	return cb;
 }
@@ -2249,7 +2255,7 @@ servlist_open_edit (GtkWidget *parent, ircnet *net)
 	gtk_window_set_transient_for (GTK_WINDOW (editwindow), GTK_WINDOW (parent));
 	gtk_window_set_modal (GTK_WINDOW (editwindow), TRUE);
 	fabulor_gtk_window_set_dialog_hint (GTK_WINDOW (editwindow));
-	gtk_window_set_role (GTK_WINDOW (editwindow), "editserv");
+	fabulor_gtk_window_set_role (GTK_WINDOW (editwindow), "editserv");
 
 	vbox5 = gtkutil_box_new (GTK_ORIENTATION_VERTICAL, FALSE, 0);
 	fabulor_gtk_window_set_child (GTK_WINDOW (editwindow), vbox5);
@@ -2257,7 +2263,7 @@ servlist_open_edit (GtkWidget *parent, ircnet *net)
 
 	/* Tabs and buttons */
 	hbox1 = gtkutil_box_new (GTK_ORIENTATION_HORIZONTAL, FALSE, 0);
-	gtk_box_pack_start (GTK_BOX (vbox5), hbox1, TRUE, TRUE, 4);
+	fabulor_gtk_box_append (GTK_BOX (vbox5), hbox1, TRUE, TRUE, 4);
 
 	scrolledwindow2 = fabulor_gtk_scrolled_window_new ();
 	scrolledwindow4 = fabulor_gtk_scrolled_window_new ();
@@ -2268,7 +2274,7 @@ servlist_open_edit (GtkWidget *parent, ircnet *net)
 	gtk_notebook_append_page (GTK_NOTEBOOK (notebook), scrolledwindow4, gtk_label_new (_("Autojoin channels")));
 	gtk_notebook_append_page (GTK_NOTEBOOK (notebook), scrolledwindow5, gtk_label_new (_("Connect commands")));
 	gtk_notebook_set_tab_pos (GTK_NOTEBOOK (notebook), GTK_POS_BOTTOM);
-	gtk_box_pack_start (GTK_BOX (hbox1), notebook, TRUE, TRUE, SERVLIST_X_PADDING);
+	fabulor_gtk_box_append (GTK_BOX (hbox1), notebook, TRUE, TRUE, SERVLIST_X_PADDING);
 
 	gtk_scrolled_window_set_policy (GTK_SCROLLED_WINDOW (scrolledwindow2), GTK_POLICY_NEVER, GTK_POLICY_AUTOMATIC);
 	fabulor_gtk_scrolled_window_set_framed (GTK_SCROLLED_WINDOW (scrolledwindow2), TRUE);
@@ -2328,30 +2334,30 @@ servlist_open_edit (GtkWidget *parent, ircnet *net)
 	/* Button Box */
 	vbuttonbox1 = fabulor_gtk_button_box_new (GTK_ORIENTATION_VERTICAL,
 		FABULOR_GTK_BUTTON_BOX_START, 3);
-	gtk_box_pack_start (GTK_BOX (hbox1), vbuttonbox1, FALSE, FALSE, 3);
+	fabulor_gtk_box_append (GTK_BOX (hbox1), vbuttonbox1, FALSE, FALSE, 3);
 
 	buttonadd = servlist_icon_button_new (_("_Add"), ICON_SERVLIST_ADD);
 	g_signal_connect (G_OBJECT (buttonadd), "clicked",
 							G_CALLBACK (servlist_addbutton_cb), notebook);
 	fabulor_gtk_box_append (GTK_BOX (vbuttonbox1), buttonadd, FALSE, TRUE, 0);
-	gtk_widget_set_can_default (buttonadd, TRUE);
+	fabulor_gtk_widget_set_can_default (buttonadd, TRUE);
 
 	buttonremove = servlist_icon_button_new (_("_Remove"), ICON_SERVLIST_REMOVE);
 	g_signal_connect (G_OBJECT (buttonremove), "clicked",
 							G_CALLBACK (servlist_deletebutton_cb), notebook);
 	fabulor_gtk_box_append (GTK_BOX (vbuttonbox1), buttonremove, FALSE, TRUE, 0);
-	gtk_widget_set_can_default (buttonremove, TRUE);
+	fabulor_gtk_widget_set_can_default (buttonremove, TRUE);
 
 	buttonedit = gtk_button_new_with_mnemonic (_("_Edit"));
 	g_signal_connect (G_OBJECT (buttonedit), "clicked",
 							G_CALLBACK (servlist_editbutton_cb), notebook);
 	fabulor_gtk_box_append (GTK_BOX (vbuttonbox1), buttonedit, FALSE, TRUE, 0);
-	gtk_widget_set_can_default (buttonedit, TRUE);
+	fabulor_gtk_widget_set_can_default (buttonedit, TRUE);
 
 
 	/* Checkboxes and entries */
 	table3 = gtkutil_grid_new (17, 2, FALSE);
-	gtk_box_pack_start (GTK_BOX (vbox5), table3, FALSE, FALSE, 0);
+	fabulor_gtk_box_append (GTK_BOX (vbox5), table3, FALSE, FALSE, 0);
 	gtk_grid_set_row_spacing (GTK_GRID (table3), 2);
 	gtk_grid_set_column_spacing (GTK_GRID (table3), 8);
 
@@ -2468,22 +2474,22 @@ servlist_open_edit (GtkWidget *parent, ircnet *net)
 	edit_button_cert_generate = gtk_button_new_with_mnemonic (_("Generate client SSL cert"));
 	g_signal_connect (G_OBJECT (edit_button_cert_generate), "clicked",
 							G_CALLBACK (servlist_generate_client_cert_cb), net);
-	gtk_box_pack_start (GTK_BOX (hbox_cert_buttons), edit_button_cert_generate, FALSE, FALSE, 0);
+	fabulor_gtk_box_append (GTK_BOX (hbox_cert_buttons), edit_button_cert_generate, FALSE, FALSE, 0);
 
 	edit_button_cert_import = gtk_button_new_with_mnemonic (_("Import client SSL cert"));
 	g_signal_connect (G_OBJECT (edit_button_cert_import), "clicked",
 							G_CALLBACK (servlist_import_client_cert_cb), net);
-	gtk_box_pack_start (GTK_BOX (hbox_cert_buttons), edit_button_cert_import, FALSE, FALSE, 0);
+	fabulor_gtk_box_append (GTK_BOX (hbox_cert_buttons), edit_button_cert_import, FALSE, FALSE, 0);
 
 	edit_button_cert_info = gtk_button_new_with_mnemonic (_("Client SSL cert info"));
 	g_signal_connect (G_OBJECT (edit_button_cert_info), "clicked",
 							G_CALLBACK (servlist_cert_info_cb), net);
-	gtk_box_pack_start (GTK_BOX (hbox_cert_buttons), edit_button_cert_info, FALSE, FALSE, 0);
+	fabulor_gtk_box_append (GTK_BOX (hbox_cert_buttons), edit_button_cert_info, FALSE, FALSE, 0);
 
 	edit_button_cert_delete = gtk_button_new_with_mnemonic (_("Delete cert"));
 	g_signal_connect (G_OBJECT (edit_button_cert_delete), "clicked",
 							G_CALLBACK (servlist_delete_client_cert_cb), net);
-	gtk_box_pack_start (GTK_BOX (hbox_cert_buttons), edit_button_cert_delete, FALSE, FALSE, 0);
+	fabulor_gtk_box_append (GTK_BOX (hbox_cert_buttons), edit_button_cert_delete, FALSE, FALSE, 0);
 
 	servlist_table_attach (table3, hbox_cert_buttons, 0, 2, 16, 17,
 						   FALSE, FALSE,
@@ -2493,17 +2499,17 @@ servlist_open_edit (GtkWidget *parent, ircnet *net)
 
 	/* Rule and Close button */
 	hseparator2 = gtk_separator_new (GTK_ORIENTATION_HORIZONTAL);
-	gtk_box_pack_start (GTK_BOX (vbox5), hseparator2, FALSE, FALSE, 8);
+	fabulor_gtk_box_append (GTK_BOX (vbox5), hseparator2, FALSE, FALSE, 8);
 
 	hbuttonbox4 = fabulor_gtk_button_box_new (GTK_ORIENTATION_HORIZONTAL,
 		FABULOR_GTK_BUTTON_BOX_END, 0);
-	gtk_box_pack_start (GTK_BOX (vbox5), hbuttonbox4, FALSE, FALSE, 0);
+	fabulor_gtk_box_append (GTK_BOX (vbox5), hbuttonbox4, FALSE, FALSE, 0);
 
 	button10 = servlist_icon_button_new (_("_Close"), ICON_SERVLIST_CLOSE);
 	g_signal_connect (G_OBJECT (button10), "clicked",
 							G_CALLBACK (servlist_edit_close_cb), 0);
 	fabulor_gtk_box_append (GTK_BOX (hbuttonbox4), button10, FALSE, TRUE, 0);
-	gtk_widget_set_can_default (button10, TRUE);
+	fabulor_gtk_widget_set_can_default (button10, TRUE);
 
 	if (net->flags & FLAG_USE_GLOBAL)
 	{
@@ -2513,7 +2519,7 @@ servlist_open_edit (GtkWidget *parent, ircnet *net)
 	servlist_update_password_tools (net);
 
 	gtk_widget_grab_focus (button10);
-	gtk_widget_grab_default (button10);
+	fabulor_gtk_window_set_default_widget (GTK_WINDOW (editwindow), button10);
 
 	fabulor_gtk_widget_reveal_tree (editwindow);
 	servlist_update_cert_buttons (net);
@@ -2569,7 +2575,7 @@ servlist_open_networks (void)
 	g_snprintf(buf, sizeof(buf), _("Network List - %s"), _(DISPLAY_NAME));
 	gtk_window_set_title (GTK_WINDOW (servlist), buf);
 	gtk_window_set_default_size (GTK_WINDOW (servlist), netlist_win_width, netlist_win_height);
-	gtk_window_set_role (GTK_WINDOW (servlist), "servlist");
+	fabulor_gtk_window_set_role (GTK_WINDOW (servlist), "servlist");
 	fabulor_gtk_window_set_dialog_hint (GTK_WINDOW (servlist));
 	if (current_sess)
 		gtk_window_set_transient_for (GTK_WINDOW (servlist), GTK_WINDOW (current_sess->gui->window));
@@ -2579,11 +2585,11 @@ servlist_open_networks (void)
 	fabulor_gtk_window_set_child (GTK_WINDOW (servlist), vbox1);
 
 	label2 = bold_label (_("User Information"));
-	gtk_box_pack_start (GTK_BOX (vbox1), label2, FALSE, FALSE, 0);
+	fabulor_gtk_box_append (GTK_BOX (vbox1), label2, FALSE, FALSE, 0);
 
 	table1 = gtkutil_grid_new (5, 2, FALSE);
 	gtk_widget_show (table1);
-	gtk_box_pack_start (GTK_BOX (vbox1), table1, FALSE, FALSE, 0);
+	fabulor_gtk_box_append (GTK_BOX (vbox1), table1, FALSE, FALSE, 0);
 	fabulor_gtk_container_set_uniform_inset (table1, 8);
 	gtk_grid_set_row_spacing (GTK_GRID (table1), 2);
 	gtk_grid_set_column_spacing (GTK_GRID (table1), 4);
@@ -2672,14 +2678,14 @@ servlist_open_networks (void)
 
 	vbox2 = gtkutil_box_new (GTK_ORIENTATION_VERTICAL, FALSE, 0);
 	gtk_widget_show (vbox2);
-	gtk_box_pack_start (GTK_BOX (vbox1), vbox2, TRUE, TRUE, 0);
+	fabulor_gtk_box_append (GTK_BOX (vbox1), vbox2, TRUE, TRUE, 0);
 
 	label1 = bold_label (_("Networks"));
-	gtk_box_pack_start (GTK_BOX (vbox2), label1, FALSE, FALSE, 0);
+	fabulor_gtk_box_append (GTK_BOX (vbox2), label1, FALSE, FALSE, 0);
 
 	table4 = gtkutil_grid_new (2, 2, FALSE);
 	gtk_widget_show (table4);
-	gtk_box_pack_start (GTK_BOX (vbox2), table4, TRUE, TRUE, 0);
+	fabulor_gtk_box_append (GTK_BOX (vbox2), table4, TRUE, TRUE, 0);
 	fabulor_gtk_container_set_uniform_inset (table4, 8);
 	gtk_grid_set_row_spacing (GTK_GRID (table4), 2);
 	gtk_grid_set_column_spacing (GTK_GRID (table4), 3);
@@ -2739,21 +2745,21 @@ servlist_open_networks (void)
 							G_CALLBACK (servlist_addnet_cb), networks_tree);
 	gtk_widget_show (button_add);
 	fabulor_gtk_box_append (GTK_BOX (vbuttonbox2), button_add, FALSE, TRUE, 0);
-	gtk_widget_set_can_default (button_add, TRUE);
+	fabulor_gtk_widget_set_can_default (button_add, TRUE);
 
 	button_remove = servlist_icon_button_new (_("_Remove"), ICON_SERVLIST_REMOVE);
 	g_signal_connect (G_OBJECT (button_remove), "clicked",
 							G_CALLBACK (servlist_deletenet_cb), 0);
 	gtk_widget_show (button_remove);
 	fabulor_gtk_box_append (GTK_BOX (vbuttonbox2), button_remove, FALSE, TRUE, 0);
-	gtk_widget_set_can_default (button_remove, TRUE);
+	fabulor_gtk_widget_set_can_default (button_remove, TRUE);
 
 	button_edit = gtk_button_new_with_mnemonic (_("_Edit..."));
 	g_signal_connect (G_OBJECT (button_edit), "clicked",
 							G_CALLBACK (servlist_edit_cb), 0);
 	gtk_widget_show (button_edit);
 	fabulor_gtk_box_append (GTK_BOX (vbuttonbox2), button_edit, FALSE, TRUE, 0);
-	gtk_widget_set_can_default (button_edit, TRUE);
+	fabulor_gtk_widget_set_can_default (button_edit, TRUE);
 
 	button_sort = gtk_button_new_with_mnemonic (_("_Sort"));
 	gtk_widget_set_tooltip_text (button_sort, _("Sorts the network list in alphabetical order. "
@@ -2762,7 +2768,7 @@ servlist_open_networks (void)
 							G_CALLBACK (servlist_sort), 0);
 	gtk_widget_show (button_sort);
 	fabulor_gtk_box_append (GTK_BOX (vbuttonbox2), button_sort, FALSE, TRUE, 0);
-	gtk_widget_set_can_default (button_sort, TRUE);
+	fabulor_gtk_widget_set_can_default (button_sort, TRUE);
 
 	button_sort = gtk_button_new_with_mnemonic (_("_Favor"));
 	gtk_widget_set_tooltip_text (button_sort, _("Mark or unmark this network as a favorite."));
@@ -2770,16 +2776,16 @@ servlist_open_networks (void)
 							G_CALLBACK (servlist_favor), 0);
 	gtk_widget_show (button_sort);
 	fabulor_gtk_box_append (GTK_BOX (vbuttonbox2), button_sort, FALSE, TRUE, 0);
-	gtk_widget_set_can_default (button_sort, TRUE);
+	fabulor_gtk_widget_set_can_default (button_sort, TRUE);
 
 	hseparator1 = gtk_separator_new (GTK_ORIENTATION_HORIZONTAL);
 	gtk_widget_show (hseparator1);
-	gtk_box_pack_start (GTK_BOX (vbox1), hseparator1, FALSE, TRUE, 4);
+	fabulor_gtk_box_append (GTK_BOX (vbox1), hseparator1, FALSE, TRUE, 4);
 
 	hbuttonbox1 = fabulor_gtk_button_box_new (GTK_ORIENTATION_HORIZONTAL,
 		FABULOR_GTK_BUTTON_BOX_SPREAD, 0);
 	gtk_widget_show (hbuttonbox1);
-	gtk_box_pack_start (GTK_BOX (vbox1), hbuttonbox1, FALSE, TRUE, 0);
+	fabulor_gtk_box_append (GTK_BOX (vbox1), hbuttonbox1, FALSE, TRUE, 0);
 	fabulor_gtk_container_set_uniform_inset (hbuttonbox1, 8);
 
 	button_close = servlist_icon_button_new (_("_Close"), ICON_SERVLIST_CLOSE);
@@ -2787,11 +2793,11 @@ servlist_open_networks (void)
 	g_signal_connect (G_OBJECT (button_close), "clicked",
 							G_CALLBACK (servlist_close_cb), 0);
 	fabulor_gtk_box_append (GTK_BOX (hbuttonbox1), button_close, FALSE, TRUE, 0);
-	gtk_widget_set_can_default (button_close, TRUE);
+	fabulor_gtk_widget_set_can_default (button_close, TRUE);
 
 button_connect = gtkutil_button (hbuttonbox1, ICON_SERVLIST_CONNECT, NULL,
 												servlist_connect_cb, NULL, _("C_onnect"));
-	gtk_widget_set_can_default (button_connect, TRUE);
+	fabulor_gtk_widget_set_can_default (button_connect, TRUE);
 
 	g_signal_connect (G_OBJECT (entry_guser), "changed", 
 					G_CALLBACK(servlist_username_changed_cb), button_connect);
@@ -2809,7 +2815,7 @@ button_connect = gtkutil_button (hbuttonbox1, ICON_SERVLIST_CONNECT, NULL,
 	/* gtk_label_set_mnemonic_widget (GTK_LABEL (label7), entry5); */
 
 	gtk_widget_grab_focus (networks_tree);
-	gtk_widget_grab_default (button_close);
+	fabulor_gtk_window_set_default_widget (GTK_WINDOW (servlist), button_close);
 	return servlist;
 }
 

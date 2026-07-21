@@ -1077,6 +1077,18 @@ non-local `GFile` values when projecting an owned filesystem path. The full
 GTK4 inventory improves to zero compiler errors, 166 warnings, 50 unique
 unresolved symbols, and 59 repeated diagnostics.
 
+Stage 8 Server List widget boundary pass 76 removes direct `GtkBin`,
+`gtk_box_pack_start()`, window-role, and widget-default calls from
+`servlistgui.c`. Editable combo child discovery is typed and null-checked;
+box expansion, fill, and padding use the shared attachment policy. GTK3 keeps
+window roles and can-default/grab-default behavior, while GTK4 uses the window
+default-widget API and treats obsolete roles as inert metadata. The shared
+utility-window constructor uses the same role boundary, eliminating that
+retired symbol from the complete frontend. The full GTK4 inventory improves
+to zero compiler errors, 156 warnings, 46 unique unresolved symbols, and 52
+repeated diagnostics. `servlistgui.c` contributes no remaining GTK4 compiler
+diagnostics.
+
 ## Functional Clusters
 
 | Cluster | Main files | GTK4 concern | Status |

@@ -6252,6 +6252,47 @@ Preferences parent remains alive; parent closure hides and releases the native
 chooser exactly once. Supported `.hct` and `colors.conf` semantics are
 unchanged, and non-local selections never become filesystem paths.
 
+### GTK4 Stage 8 Server List Widget Boundary
+
+Date: 2026-07-21
+
+Files/workflows converted: Server List and network-editor editable combo child
+access, box attachment, window roles, and default-button ownership; shared
+utility-window role containment.
+
+Automated evidence:
+
+- shipping MSVC GTK3 frontend build: pass; zero warnings and zero errors
+- strict MSVC GTK4 probe against GTK 4.22.4 / GLib 2.88.0: build and execution
+  pass under `/W4 /WX`; zero warnings and errors
+- Meson MSVC GTK4 probe: clean configure, build, and execution pass
+- repository GTK4 Python validation: 28 tests pass
+- source audit: `servlistgui.c` has no direct `GtkBin`, `gtk_box_pack_start()`,
+  `gtk_window_set_role()`, `gtk_widget_set_can_default()`, or
+  `gtk_widget_grab_default()` calls
+- source audit: the complete GTK4 compile reports no diagnostics from
+  `servlistgui.c`
+- clean isolated complete GTK4 frontend compilation: zero C compiler errors
+  and 156 warnings, down from 166 in pass 75
+- expected complete GTK4 link failure improves from 50 to 46 unique unresolved
+  symbols and from 59 to 52 repeated unresolved-symbol diagnostics
+- inventory log: `build/gtk4-full/server-list-widget-boundary-pass76.log`
+- next target: main-window label/icon child access and pane-layout queries
+- `git diff --check`: pass
+
+Manual checks deferred until the full GTK4 frontend links:
+
+- [ ] open the Server List and confirm Close remains the default action
+- [ ] open the network editor and confirm Close remains the default action
+- [ ] edit and retain a custom character set
+- [ ] change login method and confirm dependent password controls update
+- [ ] resize both windows and inspect button, separator, and notebook spacing
+
+Behavior contract: Server List layout retains its existing expansion, fill,
+padding, and focus behavior. GTK3 keeps its window-manager roles and default
+button mechanics; GTK4 assigns the default through the owning window. The
+editable character-set control continues to emit changes from its entry child.
+
 ## Stage Completion Rule
 
 A stage can move to complete in `migration-plan.md` only when:
