@@ -5617,6 +5617,31 @@ Behavior contract: GTK3 visible and transparent event-box behavior is retained;
 GTK4 surfaces remain CSS-palette targets and own one content tree. Theme list
 rows retain their order and non-selectable policy. Packaging impact: none.
 
+### GTK4 Stage 8 Lazy Preferences Page Ownership
+
+Date: 2026-07-21
+
+Files/workflows converted: one-time Preferences page creation, attachment, and
+reveal.
+
+Automated evidence:
+
+- shipping MSVC GTK3 frontend rebuild: pass; zero errors
+- strict MSVC GTK4 probe against GTK 4.22.4 / GLib 2.88.0: compile, link, and
+  execution pass under `/W4 /WX`; zero warnings and zero errors
+- clean isolated complete GTK4 frontend compilation: zero C compiler errors and
+  228 warnings, improved from 233 warnings
+- expected complete GTK4 link failure retains 69 unique unresolved symbols and
+  improves from 104 to 100 repeated unresolved-symbol diagnostics
+- `setup.c` has no direct `gtk_container_get_children`, `gtk_container_add`, or
+  `gtk_widget_show_all` calls
+- next target: typed child reparenting and removal
+- `git diff --check`: pass
+
+Behavior contract: Preferences pages remain lazy and each page factory runs at
+most once per Preferences window registry. Page order, scrolling, visibility,
+and factory selection are unchanged. Packaging impact: none.
+
 ## Build Matrix
 
 | Check | GTK3 shipping target | GTK4 candidate | Final GTK4 target |

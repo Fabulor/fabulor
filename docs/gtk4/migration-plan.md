@@ -2050,6 +2050,17 @@ contains no event-box symbols. Channel-list menu construction and lazy
 Preferences page attachment are the remaining active generic-add callers;
 typed lazy-page ownership is next before child reparent/removal.
 
+Lazy Preferences page ownership pass 61 (2026-07-21):
+the Preferences registry now owns explicit per-page creation state instead of
+inferring it by enumerating GTK3 container children. Each registered page is a
+known vertical box; its factory result is attached once through the typed box
+owner and revealed through the existing cross-version tree helper. Shipping
+GTK3 and the strict GTK4 probe remain clean. The complete GTK4 profile retains
+zero compiler errors and 69 unique unresolved symbols, improves from 233 to 228
+warnings, and reduces repeated unresolved diagnostics from 104 to 100.
+`setup.c` no longer contributes generic child enumeration, attachment, or
+`show_all` calls. Typed child reparenting/removal is next.
+
 Deliverables:
 
 - Make GTK4 the only production frontend dependency in MSVC, Meson, and CI.

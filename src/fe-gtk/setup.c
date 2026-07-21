@@ -100,6 +100,7 @@ typedef GtkWidget *(*setup_page_factory) (const setting *settings);
 static setup_page_factory setup_page_factories[SETUP_MAX_PAGES];
 static const setting *setup_page_settings[SETUP_MAX_PAGES];
 static GtkWidget *setup_page_containers[SETUP_MAX_PAGES];
+static gboolean setup_page_created[SETUP_MAX_PAGES];
 static int setup_page_count = 0;
 
 #ifdef WIN32
@@ -1918,6 +1919,7 @@ setup_register_page (const char *title, GtkWidget *book, setup_page_factory fact
 
         setup_page_factories[setup_page_count] = factory;
         setup_page_settings[setup_page_count] = settings;
+        setup_page_created[setup_page_count] = FALSE;
         container = gtkutil_box_new (GTK_ORIENTATION_VERTICAL, FALSE, 0);
         setup_page_containers[setup_page_count] = container;
         setup_add_page (title, book, container);
@@ -1927,24 +1929,20 @@ setup_register_page (const char *title, GtkWidget *book, setup_page_factory fact
 static void
 setup_ensure_page_created (int page)
 {
-        GList *children;
         GtkWidget *page_widget;
         GtkWidget *container;
 
         if (page < 0 || page >= setup_page_count)
                 return;
+        if (setup_page_created[page])
+                return;
 
         container = setup_page_containers[page];
-        children = gtk_container_get_children (GTK_CONTAINER (container));
-        if (children != NULL)
-        {
-                g_list_free (children);
-                return;
-        }
-
         page_widget = setup_page_factories[page] (setup_page_settings[page]);
-        gtk_container_add (GTK_CONTAINER (container), page_widget);
-        gtk_widget_show_all (container);
+        fabulor_gtk_box_append (GTK_BOX (container), page_widget,
+                FALSE, TRUE, 0);
+        setup_page_created[page] = TRUE;
+        fabulor_gtk_widget_reveal_tree (container);
 }
 
 static const char *const cata_interface[] =
@@ -1988,6 +1986,7 @@ setup_create_pages (void)
                 setup_page_factories[i] = NULL;
                 setup_page_settings[i] = NULL;
                 setup_page_containers[i] = NULL;
+                setup_page_created[i] = FALSE;
         }
         setup_page_count = 0;
 
