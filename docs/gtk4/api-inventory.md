@@ -956,6 +956,19 @@ and from 60 to 58 unique unresolved symbols. `gtk_box_reorder_child` and
 `gtk_button_set_always_show_image` are closed, and `chanview.obj` contributes no
 remaining GTK4 warning or unresolved diagnostic.
 
+Stage 8 Join Channel dialog lifecycle pass 66 replaces GTK3 radio-button groups
+with a typed choice abstraction: GTK3 retains native radio buttons and GTK4
+uses grouped check buttons. Active-state access also covers the dialog's normal
+checkbox without invalid GTK4 toggle-button casts. Label wrapping, root-window
+lookup, default response ownership, and dialog pointer cleanup now use explicit
+cross-version semantics. Strict probes verify three-way exclusivity, ordinary
+checkbox state, wrapping, parented and unparented root lookup, and finalization.
+The complete GTK4 inventory retains zero C compiler errors while improving from
+204 to 191 warnings, from 80 to 72 repeated diagnostics, and from 58 to 56
+unique unresolved symbols. `gtk_radio_button_set_group` and
+`gtk_label_set_line_wrap` are closed, and `joind.obj` contributes no remaining
+GTK4 warning or unresolved diagnostic.
+
 ## Functional Clusters
 
 | Cluster | Main files | GTK4 concern | Status |

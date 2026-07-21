@@ -48,7 +48,7 @@
 static void
 joind_radio2_cb (GtkWidget *radio, server *serv)
 {
-	if (gtk_toggle_button_get_active (GTK_TOGGLE_BUTTON (radio)))
+	if (fabulor_gtk_check_button_get_active (radio))
 	{
 		gtk_widget_grab_focus (serv->gui->joind_entry);
 		gtk_editable_set_position (GTK_EDITABLE (serv->gui->joind_entry), 999);
@@ -67,29 +67,44 @@ joind_entryfocus_cb (GtkWidget *entry, gpointer user_data)
 	server *serv = user_data;
 
 	(void) entry;
-	gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (serv->gui->joind_radio2), TRUE);
+	fabulor_gtk_check_button_set_active (serv->gui->joind_radio2, TRUE);
 }
 
+#if GTK_MAJOR_VERSION >= 4
 static void
-joind_destroy_cb (GtkWidget *win, server *serv)
+joind_finalized_cb (gpointer user_data, GObject *window)
 {
+	server *serv = user_data;
+
+	(void) window;
 	if (is_server (serv))
 		serv->gui->joind_win = NULL;
 }
+#else
+static void
+joind_destroy_cb (GtkWidget *window, server *serv)
+{
+	(void) window;
+	if (is_server (serv))
+		serv->gui->joind_win = NULL;
+}
+#endif
 
 static void
 joind_ok_cb (GtkWidget *ok, server *serv)
 {
 	if (!is_server (serv))
 	{
-		gtk_widget_destroy (gtk_widget_get_toplevel (ok));
+		GtkWindow *window = fabulor_gtk_widget_get_root_window (ok);
+		if (window)
+			fabulor_gtk_window_destroy (window);
 		return;
 	}
 
-	if (gtk_toggle_button_get_active (GTK_TOGGLE_BUTTON (serv->gui->joind_radio1)))
+	if (fabulor_gtk_check_button_get_active (serv->gui->joind_radio1))
 		goto xit;
 
-	if (gtk_toggle_button_get_active (GTK_TOGGLE_BUTTON (serv->gui->joind_radio2)))
+	if (fabulor_gtk_check_button_get_active (serv->gui->joind_radio2))
 	{
 		char *text = (char *)fabulor_gtk_entry_get_text (GTK_ENTRY (serv->gui->joind_entry));
 		if (strlen (text) < 1)
@@ -105,7 +120,7 @@ joind_ok_cb (GtkWidget *ok, server *serv)
 
 xit:
 	prefs.hex_gui_join_dialog = 0;
-	if (gtk_toggle_button_get_active (GTK_TOGGLE_BUTTON (serv->gui->joind_check)))
+	if (fabulor_gtk_check_button_get_active (serv->gui->joind_check))
 		prefs.hex_gui_join_dialog = 1;
 
 	fabulor_gtk_window_destroy (GTK_WINDOW (serv->gui->joind_win));
@@ -125,7 +140,6 @@ joind_show_dialog (server *serv)
 	GtkWidget *radiobutton1;
 	GtkWidget *radiobutton2;
 	GtkWidget *radiobutton3;
-	GSList *radiobutton1_group;
 	GtkWidget *hbox2;
 	GtkWidget *entry1;
 	GtkWidget *checkbutton1;
@@ -179,7 +193,7 @@ joind_show_dialog (server *serv)
 	label = gtk_label_new (_("In the server list window, no channel (chat room) has been entered to be automatically joined for this network."));
 	gtk_widget_show (label);
 	fabulor_gtk_box_append (GTK_BOX (vbox2), label, FALSE, FALSE, 0);
-	gtk_label_set_line_wrap (GTK_LABEL (label), TRUE);
+	fabulor_gtk_label_set_wrap (GTK_LABEL (label), TRUE);
 	gtk_widget_set_halign (label, GTK_ALIGN_START);
 	gtk_widget_set_valign (label, GTK_ALIGN_CENTER);
 
@@ -189,20 +203,21 @@ joind_show_dialog (server *serv)
 	gtk_widget_set_halign (label, GTK_ALIGN_START);
 	gtk_widget_set_valign (label, GTK_ALIGN_CENTER);
 
-	serv->gui->joind_radio1 = radiobutton1 = gtk_radio_button_new_with_mnemonic (NULL, _("_Nothing, I'll join a channel later."));
+	serv->gui->joind_radio1 = radiobutton1 =
+		fabulor_gtk_radio_button_new_with_mnemonic (NULL,
+			_("_Nothing, I'll join a channel later."));
 	gtk_widget_show (radiobutton1);
 	fabulor_gtk_box_append (GTK_BOX (vbox2), radiobutton1, FALSE, FALSE, 0);
-	radiobutton1_group = gtk_radio_button_get_group (GTK_RADIO_BUTTON (radiobutton1));
 
 	hbox2 = gtkutil_box_new (GTK_ORIENTATION_HORIZONTAL, FALSE, 0);
 	gtk_widget_show (hbox2);
 	fabulor_gtk_box_append (GTK_BOX (vbox2), hbox2, FALSE, FALSE, 0);
 
-	serv->gui->joind_radio2 = radiobutton2 = gtk_radio_button_new_with_mnemonic (NULL, _("_Join this channel:"));
+	serv->gui->joind_radio2 = radiobutton2 =
+		fabulor_gtk_radio_button_new_with_mnemonic (radiobutton1,
+			_("_Join this channel:"));
 	gtk_widget_show (radiobutton2);
 	fabulor_gtk_box_append (GTK_BOX (hbox2), radiobutton2, FALSE, FALSE, 0);
-	gtk_radio_button_set_group (GTK_RADIO_BUTTON (radiobutton2), radiobutton1_group);
-	radiobutton1_group = gtk_radio_button_get_group (GTK_RADIO_BUTTON (radiobutton2));
 
 	serv->gui->joind_entry = entry1 = gtk_entry_new ();
 	fabulor_gtk_entry_set_text (GTK_ENTRY (entry1), "#");
@@ -218,10 +233,10 @@ joind_show_dialog (server *serv)
 	gtk_widget_set_halign (label, GTK_ALIGN_START);
 	gtk_widget_set_valign (label, GTK_ALIGN_CENTER);
 
-	radiobutton3 = gtk_radio_button_new_with_mnemonic (NULL, _("O_pen the channel list."));
+	radiobutton3 = fabulor_gtk_radio_button_new_with_mnemonic (radiobutton1,
+		_("O_pen the channel list."));
 	gtk_widget_show (radiobutton3);
 	fabulor_gtk_box_append (GTK_BOX (vbox2), radiobutton3, FALSE, FALSE, 0);
-	gtk_radio_button_set_group (GTK_RADIO_BUTTON (radiobutton3), radiobutton1_group);
 
 	g_snprintf (buf, sizeof (buf), "<small>     %s</small>",
 				 _("Retrieving the channel list may take a minute or two."));
@@ -234,17 +249,21 @@ joind_show_dialog (server *serv)
 
 	serv->gui->joind_check = checkbutton1 = gtk_check_button_new_with_mnemonic (_("_Always show this dialog after connecting."));
 	if (prefs.hex_gui_join_dialog)
-		gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (checkbutton1), TRUE);
+		fabulor_gtk_check_button_set_active (checkbutton1, TRUE);
 	gtk_widget_show (checkbutton1);
 	fabulor_gtk_box_append (GTK_BOX (vbox1), checkbutton1, FALSE, FALSE, 0);
 
 	okbutton1 = gtkutil_button_new_from_stock ("gtk-ok", _("_OK"));
 	gtk_widget_show (okbutton1);
 	gtk_dialog_add_action_widget (GTK_DIALOG (dialog1), okbutton1, GTK_RESPONSE_OK);
-	gtk_widget_set_can_default (okbutton1, TRUE);
+	gtk_dialog_set_default_response (GTK_DIALOG (dialog1), GTK_RESPONSE_OK);
 
+#if GTK_MAJOR_VERSION >= 4
+	g_object_weak_ref (G_OBJECT (dialog1), joind_finalized_cb, serv);
+#else
 	g_signal_connect (G_OBJECT (dialog1), "destroy",
-							G_CALLBACK (joind_destroy_cb), serv);
+		G_CALLBACK (joind_destroy_cb), serv);
+#endif
 	fabulor_gtk_widget_on_focus_enter (entry1, joind_entryfocus_cb, serv);
 	g_signal_connect (G_OBJECT (entry1), "activate",
 							G_CALLBACK (joind_entryenter_cb), okbutton1);

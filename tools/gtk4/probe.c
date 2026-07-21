@@ -154,6 +154,14 @@ check_compatibility_helper_signatures (void)
 	GtkWidget *(*volatile button_new_with_icon_and_mnemonic) (const gchar *,
 		const gchar *, FabulorGtkIconSize) =
 		fabulor_gtk_button_new_with_icon_and_mnemonic;
+	GtkWidget *(*volatile radio_button_new_with_mnemonic) (GtkWidget *,
+		const gchar *) = fabulor_gtk_radio_button_new_with_mnemonic;
+	gboolean (*volatile check_button_get_active) (GtkWidget *) =
+		fabulor_gtk_check_button_get_active;
+	void (*volatile check_button_set_active) (GtkWidget *, gboolean) =
+		fabulor_gtk_check_button_set_active;
+	void (*volatile label_set_wrap) (GtkLabel *, gboolean) =
+		fabulor_gtk_label_set_wrap;
 	const gchar *(*volatile entry_get_text) (GtkEntry *) =
 		fabulor_gtk_entry_get_text;
 	void (*volatile entry_set_text) (GtkEntry *, const gchar *) =
@@ -209,6 +217,8 @@ check_compatibility_helper_signatures (void)
 		gint, gint) = fabulor_gtk_widget_queue_draw_region;
 	gboolean (*volatile widget_has_toplevel_focus) (GtkWidget *) =
 		fabulor_gtk_widget_has_toplevel_focus;
+	GtkWindow *(*volatile widget_get_root_window) (GtkWidget *) =
+		fabulor_gtk_widget_get_root_window;
 	FabulorXTextSelection *(*volatile xtext_selection_new) (GtkWidget *,
 		FabulorXTextSelectionTextFunc, FabulorXTextSelectionClearFunc,
 		gpointer) = fabulor_xtext_selection_new;
@@ -308,6 +318,10 @@ check_compatibility_helper_signatures (void)
 	(void) icon_size_get_pixels;
 	(void) image_new_from_icon_name;
 	(void) button_new_with_icon_and_mnemonic;
+	(void) radio_button_new_with_mnemonic;
+	(void) check_button_get_active;
+	(void) check_button_set_active;
+	(void) label_set_wrap;
 	(void) entry_get_text;
 	(void) entry_set_text;
 	(void) entry_set_width_chars;
@@ -336,6 +350,7 @@ check_compatibility_helper_signatures (void)
 	(void) widget_set_accessible_label;
 	(void) widget_queue_draw_region;
 	(void) widget_has_toplevel_focus;
+	(void) widget_get_root_window;
 	(void) xtext_selection_new;
 	(void) xtext_selection_free;
 	(void) xtext_selection_publish;
@@ -718,6 +733,60 @@ check_icon_mnemonic_button (gboolean gtk_ready)
 		g_strcmp0 (gtk_label_get_text (GTK_LABEL (label)), "Go Now") == 0 &&
 		gtk_label_get_mnemonic_widget (GTK_LABEL (label)) == button;
 	g_object_unref (button);
+	return valid;
+}
+
+static gboolean
+check_choice_buttons_and_root_window (gboolean gtk_ready)
+{
+	GtkWidget *window;
+	GtkWidget *box;
+	GtkWidget *first;
+	GtkWidget *second;
+	GtkWidget *third;
+	GtkWidget *check;
+	GtkWidget *label;
+	GtkWidget *unparented;
+	gboolean valid;
+
+	if (!gtk_ready)
+		return TRUE;
+
+	window = gtk_window_new ();
+	box = gtk_box_new (GTK_ORIENTATION_VERTICAL, 0);
+	first = fabulor_gtk_radio_button_new_with_mnemonic (NULL, "_First");
+	second = fabulor_gtk_radio_button_new_with_mnemonic (first, "_Second");
+	third = fabulor_gtk_radio_button_new_with_mnemonic (first, "_Third");
+	check = gtk_check_button_new_with_mnemonic ("_Remember");
+	label = gtk_label_new ("A wrapped label");
+	unparented = gtk_label_new ("Unparented");
+	g_object_ref_sink (window);
+	g_object_ref_sink (unparented);
+	gtk_box_append (GTK_BOX (box), first);
+	gtk_box_append (GTK_BOX (box), second);
+	gtk_box_append (GTK_BOX (box), third);
+	gtk_box_append (GTK_BOX (box), check);
+	gtk_box_append (GTK_BOX (box), label);
+	fabulor_gtk_window_set_child (GTK_WINDOW (window), box);
+
+	fabulor_gtk_check_button_set_active (first, TRUE);
+	valid = fabulor_gtk_check_button_get_active (first) &&
+		!fabulor_gtk_check_button_get_active (second) &&
+		!fabulor_gtk_check_button_get_active (third);
+	fabulor_gtk_check_button_set_active (second, TRUE);
+	valid = valid && !fabulor_gtk_check_button_get_active (first) &&
+		fabulor_gtk_check_button_get_active (second) &&
+		!fabulor_gtk_check_button_get_active (third);
+	fabulor_gtk_check_button_set_active (check, TRUE);
+	valid = valid && fabulor_gtk_check_button_get_active (check);
+	fabulor_gtk_label_set_wrap (GTK_LABEL (label), TRUE);
+	valid = valid && gtk_label_get_wrap (GTK_LABEL (label)) &&
+		fabulor_gtk_widget_get_root_window (second) == GTK_WINDOW (window) &&
+		fabulor_gtk_widget_get_root_window (unparented) == NULL;
+
+	g_object_unref (unparented);
+	gtk_window_destroy (GTK_WINDOW (window));
+	g_object_unref (window);
 	return valid;
 }
 
@@ -5091,6 +5160,11 @@ main (void)
 	if (!check_icon_mnemonic_button (gtk_ready))
 	{
 		fprintf (stderr, "GTK4 icon mnemonic button contract mismatch\n");
+		return 1;
+	}
+	if (!check_choice_buttons_and_root_window (gtk_ready))
+	{
+		fprintf (stderr, "GTK4 choice or root-window contract mismatch\n");
 		return 1;
 	}
 	if (!check_frame_presentation (gtk_ready))

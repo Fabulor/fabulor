@@ -150,6 +150,66 @@ fabulor_gtk_button_new_with_icon_and_mnemonic (const gchar *label,
 	return button;
 }
 
+static inline GtkWidget *
+fabulor_gtk_radio_button_new_with_mnemonic (GtkWidget *group_member,
+											const gchar *label)
+{
+	g_return_val_if_fail (label != NULL, NULL);
+
+#if GTK_MAJOR_VERSION >= 4
+	GtkWidget *button;
+
+	g_return_val_if_fail (group_member == NULL ||
+		GTK_IS_CHECK_BUTTON (group_member), NULL);
+	button = gtk_check_button_new_with_mnemonic (label);
+	if (group_member)
+		gtk_check_button_set_group (GTK_CHECK_BUTTON (button),
+			GTK_CHECK_BUTTON (group_member));
+	return button;
+#else
+	g_return_val_if_fail (group_member == NULL ||
+		GTK_IS_RADIO_BUTTON (group_member), NULL);
+	return gtk_radio_button_new_with_mnemonic_from_widget (
+		group_member ? GTK_RADIO_BUTTON (group_member) : NULL, label);
+#endif
+}
+
+static inline gboolean
+fabulor_gtk_check_button_get_active (GtkWidget *button)
+{
+#if GTK_MAJOR_VERSION >= 4
+	g_return_val_if_fail (GTK_IS_CHECK_BUTTON (button), FALSE);
+	return gtk_check_button_get_active (GTK_CHECK_BUTTON (button));
+#else
+	g_return_val_if_fail (GTK_IS_TOGGLE_BUTTON (button), FALSE);
+	return gtk_toggle_button_get_active (GTK_TOGGLE_BUTTON (button));
+#endif
+}
+
+static inline void
+fabulor_gtk_check_button_set_active (GtkWidget *button, gboolean active)
+{
+#if GTK_MAJOR_VERSION >= 4
+	g_return_if_fail (GTK_IS_CHECK_BUTTON (button));
+	gtk_check_button_set_active (GTK_CHECK_BUTTON (button), active);
+#else
+	g_return_if_fail (GTK_IS_TOGGLE_BUTTON (button));
+	gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (button), active);
+#endif
+}
+
+static inline void
+fabulor_gtk_label_set_wrap (GtkLabel *label, gboolean wrap)
+{
+	g_return_if_fail (GTK_IS_LABEL (label));
+
+#if GTK_MAJOR_VERSION >= 4
+	gtk_label_set_wrap (label, wrap);
+#else
+	gtk_label_set_line_wrap (label, wrap);
+#endif
+}
+
 static inline const gchar *
 fabulor_gtk_entry_get_text (GtkEntry *entry)
 {
@@ -543,6 +603,20 @@ fabulor_gtk_widget_has_toplevel_focus (GtkWidget *widget)
 	GtkWidget *toplevel = gtk_widget_get_toplevel (widget);
 	return GTK_IS_WINDOW (toplevel) &&
 		gtk_window_has_toplevel_focus (GTK_WINDOW (toplevel));
+#endif
+}
+
+static inline GtkWindow *
+fabulor_gtk_widget_get_root_window (GtkWidget *widget)
+{
+	g_return_val_if_fail (GTK_IS_WIDGET (widget), NULL);
+
+#if GTK_MAJOR_VERSION >= 4
+	GtkRoot *root = gtk_widget_get_root (widget);
+	return GTK_IS_WINDOW (root) ? GTK_WINDOW (root) : NULL;
+#else
+	GtkWidget *root = gtk_widget_get_toplevel (widget);
+	return GTK_IS_WINDOW (root) ? GTK_WINDOW (root) : NULL;
 #endif
 }
 
