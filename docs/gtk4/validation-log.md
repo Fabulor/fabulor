@@ -5765,6 +5765,40 @@ visibility and hover, implementation switching, and automatic main-window
 ownership are retained. GTK3 presentation and destruction remain unchanged;
 GTK4 owns removal and finalization explicitly. Packaging impact: none.
 
+### GTK4 Stage 8 Join Channel Dialog Lifecycle
+
+Date: 2026-07-21
+
+Files/workflows converted: Join Channel grouped choices, persistence checkbox,
+wrapped explanatory label, invalid-server root close, default OK response, and
+dialog pointer cleanup.
+
+Automated evidence:
+
+- shipping MSVC GTK3 frontend rebuild: pass; zero errors
+- strict MSVC GTK4 probe against GTK 4.22.4 / GLib 2.88.0: compile, link, and
+  execution pass under `/W4 /WX`; zero warnings and zero errors
+- Meson MSVC GTK4 probe: compile, link, and execution pass
+- strict runtime checks: activating each grouped choice clears its siblings;
+  ordinary check-button state is readable and writable; label wrapping is
+  enabled; a parented control resolves its owning window while an unparented
+  widget resolves no window
+- clean isolated complete GTK4 frontend compilation: zero C compiler errors and
+  191 warnings, improved from 204 warnings
+- expected complete GTK4 link failure improves from 58 to 56 unique unresolved
+  symbols and from 80 to 72 repeated unresolved-symbol diagnostics
+- closed symbols: `gtk_radio_button_set_group` and
+  `gtk_label_set_line_wrap`
+- `joind.obj` has no remaining GTK4 compiler warning or unresolved diagnostic
+- inventory log: `build/gtk4-full/join-dialog-lifecycle-pass66.log`
+- next target: DCC grouped choice controls
+- `git diff --check`: pass
+
+Behavior contract: Nothing, Join this channel, and Open channel list remain
+mutually exclusive; entry focus selects Join; Enter and OK preserve dispatch;
+the persistence checkbox and dialog-close cleanup remain intact. GTK3 retains
+native radio presentation. Packaging impact: none.
+
 ## Build Matrix
 
 | Check | GTK3 shipping target | GTK4 candidate | Final GTK4 target |

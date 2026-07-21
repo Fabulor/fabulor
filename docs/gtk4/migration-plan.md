@@ -2118,6 +2118,21 @@ from 60 to 58 unique unresolved symbols. `gtk_box_reorder_child` and
 Channel List/Channel View container and lifecycle target is complete. Remaining
 top-level visibility and lifecycle callbacks are next.
 
+Join Channel dialog lifecycle pass 66 (2026-07-21):
+the dialog's three choices now use a typed grouped-control boundary. GTK3 keeps
+native radio buttons; GTK4 uses grouped check buttons, and both share checked-
+state access with the ordinary persistence checkbox. The invalid-server close
+path resolves a typed root window, explanatory text uses cross-version wrapping,
+the OK response owns default activation, and GTK4 clears the server's dialog
+pointer at finalization while GTK3 retains its destroy callback. Strict MSVC
+and Meson probes verify exclusive selection, ordinary checkbox state, wrapping,
+root lookup, and teardown; shipping GTK3 remains clean. The complete GTK4
+profile retains zero compiler errors while improving from 204 to 191 warnings,
+from 80 to 72 repeated diagnostics, and from 58 to 56 unique unresolved
+symbols. `gtk_radio_button_set_group` and `gtk_label_set_line_wrap` leave the
+GTK4 link boundary. DCC choice controls are the next reusable grouped-control
+target within the remaining top-level lifecycle work.
+
 Deliverables:
 
 - Make GTK4 the only production frontend dependency in MSVC, Meson, and CI.
