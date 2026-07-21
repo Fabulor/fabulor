@@ -407,6 +407,7 @@ Detailed planning and evidence live in:
         - [x] Order main/tab window theme cleanup before session release and move GTK4 window ownership to weak finalization.
         - [x] Move auxiliary dialog pointers, user-list theme cleanup, and generic utility-tab cleanup to typed GTK3/GTK4 finalization.
         - [x] Move Server List, network-editor, certificate chooser, Preferences, and font-chooser cleanup to typed GTK3/GTK4 finalization.
+        - [x] Move theme-import native choosers to weak GTK4 parent ownership and shared local-path projection.
         - [ ] Convert the remaining top-level visibility and lifecycle callbacks.
     - [ ] Bind application and preferences integration to the GTK4 theme controller.
       - [x] Separate GTK3 KDE/Wayland CSD reset ownership from GTK4 top-level theme classes.
