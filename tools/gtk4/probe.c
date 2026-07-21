@@ -769,7 +769,6 @@ check_choice_buttons_and_root_window (gboolean gtk_ready)
 	gtk_box_append (GTK_BOX (box), label);
 	fabulor_gtk_window_set_child (GTK_WINDOW (window), box);
 
-	fabulor_gtk_check_button_set_active (first, TRUE);
 	valid = fabulor_gtk_check_button_get_active (first) &&
 		!fabulor_gtk_check_button_get_active (second) &&
 		!fabulor_gtk_check_button_get_active (third);

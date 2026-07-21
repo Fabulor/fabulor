@@ -969,6 +969,18 @@ unique unresolved symbols. `gtk_radio_button_set_group` and
 `gtk_label_set_line_wrap` are closed, and `joind.obj` contributes no remaining
 GTK4 warning or unresolved diagnostic.
 
+Stage 8 DCC grouped-choice pass 67 routes the Transfers window's Both, Uploads,
+and Downloads filters through the shared grouped-control boundary. The GTK4
+constructor now explicitly activates the first ungrouped member, preserving
+GTK3 radio-button defaults for both DCC and the Join dialog. The DCC toggle
+callback reads state without an invalid GTK4 toggle-button cast, and no GTK3
+group-list internals cross the boundary. Strict MSVC and Meson probes verify
+constructor-default activation and subsequent exclusivity. The complete GTK4
+inventory retains zero C compiler errors and 56 unique unresolved symbols while
+improving from 191 to 183 warnings and from 72 to 69 repeated diagnostics.
+`dccgui.obj` contributes no remaining GTK4 warning or unresolved diagnostic;
+Preferences is the sole remaining caller of the retired radio-button family.
+
 ## Functional Clusters
 
 | Cluster | Main files | GTK4 concern | Status |

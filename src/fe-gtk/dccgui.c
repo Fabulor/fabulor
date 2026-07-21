@@ -594,7 +594,7 @@ dcc_exp_cb (GtkWidget *exp, GtkWidget *box)
 static void
 dcc_toggle (GtkWidget *item, gpointer data)
 {
-	if (gtk_toggle_button_get_active (GTK_TOGGLE_BUTTON (item)))
+	if (fabulor_gtk_check_button_get_active (item))
 	{
 		view_mode = GPOINTER_TO_INT (data);
 		dcc_fill_window (GPOINTER_TO_INT (data));
@@ -616,8 +616,8 @@ dcc_geometry_cb (GtkWindow *window, const FabulorWindowGeometry *geometry,
 int
 fe_dcc_open_recv_win (int passive)
 {
-	GtkWidget *radio, *table, *vbox, *bbox, *view, *exp, *detailbox;
-	GSList *group;
+	GtkWidget *radio, *radio_group;
+	GtkWidget *table, *vbox, *bbox, *view, *exp, *detailbox;
 	char buf[128];
 
 	if (dccfwin.window)
@@ -655,7 +655,8 @@ fe_dcc_open_recv_win (int passive)
 	gtk_grid_set_column_spacing (GTK_GRID (table), 16);
 	fabulor_gtk_box_append (GTK_BOX (vbox), table, FALSE, FALSE, 0);
 
-	radio = gtk_radio_button_new_with_mnemonic (NULL, _("Both"));
+	radio_group = radio = fabulor_gtk_radio_button_new_with_mnemonic (
+		NULL, _("Both"));
 	g_signal_connect (G_OBJECT (radio), "toggled",
 							G_CALLBACK (dcc_toggle), GINT_TO_POINTER (VIEW_BOTH));
 	gtk_widget_set_hexpand (radio, FALSE);
@@ -663,9 +664,9 @@ fe_dcc_open_recv_win (int passive)
 	gtk_widget_set_halign (radio, GTK_ALIGN_FILL);
 	gtk_widget_set_valign (radio, GTK_ALIGN_FILL);
 	gtk_grid_attach (GTK_GRID (table), radio, 3, 0, 1, 1);
-	group = gtk_radio_button_get_group (GTK_RADIO_BUTTON (radio));
 
-	radio = gtk_radio_button_new_with_mnemonic (group, _("Uploads"));
+	radio = fabulor_gtk_radio_button_new_with_mnemonic (radio_group,
+		_("Uploads"));
 	g_signal_connect (G_OBJECT (radio), "toggled",
 							G_CALLBACK (dcc_toggle), GINT_TO_POINTER (VIEW_UPLOAD));
 	gtk_widget_set_hexpand (radio, FALSE);
@@ -673,9 +674,9 @@ fe_dcc_open_recv_win (int passive)
 	gtk_widget_set_halign (radio, GTK_ALIGN_FILL);
 	gtk_widget_set_valign (radio, GTK_ALIGN_FILL);
 	gtk_grid_attach (GTK_GRID (table), radio, 1, 0, 1, 1);
-	group = gtk_radio_button_get_group (GTK_RADIO_BUTTON (radio));
 
-	radio = gtk_radio_button_new_with_mnemonic (group, _("Downloads"));
+	radio = fabulor_gtk_radio_button_new_with_mnemonic (radio_group,
+		_("Downloads"));
 	g_signal_connect (G_OBJECT (radio), "toggled",
 							G_CALLBACK (dcc_toggle), GINT_TO_POINTER (VIEW_DOWNLOAD));
 	gtk_widget_set_hexpand (radio, FALSE);
