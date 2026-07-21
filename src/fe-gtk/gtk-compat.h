@@ -333,6 +333,62 @@ fabulor_gtk_box_remove_child (GtkBox *box, GtkWidget *child)
 #endif
 }
 
+static inline GtkWidget *
+fabulor_gtk_content_surface_new (gboolean visible_background)
+{
+#if GTK_MAJOR_VERSION >= 4
+	(void) visible_background;
+	return gtk_box_new (GTK_ORIENTATION_VERTICAL, 0);
+#else
+	GtkWidget *surface = gtk_event_box_new ();
+
+	gtk_event_box_set_visible_window (GTK_EVENT_BOX (surface),
+		visible_background);
+	return surface;
+#endif
+}
+
+static inline void
+fabulor_gtk_content_surface_set_child (GtkWidget *surface, GtkWidget *child)
+{
+	g_return_if_fail (GTK_IS_WIDGET (surface));
+	g_return_if_fail (GTK_IS_WIDGET (child));
+
+#if GTK_MAJOR_VERSION >= 4
+	g_return_if_fail (GTK_IS_BOX (surface));
+	gtk_box_append (GTK_BOX (surface), child);
+#else
+	g_return_if_fail (GTK_IS_EVENT_BOX (surface));
+	gtk_container_add (GTK_CONTAINER (surface), child);
+#endif
+}
+
+static inline void
+fabulor_gtk_list_box_row_set_child (GtkListBoxRow *row, GtkWidget *child)
+{
+	g_return_if_fail (GTK_IS_LIST_BOX_ROW (row));
+	g_return_if_fail (GTK_IS_WIDGET (child));
+
+#if GTK_MAJOR_VERSION >= 4
+	gtk_list_box_row_set_child (row, child);
+#else
+	gtk_container_add (GTK_CONTAINER (row), child);
+#endif
+}
+
+static inline void
+fabulor_gtk_list_box_append (GtkListBox *list, GtkWidget *row)
+{
+	g_return_if_fail (GTK_IS_LIST_BOX (list));
+	g_return_if_fail (GTK_IS_WIDGET (row));
+
+#if GTK_MAJOR_VERSION >= 4
+	gtk_list_box_append (list, row);
+#else
+	gtk_container_add (GTK_CONTAINER (list), row);
+#endif
+}
+
 static inline void
 fabulor_gtk_widget_add_css_class (GtkWidget *widget, const gchar *name)
 {

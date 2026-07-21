@@ -4247,8 +4247,8 @@ mg_create_meters (session_gui *gui, GtkWidget *parent_box)
                 gtk_widget_set_size_request (wid, 1, 8);
 #endif
 
-                wid = gtk_event_box_new ();
-                gtk_container_add (GTK_CONTAINER (wid), gui->lagometer);
+                wid = fabulor_gtk_content_surface_new (FALSE);
+                fabulor_gtk_content_surface_set_child (wid, gui->lagometer);
                 fabulor_gtk_box_append (GTK_BOX (box), wid, FALSE, FALSE, 0);
         }
         if (prefs.hex_gui_lagometer & 2)
@@ -4266,8 +4266,8 @@ mg_create_meters (session_gui *gui, GtkWidget *parent_box)
                 gtk_widget_set_size_request (wid, 1, 8);
 #endif
 
-                wid = gtk_event_box_new ();
-                gtk_container_add (GTK_CONTAINER (wid), gui->throttlemeter);
+                wid = fabulor_gtk_content_surface_new (FALSE);
+                fabulor_gtk_content_surface_set_child (wid, gui->throttlemeter);
                 fabulor_gtk_box_append (GTK_BOX (box), wid, FALSE, FALSE, 0);
         }
         if (prefs.hex_gui_throttlemeter & 2)

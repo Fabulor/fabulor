@@ -890,6 +890,16 @@ follow-up ownership boundaries. The complete GTK4 inventory retains zero C
 compiler errors and 72 unique unresolved symbols while improving from 255 to
 245 warnings and from 121 to 111 repeated linker diagnostics.
 
+Stage 8 content-surface and list ownership pass 60 replaces active event-box
+wrappers with a semantic single-child content surface. GTK3 retains real event
+boxes and visible-window policy; GTK4 uses CSS-capable boxes with explicit child
+ownership. Theme color-manager rows and list insertion now use typed
+`GtkListBoxRow` and `GtkListBox` owners. Strict MSVC and Meson runtime checks
+verify transparent and visible surface children plus row ownership and order.
+The complete GTK4 inventory retains zero C compiler errors while improving from
+245 to 233 warnings, from 111 to 104 repeated linker diagnostics, and from 72 to
+69 unique unresolved symbols. All retired event-box symbols are closed.
+
 ## Functional Clusters
 
 | Cluster | Main files | GTK4 concern | Status |

@@ -5587,6 +5587,36 @@ Behavior contract: GTK3 box placement remains non-expanding and filling, and
 the channel-tab viewport remains its child's sole owner. No event, menu, list,
 lazy-page, or reparenting behavior is changed. Packaging impact: none.
 
+### GTK4 Stage 8 Content-Surface And List Ownership
+
+Date: 2026-07-21
+
+Files/workflows converted: lag/throttle meter wrappers, theme preview and color
+surfaces, and theme color-manager row/list attachment.
+
+Automated evidence:
+
+- shipping MSVC GTK3 frontend rebuild: pass; zero errors
+- strict MSVC GTK4 probe against GTK 4.22.4 / GLib 2.88.0: compile, link, and
+  execution pass under `/W4 /WX`; zero warnings and zero errors
+- Meson MSVC GTK4 probe: compile, link, and execution pass
+- strict runtime checks: transparent and visible content surfaces own their
+  children; a list row owns its content; the list owns and orders the row
+- clean isolated complete GTK4 frontend compilation: zero C compiler errors and
+  233 warnings, improved from 245 warnings
+- expected complete GTK4 link failure improves from 72 to 69 unique unresolved
+  symbols and from 111 to 104 repeated unresolved-symbol diagnostics
+- `gtk_event_box_new`, `gtk_event_box_set_visible_window`, and `GTK_EVENT_BOX`
+  no longer appear in the GTK4 link inventory
+- remaining active generic attachment diagnostics are channel-list menu
+  construction and lazy Preferences page attachment
+- next target: typed lazy-page attachment, then child reparent/removal
+- `git diff --check`: pass
+
+Behavior contract: GTK3 visible and transparent event-box behavior is retained;
+GTK4 surfaces remain CSS-palette targets and own one content tree. Theme list
+rows retain their order and non-selectable policy. Packaging impact: none.
+
 ## Build Matrix
 
 | Check | GTK3 shipping target | GTK4 candidate | Final GTK4 target |
