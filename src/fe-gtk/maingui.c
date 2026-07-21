@@ -1700,12 +1700,17 @@ void
 mg_bring_tofront (GtkWidget *vbox)      /* non-IRC tab or window */
 {
         chan *ch;
+        GtkWindow *window;
 
         ch = g_object_get_data (G_OBJECT (vbox), "ch");
         if (ch)
                 chan_focus (ch);
         else
-                gtk_window_present (GTK_WINDOW (gtk_widget_get_toplevel (vbox)));
+        {
+                window = fabulor_gtk_widget_get_root_window (vbox);
+                if (window)
+                        gtk_window_present (window);
+        }
 }
 
 void
@@ -2124,17 +2129,25 @@ mg_chan_remove (chan *ch)
 static void
 mg_close_gen (chan *ch, GtkWidget *box)
 {
+        GtkWindow *window;
+
         if (!ch)
                 ch = g_object_get_data (G_OBJECT (box), "ch");
         if (ch)
         {
                 /* remove from notebook */
-                gtk_widget_destroy (box);
+                int page = gtk_notebook_page_num (
+                        GTK_NOTEBOOK (mg_gui->note_book), box);
+                if (page >= 0)
+                        gtk_notebook_remove_page (
+                                GTK_NOTEBOOK (mg_gui->note_book), page);
                 /* remove the tab from chanview */
                 mg_chan_remove (ch);
         } else
         {
-                gtk_widget_destroy (gtk_widget_get_toplevel (box));
+                window = fabulor_gtk_widget_get_root_window (box);
+                if (window)
+                        fabulor_gtk_window_destroy (window);
         }
 }
 
@@ -4287,7 +4300,7 @@ mg_update_meters (session_gui *gui)
         gui->throttleinfo = NULL;
 
         mg_create_meters (gui, gui->button_box_parent);
-        gtk_widget_show_all (gui->meter_box);
+        fabulor_gtk_widget_reveal_tree (gui->meter_box);
 }
 
 static void
@@ -5947,7 +5960,7 @@ mg_create_topwindow (session *sess)
 
         userlist_show (sess);
 
-        gtk_widget_show_all (table);
+        fabulor_gtk_widget_reveal_tree (table);
 
         if (prefs.hex_gui_hide_menu)
                 gtk_widget_hide (sess->gui->menu);
@@ -5992,11 +6005,10 @@ mg_create_topwindow (session *sess)
 }
 
 static gboolean
-mg_tabwindow_de_cb (GtkWidget *widget, GdkEvent *event, gpointer user_data)
+mg_tabwindow_close_request (GtkWindow *win)
 {
         GSList *list;
         session *sess;
-        GtkWindow *win = GTK_WINDOW(gtk_widget_get_toplevel (widget));
 
         if (prefs.hex_gui_tray_close && gtkutil_tray_icon_supported (win) && tray_toggle_visibility (FALSE))
                 return TRUE;
@@ -6014,6 +6026,24 @@ mg_tabwindow_de_cb (GtkWidget *widget, GdkEvent *event, gpointer user_data)
         mg_open_quit_dialog (TRUE);
         return TRUE;
 }
+
+#if GTK_MAJOR_VERSION >= 4
+static gboolean
+mg_tabwindow_close_request_cb (GtkWindow *win, gpointer user_data)
+{
+        (void) user_data;
+        return mg_tabwindow_close_request (win);
+}
+#else
+static gboolean
+mg_tabwindow_delete_event_cb (GtkWidget *widget, GdkEvent *event,
+                              gpointer user_data)
+{
+        (void) event;
+        (void) user_data;
+        return mg_tabwindow_close_request (GTK_WINDOW (widget));
+}
+#endif
 
 #if defined(G_OS_WIN32) && GTK_MAJOR_VERSION < 4
 static GdkFilterReturn
@@ -6116,8 +6146,13 @@ mg_create_tabwindow (session *sess)
         gtk_widget_set_opacity (win, (prefs.hex_gui_transparency / 255.));
         fabulor_gtk_container_set_uniform_inset (win, GUI_BORDER);
 
+#if GTK_MAJOR_VERSION >= 4
+        g_signal_connect (G_OBJECT (win), "close-request",
+                          G_CALLBACK (mg_tabwindow_close_request_cb), NULL);
+#else
         g_signal_connect (G_OBJECT (win), "delete-event",
-                                                   G_CALLBACK (mg_tabwindow_de_cb), 0);
+                          G_CALLBACK (mg_tabwindow_delete_event_cb), NULL);
+#endif
         g_signal_connect (G_OBJECT (win), "destroy",
                                                    G_CALLBACK (mg_tabwindow_kill_cb), 0);
         fabulor_gtk_widget_on_focus_enter (win, mg_tabwin_focus_cb, NULL);
@@ -6138,7 +6173,7 @@ mg_create_tabwindow (session *sess)
 
         mg_focus (sess);
 
-        gtk_widget_show_all (table);
+        fabulor_gtk_widget_reveal_tree (table);
 
         if (prefs.hex_gui_hide_menu)
                 gtk_widget_hide (sess->gui->menu);
@@ -6220,7 +6255,8 @@ fe_buttons_update (session *sess)
 {
         session_gui *gui = sess->gui;
 
-        gtk_widget_destroy (gui->button_box);
+        fabulor_gtk_box_remove_child (GTK_BOX (gui->button_box_parent),
+                                      gui->button_box);
         gui->button_box = mg_create_userlistbuttons (gui->button_box_parent);
 
         if (prefs.hex_gui_ulist_buttons)

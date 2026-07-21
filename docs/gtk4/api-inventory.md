@@ -1016,6 +1016,18 @@ improves from 178 to 177 warnings, from 66 to 65 repeated diagnostics, and from
 53 to 52 unique unresolved symbols. `setup.obj` now contributes no compiler or
 linker diagnostics, completing the active Preferences source boundary.
 
+Stage 8 main-window visibility and close-request pass 71 moves utility-window
+presentation to typed root lookup, removes generic tabs and rebuilt user-list
+button boxes through their known notebook/box owners, and routes completed
+window and meter trees through the shared reveal policy. The tabbed main window
+now receives GTK4 `close-request` while GTK3 retains `delete-event`, with one
+shared policy preserving tray hiding, detached-window handling, and quit
+confirmation. Shipping GTK3 and strict probes remain clean. The complete GTK4
+inventory retains zero compiler errors and 52 unique unresolved symbols while
+improving from 177 to 173 warnings and from 65 to 62 repeated diagnostics.
+`maingui.obj` improves from 23 to 20 unresolved diagnostics; menu and theme
+owners retain the remaining show-all and root symbols.
+
 ## Functional Clusters
 
 | Cluster | Main files | GTK4 concern | Status |

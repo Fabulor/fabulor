@@ -2183,6 +2183,19 @@ from 66 to 65 repeated diagnostics, and from 53 to 52 unique unresolved
 symbols. `setup.obj` is now clean. Remaining top-level visibility and lifecycle
 callbacks are the next planned target.
 
+Main-window visibility and close-request pass 71 (2026-07-21):
+utility-window presentation now resolves a typed root window; generic utility
+tabs and regenerated user-list buttons are removed through their notebook and
+box owners; and newly completed main-window and meter trees use cross-version
+reveal semantics. GTK4 connects the tabbed main window's `close-request`, while
+GTK3 retains `delete-event`; both call one close policy preserving tray hide,
+direct detached-window closure, and final-window quit confirmation. Shipping
+GTK3, strict MSVC and Meson GTK4 probes, and repository validation remain clean.
+The complete GTK4 profile retains zero compiler errors and 52 unique unresolved
+symbols while improving from 177 to 173 warnings and from 65 to 62 repeated
+diagnostics. Main-window finalization callbacks and cleanup ordering are the
+next contained lifecycle target.
+
 Deliverables:
 
 - Make GTK4 the only production frontend dependency in MSVC, Meson, and CI.

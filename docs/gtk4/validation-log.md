@@ -5929,6 +5929,39 @@ the remembered unit, speed conversion, allowed range, and staged transfer-speed
 value remain unchanged. GTK4 uses its native popup layout. Packaging impact:
 none.
 
+### GTK4 Stage 8 Main-Window Visibility And Close Request
+
+Date: 2026-07-21
+
+Files/workflows converted: utility-window presentation, generic-tab closure,
+user-list button regeneration, meter refresh, main/detached window reveal, and
+tabbed main-window close dispatch.
+
+Automated evidence:
+
+- shipping MSVC GTK3 frontend rebuild: pass; zero warnings and zero errors
+- strict MSVC GTK4 probe against GTK 4.22.4 / GLib 2.88.0: build and execution
+  pass under `/W4 /WX`; zero warnings and zero errors
+- Meson MSVC GTK4 probe: build and execution pass
+- repository GTK4 Python validation: 28 tests pass
+- source audit: active GTK4 `maingui.c` paths use typed root lookup,
+  `fabulor_gtk_widget_reveal_tree`, notebook/box removal, and `close-request`;
+  GTK3-only code retains `gtk_widget_get_toplevel` and `delete-event`
+- clean isolated complete GTK4 frontend compilation: zero C compiler errors and
+  173 warnings, improved from 177 warnings
+- expected complete GTK4 link failure retains 52 unique unresolved symbols and
+  improves from 65 to 62 repeated unresolved-symbol diagnostics
+- `maingui.obj` improves from 23 to 20 unresolved diagnostics
+- inventory log: `build/gtk4-full/main-window-visibility-close-pass71.log`
+- next target: main-window finalization callbacks and cleanup ordering
+- `git diff --check`: pass
+
+Behavior contract: bringing a detached utility forward still presents its
+owning window; closing utility tabs removes the matching view and closes the
+main window when it was last; refreshed meters and controls remain visible;
+tray-close still hides when supported; and closing the final tabbed window still
+opens quit confirmation. Packaging impact: none.
+
 ## Build Matrix
 
 | Check | GTK3 shipping target | GTK4 candidate | Final GTK4 target |
