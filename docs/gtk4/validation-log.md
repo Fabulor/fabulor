@@ -5732,6 +5732,39 @@ presentation are unchanged. Channel List construction failures retain their
 existing close behavior through a typed GTK3/GTK4 helper. Packaging impact:
 none.
 
+### GTK4 Stage 8 Channel View Ownership And Lifecycle
+
+Date: 2026-07-21
+
+Files/workflows converted: tab and tree scroller construction, family/tab
+ordering, close-button presentation, recursive reveal, child removal,
+implementation cleanup, and Channel View root finalization.
+
+Automated evidence:
+
+- shipping MSVC GTK3 frontend rebuild: pass; zero errors
+- strict MSVC GTK4 probe against GTK 4.22.4 / GLib 2.88.0: compile, link, and
+  execution pass under `/W4 /WX`; zero warnings and zero errors
+- Meson MSVC GTK4 probe: compile, link, and execution pass
+- strict runtime checks: an existing box child moves to the first and final
+  positions while sibling order and ownership remain intact
+- clean isolated complete GTK4 frontend compilation: zero C compiler errors and
+  204 warnings, improved from 210 warnings
+- expected complete GTK4 link failure improves from 60 to 58 unique unresolved
+  symbols and from 84 to 80 repeated unresolved-symbol diagnostics
+- closed symbols: `gtk_box_reorder_child` and
+  `gtk_button_set_always_show_image`
+- `chanview.obj` has no remaining GTK4 compiler warning, `gtk_widget_destroy`,
+  or `gtk_widget_show_all` unresolved diagnostic
+- inventory log: `build/gtk4-full/chanview-lifecycle-pass65-final.log`
+- next target: remaining top-level visibility and lifecycle callbacks
+- `git diff --check`: pass
+
+Behavior contract: tab/tree selection, ordering, scrolling, close-button
+visibility and hover, implementation switching, and automatic main-window
+ownership are retained. GTK3 presentation and destruction remain unchanged;
+GTK4 owns removal and finalization explicitly. Packaging impact: none.
+
 ## Build Matrix
 
 | Check | GTK3 shipping target | GTK4 candidate | Final GTK4 target |

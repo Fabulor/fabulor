@@ -89,7 +89,7 @@ static void
 cv_tree_init (chanview *cv)
 {
 	GtkWidget *view;
-	GtkWidget *win = gtk_scrolled_window_new (0, 0);
+	GtkWidget *win = fabulor_gtk_scrolled_window_new ();
 
 	gtk_widget_set_hexpand (win, TRUE);
 	gtk_widget_set_vexpand (win, TRUE);
@@ -194,8 +194,9 @@ cv_tree_move_family (chan *ch, int delta)
 static void
 cv_tree_cleanup (chanview *cv)
 {
-	if (cv->box)
-		gtk_widget_destroy (((treeview *) cv)->scrollw);
+	if (cv->box && ((treeview *) cv)->scrollw)
+		fabulor_gtk_box_remove_child (GTK_BOX (cv->box),
+			((treeview *) cv)->scrollw);
 }
 
 static void

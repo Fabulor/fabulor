@@ -2103,6 +2103,21 @@ diagnostics, and from 61 to 60 unique unresolved symbols.
 `gtk_button_set_image` leaves the GTK4 link boundary. Remaining Channel View
 button presentation and lifecycle calls are the next contained target.
 
+Channel View ownership and lifecycle pass 65 (2026-07-21):
+tab and tree scrollers now use the shared constructor; family and tab ordering
+uses a typed position-to-sibling translation; close-button flat/image policy
+and recursive reveal use shared presentation boundaries. Tabs, families,
+scrollers, and implementation roots are removed through their known box owner.
+GTK3 retains the root `destroy` signal, while GTK4 finalizes Channel View state
+through a weak callback when the main-window-owned root is released. Strict
+MSVC and Meson probes verify ordering at both box ends, and shipping GTK3
+remains clean. The complete GTK4 profile retains zero compiler errors while
+improving from 210 to 204 warnings, from 84 to 80 repeated diagnostics, and
+from 60 to 58 unique unresolved symbols. `gtk_box_reorder_child` and
+`gtk_button_set_always_show_image` leave the GTK4 link boundary, and the
+Channel List/Channel View container and lifecycle target is complete. Remaining
+top-level visibility and lifecycle callbacks are next.
+
 Deliverables:
 
 - Make GTK4 the only production frontend dependency in MSVC, Meson, and CI.

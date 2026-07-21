@@ -179,6 +179,8 @@ check_compatibility_helper_signatures (void)
 		fabulor_gtk_box_insert_before_trailing;
 	void (*volatile box_append_trailing_pair) (GtkBox *, GtkWidget *, GtkWidget *) =
 		fabulor_gtk_box_append_trailing_pair;
+	void (*volatile box_reorder_child) (GtkBox *, GtkWidget *, gint) =
+		fabulor_gtk_box_reorder_child;
 	void (*volatile box_remove_child) (GtkBox *, GtkWidget *) =
 		fabulor_gtk_box_remove_child;
 	GtkWidget *(*volatile content_surface_new) (gboolean) =
@@ -197,6 +199,8 @@ check_compatibility_helper_signatures (void)
 		fabulor_gtk_widget_add_css_class;
 	void (*volatile button_set_flat) (GtkButton *) =
 		fabulor_gtk_button_set_flat;
+	void (*volatile button_set_always_show_image) (GtkButton *, gboolean) =
+		fabulor_gtk_button_set_always_show_image;
 	GtkWidget *(*volatile icon_button_new) (const gchar *) =
 		fabulor_gtk_icon_button_new;
 	void (*volatile widget_set_accessible_label) (GtkWidget *, const gchar *) =
@@ -317,6 +321,7 @@ check_compatibility_helper_signatures (void)
 	(void) horizontal_box_append_trailing;
 	(void) box_insert_before_trailing;
 	(void) box_append_trailing_pair;
+	(void) box_reorder_child;
 	(void) box_remove_child;
 	(void) content_surface_new;
 	(void) content_surface_set_child;
@@ -326,6 +331,7 @@ check_compatibility_helper_signatures (void)
 	(void) copy_text_to_clipboards;
 	(void) widget_add_css_class;
 	(void) button_set_flat;
+	(void) button_set_always_show_image;
 	(void) icon_button_new;
 	(void) widget_set_accessible_label;
 	(void) widget_queue_draw_region;
@@ -560,6 +566,44 @@ check_content_and_list_ownership (gboolean gtk_ready)
 		row_child && gtk_widget_get_parent (row) == list &&
 		gtk_widget_get_first_child (list) == row;
 	g_object_unref (list);
+	return valid;
+}
+
+static gboolean
+check_box_reorder_ownership (gboolean gtk_ready)
+{
+	GtkWidget *box;
+	GtkWidget *first;
+	GtkWidget *second;
+	GtkWidget *third;
+	gboolean valid;
+
+	if (!gtk_ready)
+		return TRUE;
+
+	box = gtk_box_new (GTK_ORIENTATION_HORIZONTAL, 0);
+	first = gtk_label_new ("first");
+	second = gtk_label_new ("second");
+	third = gtk_label_new ("third");
+	g_object_ref_sink (box);
+	gtk_box_append (GTK_BOX (box), first);
+	gtk_box_append (GTK_BOX (box), second);
+	gtk_box_append (GTK_BOX (box), third);
+
+	fabulor_gtk_box_reorder_child (GTK_BOX (box), third, 0);
+	valid = gtk_widget_get_first_child (box) == third &&
+		gtk_widget_get_next_sibling (third) == first &&
+		gtk_widget_get_next_sibling (first) == second;
+	fabulor_gtk_box_reorder_child (GTK_BOX (box), third, 1);
+	valid = valid && gtk_widget_get_first_child (box) == first &&
+		gtk_widget_get_next_sibling (first) == third &&
+		gtk_widget_get_next_sibling (third) == second;
+	fabulor_gtk_box_reorder_child (GTK_BOX (box), third, 2);
+	valid = valid && gtk_widget_get_first_child (box) == first &&
+		gtk_widget_get_next_sibling (first) == second &&
+		gtk_widget_get_next_sibling (second) == third;
+
+	g_object_unref (box);
 	return valid;
 }
 
@@ -5017,6 +5061,11 @@ main (void)
 	if (!check_content_and_list_ownership (gtk_ready))
 	{
 		fprintf (stderr, "GTK4 content or list ownership mismatch\n");
+		return 1;
+	}
+	if (!check_box_reorder_ownership (gtk_ready))
+	{
+		fprintf (stderr, "GTK4 box reorder ownership mismatch\n");
 		return 1;
 	}
 	if (!check_layout_reparent_ownership (gtk_ready))
