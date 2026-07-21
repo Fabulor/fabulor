@@ -1053,6 +1053,18 @@ be freed. Shipping GTK3 and strict probes remain clean. The complete GTK4
 inventory remains at zero compiler errors, 173 warnings, 52 unique unresolved
 symbols, and 62 repeated diagnostics.
 
+Stage 8 Server List and Preferences finalization pass 74 gives both top-level
+windows one versioned cleanup owner. GTK4 uses `GWeakNotify`; GTK3 keeps typed
+widget `destroy` callbacks. Server List close/connect policy no longer clears
+window or model globals ahead of object release, and the editor finalizer now
+clears every borrowed control/list pointer plus securely held password data.
+Preferences similarly releases sound/category models and staged theme state
+once, while its font chooser has independent weak pointer cleanup. The native
+client-certificate chooser replaces its GTK4 parent `destroy` handler with a
+weak parent watch that is removed before response-owned unref. The complete
+GTK4 inventory remains unchanged at zero compiler errors, 173 warnings, 52
+unique unresolved symbols, and 62 repeated diagnostics.
+
 ## Functional Clusters
 
 | Cluster | Main files | GTK4 concern | Status |

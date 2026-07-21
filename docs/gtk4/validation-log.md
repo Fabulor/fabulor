@@ -6165,6 +6165,50 @@ For GTK4 crashes or hangs, record:
 Keep crash dumps and large logs out of Git. Record their local path/hash or attach
 them to the corresponding issue/PR according to project policy.
 
+### GTK4 Stage 8 Server List And Preferences Finalization Ownership
+
+Date: 2026-07-21
+
+Files/workflows converted: Server List and network-editor finalization,
+client-certificate native chooser parent ownership, Preferences finalization,
+and Preferences font-chooser pointer ownership.
+
+Automated evidence:
+
+- shipping MSVC GTK3 frontend rebuild: pass; zero warnings and zero errors
+- strict MSVC GTK4 probe against GTK 4.22.4 / GLib 2.88.0: build and execution
+  pass under `/W4 /WX`; zero warnings and errors
+- Meson MSVC GTK4 probe: clean build and execution pass
+- repository GTK4 Python validation: 28 tests pass
+- source audit: GTK4 Server List, editor, and Preferences cleanup use weak
+  finalization; corresponding GTK3 paths retain typed `destroy` callbacks
+- source audit: certificate import removes its GTK4 parent weak watch before
+  response-owned unref, and parent finalization hides and releases the chooser
+- source audit: Preferences font chooser clears its global pointer on response
+  and on GTK4 finalization
+- clean isolated complete GTK4 frontend compilation: zero C compiler errors and
+  173 warnings, unchanged from pass 73
+- expected complete GTK4 link failure retains 52 unique unresolved symbols and
+  62 repeated unresolved-symbol diagnostics
+- inventory log: `build/gtk4-full/server-preferences-finalization-pass74.log`
+- next target: theme-import native chooser parent lifetime
+- `git diff --check`: pass
+
+Manual checks deferred until the full GTK4 frontend links:
+
+- [ ] close and reopen Server List through the title-bar and Close button
+- [ ] connect from Server List and reopen it without stale selection/model state
+- [ ] close the network editor directly and by closing its parent Server List
+- [ ] accept and cancel certificate import, including while closing the editor
+- [ ] cancel and reopen Preferences after opening and closing its font chooser
+- [ ] apply Preferences and verify staged theme state commits exactly once
+
+Behavior contract: close and response callbacks retain save/apply/connect
+policy while object finalization owns pointer, model, theme-stage, and password
+cleanup exactly once. A parent window can close before either native chooser
+without retaining stale callback data. GTK3 behavior and packaging are
+unchanged.
+
 ## Stage Completion Rule
 
 A stage can move to complete in `migration-plan.md` only when:
