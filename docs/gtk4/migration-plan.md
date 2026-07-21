@@ -2227,6 +2227,21 @@ warnings, 52 unique unresolved symbols, and 62 repeated diagnostics. Server
 List and Preferences top-level finalization are the next contained lifecycle
 target.
 
+Server List and Preferences finalization pass 74 (2026-07-21):
+Server List, network-editor, and Preferences cleanup now have one shared
+release path per window. GTK4 invokes those paths from weak finalization while
+GTK3 retains one typed `destroy` bridge. Close, connect, cancel, and response
+callbacks only perform their user-visible policy and request destruction;
+global pointers, list models, staged theme state, and securely held network
+password data are cleared by the finalization owner. The client-certificate
+native chooser now weakly observes its editor parent under GTK4, and the font
+chooser clears its global pointer even when parent closure bypasses its normal
+response callback. Shipping GTK3, strict MSVC and Meson GTK4 probes, and all 28
+repository validation tests remain clean. The complete GTK4 profile remains
+at zero compiler errors, 173 warnings, 52 unique unresolved symbols, and 62
+repeated diagnostics. Theme-import parent lifetime is the next contained
+lifecycle target.
+
 Deliverables:
 
 - Make GTK4 the only production frontend dependency in MSVC, Meson, and CI.

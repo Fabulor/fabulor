@@ -1358,6 +1358,16 @@ setup_browsefile_cb (GtkWidget *button, GtkWidget *entry)
 }
 
 
+#if GTK_MAJOR_VERSION >= 4
+static void
+setup_fontchooser_finalized_cb (gpointer user_data, GObject *dialog)
+{
+        (void) user_data;
+        if (font_dialog == (GtkWidget *) dialog)
+                font_dialog = NULL;
+}
+#endif
+
 static void
 setup_fontchooser_response (GtkDialog *dialog, gint response, GtkWidget *entry)
 {
@@ -1373,8 +1383,9 @@ setup_fontchooser_response (GtkDialog *dialog, gint response, GtkWidget *entry)
                 }
         }
 
+        if (font_dialog == GTK_WIDGET (dialog))
+                font_dialog = NULL;
         fabulor_gtk_window_destroy (GTK_WINDOW (dialog));
-        font_dialog = NULL;
 }
 
 static void
@@ -1392,6 +1403,9 @@ setup_browsefont_cb (GtkWidget *button, GtkWidget *entry)
         dialog = gtk_font_chooser_dialog_new (_("Select font"), GTK_WINDOW (setup_window));
 	theme_manager_attach_window (dialog);
         font_dialog = dialog;      /* global var */
+#if GTK_MAJOR_VERSION >= 4
+        g_object_weak_ref (G_OBJECT (dialog), setup_fontchooser_finalized_cb, NULL);
+#endif
 
         gtk_window_set_modal (GTK_WINDOW (dialog), TRUE);
 
@@ -2425,9 +2439,14 @@ setup_window_open (void)
 }
 
 static void
-setup_close_cb (GtkWidget *win, GtkWidget **swin)
+setup_window_release (GtkWidget *window)
 {
-        *swin = NULL;
+        GtkWidget *dialog;
+
+        if (setup_window != window)
+                return;
+
+        setup_window = NULL;
 
         fabulor_sound_event_list_free (sound_event_list);
         sound_event_list = NULL;
@@ -2440,10 +2459,27 @@ setup_close_cb (GtkWidget *win, GtkWidget **swin)
 
         if (font_dialog)
         {
-                fabulor_gtk_window_destroy (GTK_WINDOW (font_dialog));
+                dialog = font_dialog;
                 font_dialog = NULL;
+                fabulor_gtk_window_destroy (GTK_WINDOW (dialog));
         }
 }
+
+#if GTK_MAJOR_VERSION >= 4
+static void
+setup_window_finalized_cb (gpointer user_data, GObject *window)
+{
+        (void) user_data;
+        setup_window_release ((GtkWidget *) window);
+}
+#else
+static void
+setup_close_cb (GtkWidget *window, gpointer user_data)
+{
+        (void) user_data;
+        setup_window_release (window);
+}
+#endif
 
 void
 setup_open (void)
@@ -2460,6 +2496,11 @@ setup_open (void)
         theme_preferences_stage_begin ();
         setup_window = setup_window_open ();
 
+#if GTK_MAJOR_VERSION >= 4
+        g_object_weak_ref (G_OBJECT (setup_window),
+                          setup_window_finalized_cb, NULL);
+#else
         g_signal_connect (G_OBJECT (setup_window), "destroy",
-                                                        G_CALLBACK (setup_close_cb), &setup_window);
+                          G_CALLBACK (setup_close_cb), NULL);
+#endif
 }
