@@ -920,6 +920,18 @@ while improving from 228 to 225 warnings, from 100 to 97 repeated diagnostics,
 and from 69 to 66 unique unresolved symbols. `gtk_container_remove`,
 `gtk_paned_pack1`, and `gtk_paned_pack2` are closed from the GTK4 link boundary.
 
+Stage 8 Channel List context-menu pass 63 replaces the active GTK3 widget menu
+with a retained GTK4 menu/action model and the shared popover presenter. The
+model owns copied channel and topic selections, preserves Join, copy-channel,
+copy-topic, icons, and first-channel Autojoin behavior, and safely outlives
+changes to the live list selection. GTK3 keeps its original icon menu privately.
+Strict MSVC and Meson tests release the source arrays before activating all four
+actions. The complete GTK4 inventory retains zero C compiler errors while
+improving from 225 to 213 warnings, from 97 to 87 repeated diagnostics, and from
+66 to 61 unique unresolved symbols. `gtk_container_add`, `GTK_MENU`,
+`gtk_menu_item_new`, `gtk_menu_new`, and `gtk_menu_popup_at_pointer` are closed
+from the GTK4 link boundary.
+
 ## Functional Clusters
 
 | Cluster | Main files | GTK4 concern | Status |

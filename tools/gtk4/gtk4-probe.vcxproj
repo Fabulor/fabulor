@@ -69,6 +69,7 @@
 	<ClCompile Include="..\..\src\fe-gtk\context-menu-presenter-gtk4.c" />
 	<ClCompile Include="..\..\src\fe-gtk\url-context-menu-model.c" />
 	<ClCompile Include="..\..\src\fe-gtk\channel-context-menu-model.c" />
+	<ClCompile Include="..\..\src\fe-gtk\channel-list-context-menu-model.c" />
 	<ClCompile Include="..\..\src\fe-gtk\nick-context-menu-model.c" />
 	<ClCompile Include="..\..\src\fe-gtk\middle-context-menu-model.c" />
 	<ClCompile Include="..\..\src\fe-gtk\tab-context-menu-model.c" />

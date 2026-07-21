@@ -69,6 +69,7 @@ probe = executable(
   '../../src/fe-gtk/context-menu-presenter-gtk4.c',
   '../../src/fe-gtk/url-context-menu-model.c',
   '../../src/fe-gtk/channel-context-menu-model.c',
+  '../../src/fe-gtk/channel-list-context-menu-model.c',
   '../../src/fe-gtk/nick-context-menu-model.c',
   '../../src/fe-gtk/middle-context-menu-model.c',
   '../../src/fe-gtk/tab-context-menu-model.c',

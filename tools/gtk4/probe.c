@@ -22,6 +22,7 @@
 #include "../../src/fe-gtk/context-menu-presenter-gtk4.h"
 #include "../../src/fe-gtk/url-context-menu-model.h"
 #include "../../src/fe-gtk/channel-context-menu-model.h"
+#include "../../src/fe-gtk/channel-list-context-menu-model.h"
 #include "../../src/fe-gtk/nick-context-menu-model.h"
 #include "../../src/fe-gtk/middle-context-menu-model.h"
 #include "../../src/fe-gtk/tab-context-menu-model.h"
@@ -3872,6 +3873,91 @@ check_channel_context_menu_model (void)
 
 typedef struct
 {
+	guint counts[4];
+	gboolean autojoin_state;
+	const char *first_channel;
+	const char *second_channel;
+	const char *first_topic;
+} ChannelListContextProbe;
+
+static void
+channel_list_context_probe_dispatch (FabulorChannelListContextAction action,
+	gboolean state, const GPtrArray *channels, const GPtrArray *topics,
+	gpointer user_data)
+{
+	ChannelListContextProbe *probe = user_data;
+
+	if ((guint) action < G_N_ELEMENTS (probe->counts))
+		probe->counts[action]++;
+	if (action == FABULOR_CHANNEL_LIST_CONTEXT_AUTOJOIN)
+		probe->autojoin_state = state;
+	probe->first_channel = channels->len > 0 ?
+		g_ptr_array_index (channels, 0) : NULL;
+	probe->second_channel = channels->len > 1 ?
+		g_ptr_array_index (channels, 1) : NULL;
+	probe->first_topic = topics->len > 0 ?
+		g_ptr_array_index (topics, 0) : NULL;
+}
+
+static gboolean
+check_channel_list_context_menu_model (void)
+{
+	FabulorChannelListContextLabels labels = {
+		"Join", "Copy channels", "Copy topics", "Autojoin",
+		"list-add", "edit-copy"
+	};
+	FabulorChannelListContextMenuModel *model;
+	ChannelListContextProbe probe = { { 0 }, FALSE, NULL, NULL, NULL };
+	GPtrArray *channels = g_ptr_array_new_with_free_func (g_free);
+	GPtrArray *topics = g_ptr_array_new_with_free_func (g_free);
+	GMenuModel *menu;
+	GMenuModel *commands;
+	GActionGroup *actions;
+	GVariant *state;
+	char *label = NULL;
+	gboolean passed;
+
+	g_ptr_array_add (channels, g_strdup ("#owned-one"));
+	g_ptr_array_add (channels, g_strdup ("#owned-two"));
+	g_ptr_array_add (topics, g_strdup ("First topic"));
+	g_ptr_array_add (topics, g_strdup ("Second topic"));
+	model = fabulor_channel_list_context_menu_model_new (channels, topics,
+		TRUE, FALSE, &labels, channel_list_context_probe_dispatch, &probe);
+	g_ptr_array_unref (topics);
+	g_ptr_array_unref (channels);
+	if (!model)
+		return FALSE;
+	menu = fabulor_channel_list_context_menu_model_get_menu (model);
+	actions = fabulor_channel_list_context_menu_model_get_actions (model);
+	commands = g_menu_model_get_item_link (menu, 0, G_MENU_LINK_SECTION);
+	passed = g_menu_model_get_n_items (menu) == 2 && commands &&
+		g_menu_model_get_n_items (commands) == 3 &&
+		g_menu_model_get_item_attribute (commands, 1,
+			G_MENU_ATTRIBUTE_LABEL, "s", &label) &&
+		g_strcmp0 (label, "Copy channels") == 0;
+	g_free (label);
+	g_clear_object (&commands);
+	g_action_group_activate_action (actions, "join", NULL);
+	g_action_group_activate_action (actions, "copy-channels", NULL);
+	g_action_group_activate_action (actions, "copy-topics", NULL);
+	g_action_group_activate_action (actions, "autojoin", NULL);
+	state = g_action_group_get_action_state (actions, "autojoin");
+	passed = passed && state && g_variant_get_boolean (state) &&
+		probe.autojoin_state &&
+		probe.counts[FABULOR_CHANNEL_LIST_CONTEXT_JOIN] == 1 &&
+		probe.counts[FABULOR_CHANNEL_LIST_CONTEXT_COPY_CHANNELS] == 1 &&
+		probe.counts[FABULOR_CHANNEL_LIST_CONTEXT_COPY_TOPICS] == 1 &&
+		probe.counts[FABULOR_CHANNEL_LIST_CONTEXT_AUTOJOIN] == 1 &&
+		g_strcmp0 (probe.first_channel, "#owned-one") == 0 &&
+		g_strcmp0 (probe.second_channel, "#owned-two") == 0 &&
+		g_strcmp0 (probe.first_topic, "First topic") == 0;
+	g_clear_pointer (&state, g_variant_unref);
+	fabulor_channel_list_context_menu_model_free (model);
+	return passed;
+}
+
+typedef struct
+{
 	guint reply_count;
 	guint command_count;
 	guint copy_info_count;
@@ -5152,6 +5238,11 @@ main (void)
 	if (!check_channel_context_menu_model ())
 	{
 		fprintf (stderr, "GTK4 channel context menu model mismatch\n");
+		return 1;
+	}
+	if (!check_channel_list_context_menu_model ())
+	{
+		fprintf (stderr, "GTK4 channel-list context menu model mismatch\n");
 		return 1;
 	}
 	if (!check_tab_context_menu_model ())
