@@ -120,12 +120,9 @@ plugingui_icon_button (GtkWidget *box, const char *label,
 							  gpointer userdata)
 {
 	GtkWidget *button;
-	GtkWidget *image;
 
-	button = gtk_button_new_with_mnemonic (label);
-	image = gtkutil_image_new_from_stock (icon_name, FABULOR_GTK_ICON_SIZE_MENU);
-	gtk_button_set_image (GTK_BUTTON (button), image);
-	gtk_button_set_use_underline (GTK_BUTTON (button), TRUE);
+	button = fabulor_gtk_button_new_with_icon_and_mnemonic (label, icon_name,
+		FABULOR_GTK_ICON_SIZE_MENU);
 	fabulor_gtk_box_append (GTK_BOX (box), button, FALSE, TRUE, 0);
 	g_signal_connect (G_OBJECT (button), "clicked", callback, userdata);
 	gtk_widget_show (button);
