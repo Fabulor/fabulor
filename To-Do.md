@@ -373,6 +373,7 @@ Detailed planning and evidence live in:
       - [x] Replace event-box wrappers and theme color-list attachment with typed content-surface and list owners.
       - [x] Give lazy Preferences pages explicit creation state and typed box ownership.
       - [x] Route the Preferences switcher-type choices through the shared GTK3/GTK4 grouped-control boundary.
+      - [x] Route Preferences check-button state and dependent-control sensitivity through typed GTK3/GTK4 access.
       - [x] Retain and detach movable channel/user layout children through typed pane and grid owners.
       - [x] Replace the Channel List GTK3 popup with an owned GTK4 multi-selection action model and popover.
       - [x] Compose Channel List and plugin-manager icon/mnemonic buttons through typed GTK3/GTK4 ownership and close Channel List failures through the window lifecycle boundary.

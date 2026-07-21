@@ -2158,6 +2158,19 @@ and from 56 to 53 unique unresolved symbols. The retired radio-button family
 is now contained wholly inside the GTK3 compatibility branch. Preferences
 ordinary check-button state access is the next contained target.
 
+Preferences check-button pass 69 (2026-07-21):
+ordinary Preferences toggles, three-column alert choices, and controls that
+enable dependent fields now use the shared typed check-button state boundary.
+Callback parameters are widget-neutral, and dependency callbacks read state
+once before updating the staged preference, child control, and child label.
+GTK3 behavior remains unchanged, while GTK4 no longer casts check buttons to
+the unrelated toggle-button class. Shipping GTK3, strict MSVC and Meson GTK4
+probes, and repository validation remain clean. The complete GTK4 inventory is
+unchanged at zero compiler errors, 178 warnings, 53 unique unresolved symbols,
+and 66 repeated diagnostics because other frontend paths still own genuine
+toggle buttons. The Preferences combo-box wrap-width operation is the next
+contained target and the final `setup.obj` diagnostic.
+
 Deliverables:
 
 - Make GTK4 the only production frontend dependency in MSVC, Meson, and CI.
