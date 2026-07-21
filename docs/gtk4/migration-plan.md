@@ -2171,6 +2171,18 @@ and 66 repeated diagnostics because other frontend paths still own genuine
 toggle buttons. The Preferences combo-box wrap-width operation is the next
 contained target and the final `setup.obj` diagnostic.
 
+Preferences combo-wrap pass 70 (2026-07-21):
+the DCC speed-unit selector now expresses a semantic single-column popup policy
+through the shared compatibility boundary. GTK3 continues to request one
+column explicitly, while GTK4 relies on its native one-column combo popup and
+avoids the removed wrap-width function. Strict MSVC and Meson probes compile
+the helper contract, the full GTK4 frontend compiles the live call site, and
+shipping GTK3 and repository validation remain clean. The complete GTK4
+profile retains zero compiler errors while improving from 178 to 177 warnings,
+from 66 to 65 repeated diagnostics, and from 53 to 52 unique unresolved
+symbols. `setup.obj` is now clean. Remaining top-level visibility and lifecycle
+callbacks are the next planned target.
+
 Deliverables:
 
 - Make GTK4 the only production frontend dependency in MSVC, Meson, and CI.

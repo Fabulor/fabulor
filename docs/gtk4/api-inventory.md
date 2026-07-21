@@ -1006,6 +1006,16 @@ no direct `GtkToggleButton`, `GTK_TOGGLE_BUTTON`, or toggle active-state call;
 its sole remaining compiler/link diagnostic is the retired combo-box wrap-width
 operation.
 
+Stage 8 Preferences combo-wrap pass 70 contains the DCC speed-unit selector's
+removed `gtk_combo_box_set_wrap_width` call behind a semantic single-column
+policy. GTK3 retains its explicit one-column popup; GTK4 uses the native
+single-column combo presentation. The helper signature is compiled under the
+strict MSVC and Meson probes, while the full frontend profile compiles the live
+Preferences call site. Shipping GTK3 remains clean. The complete GTK4 inventory
+improves from 178 to 177 warnings, from 66 to 65 repeated diagnostics, and from
+53 to 52 unique unresolved symbols. `setup.obj` now contributes no compiler or
+linker diagnostics, completing the active Preferences source boundary.
+
 ## Functional Clusters
 
 | Cluster | Main files | GTK4 concern | Status |
