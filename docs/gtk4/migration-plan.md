@@ -2013,6 +2013,18 @@ symbols and from 166 to 144 repeated linker diagnostics, and reduces warnings
 from 336 to 278. The next link-closure target remains the legacy GTK3
 container/child ownership surface.
 
+Container-inset link-closure pass 58 (2026-07-21):
+uniform content spacing now routes through a semantic GTK3/GTK4 owner. GTK3
+retains `gtk_container_set_border_width`; GTK4 applies equal margins to the
+content widget. Top-level requests are retained on the window and applied when
+its child is attached, so callers that configure an inset before building their
+content preserve that ordering. Strict MSVC and Meson GTK4 probes verify direct
+widget margins, deferred window-child application, and zero-inset reset.
+Shipping GTK3 remains clean. The complete GTK4 profile retains zero compiler
+errors and improves from 73 to 72 unique unresolved symbols, from 144 to 121
+repeated linker diagnostics, and from 278 to 255 warnings. Typed child
+attachment and removal are the next container-ownership target.
+
 Deliverables:
 
 - Make GTK4 the only production frontend dependency in MSVC, Meson, and CI.

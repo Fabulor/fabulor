@@ -593,7 +593,7 @@ banlist_opengui (struct session *sess)
 					TRUE, banlist_closegui, banl, 700, 300, &vbox, sess->server);
 	gtkutil_destroy_on_esc (banl->window);
 
-	gtk_container_set_border_width (GTK_CONTAINER (banl->window), 3);
+	fabulor_gtk_container_set_uniform_inset (banl->window, 3);
 	gtk_box_set_spacing (GTK_BOX (vbox), 3);
 
 	banl->list = fabulor_ban_list_new (banlist_select_changed, banl);
@@ -626,7 +626,7 @@ banlist_opengui (struct session *sess)
 
 	bbox = fabulor_gtk_button_box_new (GTK_ORIENTATION_HORIZONTAL,
 		FABULOR_GTK_BUTTON_BOX_SPREAD, 0);
-	gtk_container_set_border_width (GTK_CONTAINER (bbox), 5);
+	fabulor_gtk_container_set_uniform_inset (bbox, 5);
 	fabulor_gtk_box_append (GTK_BOX (vbox), bbox, FALSE, FALSE, 0);
 	gtk_widget_show (bbox);
 

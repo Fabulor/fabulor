@@ -440,7 +440,7 @@ theme_preferences_manager_preview_item_new (const char *text)
 
         box = gtk_event_box_new ();
         gtk_event_box_set_visible_window (GTK_EVENT_BOX (box), TRUE);
-        gtk_container_set_border_width (GTK_CONTAINER (box), 3);
+        fabulor_gtk_container_set_uniform_inset (box, 3);
 
         label = gtk_label_new (text);
         gtk_widget_set_halign (label, GTK_ALIGN_START);
@@ -462,12 +462,12 @@ theme_preferences_manager_create_preview (theme_color_manager_ui *ui)
 
         frame = gtk_frame_new (_("Live preview"));
         vbox = gtk_box_new (GTK_ORIENTATION_VERTICAL, 6);
-        gtk_container_set_border_width (GTK_CONTAINER (vbox), 8);
+        fabulor_gtk_container_set_uniform_inset (vbox, 8);
         fabulor_gtk_frame_set_child (GTK_FRAME (frame), vbox);
 
         ui->preview_window = gtk_event_box_new ();
         gtk_event_box_set_visible_window (GTK_EVENT_BOX (ui->preview_window), TRUE);
-        gtk_container_set_border_width (GTK_CONTAINER (ui->preview_window), 8);
+        fabulor_gtk_container_set_uniform_inset (ui->preview_window, 8);
         fabulor_gtk_box_append (GTK_BOX (vbox), ui->preview_window, TRUE, TRUE, 0);
 
         chat_box = gtk_box_new (GTK_ORIENTATION_VERTICAL, 6);
@@ -888,7 +888,7 @@ theme_preferences_create_color_manager_dialog (GtkWindow *parent, gboolean *colo
 
         content = gtk_dialog_get_content_area (GTK_DIALOG (dialog));
         vbox = gtk_box_new (GTK_ORIENTATION_VERTICAL, 8);
-        gtk_container_set_border_width (GTK_CONTAINER (vbox), 8);
+        fabulor_gtk_container_set_uniform_inset (vbox, 8);
         gtk_widget_set_hexpand (vbox, TRUE);
         gtk_widget_set_vexpand (vbox, TRUE);
         fabulor_gtk_box_append (GTK_BOX (content), vbox, TRUE, TRUE, 0);
@@ -942,7 +942,7 @@ theme_preferences_create_color_manager_dialog (GtkWindow *parent, gboolean *colo
 
                 list_row = gtk_list_box_row_new ();
                 hbox = gtk_box_new (GTK_ORIENTATION_HORIZONTAL, 8);
-                gtk_container_set_border_width (GTK_CONTAINER (hbox), 4);
+                fabulor_gtk_container_set_uniform_inset (hbox, 4);
                 gtk_container_add (GTK_CONTAINER (list_row), hbox);
 
                 display = theme_preferences_token_display_name (token);
@@ -1439,10 +1439,10 @@ theme_preferences_create_color_page (GtkWindow *parent,
         int i;
 
         box = gtk_box_new (GTK_ORIENTATION_VERTICAL, 0);
-        gtk_container_set_border_width (GTK_CONTAINER (box), 6);
+        fabulor_gtk_container_set_uniform_inset (box, 6);
 
         tab = gtk_grid_new ();
-        gtk_container_set_border_width (GTK_CONTAINER (tab), 6);
+        fabulor_gtk_container_set_uniform_inset (tab, 6);
         gtk_grid_set_row_spacing (GTK_GRID (tab), 2);
         gtk_grid_set_column_spacing (GTK_GRID (tab), 3);
         gtk_container_add (GTK_CONTAINER (box), tab);
@@ -1869,12 +1869,12 @@ theme_preferences_create_page (GtkWindow *parent,
         ui->setup_prefs = setup_prefs;
 
         box = gtkutil_box_new (GTK_ORIENTATION_VERTICAL, FALSE, 6);
-        gtk_container_set_border_width (GTK_CONTAINER (box), 6);
+        fabulor_gtk_container_set_uniform_inset (box, 6);
 
         colors_frame = gtk_frame_new (_("Colors"));
         fabulor_gtk_box_append (GTK_BOX (box), colors_frame, FALSE, FALSE, 0);
         colors_box = gtk_box_new (GTK_ORIENTATION_VERTICAL, 6);
-        gtk_container_set_border_width (GTK_CONTAINER (colors_box), 6);
+        fabulor_gtk_container_set_uniform_inset (colors_box, 6);
         fabulor_gtk_frame_set_child (GTK_FRAME (colors_frame), colors_box);
 
         label = gtk_label_new (_("GTK3 theme colors are used by default. Open the color manager to set custom colors."));
@@ -1897,7 +1897,7 @@ theme_preferences_create_page (GtkWindow *parent,
         gtk3_frame = gtk_frame_new (_("GTK3 Theme"));
         fabulor_gtk_box_append (GTK_BOX (box), gtk3_frame, FALSE, FALSE, 0);
         gtk3_grid = gtk_grid_new ();
-        gtk_container_set_border_width (GTK_CONTAINER (gtk3_grid), 6);
+        fabulor_gtk_container_set_uniform_inset (gtk3_grid, 6);
         gtk_grid_set_row_spacing (GTK_GRID (gtk3_grid), 6);
         gtk_grid_set_column_spacing (GTK_GRID (gtk3_grid), 6);
         fabulor_gtk_frame_set_child (GTK_FRAME (gtk3_frame), gtk3_grid);

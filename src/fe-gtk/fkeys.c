@@ -885,7 +885,7 @@ key_dialog_show ()
 	box = fabulor_gtk_button_box_new (GTK_ORIENTATION_HORIZONTAL,
 		FABULOR_GTK_BUTTON_BOX_SPREAD, 0);
 	fabulor_gtk_box_append (GTK_BOX (vbox), box, FALSE, FALSE, 2);
-	gtk_container_set_border_width (GTK_CONTAINER (box), 5);
+	fabulor_gtk_container_set_uniform_inset (box, 5);
 
 	gtkutil_button (box, ICON_FKEYS_NEW, NULL, key_dialog_add,
 					NULL, _("Add"));

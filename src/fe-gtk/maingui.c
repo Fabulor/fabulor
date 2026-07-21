@@ -2011,7 +2011,7 @@ mg_open_quit_dialog (gboolean minimize_button)
         dialog = gtk_dialog_new ();
 	quit_dialog = dialog;
 	theme_manager_attach_window (dialog);
-        gtk_container_set_border_width (GTK_CONTAINER (dialog), 6);
+        fabulor_gtk_container_set_uniform_inset (dialog, 6);
         gtk_window_set_title (GTK_WINDOW (dialog), _("Quit " DISPLAY_NAME "?"));
         gtk_window_set_transient_for (GTK_WINDOW (dialog), GTK_WINDOW (parent_window));
         gtk_window_set_resizable (GTK_WINDOW (dialog), FALSE);
@@ -2023,7 +2023,7 @@ mg_open_quit_dialog (gboolean minimize_button)
         table1 = gtk_grid_new ();
         gtk_widget_show (table1);
         fabulor_gtk_box_append (GTK_BOX (dialog_vbox1), table1, TRUE, TRUE, 0);
-        gtk_container_set_border_width (GTK_CONTAINER (table1), 6);
+        fabulor_gtk_container_set_uniform_inset (table1, 6);
         gtk_grid_set_row_spacing (GTK_GRID (table1), 12);
         gtk_grid_set_column_spacing (GTK_GRID (table1), 12);
 
@@ -2167,7 +2167,7 @@ mg_link_gentab (chan *ch, GtkWidget *box)
                                                                           2);
         /* so it doesn't try to chan_remove (there's no tab anymore) */
         g_object_steal_data (G_OBJECT (box), "ch");
-        gtk_container_set_border_width (GTK_CONTAINER (box), 0);
+        fabulor_gtk_container_set_uniform_inset (box, 0);
         fabulor_gtk_window_set_child (GTK_WINDOW (win), box);
         gtk_widget_show (win);
 
@@ -5229,7 +5229,7 @@ mg_show_emoji_popover (GtkEntry *entry)
         gtk_widget_set_margin_top (outer, 8);
         gtk_widget_set_margin_bottom (outer, 8);
 #else
-        gtk_container_set_border_width (GTK_CONTAINER (outer), 8);
+        fabulor_gtk_container_set_uniform_inset (outer, 8);
 #endif
         fabulor_gtk_popover_set_child (GTK_POPOVER (popover), outer);
 
@@ -5909,7 +5909,7 @@ mg_create_topwindow (session *sess)
                                                                                   prefs.hex_gui_win_width,
                                                                                   prefs.hex_gui_win_height, 0);
         sess->gui->window = win;
-        gtk_container_set_border_width (GTK_CONTAINER (win), GUI_BORDER);
+        fabulor_gtk_container_set_uniform_inset (win, GUI_BORDER);
         gtk_widget_set_opacity (win, (prefs.hex_gui_transparency / 255.));
 
         fabulor_gtk_widget_on_focus_enter (win, mg_topwin_focus_cb, sess);
@@ -6105,7 +6105,7 @@ mg_create_tabwindow (session *sess)
         if (prefs.hex_gui_win_fullscreen)
                 gtk_window_fullscreen (GTK_WINDOW (win));
         gtk_widget_set_opacity (win, (prefs.hex_gui_transparency / 255.));
-        gtk_container_set_border_width (GTK_CONTAINER (win), GUI_BORDER);
+        fabulor_gtk_container_set_uniform_inset (win, GUI_BORDER);
 
         g_signal_connect (G_OBJECT (win), "delete-event",
                                                    G_CALLBACK (mg_tabwindow_de_cb), 0);
@@ -6454,7 +6454,7 @@ mg_create_generic_tab (char *name, char *title, int force_toplevel,
         vbox = mg_box_new (GTK_ORIENTATION_VERTICAL, FALSE, 2);
         g_object_set_data (G_OBJECT (vbox), "w", GINT_TO_POINTER (width));
         g_object_set_data (G_OBJECT (vbox), "h", GINT_TO_POINTER (height));
-        gtk_container_set_border_width (GTK_CONTAINER (vbox), 3);
+        fabulor_gtk_container_set_uniform_inset (vbox, 3);
         *vbox_ret = vbox;
 
         if (close_callback)

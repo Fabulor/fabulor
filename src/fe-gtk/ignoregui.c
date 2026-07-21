@@ -187,7 +187,7 @@ ignore_gui_open (void)
 	frame = gtk_frame_new (_("Ignore Stats:"));
 	gtk_widget_show (frame);
 	stat_box = gtk_box_new (GTK_ORIENTATION_HORIZONTAL, 2);
-	gtk_container_set_border_width (GTK_CONTAINER (stat_box), 6);
+	fabulor_gtk_container_set_uniform_inset (stat_box, 6);
 	fabulor_gtk_frame_set_child (GTK_FRAME (frame), stat_box);
 	gtk_widget_show (stat_box);
 	num_chan = ignore_stats_entry (stat_box, _("Channel:"), ignored_chan);
@@ -200,7 +200,7 @@ ignore_gui_open (void)
 	box = fabulor_gtk_button_box_new (GTK_ORIENTATION_HORIZONTAL,
 		FABULOR_GTK_BUTTON_BOX_SPREAD, 0);
 	fabulor_gtk_box_append (GTK_BOX (vbox), box, FALSE, FALSE, 2);
-	gtk_container_set_border_width (GTK_CONTAINER (box), 5);
+	fabulor_gtk_container_set_uniform_inset (box, 5);
 	gtk_widget_show (box);
 	gtkutil_button (box, ICON_IGNORE_NEW, 0, ignore_new_entry_clicked, NULL,
 		_("Add..."));

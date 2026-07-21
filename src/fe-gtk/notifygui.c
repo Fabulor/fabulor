@@ -260,7 +260,7 @@ fe_notify_ask (char *nick, char *networks)
 
 	content_area = gtk_dialog_get_content_area (GTK_DIALOG (dialog));
 	table = gtkutil_grid_new (2, 3, FALSE);
-	gtk_container_set_border_width (GTK_CONTAINER (table), 12);
+	fabulor_gtk_container_set_uniform_inset (table, 12);
 	gtk_grid_set_row_spacing (GTK_GRID (table), 3);
 	gtk_grid_set_column_spacing (GTK_GRID (table), 8);
 	fabulor_gtk_box_append (GTK_BOX (content_area), table, TRUE, TRUE, 0);
@@ -333,7 +333,7 @@ notify_opengui (void)
   
 	bbox = fabulor_gtk_button_box_new (GTK_ORIENTATION_HORIZONTAL,
 		FABULOR_GTK_BUTTON_BOX_SPREAD, 0);
-	gtk_container_set_border_width (GTK_CONTAINER (bbox), 5);
+	fabulor_gtk_container_set_uniform_inset (bbox, 5);
 	fabulor_gtk_box_append (GTK_BOX (vbox), bbox, FALSE, FALSE, 0);
 	gtk_widget_show (bbox);
 

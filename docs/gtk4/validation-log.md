@@ -5531,6 +5531,34 @@ configured character widths, spell-entry operations, and persistence are
 unchanged. GTK3 retains native entry APIs; GTK4 uses editable ownership.
 Packaging impact: none.
 
+### GTK4 Stage 8 Container Inset Link Closure
+
+Date: 2026-07-21
+
+Files/workflows converted: uniform container content spacing and deferred
+top-level window-child inset application.
+
+Automated evidence:
+
+- shipping MSVC GTK3 frontend rebuild: pass; zero warnings and zero errors
+- strict MSVC GTK4 probe against GTK 4.22.4 / GLib 2.88.0: compile, link, and
+  execution pass under `/W4 /WX`; zero warnings and zero errors
+- Meson MSVC GTK4 probe: compile, link, and execution pass
+- strict runtime checks: ordinary widgets receive four equal margins; a window
+  configured before child attachment applies its stored inset to that child;
+  setting zero clears all four margins
+- clean isolated complete GTK4 frontend compilation: zero C compiler errors and
+  255 warnings, improved from 278 warnings
+- expected complete GTK4 link failure improves from 73 to 72 unique unresolved
+  symbols and from 144 to 121 repeated unresolved-symbol diagnostics
+- `gtk_container_set_border_width` no longer appears in the GTK4 link inventory
+- next target: typed child attachment and removal link closure
+- `git diff --check`: pass
+
+Behavior contract: all configured inset values and GTK3 container spacing are
+unchanged. GTK4 maps the same values to content margins and preserves requests
+made before top-level child ownership is established. Packaging impact: none.
+
 ## Build Matrix
 
 | Check | GTK3 shipping target | GTK4 candidate | Final GTK4 target |

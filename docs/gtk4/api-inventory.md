@@ -873,6 +873,14 @@ macros now use that boundary. The complete GTK4 linker inventory drops from 76
 to 73 unique unresolved symbols and from 166 to 144 repeated diagnostics, while
 the warning inventory falls from 336 to 278 with zero C compiler errors.
 
+Stage 8 container-inset link-closure pass 58 replaces GTK3 container
+`border-width` presentation with a semantic uniform-inset owner. GTK3 retains
+its original container property. GTK4 uses four equal widget margins and stores
+top-level requests until the window child is attached, including explicit zero
+insets. The complete GTK4 inventory improves from 73 to 72 unique unresolved
+symbols, from 144 to 121 repeated linker diagnostics, and from 278 to 255
+warnings while retaining zero C compiler errors.
+
 ## Functional Clusters
 
 | Cluster | Main files | GTK4 concern | Status |

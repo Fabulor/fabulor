@@ -367,6 +367,7 @@ Detailed planning and evidence live in:
     - [x] Remove Xtext's stale private GTK3 Win32 header dependency and reach the full-profile linker.
     - [x] Add the converted shared GTK4 list-model implementation to the production GTK4 build inputs.
     - [x] Route entry text and width access through typed GTK3/GTK4 editable helpers.
+    - [x] Replace GTK3 container border widths with tested uniform GTK4 content insets.
     - [ ] Complete channel-list and channel-view container/lifecycle cutover.
     - [ ] Complete top-level window positioning, visibility, and lifecycle cutover.
       - [x] Contain removed placement hints, saved coordinates, and tray restore placement behind compositor-safe GTK3/GTK4 policy.

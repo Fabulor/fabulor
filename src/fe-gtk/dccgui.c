@@ -630,7 +630,7 @@ fe_dcc_open_recv_win (int passive)
 	dccfwin.window = mg_create_generic_tab ("Transfers", buf, FALSE, TRUE, close_dcc_file_window,
 														 NULL, win_width, win_height, &vbox, 0);
 	gtkutil_destroy_on_esc (dccfwin.window);
-	gtk_container_set_border_width (GTK_CONTAINER (dccfwin.window), 3);
+	fabulor_gtk_container_set_uniform_inset (dccfwin.window, 3);
 	gtk_box_set_spacing (GTK_BOX (vbox), 3);
 
 	dccfwin.transfers = fabulor_dcc_transfer_list_new (dcc_row_cb,
@@ -694,7 +694,7 @@ fe_dcc_open_recv_win (int passive)
 	detailbox = gtk_grid_new ();
 	gtk_grid_set_column_spacing (GTK_GRID (detailbox), 6);
 	gtk_grid_set_row_spacing (GTK_GRID (detailbox), 2);
-	gtk_container_set_border_width (GTK_CONTAINER (detailbox), 6);
+	fabulor_gtk_container_set_uniform_inset (detailbox, 6);
 	g_signal_connect (G_OBJECT (exp), "activate",
 							G_CALLBACK (dcc_exp_cb), detailbox);
 	gtk_widget_set_hexpand (detailbox, TRUE);
@@ -861,7 +861,7 @@ fe_dcc_open_chat_win (int passive)
 			  mg_create_generic_tab ("DCCChat", buf, FALSE, TRUE, dcc_chat_close_cb,
 						NULL, 550, 180, &vbox, 0);
 	gtkutil_destroy_on_esc (dcccwin.window);
-	gtk_container_set_border_width (GTK_CONTAINER (dcccwin.window), 3);
+	fabulor_gtk_container_set_uniform_inset (dcccwin.window, 3);
 	gtk_box_set_spacing (GTK_BOX (vbox), 3);
 
 	dcccwin.chats = fabulor_dcc_chat_list_new (dcc_chat_row_cb,

@@ -125,7 +125,7 @@ ascii_open (void)
 
 	win = mg_create_generic_tab ("charmap", _("Character Chart"), TRUE, TRUE,
 										  NULL, NULL, 0, 0, &vbox, NULL);
-	gtk_container_set_border_width (GTK_CONTAINER (win), 5);
+	fabulor_gtk_container_set_uniform_inset (win, 5);
 	gtkutil_destroy_on_esc (win);
 
 	label = gtk_label_new (NULL);
