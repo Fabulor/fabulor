@@ -182,6 +182,48 @@ fabulor_gtk_margin_with_padding (gint margin, guint padding)
 }
 #endif
 
+#define FABULOR_GTK_WINDOW_INSET_DATA "fabulor-gtk-window-inset"
+
+#if GTK_MAJOR_VERSION >= 4
+static inline void
+fabulor_gtk_widget_set_uniform_margin (GtkWidget *widget, guint inset)
+{
+	gint margin = inset > G_MAXINT ? G_MAXINT : (gint) inset;
+
+	gtk_widget_set_margin_start (widget, margin);
+	gtk_widget_set_margin_end (widget, margin);
+	gtk_widget_set_margin_top (widget, margin);
+	gtk_widget_set_margin_bottom (widget, margin);
+}
+#endif
+
+static inline void
+fabulor_gtk_container_set_uniform_inset (GtkWidget *widget, guint inset)
+{
+	g_return_if_fail (GTK_IS_WIDGET (widget));
+
+#if GTK_MAJOR_VERSION >= 4
+	if (GTK_IS_WINDOW (widget))
+	{
+		GtkWidget *child = gtk_window_get_child (GTK_WINDOW (widget));
+		guint *stored_inset = g_new (guint, 1);
+
+		*stored_inset = inset;
+		g_object_set_data_full (G_OBJECT (widget),
+			FABULOR_GTK_WINDOW_INSET_DATA, stored_inset, g_free);
+		if (child)
+			fabulor_gtk_widget_set_uniform_margin (child, inset);
+	}
+	else
+	{
+		fabulor_gtk_widget_set_uniform_margin (widget, inset);
+	}
+#else
+	g_return_if_fail (GTK_IS_CONTAINER (widget));
+	gtk_container_set_border_width (GTK_CONTAINER (widget), inset);
+#endif
+}
+
 static inline void
 fabulor_gtk_box_append (GtkBox *box, GtkWidget *child, gboolean expand,
 						gboolean fill, guint padding)
@@ -1839,7 +1881,12 @@ fabulor_gtk_window_set_child (GtkWindow *window, GtkWidget *child)
 	g_return_if_fail (GTK_IS_WIDGET (child));
 
 #if GTK_MAJOR_VERSION >= 4
+	guint *inset;
+
 	gtk_window_set_child (window, child);
+	inset = g_object_get_data (G_OBJECT (window), FABULOR_GTK_WINDOW_INSET_DATA);
+	if (inset)
+		fabulor_gtk_widget_set_uniform_margin (child, *inset);
 #else
 	gtk_container_add (GTK_CONTAINER (window), child);
 #endif

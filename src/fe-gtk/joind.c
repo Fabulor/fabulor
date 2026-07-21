@@ -162,7 +162,7 @@ joind_show_dialog (server *serv)
 	gtk_widget_set_margin_top (image1, 2);
 
 	vbox2 = gtkutil_box_new (GTK_ORIENTATION_VERTICAL, FALSE, 10);
-	gtk_container_set_border_width (GTK_CONTAINER (vbox2), 6);
+	fabulor_gtk_container_set_uniform_inset (vbox2, 6);
 	gtk_widget_show (vbox2);
 	fabulor_gtk_box_append (GTK_BOX (hbox1), vbox2, TRUE, TRUE, 0);
 

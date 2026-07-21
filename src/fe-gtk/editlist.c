@@ -221,7 +221,7 @@ editlist_gui_open (char *title1, char *title2, GSList *list, char *title, char *
 	box = fabulor_gtk_button_box_new (GTK_ORIENTATION_HORIZONTAL,
 		FABULOR_GTK_BUTTON_BOX_SPREAD, 0);
 	fabulor_gtk_box_append (GTK_BOX (vbox), box, FALSE, FALSE, 2);
-	gtk_container_set_border_width (GTK_CONTAINER (box), 5);
+	fabulor_gtk_container_set_uniform_inset (box, 5);
 	gtk_widget_show (box);
 
 	gtkutil_button (box, ICON_EDITLIST_NEW, 0, editlist_add,

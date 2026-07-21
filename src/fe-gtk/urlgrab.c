@@ -167,7 +167,7 @@ url_opengui ()
 
 	hbox = fabulor_gtk_button_box_new (GTK_ORIENTATION_HORIZONTAL,
 		FABULOR_GTK_BUTTON_BOX_SPREAD, 0);
-	gtk_container_set_border_width (GTK_CONTAINER (hbox), 5);
+	fabulor_gtk_container_set_uniform_inset (hbox, 5);
 	fabulor_gtk_box_append (GTK_BOX (vbox), hbox, FALSE, FALSE, 0);
 	gtk_widget_show (hbox);
 

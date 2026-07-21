@@ -2143,7 +2143,7 @@ servlist_open_edit (GtkWidget *parent, ircnet *net)
 
 	editwindow = fabulor_gtk_window_new ();
 	theme_manager_attach_window (editwindow);
-	gtk_container_set_border_width (GTK_CONTAINER (editwindow), 4);
+	fabulor_gtk_container_set_uniform_inset (editwindow, 4);
 	g_snprintf (buf, sizeof (buf), _("Edit %s - %s"), net->name, _(DISPLAY_NAME));
 	gtk_window_set_title (GTK_WINDOW (editwindow), buf);
 	gtk_window_set_default_size (GTK_WINDOW (editwindow), netedit_win_width, netedit_win_height);
@@ -2462,7 +2462,7 @@ servlist_open_networks (void)
 
 	servlist = fabulor_gtk_window_new ();
 	theme_manager_attach_window (servlist);
-	gtk_container_set_border_width (GTK_CONTAINER (servlist), 4);
+	fabulor_gtk_container_set_uniform_inset (servlist, 4);
 	g_snprintf(buf, sizeof(buf), _("Network List - %s"), _(DISPLAY_NAME));
 	gtk_window_set_title (GTK_WINDOW (servlist), buf);
 	gtk_window_set_default_size (GTK_WINDOW (servlist), netlist_win_width, netlist_win_height);
@@ -2481,7 +2481,7 @@ servlist_open_networks (void)
 	table1 = gtkutil_grid_new (5, 2, FALSE);
 	gtk_widget_show (table1);
 	gtk_box_pack_start (GTK_BOX (vbox1), table1, FALSE, FALSE, 0);
-	gtk_container_set_border_width (GTK_CONTAINER (table1), 8);
+	fabulor_gtk_container_set_uniform_inset (table1, 8);
 	gtk_grid_set_row_spacing (GTK_GRID (table1), 2);
 	gtk_grid_set_column_spacing (GTK_GRID (table1), 4);
 
@@ -2577,7 +2577,7 @@ servlist_open_networks (void)
 	table4 = gtkutil_grid_new (2, 2, FALSE);
 	gtk_widget_show (table4);
 	gtk_box_pack_start (GTK_BOX (vbox2), table4, TRUE, TRUE, 0);
-	gtk_container_set_border_width (GTK_CONTAINER (table4), 8);
+	fabulor_gtk_container_set_uniform_inset (table4, 8);
 	gtk_grid_set_row_spacing (GTK_GRID (table4), 2);
 	gtk_grid_set_column_spacing (GTK_GRID (table4), 3);
 
@@ -2677,7 +2677,7 @@ servlist_open_networks (void)
 		FABULOR_GTK_BUTTON_BOX_SPREAD, 0);
 	gtk_widget_show (hbuttonbox1);
 	gtk_box_pack_start (GTK_BOX (vbox1), hbuttonbox1, FALSE, TRUE, 0);
-	gtk_container_set_border_width (GTK_CONTAINER (hbuttonbox1), 8);
+	fabulor_gtk_container_set_uniform_inset (hbuttonbox1, 8);
 
 	button_close = servlist_icon_button_new (_("_Close"), ICON_SERVLIST_CLOSE);
 	gtk_widget_show (button_close);

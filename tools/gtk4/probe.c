@@ -177,6 +177,8 @@ check_compatibility_helper_signatures (void)
 		fabulor_gtk_box_append_trailing_pair;
 	void (*volatile box_remove_child) (GtkBox *, GtkWidget *) =
 		fabulor_gtk_box_remove_child;
+	void (*volatile container_set_uniform_inset) (GtkWidget *, guint) =
+		fabulor_gtk_container_set_uniform_inset;
 	void (*volatile copy_text_to_clipboards) (GtkWidget *, const gchar *) =
 		fabulor_gtk_copy_text_to_clipboards;
 	void (*volatile widget_add_css_class) (GtkWidget *, const gchar *) =
@@ -301,6 +303,7 @@ check_compatibility_helper_signatures (void)
 	(void) box_insert_before_trailing;
 	(void) box_append_trailing_pair;
 	(void) box_remove_child;
+	(void) container_set_uniform_inset;
 	(void) copy_text_to_clipboards;
 	(void) widget_add_css_class;
 	(void) button_set_flat;
@@ -455,6 +458,45 @@ check_entry_text (gboolean gtk_ready)
 		"channel search") == 0 &&
 		gtk_editable_get_width_chars (GTK_EDITABLE (entry)) == 12;
 	g_object_unref (entry);
+	return valid;
+}
+
+static gboolean
+check_container_uniform_insets (gboolean gtk_ready)
+{
+	GtkWidget *window_child;
+	GtkWidget *window;
+	GtkWidget *box;
+	gboolean valid;
+
+	if (!gtk_ready)
+		return TRUE;
+
+	box = gtk_box_new (GTK_ORIENTATION_VERTICAL, 0);
+	g_object_ref_sink (box);
+	fabulor_gtk_container_set_uniform_inset (box, 4);
+	valid = gtk_widget_get_margin_start (box) == 4 &&
+		gtk_widget_get_margin_end (box) == 4 &&
+		gtk_widget_get_margin_top (box) == 4 &&
+		gtk_widget_get_margin_bottom (box) == 4;
+	g_object_unref (box);
+
+	window = fabulor_gtk_window_new ();
+	window_child = gtk_box_new (GTK_ORIENTATION_VERTICAL, 0);
+	g_object_ref_sink (window);
+	fabulor_gtk_container_set_uniform_inset (window, 7);
+	fabulor_gtk_window_set_child (GTK_WINDOW (window), window_child);
+	valid = valid && gtk_widget_get_margin_start (window_child) == 7 &&
+		gtk_widget_get_margin_end (window_child) == 7 &&
+		gtk_widget_get_margin_top (window_child) == 7 &&
+		gtk_widget_get_margin_bottom (window_child) == 7;
+	fabulor_gtk_container_set_uniform_inset (window, 0);
+	valid = valid && gtk_widget_get_margin_start (window_child) == 0 &&
+		gtk_widget_get_margin_end (window_child) == 0 &&
+		gtk_widget_get_margin_top (window_child) == 0 &&
+		gtk_widget_get_margin_bottom (window_child) == 0;
+	gtk_window_destroy (GTK_WINDOW (window));
+	g_object_unref (window);
 	return valid;
 }
 
@@ -4741,6 +4783,11 @@ main (void)
 	if (!check_button_box_layouts (gtk_ready))
 	{
 		fprintf (stderr, "GTK4 button box layout contract mismatch\n");
+		return 1;
+	}
+	if (!check_container_uniform_insets (gtk_ready))
+	{
+		fprintf (stderr, "GTK4 container inset ownership mismatch\n");
 		return 1;
 	}
 	if (!check_entry_text (gtk_ready))

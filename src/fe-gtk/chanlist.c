@@ -854,7 +854,7 @@ chanlist_opengui (server *serv, int do_refresh)
 								serv, 640, 480, &vbox, serv);
 	gtkutil_destroy_on_esc (serv->gui->chanlist_window);
 
-	gtk_container_set_border_width (GTK_CONTAINER (vbox), 6);
+	fabulor_gtk_container_set_uniform_inset (vbox, 6);
 	gtk_box_set_spacing (GTK_BOX (vbox), 12);
 
 	/* make a label to store the user/channel info */

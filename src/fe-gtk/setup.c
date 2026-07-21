@@ -1532,7 +1532,7 @@ setup_create_frame (void)
         GtkWidget *tab;
 
         tab = gtkutil_grid_new (3, 2, FALSE);
-        gtk_container_set_border_width (GTK_CONTAINER (tab), 6);
+        fabulor_gtk_container_set_uniform_inset (tab, 6);
         gtk_grid_set_row_spacing (GTK_GRID (tab), 2);
         gtk_grid_set_column_spacing (GTK_GRID (tab), 3);
 
@@ -1553,7 +1553,7 @@ setup_create_page (const setting *set)
         GtkWidget *wid = NULL, *parentwid = NULL;
 
         tab = setup_create_frame ();
-        gtk_container_set_border_width (GTK_CONTAINER (tab), 6);
+        fabulor_gtk_container_set_uniform_inset (tab, 6);
 
         i = row = do_disable = 0;
         while (set[i].type != ST_END)
@@ -1788,7 +1788,7 @@ setup_create_sound_page (void)
         GtkWidget *sound_play;
 
         vbox1 = gtkutil_box_new (GTK_ORIENTATION_VERTICAL, FALSE, 0);
-        gtk_container_set_border_width (GTK_CONTAINER (vbox1), 6);
+        fabulor_gtk_container_set_uniform_inset (vbox1, 6);
         gtk_widget_show (vbox1);
 
         vbox2 = gtkutil_box_new (GTK_ORIENTATION_VERTICAL, FALSE, 0);
@@ -2389,7 +2389,7 @@ setup_window_open (void)
         setup_window = win;
 
         vbox = gtkutil_box_new (GTK_ORIENTATION_VERTICAL, FALSE, 5);
-        gtk_container_set_border_width (GTK_CONTAINER (vbox), 6);
+        fabulor_gtk_container_set_uniform_inset (vbox, 6);
         fabulor_gtk_window_set_child (GTK_WINDOW (win), vbox);
 
         hbox = gtkutil_box_new (GTK_ORIENTATION_HORIZONTAL, FALSE, 4);
