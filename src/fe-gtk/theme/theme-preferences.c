@@ -54,7 +54,11 @@ typedef struct
 {
         GWeakRef owner;
         GWeakRef parent;
+#if GTK_MAJOR_VERSION >= 4
+        gboolean parent_watch_active;
+#else
         gulong parent_destroy_handler;
+#endif
 } theme_preferences_native_import_data;
 
 typedef struct
@@ -283,19 +287,40 @@ theme_preferences_native_import_data_free (gpointer user_data)
 }
 
 static void
-theme_preferences_native_import_parent_destroy_cb (GtkWidget *parent,
-                                                   gpointer user_data)
+theme_preferences_native_import_parent_gone (GtkNativeDialog *dialog)
 {
-        GtkNativeDialog *dialog = GTK_NATIVE_DIALOG (user_data);
         theme_preferences_native_import_data *data;
 
-        (void) parent;
         data = g_object_get_data (G_OBJECT (dialog), "fabulor-theme-native-import-data");
         if (data)
+#if GTK_MAJOR_VERSION >= 4
+                data->parent_watch_active = FALSE;
+#else
                 data->parent_destroy_handler = 0;
+#endif
         gtk_native_dialog_hide (dialog);
         g_object_unref (dialog);
 }
+
+#if GTK_MAJOR_VERSION >= 4
+static void
+theme_preferences_native_import_parent_finalized_cb (gpointer user_data,
+                                                      GObject *parent)
+{
+        (void) parent;
+        theme_preferences_native_import_parent_gone (
+                GTK_NATIVE_DIALOG (user_data));
+}
+#else
+static void
+theme_preferences_native_import_parent_destroy_cb (GtkWidget *parent,
+                                                    gpointer user_data)
+{
+        (void) parent;
+        theme_preferences_native_import_parent_gone (
+                GTK_NATIVE_DIALOG (user_data));
+}
+#endif
 
 static theme_preferences_native_import_data *
 theme_preferences_native_import_data_new (GtkNativeDialog *dialog,
@@ -309,14 +334,22 @@ theme_preferences_native_import_data_new (GtkNativeDialog *dialog,
         g_weak_ref_init (&data->parent, parent);
         g_object_set_data_full (G_OBJECT (dialog), "fabulor-theme-native-import-data",
                                 data, theme_preferences_native_import_data_free);
+#if GTK_MAJOR_VERSION >= 4
+        data->parent_watch_active = TRUE;
+        g_object_weak_ref (G_OBJECT (parent),
+                           theme_preferences_native_import_parent_finalized_cb,
+                           dialog);
+#else
         data->parent_destroy_handler = g_signal_connect (
                 parent, "destroy",
                 G_CALLBACK (theme_preferences_native_import_parent_destroy_cb), dialog);
+#endif
         return data;
 }
 
 static GtkWidget *
-theme_preferences_native_import_acquire_owner (theme_preferences_native_import_data *data)
+theme_preferences_native_import_acquire_owner (GtkNativeDialog *dialog,
+                                               theme_preferences_native_import_data *data)
 {
         GtkWindow *parent;
         GtkWidget *owner = NULL;
@@ -324,11 +357,21 @@ theme_preferences_native_import_acquire_owner (theme_preferences_native_import_d
         parent = g_weak_ref_get (&data->parent);
         if (parent)
         {
+#if GTK_MAJOR_VERSION >= 4
+                if (data->parent_watch_active)
+                {
+                        g_object_weak_unref (G_OBJECT (parent),
+                                             theme_preferences_native_import_parent_finalized_cb,
+                                             dialog);
+                        data->parent_watch_active = FALSE;
+                }
+#else
                 if (data->parent_destroy_handler)
                 {
                         g_signal_handler_disconnect (parent, data->parent_destroy_handler);
                         data->parent_destroy_handler = 0;
                 }
+#endif
                 owner = g_weak_ref_get (&data->owner);
         }
         g_clear_object (&parent);
@@ -1010,7 +1053,7 @@ theme_preferences_manage_colors_cb (GtkWidget *button, gpointer user_data)
         gboolean *color_change_flag = user_data;
 
         theme_preferences_create_color_manager_dialog (
-                GTK_WINDOW (gtk_widget_get_toplevel (button)), color_change_flag);
+                fabulor_gtk_widget_get_root_window (button), color_change_flag);
 }
 
 static void
@@ -1018,7 +1061,7 @@ theme_preferences_show_import_error (GtkWidget *button, const char *message)
 {
         GtkWidget *dialog;
 
-        dialog = gtk_message_dialog_new (GTK_WINDOW (gtk_widget_get_toplevel (button)),
+        dialog = gtk_message_dialog_new (fabulor_gtk_widget_get_root_window (button),
                                          GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT,
                                          GTK_MESSAGE_ERROR,
                                          GTK_BUTTONS_CLOSE,
@@ -1034,7 +1077,7 @@ theme_preferences_show_import_info (GtkWidget *button, const char *message)
 {
         GtkWidget *dialog;
 
-        dialog = gtk_message_dialog_new (GTK_WINDOW (gtk_widget_get_toplevel (button)),
+        dialog = gtk_message_dialog_new (fabulor_gtk_widget_get_root_window (button),
                                          GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT,
                                          GTK_MESSAGE_INFO,
                                          GTK_BUTTONS_CLOSE,
@@ -1256,7 +1299,7 @@ theme_preferences_import_colors_conf_response_cb (GtkNativeDialog *dialog,
         gboolean *color_change_flag;
         char *path = NULL;
 
-        button = theme_preferences_native_import_acquire_owner (data);
+        button = theme_preferences_native_import_acquire_owner (dialog, data);
         if (button && response_id == GTK_RESPONSE_ACCEPT)
         {
                 path = fabulor_gtk_file_chooser_dup_filename (
@@ -1279,8 +1322,8 @@ theme_preferences_import_colors_conf_cb (GtkWidget *button, gpointer user_data)
         GtkWindow *parent;
         theme_preferences_native_import_data *data;
 
-        parent = GTK_WINDOW (gtk_widget_get_toplevel (button));
-        if (!GTK_IS_WINDOW (parent))
+        parent = fabulor_gtk_widget_get_root_window (button);
+        if (!parent)
                 return;
 
         g_object_set_data (G_OBJECT (button), "fabulor-theme-colors-import-context", user_data);
@@ -1290,7 +1333,7 @@ theme_preferences_import_colors_conf_cb (GtkWidget *button, gpointer user_data)
                                               _("_Import"),
                                               _("_Cancel"));
         gtk_native_dialog_set_modal (GTK_NATIVE_DIALOG (dialog), TRUE);
-        gtk_file_chooser_set_local_only (GTK_FILE_CHOOSER (dialog), TRUE);
+        fabulor_gtk_file_chooser_set_local_only (GTK_FILE_CHOOSER (dialog), TRUE);
         gtk_file_chooser_set_select_multiple (GTK_FILE_CHOOSER (dialog), FALSE);
         filter = gtk_file_filter_new ();
         gtk_file_filter_set_name (filter, _("Theme colors (*.conf, *.hct)"));
@@ -1770,7 +1813,7 @@ theme_preferences_gtk3_import_response_cb (GtkNativeDialog *dialog,
         GtkWidget *button;
         char *path = NULL;
 
-        button = theme_preferences_native_import_acquire_owner (data);
+        button = theme_preferences_native_import_acquire_owner (dialog, data);
         if (button && response_id == GTK_RESPONSE_ACCEPT)
         {
                 path = fabulor_gtk_file_chooser_dup_filename (
@@ -1803,7 +1846,7 @@ theme_preferences_gtk3_import_cb (GtkWidget *button, gpointer user_data)
                                               _("_Import"),
                                               _("_Cancel"));
         gtk_native_dialog_set_modal (GTK_NATIVE_DIALOG (dialog), TRUE);
-        gtk_file_chooser_set_local_only (GTK_FILE_CHOOSER (dialog), TRUE);
+        fabulor_gtk_file_chooser_set_local_only (GTK_FILE_CHOOSER (dialog), TRUE);
         gtk_file_chooser_set_select_multiple (GTK_FILE_CHOOSER (dialog), FALSE);
         filter = gtk_file_filter_new ();
         gtk_file_filter_set_name (filter, _("Theme archives (*.zip, *.tar, *.tar.xz, *.tgz, *.tar.gz, *.tar.bz2)"));

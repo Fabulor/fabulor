@@ -1065,6 +1065,18 @@ weak parent watch that is removed before response-owned unref. The complete
 GTK4 inventory remains unchanged at zero compiler errors, 173 warnings, 52
 unique unresolved symbols, and 62 repeated diagnostics.
 
+Stage 8 theme-import chooser lifetime pass 75 gives the colour/HCT and legacy
+GTK3-theme native choosers one parent-watch contract. GTK4 uses `GWeakNotify`;
+GTK3 retains the widget `destroy` signal. Response ownership disconnects that
+watch before dialog release, and weak owner lookup prevents callbacks from
+reaching controls after Preferences closes. Direct theme-preference
+`gtk_widget_get_toplevel()` calls now use the shared root-window adapter.
+`gtk_file_chooser_set_local_only()` is contained in the owned-path adapter:
+GTK3 requests local-only selection from the toolkit, while GTK4 rejects
+non-local `GFile` values when projecting an owned filesystem path. The full
+GTK4 inventory improves to zero compiler errors, 166 warnings, 50 unique
+unresolved symbols, and 59 repeated diagnostics.
+
 ## Functional Clusters
 
 | Cluster | Main files | GTK4 concern | Status |

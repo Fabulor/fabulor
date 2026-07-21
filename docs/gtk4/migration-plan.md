@@ -2242,6 +2242,20 @@ at zero compiler errors, 173 warnings, 52 unique unresolved symbols, and 62
 repeated diagnostics. Theme-import parent lifetime is the next contained
 lifecycle target.
 
+Theme-import chooser lifetime pass 75 (2026-07-21):
+the shared colour/HCT and legacy GTK3-theme native chooser state now observes
+its Preferences parent through GTK4 weak finalization, while GTK3 retains one
+typed `destroy` bridge. Response handling removes the parent watch before
+releasing the dialog and resolves its owner only while the parent remains
+alive. Theme dialogs now use the shared root-window boundary. A shared
+file-chooser local-only adapter preserves GTK3's native restriction and relies
+on GTK4's owned-path projection to reject non-local `GFile` values; certificate
+import uses the same rule. Shipping GTK3, strict MSVC and Meson GTK4 probes,
+and all 28 repository tests remain clean. The complete GTK4 profile improves
+from 173 to 166 warnings, from 52 to 50 unique unresolved symbols, and from 62
+to 59 repeated diagnostics, with zero compiler errors. Remaining Server List
+GTK3 widget/layout calls are the next contained target.
+
 Deliverables:
 
 - Make GTK4 the only production frontend dependency in MSVC, Meson, and CI.

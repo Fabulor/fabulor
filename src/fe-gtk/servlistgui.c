@@ -480,7 +480,7 @@ servlist_import_client_cert_cb (GtkWidget *button, gpointer userdata)
 											 GTK_FILE_CHOOSER_ACTION_OPEN,
 											 _("_Open"), _("_Cancel"));
 	gtk_native_dialog_set_modal (GTK_NATIVE_DIALOG (dialog), TRUE);
-	gtk_file_chooser_set_local_only (GTK_FILE_CHOOSER (dialog), TRUE);
+	fabulor_gtk_file_chooser_set_local_only (GTK_FILE_CHOOSER (dialog), TRUE);
 	gtk_file_chooser_set_select_multiple (GTK_FILE_CHOOSER (dialog), FALSE);
 	filter = gtk_file_filter_new ();
 	gtk_file_filter_set_name (filter, _("Certificate files"));

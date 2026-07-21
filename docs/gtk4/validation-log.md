@@ -6209,6 +6209,49 @@ cleanup exactly once. A parent window can close before either native chooser
 without retaining stale callback data. GTK3 behavior and packaging are
 unchanged.
 
+### GTK4 Stage 8 Theme-Import Chooser Lifetime
+
+Date: 2026-07-21
+
+Files/workflows converted: colour/HCT import parent ownership, legacy GTK3
+theme-import parent ownership, theme dialog root lookup, and shared native
+file-chooser local-path enforcement.
+
+Automated evidence:
+
+- shipping MSVC GTK3 frontend build: pass; zero warnings and zero errors
+- strict MSVC GTK4 probe against GTK 4.22.4 / GLib 2.88.0: build and execution
+  pass under `/W4 /WX`; zero warnings and errors
+- Meson MSVC GTK4 probe: clean build and execution pass
+- repository GTK4 Python validation: 28 tests pass
+- source audit: both theme-import response paths remove the GTK4 parent weak
+  watch before releasing their native chooser
+- source audit: GTK4 theme dialogs use the shared root-window boundary and no
+  active theme-preference path calls `gtk_widget_get_toplevel()`
+- source audit: all remaining local-only chooser requests use the shared
+  adapter; GTK4 owned-path conversion returns `NULL` for non-local `GFile`
+- clean isolated complete GTK4 frontend compilation: zero C compiler errors
+  and 166 warnings, down from 173 in pass 74
+- expected complete GTK4 link failure improves from 52 to 50 unique unresolved
+  symbols and from 62 to 59 repeated unresolved-symbol diagnostics
+- inventory log: `build/gtk4-full/theme-import-lifetime-pass75.log`
+- next target: remaining Server List GTK3 widget and layout calls
+- `git diff --check`: pass
+
+Manual checks deferred until the full GTK4 frontend links:
+
+- [ ] accept and cancel `.hct` and `colors.conf` imports
+- [ ] close Preferences while either native import chooser is open
+- [ ] reject a non-local chooser result without changing staged colours
+- [ ] open the colour manager and import-result dialogs from Preferences
+- [ ] confirm certificate import still accepts a local file and rejects a
+  non-local result
+
+Behavior contract: chooser responses can reach their owner only while the
+Preferences parent remains alive; parent closure hides and releases the native
+chooser exactly once. Supported `.hct` and `colors.conf` semantics are
+unchanged, and non-local selections never become filesystem paths.
+
 ## Stage Completion Rule
 
 A stage can move to complete in `migration-plan.md` only when:

@@ -24,6 +24,20 @@ fabulor_gtk_file_chooser_set_current_folder_path (GtkFileChooser *chooser,
 	return changed;
 }
 
+void
+fabulor_gtk_file_chooser_set_local_only (GtkFileChooser *chooser,
+	gboolean local_only)
+{
+	g_return_if_fail (GTK_IS_FILE_CHOOSER (chooser));
+
+#if GTK_MAJOR_VERSION >= 4
+	/* GTK4 returns GFile values; owned-path conversion rejects non-local URIs. */
+	(void) local_only;
+#else
+	gtk_file_chooser_set_local_only (chooser, local_only);
+#endif
+}
+
 gchar *
 fabulor_gtk_file_chooser_dup_filename (GtkFileChooser *chooser)
 {
