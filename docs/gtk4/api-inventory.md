@@ -1028,6 +1028,18 @@ improving from 177 to 173 warnings and from 65 to 62 repeated diagnostics.
 `maingui.obj` improves from 23 to 20 unresolved diagnostics; menu and theme
 owners retain the remaining show-all and root symbols.
 
+Stage 8 main-window finalization pass 72 gives detached and tabbed IRC windows
+one lifecycle owner. GTK4 uses weak finalization while GTK3 retains its
+`destroy` signal; both unregister the window theme listener before releasing
+sessions. Detach/reattach explicitly suppresses that owner, cleans an obsolete
+window before freeing its `session_gui`, and restores ownership only when the
+shared tab window survives. The shared theme manager also uses weak ownership
+for GTK4 windows, so it no longer registers GTK3's removed widget `destroy`
+signal. Shipping GTK3 and strict probes remain clean. The complete GTK4
+inventory is unchanged at zero compiler errors, 173 warnings, 52 unique
+unresolved symbols, and 62 repeated diagnostics because this pass changes
+runtime callback ownership rather than linked API families.
+
 ## Functional Clusters
 
 | Cluster | Main files | GTK4 concern | Status |

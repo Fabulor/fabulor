@@ -403,6 +403,11 @@ static void mg_create_search (session *sess, GtkWidget *box);
 static GdkFilterReturn mg_win32_filter (GdkXEvent *xevent, GdkEvent *event, gpointer data);
 #endif
 static void mg_link_irctab (session *sess, int focus);
+static void mg_topwindow_lifecycle_connect (GtkWidget *window, session *sess);
+static void mg_topwindow_lifecycle_disconnect (GtkWidget *window, session *sess);
+static void mg_tabwindow_lifecycle_connect (GtkWidget *window, session_gui *gui);
+static void mg_tabwindow_lifecycle_disconnect (GtkWidget *window, session_gui *gui);
+static void mg_theme_window_cleanup (GtkWidget *window, session_gui *gui);
 
 static session_gui static_mg_gui;
 static session_gui *mg_gui = NULL;      /* the shared irc tab */
@@ -1718,14 +1723,6 @@ mg_switch_page (int relative, int num)
 {
         if (mg_gui)
                 chanview_move_focus (mg_gui->chanview, relative, num);
-}
-
-/* a toplevel IRC window was destroyed */
-
-static void
-mg_topdestroy_cb (GtkWidget *win, session *sess)
-{
-        session_free (sess);    /* tell zoitechat.c about it */
 }
 
 /* cleanup an IRC tab */
@@ -3138,26 +3135,27 @@ static GtkWidget *
 mg_changui_destroy (session *sess)
 {
         GtkWidget *ret = NULL;
+        GtkWidget *window = sess->gui->window;
+        session_gui *gui = sess->gui;
 
-        if (sess->gui->is_tab)
+        if (gui->is_tab)
         {
-                /* avoid calling the "destroy" callback */
-                g_signal_handlers_disconnect_by_func (G_OBJECT (sess->gui->window),
-                                                                                                                  mg_tabwindow_kill_cb, 0);
+                /* This window may be rebuilt around the same live session. */
+                mg_tabwindow_lifecycle_disconnect (window, gui);
+                if (chanview_get_size (gui->chanview) == 1)
+                        mg_theme_window_cleanup (window, gui);
                 /* remove the tab from the chanview */
                 if (!mg_chan_remove (sess->res->tab))
-                        /* if the window still exists, restore the signal handler */
-                        g_signal_connect (G_OBJECT (sess->gui->window), "destroy",
-                                                                        G_CALLBACK (mg_tabwindow_kill_cb), 0);
+                        /* if the window still exists, restore its lifecycle owner */
+                        mg_tabwindow_lifecycle_connect (window, gui);
         } else
         {
-                /* avoid calling the "destroy" callback */
-                g_signal_handlers_disconnect_by_func (G_OBJECT (sess->gui->window),
-                                                                                                                  mg_topdestroy_cb, sess);
+                mg_topwindow_lifecycle_disconnect (window, sess);
+                mg_theme_window_cleanup (window, gui);
                 /* don't destroy until the new one is created. Not sure why, but */
                 /* it fixes: Gdk-CRITICAL **: gdk_colormap_get_screen: */
                 /*           assertion `GDK_IS_COLORMAP (cmap)' failed */
-                ret = sess->gui->window;
+                ret = window;
                 sess->gui = NULL;
         }
         return ret;
@@ -4404,19 +4402,97 @@ mg_theme_userlist_destroy_cb (GtkWidget *widget, gpointer userdata)
 }
 
 static void
-mg_theme_window_destroy_cb (GtkWidget *widget, gpointer userdata)
+mg_theme_window_cleanup (GtkWidget *window, session_gui *gui)
 {
-	session_gui *gui = userdata;
-
-	(void) widget;
 	if (!gui)
 		return;
-	theme_manager_detach_window (gui->window);
+	if (window)
+		theme_manager_detach_window (window);
 	if (gui->theme_window_listener_id)
 	{
 		theme_listener_unregister (gui->theme_window_listener_id);
 		gui->theme_window_listener_id = 0;
 	}
+}
+
+#if GTK_MAJOR_VERSION >= 4
+static void
+mg_topwindow_finalized_cb (gpointer userdata, GObject *window)
+{
+	session *sess = userdata;
+
+	(void) window;
+	mg_theme_window_cleanup (NULL, sess->gui);
+	session_free (sess);
+}
+
+static void
+mg_tabwindow_finalized_cb (gpointer userdata, GObject *window)
+{
+	session_gui *gui = userdata;
+
+	(void) window;
+	mg_theme_window_cleanup (NULL, gui);
+	mg_tabwindow_kill_cb (NULL, NULL);
+}
+#else
+static void
+mg_topwindow_destroy_cb (GtkWidget *window, session *sess)
+{
+	mg_theme_window_cleanup (window, sess->gui);
+	session_free (sess);
+}
+
+static void
+mg_tabwindow_destroy_cb (GtkWidget *window, session_gui *gui)
+{
+	mg_theme_window_cleanup (window, gui);
+	mg_tabwindow_kill_cb (window, NULL);
+}
+#endif
+
+static void
+mg_topwindow_lifecycle_connect (GtkWidget *window, session *sess)
+{
+#if GTK_MAJOR_VERSION >= 4
+	g_object_weak_ref (G_OBJECT (window), mg_topwindow_finalized_cb, sess);
+#else
+	g_signal_connect (G_OBJECT (window), "destroy",
+		G_CALLBACK (mg_topwindow_destroy_cb), sess);
+#endif
+}
+
+static void
+mg_topwindow_lifecycle_disconnect (GtkWidget *window, session *sess)
+{
+#if GTK_MAJOR_VERSION >= 4
+	g_object_weak_unref (G_OBJECT (window), mg_topwindow_finalized_cb, sess);
+#else
+	g_signal_handlers_disconnect_by_func (G_OBJECT (window),
+		mg_topwindow_destroy_cb, sess);
+#endif
+}
+
+static void
+mg_tabwindow_lifecycle_connect (GtkWidget *window, session_gui *gui)
+{
+#if GTK_MAJOR_VERSION >= 4
+	g_object_weak_ref (G_OBJECT (window), mg_tabwindow_finalized_cb, gui);
+#else
+	g_signal_connect (G_OBJECT (window), "destroy",
+		G_CALLBACK (mg_tabwindow_destroy_cb), gui);
+#endif
+}
+
+static void
+mg_tabwindow_lifecycle_disconnect (GtkWidget *window, session_gui *gui)
+{
+#if GTK_MAJOR_VERSION >= 4
+	g_object_weak_unref (G_OBJECT (window), mg_tabwindow_finalized_cb, gui);
+#else
+	g_signal_handlers_disconnect_by_func (G_OBJECT (window),
+		mg_tabwindow_destroy_cb, gui);
+#endif
 }
 
 static void
@@ -5935,8 +6011,6 @@ mg_create_topwindow (session *sess)
         gtk_widget_set_opacity (win, (prefs.hex_gui_transparency / 255.));
 
         fabulor_gtk_widget_on_focus_enter (win, mg_topwin_focus_cb, sess);
-        g_signal_connect (G_OBJECT (win), "destroy",
-                                                        G_CALLBACK (mg_topdestroy_cb), sess);
 	fabulor_window_geometry_watch (GTK_WINDOW (win), mg_geometry_cb, sess);
 
 
@@ -5995,8 +6069,8 @@ mg_create_topwindow (session *sess)
 	gtk_widget_show (win);
 	if (!sess->gui->theme_window_listener_id)
 		sess->gui->theme_window_listener_id = theme_listener_register ("maingui.window", mg_theme_window_changed, sess->gui);
-	g_signal_connect (G_OBJECT (win), "destroy", G_CALLBACK (mg_theme_window_destroy_cb), sess->gui);
 	theme_manager_attach_window (win);
+	mg_topwindow_lifecycle_connect (win, sess);
 
 #if defined(G_OS_WIN32) && GTK_MAJOR_VERSION < 4
 	parent_win = gtk_widget_get_window (win);
@@ -6153,8 +6227,6 @@ mg_create_tabwindow (session *sess)
         g_signal_connect (G_OBJECT (win), "delete-event",
                           G_CALLBACK (mg_tabwindow_delete_event_cb), NULL);
 #endif
-        g_signal_connect (G_OBJECT (win), "destroy",
-                                                   G_CALLBACK (mg_tabwindow_kill_cb), 0);
         fabulor_gtk_widget_on_focus_enter (win, mg_tabwin_focus_cb, NULL);
 	fabulor_window_geometry_watch (GTK_WINDOW (win), mg_geometry_cb, NULL);
 		fabulor_window_state_watch (GTK_WINDOW (win), mg_windowstate_cb, NULL);
@@ -6199,8 +6271,8 @@ mg_create_tabwindow (session *sess)
         gtk_widget_show (win);
         if (!sess->gui->theme_window_listener_id)
                 sess->gui->theme_window_listener_id = theme_listener_register ("maingui.window", mg_theme_window_changed, sess->gui);
-        g_signal_connect (G_OBJECT (win), "destroy", G_CALLBACK (mg_theme_window_destroy_cb), sess->gui);
         theme_manager_attach_window (win);
+        mg_tabwindow_lifecycle_connect (win, sess->gui);
 
 #if defined(G_OS_WIN32) && GTK_MAJOR_VERSION < 4
 	parent_win = gtk_widget_get_window (win);

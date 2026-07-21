@@ -50,6 +50,9 @@ static GHashTable *theme_manager_listeners;
 static guint theme_manager_next_listener_id = 1;
 static guint theme_manager_setup_listener_id;
 static const char theme_manager_window_destroy_handler_key[] = "theme-manager-window-destroy-handler";
+#if GTK_MAJOR_VERSION >= 4
+static const char theme_manager_window_weak_owner[] = "theme-manager-window-weak-owner";
+#endif
 #if GTK_MAJOR_VERSION < 4
 static const char theme_manager_window_csd_headerbar_key[] = "theme-manager-window-csd-headerbar";
 #endif
@@ -558,12 +561,21 @@ theme_manager_apply_platform_window_theme (GtkWidget *window)
 #endif
 }
 
+#if GTK_MAJOR_VERSION >= 4
+static void
+theme_manager_window_finalized_cb (gpointer userdata, GObject *window)
+{
+	(void) userdata;
+	(void) window;
+}
+#else
 static void
 theme_manager_window_destroy_cb (GtkWidget *window, gpointer userdata)
 {
 	(void) userdata;
 	g_object_set_data (G_OBJECT (window), theme_manager_window_destroy_handler_key, NULL);
 }
+#endif
 
 void
 theme_manager_apply_to_window (GtkWidget *window)
@@ -577,11 +589,24 @@ theme_manager_apply_to_window (GtkWidget *window)
 void
 theme_manager_attach_window (GtkWidget *window)
 {
+#if GTK_MAJOR_VERSION >= 4
+	gpointer owner;
+#else
 	gulong *handler_id;
+#endif
 
 	if (!window)
 		return;
 
+#if GTK_MAJOR_VERSION >= 4
+	owner = g_object_get_data (G_OBJECT (window), theme_manager_window_destroy_handler_key);
+	if (!owner)
+	{
+		g_object_weak_ref (G_OBJECT (window), theme_manager_window_finalized_cb, NULL);
+		g_object_set_data (G_OBJECT (window), theme_manager_window_destroy_handler_key,
+			(gpointer) theme_manager_window_weak_owner);
+	}
+#else
 	handler_id = g_object_get_data (G_OBJECT (window), theme_manager_window_destroy_handler_key);
 	if (!handler_id)
 	{
@@ -589,6 +614,7 @@ theme_manager_attach_window (GtkWidget *window)
 		*handler_id = g_signal_connect (G_OBJECT (window), "destroy", G_CALLBACK (theme_manager_window_destroy_cb), NULL);
 		g_object_set_data_full (G_OBJECT (window), theme_manager_window_destroy_handler_key, handler_id, g_free);
 	}
+#endif
 
 	theme_manager_apply_to_window (window);
 }
@@ -596,17 +622,30 @@ theme_manager_attach_window (GtkWidget *window)
 void
 theme_manager_detach_window (GtkWidget *window)
 {
+#if GTK_MAJOR_VERSION >= 4
+	gpointer owner;
+#else
 	gulong *handler_id;
+#endif
 
 	if (!window)
 		return;
 
+#if GTK_MAJOR_VERSION >= 4
+	owner = g_object_get_data (G_OBJECT (window), theme_manager_window_destroy_handler_key);
+	if (owner)
+	{
+		g_object_weak_unref (G_OBJECT (window), theme_manager_window_finalized_cb, NULL);
+		g_object_set_data (G_OBJECT (window), theme_manager_window_destroy_handler_key, NULL);
+	}
+#else
 	handler_id = g_object_get_data (G_OBJECT (window), theme_manager_window_destroy_handler_key);
 	if (handler_id)
 	{
 		g_signal_handler_disconnect (G_OBJECT (window), *handler_id);
 		g_object_set_data (G_OBJECT (window), theme_manager_window_destroy_handler_key, NULL);
 	}
+#endif
 }
 
 void
