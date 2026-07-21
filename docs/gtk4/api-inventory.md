@@ -900,6 +900,15 @@ The complete GTK4 inventory retains zero C compiler errors while improving from
 245 to 233 warnings, from 111 to 104 repeated linker diagnostics, and from 72 to
 69 unique unresolved symbols. All retired event-box symbols are closed.
 
+Stage 8 lazy Preferences page ownership pass 61 replaces GTK3 child-list
+inspection with explicit per-page creation state. Registered page containers
+are known vertical boxes, so page factories now attach once through the typed
+box owner and reveal through the cross-version widget-tree boundary. The
+complete GTK4 inventory retains zero C compiler errors and 69 unique unresolved
+symbols while improving from 233 to 228 warnings and from 104 to 100 repeated
+linker diagnostics. `setup.c` no longer calls `gtk_container_get_children`,
+`gtk_container_add`, or `gtk_widget_show_all`.
+
 ## Functional Clusters
 
 | Cluster | Main files | GTK4 concern | Status |

@@ -371,6 +371,7 @@ Detailed planning and evidence live in:
     - [ ] Complete channel-list and channel-view container/lifecycle cutover.
       - [x] Route confirmed box, button-box, and channel-view scroller child attachment through typed GTK3/GTK4 owners.
       - [x] Replace event-box wrappers and theme color-list attachment with typed content-surface and list owners.
+      - [x] Give lazy Preferences pages explicit creation state and typed box ownership.
     - [ ] Complete top-level window positioning, visibility, and lifecycle cutover.
       - [x] Contain removed placement hints, saved coordinates, and tray restore placement behind compositor-safe GTK3/GTK4 policy.
       - [x] Observe minimized, maximized, fullscreen, and focused top-level state through a typed GTK3/GTK4 boundary.
