@@ -165,6 +165,8 @@ fabulor_gtk_radio_button_new_with_mnemonic (GtkWidget *group_member,
 	if (group_member)
 		gtk_check_button_set_group (GTK_CHECK_BUTTON (button),
 			GTK_CHECK_BUTTON (group_member));
+	else
+		gtk_check_button_set_active (GTK_CHECK_BUTTON (button), TRUE);
 	return button;
 #else
 	g_return_val_if_fail (group_member == NULL ||

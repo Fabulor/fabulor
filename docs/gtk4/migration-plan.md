@@ -2133,6 +2133,18 @@ symbols. `gtk_radio_button_set_group` and `gtk_label_set_line_wrap` leave the
 GTK4 link boundary. DCC choice controls are the next reusable grouped-control
 target within the remaining top-level lifecycle work.
 
+DCC grouped-choice pass 67 (2026-07-21):
+the Transfers window's Both, Uploads, and Downloads filters now use the shared
+typed grouped-control constructor and checked-state reader. GTK4 explicitly
+activates the first group member so Both remains the initial filter, also
+correcting the Join dialog's Nothing default; GTK3 retains native radio-button
+behavior. Strict MSVC and Meson probes verify default activation and exclusive
+selection, and shipping GTK3 remains clean. The complete GTK4 profile retains
+zero compiler errors and 56 unique unresolved symbols while improving from 191
+to 183 warnings and from 72 to 69 repeated diagnostics. `dccgui.obj` is clean,
+and Preferences is now the sole remaining retired radio-button caller and the
+next contained target.
+
 Deliverables:
 
 - Make GTK4 the only production frontend dependency in MSVC, Meson, and CI.

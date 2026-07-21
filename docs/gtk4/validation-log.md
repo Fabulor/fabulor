@@ -5799,6 +5799,39 @@ mutually exclusive; entry focus selects Join; Enter and OK preserve dispatch;
 the persistence checkbox and dialog-close cleanup remain intact. GTK3 retains
 native radio presentation. Packaging impact: none.
 
+### GTK4 Stage 8 DCC Grouped Choice Controls
+
+Date: 2026-07-21
+
+Files/workflows converted: Transfers window Both, Uploads, and Downloads filter
+construction, initial selection, exclusive state, and filter dispatch.
+
+Automated evidence:
+
+- shipping MSVC GTK3 frontend rebuild: pass; zero errors
+- strict MSVC GTK4 probe against GTK 4.22.4 / GLib 2.88.0: compile, link, and
+  execution pass under `/W4 /WX`; zero warnings and zero errors
+- Meson MSVC GTK4 probe: compile, link, and execution pass
+- strict runtime checks: the first grouped-control constructor result is active
+  by default; activating a later member clears both siblings; ordinary checkbox
+  state remains independent
+- clean isolated complete GTK4 frontend compilation: zero C compiler errors and
+  183 warnings, improved from 191 warnings
+- expected complete GTK4 link failure retains 56 unique unresolved symbols and
+  improves from 72 to 69 repeated unresolved-symbol diagnostics
+- `dccgui.obj` has no remaining GTK4 compiler warning or unresolved diagnostic
+- Preferences is the only remaining source of
+  `gtk_radio_button_new_with_mnemonic`, `gtk_radio_button_get_group`, and
+  `GTK_RADIO_BUTTON`
+- inventory log: `build/gtk4-full/dcc-choice-controls-pass67.log`
+- next target: Preferences grouped choice controls
+- `git diff --check`: pass
+
+Behavior contract: Both remains selected initially; Uploads and Downloads
+remain mutually exclusive and immediately refresh the transfer list; GTK3
+retains native radio presentation. The Join dialog's Nothing choice also now
+retains its GTK3 default under GTK4. Packaging impact: none.
+
 ## Build Matrix
 
 | Check | GTK3 shipping target | GTK4 candidate | Final GTK4 target |

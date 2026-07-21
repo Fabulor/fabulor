@@ -399,6 +399,7 @@ Detailed planning and evidence live in:
         - [x] Convert detached DCC transfer size persistence to the shared surface-layout observer.
         - [x] Convert Server List and network-editor close/save handling and size persistence to typed GTK3/GTK4 callbacks.
         - [x] Convert Join Channel choice controls, root lookup, default response, wrapping, and pointer cleanup to typed GTK3/GTK4 lifecycle ownership.
+        - [x] Convert DCC transfer filter choices to typed grouped controls with preserved default selection.
         - [ ] Convert the remaining top-level visibility and lifecycle callbacks.
     - [ ] Bind application and preferences integration to the GTK4 theme controller.
       - [x] Separate GTK3 KDE/Wayland CSD reset ownership from GTK4 top-level theme classes.
