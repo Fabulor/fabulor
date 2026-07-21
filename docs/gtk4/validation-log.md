@@ -5865,6 +5865,40 @@ indices remain 0 and 2 despite the intentionally blank list entry, and changing
 the choice immediately updates the staged Preferences value. GTK3 retains
 native radio presentation. Packaging impact: none.
 
+### GTK4 Stage 8 Preferences Check-Button State
+
+Date: 2026-07-21
+
+Files/workflows converted: ordinary Preferences toggles, alert event matrices,
+staged Boolean values, topic-bar choice sensitivity, and parent-controlled
+field sensitivity.
+
+Automated evidence:
+
+- shipping MSVC GTK3 frontend rebuild: pass; zero warnings and zero errors
+- strict MSVC GTK4 probe against GTK 4.22.4 / GLib 2.88.0: build and execution
+  pass under `/W4 /WX`; zero warnings and zero errors
+- Meson MSVC GTK4 probe: build and execution pass
+- repository GTK4 Python validation: 28 tests pass
+- source audit: `setup.c` has no direct `GtkToggleButton`,
+  `GTK_TOGGLE_BUTTON`, `gtk_toggle_button_get_active`, or
+  `gtk_toggle_button_set_active` use
+- clean isolated complete GTK4 frontend compilation: zero C compiler errors and
+  178 warnings, unchanged from pass 68
+- expected complete GTK4 link failure retains 53 unique unresolved symbols and
+  66 repeated unresolved-symbol diagnostics
+- `setup.obj` retains only one unrelated combo-box warning and one matching
+  unresolved diagnostic
+- inventory log: `build/gtk4-full/preferences-check-controls-pass69.log`
+- next target: Preferences combo-box wrap-width compatibility
+- `git diff --check`: pass
+
+Behavior contract: all Preferences Boolean values still initialize from staged
+preferences and update immediately when toggled. Dependent controls and labels
+retain their enabled state, mode-button placement still disables multi-line
+topics, and all three alert-event columns remain independent. Packaging impact:
+none.
+
 ## Build Matrix
 
 | Check | GTK3 shipping target | GTK4 candidate | Final GTK4 target |

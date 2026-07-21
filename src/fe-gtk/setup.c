@@ -746,9 +746,9 @@ setup_table_attach (GtkWidget *table, GtkWidget *child,
 
 
 static void
-setup_3oggle_cb (GtkToggleButton *but, unsigned int *setting)
+setup_3oggle_cb (GtkWidget *button, unsigned int *setting)
 {
-        *setting = gtk_toggle_button_get_active (but);
+        *setting = fabulor_gtk_check_button_get_active (button);
 }
 
 static void
@@ -799,24 +799,24 @@ setup_create_3oggle (GtkWidget *tab, int row, const setting *set)
                             LABEL_INDENT, 0);
 
         wid = gtk_check_button_new ();
-        gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (wid),
-                                                                                        setup_get_int3 (&setup_prefs, offsets[0]));
+        fabulor_gtk_check_button_set_active (wid,
+                                             setup_get_int3 (&setup_prefs, offsets[0]));
         g_signal_connect (G_OBJECT (wid), "toggled",
                                                         G_CALLBACK (setup_3oggle_cb), ((int *)&setup_prefs) + offsets[0]);
         setup_table_attach (tab, wid, 3, 4, row, row + 1, FALSE, FALSE,
                             SETUP_ALIGN_CENTER, SETUP_ALIGN_CENTER, 0, 0);
 
         wid = gtk_check_button_new ();
-        gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (wid),
-                                                                                        setup_get_int3 (&setup_prefs, offsets[1]));
+        fabulor_gtk_check_button_set_active (wid,
+                                             setup_get_int3 (&setup_prefs, offsets[1]));
         g_signal_connect (G_OBJECT (wid), "toggled",
                                                         G_CALLBACK (setup_3oggle_cb), ((int *)&setup_prefs) + offsets[1]);
         setup_table_attach (tab, wid, 4, 5, row, row + 1, FALSE, FALSE,
                             SETUP_ALIGN_CENTER, SETUP_ALIGN_CENTER, 0, 0);
 
         wid = gtk_check_button_new ();
-        gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (wid),
-                                                                                        setup_get_int3 (&setup_prefs, offsets[2]));
+        fabulor_gtk_check_button_set_active (wid,
+                                             setup_get_int3 (&setup_prefs, offsets[2]));
         g_signal_connect (G_OBJECT (wid), "toggled",
                                                         G_CALLBACK (setup_3oggle_cb), ((int *)&setup_prefs) + offsets[2]);
         setup_table_attach (tab, wid, 5, 6, row, row + 1, FALSE, FALSE,
@@ -824,36 +824,39 @@ setup_create_3oggle (GtkWidget *tab, int row, const setting *set)
 }
 
 static void
-setup_toggle_cb (GtkToggleButton *but, const setting *set)
+setup_toggle_cb (GtkWidget *button, const setting *set)
 {
         GtkWidget *label, *disable_wid;
+        gboolean active;
 
-        setup_set_int (&setup_prefs, set, gtk_toggle_button_get_active (but));
+        active = fabulor_gtk_check_button_get_active (button);
+        setup_set_int (&setup_prefs, set, active);
 
         /* does this toggle also enable/disable another widget? */
-        disable_wid = g_object_get_data (G_OBJECT (but), "nxt");
+        disable_wid = g_object_get_data (G_OBJECT (button), "nxt");
         if (disable_wid)
         {
-                gtk_widget_set_sensitive (disable_wid, gtk_toggle_button_get_active (but));
+                gtk_widget_set_sensitive (disable_wid, active);
                 label = g_object_get_data (G_OBJECT (disable_wid), "lbl");
-                gtk_widget_set_sensitive (label, gtk_toggle_button_get_active (but));
+                gtk_widget_set_sensitive (label, active);
         }
 }
 
 static void
-setup_toggle_sensitive_cb (GtkToggleButton *but, GtkWidget *wid)
+setup_toggle_sensitive_cb (GtkWidget *button, GtkWidget *wid)
 {
-        gtk_widget_set_sensitive (wid, gtk_toggle_button_get_active (but));
+        gtk_widget_set_sensitive (wid,
+                fabulor_gtk_check_button_get_active (button));
 }
 
 static void
-setup_topicbar_inline_toggled_cb (GtkToggleButton *but, gpointer userdata)
+setup_topicbar_inline_toggled_cb (GtkWidget *button, gpointer userdata)
 {
         (void) userdata;
 
         if (setup_topicbar_multiline_toggle)
                 gtk_widget_set_sensitive (setup_topicbar_multiline_toggle,
-                        !gtk_toggle_button_get_active (but));
+                        !fabulor_gtk_check_button_get_active (button));
 }
 
 static void
@@ -862,8 +865,8 @@ setup_create_toggleR (GtkWidget *tab, int row, const setting *set)
         GtkWidget *wid;
 
         wid = gtk_check_button_new_with_label (_(set->label));
-        gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (wid),
-                                                                                        setup_get_int (&setup_prefs, set));
+        fabulor_gtk_check_button_set_active (wid,
+                                             setup_get_int (&setup_prefs, set));
         g_signal_connect (G_OBJECT (wid), "toggled",
                                                         G_CALLBACK (setup_toggle_cb), (gpointer)set);
         if (set->tooltip)
@@ -878,8 +881,8 @@ setup_create_toggleL (GtkWidget *tab, int row, const setting *set)
         GtkWidget *wid;
 
         wid = gtk_check_button_new_with_label (_(set->label));
-        gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (wid),
-                                                                                        setup_get_int (&setup_prefs, set));
+        fabulor_gtk_check_button_set_active (wid,
+                                             setup_get_int (&setup_prefs, set));
         g_signal_connect (G_OBJECT (wid), "toggled",
                                                         G_CALLBACK (setup_toggle_cb), (gpointer)set);
         if (set->offset == STRUCT_OFFSET_INT (struct zoitechatprefs, hex_gui_mode_buttons_inline))
@@ -1608,7 +1611,8 @@ setup_create_page (const setting *set)
                         if (GTK_IS_WIDGET (parentwid))
                         {
                                 g_signal_connect (G_OBJECT (parentwid), "toggled", G_CALLBACK(setup_toggle_sensitive_cb), wid);
-                                gtk_widget_set_sensitive (wid, gtk_toggle_button_get_active (GTK_TOGGLE_BUTTON (parentwid)));
+                                gtk_widget_set_sensitive (wid,
+                                        fabulor_gtk_check_button_get_active (parentwid));
                                 do_disable--;
                                 if (!do_disable)
                                         parentwid = NULL;

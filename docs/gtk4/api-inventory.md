@@ -994,6 +994,18 @@ unresolved symbols. `gtk_radio_button_new_with_mnemonic`,
 inside the GTK3 compatibility branch; no active frontend caller uses the
 retired radio-button family.
 
+Stage 8 Preferences check-button pass 69 moves all ordinary Preferences toggles,
+the three-column alert matrix, and dependent-control sensitivity to typed
+check-button state access. Callback signatures no longer claim that GTK4 check
+buttons are `GtkToggleButton` instances, and each dependency update uses one
+stable state read. GTK3 presentation and signal behavior are unchanged. Strict
+MSVC and Meson probes remain clean. The complete GTK4 inventory remains at zero
+compiler errors, 178 warnings, 53 unique unresolved symbols, and 66 repeated
+diagnostics because genuine toggle buttons remain elsewhere. `setup.c` now has
+no direct `GtkToggleButton`, `GTK_TOGGLE_BUTTON`, or toggle active-state call;
+its sole remaining compiler/link diagnostic is the retired combo-box wrap-width
+operation.
+
 ## Functional Clusters
 
 | Cluster | Main files | GTK4 concern | Status |
