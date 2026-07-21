@@ -6379,6 +6379,46 @@ Behavior contract: an inactive reply bar is never exposed by initial window
 reveal. Active reply state reveals the complete bar atomically, and clearing
 reply state hides the bar without changing its children or input state.
 
+### GTK4 Stage 8 Legacy Widget-Menu Constructor Containment
+
+Date: 2026-07-21
+
+Files/workflows converted: main-window icon/submenu constructor declarations,
+legacy popup release, tray widget-menu item creation and population, mutable
+tray item labels, and obsolete Win32 widget-menu hover tracking.
+
+Automated evidence:
+
+- shipping MSVC GTK3 frontend build: pass; zero warnings and zero errors
+- strict MSVC GTK4 probe against GTK 4.22.4 / GLib 2.88.0: build and execution
+  pass under `/W4 /WX`; zero warnings and errors
+- Meson MSVC GTK4 probe: clean configure, build, and execution pass
+- repository GTK4 Python validation: 28 tests pass
+- source audit: main-window icon/submenu widget constructors and the tray's
+  legacy widget-menu population compile only for GTK3
+- source audit: GTK4 retains the tab context model/presenter and native Windows
+  tray popup without mutable `GtkMenuItem` state
+- clean isolated complete GTK4 frontend compilation: zero C compiler errors
+  and 123 warnings, down from 140 in pass 78
+- expected complete GTK4 link failure improves from 38 to 33 unique unresolved
+  symbols and from 44 to 37 repeated unresolved-symbol diagnostics
+- inventory log:
+  `build/gtk4-full/legacy-menu-constructor-containment-pass79.log`
+- next target: legacy GTK status-icon backend isolation
+- `git diff --check`: pass
+
+Manual checks deferred until the full GTK4 frontend links:
+
+- [ ] right-click an IRC tab and confirm the retained GTK4 context menu opens
+- [ ] trigger Detach and Close from the retained tab menu
+- [ ] open the native Windows tray menu and trigger Hide/Restore, Away/Back,
+  Preferences, and Quit
+- [ ] confirm no GTK widget-menu or mutable tray item is created by GTK4
+
+Behavior contract: GTK3 keeps its legacy widget menus unchanged. GTK4 uses
+only retained menu models/presenters and the native Windows tray popup; no
+removed GTK menu widget can be constructed or mutated in that profile.
+
 ## Stage Completion Rule
 
 A stage can move to complete in `migration-plan.md` only when:
