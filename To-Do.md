@@ -370,6 +370,7 @@ Detailed planning and evidence live in:
     - [x] Replace GTK3 container border widths with tested uniform GTK4 content insets.
     - [ ] Complete channel-list and channel-view container/lifecycle cutover.
       - [x] Route confirmed box, button-box, and channel-view scroller child attachment through typed GTK3/GTK4 owners.
+      - [x] Replace event-box wrappers and theme color-list attachment with typed content-surface and list owners.
     - [ ] Complete top-level window positioning, visibility, and lifecycle cutover.
       - [x] Contain removed placement hints, saved coordinates, and tray restore placement behind compositor-safe GTK3/GTK4 policy.
       - [x] Observe minimized, maximized, fullscreen, and focused top-level state through a typed GTK3/GTK4 boundary.

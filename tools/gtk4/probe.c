@@ -177,6 +177,14 @@ check_compatibility_helper_signatures (void)
 		fabulor_gtk_box_append_trailing_pair;
 	void (*volatile box_remove_child) (GtkBox *, GtkWidget *) =
 		fabulor_gtk_box_remove_child;
+	GtkWidget *(*volatile content_surface_new) (gboolean) =
+		fabulor_gtk_content_surface_new;
+	void (*volatile content_surface_set_child) (GtkWidget *, GtkWidget *) =
+		fabulor_gtk_content_surface_set_child;
+	void (*volatile list_box_row_set_child) (GtkListBoxRow *, GtkWidget *) =
+		fabulor_gtk_list_box_row_set_child;
+	void (*volatile list_box_append) (GtkListBox *, GtkWidget *) =
+		fabulor_gtk_list_box_append;
 	void (*volatile container_set_uniform_inset) (GtkWidget *, guint) =
 		fabulor_gtk_container_set_uniform_inset;
 	void (*volatile copy_text_to_clipboards) (GtkWidget *, const gchar *) =
@@ -303,6 +311,10 @@ check_compatibility_helper_signatures (void)
 	(void) box_insert_before_trailing;
 	(void) box_append_trailing_pair;
 	(void) box_remove_child;
+	(void) content_surface_new;
+	(void) content_surface_set_child;
+	(void) list_box_row_set_child;
+	(void) list_box_append;
 	(void) container_set_uniform_inset;
 	(void) copy_text_to_clipboards;
 	(void) widget_add_css_class;
@@ -497,6 +509,49 @@ check_container_uniform_insets (gboolean gtk_ready)
 		gtk_widget_get_margin_bottom (window_child) == 0;
 	gtk_window_destroy (GTK_WINDOW (window));
 	g_object_unref (window);
+	return valid;
+}
+
+static gboolean
+check_content_and_list_ownership (gboolean gtk_ready)
+{
+	GtkWidget *transparent_surface;
+	GtkWidget *visible_surface;
+	GtkWidget *transparent_child;
+	GtkWidget *visible_child;
+	GtkWidget *list;
+	GtkWidget *row;
+	GtkWidget *row_child;
+	gboolean valid;
+
+	if (!gtk_ready)
+		return TRUE;
+
+	transparent_surface = fabulor_gtk_content_surface_new (FALSE);
+	visible_surface = fabulor_gtk_content_surface_new (TRUE);
+	transparent_child = gtk_label_new ("meter");
+	visible_child = gtk_label_new ("preview");
+	g_object_ref_sink (transparent_surface);
+	g_object_ref_sink (visible_surface);
+	fabulor_gtk_content_surface_set_child (transparent_surface,
+		transparent_child);
+	fabulor_gtk_content_surface_set_child (visible_surface, visible_child);
+	valid = GTK_IS_BOX (transparent_surface) && GTK_IS_BOX (visible_surface) &&
+		gtk_widget_get_parent (transparent_child) == transparent_surface &&
+		gtk_widget_get_parent (visible_child) == visible_surface;
+	g_object_unref (visible_surface);
+	g_object_unref (transparent_surface);
+
+	list = gtk_list_box_new ();
+	row = gtk_list_box_row_new ();
+	row_child = gtk_label_new ("row");
+	g_object_ref_sink (list);
+	fabulor_gtk_list_box_row_set_child (GTK_LIST_BOX_ROW (row), row_child);
+	fabulor_gtk_list_box_append (GTK_LIST_BOX (list), row);
+	valid = valid && gtk_list_box_row_get_child (GTK_LIST_BOX_ROW (row)) ==
+		row_child && gtk_widget_get_parent (row) == list &&
+		gtk_widget_get_first_child (list) == row;
+	g_object_unref (list);
 	return valid;
 }
 
@@ -4788,6 +4843,11 @@ main (void)
 	if (!check_container_uniform_insets (gtk_ready))
 	{
 		fprintf (stderr, "GTK4 container inset ownership mismatch\n");
+		return 1;
+	}
+	if (!check_content_and_list_ownership (gtk_ready))
+	{
+		fprintf (stderr, "GTK4 content or list ownership mismatch\n");
 		return 1;
 	}
 	if (!check_entry_text (gtk_ready))

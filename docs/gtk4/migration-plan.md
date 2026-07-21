@@ -2037,6 +2037,19 @@ diagnostics from 121 to 111. Event-surface and list-row attachment, generic lazy
 page ownership, legacy menu children, and reparent removal remain separate
 targets; typed event/list ownership is next.
 
+Content-surface and list ownership pass 60 (2026-07-21):
+lag and throttle meter wrappers plus theme preview/color surfaces now use a
+semantic content-surface owner. GTK3 preserves event-box visible-window
+behavior; GTK4 uses CSS-capable boxes and explicit children. Theme color-manager
+rows and their list use direct typed GTK3/GTK4 ownership. Strict MSVC and Meson
+GTK4 probes verify surface parents, row children, and list order, and shipping
+GTK3 remains clean. The complete GTK4 profile retains zero compiler errors,
+improves from 245 to 233 warnings, from 111 to 104 repeated unresolved
+diagnostics, and from 72 to 69 unique unresolved symbols. The GTK4 link boundary
+contains no event-box symbols. Channel-list menu construction and lazy
+Preferences page attachment are the remaining active generic-add callers;
+typed lazy-page ownership is next before child reparent/removal.
+
 Deliverables:
 
 - Make GTK4 the only production frontend dependency in MSVC, Meson, and CI.

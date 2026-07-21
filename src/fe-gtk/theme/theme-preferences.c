@@ -438,13 +438,12 @@ theme_preferences_manager_preview_item_new (const char *text)
         GtkWidget *box;
         GtkWidget *label;
 
-        box = gtk_event_box_new ();
-        gtk_event_box_set_visible_window (GTK_EVENT_BOX (box), TRUE);
+        box = fabulor_gtk_content_surface_new (TRUE);
         fabulor_gtk_container_set_uniform_inset (box, 3);
 
         label = gtk_label_new (text);
         gtk_widget_set_halign (label, GTK_ALIGN_START);
-        gtk_container_add (GTK_CONTAINER (box), label);
+        fabulor_gtk_content_surface_set_child (box, label);
         g_object_set_data (G_OBJECT (box), "zoitechat-preview-label", label);
 
         return box;
@@ -465,13 +464,12 @@ theme_preferences_manager_create_preview (theme_color_manager_ui *ui)
         fabulor_gtk_container_set_uniform_inset (vbox, 8);
         fabulor_gtk_frame_set_child (GTK_FRAME (frame), vbox);
 
-        ui->preview_window = gtk_event_box_new ();
-        gtk_event_box_set_visible_window (GTK_EVENT_BOX (ui->preview_window), TRUE);
+        ui->preview_window = fabulor_gtk_content_surface_new (TRUE);
         fabulor_gtk_container_set_uniform_inset (ui->preview_window, 8);
         fabulor_gtk_box_append (GTK_BOX (vbox), ui->preview_window, TRUE, TRUE, 0);
 
         chat_box = gtk_box_new (GTK_ORIENTATION_VERTICAL, 6);
-        gtk_container_add (GTK_CONTAINER (ui->preview_window), chat_box);
+        fabulor_gtk_content_surface_set_child (ui->preview_window, chat_box);
 
         header = gtk_label_new (_("#zoitechat-preview"));
         gtk_widget_set_halign (header, GTK_ALIGN_START);
@@ -943,7 +941,8 @@ theme_preferences_create_color_manager_dialog (GtkWindow *parent, gboolean *colo
                 list_row = gtk_list_box_row_new ();
                 hbox = gtk_box_new (GTK_ORIENTATION_HORIZONTAL, 8);
                 fabulor_gtk_container_set_uniform_inset (hbox, 4);
-                gtk_container_add (GTK_CONTAINER (list_row), hbox);
+                fabulor_gtk_list_box_row_set_child (GTK_LIST_BOX_ROW (list_row),
+                        hbox);
 
                 display = theme_preferences_token_display_name (token);
                 name = gtk_label_new (display);
@@ -991,7 +990,7 @@ theme_preferences_create_color_manager_dialog (GtkWindow *parent, gboolean *colo
                 fabulor_gtk_widget_on_focus_leave (
                         entry, theme_preferences_manager_entry_focus_out_cb, row);
 
-                gtk_container_add (GTK_CONTAINER (list), list_row);
+                fabulor_gtk_list_box_append (GTK_LIST_BOX (list), list_row);
                 g_ptr_array_add (ui->rows, row);
                 g_free (display);
         }
@@ -1331,9 +1330,8 @@ theme_preferences_create_color_button (GtkWidget *table,
         but = gtk_button_new ();
         label = gtk_label_new (" ");
         gtk_label_set_markup (GTK_LABEL (label), buf);
-        box = gtk_event_box_new ();
-        gtk_event_box_set_visible_window (GTK_EVENT_BOX (box), TRUE);
-        gtk_container_add (GTK_CONTAINER (box), label);
+        box = fabulor_gtk_content_surface_new (TRUE);
+        fabulor_gtk_content_surface_set_child (box, label);
         fabulor_gtk_button_set_child (GTK_BUTTON (but), box);
         gtk_widget_set_halign (box, GTK_ALIGN_CENTER);
         gtk_widget_set_valign (box, GTK_ALIGN_CENTER);
