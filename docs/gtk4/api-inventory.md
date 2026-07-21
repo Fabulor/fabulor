@@ -981,6 +981,19 @@ improving from 191 to 183 warnings and from 72 to 69 repeated diagnostics.
 `dccgui.obj` contributes no remaining GTK4 warning or unresolved diagnostic;
 Preferences is the sole remaining caller of the retired radio-button family.
 
+Stage 8 Preferences grouped-choice pass 68 routes the Appearance page's Tabs
+and Tree switcher choices through the same typed grouped-control boundary. The
+blank layout slot continues to preserve the stored preference indices, while
+the first real control anchors the group and GTK4 activation dispatch stores
+the selected index without a retired toggle-button cast. GTK3 keeps native
+radio controls. Strict MSVC and Meson probes remain clean, and the complete
+GTK4 inventory retains zero compiler errors while improving from 183 to 178
+warnings, from 69 to 66 repeated diagnostics, and from 56 to 53 unique
+unresolved symbols. `gtk_radio_button_new_with_mnemonic`,
+`gtk_radio_button_get_group`, and `GTK_RADIO_BUTTON` are now contained entirely
+inside the GTK3 compatibility branch; no active frontend caller uses the
+retired radio-button family.
+
 ## Functional Clusters
 
 | Cluster | Main files | GTK4 concern | Status |

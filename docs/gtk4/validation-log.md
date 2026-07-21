@@ -5832,6 +5832,39 @@ remain mutually exclusive and immediately refresh the transfer list; GTK3
 retains native radio presentation. The Join dialog's Nothing choice also now
 retains its GTK3 default under GTK4. Packaging impact: none.
 
+### GTK4 Stage 8 Preferences Grouped Choice Controls
+
+Date: 2026-07-21
+
+Files/workflows converted: Preferences Appearance page switcher-type choice
+construction, initial selection, exclusive state, and preference dispatch.
+
+Automated evidence:
+
+- shipping MSVC GTK3 frontend rebuild: pass; zero warnings and zero errors
+- strict MSVC GTK4 probe against GTK 4.22.4 / GLib 2.88.0: compile, link, and
+  execution pass under `/W4 /WX`; zero warnings and zero errors
+- Meson MSVC GTK4 probe: compile, link, and execution pass
+- repository GTK4 Python validation: 28 tests pass
+- source audit: no active frontend source calls
+  `gtk_radio_button_new_with_mnemonic`, `gtk_radio_button_get_group`, or
+  `GTK_RADIO_BUTTON`; the names remain only in the GTK3 compatibility branch
+- clean isolated complete GTK4 frontend compilation: zero C compiler errors and
+  178 warnings, improved from 183 warnings
+- expected complete GTK4 link failure improves from 56 to 53 unique unresolved
+  symbols and from 69 to 66 repeated unresolved-symbol diagnostics
+- `setup.obj` now contributes one unrelated combo-box warning and one matching
+  unresolved diagnostic
+- inventory log:
+  `build/gtk4-full/preferences-choice-controls-pass68.log`
+- next target: Preferences ordinary check-button state access
+- `git diff --check`: pass
+
+Behavior contract: Tabs and Tree remain mutually exclusive, their stored
+indices remain 0 and 2 despite the intentionally blank list entry, and changing
+the choice immediately updates the staged Preferences value. GTK3 retains
+native radio presentation. Packaging impact: none.
+
 ## Build Matrix
 
 | Check | GTK3 shipping target | GTK4 candidate | Final GTK4 target |

@@ -1127,7 +1127,7 @@ setup_menu_cb (GtkWidget *cbox, const setting *set)
 static void
 setup_radio_cb (GtkWidget *item, const setting *set)
 {
-        if (gtk_toggle_button_get_active (GTK_TOGGLE_BUTTON (item)))
+        if (fabulor_gtk_check_button_get_active (item))
         {
                 int n = GPOINTER_TO_INT (g_object_get_data (G_OBJECT (item), "n"));
                 /* set the prefs.<field> */
@@ -1138,10 +1138,9 @@ setup_radio_cb (GtkWidget *item, const setting *set)
 static int
 setup_create_radio (GtkWidget *table, int row, const setting *set)
 {
-        GtkWidget *wid, *hbox;
+        GtkWidget *wid, *hbox, *group_member;
         int i;
         const char **text = (const char **)set->list;
-        GSList *group;
 
         wid = gtk_label_new (_(set->label));
         gtk_widget_set_halign (wid, GTK_ALIGN_START);
@@ -1155,19 +1154,21 @@ setup_create_radio (GtkWidget *table, int row, const setting *set)
                             SETUP_ALIGN_FILL, SETUP_ALIGN_FILL, 0, 0);
 
         i = 0;
-        group = NULL;
+        group_member = NULL;
         while (text[i])
         {
                 if (text[i][0] != 0)
                 {
-                        wid = gtk_radio_button_new_with_mnemonic (group, _(text[i]));
+                        wid = fabulor_gtk_radio_button_new_with_mnemonic (
+                                group_member, _(text[i]));
                         /*if (set->tooltip)
                                 gtk_widget_set_tooltip_text (wid, _(set->tooltip));*/
-                        group = gtk_radio_button_get_group (GTK_RADIO_BUTTON (wid));
+                        if (group_member == NULL)
+                                group_member = wid;
                         fabulor_gtk_box_append (GTK_BOX (hbox), wid,
                                 FALSE, TRUE, 0);
                         if (i == setup_get_int (&setup_prefs, set))
-                                gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (wid), TRUE);
+                                fabulor_gtk_check_button_set_active (wid, TRUE);
                         g_object_set_data (G_OBJECT (wid), "n", GINT_TO_POINTER (i));
                         g_signal_connect (G_OBJECT (wid), "toggled",
                                                                         G_CALLBACK (setup_radio_cb), (gpointer)set);
