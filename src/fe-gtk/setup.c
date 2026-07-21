@@ -1163,7 +1163,8 @@ setup_create_radio (GtkWidget *table, int row, const setting *set)
                         /*if (set->tooltip)
                                 gtk_widget_set_tooltip_text (wid, _(set->tooltip));*/
                         group = gtk_radio_button_get_group (GTK_RADIO_BUTTON (wid));
-                        gtk_container_add (GTK_CONTAINER (hbox), wid);
+                        fabulor_gtk_box_append (GTK_BOX (hbox), wid,
+                                FALSE, TRUE, 0);
                         if (i == setup_get_int (&setup_prefs, set))
                                 gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (wid), TRUE);
                         g_object_set_data (G_OBJECT (wid), "n", GINT_TO_POINTER (i));

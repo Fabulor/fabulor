@@ -881,6 +881,15 @@ insets. The complete GTK4 inventory improves from 73 to 72 unique unresolved
 symbols, from 144 to 121 repeated linker diagnostics, and from 278 to 255
 warnings while retaining zero C compiler errors.
 
+Stage 8 typed box-child attachment pass 59 routes confirmed box and button-box
+children through the existing cross-version box owner, and routes the channel
+tab viewport child through the typed scrolled-window owner. GTK3 preserves the
+original non-expanding, filling `gtk_container_add` placement. Event surfaces,
+list rows, legacy menus, lazy preference pages, and reparenting remain explicit
+follow-up ownership boundaries. The complete GTK4 inventory retains zero C
+compiler errors and 72 unique unresolved symbols while improving from 255 to
+245 warnings and from 121 to 111 repeated linker diagnostics.
+
 ## Functional Clusters
 
 | Cluster | Main files | GTK4 concern | Status |

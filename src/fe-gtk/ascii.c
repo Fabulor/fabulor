@@ -138,7 +138,7 @@ ascii_open (void)
 		{
 			table_pos++;
 			hbox = gtk_box_new (GTK_ORIENTATION_HORIZONTAL, 0);
-			gtk_container_add (GTK_CONTAINER (vbox), hbox);
+			fabulor_gtk_box_append (GTK_BOX (vbox), hbox, FALSE, TRUE, 0);
 			gtk_widget_show (hbox);
 			i++;
 			continue;
@@ -161,7 +161,7 @@ ascii_open (void)
 	}
 
 	frame = gtk_frame_new ("");
-	gtk_container_add (GTK_CONTAINER (hbox), frame);
+	fabulor_gtk_box_append (GTK_BOX (hbox), frame, FALSE, TRUE, 0);
 	fabulor_gtk_frame_set_child (GTK_FRAME (frame), label);
 	gtk_widget_show (label);
 	gtk_widget_show (frame);

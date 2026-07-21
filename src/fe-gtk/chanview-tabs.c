@@ -344,10 +344,10 @@ cv_tabs_init (chanview *cv)
 		NULL, g_free);
 	tabs->state->items = g_hash_table_new_full (g_direct_hash, g_direct_equal,
 		NULL, g_free);
-	gtk_container_add (GTK_CONTAINER (viewport), box);
+	fabulor_gtk_scrolled_window_set_child (GTK_SCROLLED_WINDOW (viewport), box);
 	gtk_widget_show (box);
 
-	gtk_container_add (GTK_CONTAINER (cv->box), outer);
+	fabulor_gtk_box_append (GTK_BOX (cv->box), outer, FALSE, TRUE, 0);
 }
 
 static void

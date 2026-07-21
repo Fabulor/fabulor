@@ -369,6 +369,7 @@ Detailed planning and evidence live in:
     - [x] Route entry text and width access through typed GTK3/GTK4 editable helpers.
     - [x] Replace GTK3 container border widths with tested uniform GTK4 content insets.
     - [ ] Complete channel-list and channel-view container/lifecycle cutover.
+      - [x] Route confirmed box, button-box, and channel-view scroller child attachment through typed GTK3/GTK4 owners.
     - [ ] Complete top-level window positioning, visibility, and lifecycle cutover.
       - [x] Contain removed placement hints, saved coordinates, and tray restore placement behind compositor-safe GTK3/GTK4 policy.
       - [x] Observe minimized, maximized, fullscreen, and focused top-level state through a typed GTK3/GTK4 boundary.

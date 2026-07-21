@@ -5559,6 +5559,34 @@ Behavior contract: all configured inset values and GTK3 container spacing are
 unchanged. GTK4 maps the same values to content margins and preserves requests
 made before top-level child ownership is established. Packaging impact: none.
 
+### GTK4 Stage 8 Typed Box-Child Attachment
+
+Date: 2026-07-21
+
+Files/workflows converted: ordinary box and button-box children in the ASCII
+palette, shared label/entry utility, plugin manager, preferences radio group,
+Server List controls, theme color page, channel tree, and channel tabs; channel
+tab viewport child ownership.
+
+Automated evidence:
+
+- shipping MSVC GTK3 frontend rebuild: pass; zero errors
+- strict MSVC GTK4 probe against GTK 4.22.4 / GLib 2.88.0: compile, link, and
+  execution pass under `/W4 /WX`; zero warnings and zero errors
+- clean isolated complete GTK4 frontend compilation: zero C compiler errors and
+  245 warnings, improved from 255 warnings
+- expected complete GTK4 link failure retains 72 unique unresolved symbols and
+  improves from 121 to 111 repeated unresolved-symbol diagnostics
+- 14 direct `gtk_container_add` calls remain in production and test sources;
+  they are event-surface, list-row/list-box, legacy menu, lazy-page, spell-menu,
+  and test-window ownership rather than ordinary box attachment
+- next target: typed event-surface and list ownership, followed by child removal
+- `git diff --check`: pass
+
+Behavior contract: GTK3 box placement remains non-expanding and filling, and
+the channel-tab viewport remains its child's sole owner. No event, menu, list,
+lazy-page, or reparenting behavior is changed. Packaging impact: none.
+
 ## Build Matrix
 
 | Check | GTK3 shipping target | GTK4 candidate | Final GTK4 target |

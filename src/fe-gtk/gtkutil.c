@@ -763,7 +763,7 @@ void
 gtkutil_label_new (char *text, GtkWidget * box)
 {
 	GtkWidget *label = gtk_label_new (text);
-	gtk_container_add (GTK_CONTAINER (box), label);
+	fabulor_gtk_box_append (GTK_BOX (box), label, FALSE, TRUE, 0);
 	gtk_widget_show (label);
 }
 
@@ -773,7 +773,7 @@ gtkutil_entry_new (int max, GtkWidget * box, void *callback,
 {
 	GtkWidget *entry = gtk_entry_new ();
 	gtk_entry_set_max_length (GTK_ENTRY (entry), max);
-	gtk_container_add (GTK_CONTAINER (box), entry);
+	fabulor_gtk_box_append (GTK_BOX (box), entry, FALSE, TRUE, 0);
 	if (callback)
 		g_signal_connect (G_OBJECT (entry), "changed",
 								G_CALLBACK (callback), userdata);

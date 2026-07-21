@@ -97,7 +97,7 @@ cv_tree_init (chanview *cv)
 	gtk_scrolled_window_set_policy (GTK_SCROLLED_WINDOW (win),
 		GTK_POLICY_NEVER, GTK_POLICY_AUTOMATIC);
 	gtk_scrolled_window_set_min_content_width (GTK_SCROLLED_WINDOW (win), 1);
-	gtk_container_add (GTK_CONTAINER (cv->box), win);
+	fabulor_gtk_box_append (GTK_BOX (cv->box), win, FALSE, TRUE, 0);
 	gtk_widget_show (win);
 
 	view = fabulor_channel_tree_view_new (cv->model, cv->use_icons,

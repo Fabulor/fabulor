@@ -2025,6 +2025,18 @@ errors and improves from 73 to 72 unique unresolved symbols, from 144 to 121
 repeated linker diagnostics, and from 278 to 255 warnings. Typed child
 attachment and removal are the next container-ownership target.
 
+Typed box-child attachment pass 59 (2026-07-21):
+confirmed ordinary box, button-box, channel-tree, and channel-tab outer
+attachments now use the typed cross-version box owner. The channel-tab viewport
+uses the typed scrolled-window child owner. GTK3 retains the legacy
+non-expanding, filling placement, while GTK4 establishes explicit single-owner
+child attachment. Shipping GTK3 and the strict GTK4 probe pass. The clean
+complete GTK4 profile retains zero compiler errors and 72 unique unresolved
+symbols, improves from 255 to 245 warnings, and reduces repeated unresolved
+diagnostics from 121 to 111. Event-surface and list-row attachment, generic lazy
+page ownership, legacy menu children, and reparent removal remain separate
+targets; typed event/list ownership is next.
+
 Deliverables:
 
 - Make GTK4 the only production frontend dependency in MSVC, Meson, and CI.
