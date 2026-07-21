@@ -5671,6 +5671,36 @@ Behavior contract: layout positions, hidden attachment, pane-divider settings,
 and temporary child lifetime are unchanged. GTK3 retains its resize and shrink
 flags; GTK4 uses explicit pane slots and grid removal. Packaging impact: none.
 
+### GTK4 Stage 8 Channel List Context Menu
+
+Date: 2026-07-21
+
+Files/workflows converted: Channel List row right-click menu, multi-selection
+Join and copy actions, first-selected-channel Autojoin, and popup lifetime.
+
+Automated evidence:
+
+- shipping MSVC GTK3 frontend rebuild: pass; zero errors
+- strict MSVC GTK4 probe against GTK 4.22.4 / GLib 2.88.0: compile, link, and
+  execution pass under `/W4 /WX`; zero warnings and zero errors
+- Meson MSVC GTK4 probe: compile, link, and execution pass
+- strict model checks: labels and actions project correctly; original channel
+  and topic arrays may be released before Join, both copy actions, and Autojoin
+  dispatch; Autojoin state toggles and both selected channels remain owned
+- clean isolated complete GTK4 frontend compilation: zero C compiler errors and
+  213 warnings, improved from 225 warnings
+- expected complete GTK4 link failure improves from 66 to 61 unique unresolved
+  symbols and from 97 to 87 repeated unresolved-symbol diagnostics
+- closed symbols: `gtk_container_add`, `GTK_MENU`, `gtk_menu_item_new`,
+  `gtk_menu_new`, and `gtk_menu_popup_at_pointer`
+- next target: Channel List button image and window lifecycle compatibility
+- `git diff --check`: pass
+
+Behavior contract: right-click selection, multi-channel joining, newline-
+separated channel/topic copying, icons, and Autojoin state are retained. GTK4
+actions use an owned selection snapshot; GTK3 behavior is unchanged. Packaging
+impact: one GTK4-only model source is added to frontend and probe build inputs.
+
 ## Build Matrix
 
 | Check | GTK3 shipping target | GTK4 candidate | Final GTK4 target |

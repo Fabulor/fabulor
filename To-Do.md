@@ -373,6 +373,7 @@ Detailed planning and evidence live in:
       - [x] Replace event-box wrappers and theme color-list attachment with typed content-surface and list owners.
       - [x] Give lazy Preferences pages explicit creation state and typed box ownership.
       - [x] Retain and detach movable channel/user layout children through typed pane and grid owners.
+      - [x] Replace the Channel List GTK3 popup with an owned GTK4 multi-selection action model and popover.
     - [ ] Complete top-level window positioning, visibility, and lifecycle cutover.
       - [x] Contain removed placement hints, saved coordinates, and tray restore placement behind compositor-safe GTK3/GTK4 policy.
       - [x] Observe minimized, maximized, fullscreen, and focused top-level state through a typed GTK3/GTK4 boundary.

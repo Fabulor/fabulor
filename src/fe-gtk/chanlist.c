@@ -39,12 +39,20 @@
 #include "../common/util.h"
 #include "../common/fe.h"
 #include "../common/server.h"
+#include "../common/servlist.h"
 #include "gtkutil.h"
 #include "gtk-compat.h"
 #include "maingui.h"
 #include "menu.h"
+#include "servlistgui.h"
 
 #include "channel-list.h"
+
+#if GTK_MAJOR_VERSION >= 4
+#include "channel-list-context-menu-model.h"
+#include "context-menu-presenter-gtk4.h"
+#include "menu-action-namespaces.h"
+#endif
 
 #define ICON_CHANLIST_JOIN "zc-menu-join"
 #define ICON_CHANLIST_COPY "zc-menu-copy"
@@ -135,6 +143,7 @@ chanlist_icon_button (const char *label, const char *icon_name,
 	return button;
 }
 
+#if GTK_MAJOR_VERSION < 4
 static GtkWidget *
 chanlist_icon_menu_item (const char *label, const char *icon_name,
 								 GCallback callback, gpointer userdata)
@@ -157,6 +166,7 @@ chanlist_icon_menu_item (const char *label, const char *icon_name,
 
 	return item;
 }
+#endif
 
 
 static gboolean
@@ -644,6 +654,7 @@ chanlist_maxusers (GtkSpinButton *wid, server *serv)
 		fe_message (_("Could not save fabulor.conf."), FE_MSG_WARN);
 }
 
+#if GTK_MAJOR_VERSION < 4
 static void
 chanlist_menu_destroy (GtkWidget *menu, gpointer userdata)
 {
@@ -704,14 +715,160 @@ chanlist_copytopic (GtkWidget *item, server *serv)
 	g_string_free (text, TRUE);
 	g_ptr_array_unref (selection);
 }
+#else
+#define FABULOR_CHANNEL_LIST_CONTEXT_POPUP \
+	"fabulor-channel-list-context-popup"
+
+typedef struct
+{
+	FabulorChannelListContextMenuModel *model;
+	FabulorContextMenuPresenterGtk4 *presenter;
+	server *serv;
+	GtkWidget *origin;
+} FabulorChannelListContextPopup;
+
+static void
+chanlist_context_popup_free (gpointer data)
+{
+	FabulorChannelListContextPopup *popup = data;
+
+	if (!popup)
+		return;
+	fabulor_context_menu_presenter_gtk4_free (popup->presenter);
+	fabulor_channel_list_context_menu_model_free (popup->model);
+	g_free (popup);
+}
+
+static char *
+chanlist_context_join_lines (const GPtrArray *values)
+{
+	GString *text = g_string_new ("");
+	guint i;
+
+	for (i = 0; values && i < values->len; i++)
+	{
+		if (text->len)
+			g_string_append_c (text, '\n');
+		g_string_append (text, g_ptr_array_index (values, i));
+	}
+	return g_string_free (text, FALSE);
+}
+
+static void
+chanlist_context_dispatch (FabulorChannelListContextAction action,
+	gboolean state, const GPtrArray *channels, const GPtrArray *topics,
+	gpointer user_data)
+{
+	FabulorChannelListContextPopup *popup = user_data;
+	guint i;
+
+	if (action == FABULOR_CHANNEL_LIST_CONTEXT_JOIN)
+	{
+		gboolean joined = FALSE;
+
+		for (i = 0; i < channels->len; i++)
+		{
+			const char *channel = g_ptr_array_index (channels, i);
+			char command[CHANLEN + 6];
+
+			if (popup->serv->connected && strcmp (channel, "*") != 0)
+			{
+				g_snprintf (command, sizeof command, "join %s", channel);
+				handle_command (popup->serv->server_session, command, FALSE);
+				joined = TRUE;
+			}
+		}
+		if (!joined && channels->len)
+			gdk_display_beep (gdk_display_get_default ());
+		return;
+	}
+	if (action == FABULOR_CHANNEL_LIST_CONTEXT_COPY_CHANNELS ||
+		action == FABULOR_CHANNEL_LIST_CONTEXT_COPY_TOPICS)
+	{
+		char *text = chanlist_context_join_lines (
+			action == FABULOR_CHANNEL_LIST_CONTEXT_COPY_CHANNELS ?
+			channels : topics);
+
+		if (*text)
+			gtkutil_copy_to_clipboard (popup->origin, text);
+		g_free (text);
+		return;
+	}
+	if (action == FABULOR_CHANNEL_LIST_CONTEXT_AUTOJOIN &&
+		popup->serv->network && channels->len)
+		servlist_autojoinedit (popup->serv->network,
+			g_ptr_array_index (channels, 0), state);
+}
+
+static gboolean
+chanlist_context_popup (server *serv, GtkWidget *origin, gdouble x, gdouble y)
+{
+	FabulorChannelListContextLabels labels = {
+		_("_Join Channel"), _("_Copy Channel Name"),
+		_("Copy _Topic Text"), _("Autojoin Channel"),
+		ICON_CHANLIST_JOIN, ICON_CHANLIST_COPY
+	};
+	FabulorChannelListContextPopup *popup;
+	GPtrArray *channels;
+	GPtrArray *topics;
+	gboolean has_network;
+	gboolean autojoin;
+
+	channels = fabulor_channel_list_dup_selected_text (
+		serv->gui->chanlist_model, FABULOR_CHANNEL_LIST_CHANNEL);
+	topics = fabulor_channel_list_dup_selected_text (
+		serv->gui->chanlist_model, FABULOR_CHANNEL_LIST_TOPIC);
+	if (!channels->len)
+	{
+		g_ptr_array_unref (topics);
+		g_ptr_array_unref (channels);
+		return FALSE;
+	}
+	has_network = serv->network != NULL;
+	autojoin = has_network && joinlist_is_in_list (serv,
+		g_ptr_array_index (channels, 0));
+	popup = g_new0 (FabulorChannelListContextPopup, 1);
+	popup->serv = serv;
+	popup->origin = origin;
+	popup->model = fabulor_channel_list_context_menu_model_new (channels,
+		topics, has_network, autojoin, &labels, chanlist_context_dispatch,
+		popup);
+	g_ptr_array_unref (topics);
+	g_ptr_array_unref (channels);
+	if (!popup->model)
+	{
+		chanlist_context_popup_free (popup);
+		return FALSE;
+	}
+	popup->presenter =
+		fabulor_context_menu_presenter_gtk4_new_with_namespaces (
+			fabulor_channel_list_context_menu_model_get_menu (popup->model),
+			FABULOR_CONTEXT_ACTION_NAMESPACE,
+			fabulor_channel_list_context_menu_model_get_actions (popup->model),
+			NULL, NULL);
+	if (!popup->presenter)
+	{
+		chanlist_context_popup_free (popup);
+		return FALSE;
+	}
+	g_object_set_data_full (G_OBJECT (origin),
+		FABULOR_CHANNEL_LIST_CONTEXT_POPUP, popup,
+		chanlist_context_popup_free);
+	return fabulor_context_menu_presenter_gtk4_popup_at (popup->presenter,
+		origin, x, y);
+}
+#endif
 
 static gboolean
 chanlist_button_cb (GtkWidget *view, guint button, guint n_press,
 	gdouble x, gdouble y, GdkModifierType state, gpointer data)
 {
 	server *serv = data;
+
+#if GTK_MAJOR_VERSION < 4
 	GtkWidget *menu;
 	char *chan;
+#endif
 
 	(void) view;
 	(void) n_press;
@@ -720,6 +877,9 @@ chanlist_button_cb (GtkWidget *view, guint button, guint n_press,
 		serv->gui->chanlist_model, x, y))
 		return FALSE;
 
+#if GTK_MAJOR_VERSION >= 4
+	return chanlist_context_popup (serv, view, x, y);
+#else
 	menu = gtk_menu_new ();
 	g_object_ref (menu);
 	g_object_ref_sink (menu);
@@ -750,6 +910,7 @@ chanlist_button_cb (GtkWidget *view, guint button, guint n_press,
 	gtk_menu_popup_at_pointer (GTK_MENU (menu), NULL);
 
 	return TRUE;
+#endif
 }
 
 static void

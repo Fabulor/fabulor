@@ -2075,6 +2075,21 @@ unresolved symbols. The GTK4 link boundary no longer contains
 `gtk_container_remove`, `gtk_paned_pack1`, or `gtk_paned_pack2`. Channel-list
 menu item construction is the next remaining generic child-ownership target.
 
+Channel List context-menu pass 63 (2026-07-21):
+right-clicking a selected Channel List row now snapshots every selected channel
+and topic into an owned GTK4 action model, then presents Join, Copy Channel
+Name, Copy Topic Text, and first-channel Autojoin through the shared popover.
+Action activation no longer reads the mutable live selection. GTK3 privately
+retains its icon menu, selection-done cleanup, and favorites callback. Strict
+MSVC and Meson probes release the original arrays before checking labels,
+action availability, all four dispatches, and Autojoin state. Shipping GTK3
+remains clean. The complete GTK4 profile retains zero compiler errors while
+improving from 225 to 213 warnings, from 97 to 87 repeated diagnostics, and from
+66 to 61 unique unresolved symbols. `gtk_container_add`, `GTK_MENU`,
+`gtk_menu_item_new`, `gtk_menu_new`, and `gtk_menu_popup_at_pointer` leave the
+GTK4 link boundary. Remaining Channel List button image and window lifecycle
+compatibility are the next contained target.
+
 Deliverables:
 
 - Make GTK4 the only production frontend dependency in MSVC, Meson, and CI.
