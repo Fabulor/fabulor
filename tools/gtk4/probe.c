@@ -160,6 +160,8 @@ check_compatibility_helper_signatures (void)
 		fabulor_gtk_check_button_get_active;
 	void (*volatile check_button_set_active) (GtkWidget *, gboolean) =
 		fabulor_gtk_check_button_set_active;
+	void (*volatile combo_box_set_single_column) (GtkComboBox *) =
+		fabulor_gtk_combo_box_set_single_column;
 	void (*volatile label_set_wrap) (GtkLabel *, gboolean) =
 		fabulor_gtk_label_set_wrap;
 	const gchar *(*volatile entry_get_text) (GtkEntry *) =
@@ -321,6 +323,7 @@ check_compatibility_helper_signatures (void)
 	(void) radio_button_new_with_mnemonic;
 	(void) check_button_get_active;
 	(void) check_button_set_active;
+	(void) combo_box_set_single_column;
 	(void) label_set_wrap;
 	(void) entry_get_text;
 	(void) entry_set_text;

@@ -1019,7 +1019,7 @@ setup_create_spin (GtkWidget *table, int row, const setting *set)
                 unit = gtk_combo_box_text_new ();
                 gtk_combo_box_text_append_text (GTK_COMBO_BOX_TEXT (unit), _("KiB/s"));
                 gtk_combo_box_text_append_text (GTK_COMBO_BOX_TEXT (unit), _("MiB/s"));
-                gtk_combo_box_set_wrap_width (GTK_COMBO_BOX (unit), 1);
+                fabulor_gtk_combo_box_set_single_column (GTK_COMBO_BOX (unit));
                 gtk_combo_box_set_active (GTK_COMBO_BOX (unit), use_mib ? 1 : 0);
                 data->unit = GTK_COMBO_BOX (unit);
 

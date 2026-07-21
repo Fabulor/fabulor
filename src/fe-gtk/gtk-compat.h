@@ -201,6 +201,19 @@ fabulor_gtk_check_button_set_active (GtkWidget *button, gboolean active)
 }
 
 static inline void
+fabulor_gtk_combo_box_set_single_column (GtkComboBox *combo_box)
+{
+	g_return_if_fail (GTK_IS_COMBO_BOX (combo_box));
+
+#if GTK_MAJOR_VERSION < 4
+	gtk_combo_box_set_wrap_width (combo_box, 1);
+#else
+	/* GTK4 combo popups already present their items in one column. */
+	(void) combo_box;
+#endif
+}
+
+static inline void
 fabulor_gtk_label_set_wrap (GtkLabel *label, gboolean wrap)
 {
 	g_return_if_fail (GTK_IS_LABEL (label));

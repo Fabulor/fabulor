@@ -5899,6 +5899,36 @@ retain their enabled state, mode-button placement still disables multi-line
 topics, and all three alert-event columns remain independent. Packaging impact:
 none.
 
+### GTK4 Stage 8 Preferences Combo Wrap Compatibility
+
+Date: 2026-07-21
+
+Files/workflows converted: DCC upload/download speed-unit selector popup
+presentation and the shared GTK3/GTK4 compatibility policy.
+
+Automated evidence:
+
+- shipping MSVC GTK3 frontend rebuild: pass; zero warnings and zero errors
+- strict MSVC GTK4 probe against GTK 4.22.4 / GLib 2.88.0: helper signature
+  compile, link, and execution pass under `/W4 /WX`; zero warnings and errors
+- Meson MSVC GTK4 probe: compile, link, and execution pass
+- repository GTK4 Python validation: 28 tests pass
+- source audit: `gtk_combo_box_set_wrap_width` remains only in the GTK3 branch
+  of `fabulor_gtk_combo_box_set_single_column`
+- clean isolated complete GTK4 frontend compilation: zero C compiler errors and
+  177 warnings, improved from 178 warnings
+- expected complete GTK4 link failure improves from 53 to 52 unique unresolved
+  symbols and from 66 to 65 repeated unresolved-symbol diagnostics
+- `setup.obj` has zero compiler warnings and zero unresolved diagnostics
+- inventory log: `build/gtk4-full/preferences-combo-wrap-pass70.log`
+- next target: remaining top-level visibility and lifecycle callbacks
+- `git diff --check`: pass
+
+Behavior contract: KiB/s and MiB/s remain a compact, single-column selector;
+the remembered unit, speed conversion, allowed range, and staged transfer-speed
+value remain unchanged. GTK4 uses its native popup layout. Packaging impact:
+none.
+
 ## Build Matrix
 
 | Check | GTK3 shipping target | GTK4 candidate | Final GTK4 target |
