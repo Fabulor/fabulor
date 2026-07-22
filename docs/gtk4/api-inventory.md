@@ -1180,6 +1180,18 @@ unresolved-symbol diagnostics. `gtk_window_iconify`,
 `gtk_window_set_urgency_hint`, `gtk_window_set_wmclass`, and
 `gtk_window_resize` leave the GTK4 link boundary.
 
+Stage 8 main-menu font pass 85 contains menu font application and theme-driven
+relayout across the toolkit boundary. GTK4 styles and queues the model-owned
+`GtkPopoverMenuBar` root, allowing its inherited CSS font and retained
+`GMenuModel` presentation to govern generated popovers without inspecting
+private children. GTK3 retains recursive menu-shell, item, and submenu styling
+and sizing. The full GTK4 inventory remains at zero compiler errors while
+improving from 106 to 96 warnings, from 18 to 14 unique unresolved symbols,
+and from 21 to 15 unresolved-symbol diagnostics. `GTK_IS_MENU_SHELL`,
+`GTK_IS_MENU_ITEM`, `GTK_MENU_ITEM`, and `gtk_menu_item_get_submenu` leave the
+GTK4 link boundary; the remaining container symbols belong to the separate
+legacy About-dialog layout.
+
 ## Functional Clusters
 
 | Cluster | Main files | GTK4 concern | Status |
