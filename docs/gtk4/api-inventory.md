@@ -1141,6 +1141,21 @@ warnings, from 29 to 26 unique unresolved symbols, and from 29 to 26 repeated
 diagnostics. `gtk_get_option_group`, `gtk_main`, and `gtk_main_quit` leave the
 GTK4 link boundary.
 
+Stage 8 Windows icon-theme bootstrap pass 82 moves default-theme acquisition,
+search-path extension, and explicit theme selection behind cross-version
+helpers. GTK4 resolves its theme from the default display, adds indexed icon
+roots, and selects Adwaita without an explicit rescan. It recognizes both the
+candidate `Runtime/GTK4/share/icons` layout and the older flattened
+`share/icons` layout. GTK3 preserves its default theme, append/rescan behavior,
+and Windows safeguard that rejects `hicolor/index.theme` roots known to crash
+that runtime. The strict probe verifies GTK4 path insertion and theme-name
+selection on an isolated theme object. The full GTK4 inventory remains at zero
+compiler errors while improving from 117 to 112 warnings and from 26 to 23
+unique and repeated unresolved diagnostics. `gtk_icon_theme_append_search_path`,
+`gtk_icon_theme_set_custom_theme`, and `gtk_icon_theme_rescan_if_needed` leave
+the GTK4 link boundary; one separate main-window `gtk_icon_theme_get_default`
+lookup remains.
+
 ## Functional Clusters
 
 | Cluster | Main files | GTK4 concern | Status |

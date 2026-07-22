@@ -553,8 +553,9 @@ win32_icon_path_has_payload (const char *path)
 }
 
 static gboolean
-win32_icon_path_is_gtk3_safe (const char *path)
+win32_icon_path_is_supported (const char *path)
 {
+#if GTK_MAJOR_VERSION < 4
 	char *index_theme;
 	gboolean has_index_theme;
 
@@ -567,6 +568,9 @@ win32_icon_path_is_gtk3_safe (const char *path)
 
 	/* The Windows GTK3 runtime can fail-fast while scanning a hicolor index.theme. */
 	return !has_index_theme;
+#else
+	return path && g_file_test (path, G_FILE_TEST_IS_DIR);
+#endif
 }
 
 static void
@@ -585,9 +589,9 @@ win32_configure_icon_theme (void)
 
 	#define WIN32_SET_ICON_PATH(source_name, path_value) \
 		G_STMT_START { \
-			if (win32_icon_path_is_gtk3_safe (path_value)) \
+			if (win32_icon_path_is_supported (path_value)) \
 			{ \
-				gtk_icon_theme_append_search_path (theme, (path_value)); \
+				fabulor_gtk_icon_theme_add_search_path (theme, (path_value)); \
 				if (selected_path == NULL) \
 				{ \
 					selected_source = (source_name); \
@@ -596,7 +600,7 @@ win32_configure_icon_theme (void)
 			} \
 		} G_STMT_END
 
-	theme = gtk_icon_theme_get_default ();
+	theme = fabulor_gtk_icon_theme_get_default ();
 	if (!theme)
 		return;
 
@@ -626,12 +630,21 @@ win32_configure_icon_theme (void)
 		WIN32_SET_ICON_PATH ("module base/share/icons", icons_path);
 		g_free (icons_path);
 
-		adwaita_index_theme = g_build_filename (base_path, "share", "icons", "Adwaita", "index.theme", NULL);
-		if (g_file_test (adwaita_index_theme, G_FILE_TEST_IS_REGULAR))
+#if GTK_MAJOR_VERSION >= 4
+		adwaita_index_theme = g_build_filename (base_path, "Runtime", "GTK4",
+			"share", "icons", "Adwaita", "index.theme", NULL);
+		if (!g_file_test (adwaita_index_theme, G_FILE_TEST_IS_REGULAR))
 		{
-			gtk_icon_theme_set_custom_theme (theme, "Adwaita");
-			gtk_icon_theme_rescan_if_needed (theme);
+			g_free (adwaita_index_theme);
+			adwaita_index_theme = g_build_filename (base_path, "share", "icons",
+				"Adwaita", "index.theme", NULL);
 		}
+#else
+		adwaita_index_theme = g_build_filename (base_path, "share", "icons",
+			"Adwaita", "index.theme", NULL);
+#endif
+		if (g_file_test (adwaita_index_theme, G_FILE_TEST_IS_REGULAR))
+			fabulor_gtk_icon_theme_set_name (theme, "Adwaita");
 		g_free (adwaita_index_theme);
 	}
 
@@ -659,7 +672,7 @@ win32_configure_icon_theme (void)
 	if (selected_path)
 		g_message ("win32_configure_icon_theme: selected icon path (%s): %s", selected_source, selected_path);
 	else
-		g_message ("win32_configure_icon_theme: no usable icon path found (checked ZOITECHAT_ICON_PATH, user config/icons, module base/icons, module base/share/icons, cwd/icons, cwd/share/icons, argv[0]/icons, argv[0]/share/icons)");
+		g_message ("win32_configure_icon_theme: no usable icon path found (checked ZOITECHAT_ICON_PATH, user config/icons, module base/Runtime/GTK4/share/icons, module base/icons, module base/share/icons, cwd/icons, cwd/share/icons, argv[0]/icons, argv[0]/share/icons)");
 
 	g_free (selected_path);
 	g_free (base_path);

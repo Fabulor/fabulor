@@ -146,6 +146,12 @@ fabulor_probe_xtext_widget_init (FabulorProbeXTextWidget *widget)
 static void
 check_compatibility_helper_signatures (void)
 {
+	GtkIconTheme *(*volatile icon_theme_get_default) (void) =
+		fabulor_gtk_icon_theme_get_default;
+	void (*volatile icon_theme_add_search_path) (GtkIconTheme *, const gchar *) =
+		fabulor_gtk_icon_theme_add_search_path;
+	void (*volatile icon_theme_set_name) (GtkIconTheme *, const gchar *) =
+		fabulor_gtk_icon_theme_set_name;
 	GtkWidget *(*volatile dialog_icon_new) (const gchar *) =
 		fabulor_gtk_dialog_icon_new;
 	gint (*volatile icon_size_get_pixels) (FabulorGtkIconSize) =
@@ -317,6 +323,9 @@ check_compatibility_helper_signatures (void)
 	void (*volatile dialog_destroy_on_response) (GtkDialog *, gint, gpointer) =
 		fabulor_gtk_dialog_destroy_on_response;
 
+	(void) icon_theme_get_default;
+	(void) icon_theme_add_search_path;
+	(void) icon_theme_set_name;
 	(void) dialog_icon_new;
 	(void) icon_size_get_pixels;
 	(void) image_new_from_icon_name;
@@ -445,6 +454,33 @@ check_icon_sizes (gboolean gtk_ready)
 	g_object_unref (toolbar_image);
 	g_object_unref (menu_image);
 	return valid;
+}
+
+static gboolean
+check_icon_theme_compatibility (gboolean gtk_ready)
+{
+	GtkIconTheme *theme = gtk_icon_theme_new ();
+	char **search_path;
+	char *theme_name;
+	gboolean found_path = FALSE;
+	gboolean passed;
+	guint i;
+
+	fabulor_gtk_icon_theme_add_search_path (theme, g_get_tmp_dir ());
+	fabulor_gtk_icon_theme_set_name (theme, "Adwaita");
+	search_path = gtk_icon_theme_get_search_path (theme);
+	theme_name = gtk_icon_theme_get_theme_name (theme);
+	for (i = 0; search_path && search_path[i]; i++)
+	{
+		if (g_strcmp0 (search_path[i], g_get_tmp_dir ()) == 0)
+			found_path = TRUE;
+	}
+	passed = found_path && g_strcmp0 (theme_name, "Adwaita") == 0 &&
+		(!gtk_ready || fabulor_gtk_icon_theme_get_default () != NULL);
+	g_strfreev (search_path);
+	g_free (theme_name);
+	g_object_unref (theme);
+	return passed;
 }
 
 static gboolean
@@ -5161,6 +5197,11 @@ main (void)
 	if (!check_icon_sizes (gtk_ready))
 	{
 		fprintf (stderr, "GTK4 icon size contract mismatch\n");
+		return 1;
+	}
+	if (!check_icon_theme_compatibility (gtk_ready))
+	{
+		fprintf (stderr, "GTK4 icon-theme compatibility mismatch\n");
 		return 1;
 	}
 	if (!check_button_box_layouts (gtk_ready))

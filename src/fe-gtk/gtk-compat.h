@@ -36,6 +36,47 @@ typedef enum
 	FABULOR_GTK_BUTTON_BOX_SPREAD
 } FabulorGtkButtonBoxLayout;
 
+static inline GtkIconTheme *
+fabulor_gtk_icon_theme_get_default (void)
+{
+#if GTK_MAJOR_VERSION >= 4
+	GdkDisplay *display = gdk_display_get_default ();
+
+	return display ? gtk_icon_theme_get_for_display (display) : NULL;
+#else
+	return gtk_icon_theme_get_default ();
+#endif
+}
+
+static inline void
+fabulor_gtk_icon_theme_add_search_path (GtkIconTheme *theme,
+	const gchar *path)
+{
+	g_return_if_fail (GTK_IS_ICON_THEME (theme));
+	g_return_if_fail (path != NULL);
+
+#if GTK_MAJOR_VERSION >= 4
+	gtk_icon_theme_add_search_path (theme, path);
+#else
+	gtk_icon_theme_append_search_path (theme, path);
+#endif
+}
+
+static inline void
+fabulor_gtk_icon_theme_set_name (GtkIconTheme *theme,
+	const gchar *theme_name)
+{
+	g_return_if_fail (GTK_IS_ICON_THEME (theme));
+	g_return_if_fail (theme_name != NULL);
+
+#if GTK_MAJOR_VERSION >= 4
+	gtk_icon_theme_set_theme_name (theme, theme_name);
+#else
+	gtk_icon_theme_set_custom_theme (theme, theme_name);
+	gtk_icon_theme_rescan_if_needed (theme);
+#endif
+}
+
 static inline GtkWidget *
 fabulor_gtk_button_box_new (GtkOrientation orientation,
 							FabulorGtkButtonBoxLayout layout,
