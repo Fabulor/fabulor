@@ -1204,6 +1204,18 @@ unresolved symbols, and from 15 to 14 unresolved-symbol diagnostics.
 `gtk_style_context_get` leaves the GTK4 link boundary, removing the final
 unresolved symbol from `maingui.c`.
 
+Stage 8 native save-dialog overwrite pass 87 moves the retired GTK3
+`gtk_file_chooser_set_do_overwrite_confirmation()` call behind the existing
+file-chooser compatibility boundary. GTK3 continues to apply the caller's
+explicit confirmation choice. GTK4 leaves confirmation to the native save
+dialog because its chooser API no longer exposes an application override;
+`FRF_NOASKOVERWRITE` remains accepted but cannot suppress platform-owned GTK4
+confirmation. Both strict probe systems compile and link the helper signature.
+The full GTK4 inventory remains at zero compiler errors while improving from
+95 to 94 warnings, from 13 to 12 unique unresolved symbols, and from 14 to 13
+unresolved-symbol diagnostics. The removed overwrite setter leaves the active
+GTK4 link boundary.
+
 ## Functional Clusters
 
 | Cluster | Main files | GTK4 concern | Status |

@@ -38,6 +38,20 @@ fabulor_gtk_file_chooser_set_local_only (GtkFileChooser *chooser,
 #endif
 }
 
+void
+fabulor_gtk_file_chooser_set_overwrite_confirmation (GtkFileChooser *chooser,
+	gboolean enabled)
+{
+	g_return_if_fail (GTK_IS_FILE_CHOOSER (chooser));
+
+#if GTK_MAJOR_VERSION >= 4
+	/* GTK4's native save dialog owns overwrite confirmation policy. */
+	(void) enabled;
+#else
+	gtk_file_chooser_set_do_overwrite_confirmation (chooser, enabled);
+#endif
+}
+
 gchar *
 fabulor_gtk_file_chooser_dup_filename (GtkFileChooser *chooser)
 {

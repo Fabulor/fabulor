@@ -180,6 +180,8 @@ check_compatibility_helper_signatures (void)
 	GtkWidget *(*volatile window_new) (void) = fabulor_gtk_window_new;
 	gboolean (*volatile file_chooser_set_current_folder_path) (GtkFileChooser *,
 		const gchar *) = fabulor_gtk_file_chooser_set_current_folder_path;
+	void (*volatile file_chooser_set_overwrite_confirmation) (GtkFileChooser *,
+		gboolean) = fabulor_gtk_file_chooser_set_overwrite_confirmation;
 	gchar *(*volatile file_chooser_dup_filename) (GtkFileChooser *) =
 		fabulor_gtk_file_chooser_dup_filename;
 	gchar *(*volatile file_chooser_dup_current_folder_path) (GtkFileChooser *) =
@@ -350,6 +352,7 @@ check_compatibility_helper_signatures (void)
 	(void) entry_set_width_chars;
 	(void) window_new;
 	(void) file_chooser_set_current_folder_path;
+	(void) file_chooser_set_overwrite_confirmation;
 	(void) file_chooser_dup_filename;
 	(void) file_chooser_dup_current_folder_path;
 	(void) file_chooser_dup_filenames;

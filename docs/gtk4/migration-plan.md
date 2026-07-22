@@ -2399,6 +2399,18 @@ compiler errors while improving from 96 to 95 warnings, from 14 to 13 unique
 unresolved symbols, and from 15 to 14 unresolved-symbol diagnostics. Native
 save-dialog overwrite confirmation is the next contained target.
 
+Native save-dialog overwrite pass 87 (2026-07-22):
+save requests now route their overwrite-confirmation preference through the
+shared file-chooser compatibility boundary. GTK3 retains the existing explicit
+toggle. GTK4 follows the native dialog's platform-owned confirmation policy
+because the toolkit removed the application override; the retained
+`FRF_NOASKOVERWRITE` flag therefore cannot suppress a GTK4-native prompt.
+Shipping GTK3, strict MSVC and fresh Meson GTK4 probes, and all 28 repository
+tests remain clean. The complete GTK4 profile remains at zero compiler errors
+while improving from 95 to 94 warnings, from 13 to 12 unique unresolved
+symbols, and from 14 to 13 unresolved-symbol diagnostics. Shared widget
+destruction is the next contained target.
+
 Deliverables:
 
 - Make GTK4 the only production frontend dependency in MSVC, Meson, and CI.
