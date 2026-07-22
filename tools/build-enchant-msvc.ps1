@@ -68,9 +68,14 @@ Copy-Item -Force -LiteralPath (Join-Path $install 'share\enchant-2\enchant.order
 $smokeConfig = Join-Path $WorkRoot 'smoke-config'
 New-Item -ItemType Directory -Force -Path $smokeConfig | Out-Null
 $env:XDG_CONFIG_HOME = $smokeConfig
-$env:PATH = "$StageRoot;$env:PATH"
-& (Join-Path $install 'enchant_smoke.exe')
-if ($LASTEXITCODE -ne 0) { throw "Enchant smoke test failed with exit code $LASTEXITCODE." }
+$originalPath = $env:PATH
+try {
+    $env:PATH = "$StageRoot;$(Join-Path $GtkRoot 'bin');$originalPath"
+    & (Join-Path $install 'enchant_smoke.exe')
+    if ($LASTEXITCODE -ne 0) { throw "Enchant smoke test failed with exit code $LASTEXITCODE." }
+} finally {
+    $env:PATH = $originalPath
+}
 
 Get-FileHash -Algorithm SHA256 -LiteralPath `
     (Join-Path $StageRoot 'libenchant-2-2.dll'), `

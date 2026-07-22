@@ -142,6 +142,15 @@ against a reconstructed installed layout so the packaged launcher remains
 system-only and the frontend resolves only reviewed runtime, OpenSSL, and
 Windows imports.
 
+Stage 8 pass 93 expands only that side-by-side candidate with the native
+extension set proven against the final GTK4-era dependency root. The exact
+contract now contains six autoload plugins, WinRT notifications, WinSparkle,
+Enchant 2.8.19 core, WinSpell provider, and Enchant ordering data. The extension
+validator checks required imports, ownership, and fourteen dependency edges and
+rejects GTK3 or unresolved imports. MSI extraction now enforces 1,447 exact
+files and repeats the extension graph validation against packaged bytes.
+Shipping GTK3 WiX composition remains unchanged.
+
 ## Sources And Provenance
 
 Windows CI currently downloads both GTK3 and GTK4 archives from the

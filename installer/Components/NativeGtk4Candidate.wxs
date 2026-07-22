@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">
+  <Fragment>
+    <ComponentGroup Id="Gtk4CandidatePluginComponents" Directory="PLUGINDIR">
+      <Files Include="$(var.Gtk4FrontendRoot)\plugins\hcnotifications-winrt.dll" />
+      <Files Include="$(var.Gtk4FrontendRoot)\plugins\hcchecksum.dll" />
+      <Files Include="$(var.Gtk4FrontendRoot)\plugins\hcexec.dll" />
+      <Files Include="$(var.Gtk4FrontendRoot)\plugins\hcfishlim.dll" />
+      <Files Include="$(var.Gtk4FrontendRoot)\plugins\hcsysinfo.dll" />
+      <Files Include="$(var.Gtk4FrontendRoot)\plugins\hcupd.dll" />
+    </ComponentGroup>
+
+    <ComponentGroup Id="Gtk4CandidateNativeRootComponents" Directory="INSTALLFOLDER">
+      <Files Include="$(var.FabulorPayloadRoot)\WinSparkle.dll" />
+      <Files Include="$(var.Gtk4EnchantRoot)\libenchant-2-2.dll" />
+    </ComponentGroup>
+
+    <ComponentGroup Id="Gtk4CandidateEnchantProviderComponents" Directory="LIBENCHANT2DIR">
+      <Files Include="$(var.Gtk4EnchantRoot)\lib\enchant-2\enchant_winspell.dll" />
+    </ComponentGroup>
+
+    <ComponentGroup Id="Gtk4CandidateEnchantDataComponents" Directory="SHAREENCHANT2DIR">
+      <Files Include="$(var.Gtk4EnchantRoot)\share\enchant-2\enchant.ordering" />
+    </ComponentGroup>
+  </Fragment>
+</Wix>

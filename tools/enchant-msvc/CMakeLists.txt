@@ -13,10 +13,34 @@ file(TO_CMAKE_PATH "${GTK_ROOT}" GTK_ROOT)
 set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreadedDLL")
 set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
 
+set(enchant_composite_source "${ENCHANT_SOURCE_DIR}/lib/composite.c")
+file(READ "${enchant_composite_source}" enchant_composite_content)
+set(enchant_composite_assignment "_tmp21_ = _tmp20_;")
+string(FIND "${enchant_composite_content}" "${enchant_composite_assignment}"
+  enchant_composite_assignment_offset)
+if(enchant_composite_assignment_offset EQUAL -1)
+  message(FATAL_ERROR "Enchant composite.c no longer matches the reviewed MSVC compatibility rewrite")
+endif()
+string(LENGTH "${enchant_composite_assignment}" enchant_composite_assignment_length)
+math(EXPR enchant_composite_tail_offset
+  "${enchant_composite_assignment_offset} + ${enchant_composite_assignment_length}")
+string(SUBSTRING "${enchant_composite_content}" ${enchant_composite_tail_offset} -1
+  enchant_composite_tail)
+string(FIND "${enchant_composite_tail}" "${enchant_composite_assignment}"
+  enchant_composite_second_assignment_offset)
+if(NOT enchant_composite_second_assignment_offset EQUAL -1)
+  message(FATAL_ERROR "Enchant composite.c contains multiple reviewed compatibility assignments")
+endif()
+string(REPLACE "${enchant_composite_assignment}"
+  "_tmp21_ = (gchar**) _tmp20_;"
+  enchant_composite_content "${enchant_composite_content}")
+set(enchant_composite_source "${CMAKE_CURRENT_BINARY_DIR}/composite-msvc.c")
+file(WRITE "${enchant_composite_source}" "${enchant_composite_content}")
+
 set(enchant_sources
   "${ENCHANT_SOURCE_DIR}/lib/api.c"
   "${ENCHANT_SOURCE_DIR}/lib/broker.c"
-  "${ENCHANT_SOURCE_DIR}/lib/composite.c"
+  "${enchant_composite_source}"
   "${ENCHANT_SOURCE_DIR}/lib/dict.c"
   "${ENCHANT_SOURCE_DIR}/lib/provider.c"
   "${ENCHANT_SOURCE_DIR}/lib/provider-dict.c"

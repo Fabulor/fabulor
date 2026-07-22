@@ -7010,6 +7010,58 @@ change, legacy GTK import, unresolved native import, or missing frontend export.
 Native plugin and Enchant compatibility remains required before those features
 can enter the GTK4 candidate package.
 
+### GTK4 Stage 8 Native Extension Compatibility
+
+Date: 2026-07-22
+
+Files/workflows converted: isolated native-extension build ownership, FiSHLiM
+key-manager GTK4 UI, Enchant/WinSpell final-runtime rebuild, executable-relative
+Windows plugin discovery, native import contract, candidate WiX composition,
+and expanded exact-package validation.
+
+Automated evidence:
+
+- full shipping MSVC x64 solution rebuild: pass; production frontend and all
+  native plugins build, and 18 manifest/path tests pass
+- isolated GTK4 native extension build: eight projects pass; checksum, Exec,
+  FiSHLiM, Lua, Python, SysInfo, updater, and WinRT notifications build against
+  the final GTK4 library root
+- FiSHLiM retained GTK3 branch: isolated rebuild pass
+- FiSHLiM GTK4 PE audit: imports `gtk-4-1.dll`; no GTK3 import
+- Enchant 2.8.19 and WinSpell final-runtime rebuild: pass; personal dictionary
+  smoke pass
+- Enchant core SHA-256:
+  `F6B26865B1DB04ACC96F8BACA853D2CBDFA818EC0A363BCA95FC1677CD7E6EAC`
+- WinSpell provider SHA-256:
+  `381DFAF94A38E4D4193E4E47199DEC3F6D2E175BB6820842A3F8D2CD6C3B3380`
+- native extension validator: nine modules, one data file, and fourteen owned
+  import edges pass; required-import, GTK3, unresolved-import, and ownership
+  failures are covered by four focused tests
+- complete `tools/gtk4` Python validation: 43 tests pass
+- candidate WiX rebuild with full ICE validation: pass; zero warnings and zero
+  errors
+- extracted candidate: exactly 1,447 files; all sizes and SHA-256 hashes pass
+- packaged launcher imports: nine reviewed system modules
+- packaged frontend imports: 31 resolved runtime/application/system modules
+- packaged extension graph: nine modules, one data file, fourteen owned edges
+- candidate MSI: 32,299,852 bytes; SHA-256
+  `8A2240556091F10786860D8BEBA59AC4AD4EE2864695619A7A9D9FD5182BE8FC`
+
+Controlled smoke evidence:
+
+- launched the exact extracted candidate from `C:\Windows` with an isolated
+  profile and local refused URL session so native autoload was exercised
+- responsive `Fabulor` window remained active during module inspection
+- checksum, Exec, FiSHLiM, updater, SysInfo, WinRT notifications, WinSparkle,
+  Enchant core, and WinSpell provider all loaded from the candidate root
+- normal window close returned exit code 0
+
+Behavior contract: candidate native code must resolve only through its explicit
+application, runtime, and reviewed Windows ownership roots. Windows autoload
+must use the executable-relative plugin directory unless the explicit
+development-runtime gate permits an override. Shipping GTK3 output and product
+composition remain unchanged.
+
 ## Stage Completion Rule
 
 A stage can move to complete in `migration-plan.md` only when:

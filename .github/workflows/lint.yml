@@ -210,6 +210,7 @@ jobs:
           python tools/gtk4/test_validate_runtime_msi.py
           python tools/gtk4/test_validate_runtime_imports.py
           python tools/gtk4/test_frontend_runtime_bootstrap.py
+          python tools/gtk4/test_validate_native_extensions.py
           python tools/gtk4/test_validate_frontend_candidate_msi.py
           python tools/validate_theme_contract.py
           python tools/test_validate_theme_contract.py
