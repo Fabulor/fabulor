@@ -6557,6 +6557,47 @@ the established environment, user, module, working-directory, and argv search
 sources. GTK4 accepts standard indexed themes and uses display ownership; GTK3
 retains its defensive indexed-theme rejection unchanged.
 
+### GTK4 Stage 8 Main-Window Icon-Theme Lookup
+
+Date: 2026-07-22
+
+Files/workflows converted: edit-box emoji access icon theme lookup and packaged
+fallback selection.
+
+Automated evidence:
+
+- clean shipping MSVC GTK3 frontend rebuild: pass; zero warnings and errors
+- strict MSVC GTK4 probe against GTK 4.22.4 / GLib 2.88.0: build and execution
+  pass under `/W4 /WX`; zero warnings and errors
+- fresh Meson/Ninja MSVC GTK4 probe: clean configure, build, and execution pass
+- repository GTK4 Python validation: 28 tests pass
+- source audit: the main-window icon lookup uses the cross-version
+  display-owned default-theme helper
+- source audit: candidate icon order and packaged `icon-resolver` fallback are
+  unchanged
+- clean isolated complete GTK4 frontend compilation: zero C compiler errors
+  and 110 warnings, down from 112 in pass 82
+- expected complete GTK4 link failure improves from 23 to 22 unique unresolved
+  symbols and from 23 to 22 repeated unresolved-symbol diagnostics
+- no active `gtk_icon_theme_get_default` reference occurs in the complete GTK4
+  build inventory
+- inventory log: `build/gtk4-full/main-window-icon-theme-lookup-pass83.log`
+- next target: GTK4 window-operation boundary
+- `git diff --check`: pass
+
+Manual checks deferred until the full GTK4 frontend links:
+
+- [ ] confirm the edit-box emoji access icon appears from the active GTK4 theme
+- [ ] remove the themed candidate and confirm the packaged fallback still
+  appears
+- [ ] activate the icon and confirm the emoji picker opens at the edit box
+- [ ] switch GTK4 themes and confirm icon availability follows the display
+  theme without changing picker behavior
+
+Behavior contract: the first available themed emoji icon remains preferred,
+with the packaged resolver as fallback. GTK4 obtains availability from its
+display-owned icon theme; GTK3 lookup and all entry interactions are unchanged.
+
 ## Stage Completion Rule
 
 A stage can move to complete in `migration-plan.md` only when:

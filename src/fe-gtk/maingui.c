@@ -5500,7 +5500,7 @@ mg_find_available_icon_name (const char *const *icon_names)
         GtkIconTheme *theme;
         int i;
 
-        theme = gtk_icon_theme_get_default ();
+        theme = fabulor_gtk_icon_theme_get_default ();
         if (!theme || !icon_names)
                 return NULL;
 
