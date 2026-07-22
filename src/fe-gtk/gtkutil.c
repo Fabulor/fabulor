@@ -523,7 +523,10 @@ gtkutil_destroy_on_esc (GtkWidget *win)
 void
 gtkutil_destroy (GtkWidget * igad, GtkWidget * dgad)
 {
-	gtk_widget_destroy (dgad);
+	(void) igad;
+	g_return_if_fail (GTK_IS_WINDOW (dgad));
+
+	fabulor_gtk_window_destroy (GTK_WINDOW (dgad));
 }
 
 static void

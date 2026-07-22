@@ -1216,6 +1216,17 @@ The full GTK4 inventory remains at zero compiler errors while improving from
 unresolved-symbol diagnostics. The removed overwrite setter leaves the active
 GTK4 link boundary.
 
+Stage 8 widget-destruction pass 88 routes Preferences cancellation and About
+dialog closure through the typed top-level window helper, while removal of the
+About dialog's generated action buttons uses the typed box-child helper. GTK4
+therefore destroys owned windows with `gtk_window_destroy()` and detaches owned
+children from their parent; GTK3 preserves its existing widget-destruction
+behavior. The full GTK4 inventory remains at zero compiler errors while
+improving from 94 to 93 warnings, from 12 to 11 unique unresolved symbols, and
+from 13 to 11 unresolved-symbol diagnostics. `gtk_widget_destroy` leaves the
+active GTK4 link boundary; remaining raw calls are confined to GTK3-only menu
+and adapter code.
+
 ## Functional Clusters
 
 | Cluster | Main files | GTK4 concern | Status |

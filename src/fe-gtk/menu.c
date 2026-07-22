@@ -2679,7 +2679,7 @@ about_dialog_response (GtkDialog *dialog, int response, gpointer data)
 		fe_open_url ("https://www.gnu.org/licenses/old-licenses/gpl-2.0.html");
 		return;
 	}
-	gtk_widget_destroy (GTK_WIDGET(dialog));
+	fabulor_gtk_window_destroy (GTK_WINDOW (dialog));
 }
 
 static gboolean
@@ -2730,7 +2730,8 @@ menu_about (GtkWidget *wid, gpointer sess)
 	actions = gtk_dialog_get_action_area (GTK_DIALOG (dialog));
 	children = gtk_container_get_children (GTK_CONTAINER (actions));
 	for (child = children; child; child = child->next)
-		gtk_widget_destroy (GTK_WIDGET (child->data));
+		fabulor_gtk_box_remove_child (GTK_BOX (actions),
+			GTK_WIDGET (child->data));
 	g_list_free (children);
 	website = gtk_dialog_add_button (GTK_DIALOG (dialog), "Website", GTK_RESPONSE_HELP);
 	license = gtk_dialog_add_button (GTK_DIALOG (dialog), "License", GTK_RESPONSE_APPLY);
