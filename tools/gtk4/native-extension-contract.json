@@ -22,6 +22,11 @@
       "required_imports": ["gtk-4-1.dll", "libcrypto-3-x64.dll"]
     },
     {
+      "path": "plugins/hcpython3.dll",
+      "source": "plugins",
+      "required_imports": ["python314.dll"]
+    },
+    {
       "path": "plugins/hcsysinfo.dll",
       "source": "plugins",
       "required_imports": ["glib-2.0-0.dll"]
@@ -55,6 +60,7 @@
   ],
   "application_imports": [
     "libcrypto-3-x64.dll",
-    "libssl-3-x64.dll"
+    "libssl-3-x64.dll",
+    "python314.dll"
   ]
 }

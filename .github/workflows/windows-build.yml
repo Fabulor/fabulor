@@ -34,7 +34,9 @@ jobs:
 
       - uses: actions/setup-dotnet@v5
         with:
-          dotnet-version: '10.0.x'
+          dotnet-version: |
+            10.0.x
+            8.0.423
 
       - name: Install WiX payload prerequisites
         run: |
@@ -159,7 +161,14 @@ jobs:
 
           $repoPy314Root = Join-Path $env:GITHUB_WORKSPACE 'Runtime\Python314'
           if (Test-Path $repoPy314Root) { Remove-Item $repoPy314Root -Recurse -Force }
-          New-Item -ItemType Junction -Path $repoPy314Root -Value $pyRoot | Out-Null
+          $pythonEmbed = Join-Path $env:GITHUB_WORKSPACE 'deps\python-3.14.3-embed-amd64.zip'
+          Download-WithRetry -Url https://www.python.org/ftp/python/3.14.3/python-3.14.3-embed-amd64.zip -OutFile $pythonEmbed
+          $pythonEmbedHash = (Get-FileHash -Algorithm SHA256 $pythonEmbed).Hash.ToLowerInvariant()
+          if ($pythonEmbedHash -ne 'ad4961a479dedbeb7c7d113253f8db1b1935586b73c27488712beec4f2c894e6') {
+            throw "Python 3.14.3 embeddable package hash mismatch: $pythonEmbedHash"
+          }
+          New-Item -ItemType Directory -Path $repoPy314Root -Force | Out-Null
+          Expand-Archive -LiteralPath $pythonEmbed -DestinationPath $repoPy314Root -Force
 
       - name: Build WiX payload and installer
         env:
@@ -238,6 +247,10 @@ jobs:
           python tools\gtk4\validate_native_extensions.py --plugins-root "%GITHUB_WORKSPACE%\build\gtk4-full\x64\rel\plugins" --payload-root "%FABULOR_STAGE%" --enchant-root "%GTK4_ENCHANT_ROOT%" --runtime-root "%GTK4_CANDIDATE_ROOT%\Runtime\GTK4" --dumpbin dumpbin
           if errorlevel 1 exit /b 1
 
+          rem Materialize the managed host before WiX evaluates its exact file inputs.
+          dotnet build src\managed\Fabulor.PluginHost\Fabulor.PluginHost.csproj -c Release /p:Platform=${{ matrix.platform }} /verbosity:minimal
+          if errorlevel 1 exit /b 1
+
           rem Publish artefacts from the WiX v4 installer surface only.
           dotnet build installer\Fabulor.wixproj -c Release /p:Platform=${{ matrix.platform }} /p:GtkRuntimeRoot="%GTK4_CANDIDATE_ROOT%\Runtime\GTK4" /verbosity:minimal
           if errorlevel 1 exit /b 1
@@ -248,11 +261,15 @@ jobs:
 
           rem Build the isolated GTK4 frontend candidate without changing the shipping product.
           set "GTK4_FRONTEND_MSI_ROOT=%GITHUB_WORKSPACE%\build\gtk4-frontend-candidate-installer"
-          dotnet build installer\Fabulor.wixproj -c Release /p:Platform=${{ matrix.platform }} /p:Gtk4FrontendCandidate=true /p:Gtk4FrontendRoot="%GITHUB_WORKSPACE%\build\gtk4-full\x64\rel" /p:Gtk4EnchantRoot="%GTK4_ENCHANT_ROOT%" /p:GtkRuntimeRoot="%GTK4_CANDIDATE_ROOT%\Runtime\GTK4" /p:FabulorPayloadRoot="%FABULOR_STAGE%" /p:FabulorInstallerOutputPath="%GTK4_FRONTEND_MSI_ROOT%" /p:FabulorInstallerIntermediateOutputPath="%GITHUB_WORKSPACE%\build\gtk4-frontend-candidate-installer-obj" /verbosity:minimal
+          set "GTK4_PLUGIN_HOST_ROOT=%GITHUB_WORKSPACE%\build\gtk4-plugin-host-candidate-root"
+          python tools\gtk4\stage_plugin_hosts.py --dotnet-root "%ProgramFiles%\dotnet" --managed-root "%GITHUB_WORKSPACE%\src\managed\Fabulor.PluginHost\bin\${{ matrix.platform }}\Release\net8.0" --payload-root "%FABULOR_STAGE%" --python-root "%GITHUB_WORKSPACE%\Runtime\Python314" --tcl-root "%GITHUB_WORKSPACE%\Runtime\Tcl" --output "%GTK4_PLUGIN_HOST_ROOT%"
+          if errorlevel 1 exit /b 1
+
+          dotnet build installer\Fabulor.wixproj -c Release /p:Platform=${{ matrix.platform }} /p:Gtk4FrontendCandidate=true /p:Gtk4FrontendRoot="%GITHUB_WORKSPACE%\build\gtk4-full\x64\rel" /p:Gtk4EnchantRoot="%GTK4_ENCHANT_ROOT%" /p:Gtk4PluginHostRoot="%GTK4_PLUGIN_HOST_ROOT%" /p:GtkRuntimeRoot="%GTK4_CANDIDATE_ROOT%\Runtime\GTK4" /p:FabulorPayloadRoot="%FABULOR_STAGE%" /p:FabulorInstallerOutputPath="%GTK4_FRONTEND_MSI_ROOT%" /p:FabulorInstallerIntermediateOutputPath="%GITHUB_WORKSPACE%\build\gtk4-frontend-candidate-installer-obj" /verbosity:minimal
           if errorlevel 1 exit /b 1
 
           rem Verify the identity, exact extracted content, hashes, and PE boundary of the candidate artifact.
-          python tools\gtk4\validate_frontend_candidate_msi.py --wix "%USERPROFILE%\.nuget\packages\wixtoolset.sdk\7.0.0\tools\net472\x64\wix.exe" --msi "%GTK4_FRONTEND_MSI_ROOT%\FabulorGtk4FrontendCandidate.msi" --manifest "%GTK4_CANDIDATE_ROOT%\Runtime\GTK4\runtime-manifest.json" --frontend-root "%GITHUB_WORKSPACE%\build\gtk4-full\x64\rel" --payload-root "%FABULOR_STAGE%" --enchant-root "%GTK4_ENCHANT_ROOT%" --dumpbin dumpbin
+          python tools\gtk4\validate_frontend_candidate_msi.py --wix "%USERPROFILE%\.nuget\packages\wixtoolset.sdk\7.0.0\tools\net472\x64\wix.exe" --msi "%GTK4_FRONTEND_MSI_ROOT%\FabulorGtk4FrontendCandidate.msi" --manifest "%GTK4_CANDIDATE_ROOT%\Runtime\GTK4\runtime-manifest.json" --frontend-root "%GITHUB_WORKSPACE%\build\gtk4-full\x64\rel" --payload-root "%FABULOR_STAGE%" --enchant-root "%GTK4_ENCHANT_ROOT%" --plugin-host-root "%GTK4_PLUGIN_HOST_ROOT%" --dumpbin dumpbin
           if errorlevel 1 exit /b 1
         shell: cmd
 

@@ -1,0 +1,74 @@
+{
+  "schema_version": 1,
+  "platform": "windows",
+  "architecture": "x64",
+  "dotnet_runtime_version": "8.0.29",
+  "entries": [
+    {
+      "source": "managed",
+      "path": "Fabulor.PluginAbstractions.dll",
+      "destination": "Runtime/DotNet/Fabulor.PluginAbstractions.dll",
+      "kind": "file"
+    },
+    {
+      "source": "managed",
+      "path": "Fabulor.PluginHost.deps.json",
+      "destination": "Runtime/DotNet/Fabulor.PluginHost.deps.json",
+      "kind": "file"
+    },
+    {
+      "source": "managed",
+      "path": "Fabulor.PluginHost.dll",
+      "destination": "Runtime/DotNet/Fabulor.PluginHost.dll",
+      "kind": "file"
+    },
+    {
+      "source": "managed",
+      "path": "Fabulor.PluginHost.runtimeconfig.json",
+      "destination": "Runtime/DotNet/Fabulor.PluginHost.runtimeconfig.json",
+      "kind": "file"
+    },
+    {
+      "source": "dotnet",
+      "path": "host/fxr/{dotnet_runtime_version}",
+      "destination": "Runtime/DotNet/host/fxr/{dotnet_runtime_version}",
+      "kind": "tree"
+    },
+    {
+      "source": "dotnet",
+      "path": "shared/Microsoft.NETCore.App/{dotnet_runtime_version}",
+      "destination": "Runtime/DotNet/shared/Microsoft.NETCore.App/{dotnet_runtime_version}",
+      "kind": "tree"
+    },
+    {
+      "source": "payload",
+      "path": "_cffi_backend.*.pyd",
+      "destination": "Runtime/Python314",
+      "kind": "single_glob"
+    },
+    {
+      "source": "payload",
+      "path": "python",
+      "destination": "python",
+      "kind": "tree"
+    },
+    {
+      "source": "python",
+      "path": ".",
+      "destination": "Runtime/Python314",
+      "kind": "tree"
+    },
+    {
+      "source": "tcl",
+      "path": "bin",
+      "destination": "Runtime/Tcl/bin",
+      "kind": "tree"
+    },
+    {
+      "source": "tcl",
+      "path": "lib",
+      "destination": "Runtime/Tcl/lib",
+      "kind": "tree"
+    }
+  ]
+}

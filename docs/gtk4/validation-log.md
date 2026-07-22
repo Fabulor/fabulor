@@ -7062,6 +7062,51 @@ must use the executable-relative plugin directory unless the explicit
 development-runtime gate permits an override. Shipping GTK3 output and product
 composition remain unchanged.
 
+### GTK4 Stage 8 Plugin Host Parity
+
+Date: 2026-07-22
+
+Files/workflows converted: exact C#/Python/Tcl host staging, candidate WiX
+composition, extracted-byte validation, CI runtime provisioning, and uniform
+successful manifest-plugin startup reporting.
+
+Automated evidence:
+
+- plugin-host staging tests: six pass
+- complete `tools/gtk4` Python validation: 50 tests pass
+- plugin-host manifest: 5,821 files, 199,443,761 bytes, .NET 8.0.29; SHA-256
+  `FBDC8221E3CC959A9F353E09812212B13B53A8D8808093B36B06AC836CE401DD`
+- isolated GTK4 full-profile rebuild: pass; zero compiler errors and the
+  previously recorded compatibility-warning inventory
+- candidate WiX full ICE build: pass; zero warnings and zero errors
+- extracted candidate: exactly 7,270 files; all sizes and SHA-256 hashes pass
+- packaged native graph: ten modules, one data file, fifteen owned import edges
+- candidate MSI: 100,229,788 bytes; SHA-256
+  `6B1CF0226DD6405A73BD455F51EAE4B67E50C0CCE3C5FBED33BAD3C8B7BA2F43`
+- full shipping MSVC x64 solution: pass; 18 manifest/path tests pass
+- shipping MSI and bootstrapper: pass with no errors; decompiled hostfxr and
+  shared-runtime directories both resolve to .NET 8.0.29
+- shipping MSI: 133,330,185 bytes; SHA-256
+  `1E7671B4951B4CD990F0CA0C3F399F56C9313BB9EB4BDC84859AF26665DEB76C`
+
+Controlled smoke evidence:
+
+- launched the exact extracted candidate from `C:\Windows` with an isolated
+  profile, manifest-host developer gate, and local refused URL session
+- loaded `hcpython3.dll`, `python314.dll`, `tcl86t.dll`, `hostfxr.dll`,
+  `hostpolicy.dll`, `coreclr.dll`, `clrjit.dll`, and
+  `Fabulor.PluginHost.dll` exclusively from the candidate root
+- startup report recorded one C# Greeter, one Python Greeter, and one Tcl
+  Greeter entry with `C#`, `Python`, and `Tcl` labels; the native Python host
+  remained a separate single entry
+- process remained responsive and normal window close returned exit code 0
+
+Behavior contract: candidate plugin hosts must come only from the staged,
+manifest-locked private runtime tree. Staging and MSI validation fail closed on
+path, identity, count, hash, reparse-point, collision, or native ownership
+drift. The manifest-host user preference and developer gate retain their
+existing policy; this pass changes package parity, not trust defaults.
+
 ## Stage Completion Rule
 
 A stage can move to complete in `migration-plan.md` only when:

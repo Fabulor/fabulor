@@ -2490,6 +2490,21 @@ the executable on Windows; ambient `ZOITECHAT_LIBDIR` is accepted only behind
 the explicit development-runtime gate. Shipping GTK3 composition remains
 unchanged.
 
+Plugin-host parity pass 94 (2026-07-22):
+the side-by-side candidate now includes the supported C#, Python, and Tcl
+plugin boundaries through a strict source-to-destination contract rather than
+shipping installer globs. Staging rejects unsafe, missing, reparse-backed,
+colliding, or unexpectedly plural inputs and emits a 5,821-file manifest with
+sizes and SHA-256 hashes. Exact MSI validation covers 7,270 installed files,
+including the private .NET 8.0.29, Python 3.14, and Tcl 8.6 runtimes and the
+managed/Python hosts. A launch from `C:\Windows` loaded all three sample
+manifest plugins and every expected private runtime module from the extracted
+candidate, remained responsive, and closed with exit code zero. Successful
+manifest plugins now appear once in the startup report with uniform `C#`,
+`Python`, and `Tcl` labels. The full shipping solution, manifest tests, normal
+MSI, and bootstrapper also rebuild successfully with the servicing-pinned .NET
+8.0.29 runtime.
+
 Deliverables:
 
 - Make GTK4 the only production frontend dependency in MSVC, Meson, and CI.
