@@ -7107,6 +7107,48 @@ path, identity, count, hash, reparse-point, collision, or native ownership
 drift. The manifest-host user preference and developer gate retain their
 existing policy; this pass changes package parity, not trust defaults.
 
+### GTK4 Stage 8 Win32 Display Filter Ownership
+
+Date: 2026-07-22
+
+Files/workflows converted: GTK4 native-message filter installation and
+teardown, shared GTK3/GTK4 dispatch, bounded single-instance command payloads,
+taskbar toggling, timezone refresh, and same-process wheel forwarding.
+
+Automated evidence:
+
+- complete isolated GTK4 frontend profile: pass; launcher and frontend module
+  link successfully with the existing 81-warning conversion inventory
+- full shipping MSVC x64 solution: pass; zero warnings and errors from this
+  boundary, and all 18 manifest/path tests pass
+- candidate WiX build with full ICE validation: pass; zero warnings and errors
+- extracted candidate: exactly 7,270 files; all sizes and SHA-256 hashes pass
+- packaged launcher imports: nine reviewed system modules
+- packaged frontend imports: 31 resolved runtime/application/system modules
+- packaged extension graph: ten modules, one data file, fifteen owned edges
+- frontend module: 1,594,368 bytes; SHA-256
+  `D0257C93335C764DC972D9B977FCC4E87BD7FF1FFFC76F1E77EF8254F2FDFB7B`
+- candidate MSI: 100,229,788 bytes; SHA-256
+  `BDEF6A46D1527A009FFF0600D6E7BFCA36AD5ED0C5CAD71FE3FE57B1ED9E89AD`
+
+Controlled smoke evidence:
+
+- launched the exact extracted candidate from `C:\Windows` with an isolated
+  profile, disabled plugin autoload, and a local refused URL session
+- sent the internal taskbar command directly to the candidate window through
+  `WM_COPYDATA`; the window minimized and a second message restored it
+- candidate remained responsive before and after dispatch
+- normal window close returned exit code 0; the installed Fabulor process was
+  not targeted or interrupted
+
+Behavior contract: GTK4 owns exactly one main native-message filter on the
+default Win32 display and removes it before releasing the retained display.
+GTK4 appearance changes remain owned by the separate appearance monitor.
+Single-instance payloads must use identifier zero, include a terminal NUL, and
+remain between 2 bytes and 64 KiB. Invalid payloads continue through normal
+window processing, and wheel messages are consumed only after successful
+same-process forwarding. GTK3 retains its existing per-window filter.
+
 ## Stage Completion Rule
 
 A stage can move to complete in `migration-plan.md` only when:

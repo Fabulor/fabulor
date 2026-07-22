@@ -952,6 +952,7 @@ fe_init (void)
 	application_main_loop = fabulor_application_main_loop_new ();
 #endif
 	theme_manager_init ();
+	mg_win32_message_filter_init ();
 	key_init ();
 	pixmaps_init ();
 
@@ -982,6 +983,7 @@ fe_main (void)
 void
 fe_cleanup (void)
 {
+	mg_win32_message_filter_shutdown ();
 }
 
 fe_preferences_save_result

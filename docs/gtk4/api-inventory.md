@@ -1294,6 +1294,18 @@ contract. Manifest-plugin startup reporting records successful hosts once and
 uses stable `C#`, `Python`, and `Tcl` display labels. A packaged three-language
 smoke run loaded every runtime from the candidate root and exited normally.
 
+Stage 8 Win32 display-filter pass 95 replaces GTK4's missing per-window native
+message hook with one default-display-owned `GdkWin32MessageFilter`. Startup is
+idempotent, shutdown removes the exact callback and balances the retained
+display reference, and GTK3 keeps its established per-window filter. Shared
+dispatch preserves time-change handling, same-process wheel forwarding, and
+single-instance/taskbar commands. `WM_COPYDATA` now accepts only the expected
+zero identifier, a NUL-terminated payload between 2 bytes and 64 KiB, and a
+live session; wheel messages are consumed only after successful forwarding.
+GTK4 setting and theme notifications remain exclusively owned by the existing
+display-level appearance monitor. The exact 7,270-file candidate minimized and
+restored through the new filter, remained responsive, and exited normally.
+
 ## Functional Clusters
 
 | Cluster | Main files | GTK4 concern | Status |

@@ -41,6 +41,8 @@ void mg_set_title (GtkWidget *button, char *title);
 void mg_set_access_icon (session_gui *gui, GdkPixbuf *pix, gboolean away);
 void mg_apply_setup (void);
 void mg_apply_session_font_prefs (session_gui *gui);
+void mg_win32_message_filter_init (void);
+void mg_win32_message_filter_shutdown (void);
 void mg_close_sess (session *);
 void mg_tab_close (session *sess);
 void mg_reopen_closed_channel_tab (void);
