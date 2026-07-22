@@ -182,6 +182,7 @@ FOR %%I IN ("$(ZoiteChatLib)fabulor.rc") DO IF %%~zI EQU 0 (
     <ClCompile Include="joind.c" />
     <ClCompile Include="maingui.c" />
     <ClCompile Include="window-state.c" />
+    <ClCompile Include="application-main-loop.c" Condition="'$(FabulorGtkMajor)'=='4'" />
     <ClCompile Include="window-geometry.c" />
     <ClCompile Include="menu.c" />
     <ClCompile Include="context-menu-presenter-gtk4.c" Condition="'$(FabulorGtkMajor)'=='4'" />

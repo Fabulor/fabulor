@@ -338,6 +338,7 @@ Detailed planning and evidence live in:
   - [x] Validate the packaged native import closure against explicit ownership roots and reviewed Windows imports.
   - [x] Validate the candidate payload, then replace transitional broad WiX harvesting with the allowlist.
   - [x] Add an opt-in, output-isolated full-project MSVC GTK4 profile and compile the complete common/frontend source inventory.
+  - [x] Give GTK4 correct option initialization and an owned GLib main loop with safe pre-run and active shutdown.
   - [ ] Remove the full-profile frontend compile blockers before producing a GTK4 executable.
     - [ ] Replace legacy menu event types and widget construction with the retained action/model boundaries.
       - [x] Remove raw `GdkEventButton` types from the public context-menu API and contain GTK3 event synthesis privately.

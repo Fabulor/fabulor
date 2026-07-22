@@ -6463,6 +6463,50 @@ backends. GTK4 cannot compile or select the legacy status-icon implementation;
 when no supported backend exists, tray initialization fails closed without
 hiding the application window.
 
+### GTK4 Stage 8 Application Main-Loop Ownership
+
+Date: 2026-07-22
+
+Files/workflows converted: frontend option initialization, GTK initialization,
+main-loop entry, shutdown requests, and main-loop lifetime ownership.
+
+Automated evidence:
+
+- clean shipping MSVC GTK3 frontend rebuild: pass; zero warnings and errors,
+  and the GTK4 main-loop owner is excluded from the target
+- strict MSVC GTK4 probe against GTK 4.22.4 / GLib 2.88.0: build and execution
+  pass under `/W4 /WX`; zero warnings and errors
+- fresh Meson/Ninja MSVC GTK4 probe: clean configure, build, and execution pass
+- strict lifecycle probe: quit-before-run returns without blocking; active
+  idle-source shutdown runs once and returns with inactive state
+- repository GTK4 Python validation: 28 tests pass
+- source audit: GTK4 does not register `gtk_get_option_group()` and calls the
+  correct no-argument `gtk_init()`
+- source audit: `gtk_main()` and `gtk_main_quit()` compile only for GTK3
+- clean isolated complete GTK4 frontend compilation: zero C compiler errors
+  and 117 warnings, down from 123 in pass 80
+- expected complete GTK4 link failure improves from 29 to 26 unique unresolved
+  symbols and from 29 to 26 repeated unresolved-symbol diagnostics
+- no `gtk_get_option_group`, `gtk_main`, or `gtk_main_quit` text occurs in the
+  complete GTK4 build inventory
+- inventory log: `build/gtk4-full/application-main-loop-pass81.log`
+- next target: Windows GTK4 icon-theme bootstrap
+- `git diff --check`: pass
+
+Manual checks deferred until the full GTK4 frontend links:
+
+- [ ] start Fabulor normally and confirm initial windows and connections appear
+- [ ] launch with supported command-line options and confirm they retain their
+  existing behavior
+- [ ] quit through the window, menu, tray action, and shutdown command
+- [ ] enable wait-on-exit and confirm its post-loop delay remains intact
+- [ ] trigger an early startup shutdown and confirm the GTK4 loop is not entered
+
+Behavior contract: the common core still completes configuration, frontend,
+plugin, and session initialization before entering the UI loop. GTK4 owns and
+releases one default-context loop and honors shutdown before or during entry;
+GTK3 startup and shutdown are unchanged.
+
 ## Stage Completion Rule
 
 A stage can move to complete in `migration-plan.md` only when:

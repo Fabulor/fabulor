@@ -2324,6 +2324,20 @@ profile remains at zero compiler errors and 123 warnings while improving from
 33 to 29 unique unresolved symbols and from 37 to 29 repeated diagnostics.
 GTK4 application startup and main-loop ownership is the next contained target.
 
+Application main-loop ownership pass 81 (2026-07-22):
+GTK4 command-line parsing no longer registers the removed GTK option group and
+uses the no-argument GTK4 initializer. A small GLib main-loop owner now bridges
+the existing common-core startup order to GTK4 without moving window creation
+or changing configuration, plugin, connection, or shutdown sequencing. It
+retains a quit request made before loop entry, quits the active loop, owns final
+unref, and rejects disposal while running. GTK3 keeps its original option,
+initialization, and global GTK loop path and does not compile the new owner.
+Shipping GTK3, strict MSVC and fresh Meson GTK4 probes, and all 28 repository
+tests remain clean. The complete GTK4 profile remains at zero compiler errors
+while improving from 123 to 117 warnings and from 29 to 26 unique and repeated
+unresolved diagnostics. Windows GTK4 icon-theme bootstrap is the next
+contained target.
+
 Deliverables:
 
 - Make GTK4 the only production frontend dependency in MSVC, Meson, and CI.
