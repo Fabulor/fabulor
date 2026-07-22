@@ -1069,7 +1069,7 @@ fe_idle (gpointer data)
 	plugin_print_startup_report (sess);
 
 	if (arg_minimize == 1)
-		gtk_window_iconify (GTK_WINDOW (sess->gui->window));
+		fabulor_gtk_window_minimize (GTK_WINDOW (sess->gui->window));
 	else if (arg_minimize == 2)
 		tray_toggle_visibility (FALSE);
 
@@ -1521,7 +1521,7 @@ fe_ctrl_gui (session *sess, fe_gui_action action, int arg)
 	case FE_GUI_COLOR:
 		fe_set_tab_color (sess, arg); break;
 	case FE_GUI_ICONIFY:
-		gtk_window_iconify (GTK_WINDOW (sess->gui->window)); break;
+		fabulor_gtk_window_minimize (GTK_WINDOW (sess->gui->window)); break;
 	case FE_GUI_MENU:
 		menu_bar_toggle ();	/* toggle menubar on/off */
 		break;
