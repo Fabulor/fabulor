@@ -25,8 +25,6 @@ public sealed class FabulorBootstrapperApplication : BootstrapperApplication
     private const string TclRuntimeFeatureId = "TclRuntimeFeature";
     private const string ThemeAssetFeatureId = "ThemeAssetFeature";
     private const string Gtk4RuntimeFeatureId = "Gtk4RuntimeFeature";
-    private const string LegacyGtkCompatibilityFeatureId = "LegacyGtkCompatibilityFeature";
-    private const string RuntimeDocumentationFeatureId = "RuntimeDocumentationFeature";
     private const string StartMenuFeatureId = "StartMenuFeature";
     private const string ShellIntegrationFeatureId = "ShellIntegrationFeature";
     private const string TranslationsFeatureId = "TranslationsFeature";
@@ -215,7 +213,7 @@ public sealed class FabulorBootstrapperApplication : BootstrapperApplication
         this.window.SetProgress(0);
         this.window.SetStatus(statusText + "…");
         this.window.AppendLog(this.DescribePlannedAction(action, statusText));
-        this.window.AppendLog($"Feature snapshot: dotnet={this.currentPlanFeatureSelection.IncludeDotNetPluginHost}, python={this.currentPlanFeatureSelection.IncludePythonRuntime}, tcl={this.currentPlanFeatureSelection.IncludeTclRuntime}, themeAssets=fixed, gtk4=fixed, legacyGtk=fixed, runtimeDocs={this.currentPlanFeatureSelection.IncludeRuntimeDocumentation}, startMenu={this.currentPlanFeatureSelection.IncludeStartMenuShortcuts}, shellIntegration={this.currentPlanFeatureSelection.IncludeShellIntegration}, translations={this.currentPlanFeatureSelection.IncludeTranslations}, checksum={this.currentPlanFeatureSelection.IncludeChecksumPlugin}, exec={this.currentPlanFeatureSelection.IncludeExecPlugin}, fishlim={this.currentPlanFeatureSelection.IncludeFishlimPlugin}, sysinfo={this.currentPlanFeatureSelection.IncludeSysinfoPlugin}, update={this.currentPlanFeatureSelection.IncludeUpdatePlugin}, portable={this.currentPlanPortable}.");
+        this.window.AppendLog($"Feature snapshot: dotnet={this.currentPlanFeatureSelection.IncludeDotNetPluginHost}, python={this.currentPlanFeatureSelection.IncludePythonRuntime}, tcl={this.currentPlanFeatureSelection.IncludeTclRuntime}, themeAssets=fixed, gtk4=fixed, startMenu={this.currentPlanFeatureSelection.IncludeStartMenuShortcuts}, shellIntegration={this.currentPlanFeatureSelection.IncludeShellIntegration}, translations={this.currentPlanFeatureSelection.IncludeTranslations}, checksum={this.currentPlanFeatureSelection.IncludeChecksumPlugin}, exec={this.currentPlanFeatureSelection.IncludeExecPlugin}, fishlim={this.currentPlanFeatureSelection.IncludeFishlimPlugin}, sysinfo={this.currentPlanFeatureSelection.IncludeSysinfoPlugin}, update={this.currentPlanFeatureSelection.IncludeUpdatePlugin}, portable={this.currentPlanPortable}.");
         if (this.isFabulorMsiInstalled && (action == LaunchAction.Repair || action == LaunchAction.Uninstall))
         {
             this.window.AppendLog("Maintenance action is using the detected installed mode and feature state, not any pending UI edits.");
@@ -417,14 +415,6 @@ public sealed class FabulorBootstrapperApplication : BootstrapperApplication
                 && System.IO.Directory.Exists(System.IO.Path.Combine(installFolder, "Runtime", "DotNet", "host")),
             IncludePythonRuntime = System.IO.File.Exists(System.IO.Path.Combine(installFolder, "Runtime", "Python314", "python314.dll")),
             IncludeTclRuntime = System.IO.File.Exists(System.IO.Path.Combine(installFolder, "Runtime", "Tcl", "bin", "tcl86t.dll")),
-            IncludeThemeAssets = System.IO.File.Exists(System.IO.Path.Combine(installFolder, "share", "gtkpref.png"))
-                && System.IO.File.Exists(System.IO.Path.Combine(installFolder, "share", "adwaita-icons-attribution.txt")),
-            IncludeGtk4Runtime = System.IO.File.Exists(System.IO.Path.Combine(installFolder, "Runtime", "GTK4", "bin", "gtk-4-1.dll")),
-            IncludeLegacyGtkCompatibilityData = System.IO.Directory.Exists(System.IO.Path.Combine(installFolder, "etc"))
-                && System.IO.Directory.Exists(System.IO.Path.Combine(installFolder, "lib"))
-                && System.IO.Directory.Exists(System.IO.Path.Combine(installFolder, "share", "glib-2.0"))
-                && System.IO.Directory.Exists(System.IO.Path.Combine(installFolder, "share", "xml")),
-            IncludeRuntimeDocumentation = System.IO.Directory.Exists(System.IO.Path.Combine(installFolder, "share", "doc")),
             IncludeStartMenuShortcuts = !isPortable
                 && (this.RegistryValueExists(Registry.LocalMachine, @"Software\Fabulor\Installer", "StartMenuShortcuts")
                     || this.RegistryValueExists(Registry.CurrentUser, @"Software\Fabulor\Installer", "StartMenuShortcuts")
@@ -448,10 +438,6 @@ public sealed class FabulorBootstrapperApplication : BootstrapperApplication
         this.ApplyDetectedFeatureState(selection, DotNetRuntimeFeatureId, value => selection.IncludeDotNetPluginHost = value);
         this.ApplyDetectedFeatureState(selection, PythonRuntimeFeatureId, value => selection.IncludePythonRuntime = value);
         this.ApplyDetectedFeatureState(selection, TclRuntimeFeatureId, value => selection.IncludeTclRuntime = value);
-        this.ApplyDetectedFeatureState(selection, ThemeAssetFeatureId, value => selection.IncludeThemeAssets = value);
-        this.ApplyDetectedFeatureState(selection, Gtk4RuntimeFeatureId, value => selection.IncludeGtk4Runtime = value);
-        this.ApplyDetectedFeatureState(selection, LegacyGtkCompatibilityFeatureId, value => selection.IncludeLegacyGtkCompatibilityData = value);
-        this.ApplyDetectedFeatureState(selection, RuntimeDocumentationFeatureId, value => selection.IncludeRuntimeDocumentation = value);
         this.ApplyDetectedFeatureState(selection, StartMenuFeatureId, value => selection.IncludeStartMenuShortcuts = value);
         this.ApplyDetectedFeatureState(selection, ShellIntegrationFeatureId, value => selection.IncludeShellIntegration = value);
         this.ApplyDetectedFeatureState(selection, TranslationsFeatureId, value => selection.IncludeTranslations = value);
@@ -514,8 +500,6 @@ public sealed class FabulorBootstrapperApplication : BootstrapperApplication
             TclRuntimeFeatureId => selection.IncludeTclRuntime ? FeatureState.Local : FeatureState.Absent,
             ThemeAssetFeatureId => FeatureState.Local,
             Gtk4RuntimeFeatureId => FeatureState.Local,
-            LegacyGtkCompatibilityFeatureId => FeatureState.Local,
-            RuntimeDocumentationFeatureId => selection.IncludeRuntimeDocumentation ? FeatureState.Local : FeatureState.Absent,
             StartMenuFeatureId => !isPortable && selection.IncludeStartMenuShortcuts ? FeatureState.Local : FeatureState.Absent,
             ShellIntegrationFeatureId => !isPortable && selection.IncludeShellIntegration ? FeatureState.Local : FeatureState.Absent,
             TranslationsFeatureId => selection.IncludeTranslations ? FeatureState.Local : FeatureState.Absent,

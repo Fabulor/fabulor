@@ -12,6 +12,7 @@ tags
 # WiX / installer build outputs
 installer/bin/
 installer/obj/
+installer/build/
 installer/Bootstrapper/obj/
 installer/UX/bin/
 installer/UX/obj/

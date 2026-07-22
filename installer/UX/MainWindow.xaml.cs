@@ -30,10 +30,6 @@ public partial class MainWindow : Window
         IncludeDotNetPluginHost = this.DotNetPluginHostCheckBox.IsChecked == true,
         IncludePythonRuntime = this.PythonRuntimeCheckBox.IsChecked == true,
         IncludeTclRuntime = this.TclRuntimeCheckBox.IsChecked == true,
-        IncludeThemeAssets = true,
-        IncludeGtk4Runtime = true,
-        IncludeLegacyGtkCompatibilityData = true,
-        IncludeRuntimeDocumentation = this.RuntimeDocumentationCheckBox.IsChecked == true,
         IncludeStartMenuShortcuts = this.StartMenuShortcutsCheckBox.IsChecked == true,
         IncludeShellIntegration = this.ShellIntegrationCheckBox.IsChecked == true,
         IncludeTranslations = this.TranslationsCheckBox.IsChecked == true,
@@ -58,7 +54,6 @@ public partial class MainWindow : Window
         this.DotNetPluginHostCheckBox.IsChecked = selection.IncludeDotNetPluginHost;
         this.PythonRuntimeCheckBox.IsChecked = selection.IncludePythonRuntime;
         this.TclRuntimeCheckBox.IsChecked = selection.IncludeTclRuntime;
-        this.RuntimeDocumentationCheckBox.IsChecked = selection.IncludeRuntimeDocumentation;
         this.StartMenuShortcutsCheckBox.IsChecked = selection.IncludeStartMenuShortcuts;
         this.ShellIntegrationCheckBox.IsChecked = selection.IncludeShellIntegration;
         this.TranslationsCheckBox.IsChecked = selection.IncludeTranslations;
@@ -99,7 +94,6 @@ public partial class MainWindow : Window
         this.DotNetPluginHostCheckBox.IsEnabled = !isBusy;
         this.PythonRuntimeCheckBox.IsEnabled = !isBusy;
         this.TclRuntimeCheckBox.IsEnabled = !isBusy;
-        this.RuntimeDocumentationCheckBox.IsEnabled = !isBusy;
         this.TranslationsCheckBox.IsEnabled = !isBusy;
         this.ChecksumPluginCheckBox.IsEnabled = !isBusy;
         this.ExecPluginCheckBox.IsEnabled = !isBusy;
