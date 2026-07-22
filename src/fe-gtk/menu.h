@@ -34,8 +34,10 @@ void menu_urlmenu_at (GtkWidget *origin, gdouble x, gdouble y,
 	GdkModifierType state, char *url);
 void menu_chanmenu_at (session *sess, GtkWidget *origin, gdouble x,
 	gdouble y, GdkModifierType state, char *chan);
+#if GTK_MAJOR_VERSION < 4
 void menu_addfavoritemenu (server *serv, GtkWidget *menu, char *channel, gboolean istree);
 void menu_addconnectmenu (server *serv, GtkWidget *menu);
+#endif
 void menu_nickmenu_at (session *sess, GtkWidget *origin, gdouble x,
 	gdouble y, GdkModifierType state, char *nick, int num_sel);
 void menu_middlemenu_at (session *sess, GtkWidget *origin, gdouble x,

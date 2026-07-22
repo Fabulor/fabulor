@@ -1240,6 +1240,17 @@ unresolved-symbol diagnostics. `GTK_BUTTON_BOX`,
 `gtk_container_get_children`, `gtk_dialog_get_action_area`, and
 `gtk_widget_show_all` leave the active GTK4 link boundary.
 
+Stage 8 menu-toggle link-closure pass 90 confines the remaining
+`GtkCheckMenuItem` state fallback, radio callbacks, and widget-menu
+Autojoin/Auto-Connect builders to GTK3. GTK4 continues through the retained
+boolean and string-target `GSimpleAction` state plus the tab-context action
+model. The clean complete GTK4 profile improves from 86 to 81 warnings and
+from five unresolved symbols and diagnostics to zero, producing the first
+linked full-profile `fabulor.exe`. Its PE imports include `gtk-4-1.dll` and no
+GTK3 DLL. `GTK_CHECK_MENU_ITEM`, `GTK_IS_CHECK_MENU_ITEM`,
+`gtk_check_menu_item_get_active`, `gtk_check_menu_item_set_active`, and
+`menu_toggle_item` leave the GTK4 link boundary.
+
 ## Functional Clusters
 
 | Cluster | Main files | GTK4 concern | Status |

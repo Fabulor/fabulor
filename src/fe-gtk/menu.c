@@ -1445,21 +1445,25 @@ menu_setting_foreach (void (*callback) (session *), int id, guint state)
 				GtkWidget *menu_item = sess->gui->menu_item[id];
 
 				if (menu_item != NULL &&
-					!menu_action_set_item_state (menu_item, state) &&
-					GTK_IS_CHECK_MENU_ITEM (menu_item))
+					!menu_action_set_item_state (menu_item, state))
 				{
-					guint toggled_signal = g_signal_lookup ("toggled", G_OBJECT_TYPE (menu_item));
+#if GTK_MAJOR_VERSION < 4
+					if (GTK_IS_CHECK_MENU_ITEM (menu_item))
+					{
+						guint toggled_signal = g_signal_lookup ("toggled", G_OBJECT_TYPE (menu_item));
 
-					if (toggled_signal != 0)
-					{
-						g_signal_handlers_block_matched (menu_item, G_SIGNAL_MATCH_ID, toggled_signal, 0, NULL, NULL, NULL);
-						gtk_check_menu_item_set_active (GTK_CHECK_MENU_ITEM (menu_item), state);
-						g_signal_handlers_unblock_matched (menu_item, G_SIGNAL_MATCH_ID, toggled_signal, 0, NULL, NULL, NULL);
+						if (toggled_signal != 0)
+						{
+							g_signal_handlers_block_matched (menu_item, G_SIGNAL_MATCH_ID, toggled_signal, 0, NULL, NULL, NULL);
+							gtk_check_menu_item_set_active (GTK_CHECK_MENU_ITEM (menu_item), state);
+							g_signal_handlers_unblock_matched (menu_item, G_SIGNAL_MATCH_ID, toggled_signal, 0, NULL, NULL, NULL);
+						}
+						else
+						{
+							gtk_check_menu_item_set_active (GTK_CHECK_MENU_ITEM (menu_item), state);
+						}
 					}
-					else
-					{
-						gtk_check_menu_item_set_active (GTK_CHECK_MENU_ITEM (menu_item), state);
-					}
+#endif
 				}
 			}
 			if (callback)
@@ -1946,6 +1950,7 @@ menu_chanmenu_at (session *sess, GtkWidget *origin, gdouble x, gdouble y,
 #endif
 }
 
+#if GTK_MAJOR_VERSION < 4
 static void
 menu_delfav_cb (GtkWidget *item, server *serv)
 {
@@ -2016,6 +2021,7 @@ menu_addconnectmenu (server *serv, GtkWidget *menu)
 		menu_toggle_item (_("_Auto-Connect"), menu, menu_addautoconn_cb, serv, FALSE);
 	}
 }
+#endif
 
 static void
 menu_open_server_list (GtkWidget *wid, gpointer none)
@@ -2561,6 +2567,7 @@ menu_change_layout (void)
 	}
 }
 
+#if GTK_MAJOR_VERSION < 4
 static void
 menu_layout_cb (GtkWidget *item, gpointer none)
 {
@@ -2570,6 +2577,11 @@ menu_layout_cb (GtkWidget *item, gpointer none)
 
 	menu_change_layout ();
 }
+
+#define MENU_LAYOUT_WIDGET_CALLBACK menu_layout_cb
+#else
+#define MENU_LAYOUT_WIDGET_CALLBACK NULL
+#endif
 
 static void
 menu_apply_metres_cb (session *sess)
@@ -2638,6 +2650,7 @@ menu_set_metres (int mode)
 	menu_setting_foreach (menu_apply_metres_cb, -1, 0);
 }
 
+#if GTK_MAJOR_VERSION < 4
 static void
 menu_metres_off (GtkWidget *item, gpointer none)
 {
@@ -2665,6 +2678,16 @@ menu_metres_both (GtkWidget *item, gpointer none)
 	if (gtk_check_menu_item_get_active (GTK_CHECK_MENU_ITEM (item)))
 		menu_set_metres (3);
 }
+#define MENU_METRES_OFF_WIDGET_CALLBACK menu_metres_off
+#define MENU_METRES_GRAPH_WIDGET_CALLBACK menu_metres_graph
+#define MENU_METRES_TEXT_WIDGET_CALLBACK menu_metres_text
+#define MENU_METRES_BOTH_WIDGET_CALLBACK menu_metres_both
+#else
+#define MENU_METRES_OFF_WIDGET_CALLBACK NULL
+#define MENU_METRES_GRAPH_WIDGET_CALLBACK NULL
+#define MENU_METRES_TEXT_WIDGET_CALLBACK NULL
+#define MENU_METRES_BOTH_WIDGET_CALLBACK NULL
+#endif
 
 #if GTK_MAJOR_VERSION < 4
 static void
@@ -2824,7 +2847,7 @@ static struct mymenu mymenu[] = {
 #define CHANNEL_SWITCHER_ACTION_COUNT (2)
 	{N_("_Channel Switcher"), 0, 0, M_MENUSUB, 0, 0, 1},	/* 23 */
 #define TABS_OFFSET (24)
-		{N_("_Tabs"), menu_layout_cb, 0, M_MENURADIO, MENU_ID_LAYOUT_TABS, 0, 1, 0,
+		{N_("_Tabs"), MENU_LAYOUT_WIDGET_CALLBACK, 0, M_MENURADIO, MENU_ID_LAYOUT_TABS, 0, 1, 0,
 			"channel-switcher", MENU_ACTION_CHANNEL_SWITCHER, "tabs"},
 		{N_("T_ree"), 0, 0, M_MENURADIO, MENU_ID_LAYOUT_TREE, 0, 1, 0,
 			"channel-switcher", MENU_ACTION_CHANNEL_SWITCHER, "tree"},
@@ -2833,13 +2856,13 @@ static struct mymenu mymenu[] = {
 #define NETWORK_METERS_ACTION_COUNT (4)
 	{N_("_Network Meters"), 0, 0, M_MENUSUB, 0, 0, 1},	/* 27 */
 #define METRE_OFFSET (28)
-		{N_("Off"), menu_metres_off, 0, M_MENURADIO, 0, 0, 1, 0,
+		{N_("Off"), MENU_METRES_OFF_WIDGET_CALLBACK, 0, M_MENURADIO, 0, 0, 1, 0,
 			"network-meters", MENU_ACTION_NETWORK_METERS, "off"},
-		{N_("Graph"), menu_metres_graph, 0, M_MENURADIO, 0, 0, 1, 0,
+		{N_("Graph"), MENU_METRES_GRAPH_WIDGET_CALLBACK, 0, M_MENURADIO, 0, 0, 1, 0,
 			"network-meters", MENU_ACTION_NETWORK_METERS, "graph"},
-		{N_("Text"), menu_metres_text, 0, M_MENURADIO, 0, 0, 1, 0,
+		{N_("Text"), MENU_METRES_TEXT_WIDGET_CALLBACK, 0, M_MENURADIO, 0, 0, 1, 0,
 			"network-meters", MENU_ACTION_NETWORK_METERS, "text"},
-		{N_("Both"), menu_metres_both, 0, M_MENURADIO, 0, 0, 1, 0,
+		{N_("Both"), MENU_METRES_BOTH_WIDGET_CALLBACK, 0, M_MENURADIO, 0, 0, 1, 0,
 			"network-meters", MENU_ACTION_NETWORK_METERS, "both"},
 		{0, 0, 0, M_END, 0, 0, 0},	/* 32 */
 	{ 0, 0, 0, M_SEP, 0, 0, 0 },
