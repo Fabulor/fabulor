@@ -2388,6 +2388,17 @@ while improving from 106 to 96 warnings, from 18 to 14 unique unresolved
 symbols, and from 21 to 15 unresolved-symbol diagnostics. Main-window emoji
 fallback style lookup is the next contained target.
 
+Emoji fallback font pass 86 (2026-07-22):
+GTK4 now copies each target widget's effective default font description from
+its `PangoContext` before appending the configured emoji fallback family. GTK3
+continues to obtain the same owned description through its style-context font
+property. Family detection, fallback order, CSS scope, and caller-side cleanup
+are unchanged. Shipping GTK3, strict MSVC and fresh Meson GTK4 probes, and all
+28 repository tests remain clean. The complete GTK4 profile remains at zero
+compiler errors while improving from 96 to 95 warnings, from 14 to 13 unique
+unresolved symbols, and from 15 to 14 unresolved-symbol diagnostics. Native
+save-dialog overwrite confirmation is the next contained target.
+
 Deliverables:
 
 - Make GTK4 the only production frontend dependency in MSVC, Meson, and CI.

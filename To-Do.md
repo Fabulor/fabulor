@@ -343,6 +343,7 @@ Detailed planning and evidence live in:
   - [x] Route main-window icon availability checks through the display-owned GTK4 icon theme.
   - [x] Contain window minimize, urgency, WM-class, and post-fullscreen sizing operations across GTK3 and GTK4.
   - [x] Keep main-menu font and theme refresh on the GTK4 model-owned root while preserving GTK3 submenu traversal.
+  - [x] Resolve emoji fallback fonts through GTK4 widget Pango context ownership while retaining the GTK3 style query.
   - [ ] Remove the full-profile frontend compile blockers before producing a GTK4 executable.
     - [ ] Replace legacy menu event types and widget construction with the retained action/model boundaries.
       - [x] Remove raw `GdkEventButton` types from the public context-menu API and contain GTK3 event synthesis privately.

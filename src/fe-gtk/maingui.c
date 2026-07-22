@@ -5590,19 +5590,12 @@ static void
 mg_apply_emoji_fallback_widget (GtkWidget *widget)
 {
         PangoFontDescription *desc;
-        GtkStyleContext *context;
-        PangoFontDescription *base_desc = NULL;
+        PangoFontDescription *base_desc;
 
         if (!widget)
                 return;
 
-        context = gtk_widget_get_style_context (widget);
-        if (!context)
-                return;
-
-        gtk_style_context_get (context, GTK_STATE_FLAG_NORMAL,
-                               "font", &base_desc,
-                               NULL);
+        base_desc = fabulor_gtk_widget_dup_font_description (widget);
         if (!base_desc)
                 return;
 

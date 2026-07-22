@@ -6688,6 +6688,52 @@ Behavior contract: GTK4 menu structure remains owned by the retained model and
 receives inherited font styling from its root. GTK3 continues recursive widget
 and submenu updates with no behavior change.
 
+### GTK4 Stage 8 Emoji Fallback Font Lookup
+
+Date: 2026-07-22
+
+Files/workflows converted: effective widget font discovery used by emoji
+fallback CSS for mode entries, picker labels, and the search entry.
+
+Automated evidence:
+
+- clean shipping MSVC GTK3 frontend rebuild: pass; zero warnings and errors
+- strict MSVC GTK4 probe against GTK 4.22.4 / GLib 2.88.0: build and execution
+  pass under `/W4 /WX`; zero warnings and errors
+- fresh Meson/Ninja MSVC GTK4 probe: clean configure, build, and execution pass
+- repository GTK4 Python validation: 28 tests pass
+- probe audit: the owned widget font-description helper is address-taken and
+  linked by both strict probe build systems
+- source audit: GTK4 copies the effective default description from the
+  widget's `PangoContext`; GTK3 retains the style-context `"font"` query
+- source audit: both branches return caller-owned descriptions and the emoji
+  fallback caller frees the base and merged descriptions
+- source audit: emoji-family detection, fallback order, and CSS provider keys
+  are unchanged
+- clean isolated complete GTK4 frontend compilation: zero C compiler errors
+  and 95 warnings, down from 96 in pass 85
+- expected complete GTK4 link failure improves from 14 to 13 unique unresolved
+  symbols and from 15 to 14 unresolved-symbol diagnostics
+- `gtk_style_context_get` no longer occurs in the active GTK4 inventory, and
+  `maingui.c` contributes no unresolved symbols
+- inventory log: `build/gtk4-full/emoji-font-lookup-pass86.log`
+- next target: native save-dialog overwrite confirmation
+- `git diff --check`: pass
+
+Manual checks deferred until the full GTK4 frontend links:
+
+- [ ] confirm emoji render with the configured fallback family in mode key and
+  limit entries
+- [ ] confirm emoji picker labels retain their large size and fallback glyphs
+- [ ] confirm emoji in the search entry uses the fallback without changing the
+  configured text font
+- [ ] switch GTK4 themes and fonts, then reopen these widgets and confirm their
+  effective base font remains current
+
+Behavior contract: the effective widget font remains the base, the emoji
+family remains appended only when absent, and every temporary font description
+has one clear owner. GTK3 rendering behavior is unchanged.
+
 ## Stage Completion Rule
 
 A stage can move to complete in `migration-plan.md` only when:
