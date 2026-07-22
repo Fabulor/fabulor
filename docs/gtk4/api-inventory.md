@@ -1156,6 +1156,16 @@ unique and repeated unresolved diagnostics. `gtk_icon_theme_append_search_path`,
 the GTK4 link boundary; one separate main-window `gtk_icon_theme_get_default`
 lookup remains.
 
+Stage 8 main-window icon-theme lookup pass 83 routes the edit-box emoji access
+icon availability check through the shared cross-version default-theme helper.
+GTK4 now queries the icon theme owned by the default display before falling
+back to the existing packaged icon resolver; GTK3 receives the same default
+theme as before. Candidate icon order, packaged fallback, tooltip, sensitivity,
+and emoji-picker activation are unchanged. The full GTK4 inventory remains at
+zero compiler errors while improving from 112 to 110 warnings and from 23 to
+22 unique and repeated unresolved diagnostics. The final active
+`gtk_icon_theme_get_default` call leaves the GTK4 link boundary.
+
 ## Functional Clusters
 
 | Cluster | Main files | GTK4 concern | Status |

@@ -340,6 +340,7 @@ Detailed planning and evidence live in:
   - [x] Add an opt-in, output-isolated full-project MSVC GTK4 profile and compile the complete common/frontend source inventory.
   - [x] Give GTK4 correct option initialization and an owned GLib main loop with safe pre-run and active shutdown.
   - [x] Move Windows icon-theme bootstrap onto GTK4 display ownership while retaining the GTK3 indexed-theme safeguard.
+  - [x] Route main-window icon availability checks through the display-owned GTK4 icon theme.
   - [ ] Remove the full-profile frontend compile blockers before producing a GTK4 executable.
     - [ ] Replace legacy menu event types and widget construction with the retained action/model boundaries.
       - [x] Remove raw `GdkEventButton` types from the public context-menu API and contain GTK3 event synthesis privately.

@@ -2352,6 +2352,17 @@ GTK4 profile remains at zero compiler errors while improving from 117 to 112
 warnings and from 26 to 23 unique and repeated unresolved diagnostics. The
 remaining main-window icon-theme lookup is the next contained target.
 
+Main-window icon-theme lookup pass 83 (2026-07-22):
+the edit-box emoji access icon now resolves theme availability through the
+shared display-owned GTK4 helper before retaining its existing packaged icon
+fallback. GTK3 maps to the same default icon theme used previously. Icon-name
+priority, resolver behavior, entry presentation, and emoji-picker activation
+are unchanged. Shipping GTK3, strict MSVC and fresh Meson GTK4 probes, and all
+28 repository tests remain clean. The complete GTK4 profile remains at zero
+compiler errors while improving from 112 to 110 warnings and from 23 to 22
+unique and repeated unresolved diagnostics. GTK4 window minimize, urgency,
+WM-class, and post-fullscreen sizing operations are the next contained target.
+
 Deliverables:
 
 - Make GTK4 the only production frontend dependency in MSVC, Meson, and CI.
