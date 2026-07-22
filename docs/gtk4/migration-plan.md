@@ -2433,6 +2433,18 @@ to 86 warnings, from 11 to 5 unique unresolved symbols, and from 11 to 5
 unresolved-symbol diagnostics. The remaining check-menu and toggle-action
 boundary is the next contained target.
 
+Menu-toggle link-closure pass 90 (2026-07-22):
+the GTK3 check-item fallback and radio callbacks now compile only for GTK3,
+along with the widget-menu Autojoin and Auto-Connect builders superseded by
+GTK4 context models. GTK4 retains boolean and string-target action state for
+View, layout, and network-meter selection, while tab context dispatch owns
+Autojoin and Auto-Connect changes. Shipping GTK3, strict MSVC and fresh Meson
+GTK4 probes, and all 28 repository tests remain clean. The clean complete GTK4
+profile improves from 86 to 81 warnings and from five unresolved symbols to
+zero, producing a 1,592,832-byte executable whose PE imports include
+`gtk-4-1.dll` and no GTK3 DLL. Isolated candidate runtime staging and startup
+smoke validation is the next contained target.
+
 Deliverables:
 
 - Make GTK4 the only production frontend dependency in MSVC, Meson, and CI.

@@ -347,8 +347,9 @@ Detailed planning and evidence live in:
   - [x] Follow GTK4 native save-dialog overwrite policy while retaining GTK3's explicit confirmation toggle.
   - [x] Route active top-level and child destruction through typed GTK3/GTK4 ownership helpers.
   - [x] Present About through GTK4's native window, link, license, and paintable-logo contracts while retaining GTK3's custom actions.
-  - [ ] Remove the full-profile frontend compile blockers before producing a GTK4 executable.
-    - [ ] Replace legacy menu event types and widget construction with the retained action/model boundaries.
+  - [x] Compile legacy check-menu callbacks and widget autojoin/autoconnect builders only for GTK3 after retained GTK4 action/model replacement.
+  - [x] Remove the full-profile frontend compile blockers before producing a GTK4 executable.
+    - [x] Replace legacy menu event types and widget construction with the retained action/model boundaries.
       - [x] Remove raw `GdkEventButton` types from the public context-menu API and contain GTK3 event synthesis privately.
       - [x] Add a GTK4 popover presenter with retained model/action ownership, coordinate placement, reparenting, and cleanup coverage.
       - [x] Present built-in URL, channel, nick, and middle-click context actions through a retained GTK4 model.
@@ -428,6 +429,7 @@ Detailed planning and evidence live in:
       - [x] Route application CSS provider installation, removal, priority, and string loading through one GTK3/GTK4 owner.
       - [x] Keep GTK3 widget-style palette sampling private while GTK4 uses the semantic runtime palette.
       - [x] Compile the legacy GTK3 theme adapter only for GTK3 and provide a tested inert GTK4 contract.
+  - [ ] Stage the linked full-profile GTK4 executable with its pinned runtime and perform controlled startup smoke validation.
 - [ ] Remove GTK3 code, build inputs, runtime files, installer components, and compatibility helpers.
 - [ ] Complete clean-install, upgrade, accessibility, visual, performance, plugin, and packaging validation.
 

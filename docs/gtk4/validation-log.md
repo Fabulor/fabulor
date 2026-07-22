@@ -6876,6 +6876,55 @@ provides its standard accessible website, license, and closure UI. Link
 activation continues through Fabulor's URL opener. GTK3 retains its established
 custom action-area behavior and visual layout.
 
+### GTK4 Stage 8 Menu-Toggle Link Closure
+
+Date: 2026-07-22
+
+Files/workflows converted: View-menu action-state propagation, channel-switcher
+and network-meter radio callbacks, and tab-context Autojoin/Auto-Connect menu
+construction.
+
+Automated evidence:
+
+- clean shipping MSVC GTK3 frontend rebuild: pass; zero warnings and errors
+- strict MSVC GTK4 probe against GTK 4.22.4 / GLib 2.88.0: build and execution
+  pass under `/W4 /WX`; zero warnings and errors
+- fresh Meson/Ninja MSVC GTK4 probe: clean configure, build, and execution pass
+- repository GTK4 Python validation: 28 tests pass
+- source audit: GTK4 View and layout synchronization uses retained boolean and
+  string-target `GSimpleAction` state; the check-item widget fallback is GTK3-only
+- source audit: GTK4 tab context dispatch owns Autojoin and Auto-Connect state;
+  their legacy widget-menu constructors and callbacks are GTK3-only
+- clean isolated complete GTK4 frontend build: pass; zero compiler errors, 81
+  warnings, zero unresolved-symbol diagnostics, and zero unresolved symbols
+- improvement from pass 89: warnings fall from 86 to 81 and the final five
+  unresolved symbols and diagnostics are removed
+- linked candidate: `build/gtk4-full/x64/rel/fabulor.exe`, 1,592,832 bytes,
+  SHA-256 `EF98F010E475DE6BBA7B4C15697BDB684D3FAC9BD0D4324E3B5CCB28F14C2ADF`
+- PE import audit: `gtk-4-1.dll` is present; no GTK3 DLL is imported
+- inventory log: `build/gtk4-full/menu-toggle-closure-pass90.log`
+- next target: isolated candidate runtime staging and startup smoke validation
+- `git diff --check`: pass
+
+Manual checks deferred to candidate runtime staging:
+
+- [ ] toggle Menu Bar, Topic Bar, User List, user-list buttons, mode buttons,
+  and fullscreen; confirm each retained action and visible state stays aligned
+- [ ] switch between Tabs and Tree and confirm the selected radio target and
+  saved layout stay aligned across all windows
+- [ ] switch among Off, Graph, Text, and Both network-meter modes and confirm
+  all windows update without duplicate dispatch
+- [ ] toggle Autojoin and Auto-Connect from GTK4 tab context menus, reopen the
+  menus, and confirm persisted state
+- [ ] repeat the equivalent GTK3 widget-menu workflows and confirm unchanged
+  behavior
+
+Behavior contract: GTK4 menu state has one owner in retained actions and
+models; no GTK4 path falls back to removed check-menu widgets. GTK3 preserves
+its existing widget callbacks and signal-blocked state synchronization. The
+full GTK4 source profile now compiles and links, but this isolated executable is
+not yet a staged or runtime-validated release candidate.
+
 ## Stage Completion Rule
 
 A stage can move to complete in `migration-plan.md` only when:
