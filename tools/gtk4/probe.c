@@ -28,6 +28,7 @@
 #include "../../src/fe-gtk/tab-context-menu-model.h"
 #include "../../src/fe-gtk/window-state.h"
 #include "../../src/fe-gtk/window-geometry.h"
+#include "../../src/fe-gtk/application-main-loop.h"
 #include "../../src/fe-gtk/ignore-list.h"
 #include "../../src/fe-gtk/ban-list.h"
 #include "../../src/fe-gtk/channel-list.h"
@@ -5100,6 +5101,44 @@ check_window_geometry_boundary (gboolean gtk_ready)
 		geometry.width > 0 && geometry.height > 0 && !geometry.has_position;
 }
 
+typedef struct
+{
+	FabulorApplicationMainLoop *owner;
+	guint quit_count;
+} ApplicationMainLoopProbe;
+
+static gboolean
+application_main_loop_quit_cb (gpointer user_data)
+{
+	ApplicationMainLoopProbe *probe = user_data;
+
+	probe->quit_count++;
+	fabulor_application_main_loop_request_quit (probe->owner);
+	return G_SOURCE_REMOVE;
+}
+
+static gboolean
+check_application_main_loop (void)
+{
+	ApplicationMainLoopProbe probe = { 0 };
+	FabulorApplicationMainLoop *prequit;
+	gboolean passed;
+
+	prequit = fabulor_application_main_loop_new ();
+	fabulor_application_main_loop_request_quit (prequit);
+	fabulor_application_main_loop_run (prequit);
+	passed = !fabulor_application_main_loop_is_running (prequit);
+	fabulor_application_main_loop_free (prequit);
+
+	probe.owner = fabulor_application_main_loop_new ();
+	g_idle_add (application_main_loop_quit_cb, &probe);
+	fabulor_application_main_loop_run (probe.owner);
+	passed = passed && probe.quit_count == 1 &&
+		!fabulor_application_main_loop_is_running (probe.owner);
+	fabulor_application_main_loop_free (probe.owner);
+	return passed;
+}
+
 int
 main (void)
 {
@@ -5109,6 +5148,11 @@ main (void)
 	check_compatibility_helper_signatures ();
 	check_user_list_view_signatures ();
 	check_channel_tree_view_signatures ();
+	if (!check_application_main_loop ())
+	{
+		fprintf (stderr, "GTK4 application main-loop contract mismatch\n");
+		return 1;
+	}
 	if (!check_dialog_icon (gtk_ready))
 	{
 		fprintf (stderr, "GTK4 dialog icon contract mismatch\n");

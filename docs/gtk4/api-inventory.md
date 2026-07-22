@@ -1129,6 +1129,18 @@ warnings while improving from 33 to 29 unique unresolved symbols and from 37
 to 29 repeated diagnostics. All four `gtk_status_icon_*` dependencies leave
 the GTK4 link boundary.
 
+Stage 8 application main-loop ownership pass 81 removes GTK4 use of the
+retired GTK option group, argument-taking initialization, and global GTK main
+loop. `application-main-loop.c` owns one default-context `GMainLoop`, preserves
+shutdown requested before entry, quits safely while active, and rejects active
+destruction. The strict probe covers both pre-run and active shutdown. GTK3
+keeps its existing option group, `gtk_init(&argc, &argv)`, `gtk_main()`, and
+`gtk_main_quit()` path, and does not compile the new owner. The full GTK4
+inventory remains at zero compiler errors while improving from 123 to 117
+warnings, from 29 to 26 unique unresolved symbols, and from 29 to 26 repeated
+diagnostics. `gtk_get_option_group`, `gtk_main`, and `gtk_main_quit` leave the
+GTK4 link boundary.
+
 ## Functional Clusters
 
 | Cluster | Main files | GTK4 concern | Status |
@@ -1140,7 +1152,7 @@ the GTK4 link boundary.
 | Operational lists | `servlistgui.c`, `chanlist.c`, `userlistgui.c`, `dccgui.c`, `banlist.c`, `notifygui.c`, `ignoregui.c`, `plugingui.c`, `urlgrab.c` | list models, factories, editing | converted; toolkit-specific models and views are contained and the shared GTK4 model stack is a production candidate input |
 | Preferences/editors | `setup.c`, `fkeys.c`, `textgui.c`, `editlist.c` | generic edit list, Print Events, key bindings, sound events, and preference navigation converted | converted |
 | Themes | `theme/*.c`, `common/gtk3-theme-service.c`, `common/gtk4-theme-*.c` | GTK4 CSS compatibility and adapter policy | in progress; pre-production GTK4 theme stack composed behind a lifecycle controller |
-| Platform integration | `fe-gtk.c`, `plugin-tray.c`, notifications | displays, surfaces, icons, native tray | not started |
+| Platform integration | `fe-gtk.c`, `plugin-tray.c`, notifications | displays, surfaces, icons, native tray | in progress; notification, tray policy, and application main-loop boundaries established |
 
 ## Theme Inventory
 

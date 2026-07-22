@@ -74,6 +74,7 @@
 	<ClCompile Include="..\..\src\fe-gtk\middle-context-menu-model.c" />
 	<ClCompile Include="..\..\src\fe-gtk\tab-context-menu-model.c" />
 	<ClCompile Include="..\..\src\fe-gtk\window-state.c" />
+	<ClCompile Include="..\..\src\fe-gtk\application-main-loop.c" />
 	<ClCompile Include="..\..\src\fe-gtk\window-geometry.c" />
 	<ClCompile Include="..\..\src\fe-gtk\spell-entry-words.c" />
 	<ClCompile Include="..\..\src\fe-gtk\spell-entry-style.c" />
