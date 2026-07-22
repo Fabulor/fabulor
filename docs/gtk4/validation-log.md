@@ -6780,6 +6780,51 @@ callback. GTK3 preserves the explicit overwrite toggle. GTK4 does not recreate
 that removed toggle with a separate path check or application dialog; the
 native save dialog remains the sole owner of overwrite confirmation.
 
+### GTK4 Stage 8 Typed Widget Destruction
+
+Date: 2026-07-22
+
+Files/workflows converted: Preferences Cancel closure, About dialog response
+closure, and removal of the About dialog's generated action buttons.
+
+Automated evidence:
+
+- clean shipping MSVC GTK3 frontend rebuild: pass; zero warnings and errors
+- strict MSVC GTK4 probe against GTK 4.22.4 / GLib 2.88.0: build and execution
+  pass under `/W4 /WX`; zero warnings and errors
+- fresh Meson/Ninja MSVC GTK4 probe: clean configure, build, and execution pass
+- repository GTK4 Python validation: 28 tests pass
+- helper audit: both typed window destruction and typed box-child removal are
+  address-taken and exercised by the strict GTK4 probe
+- source audit: active top-level closures validate and destroy a `GtkWindow`;
+  action-button removal validates the parent box and child relationship
+- source audit: remaining raw `gtk_widget_destroy()` calls in `menu.c` are
+  confined to GTK3-only menu code
+- clean isolated complete GTK4 frontend compilation: zero C compiler errors
+  and 93 warnings, down from 94 in pass 87
+- expected complete GTK4 link failure improves from 12 to 11 unique unresolved
+  symbols and from 13 to 11 unresolved-symbol diagnostics
+- `gtk_widget_destroy` no longer occurs in the active GTK4 link inventory
+- inventory log: `build/gtk4-full/widget-destruction-pass88.log`
+- next target: legacy About-dialog layout and presentation
+- `git diff --check`: pass
+
+Manual checks deferred until the full GTK4 frontend links:
+
+- [ ] open Preferences, select Cancel, and confirm the window closes once
+  without applying pending changes
+- [ ] open About, follow the Website and License actions, and confirm the
+  dialog remains open after each action
+- [ ] close About through its Close action and window control, confirming
+  theme cleanup and window finalization run once
+- [ ] repeat Preferences and About closure on GTK3 and confirm unchanged
+  behavior
+
+Behavior contract: top-level windows are closed through window ownership, not
+generic widget disposal. Child removal is performed by the owning container.
+GTK3 retains its existing destruction semantics; GTK4 uses its explicit window
+and parent-child lifecycle APIs.
+
 ## Stage Completion Rule
 
 A stage can move to complete in `migration-plan.md` only when:

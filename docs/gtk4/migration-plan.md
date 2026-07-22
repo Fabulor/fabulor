@@ -2411,6 +2411,16 @@ while improving from 95 to 94 warnings, from 13 to 12 unique unresolved
 symbols, and from 14 to 13 unresolved-symbol diagnostics. Shared widget
 destruction is the next contained target.
 
+Widget-destruction pass 88 (2026-07-22):
+Preferences cancellation and About dialog closure now use the shared typed
+window-destruction boundary. About action-button removal uses the typed
+box-child boundary, preserving GTK3 destruction while GTK4 detaches children
+from their owner. Shipping GTK3, strict MSVC and fresh Meson GTK4 probes, and
+all 28 repository tests remain clean. The complete GTK4 profile remains at
+zero compiler errors while improving from 94 to 93 warnings, from 12 to 11
+unique unresolved symbols, and from 13 to 11 unresolved-symbol diagnostics.
+The legacy About-dialog layout and presentation is the next contained target.
+
 Deliverables:
 
 - Make GTK4 the only production frontend dependency in MSVC, Meson, and CI.
