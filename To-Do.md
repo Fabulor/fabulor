@@ -325,6 +325,7 @@ Detailed planning and evidence live in:
   - [x] Compose dynamic `$TRAY` plugin entries into an owned tray projection with separate action namespaces and inert teardown.
   - [x] Bind tray projections to an owned GTK4 popover presenter with replaceable action groups and deterministic unparenting.
   - [x] Centralize tray backend selection and prohibit legacy status-icon fallback for GTK4 or unknown toolkit versions.
+  - [x] Compile the legacy `GtkStatusIcon` backend only for GTK3 and fail closed through inert backend operations in GTK4.
   - [x] Discover system GTK4 desktop themes and imported themes under `%APPDATA%\Fabulor\themes`.
   - [x] Bind discovered GTK4 themes and variant policy to owned preference controls with transactional persistence callbacks.
   - [x] Refresh GTK4 theme appearance from queued Windows light/dark and high-contrast signals without GTK3 window filters.

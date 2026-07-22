@@ -73,6 +73,13 @@ compiled and available StatusNotifier implementation. A legacy `GtkStatusIcon`
 fallback is allowed only for a known pre-GTK4 toolkit; GTK4 and unknown toolkit
 versions return `unavailable` instead of calling removed APIs.
 
+The implementation boundary matches that policy. Every `GtkStatusIcon` type,
+declaration, callback, object, and backend operation is compiled only when the
+toolkit major version is less than four. A GTK4 build without AppIndicator uses
+an inert backend-operation table, so initialization fails closed and cannot
+acquire a removed status-icon symbol. The shipping GTK3 AppIndicator and legacy
+status-icon paths are unchanged.
+
 The shipping tray initialization and preference-restart paths use this same
 policy, preserving their current GTK3 behavior while removing duplicated
 preprocessor decisions. Stable backend names provide a future diagnostics

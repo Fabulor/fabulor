@@ -2312,6 +2312,18 @@ from 140 to 123 warnings, from 38 to 33 unique unresolved symbols, and from 44
 to 37 repeated diagnostics, with zero compiler errors. Legacy GTK status-icon
 backend isolation is the next contained target.
 
+Legacy status-icon backend isolation pass 80 (2026-07-22):
+`plugin-tray.c` now exposes one explicit GTK3-only capability for the legacy
+status-icon implementation. Every `GtkStatusIcon` declaration, object,
+callback, and backend operation is excluded from GTK4. A GTK4 build without
+AppIndicator receives an inert backend-operation table, so initialization
+fails closed in agreement with the existing selection policy. Shipping GTK3
+tray behavior remains unchanged. Shipping GTK3, strict MSVC and fresh Meson
+GTK4 probes, and all 28 repository tests remain clean. The complete GTK4
+profile remains at zero compiler errors and 123 warnings while improving from
+33 to 29 unique unresolved symbols and from 37 to 29 repeated diagnostics.
+GTK4 application startup and main-loop ownership is the next contained target.
+
 Deliverables:
 
 - Make GTK4 the only production frontend dependency in MSVC, Meson, and CI.
