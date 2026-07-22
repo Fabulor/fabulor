@@ -1169,8 +1169,13 @@ set_locale (void)
 #endif
 }
 
+#ifdef FABULOR_GTK4_FRONTEND_MODULE
+__declspec(dllexport) int
+fabulor_frontend_main (int argc, char *argv[])
+#else
 int
 main (int argc, char *argv[])
+#endif
 {
 	int i;
 	int ret;

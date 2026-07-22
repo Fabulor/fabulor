@@ -1,6 +1,6 @@
 # GTK4 Runtime And Packaging
 
-Status: allowlisted GTK4 runtime in the shipping WiX package; GTK3 executable retained
+Status: allowlisted GTK4 runtime in shipping WiX; isolated GTK4 launcher/frontend startup validated; shipping GTK3 retained
 
 Baseline date: 2026-07-14
 
@@ -112,6 +112,23 @@ extracts, and hash-validates the GTK4 payload in that same shipping MSI. The
 duplicate candidate MSI build and artifact are removed. This cuts shipping WiX
 packaging over to the allowlist but deliberately retains the GTK3 executable
 and root payload until production frontend linking and feature validation pass.
+
+Stage 8 pass 91 closes the first real frontend-startup boundary. A directly
+linked GTK4 executable cannot register the nested runtime before Windows
+resolves its import table, and MSVC delay-loading is not available for GLib
+because normal GLib macros import data symbols such as `g_ascii_table` and
+`g_utf8_skip`. The isolated GTK4 profile now builds a minimal Win32-only
+`fabulor.exe` and `fabulor-gtk4-frontend.dll`. The launcher registers the
+contained runtime, rejects a missing, directory, or reparse-point frontend
+module, and loads it with only DLL-load-directory, System32, and registered user
+directories enabled. `validate_frontend_bootstrap.py` enforces the PE boundary.
+
+A workspace-only candidate containing the launcher, frontend, reviewed OpenSSL
+DLLs, certificate, and 1,431-file pinned runtime opened a responsive Network
+List with a System32-only `PATH`. Process inspection confirmed GTK4, GLib,
+GObject, and GIO came from `Runtime/GTK4/bin`; normal close returned zero and no
+matching Application event was recorded. The shipping WiX payload does not yet
+install the frontend DLL and remains on the GTK3 executable until cutover.
 
 ## Sources And Provenance
 

@@ -2,7 +2,8 @@
 <Project DefaultTargets="Build" ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup Label="Configuration">
     <PlatformToolset>v142</PlatformToolset>
-    <ConfigurationType>Application</ConfigurationType>
+    <ConfigurationType Condition="'$(FabulorGtkMajor)'!='4'">Application</ConfigurationType>
+    <ConfigurationType Condition="'$(FabulorGtkMajor)'=='4'">DynamicLibrary</ConfigurationType>
   </PropertyGroup>
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Release|x64">
@@ -20,7 +21,8 @@
   <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
   <Import Project="..\..\win32\zoitechat.props" />
   <PropertyGroup>
-    <TargetName>fabulor</TargetName>
+    <TargetName Condition="'$(FabulorGtkMajor)'=='3'">fabulor</TargetName>
+    <TargetName Condition="'$(FabulorGtkMajor)'=='4'">fabulor-gtk4-frontend</TargetName>
     <OutDir>$(ZoiteChatRel)</OutDir>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -32,7 +34,7 @@
     <Link>
       <AdditionalLibraryDirectories>$(ArchiveLibDir);$(GtkDepsRoot)\lib;$(DepsRoot)\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalDependencies>$(DepLibs);$(ZoiteChatLib)common.lib;wbemuuid.lib;dwmapi.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <EntryPointSymbol>mainCRTStartup</EntryPointSymbol>
+      <EntryPointSymbol Condition="'$(FabulorGtkMajor)'=='3'">mainCRTStartup</EntryPointSymbol>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup>
