@@ -2376,6 +2376,18 @@ while improving from 110 to 106 warnings, from 22 to 18 unique unresolved
 symbols, and from 25 to 21 unresolved-symbol diagnostics. Main-window
 menu-font traversal is the next contained target.
 
+Main-menu font pass 85 (2026-07-22):
+GTK4 now applies the configured main font and theme relayout request to its
+model-owned `GtkPopoverMenuBar` root. Font inheritance reaches generated menu
+presentation without traversing private GTK4 children, and the retained
+`GMenuModel` remains the source of menu structure. GTK3 continues to recurse
+through menu shells, items, and submenus for font and preferred-size updates.
+Shipping GTK3, strict MSVC and fresh Meson GTK4 probes, and all 28 repository
+tests remain clean. The complete GTK4 profile remains at zero compiler errors
+while improving from 106 to 96 warnings, from 18 to 14 unique unresolved
+symbols, and from 21 to 15 unresolved-symbol diagnostics. Main-window emoji
+fallback style lookup is the next contained target.
+
 Deliverables:
 
 - Make GTK4 the only production frontend dependency in MSVC, Meson, and CI.

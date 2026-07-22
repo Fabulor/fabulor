@@ -6647,6 +6647,47 @@ Behavior contract: GTK3 window operations remain unchanged. GTK4 minimizes
 only a realized toplevel, restores the configured size after fullscreen, and
 does not replace removed compositor hints with focus-stealing presentation.
 
+### GTK4 Stage 8 Main-Menu Font And Refresh
+
+Date: 2026-07-22
+
+Files/workflows converted: main-menu font application and theme-driven menu
+relayout.
+
+Automated evidence:
+
+- clean shipping MSVC GTK3 frontend rebuild: pass; zero warnings and errors
+- strict MSVC GTK4 probe against GTK 4.22.4 / GLib 2.88.0: build and execution
+  pass under `/W4 /WX`; zero warnings and errors
+- fresh Meson/Ninja MSVC GTK4 probe: clean configure, build, and execution pass
+- repository GTK4 Python validation: 28 tests pass
+- source audit: GTK4 applies font styling and relayout only to the
+  model-owned `GtkPopoverMenuBar` root
+- source audit: GTK4 does not inspect generated menu children or submenus;
+  GTK3 retains its recursive menu-shell traversal unchanged
+- clean isolated complete GTK4 frontend compilation: zero C compiler errors
+  and 96 warnings, down from 106 in pass 84
+- expected complete GTK4 link failure improves from 18 to 14 unique unresolved
+  symbols and from 21 to 15 unresolved-symbol diagnostics
+- `GTK_IS_MENU_SHELL`, `GTK_IS_MENU_ITEM`, `GTK_MENU_ITEM`, and
+  `gtk_menu_item_get_submenu` no longer occur in the active GTK4 inventory
+- inventory log: `build/gtk4-full/main-menu-font-pass85.log`
+- next target: main-window emoji fallback style lookup
+- `git diff --check`: pass
+
+Manual checks deferred until the full GTK4 frontend links:
+
+- [ ] change the configured input font and confirm the GTK4 menu bar and its
+  generated popovers inherit the updated font
+- [ ] switch themes and confirm the menu bar and open popovers relayout without
+  stale sizing or clipped labels
+- [ ] rebuild and run GTK3, then confirm nested menus retain their existing
+  font and preferred-size behavior
+
+Behavior contract: GTK4 menu structure remains owned by the retained model and
+receives inherited font styling from its root. GTK3 continues recursive widget
+and submenu updates with no behavior change.
+
 ## Stage Completion Rule
 
 A stage can move to complete in `migration-plan.md` only when:

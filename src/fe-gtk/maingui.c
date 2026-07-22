@@ -3736,15 +3736,18 @@ mg_apply_main_font_widget (GtkWidget *widget, const PangoFontDescription *font)
 }
 
 static void
-mg_apply_main_font_menu_tree (GtkWidget *menu, const PangoFontDescription *font)
+mg_apply_main_font_menu (GtkWidget *menu, const PangoFontDescription *font)
 {
+#if GTK_MAJOR_VERSION < 4
 	GList *children;
 	GList *node;
+#endif
 
 	if (!menu || !GTK_IS_WIDGET (menu))
 		return;
 
 	mg_apply_main_font_widget (menu, font);
+#if GTK_MAJOR_VERSION < 4
 	if (!GTK_IS_MENU_SHELL (menu))
 		return;
 
@@ -3758,9 +3761,10 @@ mg_apply_main_font_menu_tree (GtkWidget *menu, const PangoFontDescription *font)
 		if (GTK_IS_MENU_ITEM (item))
 			submenu = gtk_menu_item_get_submenu (GTK_MENU_ITEM (item));
 		if (submenu)
-			mg_apply_main_font_menu_tree (submenu, font);
+			mg_apply_main_font_menu (submenu, font);
 	}
 	g_list_free (children);
+#endif
 }
 
 void
@@ -3787,7 +3791,7 @@ mg_apply_session_font_prefs (session_gui *gui)
 		mg_apply_main_font_widget (gui->nick_label, font);
 
 	if (gui->menu)
-		mg_apply_main_font_menu_tree (gui->menu, font);
+		mg_apply_main_font_menu (gui->menu, font);
 
 	if (gui->chanview)
 		chanview_apply_theme (gui->chanview);
@@ -4362,10 +4366,16 @@ mg_theme_refresh_menu_widget (GtkWidget *widget)
 static void
 mg_theme_refresh_menu_tree (GtkWidget *menu)
 {
+#if GTK_MAJOR_VERSION < 4
 	GList *children;
 	GList *node;
+#endif
 
-	if (!menu || !GTK_IS_MENU_SHELL (menu))
+	if (!menu || !GTK_IS_WIDGET (menu))
+		return;
+
+#if GTK_MAJOR_VERSION < 4
+	if (!GTK_IS_MENU_SHELL (menu))
 		return;
 
 	children = gtk_container_get_children (GTK_CONTAINER (menu));
@@ -4381,6 +4391,7 @@ mg_theme_refresh_menu_tree (GtkWidget *menu)
 		mg_theme_refresh_menu_widget (item);
 	}
 	g_list_free (children);
+#endif
 	mg_theme_refresh_menu_widget (menu);
 }
 
@@ -6064,7 +6075,7 @@ mg_create_menu (session *sess, GtkWidget *table)
         gtk_widget_set_valign (gui->menu, GTK_ALIGN_FILL);
         gtk_grid_attach (GTK_GRID (table), gui->menu, 0, 0, 3, 1);
 #if GTK_MAJOR_VERSION < 4
-        mg_apply_main_font_menu_tree (gui->menu, input_style ? input_style->font_desc : NULL);
+        mg_apply_main_font_menu (gui->menu, input_style ? input_style->font_desc : NULL);
 #endif
 }
 
