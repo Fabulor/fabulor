@@ -281,6 +281,14 @@ check_compatibility_helper_signatures (void)
 		fabulor_gtk_widget_on_scroll;
 	void (*volatile window_set_child) (GtkWindow *, GtkWidget *) =
 		fabulor_gtk_window_set_child;
+	gboolean (*volatile window_minimize) (GtkWindow *) =
+		fabulor_gtk_window_minimize;
+	void (*volatile window_set_urgent) (GtkWindow *, gboolean) =
+		fabulor_gtk_window_set_urgent;
+	void (*volatile window_set_wm_class) (GtkWindow *, const gchar *,
+		const gchar *) = fabulor_gtk_window_set_wm_class;
+	void (*volatile window_resize) (GtkWindow *, gint, gint) =
+		fabulor_gtk_window_resize;
 	void (*volatile window_position_at_pointer) (GtkWindow *) =
 		fabulor_gtk_window_position_at_pointer;
 	void (*volatile window_position_center) (GtkWindow *) =
@@ -387,6 +395,10 @@ check_compatibility_helper_signatures (void)
 	(void) widget_on_focus_leave;
 	(void) widget_on_scroll;
 	(void) window_set_child;
+	(void) window_minimize;
+	(void) window_set_urgent;
+	(void) window_set_wm_class;
+	(void) window_resize;
 	(void) window_position_at_pointer;
 	(void) window_position_center;
 	(void) window_position_center_on_parent;

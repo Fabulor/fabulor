@@ -2218,6 +2218,67 @@ fabulor_gtk_window_set_role (GtkWindow *window, const gchar *role)
 #endif
 }
 
+static inline gboolean
+fabulor_gtk_window_minimize (GtkWindow *window)
+{
+	g_return_val_if_fail (GTK_IS_WINDOW (window), FALSE);
+
+#if GTK_MAJOR_VERSION >= 4
+	{
+		GdkSurface *surface = gtk_native_get_surface (GTK_NATIVE (window));
+
+		if (!GDK_IS_TOPLEVEL (surface))
+			return FALSE;
+		return gdk_toplevel_minimize (GDK_TOPLEVEL (surface));
+	}
+#else
+	gtk_window_iconify (window);
+	return TRUE;
+#endif
+}
+
+static inline void
+fabulor_gtk_window_set_urgent (GtkWindow *window, gboolean urgent)
+{
+	g_return_if_fail (GTK_IS_WINDOW (window));
+
+#if GTK_MAJOR_VERSION >= 4
+	/* GTK4 deliberately has no urgency-hint API. */
+	(void) urgent;
+#else
+	gtk_window_set_urgency_hint (window, urgent);
+#endif
+}
+
+static inline void
+fabulor_gtk_window_set_wm_class (GtkWindow *window, const gchar *name,
+	const gchar *class_name)
+{
+	g_return_if_fail (GTK_IS_WINDOW (window));
+	g_return_if_fail (name != NULL);
+	g_return_if_fail (class_name != NULL);
+
+#if GTK_MAJOR_VERSION >= 4
+	/* GTK4 derives application identity from the process/application setup. */
+	(void) name;
+	(void) class_name;
+#else
+	gtk_window_set_wmclass (window, name, class_name);
+#endif
+}
+
+static inline void
+fabulor_gtk_window_resize (GtkWindow *window, gint width, gint height)
+{
+	g_return_if_fail (GTK_IS_WINDOW (window));
+
+#if GTK_MAJOR_VERSION >= 4
+	gtk_window_set_default_size (window, width, height);
+#else
+	gtk_window_resize (window, width, height);
+#endif
+}
+
 static inline void
 fabulor_gtk_widget_set_can_default (GtkWidget *widget, gboolean can_default)
 {

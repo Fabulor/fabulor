@@ -1166,6 +1166,20 @@ zero compiler errors while improving from 112 to 110 warnings and from 23 to
 22 unique and repeated unresolved diagnostics. The final active
 `gtk_icon_theme_get_default` call leaves the GTK4 link boundary.
 
+Stage 8 window-operation pass 84 contains minimize, urgency, WM-class, and
+post-fullscreen sizing behind shared cross-version helpers. GTK4 minimizes a
+realized window through its display-owned `GdkToplevel` and restores the
+configured window size through `gtk_window_set_default_size()`. GTK4 has no
+urgency-hint or per-window WM-class API, so those compatibility branches
+deliberately preserve compositor focus policy and rely on Fabulor's process
+identity established before GTK initialization. GTK3 retains all four original
+calls. The strict probe compiles and links every new helper. The full GTK4
+inventory remains at zero compiler errors while improving from 110 to 106
+warnings, from 22 to 18 unique unresolved symbols, and from 25 to 21
+unresolved-symbol diagnostics. `gtk_window_iconify`,
+`gtk_window_set_urgency_hint`, `gtk_window_set_wmclass`, and
+`gtk_window_resize` leave the GTK4 link boundary.
+
 ## Functional Clusters
 
 | Cluster | Main files | GTK4 concern | Status |

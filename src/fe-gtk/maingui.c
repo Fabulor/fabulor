@@ -488,7 +488,7 @@ mg_create_tab_colors (void)
 static void
 set_window_urgency (GtkWidget *win, gboolean set)
 {
-        gtk_window_set_urgency_hint (GTK_WINDOW (win), set);
+        fabulor_gtk_window_set_urgent (GTK_WINDOW (win), set);
 }
 
 static gboolean

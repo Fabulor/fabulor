@@ -2363,6 +2363,19 @@ compiler errors while improving from 112 to 110 warnings and from 23 to 22
 unique and repeated unresolved diagnostics. GTK4 window minimize, urgency,
 WM-class, and post-fullscreen sizing operations are the next contained target.
 
+Window-operation pass 84 (2026-07-22):
+startup and command-driven minimization now address GTK4's realized
+`GdkToplevel`, while the post-fullscreen Windows path restores the configured
+default size. The removed urgency and per-window WM-class hints are explicit
+GTK4 no-ops: Fabulor retains its existing KDE Wayland presentation workaround,
+does not manufacture focus-stealing behavior, and establishes process identity
+before GTK initialization. GTK3 continues to execute every original API call.
+Shipping GTK3, strict MSVC and fresh Meson GTK4 probes, and all 28 repository
+tests remain clean. The complete GTK4 profile remains at zero compiler errors
+while improving from 110 to 106 warnings, from 22 to 18 unique unresolved
+symbols, and from 25 to 21 unresolved-symbol diagnostics. Main-window
+menu-font traversal is the next contained target.
+
 Deliverables:
 
 - Make GTK4 the only production frontend dependency in MSVC, Meson, and CI.

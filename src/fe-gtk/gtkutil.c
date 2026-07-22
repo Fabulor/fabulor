@@ -810,7 +810,7 @@ gtkutil_window_new (char *title, char *role, int width, int height, int flags)
 	theme_manager_attach_window (win);
 	gtkutil_set_icon (win);
 #ifdef WIN32
-	gtk_window_set_wmclass (GTK_WINDOW (win), "Fabulor", "fabulor");
+	fabulor_gtk_window_set_wm_class (GTK_WINDOW (win), "Fabulor", "fabulor");
 #endif
 	gtk_window_set_title (GTK_WINDOW (win), title);
 	gtk_window_set_default_size (GTK_WINDOW (win), width, height);

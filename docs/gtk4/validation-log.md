@@ -6598,6 +6598,55 @@ Behavior contract: the first available themed emoji icon remains preferred,
 with the packaged resolver as fallback. GTK4 obtains availability from its
 display-owned icon theme; GTK3 lookup and all entry interactions are unchanged.
 
+### GTK4 Stage 8 Window Operations
+
+Date: 2026-07-22
+
+Files/workflows converted: startup and command-driven minimization, attention
+hints, auxiliary-window identity, and Windows post-fullscreen sizing.
+
+Automated evidence:
+
+- clean shipping MSVC GTK3 frontend rebuild: pass; zero warnings and errors
+- strict MSVC GTK4 probe against GTK 4.22.4 / GLib 2.88.0: build and execution
+  pass under `/W4 /WX`; zero warnings and errors
+- fresh Meson/Ninja MSVC GTK4 probe: clean configure, build, and execution pass
+- repository GTK4 Python validation: 28 tests pass
+- probe audit: every new cross-version window helper is address-taken and
+  linked by both strict probe build systems
+- source audit: GTK4 minimization uses the realized window's `GdkToplevel`
+- source audit: GTK4 post-fullscreen sizing uses the configured default size;
+  GTK3 retains `gtk_window_resize()` and its existing position restoration
+- source audit: GTK4 urgency and per-window WM-class branches are explicit
+  no-ops because GTK4 removed both hints; process identity remains configured
+  before GTK initialization
+- clean isolated complete GTK4 frontend compilation: zero C compiler errors
+  and 106 warnings, down from 110 in pass 83
+- expected complete GTK4 link failure improves from 22 to 18 unique unresolved
+  symbols and from 25 to 21 unresolved-symbol diagnostics
+- `gtk_window_iconify`, `gtk_window_set_urgency_hint`,
+  `gtk_window_set_wmclass`, and `gtk_window_resize` no longer occur in the
+  active GTK4 inventory
+- inventory log: `build/gtk4-full/window-operations-pass84.log`
+- next target: main-window menu-font traversal boundary
+- `git diff --check`: pass
+
+Manual checks deferred until the full GTK4 frontend links:
+
+- [ ] start with the normal minimize option and confirm the main window starts
+  minimized
+- [ ] invoke command-driven iconify and confirm the active main window
+  minimizes
+- [ ] trigger an unfocused highlight and confirm GTK4 does not steal focus
+- [ ] enter and leave fullscreen on Windows and confirm the saved non-maximized
+  size is restored
+- [ ] open auxiliary windows and confirm taskbar grouping follows Fabulor's
+  established process identity
+
+Behavior contract: GTK3 window operations remain unchanged. GTK4 minimizes
+only a realized toplevel, restores the configured size after fullscreen, and
+does not replace removed compositor hints with focus-stealing presentation.
+
 ## Stage Completion Rule
 
 A stage can move to complete in `migration-plan.md` only when:

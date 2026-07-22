@@ -1533,7 +1533,7 @@ menu_fullscreen_toggle (GtkWidget *wid, gpointer ud)
 		if (!prefs.hex_gui_win_state) /* not maximized */
 		{
 			/* other window managers seem to handle this */
-			gtk_window_resize (GTK_WINDOW (parent_window),
+			fabulor_gtk_window_resize (GTK_WINDOW (parent_window),
 				prefs.hex_gui_win_width, prefs.hex_gui_win_height);
 			fabulor_gtk_window_move (GTK_WINDOW (parent_window),
 				prefs.hex_gui_win_left, prefs.hex_gui_win_top);
