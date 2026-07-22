@@ -9,6 +9,7 @@ import tempfile
 import xml.etree.ElementTree as ET
 
 import validate_frontend_bootstrap
+import validate_native_extensions
 import validate_runtime_imports
 import validate_runtime_msi
 
@@ -109,9 +110,13 @@ def extract_sources(directory):
     return sources
 
 
-def expected_paths(manifest_path):
+def expected_paths(manifest_path, extension_contract):
     runtime_paths = validate_runtime_msi.load_expected_paths(manifest_path)
-    return set(ROOT_FILES) | {
+    extension_paths = {
+        entry["path"] for entry in
+        extension_contract["modules"] + extension_contract["data_files"]
+    }
+    return set(ROOT_FILES) | extension_paths | {
         f"Runtime/GTK4/{relative}" for relative in runtime_paths
     }
 
@@ -151,7 +156,8 @@ def file_content(path):
     return size, digest.hexdigest()
 
 
-def expected_content(manifest_path, frontend_root, payload_root):
+def expected_content(manifest_path, frontend_root, payload_root, enchant_root,
+                     extension_contract):
     expected = {
         f"Runtime/GTK4/{relative}": content
         for relative, content in
@@ -160,6 +166,15 @@ def expected_content(manifest_path, frontend_root, payload_root):
     for name, source_root in ROOT_FILES.items():
         root = frontend_root if source_root == "frontend" else payload_root
         expected[name] = file_content(root / name)
+    extension_roots = {
+        "plugins": frontend_root / "plugins",
+        "payload": payload_root,
+        "enchant": enchant_root,
+    }
+    for entry in extension_contract["modules"] + extension_contract["data_files"]:
+        expected[entry["path"]] = file_content(
+            validate_native_extensions.source_path(entry, extension_roots)
+        )
     return expected
 
 
@@ -219,7 +234,14 @@ def parse_args(argv):
     parser.add_argument("--manifest", type=pathlib.Path, required=True)
     parser.add_argument("--frontend-root", type=pathlib.Path, required=True)
     parser.add_argument("--payload-root", type=pathlib.Path, required=True)
+    parser.add_argument("--enchant-root", type=pathlib.Path, required=True)
+    parser.add_argument("--layout-output", type=pathlib.Path)
     parser.add_argument("--dumpbin", required=True)
+    parser.add_argument(
+        "--extension-contract",
+        type=pathlib.Path,
+        default=pathlib.Path(__file__).with_name("native-extension-contract.json"),
+    )
     parser.add_argument(
         "--contract",
         type=pathlib.Path,
@@ -236,10 +258,22 @@ def main(argv=None):
         manifest = args.manifest.resolve(strict=True)
         frontend_root = args.frontend_root.resolve(strict=True)
         payload_root = args.payload_root.resolve(strict=True)
+        enchant_root = args.enchant_root.resolve(strict=True)
         dumpbin = validate_runtime_imports.resolve_tool(args.dumpbin)
         contract = args.contract.resolve(strict=True)
-        expected = expected_paths(manifest)
-        expected_hashes = expected_content(manifest, frontend_root, payload_root)
+        layout_output = args.layout_output.resolve() if args.layout_output else None
+        if layout_output and layout_output.exists():
+            raise FrontendCandidateMsiError(
+                f"Layout output must not already exist: {layout_output}"
+            )
+        extension_contract = validate_native_extensions.load_contract(
+            args.extension_contract.resolve(strict=True)
+        )
+        expected = expected_paths(manifest, extension_contract)
+        expected_hashes = expected_content(
+            manifest, frontend_root, payload_root, enchant_root,
+            extension_contract
+        )
         temporary_root = msi.parent / "frontend-candidate-msi-validation"
         temporary_root.mkdir(exist_ok=True)
         with tempfile.TemporaryDirectory(dir=temporary_root) as temporary:
@@ -261,9 +295,24 @@ def main(argv=None):
             launcher_count, frontend_count = validate_packaged_bootstrap(
                 layout_root, dumpbin, contract
             )
+            module_count, data_count, extension_edges = (
+                validate_native_extensions.validate_native_extensions(
+                    extension_contract,
+                    {
+                        "plugins": layout_root / "plugins",
+                        "payload": layout_root,
+                        "enchant": layout_root,
+                    },
+                    layout_root / "Runtime" / "GTK4", dumpbin,
+                    validate_runtime_imports.load_contract(contract),
+                )
+            )
+            if layout_output:
+                shutil.copytree(layout_root, layout_output)
     except (OSError, ET.ParseError, validate_runtime_msi.CandidateMsiError,
             validate_runtime_imports.RuntimeImportError,
             validate_frontend_bootstrap.FrontendBootstrapError,
+            validate_native_extensions.NativeExtensionError,
             FrontendCandidateMsiError) as exc:
         print(f"GTK4 frontend candidate MSI validation failed: {exc}", file=sys.stderr)
         return 1
@@ -271,7 +320,9 @@ def main(argv=None):
     print(
         "GTK4 frontend candidate MSI validated: "
         f"files={len(expected)}, content_hashes=verified, "
-        f"launcher_imports={launcher_count}, frontend_imports={frontend_count}"
+        f"launcher_imports={launcher_count}, frontend_imports={frontend_count}, "
+        f"extension_modules={module_count}, extension_data={data_count}, "
+        f"extension_edges={extension_edges}"
     )
     return 0
 

@@ -1,0 +1,60 @@
+{
+  "schema_version": 1,
+  "modules": [
+    {
+      "path": "plugins/hcnotifications-winrt.dll",
+      "source": "plugins",
+      "required_imports": []
+    },
+    {
+      "path": "plugins/hcchecksum.dll",
+      "source": "plugins",
+      "required_imports": ["gio-2.0-0.dll", "glib-2.0-0.dll", "gobject-2.0-0.dll"]
+    },
+    {
+      "path": "plugins/hcexec.dll",
+      "source": "plugins",
+      "required_imports": []
+    },
+    {
+      "path": "plugins/hcfishlim.dll",
+      "source": "plugins",
+      "required_imports": ["gtk-4-1.dll", "libcrypto-3-x64.dll"]
+    },
+    {
+      "path": "plugins/hcsysinfo.dll",
+      "source": "plugins",
+      "required_imports": ["glib-2.0-0.dll"]
+    },
+    {
+      "path": "plugins/hcupd.dll",
+      "source": "plugins",
+      "required_imports": ["winsparkle.dll"]
+    },
+    {
+      "path": "WinSparkle.dll",
+      "source": "payload",
+      "required_imports": []
+    },
+    {
+      "path": "libenchant-2-2.dll",
+      "source": "enchant",
+      "required_imports": ["glib-2.0-0.dll", "gmodule-2.0-0.dll", "gobject-2.0-0.dll"]
+    },
+    {
+      "path": "lib/enchant-2/enchant_winspell.dll",
+      "source": "enchant",
+      "required_imports": ["glib-2.0-0.dll", "libenchant-2-2.dll"]
+    }
+  ],
+  "data_files": [
+    {
+      "path": "share/enchant-2/enchant.ordering",
+      "source": "enchant"
+    }
+  ],
+  "application_imports": [
+    "libcrypto-3-x64.dll",
+    "libssl-3-x64.dll"
+  ]
+}

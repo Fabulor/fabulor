@@ -2471,6 +2471,25 @@ PE validation against the packaged bytes. The local WiX build completes with
 zero warnings and errors. Native extension and spell-check runtime compatibility
 is the next contained packaging target before the candidate feature set grows.
 
+Native extension compatibility pass 93 (2026-07-22):
+an isolated MSBuild profile now rebuilds all eight bundled native extension
+targets against the final GTK4-era library root without contaminating shipping
+output. FiSHLiM's key manager has a GTK4-native list/dropdown and asynchronous
+dialog path, while its retained GTK3 path still rebuilds. Enchant 2.8.19 and
+WinSpell rebuild against the final GLib with a source-version-checked generated
+C fix and pass personal-dictionary smoke coverage. A machine-readable native
+extension contract verifies nine modules, one data file, required imports, and
+fourteen owned import edges; GTK3, unresolved, and unowned imports fail closed.
+The side-by-side MSI now contains the six compatible autoload plugins, WinRT
+notifications, WinSparkle, Enchant core/provider/data, and the existing locked
+runtime. Exact extraction validates all 1,447 files and hashes. A launch from
+`C:\Windows` with an isolated URL session loaded every expected module from the
+candidate root, including `enchant_winspell.dll`, remained responsive, and
+closed normally with exit code zero. Native plugin discovery is now rooted at
+the executable on Windows; ambient `ZOITECHAT_LIBDIR` is accepted only behind
+the explicit development-runtime gate. Shipping GTK3 composition remains
+unchanged.
+
 Deliverables:
 
 - Make GTK4 the only production frontend dependency in MSVC, Meson, and CI.

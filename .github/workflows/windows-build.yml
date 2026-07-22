@@ -195,6 +195,9 @@ jobs:
           python tools\gtk4\validate_frontend_bootstrap.py --launcher "%GITHUB_WORKSPACE%\build\gtk4-full\x64\rel\fabulor.exe" --frontend "%GITHUB_WORKSPACE%\build\gtk4-full\x64\rel\fabulor-gtk4-frontend.dll" --runtime-root "%GTK4_CANDIDATE_ROOT%\Runtime\GTK4" --dumpbin dumpbin
           if errorlevel 1 exit /b 1
 
+          msbuild tools\gtk4\gtk4-native-extensions.proj /t:Build /m:1 /verbosity:minimal /p:Configuration=Release /p:Platform=${{ matrix.platform }} /p:FabulorGtk4Root="%GITHUB_WORKSPACE%\Runtime\GTK4"
+          if errorlevel 1 exit /b 1
+
           python -m mesonbuild.mesonmain setup --buildtype=release build\gtk4-probe-meson tools\gtk4 "-Dgtk4_root=%GITHUB_WORKSPACE%\Runtime\GTK4"
           if errorlevel 1 exit /b 1
           python -m mesonbuild.mesonmain compile -C build\gtk4-probe-meson
@@ -227,6 +230,14 @@ jobs:
           powershell -NoProfile -ExecutionPolicy Bypass -File tools\build-enchant-msvc.ps1 -GtkRoot C:\gtk-build\gtk\x64\release -StageRoot "%FABULOR_STAGE%" -WorkRoot "%ENCHANT_WORK%"
           if errorlevel 1 exit /b 1
 
+          rem Reconfigure the verified Enchant source against the final GTK4-era GLib.
+          set "GTK4_ENCHANT_ROOT=%GITHUB_WORKSPACE%\build\gtk4-enchant-stage"
+          powershell -NoProfile -ExecutionPolicy Bypass -File tools\build-enchant-msvc.ps1 -GtkRoot "%GITHUB_WORKSPACE%\Runtime\GTK4" -StageRoot "%GTK4_ENCHANT_ROOT%" -WorkRoot "%ENCHANT_WORK%"
+          if errorlevel 1 exit /b 1
+
+          python tools\gtk4\validate_native_extensions.py --plugins-root "%GITHUB_WORKSPACE%\build\gtk4-full\x64\rel\plugins" --payload-root "%FABULOR_STAGE%" --enchant-root "%GTK4_ENCHANT_ROOT%" --runtime-root "%GTK4_CANDIDATE_ROOT%\Runtime\GTK4" --dumpbin dumpbin
+          if errorlevel 1 exit /b 1
+
           rem Publish artefacts from the WiX v4 installer surface only.
           dotnet build installer\Fabulor.wixproj -c Release /p:Platform=${{ matrix.platform }} /p:GtkRuntimeRoot="%GTK4_CANDIDATE_ROOT%\Runtime\GTK4" /verbosity:minimal
           if errorlevel 1 exit /b 1
@@ -237,11 +248,11 @@ jobs:
 
           rem Build the isolated GTK4 frontend candidate without changing the shipping product.
           set "GTK4_FRONTEND_MSI_ROOT=%GITHUB_WORKSPACE%\build\gtk4-frontend-candidate-installer"
-          dotnet build installer\Fabulor.wixproj -c Release /p:Platform=${{ matrix.platform }} /p:Gtk4FrontendCandidate=true /p:Gtk4FrontendRoot="%GITHUB_WORKSPACE%\build\gtk4-full\x64\rel" /p:GtkRuntimeRoot="%GTK4_CANDIDATE_ROOT%\Runtime\GTK4" /p:FabulorPayloadRoot="%FABULOR_STAGE%" /p:FabulorInstallerOutputPath="%GTK4_FRONTEND_MSI_ROOT%" /p:FabulorInstallerIntermediateOutputPath="%GITHUB_WORKSPACE%\build\gtk4-frontend-candidate-installer-obj" /verbosity:minimal
+          dotnet build installer\Fabulor.wixproj -c Release /p:Platform=${{ matrix.platform }} /p:Gtk4FrontendCandidate=true /p:Gtk4FrontendRoot="%GITHUB_WORKSPACE%\build\gtk4-full\x64\rel" /p:Gtk4EnchantRoot="%GTK4_ENCHANT_ROOT%" /p:GtkRuntimeRoot="%GTK4_CANDIDATE_ROOT%\Runtime\GTK4" /p:FabulorPayloadRoot="%FABULOR_STAGE%" /p:FabulorInstallerOutputPath="%GTK4_FRONTEND_MSI_ROOT%" /p:FabulorInstallerIntermediateOutputPath="%GITHUB_WORKSPACE%\build\gtk4-frontend-candidate-installer-obj" /verbosity:minimal
           if errorlevel 1 exit /b 1
 
           rem Verify the identity, exact extracted content, hashes, and PE boundary of the candidate artifact.
-          python tools\gtk4\validate_frontend_candidate_msi.py --wix "%USERPROFILE%\.nuget\packages\wixtoolset.sdk\7.0.0\tools\net472\x64\wix.exe" --msi "%GTK4_FRONTEND_MSI_ROOT%\FabulorGtk4FrontendCandidate.msi" --manifest "%GTK4_CANDIDATE_ROOT%\Runtime\GTK4\runtime-manifest.json" --frontend-root "%GITHUB_WORKSPACE%\build\gtk4-full\x64\rel" --payload-root "%FABULOR_STAGE%" --dumpbin dumpbin
+          python tools\gtk4\validate_frontend_candidate_msi.py --wix "%USERPROFILE%\.nuget\packages\wixtoolset.sdk\7.0.0\tools\net472\x64\wix.exe" --msi "%GTK4_FRONTEND_MSI_ROOT%\FabulorGtk4FrontendCandidate.msi" --manifest "%GTK4_CANDIDATE_ROOT%\Runtime\GTK4\runtime-manifest.json" --frontend-root "%GITHUB_WORKSPACE%\build\gtk4-full\x64\rel" --payload-root "%FABULOR_STAGE%" --enchant-root "%GTK4_ENCHANT_ROOT%" --dumpbin dumpbin
           if errorlevel 1 exit /b 1
         shell: cmd
 

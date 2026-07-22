@@ -140,12 +140,16 @@ python tools\gtk4\validate_frontend_bootstrap.py --launcher C:\fabulor-master\bu
 ```
 
 The isolated candidate WiX mode packages the launcher, frontend, certificate,
-OpenSSL DLLs, and locked runtime under a distinct product identity. It does not
-replace or modify the shipping installer and deliberately omits plugin and
-spell-check runtimes until their GTK4 compatibility is validated:
+OpenSSL DLLs, locked runtime, validated native plugins, WinRT notifications,
+WinSparkle, and the rebuilt Enchant/WinSpell payload under a distinct product
+identity. It does not replace or modify the shipping installer. Build the
+extensions after the full frontend and rebuild Enchant against the final GTK4
+root before composing the candidate:
 
 ```powershell
-dotnet build installer\Fabulor.wixproj -c Release -p:Platform=x64 -p:Gtk4FrontendCandidate=true -p:Gtk4FrontendRoot=C:\fabulor-master\build\gtk4-full\x64\rel -p:GtkRuntimeRoot=C:\fabulor-master\build\gtk4-runtime-candidate-root\Runtime\GTK4 -p:FabulorPayloadRoot=C:\zoitechat-build\x64\rel
+msbuild tools\gtk4\gtk4-native-extensions.proj /t:Build /m:1 /p:Configuration=Release /p:Platform=x64 /p:FabulorGtk4Root=C:\fabulor-master\Runtime\GTK4
+python tools\gtk4\validate_native_extensions.py --plugins-root C:\fabulor-master\build\gtk4-full\x64\rel\plugins --payload-root C:\zoitechat-build\x64\rel --enchant-root C:\fabulor-master\build\gtk4-enchant-stage --runtime-root C:\fabulor-master\build\gtk4-runtime-candidate-root\Runtime\GTK4 --dumpbin dumpbin
+dotnet build installer\Fabulor.wixproj -c Release -p:Platform=x64 -p:Gtk4FrontendCandidate=true -p:Gtk4FrontendRoot=C:\fabulor-master\build\gtk4-full\x64\rel -p:Gtk4EnchantRoot=C:\fabulor-master\build\gtk4-enchant-stage -p:GtkRuntimeRoot=C:\fabulor-master\build\gtk4-runtime-candidate-root\Runtime\GTK4 -p:FabulorPayloadRoot=C:\zoitechat-build\x64\rel
 python tools\gtk4\test_validate_frontend_candidate_msi.py
-python tools\gtk4\validate_frontend_candidate_msi.py --wix C:\path\to\wix.exe --msi C:\path\to\FabulorGtk4FrontendCandidate.msi --manifest C:\fabulor-master\build\gtk4-runtime-candidate-root\Runtime\GTK4\runtime-manifest.json --frontend-root C:\fabulor-master\build\gtk4-full\x64\rel --payload-root C:\zoitechat-build\x64\rel --dumpbin dumpbin
+python tools\gtk4\validate_frontend_candidate_msi.py --wix C:\path\to\wix.exe --msi C:\path\to\FabulorGtk4FrontendCandidate.msi --manifest C:\fabulor-master\build\gtk4-runtime-candidate-root\Runtime\GTK4\runtime-manifest.json --frontend-root C:\fabulor-master\build\gtk4-full\x64\rel --payload-root C:\zoitechat-build\x64\rel --enchant-root C:\fabulor-master\build\gtk4-enchant-stage --dumpbin dumpbin
 ```

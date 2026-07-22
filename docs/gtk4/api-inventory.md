@@ -1271,6 +1271,19 @@ frontend-export checks against the packaged bytes. Shipping GTK3 components,
 product identity, bootstrapper, shortcuts, protocols, and plugin runtimes do
 not enter this candidate boundary.
 
+Stage 8 native-extension compatibility pass 93 adds an isolated build profile
+for the bundled checksum, Exec, FiSHLiM, Lua, Python, SysInfo, updater, and
+WinRT notification modules. FiSHLiM's key manager now has a GTK4-native list,
+dropdown, and modeless-dialog implementation while its retained GTK3 branch
+still compiles independently. Enchant 2.8.19 and WinSpell are rebuilt against
+the final GTK4-era GLib, and a machine-readable contract verifies nine
+candidate modules, one data file, required imports, and fourteen owned import
+edges while rejecting GTK3, unresolved, or unowned dependencies. Candidate
+WiX composition now includes the compatible six autoload plugins, WinRT
+notifications, WinSparkle, Enchant core/provider/data, and exact extracted-byte
+validation. Windows native plugin discovery is executable-relative unless the
+existing development-runtime gate explicitly permits an override.
+
 ## Functional Clusters
 
 | Cluster | Main files | GTK4 concern | Status |

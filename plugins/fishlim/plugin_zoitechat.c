@@ -58,7 +58,9 @@ static GtkWidget *fishlim_target_entry;
 static GtkWidget *fishlim_key_entry;
 static GtkWidget *fishlim_mode_combo;
 static GtkWidget *fishlim_status_label;
+#if GTK_MAJOR_VERSION < 4
 static GtkListStore *fishlim_store;
+#endif
 static GtkWidget *fishlim_view;
 
 
@@ -466,6 +468,369 @@ cleanup:
 }
 
 
+#if GTK_MAJOR_VERSION >= 4
+
+typedef struct {
+    GtkWidget *entry;
+    char *channel;
+    char *mode;
+    char *key;
+} FishlimSharePrompt;
+
+static void fishlim_share_prompt_free(gpointer data) {
+    FishlimSharePrompt *prompt = data;
+
+    g_free(prompt->channel);
+    g_free(prompt->mode);
+    g_free(prompt->key);
+    g_free(prompt);
+}
+
+static const char *fishlim_gui_target(void) {
+    const char *target;
+
+    target = gtk_editable_get_text(GTK_EDITABLE(fishlim_target_entry));
+    if (target && *target)
+        return target;
+
+    return zoitechat_get_info(ph, "channel");
+}
+
+static const char *fishlim_gui_mode(void) {
+    return gtk_drop_down_get_selected(GTK_DROP_DOWN(fishlim_mode_combo)) == 1
+        ? "CBC" : "ECB";
+}
+
+static void fishlim_gui_refresh(void) {
+    GtkWidget *child;
+    gchar **targets;
+    gsize length, i;
+    const char *target;
+    char *key;
+    enum fish_mode mode;
+
+    if (!fishlim_dialog)
+        return;
+
+    while ((child = gtk_widget_get_first_child(fishlim_view)) != NULL)
+        gtk_list_box_remove(GTK_LIST_BOX(fishlim_view), child);
+
+    targets = keystore_get_targets(&length);
+    for (i = 0; targets && i < length; i++) {
+        GtkWidget *row = gtk_list_box_row_new();
+        GtkWidget *box = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 12);
+        GtkWidget *target_label = gtk_label_new(targets[i]);
+        GtkWidget *mode_label;
+        GtkWidget *status_label;
+
+        key = keystore_get_key(targets[i], &mode);
+        mode_label = gtk_label_new(fish_modes[mode]);
+        status_label = gtk_label_new(key ? "Stored" : "Unreadable");
+        gtk_widget_set_hexpand(target_label, TRUE);
+        gtk_label_set_xalign(GTK_LABEL(target_label), 0.0f);
+        gtk_box_append(GTK_BOX(box), target_label);
+        gtk_box_append(GTK_BOX(box), mode_label);
+        gtk_box_append(GTK_BOX(box), status_label);
+        gtk_list_box_row_set_child(GTK_LIST_BOX_ROW(row), box);
+        g_object_set_data_full(G_OBJECT(row), "fishlim-target",
+            g_strdup(targets[i]), g_free);
+        gtk_list_box_append(GTK_LIST_BOX(fishlim_view), row);
+        g_free(key);
+    }
+    g_strfreev(targets);
+
+    target = fishlim_gui_target();
+    key = target ? keystore_get_key(target, &mode) : NULL;
+    if (key) {
+        char *text = g_strdup_printf("Key stored for %s (%s)", target,
+            fish_modes[mode]);
+        gtk_label_set_text(GTK_LABEL(fishlim_status_label), text);
+        gtk_drop_down_set_selected(GTK_DROP_DOWN(fishlim_mode_combo),
+            mode == FISH_CBC_MODE ? 1 : 0);
+        g_free(text);
+        g_free(key);
+    } else if (target && *target) {
+        char *text = g_strdup_printf("No key for %s", target);
+        gtk_label_set_text(GTK_LABEL(fishlim_status_label), text);
+        g_free(text);
+    } else {
+        gtk_label_set_text(GTK_LABEL(fishlim_status_label),
+            "No target selected");
+    }
+}
+
+static void fishlim_gui_refresh_cb(GtkWidget *widget, gpointer data) {
+    fishlim_gui_refresh();
+}
+
+static void fishlim_gui_close_window(GtkButton *button, gpointer window) {
+    gtk_window_destroy(GTK_WINDOW(window));
+}
+
+static void fishlim_gui_share_send(GtkButton *button, gpointer window) {
+    FishlimSharePrompt *prompt = g_object_get_data(G_OBJECT(window),
+        "fishlim-share-prompt");
+    char **users;
+    int i;
+
+    users = g_strsplit(gtk_editable_get_text(GTK_EDITABLE(prompt->entry)),
+        ",", -1);
+    for (i = 0; users && users[i]; i++) {
+        char *user = g_strstrip(users[i]);
+        if (*user)
+            zoitechat_commandf(ph,
+                "msg %s Encrypted chat invite: join %s, open FiSHLiM Key Manager, add channel %s with %s key: %s. Key exchange is for private messages only.",
+                user, prompt->channel, prompt->channel, prompt->mode,
+                prompt->key);
+    }
+    g_strfreev(users);
+    gtk_window_destroy(GTK_WINDOW(window));
+}
+
+static void fishlim_gui_send_channel_key(const char *channel,
+    const char *mode, const char *key) {
+    GtkWidget *window, *content, *label, *buttons, *button;
+    FishlimSharePrompt *prompt;
+
+    if (!channel || !*channel || irc_is_query(channel))
+        return;
+
+    window = gtk_window_new();
+    gtk_window_set_title(GTK_WINDOW(window), "Share Channel Key");
+    gtk_window_set_transient_for(GTK_WINDOW(window), GTK_WINDOW(fishlim_dialog));
+    gtk_window_set_destroy_with_parent(GTK_WINDOW(window), TRUE);
+    gtk_window_set_modal(GTK_WINDOW(window), TRUE);
+    content = gtk_box_new(GTK_ORIENTATION_VERTICAL, 8);
+    gtk_widget_set_margin_top(content, 12);
+    gtk_widget_set_margin_bottom(content, 12);
+    gtk_widget_set_margin_start(content, 12);
+    gtk_widget_set_margin_end(content, 12);
+    label = gtk_label_new("Send this channel key to users by private message. Enter users separated by commas.");
+    gtk_label_set_wrap(GTK_LABEL(label), TRUE);
+    gtk_box_append(GTK_BOX(content), label);
+
+    prompt = g_new0(FishlimSharePrompt, 1);
+    prompt->entry = gtk_entry_new();
+    prompt->channel = g_strdup(channel);
+    prompt->mode = g_strdup(mode);
+    prompt->key = g_strdup(key);
+    gtk_entry_set_placeholder_text(GTK_ENTRY(prompt->entry),
+        "nick1, nick2, nick3");
+    gtk_box_append(GTK_BOX(content), prompt->entry);
+
+    buttons = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 8);
+    gtk_widget_set_halign(buttons, GTK_ALIGN_END);
+    button = gtk_button_new_with_label("Skip");
+    g_signal_connect(button, "clicked", G_CALLBACK(fishlim_gui_close_window),
+        window);
+    gtk_box_append(GTK_BOX(buttons), button);
+    button = gtk_button_new_with_label("Send");
+    g_signal_connect(button, "clicked", G_CALLBACK(fishlim_gui_share_send),
+        window);
+    gtk_box_append(GTK_BOX(buttons), button);
+    gtk_box_append(GTK_BOX(content), buttons);
+    gtk_window_set_child(GTK_WINDOW(window), content);
+    g_object_set_data_full(G_OBJECT(window), "fishlim-share-prompt", prompt,
+        fishlim_share_prompt_free);
+    gtk_window_present(GTK_WINDOW(window));
+}
+
+static void fishlim_gui_set(GtkWidget *widget, gpointer data) {
+    const char *target = fishlim_gui_target();
+    const char *key = gtk_editable_get_text(GTK_EDITABLE(fishlim_key_entry));
+    const char *mode = fishlim_gui_mode();
+
+    if (!target || !*target || !key || !*key) {
+        zoitechat_printf(ph, "%s\n", usage_setkey);
+        return;
+    }
+
+    zoitechat_commandf(ph, "SETKEY %s %s:%s", target, mode, key);
+    fishlim_gui_send_channel_key(target, mode, key);
+    gtk_editable_set_text(GTK_EDITABLE(fishlim_key_entry), "");
+    fishlim_gui_refresh();
+}
+
+static char *fishlim_gui_selected_target(void) {
+    GtkListBoxRow *row;
+    const char *target;
+
+    if (!fishlim_view)
+        return NULL;
+    row = gtk_list_box_get_selected_row(GTK_LIST_BOX(fishlim_view));
+    target = row ? g_object_get_data(G_OBJECT(row), "fishlim-target") : NULL;
+    return g_strdup(target);
+}
+
+static void fishlim_gui_confirm_delete_apply(GtkButton *button,
+    gpointer window) {
+    const char *target = g_object_get_data(G_OBJECT(window),
+        "fishlim-delete-target");
+
+    if (target && *target) {
+        zoitechat_commandf(ph, "DELKEY %s", target);
+        fishlim_gui_refresh();
+    }
+    gtk_window_destroy(GTK_WINDOW(window));
+}
+
+static void fishlim_gui_delete(GtkWidget *widget, gpointer data) {
+    char *selected = fishlim_gui_selected_target();
+    const char *target = selected ? selected : fishlim_gui_target();
+    GtkWidget *window, *content, *buttons, *button;
+    char *message;
+
+    if (!target || !*target) {
+        zoitechat_printf(ph, "%s\n", usage_delkey);
+        g_free(selected);
+        return;
+    }
+
+    window = gtk_window_new();
+    gtk_window_set_title(GTK_WINDOW(window), "Delete FiSHLiM Key");
+    gtk_window_set_transient_for(GTK_WINDOW(window), GTK_WINDOW(fishlim_dialog));
+    gtk_window_set_destroy_with_parent(GTK_WINDOW(window), TRUE);
+    gtk_window_set_modal(GTK_WINDOW(window), TRUE);
+    content = gtk_box_new(GTK_ORIENTATION_VERTICAL, 8);
+    gtk_widget_set_margin_top(content, 12);
+    gtk_widget_set_margin_bottom(content, 12);
+    gtk_widget_set_margin_start(content, 12);
+    gtk_widget_set_margin_end(content, 12);
+    message = g_strdup_printf("Delete the key for %s?", target);
+    gtk_box_append(GTK_BOX(content), gtk_label_new(message));
+    gtk_box_append(GTK_BOX(content), gtk_label_new("This cannot be undone."));
+    g_free(message);
+
+    buttons = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 8);
+    gtk_widget_set_halign(buttons, GTK_ALIGN_END);
+    button = gtk_button_new_with_label("Cancel");
+    g_signal_connect(button, "clicked", G_CALLBACK(fishlim_gui_close_window),
+        window);
+    gtk_box_append(GTK_BOX(buttons), button);
+    button = gtk_button_new_with_label("Delete");
+    g_signal_connect(button, "clicked",
+        G_CALLBACK(fishlim_gui_confirm_delete_apply), window);
+    gtk_box_append(GTK_BOX(buttons), button);
+    gtk_box_append(GTK_BOX(content), buttons);
+    gtk_window_set_child(GTK_WINDOW(window), content);
+    g_object_set_data_full(G_OBJECT(window), "fishlim-delete-target",
+        g_strdup(target), g_free);
+    gtk_window_present(GTK_WINDOW(window));
+    g_free(selected);
+}
+
+static void fishlim_gui_keyx(GtkWidget *widget, gpointer data) {
+    const char *target = fishlim_gui_target();
+
+    if (!target || !*target || !irc_is_query(target)) {
+        zoitechat_printf(ph, "%s\n", usage_keyx);
+        return;
+    }
+    zoitechat_commandf(ph, "KEYX %s %s", target, fishlim_gui_mode());
+}
+
+static void fishlim_gui_row_activated(GtkListBox *box, GtkListBoxRow *row,
+    gpointer data) {
+    const char *target = g_object_get_data(G_OBJECT(row), "fishlim-target");
+
+    if (target)
+        gtk_editable_set_text(GTK_EDITABLE(fishlim_target_entry), target);
+    fishlim_gui_refresh();
+}
+
+static void fishlim_gui_destroy(GtkWidget *widget, gpointer data) {
+    fishlim_dialog = NULL;
+    fishlim_target_entry = NULL;
+    fishlim_key_entry = NULL;
+    fishlim_mode_combo = NULL;
+    fishlim_status_label = NULL;
+    fishlim_view = NULL;
+}
+
+static int handle_fishlim(char *word[], char *word_eol[], void *userdata) {
+    GtkWidget *content, *grid, *scroll, *buttons, *button, *label;
+    const char *target;
+    const char *modes[] = {"ECB", "CBC", NULL};
+
+    target = *word_eol[2] ? word_eol[2] : zoitechat_get_info(ph, "channel");
+    if (fishlim_dialog) {
+        if (target)
+            gtk_editable_set_text(GTK_EDITABLE(fishlim_target_entry), target);
+        gtk_window_present(GTK_WINDOW(fishlim_dialog));
+        return ZOITECHAT_EAT_ZOITECHAT;
+    }
+
+    fishlim_dialog = gtk_window_new();
+    gtk_window_set_title(GTK_WINDOW(fishlim_dialog), "FiSHLiM Key Manager");
+    gtk_window_set_default_size(GTK_WINDOW(fishlim_dialog), 520, 360);
+    g_signal_connect(fishlim_dialog, "destroy",
+        G_CALLBACK(fishlim_gui_destroy), NULL);
+
+    content = gtk_box_new(GTK_ORIENTATION_VERTICAL, 8);
+    gtk_widget_set_margin_top(content, 12);
+    gtk_widget_set_margin_bottom(content, 12);
+    gtk_widget_set_margin_start(content, 12);
+    gtk_widget_set_margin_end(content, 12);
+    grid = gtk_grid_new();
+    gtk_grid_set_row_spacing(GTK_GRID(grid), 8);
+    gtk_grid_set_column_spacing(GTK_GRID(grid), 8);
+    gtk_box_append(GTK_BOX(content), grid);
+
+    fishlim_target_entry = gtk_entry_new();
+    if (target)
+        gtk_editable_set_text(GTK_EDITABLE(fishlim_target_entry), target);
+    gtk_grid_attach(GTK_GRID(grid), gtk_label_new("Target nick or channel"),
+        0, 0, 1, 1);
+    gtk_grid_attach(GTK_GRID(grid), fishlim_target_entry, 1, 0, 2, 1);
+
+    fishlim_mode_combo = gtk_drop_down_new_from_strings(modes);
+    gtk_drop_down_set_selected(GTK_DROP_DOWN(fishlim_mode_combo), 1);
+    gtk_grid_attach(GTK_GRID(grid), gtk_label_new("Mode"), 0, 1, 1, 1);
+    gtk_grid_attach(GTK_GRID(grid), fishlim_mode_combo, 1, 1, 2, 1);
+    label = gtk_label_new("CBC may not work with older clients. Key exchange is private-message only.");
+    gtk_label_set_wrap(GTK_LABEL(label), TRUE);
+    gtk_grid_attach(GTK_GRID(grid), label, 1, 2, 2, 1);
+
+    fishlim_key_entry = gtk_entry_new();
+    gtk_entry_set_visibility(GTK_ENTRY(fishlim_key_entry), FALSE);
+    gtk_grid_attach(GTK_GRID(grid), gtk_label_new("Key"), 0, 3, 1, 1);
+    gtk_grid_attach(GTK_GRID(grid), fishlim_key_entry, 1, 3, 2, 1);
+
+    buttons = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 8);
+    gtk_widget_set_halign(buttons, GTK_ALIGN_END);
+    gtk_box_append(GTK_BOX(content), buttons);
+    button = gtk_button_new_with_label("Set Key");
+    g_signal_connect(button, "clicked", G_CALLBACK(fishlim_gui_set), NULL);
+    gtk_box_append(GTK_BOX(buttons), button);
+    button = gtk_button_new_with_label("Delete Key");
+    g_signal_connect(button, "clicked", G_CALLBACK(fishlim_gui_delete), NULL);
+    gtk_box_append(GTK_BOX(buttons), button);
+    button = gtk_button_new_with_label("Private Message Key Exchange");
+    g_signal_connect(button, "clicked", G_CALLBACK(fishlim_gui_keyx), NULL);
+    gtk_box_append(GTK_BOX(buttons), button);
+
+    fishlim_status_label = gtk_label_new(NULL);
+    gtk_label_set_xalign(GTK_LABEL(fishlim_status_label), 0.0f);
+    gtk_box_append(GTK_BOX(content), fishlim_status_label);
+    fishlim_view = gtk_list_box_new();
+    gtk_list_box_set_selection_mode(GTK_LIST_BOX(fishlim_view),
+        GTK_SELECTION_SINGLE);
+    g_signal_connect(fishlim_view, "row-activated",
+        G_CALLBACK(fishlim_gui_row_activated), NULL);
+    scroll = gtk_scrolled_window_new();
+    gtk_widget_set_vexpand(scroll, TRUE);
+    gtk_scrolled_window_set_child(GTK_SCROLLED_WINDOW(scroll), fishlim_view);
+    gtk_box_append(GTK_BOX(content), scroll);
+    g_signal_connect(fishlim_target_entry, "changed",
+        G_CALLBACK(fishlim_gui_refresh_cb), NULL);
+    gtk_window_set_child(GTK_WINDOW(fishlim_dialog), content);
+    fishlim_gui_refresh();
+    gtk_window_present(GTK_WINDOW(fishlim_dialog));
+    return ZOITECHAT_EAT_ZOITECHAT;
+}
+
+#else
+
 static const char *fishlim_gui_target(void) {
     const char *target;
 
@@ -772,6 +1137,8 @@ static int handle_fishlim(char *word[], char *word_eol[], void *userdata) {
     gtk_widget_show_all(fishlim_dialog);
     return ZOITECHAT_EAT_ZOITECHAT;
 }
+
+#endif
 
 /**
  * Command handler for /setkey
@@ -1161,8 +1528,13 @@ int zoitechat_plugin_init(zoitechat_plugin *plugin_handle,
 int zoitechat_plugin_deinit(void) {
     zoitechat_command(ph, "MENU DEL \"Window/FiSHLiM Key Manager\"");
     zoitechat_command(ph, "MENU DEL \"$NICK/FiSHLiM Key Manager\"");
-    if (fishlim_dialog)
+    if (fishlim_dialog) {
+#if GTK_MAJOR_VERSION >= 4
+        gtk_window_destroy(GTK_WINDOW(fishlim_dialog));
+#else
         gtk_widget_destroy(fishlim_dialog);
+#endif
+    }
     g_clear_pointer(&pending_exchanges, g_hash_table_destroy);
     dh1080_deinit();
     fish_deinit();

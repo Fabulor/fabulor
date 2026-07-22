@@ -19,6 +19,13 @@
 
     <StandardDirectory Id="ProgramFiles64Folder">
       <Directory Id="INSTALLFOLDER" Name="Fabulor GTK4 Candidate">
+        <Directory Id="PLUGINDIR" Name="plugins" />
+        <Directory Id="LIBDIR" Name="lib">
+          <Directory Id="LIBENCHANT2DIR" Name="enchant-2" />
+        </Directory>
+        <Directory Id="SHAREDIR" Name="share">
+          <Directory Id="SHAREENCHANT2DIR" Name="enchant-2" />
+        </Directory>
         <Directory Id="RUNTIMEDIR" Name="Runtime">
           <Directory Id="GTK4DIR" Name="GTK4">
             <Directory Id="GTK4BINDIR" Name="bin" />
@@ -46,6 +53,10 @@
 
     <Feature Id="Gtk4CandidateFeature" Title="Fabulor GTK4 Frontend Candidate" Level="1">
       <ComponentGroupRef Id="Gtk4CandidateCoreComponents" />
+      <ComponentGroupRef Id="Gtk4CandidatePluginComponents" />
+      <ComponentGroupRef Id="Gtk4CandidateNativeRootComponents" />
+      <ComponentGroupRef Id="Gtk4CandidateEnchantProviderComponents" />
+      <ComponentGroupRef Id="Gtk4CandidateEnchantDataComponents" />
       <ComponentGroupRef Id="GTK4Components" />
     </Feature>
   </Package>

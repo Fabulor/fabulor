@@ -35,7 +35,7 @@
     <Link>
       <ModuleDefinitionFile>upd.def</ModuleDefinitionFile>
       <AdditionalDependencies>$(DepLibs);WinSparkle.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>$(DepsRoot)\lib;$(WinSparklePath);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(GtkDepsRoot)\lib;$(DepsRoot)\lib;$(WinSparklePath);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>

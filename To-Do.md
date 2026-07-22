@@ -349,6 +349,7 @@ Detailed planning and evidence live in:
   - [x] Present About through GTK4's native window, link, license, and paintable-logo contracts while retaining GTK3's custom actions.
   - [x] Compile legacy check-menu callbacks and widget autojoin/autoconnect builders only for GTK3 after retained GTK4 action/model replacement.
   - [x] Compose and validate a side-by-side minimal GTK4 frontend candidate MSI without changing the shipping product or bootstrapper.
+  - [x] Rebuild and validate bundled native plugins, WinRT notifications, WinSparkle, and Enchant/WinSpell against the final GTK4-era runtime; include their exact allowlisted payload in the side-by-side candidate MSI.
   - [x] Remove the full-profile frontend compile blockers before producing a GTK4 executable.
     - [x] Replace legacy menu event types and widget construction with the retained action/model boundaries.
       - [x] Remove raw `GdkEventButton` types from the public context-menu API and contain GTK3 event synthesis privately.

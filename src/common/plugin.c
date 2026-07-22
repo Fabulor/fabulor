@@ -880,10 +880,36 @@ plugin_get_libdir (void)
 	const char *libdir;
 
 	libdir = g_getenv ("ZOITECHAT_LIBDIR");
+#ifdef WIN32
+	if (libdir && *libdir)
+	{
+		const char *development_roots_enabled;
+
+		development_roots_enabled = g_getenv ("FABULOR_ENABLE_DEVELOPMENT_RUNTIME_ROOTS");
+		if (development_roots_enabled &&
+			g_ascii_strcasecmp (development_roots_enabled, "1") == 0)
+			return libdir;
+	}
+
+	{
+		static char *windows_libdir;
+		char *install_root;
+
+		if (windows_libdir)
+			return windows_libdir;
+		install_root = g_win32_get_package_installation_directory_of_module (NULL);
+		if (install_root)
+		{
+			windows_libdir = g_build_filename (install_root, "plugins", NULL);
+			g_free (install_root);
+			return windows_libdir;
+		}
+	}
+#else
 	if (libdir && *libdir)
 		return libdir;
-	else
-		return ZOITECHATLIBDIR;
+#endif
+	return ZOITECHATLIBDIR;
 }
 
 static char *
