@@ -428,8 +428,9 @@ gtkutil_file_req (GtkWindow *parent, const char *title, void *callback, void *us
 
 		if (flags & FRF_MULTIPLE)
 			gtk_file_chooser_set_select_multiple (native_chooser, TRUE);
-		if (flags & FRF_WRITE && !(flags & FRF_NOASKOVERWRITE))
-			gtk_file_chooser_set_do_overwrite_confirmation (native_chooser, TRUE);
+		if (flags & FRF_WRITE)
+			fabulor_gtk_file_chooser_set_overwrite_confirmation (native_chooser,
+				!(flags & FRF_NOASKOVERWRITE));
 
 		if ((flags & FRF_EXTENSIONS || flags & FRF_MIMETYPES) && extensions != NULL)
 		{

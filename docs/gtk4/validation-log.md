@@ -6734,6 +6734,52 @@ Behavior contract: the effective widget font remains the base, the emoji
 family remains appended only when absent, and every temporary font description
 has one clear owner. GTK3 rendering behavior is unchanged.
 
+### GTK4 Stage 8 Native Save-Dialog Overwrite Confirmation
+
+Date: 2026-07-22
+
+Files/workflows converted: overwrite-confirmation policy for native save
+requests, including buffer, channel-list, raw-log, event, URL-list, and DCC
+save-as callers.
+
+Automated evidence:
+
+- clean shipping MSVC GTK3 frontend rebuild: pass; zero warnings and errors
+- strict MSVC GTK4 probe against GTK 4.22.4 / GLib 2.88.0: build and execution
+  pass under `/W4 /WX`; zero warnings and errors
+- fresh Meson/Ninja MSVC GTK4 probe: clean configure, build, and execution pass
+- repository GTK4 Python validation: 28 tests pass
+- probe audit: the overwrite-confirmation compatibility helper is
+  address-taken and linked by both strict probe build systems
+- source audit: GTK3 applies the requested boolean through
+  `gtk_file_chooser_set_do_overwrite_confirmation()`; GTK4 leaves the native
+  save dialog's confirmation policy unchanged
+- source audit: save callers continue to express the existing
+  `FRF_NOASKOVERWRITE` policy without direct toolkit calls
+- clean isolated complete GTK4 frontend compilation: zero C compiler errors
+  and 94 warnings, down from 95 in pass 86
+- expected complete GTK4 link failure improves from 13 to 12 unique unresolved
+  symbols and from 14 to 13 unresolved-symbol diagnostics
+- `gtk_file_chooser_set_do_overwrite_confirmation` no longer occurs in the
+  active GTK4 link inventory
+- inventory log: `build/gtk4-full/save-overwrite-confirmation-pass87.log`
+- next target: shared widget destruction
+- `git diff --check`: pass
+
+Manual checks deferred until the full GTK4 frontend links:
+
+- [ ] save a buffer, channel list, raw log, event file, and URL list over an
+  existing file and confirm the native GTK4 dialog applies its platform policy
+- [ ] use DCC Save As over an existing path and confirm the native GTK4 result
+  is accepted without a second application-owned prompt
+- [ ] rebuild and run GTK3, then confirm ordinary saves still prompt while DCC
+  Save As retains the existing `FRF_NOASKOVERWRITE` behavior
+
+Behavior contract: save requests retain one native chooser and one completion
+callback. GTK3 preserves the explicit overwrite toggle. GTK4 does not recreate
+that removed toggle with a separate path check or application dialog; the
+native save dialog remains the sole owner of overwrite confirmation.
+
 ## Stage Completion Rule
 
 A stage can move to complete in `migration-plan.md` only when:
