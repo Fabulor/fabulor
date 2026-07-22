@@ -1192,6 +1192,18 @@ and from 21 to 15 unresolved-symbol diagnostics. `GTK_IS_MENU_SHELL`,
 GTK4 link boundary; the remaining container symbols belong to the separate
 legacy About-dialog layout.
 
+Stage 8 emoji fallback font pass 86 replaces the removed GTK4 style-context
+property lookup with an owned cross-version font-description helper. GTK4
+copies the widget's effective default description from its `PangoContext`;
+GTK3 retains the existing style-context `"font"` query. The caller owns and
+frees either result, then preserves the established emoji-family detection,
+fallback ordering, and scoped CSS application. Both strict probe systems
+compile and link the helper signature. The full GTK4 inventory remains at zero
+compiler errors while improving from 96 to 95 warnings, from 14 to 13 unique
+unresolved symbols, and from 15 to 14 unresolved-symbol diagnostics.
+`gtk_style_context_get` leaves the GTK4 link boundary, removing the final
+unresolved symbol from `maingui.c`.
+
 ## Functional Clusters
 
 | Cluster | Main files | GTK4 concern | Status |

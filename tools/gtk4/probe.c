@@ -214,6 +214,8 @@ check_compatibility_helper_signatures (void)
 		fabulor_gtk_copy_text_to_clipboards;
 	void (*volatile widget_add_css_class) (GtkWidget *, const gchar *) =
 		fabulor_gtk_widget_add_css_class;
+	PangoFontDescription *(*volatile widget_dup_font_description) (GtkWidget *) =
+		fabulor_gtk_widget_dup_font_description;
 	void (*volatile button_set_flat) (GtkButton *) =
 		fabulor_gtk_button_set_flat;
 	void (*volatile button_set_always_show_image) (GtkButton *, gboolean) =
@@ -365,6 +367,7 @@ check_compatibility_helper_signatures (void)
 	(void) container_set_uniform_inset;
 	(void) copy_text_to_clipboards;
 	(void) widget_add_css_class;
+	(void) widget_dup_font_description;
 	(void) button_set_flat;
 	(void) button_set_always_show_image;
 	(void) icon_button_new;

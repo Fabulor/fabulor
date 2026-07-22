@@ -633,6 +633,35 @@ fabulor_gtk_widget_add_css_class (GtkWidget *widget, const gchar *name)
 #endif
 }
 
+static inline PangoFontDescription *
+fabulor_gtk_widget_dup_font_description (GtkWidget *widget)
+{
+	g_return_val_if_fail (GTK_IS_WIDGET (widget), NULL);
+
+#if GTK_MAJOR_VERSION >= 4
+	{
+		PangoContext *context = gtk_widget_get_pango_context (widget);
+		const PangoFontDescription *description;
+
+		if (!context)
+			return NULL;
+		description = pango_context_get_font_description (context);
+		return description ? pango_font_description_copy (description) : NULL;
+	}
+#else
+	{
+		GtkStyleContext *context = gtk_widget_get_style_context (widget);
+		PangoFontDescription *description = NULL;
+
+		if (!context)
+			return NULL;
+		gtk_style_context_get (context, GTK_STATE_FLAG_NORMAL,
+			"font", &description, NULL);
+		return description;
+	}
+#endif
+}
+
 static inline void
 fabulor_gtk_button_set_flat (GtkButton *button)
 {
