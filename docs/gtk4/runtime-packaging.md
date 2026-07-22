@@ -161,7 +161,10 @@ files and 199,443,761 bytes. Candidate WiX owns those paths explicitly, and
 the extracted-MSI validator now checks all 7,270 package files and hashes plus
 ten native modules, one data file, and fifteen owned import edges. The normal
 shipping package retains its existing host composition but advances its pinned
-.NET servicing runtime from 8.0.28 to 8.0.29.
+.NET servicing runtime from 8.0.28 to 8.0.29. Windows CI stages the Python
+runtime from the official 3.14.3 x64 embeddable archive and verifies SHA-256
+`AD4961A479DEDBEB7C7D113253F8DB1B1935586B73C27488712BEEC4F2C894E6`;
+the full hosted Python installation remains a build dependency only.
 
 ## Sources And Provenance
 

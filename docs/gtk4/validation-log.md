@@ -7084,8 +7084,8 @@ Automated evidence:
 - candidate MSI: 100,229,788 bytes; SHA-256
   `6B1CF0226DD6405A73BD455F51EAE4B67E50C0CCE3C5FBED33BAD3C8B7BA2F43`
 - full shipping MSVC x64 solution: pass; 18 manifest/path tests pass
-- shipping MSI and bootstrapper: pass with zero warnings and errors; decompiled
-  hostfxr and shared-runtime directories both resolve to .NET 8.0.29
+- shipping MSI and bootstrapper: pass with no errors; decompiled hostfxr and
+  shared-runtime directories both resolve to .NET 8.0.29
 - shipping MSI: 133,330,185 bytes; SHA-256
   `1E7671B4951B4CD990F0CA0C3F399F56C9313BB9EB4BDC84859AF26665DEB76C`
 
