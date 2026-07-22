@@ -158,6 +158,8 @@ check_compatibility_helper_signatures (void)
 		fabulor_gtk_icon_size_get_pixels;
 	GtkWidget *(*volatile image_new_from_icon_name) (const gchar *,
 		FabulorGtkIconSize) = fabulor_gtk_image_new_from_icon_name;
+	void (*volatile about_dialog_set_logo_from_pixbuf) (GtkAboutDialog *,
+		GdkPixbuf *) = fabulor_gtk_about_dialog_set_logo_from_pixbuf;
 	GtkWidget *(*volatile button_new_with_icon_and_mnemonic) (const gchar *,
 		const gchar *, FabulorGtkIconSize) =
 		fabulor_gtk_button_new_with_icon_and_mnemonic;
@@ -341,6 +343,7 @@ check_compatibility_helper_signatures (void)
 	(void) dialog_icon_new;
 	(void) icon_size_get_pixels;
 	(void) image_new_from_icon_name;
+	(void) about_dialog_set_logo_from_pixbuf;
 	(void) button_new_with_icon_and_mnemonic;
 	(void) radio_button_new_with_mnemonic;
 	(void) check_button_get_active;

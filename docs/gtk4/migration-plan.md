@@ -2421,6 +2421,18 @@ zero compiler errors while improving from 94 to 93 warnings, from 12 to 11
 unique unresolved symbols, and from 13 to 11 unresolved-symbol diagnostics.
 The legacy About-dialog layout and presentation is the next contained target.
 
+Native About-dialog pass 89 (2026-07-22):
+GTK4 now uses `GtkAboutDialog` as its native top-level window with built-in
+website, GPL 2.0-only license, Close, Escape, and presentation behavior. GTK3
+retains its custom action-area buttons and response handling. The shared logo
+boundary converts the retained pixbuf to an owned GTK4 texture paintable and
+releases the temporary reference after assignment. Shipping GTK3, strict MSVC
+and fresh Meson GTK4 probes, and all 28 repository tests remain clean. The
+complete GTK4 profile remains at zero compiler errors while improving from 93
+to 86 warnings, from 11 to 5 unique unresolved symbols, and from 11 to 5
+unresolved-symbol diagnostics. The remaining check-menu and toggle-action
+boundary is the next contained target.
+
 Deliverables:
 
 - Make GTK4 the only production frontend dependency in MSVC, Meson, and CI.

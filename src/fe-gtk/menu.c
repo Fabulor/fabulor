@@ -2666,6 +2666,7 @@ menu_metres_both (GtkWidget *item, gpointer none)
 		menu_set_metres (3);
 }
 
+#if GTK_MAJOR_VERSION < 4
 static void
 about_dialog_response (GtkDialog *dialog, int response, gpointer data)
 {
@@ -2681,6 +2682,7 @@ about_dialog_response (GtkDialog *dialog, int response, gpointer data)
 	}
 	fabulor_gtk_window_destroy (GTK_WINDOW (dialog));
 }
+#endif
 
 static gboolean
 about_dialog_openurl (GtkAboutDialog *dialog, char *uri, gpointer data)
@@ -2692,14 +2694,23 @@ about_dialog_openurl (GtkAboutDialog *dialog, char *uri, gpointer data)
 static void
 menu_about (GtkWidget *wid, gpointer sess)
 {
-	GtkAboutDialog *dialog = GTK_ABOUT_DIALOG (g_object_new (GTK_TYPE_ABOUT_DIALOG, "use-header-bar", FALSE, NULL));
+	GtkAboutDialog *dialog;
+#if GTK_MAJOR_VERSION < 4
 	GtkWidget *website;
 	GtkWidget *license;
 	GtkWidget *close;
 	GtkWidget *actions;
 	GList *children;
 	GList *child;
+#endif
 	static const gchar *empty_people[] = { NULL };
+
+#if GTK_MAJOR_VERSION >= 4
+	dialog = GTK_ABOUT_DIALOG (gtk_about_dialog_new ());
+#else
+	dialog = GTK_ABOUT_DIALOG (g_object_new (GTK_TYPE_ABOUT_DIALOG,
+		"use-header-bar", FALSE, NULL));
+#endif
 	theme_manager_attach_window (GTK_WIDGET (dialog));
 	char comment[512];
 	g_snprintf  (comment, sizeof(comment), ""
@@ -2720,13 +2731,20 @@ menu_about (GtkWidget *wid, gpointer sess)
 	gtk_about_dialog_set_documenters (dialog, empty_people);
 	gtk_about_dialog_set_artists (dialog, empty_people);
 	gtk_about_dialog_set_translator_credits (dialog, "");
+#if GTK_MAJOR_VERSION >= 4
+	gtk_about_dialog_set_website (dialog, FABULOR_README_URL);
+	gtk_about_dialog_set_website_label (dialog, _("Website"));
+	gtk_about_dialog_set_license_type (dialog, GTK_LICENSE_GPL_2_0_ONLY);
+#else
 	gtk_about_dialog_set_website (dialog, NULL);
 	gtk_about_dialog_set_website_label (dialog, NULL);
 	gtk_about_dialog_set_license (dialog, NULL);
+#endif
 	gtk_about_dialog_set_wrap_license (dialog, FALSE);
-	gtk_about_dialog_set_logo (dialog, pix_zoitechat);
+	fabulor_gtk_about_dialog_set_logo_from_pixbuf (dialog, pix_zoitechat);
 	gtk_about_dialog_set_copyright (dialog, "\302\251 1998-2010 Peter \305\275elezn\303\275\n\302\251 2009-2014 Berke Viktor\n\302\251 2015-2025 Patrick Griffis\n\302\251 2026 deepend");
 	gtk_about_dialog_set_comments (dialog, comment);
+#if GTK_MAJOR_VERSION < 4
 	actions = gtk_dialog_get_action_area (GTK_DIALOG (dialog));
 	children = gtk_container_get_children (GTK_CONTAINER (actions));
 	for (child = children; child; child = child->next)
@@ -2739,12 +2757,19 @@ menu_about (GtkWidget *wid, gpointer sess)
 	gtk_button_box_set_child_secondary (GTK_BUTTON_BOX (actions), website, TRUE);
 	gtk_button_box_set_child_secondary (GTK_BUTTON_BOX (actions), license, TRUE);
 	gtk_button_box_set_child_secondary (GTK_BUTTON_BOX (actions), close, FALSE);
+#endif
 
 	gtk_window_set_transient_for (GTK_WINDOW(dialog), GTK_WINDOW(parent_window));
+#if GTK_MAJOR_VERSION < 4
 	g_signal_connect (G_OBJECT(dialog), "response", G_CALLBACK(about_dialog_response), NULL);
+#endif
 	g_signal_connect (G_OBJECT(dialog), "activate-link", G_CALLBACK(about_dialog_openurl), NULL);
-	
+
+#if GTK_MAJOR_VERSION >= 4
+	gtk_window_present (GTK_WINDOW (dialog));
+#else
 	gtk_widget_show_all (GTK_WIDGET(dialog));
+#endif
 }
 
 static struct mymenu mymenu[] = {

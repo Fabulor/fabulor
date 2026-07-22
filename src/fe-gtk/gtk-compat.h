@@ -190,6 +190,23 @@ fabulor_gtk_image_get_source_pixbuf (GtkImage *image)
 		FABULOR_GTK_IMAGE_SOURCE_PIXBUF_DATA);
 }
 
+static inline void
+fabulor_gtk_about_dialog_set_logo_from_pixbuf (GtkAboutDialog *dialog,
+	GdkPixbuf *pixbuf)
+{
+	g_return_if_fail (GTK_IS_ABOUT_DIALOG (dialog));
+	g_return_if_fail (GDK_IS_PIXBUF (pixbuf));
+
+#if GTK_MAJOR_VERSION >= 4
+	GdkTexture *texture = gdk_texture_new_for_pixbuf (pixbuf);
+
+	gtk_about_dialog_set_logo (dialog, GDK_PAINTABLE (texture));
+	g_object_unref (texture);
+#else
+	gtk_about_dialog_set_logo (dialog, pixbuf);
+#endif
+}
+
 static inline GtkWidget *
 fabulor_gtk_button_new_with_icon_and_mnemonic (const gchar *label,
 											   const gchar *icon_name,
