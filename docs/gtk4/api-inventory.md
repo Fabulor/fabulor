@@ -1261,15 +1261,12 @@ module, and loads the frontend through constrained search flags. A system-only
 `PATH` smoke run loaded GTK4, GLib, GObject, and GIO exclusively from the staged
 runtime and closed normally.
 
-Stage 8 candidate-MSI pass 92 gives the launcher/frontend boundary an isolated
-production WiX composition. `ProductGtk4Candidate.wxs` and
-`CoreGtk4Candidate.wxs` compile only in candidate mode, use a distinct product
-identity and install root, and combine five reviewed root files with the locked
-GTK4 component group. `validate_frontend_candidate_msi.py` verifies exact
-installed paths and hashes after cabinet extraction, then repeats PE import and
-frontend-export checks against the packaged bytes. Shipping GTK3 components,
-product identity, bootstrapper, shortcuts, protocols, and plugin runtimes do
-not enter this candidate boundary.
+Stage 8 candidate-MSI pass 92 first gave the launcher/frontend boundary an
+isolated package for cutover testing. Stage 9 pass 2 retires that temporary
+product graph and validator: the established Fabulor product identity is now
+the only WiX graph, and production validation enforces its GTK4-only content,
+runtime manifest, PE bootstrap boundary, shortcuts, protocols, and selectable
+plugin runtimes.
 
 Stage 8 native-extension compatibility pass 93 adds an isolated build profile
 for the bundled checksum, Exec, FiSHLiM, Lua, Python, SysInfo, updater, and

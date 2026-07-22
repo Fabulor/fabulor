@@ -1,7 +1,7 @@
 # GTK4 Build Probe
 
-This directory defines the first Fabulor GTK4 build contract. It validates and
-compiles against GTK4 without changing the production GTK3 frontend.
+This directory defines the Fabulor GTK4 build and production packaging
+contract. GTK4 is the only supported MSVC and CI frontend profile.
 
 The authoritative Windows x64 dependency identity is recorded in
 `dependency-contract.json`. Both build probes require the same root layout and
@@ -61,10 +61,10 @@ display or changing the production frontend target.
 
 ## Full MSVC Frontend Profile
 
-`gtk4-full-frontend.proj` applies the same validated GTK4 root to the production
-common and frontend projects while keeping all outputs beneath
-`build\gtk4-full`. It is an opt-in conversion target: the normal project and
-solution build still default to GTK3 and the existing external output root.
+`gtk4-full-frontend.proj` applies the validated GTK4 root to the production
+common, translation, frontend, and launcher projects while keeping all outputs
+beneath `build\gtk4-full`. The normal Visual Studio solution uses this same
+GTK4-only output and includes the launcher.
 
 Run the common-library checkpoint or attempt the complete frontend from an x64
 Visual Studio developer shell:
@@ -78,11 +78,11 @@ Windows CI builds the complete profile. `Build` produces a Win32-only
 `fabulor.exe` launcher and `fabulor-gtk4-frontend.dll`. The launcher registers
 the executable-relative `Runtime\GTK4\bin` directory before loading the
 frontend module, so its own PE import table contains no GTK or GLib dependency.
-This profile remains isolated from the shipping GTK3 solution output.
+The shared MSVC properties reject attempts to select a GTK3 frontend profile.
 
-## Stage 8 Runtime Candidate
+## Production Runtime
 
-`runtime-payload-contract.json` defines the first production runtime candidate
+`runtime-payload-contract.json` defines the production runtime
 as exact files and owned data trees from the pinned dependency root. It excludes
 headers, import libraries, debug symbols, build tools, GIR source, and Python
 build helpers. `stage_runtime.py` copies only that selection, normalizes the GDK
@@ -92,7 +92,7 @@ manifest of every staged file.
 ```powershell
 python tools\gtk4\test_stage_runtime.py
 python tools\gtk4\stage_runtime.py --root C:\fabulor-master\Runtime\GTK4 --validate-only
-python tools\gtk4\stage_runtime.py --root C:\fabulor-master\Runtime\GTK4 --output C:\fabulor-master\build\gtk4-runtime-candidate-root\Runtime\GTK4
+python tools\gtk4\stage_runtime.py --root C:\fabulor-master\Runtime\GTK4 --output C:\fabulor-master\build\gtk4-runtime-production-root\Runtime\GTK4
 ```
 
 The output directory must be absent or empty. The normal WiX build consumes this
@@ -134,27 +134,29 @@ in the Windows build after staging.
 
 ```powershell
 python tools\gtk4\test_validate_runtime_imports.py
-python tools\gtk4\validate_runtime_imports.py --root C:\fabulor-master\build\gtk4-runtime-candidate-root\Runtime\GTK4 --dumpbin dumpbin
+python tools\gtk4\validate_runtime_imports.py --root C:\fabulor-master\build\gtk4-runtime-production-root\Runtime\GTK4 --dumpbin dumpbin
 python tools\gtk4\test_frontend_runtime_bootstrap.py
-python tools\gtk4\validate_frontend_bootstrap.py --launcher C:\fabulor-master\build\gtk4-full\x64\rel\fabulor.exe --frontend C:\fabulor-master\build\gtk4-full\x64\rel\fabulor-gtk4-frontend.dll --runtime-root C:\fabulor-master\build\gtk4-runtime-candidate-root\Runtime\GTK4 --dumpbin dumpbin
+python tools\gtk4\validate_frontend_bootstrap.py --launcher C:\fabulor-master\build\gtk4-full\x64\rel\fabulor.exe --frontend C:\fabulor-master\build\gtk4-full\x64\rel\fabulor-gtk4-frontend.dll --runtime-root C:\fabulor-master\build\gtk4-runtime-production-root\Runtime\GTK4 --dumpbin dumpbin
 ```
 
-The isolated candidate WiX mode packages the launcher, frontend, certificate,
-OpenSSL DLLs, locked runtime, validated native plugins, WinRT notifications,
-WinSparkle, rebuilt Enchant/WinSpell payload, and the C#, Python, and Tcl plugin
-hosts under a distinct product identity. `plugin-host-payload-contract.json`
-defines the exact private runtime inputs; `stage_plugin_hosts.py` emits their
-installed-layout root and content manifest. The candidate does not replace or
-modify the shipping installer. Build the extensions after the full frontend,
-rebuild Enchant against the final GTK4 root, and stage the plugin hosts before
-composing the candidate:
+The production WiX package combines the launcher, frontend, locked runtime,
+validated native plugins, WinRT notifications, rebuilt Enchant/WinSpell
+payload, and C#, Python, and Tcl plugin hosts. `production-support-contract.json`
+allowlists the certificate, OpenSSL, WinSparkle, CFFI, and Python API support
+files that previously came from the broad legacy staging tree.
+`plugin-host-payload-contract.json` defines the exact private runtime inputs;
+`stage_plugin_hosts.py` emits their installed-layout root and content manifest.
+Build the extensions after the full frontend, stage production support, rebuild
+Enchant against the final GTK4 root, and stage the plugin hosts before WiX:
 
 ```powershell
 msbuild tools\gtk4\gtk4-native-extensions.proj /t:Build /m:1 /p:Configuration=Release /p:Platform=x64 /p:FabulorGtk4Root=C:\fabulor-master\Runtime\GTK4
-python tools\gtk4\validate_native_extensions.py --plugins-root C:\fabulor-master\build\gtk4-full\x64\rel\plugins --payload-root C:\zoitechat-build\x64\rel --enchant-root C:\fabulor-master\build\gtk4-enchant-stage --runtime-root C:\fabulor-master\build\gtk4-runtime-candidate-root\Runtime\GTK4 --dumpbin dumpbin
+python tools\gtk4\test_stage_production_support.py
+python tools\gtk4\stage_production_support.py --dependency-root C:\gtk-build\gtk\x64\release --python-build-root C:\gtk-build\python-3.14\x64 --repository-root C:\fabulor-master --winsparkle-root C:\gtk-build\WinSparkle --output C:\fabulor-master\build\gtk4-production-support
+python tools\gtk4\validate_native_extensions.py --plugins-root C:\fabulor-master\build\gtk4-full\x64\rel\plugins --payload-root C:\fabulor-master\build\gtk4-production-support --enchant-root C:\fabulor-master\build\gtk4-enchant-stage --runtime-root C:\fabulor-master\build\gtk4-runtime-production-root\Runtime\GTK4 --dumpbin dumpbin
 python tools\gtk4\test_stage_plugin_hosts.py
-python tools\gtk4\stage_plugin_hosts.py --output C:\fabulor-master\build\gtk4-plugin-host-candidate-root --payload-root C:\zoitechat-build\x64\rel --managed-root C:\fabulor-master\src\managed\Fabulor.PluginHost\bin\x64\Release\net8.0 --dotnet-root "C:\Program Files\dotnet" --python-root C:\fabulor-master\Runtime\Python314 --tcl-root C:\fabulor-master\Runtime\Tcl
-dotnet build installer\Fabulor.wixproj -c Release -p:Platform=x64 -p:Gtk4FrontendCandidate=true -p:Gtk4FrontendRoot=C:\fabulor-master\build\gtk4-full\x64\rel -p:Gtk4EnchantRoot=C:\fabulor-master\build\gtk4-enchant-stage -p:GtkRuntimeRoot=C:\fabulor-master\build\gtk4-runtime-candidate-root\Runtime\GTK4 -p:Gtk4PluginHostRoot=C:\fabulor-master\build\gtk4-plugin-host-candidate-root -p:FabulorPayloadRoot=C:\zoitechat-build\x64\rel
-python tools\gtk4\test_validate_frontend_candidate_msi.py
-python tools\gtk4\validate_frontend_candidate_msi.py --wix C:\path\to\wix.exe --msi C:\path\to\FabulorGtk4FrontendCandidate.msi --manifest C:\fabulor-master\build\gtk4-runtime-candidate-root\Runtime\GTK4\runtime-manifest.json --frontend-root C:\fabulor-master\build\gtk4-full\x64\rel --payload-root C:\zoitechat-build\x64\rel --enchant-root C:\fabulor-master\build\gtk4-enchant-stage --plugin-host-root C:\fabulor-master\build\gtk4-plugin-host-candidate-root --dumpbin dumpbin
+python tools\gtk4\stage_plugin_hosts.py --output C:\fabulor-master\build\gtk4-plugin-host-production-root --payload-root C:\fabulor-master\build\gtk4-production-support --managed-root C:\fabulor-master\src\managed\Fabulor.PluginHost\bin\x64\Release\net8.0 --dotnet-root "C:\Program Files\dotnet" --python-root C:\fabulor-master\Runtime\Python314 --tcl-root C:\fabulor-master\Runtime\Tcl
+dotnet build installer\Fabulor.wixproj -c Release -p:Platform=x64
+python tools\gtk4\validate_production_gtk4_msi.py --wix C:\path\to\wix.exe --msi C:\fabulor-master\installer\bin\x64\Release\Fabulor.msi
+python tools\gtk4\validate_runtime_msi.py --wix C:\path\to\wix.exe --msi C:\fabulor-master\installer\bin\x64\Release\Fabulor.msi --manifest C:\fabulor-master\build\gtk4-runtime-production-root\Runtime\GTK4\runtime-manifest.json
 ```

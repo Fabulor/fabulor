@@ -7,57 +7,29 @@
 
     <WixToolsetMajorVersion>7</WixToolsetMajorVersion>
     <WixToolsetVersion>7.0.0</WixToolsetVersion>
-    <FabulorPayloadRoot Condition="'$(FabulorPayloadRoot)'==''">$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\..\zoitechat-build\$(Platform)\rel\'))</FabulorPayloadRoot>
-    <GtkRuntimeRoot Condition="'$(GtkRuntimeRoot)'==''">$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\build\gtk4-runtime-candidate-root\Runtime\GTK4\'))</GtkRuntimeRoot>
-    <Gtk4FrontendCandidate Condition="'$(Gtk4FrontendCandidate)'==''">false</Gtk4FrontendCandidate>
-    <LegacyGtk3Frontend Condition="'$(LegacyGtk3Frontend)'==''">false</LegacyGtk3Frontend>
-    <Gtk4Payload Condition="'$(Gtk4FrontendCandidate)'=='true' or '$(LegacyGtk3Frontend)'!='true'">true</Gtk4Payload>
+    <FabulorPayloadRoot Condition="'$(FabulorPayloadRoot)'==''">$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\build\gtk4-production-support\'))</FabulorPayloadRoot>
+    <GtkRuntimeRoot Condition="'$(GtkRuntimeRoot)'==''">$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\build\gtk4-runtime-production-root\Runtime\GTK4\'))</GtkRuntimeRoot>
     <Gtk4FrontendRoot Condition="'$(Gtk4FrontendRoot)'==''">$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\build\gtk4-full\$(Platform)\rel\'))</Gtk4FrontendRoot>
+    <Gtk4LocaleRoot Condition="'$(Gtk4LocaleRoot)'==''">$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\build\gtk4-full\$(Platform)\bin\locale\'))</Gtk4LocaleRoot>
     <Gtk4EnchantRoot Condition="'$(Gtk4EnchantRoot)'==''">$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\build\gtk4-enchant-stage\'))</Gtk4EnchantRoot>
-    <Gtk4PluginHostRoot Condition="'$(Gtk4PluginHostRoot)'==''">$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\build\gtk4-plugin-host-candidate-root\'))</Gtk4PluginHostRoot>
-    <BuildFabulorBootstrapper Condition="'$(BuildFabulorBootstrapper)'=='' and '$(Gtk4FrontendCandidate)'=='true'">false</BuildFabulorBootstrapper>
+    <Gtk4PluginHostRoot Condition="'$(Gtk4PluginHostRoot)'==''">$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\build\gtk4-plugin-host-production-root\'))</Gtk4PluginHostRoot>
     <BuildFabulorBootstrapper Condition="'$(BuildFabulorBootstrapper)'==''">true</BuildFabulorBootstrapper>
     <OutputPath Condition="'$(FabulorInstallerOutputPath)'!=''">$(FabulorInstallerOutputPath)</OutputPath>
     <IntermediateOutputPath Condition="'$(FabulorInstallerIntermediateOutputPath)'!=''">$(FabulorInstallerIntermediateOutputPath)</IntermediateOutputPath>
-    <ManagedPluginHostRoot>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\src\managed\Fabulor.PluginHost\bin\$(Platform)\$(Configuration)\net8.0\'))</ManagedPluginHostRoot>
-    <BundledDotNetRoot Condition="'$(BundledDotNetRoot)'=='' and '$(DOTNET_ROOT)'!=''">$(DOTNET_ROOT)</BundledDotNetRoot>
-    <BundledDotNetRoot Condition="'$(BundledDotNetRoot)'==''">C:\Program Files\dotnet</BundledDotNetRoot>
-    <BundledDotNetHostFxrRoot>$([System.IO.Path]::GetFullPath('$(BundledDotNetRoot)\host\fxr\'))</BundledDotNetHostFxrRoot>
-    <BundledDotNetSharedRuntimeRoot>$([System.IO.Path]::GetFullPath('$(BundledDotNetRoot)\shared\Microsoft.NETCore.App\'))</BundledDotNetSharedRuntimeRoot>
     <BundledDotNetRuntimeVersion Condition="'$(BundledDotNetRuntimeVersion)'==''">8.0.29</BundledDotNetRuntimeVersion>
-    <PythonRuntimeRoot>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\Runtime\Python314\'))</PythonRuntimeRoot>
-    <PythonRuntimeDll>python314.dll</PythonRuntimeDll>
     <PythonRuntimeFolderName>Python314</PythonRuntimeFolderName>
-    <TclRuntimeRoot>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\Runtime\Tcl\'))</TclRuntimeRoot>
-    <DefineConstants>$(DefineConstants);FabulorSemVer=$(FabulorSemVer);FabulorPayloadRoot=$(FabulorPayloadRoot);GtkRuntimeRoot=$(GtkRuntimeRoot);Gtk4FrontendCandidate=$(Gtk4FrontendCandidate);Gtk4FrontendRoot=$(Gtk4FrontendRoot);Gtk4EnchantRoot=$(Gtk4EnchantRoot);Gtk4PluginHostRoot=$(Gtk4PluginHostRoot);ManagedPluginHostRoot=$(ManagedPluginHostRoot);BundledDotNetRoot=$(BundledDotNetRoot);BundledDotNetHostFxrRoot=$(BundledDotNetHostFxrRoot);BundledDotNetSharedRuntimeRoot=$(BundledDotNetSharedRuntimeRoot);BundledDotNetRuntimeVersion=$(BundledDotNetRuntimeVersion);PythonRuntimeRoot=$(PythonRuntimeRoot);PythonRuntimeFolderName=$(PythonRuntimeFolderName);TclRuntimeRoot=$(TclRuntimeRoot)</DefineConstants>
+    <DefineConstants>$(DefineConstants);FabulorSemVer=$(FabulorSemVer);FabulorPayloadRoot=$(FabulorPayloadRoot);GtkRuntimeRoot=$(GtkRuntimeRoot);Gtk4FrontendRoot=$(Gtk4FrontendRoot);Gtk4LocaleRoot=$(Gtk4LocaleRoot);Gtk4EnchantRoot=$(Gtk4EnchantRoot);Gtk4PluginHostRoot=$(Gtk4PluginHostRoot);BundledDotNetRuntimeVersion=$(BundledDotNetRuntimeVersion);PythonRuntimeFolderName=$(PythonRuntimeFolderName)</DefineConstants>
 
     <WixProjectType>Package</WixProjectType>
-    <OutputName Condition="'$(FabulorInstallerOutputName)'=='' and '$(Gtk4FrontendCandidate)'=='true'">FabulorGtk4FrontendCandidate</OutputName>
-    <OutputName Condition="'$(FabulorInstallerOutputName)'=='' and '$(Gtk4FrontendCandidate)'!='true'">Fabulor</OutputName>
+    <OutputName Condition="'$(FabulorInstallerOutputName)'==''">Fabulor</OutputName>
     <OutputName Condition="'$(FabulorInstallerOutputName)'!=''">$(FabulorInstallerOutputName)</OutputName>
     <EnableDefaultItems>false</EnableDefaultItems>
     <SuppressIces>ICE60;ICE61</SuppressIces>
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Include="ProductGtk4.wxs"
-             Condition="'$(Gtk4FrontendCandidate)'!='true' and '$(LegacyGtk3Frontend)'!='true'" />
-    <Compile Include="Product.wxs"
-             Condition="'$(Gtk4FrontendCandidate)'!='true' and '$(LegacyGtk3Frontend)'=='true'" />
-    <Compile Include="ProductGtk4Candidate.wxs" Condition="'$(Gtk4FrontendCandidate)'=='true'" />
-    <Compile Include="Components\**\*.wxs"
-             Exclude="Components\CoreGtk4.wxs;Components\CoreGtk4Candidate.wxs;Components\EnchantGtk4.wxs;Components\NativeGtk4Candidate.wxs;Components\PluginsGtk4.wxs;Components\PluginHostsGtk4Candidate.wxs;Components\PluginRuntimesGtk4.wxs;Components\ShareGtk4.wxs"
-             Condition="'$(Gtk4FrontendCandidate)'!='true' and '$(LegacyGtk3Frontend)'=='true'" />
-    <Compile Include="Components\Config.wxs;Components\CoreGtk4.wxs;Components\EnchantGtk4.wxs;Components\GTK4Allowlist.wxs;Components\InstalledMode.wxs;Components\PluginsGtk4.wxs;Components\PluginRuntimesGtk4.wxs;Components\PortableMode.wxs;Components\ShareAssets.wxs;Components\ShareGtk4.wxs"
-             Condition="'$(Gtk4FrontendCandidate)'!='true' and '$(LegacyGtk3Frontend)'!='true'" />
-    <Compile Include="Components\CoreGtk4Candidate.wxs"
-             Condition="'$(Gtk4FrontendCandidate)'=='true'" />
-    <Compile Include="Components\NativeGtk4Candidate.wxs"
-             Condition="'$(Gtk4FrontendCandidate)'=='true'" />
-    <Compile Include="Components\PluginHostsGtk4Candidate.wxs"
-             Condition="'$(Gtk4FrontendCandidate)'=='true'" />
-    <Compile Include="Components\GTK4Allowlist.wxs"
-             Condition="'$(Gtk4FrontendCandidate)'=='true'" />
+    <Compile Include="ProductGtk4.wxs" />
+    <Compile Include="Components\Config.wxs;Components\CoreGtk4.wxs;Components\EnchantGtk4.wxs;Components\GTK4Allowlist.wxs;Components\InstalledMode.wxs;Components\PluginsGtk4.wxs;Components\PluginRuntimesGtk4.wxs;Components\PortableMode.wxs;Components\ShareAssets.wxs;Components\ShareGtk4.wxs" />
   </ItemGroup>
 
   <Target Name="BuildManagedPluginHost" BeforeTargets="Compile">
@@ -67,44 +39,33 @@
   </Target>
 
   <Target Name="ValidateInstallerPayload" BeforeTargets="Build" DependsOnTargets="BuildManagedPluginHost">
-    <Error Condition="'$(Gtk4FrontendCandidate)'=='true' and '$(LegacyGtk3Frontend)'=='true'" Text="Gtk4FrontendCandidate and LegacyGtk3Frontend are mutually exclusive." />
-    <Error Condition="'$(LegacyGtk3Frontend)'=='true' and !Exists('$(FabulorPayloadRoot)\fabulor.exe')" Text="Missing built legacy Fabulor payload at $(FabulorPayloadRoot)." />
-    <Error Condition="'$(LegacyGtk3Frontend)'=='true' and !Exists('$(FabulorPayloadRoot)\libenchant-2-2.dll')" Text="Missing legacy MSVC Enchant 2 core at $(FabulorPayloadRoot)." />
-    <Error Condition="'$(LegacyGtk3Frontend)'=='true' and !Exists('$(FabulorPayloadRoot)\lib\enchant-2\enchant_winspell.dll')" Text="Missing legacy MSVC WinSpell provider at $(FabulorPayloadRoot)." />
-    <Error Condition="'$(LegacyGtk3Frontend)'=='true' and !Exists('$(FabulorPayloadRoot)\share\enchant-2\enchant.ordering')" Text="Missing legacy MSVC WinSpell provider ordering at $(FabulorPayloadRoot)." />
-    <Error Condition="'$(LegacyGtk3Frontend)'=='true' and !Exists('$(FabulorPayloadRoot)\plugins')" Text="Missing legacy plugin payload at $(FabulorPayloadRoot)." />
-    <Error Condition="'$(Gtk4Payload)'=='true' and !Exists('$(Gtk4FrontendRoot)\fabulor.exe')" Text="Missing GTK4 launcher at $(Gtk4FrontendRoot). Build tools\gtk4\gtk4-full-frontend.proj first." />
-    <Error Condition="'$(Gtk4Payload)'=='true' and !Exists('$(Gtk4FrontendRoot)\fabulor-gtk4-frontend.dll')" Text="Missing GTK4 frontend module at $(Gtk4FrontendRoot). Build tools\gtk4\gtk4-full-frontend.proj first." />
-    <Error Condition="'$(Gtk4Payload)'=='true' and !Exists('$(FabulorPayloadRoot)\cert.pem')" Text="Missing GTK4 certificate bundle at $(FabulorPayloadRoot)." />
-    <Error Condition="'$(Gtk4Payload)'=='true' and !Exists('$(FabulorPayloadRoot)\libssl-3-x64.dll')" Text="Missing GTK4 OpenSSL runtime at $(FabulorPayloadRoot)." />
-    <Error Condition="'$(Gtk4Payload)'=='true' and !Exists('$(FabulorPayloadRoot)\libcrypto-3-x64.dll')" Text="Missing GTK4 OpenSSL crypto runtime at $(FabulorPayloadRoot)." />
-    <Error Condition="'$(Gtk4Payload)'=='true' and !Exists('$(FabulorPayloadRoot)\WinSparkle.dll')" Text="Missing GTK4 WinSparkle runtime at $(FabulorPayloadRoot)." />
-    <Error Condition="'$(Gtk4Payload)'=='true' and !Exists('$(Gtk4FrontendRoot)\plugins\hcchecksum.dll')" Text="Missing GTK4 native extensions at $(Gtk4FrontendRoot)\plugins." />
-    <Error Condition="'$(Gtk4Payload)'=='true' and !Exists('$(Gtk4FrontendRoot)\plugins\hcexec.dll')" Text="Missing GTK4 Exec extension at $(Gtk4FrontendRoot)\plugins." />
-    <Error Condition="'$(Gtk4Payload)'=='true' and !Exists('$(Gtk4FrontendRoot)\plugins\hcfishlim.dll')" Text="Missing GTK4 FiSHLiM extension at $(Gtk4FrontendRoot)\plugins." />
-    <Error Condition="'$(Gtk4Payload)'=='true' and !Exists('$(Gtk4FrontendRoot)\plugins\hcnotifications-winrt.dll')" Text="Missing GTK4 notification extension at $(Gtk4FrontendRoot)\plugins." />
-    <Error Condition="'$(Gtk4Payload)'=='true' and !Exists('$(Gtk4FrontendRoot)\plugins\hcsysinfo.dll')" Text="Missing GTK4 Sysinfo extension at $(Gtk4FrontendRoot)\plugins." />
-    <Error Condition="'$(Gtk4Payload)'=='true' and !Exists('$(Gtk4FrontendRoot)\plugins\hcupd.dll')" Text="Missing GTK4 updater extension at $(Gtk4FrontendRoot)\plugins." />
-    <Error Condition="'$(Gtk4Payload)'=='true' and !Exists('$(Gtk4FrontendRoot)\plugins\hcpython3.dll')" Text="Missing GTK4 Python host extension at $(Gtk4FrontendRoot)\plugins." />
-    <Error Condition="'$(Gtk4Payload)'=='true' and !Exists('$(Gtk4EnchantRoot)\libenchant-2-2.dll')" Text="Missing GTK4-compatible Enchant core at $(Gtk4EnchantRoot)." />
-    <Error Condition="'$(Gtk4Payload)'=='true' and !Exists('$(Gtk4EnchantRoot)\lib\enchant-2\enchant_winspell.dll')" Text="Missing GTK4-compatible WinSpell provider at $(Gtk4EnchantRoot)." />
-    <Error Condition="'$(Gtk4Payload)'=='true' and !Exists('$(Gtk4EnchantRoot)\share\enchant-2\enchant.ordering')" Text="Missing GTK4-compatible Enchant provider ordering at $(Gtk4EnchantRoot)." />
-    <Error Condition="'$(Gtk4Payload)'=='true' and !Exists('$(Gtk4PluginHostRoot)\Runtime\plugin-host-manifest.json')" Text="Missing staged GTK4 plugin-host manifest at $(Gtk4PluginHostRoot)." />
-    <Error Condition="'$(Gtk4Payload)'=='true' and !Exists('$(Gtk4PluginHostRoot)\Runtime\Python314\python314.dll')" Text="Missing staged Python 3.14 runtime at $(Gtk4PluginHostRoot)." />
-    <Error Condition="'$(Gtk4Payload)'=='true' and !Exists('$(Gtk4PluginHostRoot)\Runtime\Tcl\bin\tcl86t.dll')" Text="Missing staged Tcl 8.6 runtime at $(Gtk4PluginHostRoot)." />
-    <Error Condition="'$(Gtk4Payload)'=='true' and !Exists('$(Gtk4PluginHostRoot)\Runtime\DotNet\Fabulor.PluginHost.runtimeconfig.json')" Text="Missing staged managed plugin host at $(Gtk4PluginHostRoot)." />
-    <Error Condition="'$(Gtk4Payload)'=='true' and !Exists('$(Gtk4PluginHostRoot)\Runtime\DotNet\host\fxr\$(BundledDotNetRuntimeVersion)\hostfxr.dll')" Text="Missing staged .NET hostfxr $(BundledDotNetRuntimeVersion) at $(Gtk4PluginHostRoot)." />
-    <Error Condition="'$(Gtk4Payload)'=='true' and !Exists('$(Gtk4PluginHostRoot)\Runtime\DotNet\shared\Microsoft.NETCore.App\$(BundledDotNetRuntimeVersion)\hostpolicy.dll')" Text="Missing staged .NET shared runtime $(BundledDotNetRuntimeVersion) at $(Gtk4PluginHostRoot)." />
+    <Error Condition="!Exists('$(FabulorPayloadRoot)\production-support-manifest.json')" Text="Missing allowlisted production-support manifest at $(FabulorPayloadRoot)." />
+    <Error Condition="!Exists('$(Gtk4FrontendRoot)\fabulor.exe')" Text="Missing GTK4 launcher at $(Gtk4FrontendRoot). Build tools\gtk4\gtk4-full-frontend.proj first." />
+    <Error Condition="!Exists('$(Gtk4FrontendRoot)\fabulor-gtk4-frontend.dll')" Text="Missing GTK4 frontend module at $(Gtk4FrontendRoot). Build tools\gtk4\gtk4-full-frontend.proj first." />
+    <Error Condition="!Exists('$(Gtk4LocaleRoot)')" Text="Missing compiled Fabulor translations at $(Gtk4LocaleRoot)." />
+    <Error Condition="Exists('$(Gtk4LocaleRoot)') and !Exists('$(Gtk4LocaleRoot)\de\LC_MESSAGES\fabulor.mo')" Text="Missing compiled Fabulor translation catalog beneath $(Gtk4LocaleRoot)." />
+    <Error Condition="!Exists('$(FabulorPayloadRoot)\cert.pem')" Text="Missing GTK4 certificate bundle at $(FabulorPayloadRoot)." />
+    <Error Condition="!Exists('$(FabulorPayloadRoot)\libssl-3-x64.dll')" Text="Missing GTK4 OpenSSL runtime at $(FabulorPayloadRoot)." />
+    <Error Condition="!Exists('$(FabulorPayloadRoot)\libcrypto-3-x64.dll')" Text="Missing GTK4 OpenSSL crypto runtime at $(FabulorPayloadRoot)." />
+    <Error Condition="!Exists('$(FabulorPayloadRoot)\WinSparkle.dll')" Text="Missing GTK4 WinSparkle runtime at $(FabulorPayloadRoot)." />
+    <Error Condition="!Exists('$(Gtk4FrontendRoot)\plugins\hcchecksum.dll')" Text="Missing GTK4 native extensions at $(Gtk4FrontendRoot)\plugins." />
+    <Error Condition="!Exists('$(Gtk4FrontendRoot)\plugins\hcexec.dll')" Text="Missing GTK4 Exec extension at $(Gtk4FrontendRoot)\plugins." />
+    <Error Condition="!Exists('$(Gtk4FrontendRoot)\plugins\hcfishlim.dll')" Text="Missing GTK4 FiSHLiM extension at $(Gtk4FrontendRoot)\plugins." />
+    <Error Condition="!Exists('$(Gtk4FrontendRoot)\plugins\hcnotifications-winrt.dll')" Text="Missing GTK4 notification extension at $(Gtk4FrontendRoot)\plugins." />
+    <Error Condition="!Exists('$(Gtk4FrontendRoot)\plugins\hcsysinfo.dll')" Text="Missing GTK4 Sysinfo extension at $(Gtk4FrontendRoot)\plugins." />
+    <Error Condition="!Exists('$(Gtk4FrontendRoot)\plugins\hcupd.dll')" Text="Missing GTK4 updater extension at $(Gtk4FrontendRoot)\plugins." />
+    <Error Condition="!Exists('$(Gtk4FrontendRoot)\plugins\hcpython3.dll')" Text="Missing GTK4 Python host extension at $(Gtk4FrontendRoot)\plugins." />
+    <Error Condition="!Exists('$(Gtk4EnchantRoot)\libenchant-2-2.dll')" Text="Missing GTK4-compatible Enchant core at $(Gtk4EnchantRoot)." />
+    <Error Condition="!Exists('$(Gtk4EnchantRoot)\lib\enchant-2\enchant_winspell.dll')" Text="Missing GTK4-compatible WinSpell provider at $(Gtk4EnchantRoot)." />
+    <Error Condition="!Exists('$(Gtk4EnchantRoot)\share\enchant-2\enchant.ordering')" Text="Missing GTK4-compatible Enchant provider ordering at $(Gtk4EnchantRoot)." />
+    <Error Condition="!Exists('$(Gtk4PluginHostRoot)\Runtime\plugin-host-manifest.json')" Text="Missing staged GTK4 plugin-host manifest at $(Gtk4PluginHostRoot)." />
+    <Error Condition="!Exists('$(Gtk4PluginHostRoot)\Runtime\Python314\python314.dll')" Text="Missing staged Python 3.14 runtime at $(Gtk4PluginHostRoot)." />
+    <Error Condition="!Exists('$(Gtk4PluginHostRoot)\Runtime\Tcl\bin\tcl86t.dll')" Text="Missing staged Tcl 8.6 runtime at $(Gtk4PluginHostRoot)." />
+    <Error Condition="!Exists('$(Gtk4PluginHostRoot)\Runtime\DotNet\Fabulor.PluginHost.runtimeconfig.json')" Text="Missing staged managed plugin host at $(Gtk4PluginHostRoot)." />
+    <Error Condition="!Exists('$(Gtk4PluginHostRoot)\Runtime\DotNet\host\fxr\$(BundledDotNetRuntimeVersion)\hostfxr.dll')" Text="Missing staged .NET hostfxr $(BundledDotNetRuntimeVersion) at $(Gtk4PluginHostRoot)." />
+    <Error Condition="!Exists('$(Gtk4PluginHostRoot)\Runtime\DotNet\shared\Microsoft.NETCore.App\$(BundledDotNetRuntimeVersion)\hostpolicy.dll')" Text="Missing staged .NET shared runtime $(BundledDotNetRuntimeVersion) at $(Gtk4PluginHostRoot)." />
     <Error Condition="!Exists('$(GtkRuntimeRoot)\bin\gtk-4-1.dll')" Text="Missing GTK4 runtime payload at $(GtkRuntimeRoot)." />
     <Error Condition="!Exists('$(GtkRuntimeRoot)\runtime-manifest.json')" Text="Missing generated GTK4 runtime manifest at $(GtkRuntimeRoot). Stage the allowlisted runtime with tools\gtk4\stage_runtime.py before building WiX output." />
-    <Error Condition="'$(LegacyGtk3Frontend)'=='true' and !Exists('$(ManagedPluginHostRoot)\Fabulor.PluginHost.runtimeconfig.json')" Text="Missing legacy managed plugin host payload at $(ManagedPluginHostRoot)." />
-    <Error Condition="'$(LegacyGtk3Frontend)'=='true' and !Exists('$(BundledDotNetRoot)\host\fxr')" Text="Missing legacy .NET hostfxr root at $(BundledDotNetRoot)." />
-    <Error Condition="'$(LegacyGtk3Frontend)'=='true' and !Exists('$(BundledDotNetRoot)\shared\Microsoft.NETCore.App')" Text="Missing legacy .NET shared runtime payload." />
-    <Error Condition="'$(LegacyGtk3Frontend)'=='true' and !Exists('$(PythonRuntimeRoot)\$(PythonRuntimeDll)')" Text="Missing legacy Python 3.14 runtime payload at $(PythonRuntimeRoot)." />
-    <Error Condition="'$(LegacyGtk3Frontend)'=='true' and !Exists('$(FabulorPayloadRoot)\plugins\hcpython3.dll')" Text="Missing legacy Python plugin host at $(FabulorPayloadRoot)." />
-    <Error Condition="'$(LegacyGtk3Frontend)'=='true' and !Exists('$(FabulorPayloadRoot)\python\zoitechat.py')" Text="Missing legacy Python API modules at $(FabulorPayloadRoot)." />
-    <Error Condition="'$(LegacyGtk3Frontend)'=='true' and $([System.IO.Directory]::GetFiles('$(FabulorPayloadRoot)', '_cffi_backend.*.pyd').Length) == 0" Text="Missing legacy Python CFFI backend under $(FabulorPayloadRoot)." />
-    <Error Condition="'$(LegacyGtk3Frontend)'=='true' and !Exists('$(TclRuntimeRoot)\bin\tcl86t.dll')" Text="Missing legacy Tcl runtime payload at $(TclRuntimeRoot)." />
   </Target>
 
   <Target Name="BuildBootstrapper" AfterTargets="Build"

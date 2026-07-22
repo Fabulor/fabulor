@@ -5,6 +5,8 @@ import xml.etree.ElementTree as ET
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
 INSTALLER = ROOT / "installer"
+PROPS = ROOT / "win32" / "zoitechat.props"
+SOLUTION = ROOT / "win32" / "zoitechat.sln"
 WIX_NS = {"w": "http://wixtoolset.org/schemas/v4/wxs"}
 
 
@@ -30,19 +32,12 @@ class ProductionWixProfileTests(unittest.TestCase):
         self.assertNotIn("SHAREGTK3DIR", source)
         self.assertIn('ComponentGroupRef Id="GTK4Components"', source)
 
-    def test_default_project_profile_selects_only_gtk4_components(self):
+    def test_project_has_one_unconditional_gtk4_product_graph(self):
         root = ET.parse(INSTALLER / "Fabulor.wixproj").getroot()
         compile_items = root.findall(".//Compile")
-        default_condition = (
-            "'$(Gtk4FrontendCandidate)'!='true' and "
-            "'$(LegacyGtk3Frontend)'!='true'"
-        )
-        default_sources = {
-            item.get("Include")
-            for item in compile_items
-            if item.get("Condition") == default_condition
-        }
-
+        self.assertEqual(len(compile_items), 2)
+        self.assertTrue(all(item.get("Condition") is None for item in compile_items))
+        default_sources = {item.get("Include") for item in compile_items}
         self.assertIn("ProductGtk4.wxs", default_sources)
         component_sources = next(
             source for source in default_sources
@@ -53,15 +48,36 @@ class ProductionWixProfileTests(unittest.TestCase):
         self.assertNotIn("Components\\Core.wxs", component_sources)
         self.assertNotIn("LegacyGtkRootRuntime.wxs", component_sources)
 
-    def test_legacy_profile_is_explicit(self):
-        root = ET.parse(INSTALLER / "Fabulor.wixproj").getroot()
-        properties = {
-            child.tag.rsplit("}", 1)[-1]: child.text
-            for group in root.findall("PropertyGroup")
-            for child in group
+    def test_obsolete_product_graphs_are_removed(self):
+        obsolete = {
+            "Product.wxs",
+            "ProductGtk4Candidate.wxs",
+            "Components/Core.wxs",
+            "Components/CoreGtk4Candidate.wxs",
+            "Components/LegacyGtkRootRuntime.wxs",
+            "Components/NativeGtk4Candidate.wxs",
+            "Components/PluginHostsGtk4Candidate.wxs",
         }
+        self.assertFalse([path for path in obsolete if (INSTALLER / path).exists()])
 
-        self.assertEqual(properties.get("LegacyGtk3Frontend"), "false")
+    def test_project_exposes_no_frontend_profile_switch(self):
+        source = (INSTALLER / "Fabulor.wixproj").read_text(encoding="utf-8")
+        self.assertNotIn("LegacyGtk3Frontend", source)
+        self.assertNotIn("Gtk4FrontendCandidate", source)
+        self.assertIn("gtk4-runtime-production-root", source)
+        self.assertIn("gtk4-plugin-host-production-root", source)
+
+    def test_msvc_profile_is_gtk4_only(self):
+        props = PROPS.read_text(encoding="utf-8")
+        solution = SOLUTION.read_text(encoding="utf-8-sig")
+
+        self.assertIn("<FabulorGtkMajor>4</FabulorGtkMajor>", props)
+        self.assertIn("Fabulor supports only the GTK4 frontend build profile", props)
+        self.assertNotIn("Gtk3Lib", props)
+        self.assertNotIn("Gdk3Lib", props)
+        self.assertNotIn('= "copy", "copy\\copy.vcxproj"', solution)
+        self.assertNotIn('= "fe-text"', solution)
+        self.assertIn('= "fabulor-launcher"', solution)
 
 
 if __name__ == "__main__":

@@ -2571,6 +2571,24 @@ manifest runtime entries. The isolated candidate and explicit
 `LegacyGtk3Frontend=true` package both remain buildable for one rollback cycle;
 promoting GTK4 to the sole MSVC/CI build profile is the next contained target.
 
+Stage 9 sole-build-profile pass 2 (2026-07-23): GTK4 is now the only supported
+MSVC frontend profile and the only Windows CI installer artifact. Shared MSVC
+properties select GTK4 unconditionally and reject an attempted
+`FabulorGtkMajor=3` override. The standard solution includes the GTK4 launcher
+and excludes the retired text frontend and GTK3 runtime-copy project. The WiX
+project has one unconditional `ProductGtk4.wxs` graph; the temporary candidate
+product, explicit GTK3 rollback product, and their duplicate component graphs
+and validator are removed. CI no longer builds a GTK3 frontend, legacy Enchant
+payload, or side-by-side candidate MSI. A 12-file, SHA-256-manifested production
+support contract replaces broad reads from the legacy application staging tree,
+and translations are compiled as part of the GTK4 frontend orchestration.
+
+The next contained target is the remaining cleanup item: replace the transitional
+GTK3-named dependency download with explicit non-GTK dependencies, remove the
+inactive runtime-copy implementation, and then delete source-level GTK3 branches,
+tests, and compatibility helpers. Existing GTK4 compiler diagnostics in those
+source branches remain assigned to that pass rather than being hidden here.
+
 Deliverables:
 
 - Make GTK4 the only production frontend dependency in MSVC, Meson, and CI.

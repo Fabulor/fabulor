@@ -2,8 +2,7 @@
 <Project DefaultTargets="Build" ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup Label="Configuration">
     <PlatformToolset>v142</PlatformToolset>
-    <ConfigurationType Condition="'$(FabulorGtkMajor)'!='4'">Application</ConfigurationType>
-    <ConfigurationType Condition="'$(FabulorGtkMajor)'=='4'">DynamicLibrary</ConfigurationType>
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
   </PropertyGroup>
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Release|x64">
@@ -21,8 +20,7 @@
   <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
   <Import Project="..\..\win32\zoitechat.props" />
   <PropertyGroup>
-    <TargetName Condition="'$(FabulorGtkMajor)'=='3'">fabulor</TargetName>
-    <TargetName Condition="'$(FabulorGtkMajor)'=='4'">fabulor-gtk4-frontend</TargetName>
+    <TargetName>fabulor-gtk4-frontend</TargetName>
     <OutDir>$(ZoiteChatRel)</OutDir>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -34,7 +32,6 @@
     <Link>
       <AdditionalLibraryDirectories>$(ArchiveLibDir);$(GtkDepsRoot)\lib;$(DepsRoot)\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalDependencies>$(DepLibs);$(ZoiteChatLib)common.lib;wbemuuid.lib;dwmapi.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <EntryPointSymbol Condition="'$(FabulorGtkMajor)'=='3'">mainCRTStartup</EntryPointSymbol>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup>
@@ -148,10 +145,10 @@ FOR %%I IN ("$(ZoiteChatLib)fabulor.rc") DO IF %%~zI EQU 0 (
     <ClInclude Include="theme\theme-access.h" />
     <ClInclude Include="theme\theme-gtk.h" />
     <ClInclude Include="theme\theme-gtk3.h" />
-    <ClInclude Include="theme\theme-gtk4.h" Condition="'$(FabulorGtkMajor)'=='4'" />
-    <ClInclude Include="theme\theme-gtk4-controller.h" Condition="'$(FabulorGtkMajor)'=='4'" />
-    <ClInclude Include="theme\theme-preferences-gtk4.h" Condition="'$(FabulorGtkMajor)'=='4'" />
-    <ClInclude Include="theme\theme-appearance-monitor-gtk4.h" Condition="'$(FabulorGtkMajor)'=='4'" />
+    <ClInclude Include="theme\theme-gtk4.h" />
+    <ClInclude Include="theme\theme-gtk4-controller.h" />
+    <ClInclude Include="theme\theme-preferences-gtk4.h" />
+    <ClInclude Include="theme\theme-appearance-monitor-gtk4.h" />
     <ClInclude Include="theme\theme-preferences.h" />
   </ItemGroup>
   <ItemGroup>
@@ -181,23 +178,23 @@ FOR %%I IN ("$(ZoiteChatLib)fabulor.rc") DO IF %%~zI EQU 0 (
     <ClCompile Include="fkeys.c" />
     <ClCompile Include="file-chooser-path.c" />
     <ClCompile Include="gtkutil.c" />
-    <ClCompile Include="gtk4-list-models.c" Condition="'$(FabulorGtkMajor)'=='4'" />
+    <ClCompile Include="gtk4-list-models.c" />
     <ClCompile Include="icon-resolver.c" />
     <ClCompile Include="ignore-list.c" />
     <ClCompile Include="ignoregui.c" />
     <ClCompile Include="joind.c" />
     <ClCompile Include="maingui.c" />
     <ClCompile Include="window-state.c" />
-    <ClCompile Include="application-main-loop.c" Condition="'$(FabulorGtkMajor)'=='4'" />
+    <ClCompile Include="application-main-loop.c" />
     <ClCompile Include="window-geometry.c" />
     <ClCompile Include="menu.c" />
-    <ClCompile Include="context-menu-presenter-gtk4.c" Condition="'$(FabulorGtkMajor)'=='4'" />
-      <ClCompile Include="middle-context-menu-model.c" Condition="'$(FabulorGtkMajor)'=='4'" />
-	  <ClCompile Include="tab-context-menu-model.c" Condition="'$(FabulorGtkMajor)'=='4'" />
-    <ClCompile Include="url-context-menu-model.c" Condition="'$(FabulorGtkMajor)'=='4'" />
-    <ClCompile Include="channel-context-menu-model.c" Condition="'$(FabulorGtkMajor)'=='4'" />
-    <ClCompile Include="channel-list-context-menu-model.c" Condition="'$(FabulorGtkMajor)'=='4'" />
-    <ClCompile Include="nick-context-menu-model.c" Condition="'$(FabulorGtkMajor)'=='4'" />
+    <ClCompile Include="context-menu-presenter-gtk4.c" />
+    <ClCompile Include="middle-context-menu-model.c" />
+	<ClCompile Include="tab-context-menu-model.c" />
+    <ClCompile Include="url-context-menu-model.c" />
+    <ClCompile Include="channel-context-menu-model.c" />
+    <ClCompile Include="channel-list-context-menu-model.c" />
+    <ClCompile Include="nick-context-menu-model.c" />
     <ClCompile Include="notifications\notification-windows.c" />
     <ClCompile Include="notifygui.c" />
     <ClCompile Include="notify-list.c" />
@@ -246,10 +243,10 @@ FOR %%I IN ("$(ZoiteChatLib)fabulor.rc") DO IF %%~zI EQU 0 (
     <ClCompile Include="theme\theme-runtime.c" />
     <ClCompile Include="theme\theme-access.c" />
     <ClCompile Include="theme\theme-gtk3.c" />
-    <ClCompile Include="theme\theme-gtk4.c" Condition="'$(FabulorGtkMajor)'=='4'" />
-    <ClCompile Include="theme\theme-gtk4-controller.c" Condition="'$(FabulorGtkMajor)'=='4'" />
-    <ClCompile Include="theme\theme-preferences-gtk4.c" Condition="'$(FabulorGtkMajor)'=='4'" />
-    <ClCompile Include="theme\theme-appearance-monitor-gtk4.c" Condition="'$(FabulorGtkMajor)'=='4'" />
+    <ClCompile Include="theme\theme-gtk4.c" />
+    <ClCompile Include="theme\theme-gtk4-controller.c" />
+    <ClCompile Include="theme\theme-preferences-gtk4.c" />
+    <ClCompile Include="theme\theme-appearance-monitor-gtk4.c" />
     <ClCompile Include="theme\theme-preferences.c" />
   </ItemGroup>
   <ItemGroup>

@@ -1,21 +1,20 @@
 # GTK4 Runtime And Packaging
 
-Status: allowlisted GTK4 runtime in shipping WiX; isolated GTK4 launcher/frontend startup validated; shipping GTK3 retained
+Status: GTK4-only production launcher/frontend and allowlisted runtime in shipping WiX; GTK3 rollback package retired
 
 Baseline date: 2026-07-14
 
 ## Current Packaging Model
 
-Fabulor currently has two GTK payload concepts:
+Fabulor has one supported GTK payload. The shipping launcher loads
+`fabulor-gtk4-frontend.dll` after registering the executable-relative
+`Runtime/GTK4/bin` directory, and WiX packages the deterministic staged
+allowlist into `ProgramFiles/Fabulor/Runtime/GTK4` with its source-bound
+manifest. A separate 12-file production-support manifest supplies only the
+reviewed non-GTK root files required by the application and Python host.
 
-1. The shipping executable is built against a GTK3 gvsbuild dependency root.
-   `win32/copy/copy.vcxproj` stages GTK3 DLLs and supporting data into the
-   release root beside `fabulor.exe`.
-2. The WiX project packages the deterministic staged allowlist into
-   `ProgramFiles/Fabulor/Runtime/GTK4` and requires its source-bound manifest.
-
-This is a transition state, not the final runtime design. The installed GTK4
-payload does not by itself make the current executable GTK4-compliant.
+The old GTK3 copy project remains only as inactive cleanup work; it is absent
+from the supported solution, CI build, and WiX graph.
 
 ## Repository Runtime Baseline
 
@@ -49,9 +48,9 @@ closure rooted at GTK4 and the SVG pixbuf loader, the two GLib spawn helpers,
 and explicit runtime data trees. Staging rejects missing, escaping, reparse,
 duplicate, or build-only files; normalizes the pixbuf loader cache; and emits a
 deterministic file/size/SHA-256 manifest tied to the pinned source archive.
-Windows CI materializes this candidate before compiling the GTK4 probe. WiX
-continues to use the transitional component group until candidate feature and
-payload validation is complete.
+Windows CI now materializes this allowlist as the production runtime before
+compiling and packaging the GTK4 frontend. The following candidate passes are
+retained as historical steps that led to the production contract.
 
 Stage 8 pass 2 adds an opt-in `GtkRuntimeCandidate=true` WiX composition. It
 selects `Components/GTK4Candidate.wxs`, requires the generated runtime manifest,

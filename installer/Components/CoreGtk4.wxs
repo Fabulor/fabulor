@@ -5,10 +5,10 @@
       <Files Include="$(var.Gtk4FrontendRoot)\fabulor.exe" />
       <Files Include="$(var.Gtk4FrontendRoot)\fabulor-gtk4-frontend.dll" />
       <Files Include="$(var.FabulorPayloadRoot)\cert.pem" />
-      <Files Include="$(var.FabulorPayloadRoot)\changelog.url" />
+      <Files Include="$(sys.SOURCEFILEDIR)..\..\win32\copy\changelog.url" />
       <Files Include="$(var.FabulorPayloadRoot)\libcrypto-3-x64.dll" />
       <Files Include="$(var.FabulorPayloadRoot)\libssl-3-x64.dll" />
-      <Files Include="$(var.FabulorPayloadRoot)\readme.url" />
+      <Files Include="$(sys.SOURCEFILEDIR)..\..\win32\copy\readme.url" />
     </ComponentGroup>
   </Fragment>
 </Wix>
