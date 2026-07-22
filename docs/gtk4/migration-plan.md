@@ -2505,6 +2505,20 @@ manifest plugins now appear once in the startup report with uniform `C#`,
 MSI, and bootstrapper also rebuild successfully with the servicing-pinned .NET
 8.0.29 runtime.
 
+Win32 display-filter ownership pass 95 (2026-07-22):
+GTK4 now installs one native-message filter on the default Win32 display after
+frontend initialization and removes it during frontend cleanup. The retained
+display reference and installed state make repeated initialization and teardown
+safe, while GTK3 keeps its existing per-window attachment. Shared dispatch
+preserves timezone refresh, single-instance commands, taskbar toggling, and
+same-process wheel forwarding without duplicating GTK4 appearance ownership.
+Inbound `WM_COPYDATA` commands must use the expected identifier and a
+NUL-terminated 2-byte-to-64-KiB payload; malformed or oversized messages are
+ignored, and wheel messages are removed only when forwarding succeeds. Both
+frontend profiles rebuild, all 18 manifest tests pass, exact validation covers
+the 7,270-file candidate, and a controlled candidate run minimized, restored,
+remained responsive, and exited normally through the new filter.
+
 Deliverables:
 
 - Make GTK4 the only production frontend dependency in MSVC, Meson, and CI.

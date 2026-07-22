@@ -78,6 +78,8 @@
 #include <windows.h>
 #if GTK_MAJOR_VERSION < 4
 #include <gdk/gdkwin32.h>
+#else
+#include <gdk/win32/gdkwin32.h>
 #endif
 #include <glib/gwin32.h>
 #endif
@@ -424,6 +426,11 @@ static chan *active_tab = NULL; /* active tab */
 GtkWidget *parent_window = NULL;                        /* the master window */
 static GtkWidget *quit_dialog = NULL;
 static GtkWidget *font_error_dialog = NULL;
+
+#if defined(G_OS_WIN32) && GTK_MAJOR_VERSION >= 4
+static GdkDisplay *mg_win32_filter_display;
+static gboolean mg_win32_filter_installed;
+#endif
 
 InputStyle *input_style;
 
@@ -6216,47 +6223,54 @@ mg_tabwindow_delete_event_cb (GtkWidget *widget, GdkEvent *event,
 }
 #endif
 
-#if defined(G_OS_WIN32) && GTK_MAJOR_VERSION < 4
-static GdkFilterReturn
-mg_win32_filter (GdkXEvent *xevent, GdkEvent *event, gpointer data)
-{
-        MSG *msg = (MSG*)xevent;
+#ifdef G_OS_WIN32
+#define MG_WIN32_COPYDATA_MAX_BYTES (64 * 1024)
 
+static gboolean
+mg_win32_message_dispatch (MSG *msg)
+{
 	if (!msg)
-		return GDK_FILTER_CONTINUE;
+		return FALSE;
 
 	if (msg->message == WM_TIMECHANGE)
 	{
 		_tzset();
-		return GDK_FILTER_CONTINUE;
+		return FALSE;
 	}
 
+#if GTK_MAJOR_VERSION < 4
 	if (msg->message == WM_SETTINGCHANGE || msg->message == WM_THEMECHANGED)
 	{
 		theme_manager_refresh_auto_mode ();
-		return GDK_FILTER_CONTINUE;
+		return FALSE;
 	}
+#endif
 
 	if (msg->message == WM_COPYDATA)
 	{
 		COPYDATASTRUCT *copy_data = (COPYDATASTRUCT *)msg->lParam;
 
-		if (copy_data && copy_data->lpData && copy_data->cbData > 0 && current_sess)
+		if (copy_data && copy_data->dwData == 0 && copy_data->lpData &&
+			copy_data->cbData > 1 &&
+			copy_data->cbData <= MG_WIN32_COPYDATA_MAX_BYTES && current_sess)
 		{
-			char *command = g_strndup ((const char *)copy_data->lpData, copy_data->cbData);
+			const char *payload = copy_data->lpData;
+			char *command;
+
+			if (payload[copy_data->cbData - 1] != '\0')
+				return FALSE;
+			command = g_strndup (payload, copy_data->cbData - 1);
 
 			if (command)
 			{
 				if (strcmp (command, "__WIN32_TASKBAR_TOGGLE__") == 0)
 				{
-					GdkWindowState state = 0;
-					GdkWindow *gdk_window = gtk_widget_get_window (current_sess->gui->window);
+					FabulorWindowState state;
 
-					if (gdk_window)
-						state = gdk_window_get_state (gdk_window);
-
+					fabulor_window_state_get (
+						GTK_WINDOW (current_sess->gui->window), &state);
 					if (gtk_widget_get_visible (current_sess->gui->window)
-						&& (state & GDK_WINDOW_STATE_ICONIFIED) == 0)
+						&& !state.minimized)
 						fe_ctrl_gui (current_sess, FE_GUI_ICONIFY, 0);
 					else
 						fe_ctrl_gui (current_sess, FE_GUI_SHOW, 0);
@@ -6266,7 +6280,7 @@ mg_win32_filter (GdkXEvent *xevent, GdkEvent *event, gpointer data)
 					handle_command (current_sess, command, FALSE);
 				}
 				g_free (command);
-				return GDK_FILTER_REMOVE;
+				return TRUE;
 			}
 		}
 	}
@@ -6278,23 +6292,78 @@ mg_win32_filter (GdkXEvent *xevent, GdkEvent *event, gpointer data)
 		DWORD hover_pid = 0;
 
 		if (!GetCursorPos (&cursor_pos))
-			return GDK_FILTER_CONTINUE;
+			return FALSE;
 
 		hover_hwnd = WindowFromPoint (cursor_pos);
 		if (!hover_hwnd || hover_hwnd == msg->hwnd)
-			return GDK_FILTER_CONTINUE;
+			return FALSE;
 
 		GetWindowThreadProcessId (hover_hwnd, &hover_pid);
 		if (hover_pid != GetCurrentProcessId ())
-			return GDK_FILTER_CONTINUE;
+			return FALSE;
 
-		PostMessage (hover_hwnd, msg->message, msg->wParam, msg->lParam);
-		return GDK_FILTER_REMOVE;
+		return PostMessage (hover_hwnd, msg->message, msg->wParam,
+			msg->lParam) != 0;
 	}
-	
-        return GDK_FILTER_CONTINUE;
+
+	return FALSE;
+}
+
+#if GTK_MAJOR_VERSION < 4
+static GdkFilterReturn
+mg_win32_filter (GdkXEvent *xevent, GdkEvent *event, gpointer data)
+{
+	(void) event;
+	(void) data;
+	return mg_win32_message_dispatch ((MSG *)xevent) ?
+		GDK_FILTER_REMOVE : GDK_FILTER_CONTINUE;
+}
+#else
+static GdkWin32MessageFilterReturn
+mg_win32_display_filter (GdkWin32Display *display, MSG *message,
+	int *return_value, gpointer user_data)
+{
+	(void) display;
+	(void) return_value;
+	(void) user_data;
+	return mg_win32_message_dispatch (message) ?
+		GDK_WIN32_MESSAGE_FILTER_REMOVE : GDK_WIN32_MESSAGE_FILTER_CONTINUE;
 }
 #endif
+#endif
+
+void
+mg_win32_message_filter_init (void)
+{
+#if defined(G_OS_WIN32) && GTK_MAJOR_VERSION >= 4
+	GdkDisplay *display;
+
+	if (mg_win32_filter_installed)
+		return;
+	display = gdk_display_get_default ();
+	if (!display || !GDK_IS_WIN32_DISPLAY (display))
+		return;
+	mg_win32_filter_display = g_object_ref (display);
+	gdk_win32_display_add_filter (GDK_WIN32_DISPLAY (display),
+		mg_win32_display_filter, NULL);
+	mg_win32_filter_installed = TRUE;
+#endif
+}
+
+void
+mg_win32_message_filter_shutdown (void)
+{
+#if defined(G_OS_WIN32) && GTK_MAJOR_VERSION >= 4
+	if (mg_win32_filter_installed)
+	{
+		gdk_win32_display_remove_filter (
+			GDK_WIN32_DISPLAY (mg_win32_filter_display),
+			mg_win32_display_filter, NULL);
+		mg_win32_filter_installed = FALSE;
+	}
+	g_clear_object (&mg_win32_filter_display);
+#endif
+}
 
 static void
 mg_create_tabwindow (session *sess)
