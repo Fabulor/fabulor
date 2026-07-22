@@ -13,6 +13,12 @@ ThemePreferencesGtk4 *theme_preferences_gtk4_new (GdkDisplay *display,
 	gboolean system_prefers_dark, gboolean high_contrast,
 	ThemePreferencesGtk4CommitFunc commit, gpointer user_data,
 	GDestroyNotify user_data_destroy, GError **error);
+ThemePreferencesGtk4 *theme_preferences_gtk4_new_with_controller (
+	ThemeGtk4Controller *controller, const char *config_dir,
+	const char *stored_id, guint stored_variant,
+	gboolean system_prefers_dark, gboolean high_contrast,
+	ThemePreferencesGtk4CommitFunc commit, gpointer user_data,
+	GDestroyNotify user_data_destroy, GError **error);
 void theme_preferences_gtk4_free (ThemePreferencesGtk4 *preferences);
 
 GtkWidget *theme_preferences_gtk4_widget (

@@ -7,6 +7,7 @@
 struct _ThemePreferencesGtk4
 {
 	ThemeGtk4Controller *controller;
+	gboolean owns_controller;
 	GtkWidget *root;
 	GtkDropDown *theme_dropdown;
 	GtkDropDown *variant_dropdown;
@@ -188,8 +189,9 @@ theme_preferences_gtk4_row (const char *title, GtkWidget *control)
 	return row;
 }
 
-ThemePreferencesGtk4 *
-theme_preferences_gtk4_new (GdkDisplay *display, const char *config_dir,
+static ThemePreferencesGtk4 *
+theme_preferences_gtk4_new_internal (ThemeGtk4Controller *controller,
+	gboolean owns_controller, const char *config_dir,
 	const char *stored_id, guint stored_variant, gboolean system_prefers_dark,
 	gboolean high_contrast, ThemePreferencesGtk4CommitFunc commit,
 	gpointer user_data, GDestroyNotify user_data_destroy, GError **error)
@@ -201,7 +203,8 @@ theme_preferences_gtk4_new (GdkDisplay *display, const char *config_dir,
 	GtkStringList *theme_model;
 	GtkStringList *variant_model;
 
-	preferences->controller = theme_gtk4_controller_new (display);
+	preferences->controller = controller;
+	preferences->owns_controller = owns_controller;
 	preferences->config_dir = g_strdup (config_dir);
 	preferences->stored_id = g_strdup (stored_id ? stored_id : "");
 	preferences->stored_variant =
@@ -247,6 +250,31 @@ theme_preferences_gtk4_new (GdkDisplay *display, const char *config_dir,
 	return preferences;
 }
 
+ThemePreferencesGtk4 *
+theme_preferences_gtk4_new (GdkDisplay *display, const char *config_dir,
+	const char *stored_id, guint stored_variant, gboolean system_prefers_dark,
+	gboolean high_contrast, ThemePreferencesGtk4CommitFunc commit,
+	gpointer user_data, GDestroyNotify user_data_destroy, GError **error)
+{
+	return theme_preferences_gtk4_new_internal (
+		theme_gtk4_controller_new (display), TRUE, config_dir, stored_id,
+		stored_variant, system_prefers_dark, high_contrast, commit, user_data,
+		user_data_destroy, error);
+}
+
+ThemePreferencesGtk4 *
+theme_preferences_gtk4_new_with_controller (ThemeGtk4Controller *controller,
+	const char *config_dir, const char *stored_id, guint stored_variant,
+	gboolean system_prefers_dark, gboolean high_contrast,
+	ThemePreferencesGtk4CommitFunc commit, gpointer user_data,
+	GDestroyNotify user_data_destroy, GError **error)
+{
+	g_return_val_if_fail (controller != NULL, NULL);
+	return theme_preferences_gtk4_new_internal (controller, FALSE, config_dir,
+		stored_id, stored_variant, system_prefers_dark, high_contrast, commit,
+		user_data, user_data_destroy, error);
+}
+
 void
 theme_preferences_gtk4_free (ThemePreferencesGtk4 *preferences)
 {
@@ -267,7 +295,8 @@ theme_preferences_gtk4_free (ThemePreferencesGtk4 *preferences)
 			gtk_widget_unparent (preferences->root);
 		g_object_unref (preferences->root);
 	}
-	theme_gtk4_controller_free (preferences->controller);
+	if (preferences->owns_controller)
+		theme_gtk4_controller_free (preferences->controller);
 	if (preferences->user_data_destroy)
 		preferences->user_data_destroy (preferences->user_data);
 	g_free (preferences->status);

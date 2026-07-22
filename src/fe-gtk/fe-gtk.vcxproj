@@ -148,6 +148,10 @@ FOR %%I IN ("$(ZoiteChatLib)fabulor.rc") DO IF %%~zI EQU 0 (
     <ClInclude Include="theme\theme-access.h" />
     <ClInclude Include="theme\theme-gtk.h" />
     <ClInclude Include="theme\theme-gtk3.h" />
+    <ClInclude Include="theme\theme-gtk4.h" Condition="'$(FabulorGtkMajor)'=='4'" />
+    <ClInclude Include="theme\theme-gtk4-controller.h" Condition="'$(FabulorGtkMajor)'=='4'" />
+    <ClInclude Include="theme\theme-preferences-gtk4.h" Condition="'$(FabulorGtkMajor)'=='4'" />
+    <ClInclude Include="theme\theme-appearance-monitor-gtk4.h" Condition="'$(FabulorGtkMajor)'=='4'" />
     <ClInclude Include="theme\theme-preferences.h" />
   </ItemGroup>
   <ItemGroup>
@@ -242,6 +246,10 @@ FOR %%I IN ("$(ZoiteChatLib)fabulor.rc") DO IF %%~zI EQU 0 (
     <ClCompile Include="theme\theme-runtime.c" />
     <ClCompile Include="theme\theme-access.c" />
     <ClCompile Include="theme\theme-gtk3.c" />
+    <ClCompile Include="theme\theme-gtk4.c" Condition="'$(FabulorGtkMajor)'=='4'" />
+    <ClCompile Include="theme\theme-gtk4-controller.c" Condition="'$(FabulorGtkMajor)'=='4'" />
+    <ClCompile Include="theme\theme-preferences-gtk4.c" Condition="'$(FabulorGtkMajor)'=='4'" />
+    <ClCompile Include="theme\theme-appearance-monitor-gtk4.c" Condition="'$(FabulorGtkMajor)'=='4'" />
     <ClCompile Include="theme\theme-preferences.c" />
   </ItemGroup>
   <ItemGroup>

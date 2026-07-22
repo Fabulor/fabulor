@@ -38,6 +38,9 @@
 #include "theme-manager.h"
 #include "theme-preferences.h"
 #include "theme-runtime.h"
+#if GTK_MAJOR_VERSION >= 4
+#include "theme-preferences-gtk4.h"
+#endif
 
 extern void load_text_events (void);
 
@@ -116,6 +119,10 @@ typedef struct
         gboolean staged_valid[THEME_TOKEN_COUNT];
         GdkRGBA snapshot[THEME_TOKEN_COUNT];
         GdkRGBA staged[THEME_TOKEN_COUNT];
+#if GTK_MAJOR_VERSION >= 4
+	char gtk4_theme_snapshot[sizeof prefs.hex_gui_gtk4_theme];
+	guint gtk4_variant_snapshot;
+#endif
 } theme_preferences_stage_state;
 
 static theme_preferences_stage_state theme_preferences_stage;
@@ -226,6 +233,12 @@ theme_preferences_stage_begin (void)
         memset (&theme_preferences_stage, 0, sizeof (theme_preferences_stage));
         theme_preferences_stage.active = TRUE;
         theme_preferences_stage.mode = theme_preferences_current_color_mode ();
+#if GTK_MAJOR_VERSION >= 4
+	g_strlcpy (theme_preferences_stage.gtk4_theme_snapshot,
+		prefs.hex_gui_gtk4_theme,
+		sizeof (theme_preferences_stage.gtk4_theme_snapshot));
+	theme_preferences_stage.gtk4_variant_snapshot = prefs.hex_gui_gtk4_variant;
+#endif
 
         for (token = THEME_TOKEN_MIRC_0; token < THEME_TOKEN_COUNT; token++)
         {
@@ -267,6 +280,11 @@ theme_preferences_stage_discard (void)
                 return;
 
         theme_preferences_stage_sync_runtime_to_snapshot ();
+#if GTK_MAJOR_VERSION >= 4
+	theme_manager_gtk4_apply_selection (
+		theme_preferences_stage.gtk4_theme_snapshot,
+		theme_preferences_stage.gtk4_variant_snapshot, NULL);
+#endif
         memset (&theme_preferences_stage, 0, sizeof (theme_preferences_stage));
 }
 
@@ -1887,6 +1905,57 @@ theme_preferences_gtk3_remove_cb (GtkWidget *button, gpointer user_data)
         theme_preferences_populate_gtk3 (ui);
 }
 
+#if GTK_MAJOR_VERSION >= 4
+static void
+theme_preferences_gtk4_commit (const char *theme_id, guint variant,
+	gpointer user_data)
+{
+	struct zoitechatprefs *setup_prefs = user_data;
+
+	g_strlcpy (setup_prefs->hex_gui_gtk4_theme, theme_id ? theme_id : "",
+		sizeof (setup_prefs->hex_gui_gtk4_theme));
+	setup_prefs->hex_gui_gtk4_variant = variant;
+	theme_manager_dispatch_changed (THEME_CHANGED_REASON_THEME_PACK |
+		THEME_CHANGED_REASON_WIDGET_STYLE | THEME_CHANGED_REASON_MODE);
+}
+
+GtkWidget *
+theme_preferences_create_page (GtkWindow *parent,
+                               struct zoitechatprefs *setup_prefs,
+                               gboolean *color_change_flag)
+{
+	ThemePreferencesGtk4 *preferences;
+	GtkWidget *box;
+	GtkWidget *surface;
+	GError *error = NULL;
+	(void) parent;
+	(void) color_change_flag;
+
+	box = gtk_box_new (GTK_ORIENTATION_VERTICAL, 6);
+	preferences = theme_preferences_gtk4_new_with_controller (
+		theme_manager_gtk4_controller (), get_xdir (),
+		setup_prefs->hex_gui_gtk4_theme, setup_prefs->hex_gui_gtk4_variant,
+		theme_manager_gtk4_prefers_dark (),
+		theme_manager_gtk4_high_contrast (), theme_preferences_gtk4_commit,
+		setup_prefs, NULL, &error);
+	if (!preferences)
+	{
+		GtkWidget *label = gtk_label_new (error ? error->message :
+			_("GTK4 theme preferences are unavailable."));
+
+		gtk_label_set_wrap (GTK_LABEL (label), TRUE);
+		gtk_label_set_xalign (GTK_LABEL (label), 0.0f);
+		gtk_box_append (GTK_BOX (box), label);
+		g_clear_error (&error);
+		return box;
+	}
+	surface = theme_preferences_gtk4_widget (preferences);
+	gtk_box_append (GTK_BOX (box), surface);
+	g_object_set_data_full (G_OBJECT (box), "theme-preferences-gtk4",
+		preferences, (GDestroyNotify) theme_preferences_gtk4_free);
+	return box;
+}
+#else
 GtkWidget *
 theme_preferences_create_page (GtkWindow *parent,
                                struct zoitechatprefs *setup_prefs,
@@ -1976,6 +2045,7 @@ theme_preferences_create_page (GtkWindow *parent,
 
         return box;
 }
+#endif
 
 void
 theme_preferences_apply_to_session (session_gui *gui, InputStyle *input_style)

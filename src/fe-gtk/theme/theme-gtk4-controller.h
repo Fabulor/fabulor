@@ -19,6 +19,8 @@ const GPtrArray *theme_gtk4_controller_choices (
 	const ThemeGtk4Controller *controller);
 guint theme_gtk4_controller_selected_index (
 	const ThemeGtk4Controller *controller);
+guint theme_gtk4_controller_selected_variant (
+	const ThemeGtk4Controller *controller);
 const FabulorGtk4ThemeChoice *theme_gtk4_controller_selected_choice (
 	const ThemeGtk4Controller *controller);
 gboolean theme_gtk4_controller_stored_selection_available (

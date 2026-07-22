@@ -12,7 +12,7 @@
 struct _ThemeAppearanceMonitorGtk4
 {
 	GdkDisplay *display;
-	ThemePreferencesGtk4 *preferences;
+	ThemeAppearanceGtk4ApplyFunc apply;
 	ThemeAppearanceGtk4QueryFunc query;
 	gpointer user_data;
 	GDestroyNotify user_data_destroy;
@@ -103,8 +103,7 @@ theme_appearance_monitor_gtk4_refresh_now (
 		g_clear_pointer (&monitor->last_diagnostic, g_free);
 		return TRUE;
 	}
-	if (!theme_preferences_gtk4_refresh (monitor->preferences, prefer_dark,
-		high_contrast, error))
+	if (!monitor->apply (prefer_dark, high_contrast, monitor->user_data, error))
 	{
 		g_free (monitor->last_diagnostic);
 		monitor->last_diagnostic = g_strdup (error && *error ?
@@ -161,16 +160,16 @@ theme_appearance_monitor_gtk4_filter (GdkWin32Display *display, MSG *message,
 
 ThemeAppearanceMonitorGtk4 *
 theme_appearance_monitor_gtk4_new_with_query (GdkDisplay *display,
-	ThemePreferencesGtk4 *preferences, ThemeAppearanceGtk4QueryFunc query,
+	ThemeAppearanceGtk4ApplyFunc apply, ThemeAppearanceGtk4QueryFunc query,
 	gpointer user_data, GDestroyNotify user_data_destroy, GError **error)
 {
 	ThemeAppearanceMonitorGtk4 *monitor;
 
-	g_return_val_if_fail (preferences != NULL, NULL);
+	g_return_val_if_fail (apply != NULL, NULL);
 	g_return_val_if_fail (query != NULL, NULL);
 	monitor = g_new0 (ThemeAppearanceMonitorGtk4, 1);
 	monitor->display = display ? g_object_ref (display) : NULL;
-	monitor->preferences = preferences;
+	monitor->apply = apply;
 	monitor->query = query;
 	monitor->user_data = user_data;
 	monitor->user_data_destroy = user_data_destroy;
@@ -192,10 +191,12 @@ theme_appearance_monitor_gtk4_new_with_query (GdkDisplay *display,
 
 ThemeAppearanceMonitorGtk4 *
 theme_appearance_monitor_gtk4_new (GdkDisplay *display,
-	ThemePreferencesGtk4 *preferences, GError **error)
+	ThemeAppearanceGtk4ApplyFunc apply, gpointer user_data,
+	GDestroyNotify user_data_destroy, GError **error)
 {
-	return theme_appearance_monitor_gtk4_new_with_query (display, preferences,
-		theme_appearance_monitor_gtk4_platform_query, NULL, NULL, error);
+	return theme_appearance_monitor_gtk4_new_with_query (display, apply,
+		theme_appearance_monitor_gtk4_platform_query, user_data,
+		user_data_destroy, error);
 }
 
 void

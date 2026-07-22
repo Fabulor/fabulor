@@ -2533,7 +2533,24 @@ The strict GTK4 probe, complete GTK4 frontend, shipping solution, and 18
 manifest tests pass. Exact validation covers all 7,270 candidate files, and a
 controlled packaged run hid and restored the window, remained responsive, and
 exited normally. The top-level positioning, visibility, and lifecycle target
-is complete; application/preferences theme-controller integration is next.
+is complete; application/preferences theme-controller integration remained.
+
+Theme-controller application integration pass 97 (2026-07-23):
+the GTK4 candidate now creates one theme controller during frontend startup,
+applies the persisted `gui_gtk4_theme` and `gui_gtk4_variant`, and retains that
+controller until frontend cleanup. The display-scoped Windows appearance
+monitor now invokes an application callback rather than owning a Preferences
+surface, so system light/dark and high-contrast changes remain active while the
+window is closed. GTK4 Preferences borrows the application controller for live,
+transactional preview; successful choices update the setup copy, while Cancel
+and persistence failure restore the original controller selection through the
+existing preference-stage boundary. Preferences destruction no longer removes
+application CSS providers. The strict probe passes with `/W4 /WX`, the complete
+GTK4 frontend links with the unchanged 81-warning inventory, the shipping GTK3
+solution builds with zero warnings/errors and 18 tests, all 50 GTK4 tooling
+tests pass, and the exact 7,270-file candidate starts responsively and exits
+normally. The application/preferences theme-controller target is complete;
+GTK3 removal is the next migration boundary.
 
 Deliverables:
 

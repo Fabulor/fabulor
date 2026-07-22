@@ -3104,7 +3104,9 @@ check_gtk4_theme_preferences_binding (void)
 	char *valid_id = NULL;
 	ThemePreferencesGtk4 *preferences;
 	ThemePreferencesGtk4 *missing_preferences;
+	ThemePreferencesGtk4 *shared_preferences;
 	ThemeGtk4Controller *controller;
+	ThemeGtk4Controller *shared_controller;
 	const GPtrArray *choices;
 	ProbeThemePreferencesCommit commit = { 0 };
 	GtkWidget *container;
@@ -3194,6 +3196,19 @@ check_gtk4_theme_preferences_binding (void)
 			theme_preferences_gtk4_controller (missing_preferences)) == 0;
 	theme_preferences_gtk4_free (missing_preferences);
 
+	shared_controller = theme_gtk4_controller_new (NULL);
+	shared_preferences = theme_preferences_gtk4_new_with_controller (
+		shared_controller, temporary, valid_id,
+		FABULOR_GTK4_THEME_VARIANT_PREFER_LIGHT, FALSE, FALSE, NULL, NULL,
+		NULL, &error);
+	valid = valid && shared_preferences != NULL && error == NULL &&
+		theme_gtk4_controller_theme_is_active (shared_controller);
+	theme_preferences_gtk4_free (shared_preferences);
+	valid = valid && theme_gtk4_controller_theme_is_active (shared_controller) &&
+		g_strcmp0 (theme_gtk4_controller_active_id (shared_controller),
+			valid_id) == 0;
+	theme_gtk4_controller_free (shared_controller);
+
 	g_free (commit.theme_id);
 	g_free (valid_id);
 	g_free (invalid_css);
@@ -3214,11 +3229,18 @@ typedef struct
 	guint count;
 } ProbeThemeAppearanceQuery;
 
+typedef struct
+{
+	ThemePreferencesGtk4 *preferences;
+	ProbeThemeAppearanceQuery *query;
+} ProbeThemeAppearanceContext;
+
 static gboolean
 probe_theme_appearance_query (gboolean *prefer_dark, gboolean *high_contrast,
 	gpointer user_data)
 {
-	ProbeThemeAppearanceQuery *query = user_data;
+	ProbeThemeAppearanceContext *context = user_data;
+	ProbeThemeAppearanceQuery *query = context->query;
 
 	query->count++;
 	if (!query->succeed)
@@ -3226,6 +3248,16 @@ probe_theme_appearance_query (gboolean *prefer_dark, gboolean *high_contrast,
 	*prefer_dark = query->prefer_dark;
 	*high_contrast = query->high_contrast;
 	return TRUE;
+}
+
+static gboolean
+probe_theme_appearance_apply (gboolean prefer_dark, gboolean high_contrast,
+	gpointer user_data, GError **error)
+{
+	ProbeThemeAppearanceContext *context = user_data;
+
+	return theme_preferences_gtk4_refresh (context->preferences, prefer_dark,
+		high_contrast, error);
 }
 
 static void
@@ -3250,6 +3282,7 @@ check_gtk4_theme_appearance_monitor (void)
 	ThemeGtk4Controller *controller;
 	ProbeThemePreferencesCommit commit = { 0 };
 	ProbeThemeAppearanceQuery query = { FALSE, FALSE, TRUE, 0 };
+	ProbeThemeAppearanceContext context = { NULL, &query };
 	gboolean valid;
 	guint query_count_before_free;
 	guint i;
@@ -3274,9 +3307,11 @@ check_gtk4_theme_appearance_monitor (void)
 	preferences = theme_preferences_gtk4_new (NULL, temporary, valid_id,
 		FABULOR_GTK4_THEME_VARIANT_FOLLOW_SYSTEM, FALSE, FALSE,
 		probe_theme_preferences_commit, &commit, NULL, &error);
+	context.preferences = preferences;
 	monitor = preferences ? theme_appearance_monitor_gtk4_new_with_query (
-		gdk_display_get_default (), preferences, probe_theme_appearance_query,
-		&query, NULL, &error) : NULL;
+		gdk_display_get_default (), probe_theme_appearance_apply,
+		probe_theme_appearance_query,
+		&context, NULL, &error) : NULL;
 	controller = theme_preferences_gtk4_controller (preferences);
 	valid = preferences && monitor && error == NULL && query.count == 1 &&
 		theme_appearance_monitor_gtk4_refresh_count (monitor) == 1 &&
