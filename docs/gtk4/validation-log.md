@@ -6419,6 +6419,50 @@ Behavior contract: GTK3 keeps its legacy widget menus unchanged. GTK4 uses
 only retained menu models/presenters and the native Windows tray popup; no
 removed GTK menu widget can be constructed or mutated in that profile.
 
+### GTK4 Stage 8 Legacy Status-Icon Backend Isolation
+
+Date: 2026-07-22
+
+Files/workflows converted: tray backend compile capability, legacy status-icon
+declarations and state, status-icon operations, and status-icon popup callback.
+
+Automated evidence:
+
+- shipping MSVC GTK3 frontend build: pass; `plugin-tray.c` rebuilt and the
+  shipping executable linked
+- strict MSVC GTK4 probe against GTK 4.22.4 / GLib 2.88.0: build and execution
+  pass under `/W4 /WX`; zero compiler warnings and errors
+- fresh Meson/Ninja MSVC GTK4 probe: clean configure, build, and execution pass
+- repository GTK4 Python validation: 28 tests pass
+- source audit: every `GtkStatusIcon` declaration, object, callback, and
+  operation compiles only when `GTK_MAJOR_VERSION < 4`
+- source audit: GTK4 without AppIndicator has an inert operation table and
+  cannot call or acquire a legacy status-icon symbol
+- clean isolated complete GTK4 frontend compilation: zero C compiler errors
+  and 123 warnings, unchanged from pass 79
+- expected complete GTK4 link failure improves from 33 to 29 unique unresolved
+  symbols and from 37 to 29 repeated unresolved-symbol diagnostics
+- no `GtkStatusIcon` or `gtk_status_icon_*` text occurs in the complete GTK4
+  build inventory
+- inventory log:
+  `build/gtk4-full/status-icon-backend-isolation-pass80.log`
+- next target: GTK4 application startup and main-loop ownership
+- `git diff --check`: pass
+
+Manual checks deferred until the full GTK4 frontend links:
+
+- [ ] enable the tray in the shipping GTK3 client and confirm its icon appears
+- [ ] trigger Restore, Away/Back, Preferences, and Quit from the GTK3 tray menu
+- [ ] confirm a GTK4 build without a supported tray backend stays visible and
+  never offers minimize-to-tray behavior
+- [ ] confirm the later native GTK4 tray backend can be enabled without
+  reintroducing `GtkStatusIcon`
+
+Behavior contract: GTK3 retains its AppIndicator and legacy status-icon
+backends. GTK4 cannot compile or select the legacy status-icon implementation;
+when no supported backend exists, tray initialization fails closed without
+hiding the application window.
+
 ## Stage Completion Rule
 
 A stage can move to complete in `migration-plan.md` only when:

@@ -38,7 +38,7 @@
 #include "window-state.h"
 
 #include <gio/gio.h>
-#if defined(GTK_DISABLE_DEPRECATED)
+#if defined(GTK_DISABLE_DEPRECATED) && GTK_MAJOR_VERSION < 4
 typedef struct _GtkStatusIcon GtkStatusIcon;
 #endif
 #ifndef WIN32
@@ -82,6 +82,12 @@ typedef enum
 #define HAVE_APPINDICATOR_BACKEND 0
 #endif
 
+#if !HAVE_APPINDICATOR_BACKEND && GTK_MAJOR_VERSION < 4
+#define HAVE_LEGACY_STATUS_ICON_BACKEND 1
+#else
+#define HAVE_LEGACY_STATUS_ICON_BACKEND 0
+#endif
+
 #if HAVE_APPINDICATOR_BACKEND
 /* GTK3: use AppIndicator/StatusNotifier item for tray integration. */
 typedef GIcon *TrayIcon;
@@ -115,7 +121,7 @@ typedef GdkPixbuf* TrayCustomIcon;
 #define ICON_HILIGHT pix_tray_highlight
 #define ICON_FILE pix_tray_fileoffer
 #endif
-#if defined(GTK_DISABLE_DEPRECATED) && !HAVE_APPINDICATOR_BACKEND
+#if defined(GTK_DISABLE_DEPRECATED) && HAVE_LEGACY_STATUS_ICON_BACKEND
 GtkStatusIcon *gtk_status_icon_new_from_pixbuf (GdkPixbuf *pixbuf);
 void gtk_status_icon_set_from_pixbuf (GtkStatusIcon *status_icon, GdkPixbuf *pixbuf);
 void gtk_status_icon_set_tooltip_text (GtkStatusIcon *status_icon, const gchar *text);
@@ -142,7 +148,7 @@ static void tray_toggle_item_destroy_cb (GtkWidget *widget, gpointer userdata);
 #if HAVE_APPINDICATOR_BACKEND
 static void tray_menu_show_cb (GtkWidget *menu, gpointer userdata) G_GNUC_UNUSED;
 #endif
-#if !HAVE_APPINDICATOR_BACKEND
+#if HAVE_LEGACY_STATUS_ICON_BACKEND
 static void tray_menu_cb (GtkWidget *widget, guint button, guint time, gpointer userdata);
 #endif
 
@@ -159,7 +165,7 @@ typedef struct
 static AppIndicator *tray_indicator;
 static GtkWidget *tray_menu;
 #endif
-#if !HAVE_APPINDICATOR_BACKEND
+#if HAVE_LEGACY_STATUS_ICON_BACKEND
 static GtkStatusIcon *tray_status_icon;
 #endif
 static gboolean tray_backend_active = FALSE;
@@ -624,7 +630,7 @@ static const TrayBackendOps tray_backend_ops = {
 };
 #endif
 
-#if !HAVE_APPINDICATOR_BACKEND
+#if HAVE_LEGACY_STATUS_ICON_BACKEND
 static void
 tray_status_icon_set_icon (TrayIcon icon)
 {
@@ -688,6 +694,10 @@ static const TrayBackendOps tray_backend_ops = {
 	tray_status_icon_is_embedded,
 	tray_status_icon_cleanup
 };
+#endif
+
+#if !HAVE_APPINDICATOR_BACKEND && !HAVE_LEGACY_STATUS_ICON_BACKEND
+static const TrayBackendOps tray_backend_ops = { 0 };
 #endif
 
 static gboolean
@@ -1509,7 +1519,7 @@ tray_window_visibility_cb (GtkWidget *widget, gpointer userdata)
 	tray_action_model_refresh ();
 }
 
-#if !HAVE_APPINDICATOR_BACKEND
+#if HAVE_LEGACY_STATUS_ICON_BACKEND
 static void
 tray_menu_cb (GtkWidget *widget, guint button, guint time, gpointer userdata)
 {

@@ -465,7 +465,7 @@ drag/drop or transcript content logic.
 | `gdk_window_*` | 32 | 8 | `GdkSurface`, snapshots, controllers, or removal | 4/6 | in progress; top-level state contained |
 | `gtk_clipboard_*` | 1 | 1 | `GdkClipboard` and content providers | 4/6 | in progress |
 | `GtkTreeView` | 75 | 18 | choose GTK4 list/model widget per workflow | 5 | in progress; Notify and user model owners converted |
-| `GtkStatusIcon` | 6 | 1 | native Win32 tray or supported external backend | 7 | action model complete; presentation not started |
+| `GtkStatusIcon` | 6 | 1 | native Win32 tray or supported external backend | 7 | legacy backend isolated to GTK3; GTK4 native presentation pending |
 | screen CSS provider installation | 4 | 3 | display-scoped provider installation | 7 | not started |
 
 ## High-Risk Files
@@ -1117,6 +1117,17 @@ model/presenter and the native Windows tray popup. The full GTK4 inventory
 improves to zero compiler errors, 123 warnings, 33 unique unresolved symbols,
 and 37 repeated diagnostics; `plugin-tray.c` contributes no compiler warnings
 from legacy widget-menu construction.
+
+Stage 8 legacy status-icon backend isolation pass 80 gives the removed
+`GtkStatusIcon` implementation one explicit GTK3-only compile capability. Its
+type declarations, compatibility prototypes, object state, signal callback,
+and complete operation table cannot enter a GTK4 object. GTK4 builds without
+AppIndicator retain an inert operation table and fail initialization closed,
+matching the existing backend-selection policy. The shipping GTK3 fallback is
+unchanged. The full GTK4 inventory remains at zero compiler errors and 123
+warnings while improving from 33 to 29 unique unresolved symbols and from 37
+to 29 repeated diagnostics. All four `gtk_status_icon_*` dependencies leave
+the GTK4 link boundary.
 
 ## Functional Clusters
 
