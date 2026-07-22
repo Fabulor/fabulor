@@ -6269,7 +6269,7 @@ mg_win32_message_dispatch (MSG *msg)
 
 					fabulor_window_state_get (
 						GTK_WINDOW (current_sess->gui->window), &state);
-					if (gtk_widget_get_visible (current_sess->gui->window)
+					if (state.visible
 						&& !state.minimized)
 						fe_ctrl_gui (current_sess, FE_GUI_ICONIFY, 0);
 					else

@@ -1511,10 +1511,9 @@ fe_ctrl_gui (session *sess, fe_gui_action action, int arg)
 	switch (action)
 	{
 	case FE_GUI_HIDE:
-		gtk_widget_hide (sess->gui->window); break;
+		fabulor_window_hide (GTK_WINDOW (sess->gui->window)); break;
 	case FE_GUI_SHOW:
-		gtk_widget_show (sess->gui->window);
-		gtk_window_present (GTK_WINDOW (sess->gui->window));
+		fabulor_window_present (GTK_WINDOW (sess->gui->window));
 		break;
 	case FE_GUI_FOCUS:
 		mg_bring_tofront_sess (sess); break;
@@ -1573,12 +1572,12 @@ fe_gui_info (session *sess, int info_type)
 	switch (info_type)
 	{
 	case 0:	/* window status */
-		if (!gtk_widget_get_visible (GTK_WIDGET (sess->gui->window)))
+		fabulor_window_state_get (GTK_WINDOW (sess->gui->window), &state);
+		if (!state.visible)
 		{
 			return 2;	/* hidden (iconified or systray) */
 		}
 
-		fabulor_window_state_get (GTK_WINDOW (sess->gui->window), &state);
 		if (state.minimized)
 			return 2;
 

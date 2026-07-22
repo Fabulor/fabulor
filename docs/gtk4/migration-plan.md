@@ -2519,6 +2519,22 @@ frontend profiles rebuild, all 18 manifest tests pass, exact validation covers
 the 7,270-file candidate, and a controlled candidate run minimized, restored,
 remained responsive, and exited normally through the new filter.
 
+Top-level visibility closure pass 96 (2026-07-23):
+the shared window-state owner now includes visible state, visibility change
+detection, and `notify::visible` observation on both frontend profiles. One
+hide/present policy preserves GTK3 deiconification while using common
+visibility and presentation operations for GTK3 and GTK4. `/GUI HIDE`,
+`/GUI SHOW`, tray restore, plugin status, and Win32 taskbar dispatch no longer
+combine direct widget visibility reads with separately acquired surface state.
+A source audit confirms that the previously converted main, DCC, Server List,
+editor, chooser, Preferences, Join, and utility-window callbacks cover every
+active top-level close, destruction, finalization, geometry, and state owner.
+The strict GTK4 probe, complete GTK4 frontend, shipping solution, and 18
+manifest tests pass. Exact validation covers all 7,270 candidate files, and a
+controlled packaged run hid and restored the window, remained responsive, and
+exited normally. The top-level positioning, visibility, and lifecycle target
+is complete; application/preferences theme-controller integration is next.
+
 Deliverables:
 
 - Make GTK4 the only production frontend dependency in MSVC, Meson, and CI.

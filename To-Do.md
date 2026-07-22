@@ -394,7 +394,7 @@ Detailed planning and evidence live in:
       - [x] Replace the Channel List GTK3 popup with an owned GTK4 multi-selection action model and popover.
       - [x] Compose Channel List and plugin-manager icon/mnemonic buttons through typed GTK3/GTK4 ownership and close Channel List failures through the window lifecycle boundary.
       - [x] Convert Channel View scrollers, tab ordering, close-button presentation, recursive reveal, child removal, and root finalization to typed GTK3/GTK4 ownership.
-    - [ ] Complete top-level window positioning, visibility, and lifecycle cutover.
+    - [x] Complete top-level window positioning, visibility, and lifecycle cutover.
       - [x] Contain removed placement hints, saved coordinates, and tray restore placement behind compositor-safe GTK3/GTK4 policy.
       - [x] Observe minimized, maximized, fullscreen, and focused top-level state through a typed GTK3/GTK4 boundary.
       - [x] Route tray and plugin status plus Win32 native-handle reads through the shared window-state owner.
@@ -413,7 +413,7 @@ Detailed planning and evidence live in:
       - [x] Move shared file-chooser file and folder paths to an owned local-path boundary.
       - [x] Replace active GTK3 top-level window constructors with one cross-version constructor.
       - [x] Replace the GTK3 per-window Win32 message filter with reviewed GTK4 display-filter ownership.
-      - [ ] Convert DCC/Server List geometry plus remaining top-level visibility and lifecycle callbacks.
+      - [x] Convert DCC/Server List geometry plus remaining top-level visibility and lifecycle callbacks.
         - [x] Convert detached DCC transfer size persistence to the shared surface-layout observer.
         - [x] Convert Server List and network-editor close/save handling and size persistence to typed GTK3/GTK4 callbacks.
         - [x] Convert Join Channel choice controls, root lookup, default response, wrapping, and pointer cleanup to typed GTK3/GTK4 lifecycle ownership.
@@ -426,7 +426,7 @@ Detailed planning and evidence live in:
         - [x] Route Server List editable-combo child access, box attachment, window roles, and default-button ownership through typed GTK3/GTK4 boundaries.
         - [x] Route main-window nickname/access-icon child ownership and pane geometry/restoration through typed GTK3/GTK4 boundaries.
         - [x] Preserve reply-bar hidden-until-used and child-reveal semantics without active GTK3 container visibility APIs.
-        - [ ] Convert the remaining top-level visibility and lifecycle callbacks.
+        - [x] Convert the remaining top-level visibility and lifecycle callbacks.
     - [ ] Bind application and preferences integration to the GTK4 theme controller.
       - [x] Separate GTK3 KDE/Wayland CSD reset ownership from GTK4 top-level theme classes.
       - [x] Route application CSS provider installation, removal, priority, and string loading through one GTK3/GTK4 owner.
