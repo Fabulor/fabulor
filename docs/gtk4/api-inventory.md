@@ -1227,6 +1227,19 @@ from 13 to 11 unresolved-symbol diagnostics. `gtk_widget_destroy` leaves the
 active GTK4 link boundary; remaining raw calls are confined to GTK3-only menu
 and adapter code.
 
+Stage 8 native About-dialog pass 89 gives GTK4 its native `GtkWindow`-owned
+About presentation, website link, GPL 2.0-only license page, built-in Close and
+Escape handling, and `gtk_window_present()` path. GTK3 retains the existing
+custom Website, License, and Close action-area layout. A typed logo helper
+projects the retained `GdkPixbuf` into a temporary GTK4 `GdkTexture` paintable
+with balanced ownership while preserving the GTK3 pixbuf call. The full GTK4
+inventory remains at zero compiler errors while improving from 93 to 86
+warnings, from 11 to 5 unique unresolved symbols, and from 11 to 5
+unresolved-symbol diagnostics. `GTK_BUTTON_BOX`,
+`gtk_button_box_set_child_secondary`, `GTK_CONTAINER`,
+`gtk_container_get_children`, `gtk_dialog_get_action_area`, and
+`gtk_widget_show_all` leave the active GTK4 link boundary.
+
 ## Functional Clusters
 
 | Cluster | Main files | GTK4 concern | Status |

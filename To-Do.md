@@ -346,6 +346,7 @@ Detailed planning and evidence live in:
   - [x] Resolve emoji fallback fonts through GTK4 widget Pango context ownership while retaining the GTK3 style query.
   - [x] Follow GTK4 native save-dialog overwrite policy while retaining GTK3's explicit confirmation toggle.
   - [x] Route active top-level and child destruction through typed GTK3/GTK4 ownership helpers.
+  - [x] Present About through GTK4's native window, link, license, and paintable-logo contracts while retaining GTK3's custom actions.
   - [ ] Remove the full-profile frontend compile blockers before producing a GTK4 executable.
     - [ ] Replace legacy menu event types and widget construction with the retained action/model boundaries.
       - [x] Remove raw `GdkEventButton` types from the public context-menu API and contain GTK3 event synthesis privately.

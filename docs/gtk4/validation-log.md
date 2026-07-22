@@ -6825,6 +6825,57 @@ generic widget disposal. Child removal is performed by the owning container.
 GTK3 retains its existing destruction semantics; GTK4 uses its explicit window
 and parent-child lifecycle APIs.
 
+### GTK4 Stage 8 Native About Dialog
+
+Date: 2026-07-22
+
+Files/workflows converted: About construction, logo ownership, website and
+license access, presentation, Close/Escape behavior, and toolkit-specific
+action layout.
+
+Automated evidence:
+
+- clean shipping MSVC GTK3 frontend rebuild: pass; zero warnings and errors
+- strict MSVC GTK4 probe against GTK 4.22.4 / GLib 2.88.0: build and execution
+  pass under `/W4 /WX`; zero warnings and errors
+- fresh Meson/Ninja MSVC GTK4 probe: clean configure, build, and execution pass
+- repository GTK4 Python validation: 28 tests pass
+- probe audit: the typed About-logo helper is address-taken and linked by both
+  strict probe build systems
+- source audit: GTK4 constructs `GtkAboutDialog` through its native constructor
+  and does not cast it to the removed `GtkDialog` base
+- source audit: GTK4 uses the native website, GPL 2.0-only license,
+  Close/Escape, link activation, transient-parent, and window presentation
+  contracts; GTK3 retains its custom response buttons
+- ownership audit: GTK4 creates one `GdkTexture` from the retained logo pixbuf,
+  assigns it as the dialog paintable, and releases the temporary reference
+- clean isolated complete GTK4 frontend compilation: zero C compiler errors
+  and 86 warnings, down from 93 in pass 88
+- expected complete GTK4 link failure improves from 11 to 5 unique unresolved
+  symbols and from 11 to 5 unresolved-symbol diagnostics
+- `GTK_BUTTON_BOX`, `gtk_button_box_set_child_secondary`, `GTK_CONTAINER`,
+  `gtk_container_get_children`, `gtk_dialog_get_action_area`, and
+  `gtk_widget_show_all` no longer occur in the active GTK4 link inventory
+- inventory log: `build/gtk4-full/about-dialog-pass89.log`
+- next target: remaining check-menu and toggle-action boundary
+- `git diff --check`: pass
+
+Manual checks deferred until the full GTK4 frontend links:
+
+- [ ] open About and confirm the logo, program name, version, copyright,
+  platform details, and theme styling render correctly
+- [ ] activate Website and confirm it opens the Fabulor project URL once
+- [ ] open the GPL 2.0-only license page and return to the main About view
+- [ ] close About through its native Close control, Escape, and window control,
+  confirming each path finalizes the window once
+- [ ] repeat the custom Website, License, and Close actions on GTK3 and confirm
+  unchanged behavior
+
+Behavior contract: GTK4 owns the About dialog as a native top-level window and
+provides its standard accessible website, license, and closure UI. Link
+activation continues through Fabulor's URL opener. GTK3 retains its established
+custom action-area behavior and visual layout.
+
 ## Stage Completion Rule
 
 A stage can move to complete in `migration-plan.md` only when:
