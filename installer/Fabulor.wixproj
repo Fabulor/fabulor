@@ -12,6 +12,7 @@
     <Gtk4FrontendCandidate Condition="'$(Gtk4FrontendCandidate)'==''">false</Gtk4FrontendCandidate>
     <Gtk4FrontendRoot Condition="'$(Gtk4FrontendRoot)'==''">$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\build\gtk4-full\$(Platform)\rel\'))</Gtk4FrontendRoot>
     <Gtk4EnchantRoot Condition="'$(Gtk4EnchantRoot)'==''">$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\build\gtk4-enchant-stage\'))</Gtk4EnchantRoot>
+    <Gtk4PluginHostRoot Condition="'$(Gtk4PluginHostRoot)'==''">$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\build\gtk4-plugin-host-candidate-root\'))</Gtk4PluginHostRoot>
     <BuildFabulorBootstrapper Condition="'$(BuildFabulorBootstrapper)'=='' and '$(Gtk4FrontendCandidate)'=='true'">false</BuildFabulorBootstrapper>
     <BuildFabulorBootstrapper Condition="'$(BuildFabulorBootstrapper)'==''">true</BuildFabulorBootstrapper>
     <OutputPath Condition="'$(FabulorInstallerOutputPath)'!=''">$(FabulorInstallerOutputPath)</OutputPath>
@@ -21,12 +22,12 @@
     <BundledDotNetRoot Condition="'$(BundledDotNetRoot)'==''">C:\Program Files\dotnet</BundledDotNetRoot>
     <BundledDotNetHostFxrRoot>$([System.IO.Path]::GetFullPath('$(BundledDotNetRoot)\host\fxr\'))</BundledDotNetHostFxrRoot>
     <BundledDotNetSharedRuntimeRoot>$([System.IO.Path]::GetFullPath('$(BundledDotNetRoot)\shared\Microsoft.NETCore.App\'))</BundledDotNetSharedRuntimeRoot>
-    <BundledDotNetRuntimeVersion Condition="'$(BundledDotNetRuntimeVersion)'==''">8.0.28</BundledDotNetRuntimeVersion>
+    <BundledDotNetRuntimeVersion Condition="'$(BundledDotNetRuntimeVersion)'==''">8.0.29</BundledDotNetRuntimeVersion>
     <PythonRuntimeRoot>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\Runtime\Python314\'))</PythonRuntimeRoot>
     <PythonRuntimeDll>python314.dll</PythonRuntimeDll>
     <PythonRuntimeFolderName>Python314</PythonRuntimeFolderName>
     <TclRuntimeRoot>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\Runtime\Tcl\'))</TclRuntimeRoot>
-    <DefineConstants>$(DefineConstants);FabulorSemVer=$(FabulorSemVer);FabulorPayloadRoot=$(FabulorPayloadRoot);GtkRuntimeRoot=$(GtkRuntimeRoot);Gtk4FrontendCandidate=$(Gtk4FrontendCandidate);Gtk4FrontendRoot=$(Gtk4FrontendRoot);Gtk4EnchantRoot=$(Gtk4EnchantRoot);ManagedPluginHostRoot=$(ManagedPluginHostRoot);BundledDotNetRoot=$(BundledDotNetRoot);BundledDotNetHostFxrRoot=$(BundledDotNetHostFxrRoot);BundledDotNetSharedRuntimeRoot=$(BundledDotNetSharedRuntimeRoot);BundledDotNetRuntimeVersion=$(BundledDotNetRuntimeVersion);PythonRuntimeRoot=$(PythonRuntimeRoot);PythonRuntimeFolderName=$(PythonRuntimeFolderName);TclRuntimeRoot=$(TclRuntimeRoot)</DefineConstants>
+    <DefineConstants>$(DefineConstants);FabulorSemVer=$(FabulorSemVer);FabulorPayloadRoot=$(FabulorPayloadRoot);GtkRuntimeRoot=$(GtkRuntimeRoot);Gtk4FrontendCandidate=$(Gtk4FrontendCandidate);Gtk4FrontendRoot=$(Gtk4FrontendRoot);Gtk4EnchantRoot=$(Gtk4EnchantRoot);Gtk4PluginHostRoot=$(Gtk4PluginHostRoot);ManagedPluginHostRoot=$(ManagedPluginHostRoot);BundledDotNetRoot=$(BundledDotNetRoot);BundledDotNetHostFxrRoot=$(BundledDotNetHostFxrRoot);BundledDotNetSharedRuntimeRoot=$(BundledDotNetSharedRuntimeRoot);BundledDotNetRuntimeVersion=$(BundledDotNetRuntimeVersion);PythonRuntimeRoot=$(PythonRuntimeRoot);PythonRuntimeFolderName=$(PythonRuntimeFolderName);TclRuntimeRoot=$(TclRuntimeRoot)</DefineConstants>
 
     <WixProjectType>Package</WixProjectType>
     <OutputName Condition="'$(FabulorInstallerOutputName)'=='' and '$(Gtk4FrontendCandidate)'=='true'">FabulorGtk4FrontendCandidate</OutputName>
@@ -40,18 +41,19 @@
     <Compile Include="Product.wxs" Condition="'$(Gtk4FrontendCandidate)'!='true'" />
     <Compile Include="ProductGtk4Candidate.wxs" Condition="'$(Gtk4FrontendCandidate)'=='true'" />
     <Compile Include="Components\**\*.wxs"
-             Exclude="Components\CoreGtk4Candidate.wxs;Components\NativeGtk4Candidate.wxs"
+             Exclude="Components\CoreGtk4Candidate.wxs;Components\NativeGtk4Candidate.wxs;Components\PluginHostsGtk4Candidate.wxs"
              Condition="'$(Gtk4FrontendCandidate)'!='true'" />
     <Compile Include="Components\CoreGtk4Candidate.wxs"
              Condition="'$(Gtk4FrontendCandidate)'=='true'" />
     <Compile Include="Components\NativeGtk4Candidate.wxs"
              Condition="'$(Gtk4FrontendCandidate)'=='true'" />
+    <Compile Include="Components\PluginHostsGtk4Candidate.wxs"
+             Condition="'$(Gtk4FrontendCandidate)'=='true'" />
     <Compile Include="Components\GTK4Allowlist.wxs"
              Condition="'$(Gtk4FrontendCandidate)'=='true'" />
   </ItemGroup>
 
-  <Target Name="BuildManagedPluginHost" BeforeTargets="Compile"
-          Condition="'$(Gtk4FrontendCandidate)'!='true'">
+  <Target Name="BuildManagedPluginHost" BeforeTargets="Compile">
     <MSBuild Projects="..\src\managed\Fabulor.PluginHost\Fabulor.PluginHost.csproj"
              Targets="Restore;Build"
              Properties="Configuration=$(Configuration);Platform=$(Platform)" />
@@ -75,9 +77,16 @@
     <Error Condition="'$(Gtk4FrontendCandidate)'=='true' and !Exists('$(Gtk4FrontendRoot)\plugins\hcnotifications-winrt.dll')" Text="Missing GTK4 notification extension at $(Gtk4FrontendRoot)\plugins." />
     <Error Condition="'$(Gtk4FrontendCandidate)'=='true' and !Exists('$(Gtk4FrontendRoot)\plugins\hcsysinfo.dll')" Text="Missing GTK4 Sysinfo extension at $(Gtk4FrontendRoot)\plugins." />
     <Error Condition="'$(Gtk4FrontendCandidate)'=='true' and !Exists('$(Gtk4FrontendRoot)\plugins\hcupd.dll')" Text="Missing GTK4 updater extension at $(Gtk4FrontendRoot)\plugins." />
+    <Error Condition="'$(Gtk4FrontendCandidate)'=='true' and !Exists('$(Gtk4FrontendRoot)\plugins\hcpython3.dll')" Text="Missing GTK4 Python host extension at $(Gtk4FrontendRoot)\plugins." />
     <Error Condition="'$(Gtk4FrontendCandidate)'=='true' and !Exists('$(Gtk4EnchantRoot)\libenchant-2-2.dll')" Text="Missing GTK4-compatible Enchant core at $(Gtk4EnchantRoot)." />
     <Error Condition="'$(Gtk4FrontendCandidate)'=='true' and !Exists('$(Gtk4EnchantRoot)\lib\enchant-2\enchant_winspell.dll')" Text="Missing GTK4-compatible WinSpell provider at $(Gtk4EnchantRoot)." />
     <Error Condition="'$(Gtk4FrontendCandidate)'=='true' and !Exists('$(Gtk4EnchantRoot)\share\enchant-2\enchant.ordering')" Text="Missing GTK4-compatible Enchant provider ordering at $(Gtk4EnchantRoot)." />
+    <Error Condition="'$(Gtk4FrontendCandidate)'=='true' and !Exists('$(Gtk4PluginHostRoot)\Runtime\plugin-host-manifest.json')" Text="Missing staged GTK4 candidate plugin-host manifest at $(Gtk4PluginHostRoot). Run tools\gtk4\stage_plugin_hosts.py first." />
+    <Error Condition="'$(Gtk4FrontendCandidate)'=='true' and !Exists('$(Gtk4PluginHostRoot)\Runtime\Python314\python314.dll')" Text="Missing staged Python 3.14 runtime at $(Gtk4PluginHostRoot)." />
+    <Error Condition="'$(Gtk4FrontendCandidate)'=='true' and !Exists('$(Gtk4PluginHostRoot)\Runtime\Tcl\bin\tcl86t.dll')" Text="Missing staged Tcl 8.6 runtime at $(Gtk4PluginHostRoot)." />
+    <Error Condition="'$(Gtk4FrontendCandidate)'=='true' and !Exists('$(Gtk4PluginHostRoot)\Runtime\DotNet\Fabulor.PluginHost.runtimeconfig.json')" Text="Missing staged managed plugin host at $(Gtk4PluginHostRoot)." />
+    <Error Condition="'$(Gtk4FrontendCandidate)'=='true' and !Exists('$(Gtk4PluginHostRoot)\Runtime\DotNet\host\fxr\$(BundledDotNetRuntimeVersion)\hostfxr.dll')" Text="Missing staged .NET hostfxr $(BundledDotNetRuntimeVersion) at $(Gtk4PluginHostRoot)." />
+    <Error Condition="'$(Gtk4FrontendCandidate)'=='true' and !Exists('$(Gtk4PluginHostRoot)\Runtime\DotNet\shared\Microsoft.NETCore.App\$(BundledDotNetRuntimeVersion)\hostpolicy.dll')" Text="Missing staged .NET shared runtime $(BundledDotNetRuntimeVersion) at $(Gtk4PluginHostRoot)." />
     <Error Condition="!Exists('$(GtkRuntimeRoot)\bin\gtk-4-1.dll')" Text="Missing GTK4 runtime payload at $(GtkRuntimeRoot)." />
     <Error Condition="!Exists('$(GtkRuntimeRoot)\runtime-manifest.json')" Text="Missing generated GTK4 runtime manifest at $(GtkRuntimeRoot). Stage the allowlisted runtime with tools\gtk4\stage_runtime.py before building WiX output." />
     <Error Condition="'$(Gtk4FrontendCandidate)'!='true' and !Exists('$(ManagedPluginHostRoot)\Fabulor.PluginHost.runtimeconfig.json')" Text="Missing managed plugin host payload at $(ManagedPluginHostRoot)." />

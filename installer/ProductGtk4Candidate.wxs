@@ -20,6 +20,7 @@
     <StandardDirectory Id="ProgramFiles64Folder">
       <Directory Id="INSTALLFOLDER" Name="Fabulor GTK4 Candidate">
         <Directory Id="PLUGINDIR" Name="plugins" />
+        <Directory Id="PYTHONAPIDIR" Name="python" />
         <Directory Id="LIBDIR" Name="lib">
           <Directory Id="LIBENCHANT2DIR" Name="enchant-2" />
         </Directory>
@@ -27,6 +28,18 @@
           <Directory Id="SHAREENCHANT2DIR" Name="enchant-2" />
         </Directory>
         <Directory Id="RUNTIMEDIR" Name="Runtime">
+          <Directory Id="DOTNETDIR" Name="DotNet">
+            <Directory Id="DOTNETHOSTDIR" Name="host">
+              <Directory Id="DOTNETFXRDIR" Name="fxr">
+                <Directory Id="DOTNETFXRVERSIONDIR" Name="$(var.BundledDotNetRuntimeVersion)" />
+              </Directory>
+            </Directory>
+            <Directory Id="DOTNETSHAREDDIR" Name="shared">
+              <Directory Id="DOTNETCOREAPPDIR" Name="Microsoft.NETCore.App">
+                <Directory Id="DOTNETCOREAPPVERSIONDIR" Name="$(var.BundledDotNetRuntimeVersion)" />
+              </Directory>
+            </Directory>
+          </Directory>
           <Directory Id="GTK4DIR" Name="GTK4">
             <Directory Id="GTK4BINDIR" Name="bin" />
             <Directory Id="GTK4ETCDIR" Name="etc">
@@ -47,6 +60,11 @@
               <Directory Id="GTK4SHAREXMLDIR" Name="xml" />
             </Directory>
           </Directory>
+          <Directory Id="PYDIR" Name="$(var.PythonRuntimeFolderName)" />
+          <Directory Id="TCLDIR" Name="Tcl">
+            <Directory Id="TCLBINDIR" Name="bin" />
+            <Directory Id="TCLLIBDIR" Name="lib" />
+          </Directory>
         </Directory>
       </Directory>
     </StandardDirectory>
@@ -57,6 +75,15 @@
       <ComponentGroupRef Id="Gtk4CandidateNativeRootComponents" />
       <ComponentGroupRef Id="Gtk4CandidateEnchantProviderComponents" />
       <ComponentGroupRef Id="Gtk4CandidateEnchantDataComponents" />
+      <ComponentGroupRef Id="Gtk4CandidatePluginHostManifestComponents" />
+      <ComponentGroupRef Id="Gtk4CandidatePythonHostComponents" />
+      <ComponentGroupRef Id="Gtk4CandidatePythonApiComponents" />
+      <ComponentGroupRef Id="Gtk4CandidatePythonRuntimeComponents" />
+      <ComponentGroupRef Id="Gtk4CandidateTclBinComponents" />
+      <ComponentGroupRef Id="Gtk4CandidateTclLibComponents" />
+      <ComponentGroupRef Id="Gtk4CandidateManagedHostComponents" />
+      <ComponentGroupRef Id="Gtk4CandidateDotNetHostFxrComponents" />
+      <ComponentGroupRef Id="Gtk4CandidateDotNetSharedRuntimeComponents" />
       <ComponentGroupRef Id="GTK4Components" />
     </Feature>
   </Package>

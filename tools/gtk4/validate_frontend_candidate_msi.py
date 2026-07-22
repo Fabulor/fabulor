@@ -12,6 +12,7 @@ import validate_frontend_bootstrap
 import validate_native_extensions
 import validate_runtime_imports
 import validate_runtime_msi
+import stage_plugin_hosts
 
 
 NS = validate_runtime_msi.NS
@@ -110,15 +111,21 @@ def extract_sources(directory):
     return sources
 
 
-def expected_paths(manifest_path, extension_contract):
+def expected_paths(manifest_path, extension_contract, plugin_host_paths):
     runtime_paths = validate_runtime_msi.load_expected_paths(manifest_path)
     extension_paths = {
         entry["path"] for entry in
         extension_contract["modules"] + extension_contract["data_files"]
     }
-    return set(ROOT_FILES) | extension_paths | {
+    base_paths = set(ROOT_FILES) | extension_paths | {
         f"Runtime/GTK4/{relative}" for relative in runtime_paths
     }
+    collisions = sorted(base_paths.intersection(plugin_host_paths))
+    if collisions:
+        raise FrontendCandidateMsiError(
+            f"Plugin-host payload collides with candidate content: {collisions[:20]}"
+        )
+    return base_paths | set(plugin_host_paths)
 
 
 def validate_paths(expected, actual):
@@ -157,7 +164,7 @@ def file_content(path):
 
 
 def expected_content(manifest_path, frontend_root, payload_root, enchant_root,
-                     extension_contract):
+                     extension_contract, plugin_host_root, plugin_host_content):
     expected = {
         f"Runtime/GTK4/{relative}": content
         for relative, content in
@@ -175,6 +182,19 @@ def expected_content(manifest_path, frontend_root, payload_root, enchant_root,
         expected[entry["path"]] = file_content(
             validate_native_extensions.source_path(entry, extension_roots)
         )
+    for relative, recorded in plugin_host_content.items():
+        actual = file_content(
+            plugin_host_root.joinpath(*pathlib.PurePosixPath(relative).parts)
+        )
+        if actual != recorded:
+            raise FrontendCandidateMsiError(
+                f"Staged plugin-host content differs from its manifest: {relative}"
+            )
+        expected[relative] = recorded
+    manifest_relative = stage_plugin_hosts.MANIFEST_RELATIVE
+    expected[manifest_relative] = file_content(
+        plugin_host_root.joinpath(*pathlib.PurePosixPath(manifest_relative).parts)
+    )
     return expected
 
 
@@ -235,6 +255,7 @@ def parse_args(argv):
     parser.add_argument("--frontend-root", type=pathlib.Path, required=True)
     parser.add_argument("--payload-root", type=pathlib.Path, required=True)
     parser.add_argument("--enchant-root", type=pathlib.Path, required=True)
+    parser.add_argument("--plugin-host-root", type=pathlib.Path, required=True)
     parser.add_argument("--layout-output", type=pathlib.Path)
     parser.add_argument("--dumpbin", required=True)
     parser.add_argument(
@@ -259,6 +280,7 @@ def main(argv=None):
         frontend_root = args.frontend_root.resolve(strict=True)
         payload_root = args.payload_root.resolve(strict=True)
         enchant_root = args.enchant_root.resolve(strict=True)
+        plugin_host_root = args.plugin_host_root.resolve(strict=True)
         dumpbin = validate_runtime_imports.resolve_tool(args.dumpbin)
         contract = args.contract.resolve(strict=True)
         layout_output = args.layout_output.resolve() if args.layout_output else None
@@ -269,10 +291,20 @@ def main(argv=None):
         extension_contract = validate_native_extensions.load_contract(
             args.extension_contract.resolve(strict=True)
         )
-        expected = expected_paths(manifest, extension_contract)
+        plugin_host_manifest, plugin_host_content = stage_plugin_hosts.load_manifest(
+            plugin_host_root.joinpath(
+                *pathlib.PurePosixPath(stage_plugin_hosts.MANIFEST_RELATIVE).parts
+            )
+        )
+        plugin_host_paths = set(plugin_host_content) | {
+            stage_plugin_hosts.MANIFEST_RELATIVE
+        }
+        expected = expected_paths(
+            manifest, extension_contract, plugin_host_paths
+        )
         expected_hashes = expected_content(
             manifest, frontend_root, payload_root, enchant_root,
-            extension_contract
+            extension_contract, plugin_host_root, plugin_host_content
         )
         temporary_root = msi.parent / "frontend-candidate-msi-validation"
         temporary_root.mkdir(exist_ok=True)
@@ -313,6 +345,7 @@ def main(argv=None):
             validate_runtime_imports.RuntimeImportError,
             validate_frontend_bootstrap.FrontendBootstrapError,
             validate_native_extensions.NativeExtensionError,
+            stage_plugin_hosts.PluginHostStagingError,
             FrontendCandidateMsiError) as exc:
         print(f"GTK4 frontend candidate MSI validation failed: {exc}", file=sys.stderr)
         return 1
@@ -322,7 +355,9 @@ def main(argv=None):
         f"files={len(expected)}, content_hashes=verified, "
         f"launcher_imports={launcher_count}, frontend_imports={frontend_count}, "
         f"extension_modules={module_count}, extension_data={data_count}, "
-        f"extension_edges={extension_edges}"
+        f"extension_edges={extension_edges}, "
+        f"plugin_host_files={plugin_host_manifest['file_count']}, "
+        f"dotnet={plugin_host_manifest['dotnet_runtime_version']}"
     )
     return 0
 

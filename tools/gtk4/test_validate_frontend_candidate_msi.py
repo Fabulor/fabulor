@@ -84,6 +84,18 @@ class FrontendCandidateMsiTests(unittest.TestCase):
                     candidate.FrontendCandidateMsiError, "content differs"):
                 candidate.validate_content(expected, sources, pathlib.Path("files"))
 
+    def test_plugin_host_path_collision_is_rejected(self):
+        with mock.patch.object(
+                candidate.validate_runtime_msi, "load_expected_paths",
+                return_value={"runtime-manifest.json"}):
+            with self.assertRaisesRegex(
+                    candidate.FrontendCandidateMsiError, "collides"):
+                candidate.expected_paths(
+                    pathlib.Path("manifest.json"),
+                    {"modules": [], "data_files": []},
+                    {"fabulor.exe"},
+                )
+
 
 if __name__ == "__main__":
     unittest.main()

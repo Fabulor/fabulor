@@ -153,6 +153,8 @@ GSList *plugin_list = NULL;	/* export for plugingui.c */
 static GSList *hook_list = NULL;
 static FabulorPluginCatalog *fabulor_plugin_catalog = NULL;
 static FabulorCallbackRegistry *fabulor_callback_registry = NULL;
+static GHashTable *fabulor_loaded_manifest_ids = NULL;
+static GPtrArray *fabulor_loaded_manifest_reports = NULL;
 static FabulorAPI fabulor_plugin_api;
 
 extern const struct prefs vars[];	/* cfgfiles.c */
@@ -275,6 +277,17 @@ fabulor_plugin_api_set_session (session *sess)
 static void
 fabulor_plugin_host_free (void)
 {
+	if (fabulor_loaded_manifest_reports)
+	{
+		g_ptr_array_unref (fabulor_loaded_manifest_reports);
+		fabulor_loaded_manifest_reports = NULL;
+	}
+	if (fabulor_loaded_manifest_ids)
+	{
+		g_hash_table_unref (fabulor_loaded_manifest_ids);
+		fabulor_loaded_manifest_ids = NULL;
+	}
+
 	if (fabulor_callback_registry)
 	{
 		fabulor_callback_registry_shutdown (fabulor_callback_registry);
@@ -480,6 +493,22 @@ fabulor_plugin_host_fire_event (session *sess,
 	}
 }
 
+static const char *
+fabulor_manifest_language_display_name (FabulorPluginLanguage language)
+{
+	switch (language)
+	{
+	case FABULOR_PLUGIN_LANGUAGE_CSHARP:
+		return "C#";
+	case FABULOR_PLUGIN_LANGUAGE_PYTHON:
+		return "Python";
+	case FABULOR_PLUGIN_LANGUAGE_TCL:
+		return "Tcl";
+	default:
+		return "Unknown";
+	}
+}
+
 static void
 fabulor_plugin_host_autoload (session *sess)
 {
@@ -551,6 +580,18 @@ fabulor_plugin_host_autoload (session *sess)
 			continue;
 		}
 
+		if (!fabulor_loaded_manifest_ids)
+			fabulor_loaded_manifest_ids = g_hash_table_new_full (g_str_hash,
+														  g_str_equal, g_free, NULL);
+		if (!fabulor_loaded_manifest_reports)
+			fabulor_loaded_manifest_reports = g_ptr_array_new_with_free_func (g_free);
+		g_hash_table_add (fabulor_loaded_manifest_ids, g_strdup (manifest->id));
+		g_ptr_array_add (fabulor_loaded_manifest_reports,
+			g_strdup_printf ("Manifest %s plugin: %s %s [%s]",
+				fabulor_manifest_language_display_name (manifest->language),
+				manifest->name,
+				manifest->version,
+				manifest->entrypoint));
 		fabulor_api_logf (sess, "Loaded manifest plugin %s (%s).", manifest->id, loader->language_name);
 	}
 
@@ -1035,6 +1076,9 @@ plugin_print_startup_report (session *sess)
 		kind = plugin->fake && filename && g_str_has_suffix (filename, ".py")
 			? "Python add-on"
 			: (plugin->fake ? "Script add-on" : "Plugin");
+		if (plugin->fake && fabulor_loaded_manifest_ids && name &&
+			g_hash_table_contains (fabulor_loaded_manifest_ids, name))
+			continue;
 
 		if (version && filename)
 			g_ptr_array_add (entries, g_strdup_printf ("%s: %s %s [%s]", kind, name, version, filename));
@@ -1047,6 +1091,12 @@ plugin_print_startup_report (session *sess)
 	}
 
 	fabulor_plugin_host_append_loaded_simple_addons (entries);
+	if (fabulor_loaded_manifest_reports)
+	{
+		for (i = 0; i < fabulor_loaded_manifest_reports->len; i++)
+			g_ptr_array_add (entries, g_strdup (g_ptr_array_index (
+				fabulor_loaded_manifest_reports, i)));
+	}
 	g_ptr_array_sort (entries, plugin_startup_report_compare);
 
 	PrintTextf (sess, "\nFabulor loaded plugins and add-ons (%u):\n", entries->len);

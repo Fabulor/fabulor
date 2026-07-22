@@ -1284,6 +1284,16 @@ notifications, WinSparkle, Enchant core/provider/data, and exact extracted-byte
 validation. Windows native plugin discovery is executable-relative unless the
 existing development-runtime gate explicitly permits an override.
 
+Stage 8 plugin-host parity pass 94 adds the supported C#, Python, and Tcl
+plugin hosts to the side-by-side candidate without broad runtime harvesting.
+`plugin-host-payload-contract.json` and `stage_plugin_hosts.py` select and hash
+the managed host, private .NET 8.0.29 runtime, Python 3.14 runtime/API, Tcl 8.6
+runtime, and Python native host. Candidate MSI validation now requires all
+5,821 host files and checks their extracted bytes alongside the native import
+contract. Manifest-plugin startup reporting records successful hosts once and
+uses stable `C#`, `Python`, and `Tcl` display labels. A packaged three-language
+smoke run loaded every runtime from the candidate root and exited normally.
+
 ## Functional Clusters
 
 | Cluster | Main files | GTK4 concern | Status |

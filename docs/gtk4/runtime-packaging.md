@@ -151,6 +151,18 @@ rejects GTK3 or unresolved imports. MSI extraction now enforces 1,447 exact
 files and repeats the extension graph validation against packaged bytes.
 Shipping GTK3 WiX composition remains unchanged.
 
+Stage 8 pass 94 adds plugin-host parity through
+`plugin-host-payload-contract.json`. `stage_plugin_hosts.py` materializes an
+installed-layout root for the managed host, .NET 8.0.29 hostfxr/shared runtime,
+Python 3.14 runtime and API, Tcl 8.6 runtime, and `hcpython3.dll`; it rejects
+reparse points, unsafe destinations, case-insensitive collisions, absent or
+empty trees, and ambiguous glob matches. The generated manifest locks 5,821
+files and 199,443,761 bytes. Candidate WiX owns those paths explicitly, and
+the extracted-MSI validator now checks all 7,270 package files and hashes plus
+ten native modules, one data file, and fifteen owned import edges. The normal
+shipping package retains its existing host composition but advances its pinned
+.NET servicing runtime from 8.0.28 to 8.0.29.
+
 ## Sources And Provenance
 
 Windows CI currently downloads both GTK3 and GTK4 archives from the
