@@ -2445,6 +2445,20 @@ zero, producing a 1,592,832-byte executable whose PE imports include
 `gtk-4-1.dll` and no GTK3 DLL. Isolated candidate runtime staging and startup
 smoke validation is the next contained target.
 
+Candidate startup pass 91 (2026-07-22):
+the first linked executable exposed that direct GTK/GLib imports are resolved
+before the in-process runtime bootstrap can register `Runtime\GTK4\bin`. GLib
+also imports data tables that MSVC cannot delay-load safely. The isolated GTK4
+profile therefore emits a system-only `fabulor.exe` launcher and
+`fabulor-gtk4-frontend.dll`; the launcher registers the contained runtime,
+validates the frontend file, and loads its exported entry through constrained
+Win32 search flags. Binary validation reports nine launcher imports, all
+reviewed system modules, and 31 resolved frontend imports with no GTK3 family.
+An eight-second system-only-`PATH` smoke run opened a responsive Network List,
+loaded GTK4/GLib/GObject/GIO from the staged runtime, closed with exit code 0,
+and produced no matching Windows Application event. Production WiX composition
+and clean-machine workflow validation remain separate cutover targets.
+
 Deliverables:
 
 - Make GTK4 the only production frontend dependency in MSVC, Meson, and CI.

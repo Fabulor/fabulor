@@ -6925,6 +6925,51 @@ its existing widget callbacks and signal-blocked state synchronization. The
 full GTK4 source profile now compiles and links, but this isolated executable is
 not yet a staged or runtime-validated release candidate.
 
+### GTK4 Stage 8 Candidate Startup Bootstrap
+
+Date: 2026-07-22
+
+Files/workflows converted: executable-relative runtime bootstrap, GTK4 frontend
+module entry, isolated launcher build, PE import validation, and controlled
+candidate startup/shutdown.
+
+Automated evidence:
+
+- shipping MSVC GTK3 frontend rebuild: pass; zero warnings and errors
+- strict MSVC GTK4 probe against GTK 4.22.4 / GLib 2.88.0: build and execution
+  pass under `/W4 /WX`; zero warnings and errors
+- fresh Meson/Ninja MSVC GTK4 probe: configure, 61-step build, and execution pass
+- repository validation: 38 tests pass
+- complete isolated GTK4 profile: pass; `fabulor.exe` launcher and
+  `fabulor-gtk4-frontend.dll` produced with zero compiler or linker errors
+- launcher build: pass under `/W4 /WX`; zero warnings and errors
+- bootstrap contract tests: six pass
+- staged runtime import validation: 35 native files, four roots, 107 packaged
+  edges, and 54 reviewed system imports
+- frontend bootstrap PE validation: nine launcher imports, all system-owned;
+  31 frontend imports resolved through the staged runtime, reviewed OpenSSL
+  application DLLs, or system allowlist; exported entry present; no GTK3 import
+- isolated candidate launcher SHA-256:
+  `66FC3472803D65C9A70C751516C45AB7EE464B5A20A59AEF37DB5A76A9DFBC19`
+- isolated frontend SHA-256:
+  `8C6628BF198932CE401F282DE2C0CB7B51E7AFA7A853BA808F93DA2768911F0F`
+
+Controlled smoke evidence:
+
+- launched from `build/gtk4-startup-smoke` with a System32-only `PATH`,
+  `--no-auto`, `--no-plugins`, and a workspace-only configuration root
+- responsive `Network List - Fabulor` window remained active for eight seconds
+- loaded `fabulor-gtk4-frontend.dll` from the candidate root and GTK4, GLib,
+  GObject, and GIO from `Runtime/GTK4/bin`
+- normal window close returned exit code 0
+- no matching Windows Application event was recorded during the run
+
+Behavior contract: the process bootstrap has no GTK or GLib import and must
+register the trusted nested runtime before loading the frontend module. The
+shipping GTK3 build and installed/user configuration roots remain untouched.
+WiX frontend-module composition and clean-machine feature workflows are the
+next packaging targets.
+
 ## Stage Completion Rule
 
 A stage can move to complete in `migration-plan.md` only when:

@@ -1251,6 +1251,16 @@ GTK3 DLL. `GTK_CHECK_MENU_ITEM`, `GTK_IS_CHECK_MENU_ITEM`,
 `gtk_check_menu_item_get_active`, `gtk_check_menu_item_set_active`, and
 `menu_toggle_item` leave the GTK4 link boundary.
 
+Stage 8 candidate-startup pass 91 resolves the nested-runtime bootstrap
+boundary exposed by that first executable. MSVC cannot delay-load GLib because
+normal `g_ascii_*` and UTF-8 macros import GLib data tables, so the GTK4 profile
+now emits a Win32-only `fabulor.exe` launcher and an exported
+`fabulor-gtk4-frontend.dll`. The launcher contains no GTK/GLib import, registers
+the trusted executable-relative runtime first, rejects a reparse-point frontend
+module, and loads the frontend through constrained search flags. A system-only
+`PATH` smoke run loaded GTK4, GLib, GObject, and GIO exclusively from the staged
+runtime and closed normally.
+
 ## Functional Clusters
 
 | Cluster | Main files | GTK4 concern | Status |

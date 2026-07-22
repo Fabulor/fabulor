@@ -74,10 +74,11 @@ msbuild tools\gtk4\gtk4-full-frontend.proj /t:BuildCommon /m:1
 msbuild tools\gtk4\gtk4-full-frontend.proj /t:Build /m:1
 ```
 
-`BuildCommon` is required by Windows CI. `Build` intentionally compiles the
-whole frontend and currently stops at the remaining GTK3-only source
-boundaries; it is the authoritative error inventory during cutover and does
-not produce a shipping executable until those boundaries are removed.
+Windows CI builds the complete profile. `Build` produces a Win32-only
+`fabulor.exe` launcher and `fabulor-gtk4-frontend.dll`. The launcher registers
+the executable-relative `Runtime\GTK4\bin` directory before loading the
+frontend module, so its own PE import table contains no GTK or GLib dependency.
+This profile remains isolated from the shipping GTK3 solution output.
 
 ## Stage 8 Runtime Candidate
 
@@ -134,4 +135,6 @@ in the Windows build after staging.
 ```powershell
 python tools\gtk4\test_validate_runtime_imports.py
 python tools\gtk4\validate_runtime_imports.py --root C:\fabulor-master\build\gtk4-runtime-candidate-root\Runtime\GTK4 --dumpbin dumpbin
+python tools\gtk4\test_frontend_runtime_bootstrap.py
+python tools\gtk4\validate_frontend_bootstrap.py --launcher C:\fabulor-master\build\gtk4-full\x64\rel\fabulor.exe --frontend C:\fabulor-master\build\gtk4-full\x64\rel\fabulor-gtk4-frontend.dll --runtime-root C:\fabulor-master\build\gtk4-runtime-candidate-root\Runtime\GTK4 --dumpbin dumpbin
 ```
