@@ -2338,6 +2338,20 @@ while improving from 123 to 117 warnings and from 29 to 26 unique and repeated
 unresolved diagnostics. Windows GTK4 icon-theme bootstrap is the next
 contained target.
 
+Windows icon-theme bootstrap pass 82 (2026-07-22):
+the startup path now acquires GTK4's display-scoped icon theme, adds search
+roots through the supported GTK4 API, and selects Adwaita without the removed
+custom-theme/rescan calls. Candidate `Runtime/GTK4/share/icons` and flattened
+`share/icons` layouts are both recognized. GTK4 accepts standard indexed icon
+roots, including the staged hicolor theme; GTK3 retains its existing
+index-theme rejection because that Windows runtime can fail fast while
+scanning it. The strict probe covers search-path insertion and theme-name
+selection without mutating the display theme. Shipping GTK3, strict MSVC and
+fresh Meson GTK4 probes, and all 28 repository tests remain clean. The complete
+GTK4 profile remains at zero compiler errors while improving from 117 to 112
+warnings and from 26 to 23 unique and repeated unresolved diagnostics. The
+remaining main-window icon-theme lookup is the next contained target.
+
 Deliverables:
 
 - Make GTK4 the only production frontend dependency in MSVC, Meson, and CI.

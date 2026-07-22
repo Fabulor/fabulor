@@ -6507,6 +6507,56 @@ plugin, and session initialization before entering the UI loop. GTK4 owns and
 releases one default-context loop and honors shutdown before or during entry;
 GTK3 startup and shutdown are unchanged.
 
+### GTK4 Stage 8 Windows Icon-Theme Bootstrap
+
+Date: 2026-07-22
+
+Files/workflows converted: default icon-theme acquisition, startup icon search
+paths, indexed-theme eligibility, Adwaita selection, and runtime-layout fallback.
+
+Automated evidence:
+
+- clean shipping MSVC GTK3 frontend rebuild: pass; zero warnings and errors
+- strict MSVC GTK4 probe against GTK 4.22.4 / GLib 2.88.0: build and execution
+  pass under `/W4 /WX`; zero warnings and errors
+- fresh Meson/Ninja MSVC GTK4 probe: clean configure, build, and execution pass
+- strict icon-theme probe: the display default resolves, and an isolated GTK4
+  theme accepts an added search root and reports the selected Adwaita name
+- repository GTK4 Python validation: 28 tests pass
+- source audit: GTK4 default theme acquisition is display-scoped and uses
+  `gtk_icon_theme_add_search_path()` plus `gtk_icon_theme_set_theme_name()`
+- source audit: GTK4 accepts indexed icon roots; GTK3 alone retains the
+  fail-fast `hicolor/index.theme` safeguard
+- source audit: startup recognizes candidate `Runtime/GTK4/share/icons` and
+  flattened `share/icons` Adwaita layouts
+- clean isolated complete GTK4 frontend compilation: zero C compiler errors
+  and 112 warnings, down from 117 in pass 81
+- expected complete GTK4 link failure improves from 26 to 23 unique unresolved
+  symbols and from 26 to 23 repeated unresolved-symbol diagnostics
+- startup no longer contributes `gtk_icon_theme_get_default`,
+  `gtk_icon_theme_append_search_path`, `gtk_icon_theme_set_custom_theme`, or
+  `gtk_icon_theme_rescan_if_needed`; one main-window default lookup remains
+- inventory log: `build/gtk4-full/windows-icon-theme-bootstrap-pass82.log`
+- next target: main-window icon-theme lookup boundary
+- `git diff --check`: pass
+
+Manual checks deferred until the full GTK4 frontend links:
+
+- [ ] start from the candidate runtime and confirm toolbar, access, dialog, and
+  status icons resolve without ambient GTK paths
+- [ ] place valid custom icons under `%APPDATA%\Fabulor\icons` and confirm they
+  are discoverable
+- [ ] set `ZOITECHAT_ICON_PATH` to a valid indexed theme root and confirm GTK4
+  accepts it
+- [ ] launch from a different working directory and confirm executable-relative
+  candidate icons still resolve
+- [ ] run the shipping GTK3 client and confirm its icon theme remains stable
+
+Behavior contract: Windows icon lookup remains executable-relative and keeps
+the established environment, user, module, working-directory, and argv search
+sources. GTK4 accepts standard indexed themes and uses display ownership; GTK3
+retains its defensive indexed-theme rejection unchanged.
+
 ## Stage Completion Rule
 
 A stage can move to complete in `migration-plan.md` only when:
