@@ -237,7 +237,13 @@ jobs:
           if errorlevel 1 exit /b 1
 
           set "FABULOR_STAGE=%GITHUB_WORKSPACE%\build\gtk4-production-support"
-          python tools\gtk4\stage_production_support.py --dependency-root C:\gtk-build\gtk\x64\release --python-build-root "%pythonLocation%" --repository-root "%GITHUB_WORKSPACE%" --winsparkle-root C:\gtk-build\WinSparkle --output "%FABULOR_STAGE%"
+          set "WINSPARKLE_ROOT=C:\gtk-build\WinSparkle"
+          if exist "C:\gtk-build\WinSparkle\x64\WinSparkle.dll" set "WINSPARKLE_ROOT=C:\gtk-build\WinSparkle\x64"
+          if not exist "%WINSPARKLE_ROOT%\WinSparkle.dll" (
+            echo Missing WinSparkle.dll beneath C:\gtk-build\WinSparkle
+            exit /b 1
+          )
+          python tools\gtk4\stage_production_support.py --dependency-root C:\gtk-build\gtk\x64\release --python-build-root "%pythonLocation%" --repository-root "%GITHUB_WORKSPACE%" --winsparkle-root "%WINSPARKLE_ROOT%" --output "%FABULOR_STAGE%"
           if errorlevel 1 exit /b 1
 
           python tools\gtk4\validate_native_extensions.py --plugins-root "%GITHUB_WORKSPACE%\build\gtk4-full\x64\rel\plugins" --payload-root "%FABULOR_STAGE%" --enchant-root "%GTK4_ENCHANT_ROOT%" --runtime-root "%GTK4_RUNTIME_ROOT%\Runtime\GTK4" --dumpbin dumpbin
