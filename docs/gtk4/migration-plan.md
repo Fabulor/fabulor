@@ -1,6 +1,6 @@
 # GTK4 Migration Plan
 
-Status: planning baseline
+Status: Stage 9 legacy-removal cleanup
 
 Baseline date: 2026-07-14
 
@@ -16,19 +16,16 @@ the validation matrix in [validation-log.md](validation-log.md) passes.
 
 ## Current State
 
-- `src/fe-gtk/meson.build` requires `gtk+-3.0 >= 3.22`.
-- `win32/zoitechat.props` selects GTK3 headers and import libraries.
-- `.github/workflows/windows-build.yml` downloads separate GTK3 build
-  dependencies and a GTK4 runtime payload.
-- `win32/copy/copy.vcxproj` stages GTK3 DLLs, modules, print backends, emoji
-  data, themes, schemas, icons, and shared libraries beside `fabulor.exe`.
-- WiX already packages a repository `Runtime/GTK4` tree. The current tree
-  contains GTK 4.22.4 and GLib 2.88.0, but the executable does not yet consume
-  that GTK4 build surface.
-- Theme code is intentionally split into policy/runtime/application layers and
-  a GTK3 adapter. This is a useful boundary for introducing a GTK4 adapter.
-- The frontend is source-driven rather than GtkBuilder-driven; there are no
-  `.ui` files to convert.
+- GTK4 is the sole supported MSVC, CI, runtime, MSI, and bootstrapper profile.
+- The GTK4 4.22.4 / GLib 2.88.0 root supplies the normal compile, link, and
+  runtime surface.
+- A pinned vcpkg manifest supplies only OpenSSL; CI verifies and stages a dated
+  Mozilla CA bundle alongside its DLLs.
+- The GTK3 gvsbuild archive, MSYS2 hicolor/libarchive augmentation, LuaJIT,
+  Perl, gendef, broad runtime-copy project, and Inno installer are absent from
+  the active Windows build graph.
+- GTK3 source branches and compatibility helpers remain the next cleanup
+  boundary; historical plugin source trees remain retained but unsupported.
 
 ## Migration Rules
 

@@ -5,14 +5,14 @@
     <Platform Condition="'$(Platform)'==''">x64</Platform>
     <FabulorGtk4Root Condition="'$(FabulorGtk4Root)'=='' and '$(FABULOR_GTK4_ROOT)'!=''">$(FABULOR_GTK4_ROOT)</FabulorGtk4Root>
     <FabulorGtk4Root Condition="'$(FabulorGtk4Root)'==''">$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\..\Runtime\GTK4'))</FabulorGtk4Root>
-    <BuildProperties>Configuration=$(Configuration);Platform=$(Platform);FabulorGtkMajor=4;FabulorGtk4Root=$(FabulorGtk4Root)</BuildProperties>
+    <FabulorSupportDepsRoot Condition="'$(FabulorSupportDepsRoot)'=='' and '$(FABULOR_SUPPORT_DEPS_ROOT)'!=''">$(FABULOR_SUPPORT_DEPS_ROOT)</FabulorSupportDepsRoot>
+    <BuildProperties>Configuration=$(Configuration);Platform=$(Platform);FabulorGtkMajor=4;FabulorGtk4Root=$(FabulorGtk4Root);FabulorSupportDepsRoot=$(FabulorSupportDepsRoot)</BuildProperties>
   </PropertyGroup>
 
   <ItemGroup>
     <NativeExtensionProject Include="$(MSBuildThisFileDirectory)..\..\plugins\checksum\checksum.vcxproj" />
     <NativeExtensionProject Include="$(MSBuildThisFileDirectory)..\..\plugins\exec\exec.vcxproj" />
     <NativeExtensionProject Include="$(MSBuildThisFileDirectory)..\..\plugins\fishlim\fishlim.vcxproj" />
-    <NativeExtensionProject Include="$(MSBuildThisFileDirectory)..\..\plugins\lua\lua.vcxproj" />
     <NativeExtensionProject Include="$(MSBuildThisFileDirectory)..\..\plugins\python\python3.vcxproj" />
     <NativeExtensionProject Include="$(MSBuildThisFileDirectory)..\..\plugins\sysinfo\sysinfo.vcxproj" />
     <NativeExtensionProject Include="$(MSBuildThisFileDirectory)..\..\plugins\upd\upd.vcxproj" />

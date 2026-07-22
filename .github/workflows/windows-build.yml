@@ -45,7 +45,6 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install cffi
           python -m pip install meson==1.11.2 ninja==1.13.0
-          python -m pip install zstandard
 
           $ProgressPreference = 'SilentlyContinue'
           function Download-WithRetry {
@@ -69,9 +68,6 @@ jobs:
             }
           }
 
-          Download-WithRetry -Url https://github.com/ZoiteChat/gvsbuild/releases/download/zoitechat-2.18.1/GTK3_Gvsbuild_zoitechat-2.18.1_x64.zip -OutFile deps\gtk-${{ matrix.arch }}.zip
-          Expand-Archive -LiteralPath deps\gtk-${{ matrix.arch }}.zip -DestinationPath C:\gtk-build\gtk\x64\release -Force
-
           $gtk4Contract = Get-Content tools\gtk4\dependency-contract.json -Raw | ConvertFrom-Json
           $gtk4Archive = Join-Path 'deps' $gtk4Contract.source.file_name
           Download-WithRetry -Url $gtk4Contract.source.url -OutFile $gtk4Archive
@@ -82,40 +78,28 @@ jobs:
           Expand-Archive -LiteralPath $gtk4Archive -DestinationPath $repoGtk4Root -Force
           python tools\gtk4\validate_root.py --root $repoGtk4Root
 
-          Download-WithRetry -Url https://repo.msys2.org/mingw/x86_64/mingw-w64-x86_64-hicolor-icon-theme-0.18-1-any.pkg.tar.zst -OutFile deps\hicolor-icon-theme.pkg.tar.zst
-          python -c "import tarfile,zstandard,pathlib;archive=pathlib.Path(r'deps\\hicolor-icon-theme.pkg.tar.zst');target=pathlib.Path(r'C:\\gtk-build\\gtk\\x64\\release');dctx=zstandard.ZstdDecompressor();f=archive.open('rb');reader=dctx.stream_reader(f);tf=tarfile.open(fileobj=reader,mode='r|');[tf.extract(m,path=target) for m in tf if m.name.startswith('mingw64/share/icons/hicolor/')];tf.close();reader.close();f.close()"
-
-          Download-WithRetry -Url https://repo.msys2.org/mingw/x86_64/mingw-w64-x86_64-libarchive-3.8.6-1-any.pkg.tar.zst -OutFile deps\libarchive.pkg.tar.zst
-          python -c "import tarfile,zstandard,pathlib;archive=pathlib.Path(r'deps\\libarchive.pkg.tar.zst');target=pathlib.Path(r'C:\\gtk-build\\gtk\\x64\\release');dctx=zstandard.ZstdDecompressor();f=archive.open('rb');reader=dctx.stream_reader(f);tf=tarfile.open(fileobj=reader,mode='r|');[tf.extract(m,path=target) for m in tf if m.name.startswith(('mingw64/include/archive','mingw64/lib/libarchive','mingw64/bin/libarchive'))];tf.close();reader.close();f.close()"
-
-          if (Test-Path C:\gtk-build\gtk\x64\release\mingw64\share\icons\hicolor) {
-            New-Item -Path C:\gtk-build\gtk\x64\release\share\icons -ItemType Directory -Force | Out-Null
-            Copy-Item -Path C:\gtk-build\gtk\x64\release\mingw64\share\icons\hicolor -Destination C:\gtk-build\gtk\x64\release\share\icons\hicolor -Recurse -Force
+          $vcpkg = Join-Path $env:VCPKG_INSTALLATION_ROOT 'vcpkg.exe'
+          if (-not (Test-Path $vcpkg)) {
+            $vcpkg = 'C:\vcpkg\vcpkg.exe'
           }
-          if (Test-Path C:\gtk-build\gtk\x64\release\mingw64\include) {
-            New-Item -Path C:\gtk-build\gtk\x64\release\include -ItemType Directory -Force | Out-Null
-            Copy-Item -Path C:\gtk-build\gtk\x64\release\mingw64\include\archive* -Destination C:\gtk-build\gtk\x64\release\include -Recurse -Force
+          if (-not (Test-Path $vcpkg)) { throw "Unable to locate vcpkg.exe." }
+          $supportInstallRoot = Join-Path $env:GITHUB_WORKSPACE 'build\vcpkg-installed'
+          & $vcpkg install --triplet x64-windows --x-manifest-root="$env:GITHUB_WORKSPACE\tools\windows-deps" --x-install-root="$supportInstallRoot"
+          if ($LASTEXITCODE -ne 0) { throw "vcpkg install failed with exit code $LASTEXITCODE." }
+          $supportRoot = Join-Path $supportInstallRoot 'x64-windows'
+          $supportBin = Join-Path $supportRoot 'bin'
+          New-Item -Path $supportBin -ItemType Directory -Force | Out-Null
+          $certPath = Join-Path $supportBin 'cert.pem'
+          Download-WithRetry -Url https://curl.se/ca/cacert-2026-07-16.pem -OutFile $certPath
+          $cert = Get-Item $certPath
+          $certHash = (Get-FileHash -Algorithm SHA256 $certPath).Hash
+          if ($cert.Length -ne 186446 -or $certHash -ne '3FF344E30B9B1ED2971044EABB438A08F2E2245DDB5F8AB1A3AD8B63AB4EAF91') {
+            throw "CA bundle integrity check failed: size=$($cert.Length), SHA256=$certHash"
           }
-          if (Test-Path C:\gtk-build\gtk\x64\release\mingw64\lib) {
-            New-Item -Path C:\gtk-build\gtk\x64\release\lib -ItemType Directory -Force | Out-Null
-            Copy-Item -Path C:\gtk-build\gtk\x64\release\mingw64\lib\libarchive* -Destination C:\gtk-build\gtk\x64\release\lib -Force
-          }
-          if (Test-Path C:\gtk-build\gtk\x64\release\mingw64\bin) {
-            New-Item -Path C:\gtk-build\gtk\x64\release\bin -ItemType Directory -Force | Out-Null
-            Copy-Item -Path C:\gtk-build\gtk\x64\release\mingw64\bin\libarchive*.dll -Destination C:\gtk-build\gtk\x64\release\bin -Force
-          }
-          if (Test-Path C:\gtk-build\gtk\x64\release\mingw64) {
-            Remove-Item -Path C:\gtk-build\gtk\x64\release\mingw64 -Recurse -Force
-          }
-
-          Download-WithRetry -Url https://github.com/ZoiteChat/gvsbuild/releases/download/zoitechat-2.18.0-pre4/gendef20260315.7z -OutFile deps\gendef.7z
-          & 7z.exe x deps\gendef.7z -oC:\gtk-build
+          "FABULOR_SUPPORT_DEPS_ROOT=$supportRoot" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
 
           Download-WithRetry -Url https://github.com/ZoiteChat/gvsbuild/releases/download/zoitechat-2.18.0-pre4/WinSparkle-20260315.7z -OutFile deps\WinSparkle.7z
           & 7z.exe x deps\WinSparkle.7z -oC:\gtk-build\WinSparkle
-
-          Download-WithRetry -Url https://github.com/ZoiteChat/gvsbuild/releases/download/zoitechat-2.18.0-pre4/perl-5.42.0.1-${{ matrix.arch }}.7z -OutFile deps\perl-${{ matrix.arch }}.7z
-          & 7z.exe x deps\perl-${{ matrix.arch }}.7z -oC:\gtk-build\perl-5.42.0.1\${{ matrix.platform }}
 
           Download-WithRetry -Url https://sourceforge.net/projects/magicsplat/files/magicsplat-tcl/tcl-8.6.16-installer-1.16.0-x64.msi/download -OutFile deps\tcltk-sourceforge.html
           $tclMsiMatch = [regex]::Match((Get-Content -Raw deps\tcltk-sourceforge.html), 'https://downloads\.sourceforge\.net/project/magicsplat/magicsplat-tcl/tcl-8\.6\.16-installer-1\.16\.0-x64\.msi\?[^"\s<>]*use_mirror=[^"\s<>]*')
@@ -198,13 +182,13 @@ jobs:
           msbuild tools\gtk4\gtk4-probe.vcxproj /m /verbosity:minimal /p:Configuration=Release /p:Platform=${{ matrix.platform }} /p:FabulorGtk4Root="%GITHUB_WORKSPACE%\Runtime\GTK4"
           if errorlevel 1 exit /b 1
 
-          msbuild tools\gtk4\gtk4-full-frontend.proj /t:Build /m:1 /verbosity:minimal /p:Configuration=Release /p:Platform=${{ matrix.platform }} /p:FabulorGtk4Root="%GITHUB_WORKSPACE%\Runtime\GTK4"
+          msbuild tools\gtk4\gtk4-full-frontend.proj /t:Build /m:1 /verbosity:minimal /p:Configuration=Release /p:Platform=${{ matrix.platform }} /p:FabulorGtk4Root="%GITHUB_WORKSPACE%\Runtime\GTK4" /p:FabulorSupportDepsRoot="%FABULOR_SUPPORT_DEPS_ROOT%"
           if errorlevel 1 exit /b 1
 
           python tools\gtk4\validate_frontend_bootstrap.py --launcher "%GITHUB_WORKSPACE%\build\gtk4-full\x64\rel\fabulor.exe" --frontend "%GITHUB_WORKSPACE%\build\gtk4-full\x64\rel\fabulor-gtk4-frontend.dll" --runtime-root "%GTK4_RUNTIME_ROOT%\Runtime\GTK4" --dumpbin dumpbin
           if errorlevel 1 exit /b 1
 
-          msbuild tools\gtk4\gtk4-native-extensions.proj /t:Build /m:1 /verbosity:minimal /p:Configuration=Release /p:Platform=${{ matrix.platform }} /p:FabulorGtk4Root="%GITHUB_WORKSPACE%\Runtime\GTK4"
+          msbuild tools\gtk4\gtk4-native-extensions.proj /t:Build /m:1 /verbosity:minimal /p:Configuration=Release /p:Platform=${{ matrix.platform }} /p:FabulorGtk4Root="%GITHUB_WORKSPACE%\Runtime\GTK4" /p:FabulorSupportDepsRoot="%FABULOR_SUPPORT_DEPS_ROOT%"
           if errorlevel 1 exit /b 1
 
           python -m mesonbuild.mesonmain setup --buildtype=release build\gtk4-probe-meson tools\gtk4 "-Dgtk4_root=%GITHUB_WORKSPACE%\Runtime\GTK4"
@@ -224,8 +208,6 @@ jobs:
           set "LIB=%PYTHON_DIR%\libs;%LIB%"
           set "INCLUDE=%PYTHON_DIR%\include;%INCLUDE%"
 
-          powershell -NoProfile -ExecutionPolicy Bypass -Command "$archiveLib='C:\gtk-build\gtk\x64\release\lib\libarchive.lib'; if (-not (Test-Path $archiveLib)) { $archiveDll = Get-ChildItem 'C:\gtk-build\gtk\x64\release\bin\libarchive*.dll' | Select-Object -First 1; if ($archiveDll) { Push-Location 'C:\gtk-build\gtk\x64\release\lib'; & 'C:\gtk-build\gendef\gendef.exe' $archiveDll.FullName | Out-Null; $archiveDef = Get-ChildItem 'libarchive*.def' | Select-Object -First 1; if ($archiveDef) { & lib /def:$archiveDef.Name /machine:${{ matrix.platform }} /out:libarchive.lib | Out-Null }; Pop-Location } }"
-
           set "ENCHANT_WORK=%RUNNER_TEMP%\fabulor-enchant-msvc"
           if not exist "%ENCHANT_WORK%" mkdir "%ENCHANT_WORK%"
           gh release download v2.8.19 --repo rrthomas/enchant --pattern enchant-2.8.19.tar.gz --dir "%ENCHANT_WORK%" --clobber
@@ -243,7 +225,7 @@ jobs:
             echo Missing WinSparkle.dll beneath C:\gtk-build\WinSparkle
             exit /b 1
           )
-          python tools\gtk4\stage_production_support.py --dependency-root C:\gtk-build\gtk\x64\release --python-build-root "%pythonLocation%" --repository-root "%GITHUB_WORKSPACE%" --winsparkle-root "%WINSPARKLE_ROOT%" --output "%FABULOR_STAGE%"
+          python tools\gtk4\stage_production_support.py --dependency-root "%FABULOR_SUPPORT_DEPS_ROOT%" --python-build-root "%pythonLocation%" --repository-root "%GITHUB_WORKSPACE%" --winsparkle-root "%WINSPARKLE_ROOT%" --output "%FABULOR_STAGE%"
           if errorlevel 1 exit /b 1
 
           python tools\gtk4\validate_native_extensions.py --plugins-root "%GITHUB_WORKSPACE%\build\gtk4-full\x64\rel\plugins" --payload-root "%FABULOR_STAGE%" --enchant-root "%GTK4_ENCHANT_ROOT%" --runtime-root "%GTK4_RUNTIME_ROOT%\Runtime\GTK4" --dumpbin dumpbin

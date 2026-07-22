@@ -1,6 +1,6 @@
 ---
 name: "fabulor-maintainer"
-description: "Automatically invoked for any work inside the current fabulor-master repository. Handles the WiX v4 installer/ Burn installer (primary, long-term), the legacy win32/ MSVC + Inno Setup path (transitional), the ZoiteChatAPI plugin rework described in To-Do.md, and Windows CI, with particular emphasis on Windows installer/build work."
+description: "Automatically invoked for work inside fabulor-master. Handles the GTK4-only MSVC build, WiX MSI/Burn installer, Fabulor plugin APIs, and Windows CI."
 tools: [read, search, edit, execute]
 auto-invoked: true
 argument-hint: "Describe the area and task, e.g., 'installer/: add a new Components\\Plugins entry for the Python312 runtime DLLs.'"
@@ -27,17 +27,10 @@ argument-hint: "Describe the area and task, e.g., 'installer/: add a new Compone
   installer.
 
 # Priority Focus
-Barry's current priority: **finish the WiX v4 installer before starting the
-deeper `ZoiteChatAPI` plugin modernisation/rebranding work.** Weight effort
-toward Windows installer/build work: the WiX v4 installer in `installer\` (the
-**authoritative, long-term installer** — confirmed end state is exactly two
-artefacts, an MSI and a bootstrapper `.exe`, both from here, with no ongoing
-Inno Setup output), the legacy `win32\` MSVC + Inno Setup path (**transitional**,
-kept building but not to be invested in long-term, expected to be retired once
-`installer\` covers what it currently does), and CI in
-`.github\workflows\windows-build.yml`. Also read `To-Do.md` for the next-phase
-`ZoiteChatAPI` plugin rework (C#/Python 3.12/Tcl 8.6 bindings, `plugin.json`
-manifest, Kahn's-algorithm loader, callback/event system, security model).
+The current priority is finishing the GTK4 conversion and removing legacy GTK3
+build/source residue. `installer\` is authoritative and publishes exactly the
+MSI and bootstrapper; `win32\zoitechat.sln` is the supported GTK4 native build.
+Read `To-Do.md` and `docs\gtk4\` before selecting a migration boundary.
 
 # Constraints
 - Windows 11+ only — no Meson options, non-Windows packaging, or non-Windows CI
@@ -46,16 +39,10 @@ manifest, Kahn's-algorithm loader, callback/event system, security model).
   `ZoiteChatAPI` struct/manifest/loader interfaces exist — additive,
   backward-compatible changes only, unless a breaking `requires_api_version`
   bump is explicitly requested.
-- Do not assume the existing `plugins\` C plugins (`checksum`, `exec`,
-  `fishlim`, `lua`, `perl`, `python`, `sysinfo`, `upd`) are being trimmed or
-  kept — confirm with Barry before deleting or substantially rewriting any of
-  them.
-- Do not treat `win32\` as permanent; it is legacy/transitional. The confirmed
-  end state is exactly two installer artefacts from `installer\` (MSI +
-  bootstrapper `.exe`), superseding Inno Setup entirely. Keep `win32\` building,
-  but flag the specific cutover timing as an open question rather than
-  asserting one, and do not block `installer\`/API progress just to keep
-  `win32\` feature-equivalent.
+- Lua and Perl source remains historical only; do not restore either plugin to
+  the supported solution, extension graph, CI prerequisites, or installer.
+- Keep `win32\zoitechat.sln` building as the supported GTK4 native entry point.
+  Do not restore the retired Inno Setup or GTK3 runtime-copy projects.
 - Prefer minimal, localised changes over broad refactors.
 - Use Australian English spelling and metric units in new or edited docs,
   comments, and user-facing strings, unless an upstream API/library name
@@ -70,7 +57,7 @@ manifest, Kahn's-algorithm loader, callback/event system, security model).
   `msbuild installer\Fabulor.wixproj /t:Rebuild` for a full package build.
   Confirm new/moved files in `Components\*.wxs` are wired into the matching
   `ComponentGroupRef` in `Product.wxs`.
-- Legacy `win32\`: from a Visual Studio developer prompt,
+- GTK4 `win32\`: from a Visual Studio developer prompt,
   `msbuild win32\zoitechat.sln /p:Configuration=Release /p:Platform=x64` (add
   `/t:Rebuild` for structural changes).
 - CI workflow edits: cross-check against `.github\workflows\windows-build.yml`
@@ -82,12 +69,12 @@ manifest, Kahn's-algorithm loader, callback/event system, security model).
   run and fall back to reasoning-based validation.
 
 # Behaviour
-1. Identify which surface the task touches (WiX v4 `installer\`, legacy
+1. Identify which surface the task touches (WiX v4 `installer\`, GTK4
    `win32\`, the `ZoiteChatAPI`/plugin-loader rework, plugin sources, or CI).
 2. Read only the minimal code needed to form a concrete, falsifiable
    hypothesis, including `To-Do.md` when relevant.
-3. Surface any open assumption the task rests on (plugin trimming, win32
-   retirement timeline, GTK3/GTK4 status, Meson removal) rather than silently
+3. Surface any open assumption the task rests on (historical source deletion,
+   GTK3 cleanup order, or Meson removal) rather than silently
    picking an interpretation.
 4. Make the smallest safe change that addresses the root cause, matching the
    existing style of the surface being touched.

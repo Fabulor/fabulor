@@ -167,9 +167,10 @@ the full hosted Python installation remains a build dependency only.
 
 ## Sources And Provenance
 
-Windows CI currently downloads both GTK3 and GTK4 archives from the
-`ZoiteChat/gvsbuild` release `zoitechat-2.18.1`. It also augments the GTK3 build
-root with MSYS2 hicolor and libarchive packages. The final GTK4 pipeline must:
+Windows CI downloads the pinned GTK4 archive from the `ZoiteChat/gvsbuild`
+release `zoitechat-2.18.1`. OpenSSL is resolved from the vcpkg baseline in
+`tools/windows-deps/vcpkg-configuration.json`; no GTK3 or MSYS2 staging archive
+participates in the supported Windows build. The pipeline must:
 
 - pin source URLs and immutable release/package versions
 - verify expected SHA-256 values before extraction
@@ -261,8 +262,7 @@ feature ownership. Review at least:
 - translations supported by the application and runtime
 - TLS certificate data and spawn helpers where used
 - licences and notices required for redistribution
-- introspection typelibs only if the retained Lua/LGI path uses them at runtime
-- WinSparkle, Enchant/WinSpell, libarchive, and plugins that share GLib or CRT
+- WinSparkle, Enchant/WinSpell, OpenSSL, and plugins that share GLib or CRT
   ownership with the frontend
 
 Do not package headers, import/static libraries, build scripts, Python wheels,
@@ -277,9 +277,8 @@ DLL boundaries. Before cutover:
 - rebuild Enchant 2.8.19 and WinSpell against the final MSVC/UCRT GTK4-era GLib
   bundle and rerun the personal-word-list smoke test
 - rebuild bundled native plugins against the final import libraries
-- verify libarchive ownership and theme extraction tests
-- verify Lua/LGI and any introspection modules against retained typelib/runtime
-  versions
+- keep GTK3 archive import and the unsupported Lua/LGI runtime outside the
+  production build and package
 - inspect `fabulor.exe` and every bundled DLL for GTK3 imports
 - reject duplicate GLib/GObject/GIO DLL families in the installed process search
   path
