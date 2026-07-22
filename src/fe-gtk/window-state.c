@@ -40,6 +40,8 @@ fabulor_window_state_changes (const FabulorWindowState *previous,
 		changed |= FABULOR_WINDOW_STATE_FULLSCREEN;
 	if (previous->focused != current->focused)
 		changed |= FABULOR_WINDOW_STATE_FOCUSED;
+	if (previous->visible != current->visible)
+		changed |= FABULOR_WINDOW_STATE_VISIBLE;
 	return changed;
 }
 
@@ -50,6 +52,7 @@ fabulor_window_state_get (GtkWindow *window, FabulorWindowState *state)
 	g_return_if_fail (state != NULL);
 
 	memset (state, 0, sizeof (*state));
+	state->visible = gtk_widget_get_visible (GTK_WIDGET (window));
 #if GTK_MAJOR_VERSION >= 4
 	{
 		GdkSurface *surface = gtk_native_get_surface (GTK_NATIVE (window));
@@ -90,6 +93,15 @@ window_state_emit (FabulorWindowStateWatch *watch)
 		watch->callback (watch->window, &current, watch->user_data);
 }
 
+static void
+window_state_visible_notify_cb (GObject *object, GParamSpec *pspec,
+	gpointer user_data)
+{
+	(void)object;
+	(void)pspec;
+	window_state_emit (user_data);
+}
+
 #if GTK_MAJOR_VERSION >= 4
 static void
 window_state_notify_cb (GObject *object, GParamSpec *pspec, gpointer user_data)
@@ -98,7 +110,6 @@ window_state_notify_cb (GObject *object, GParamSpec *pspec, gpointer user_data)
 	(void)pspec;
 	window_state_emit (user_data);
 }
-
 static void
 window_state_detach_surface (FabulorWindowStateWatch *watch)
 {
@@ -156,6 +167,9 @@ window_state_event_cb (GtkWidget *widget, GdkEventWindowState *event,
 	current.maximized = (event->new_window_state & GDK_WINDOW_STATE_MAXIMIZED) != 0;
 	current.fullscreen = (event->new_window_state & GDK_WINDOW_STATE_FULLSCREEN) != 0;
 	current.focused = (event->new_window_state & GDK_WINDOW_STATE_FOCUSED) != 0;
+	current.visible = gtk_widget_get_visible (GTK_WIDGET (watch->window));
+	if (watch->previous.visible != current.visible)
+		current.changed |= FABULOR_WINDOW_STATE_VISIBLE;
 	watch->previous = current;
 	watch->previous.changed = 0;
 	watch->callback (watch->window, &current, watch->user_data);
@@ -195,6 +209,8 @@ fabulor_window_state_watch (GtkWindow *window,
 	watch->user_data = user_data;
 	fabulor_window_state_get (window, &watch->previous);
 	g_ptr_array_add (watches, watch);
+	g_signal_connect (window, "notify::visible",
+		G_CALLBACK (window_state_visible_notify_cb), watch);
 #if GTK_MAJOR_VERSION >= 4
 	g_signal_connect (window, "realize", G_CALLBACK (window_state_realize_cb), watch);
 	g_signal_connect (window, "unrealize", G_CALLBACK (window_state_unrealize_cb), watch);
@@ -204,6 +220,24 @@ fabulor_window_state_watch (GtkWindow *window,
 	g_signal_connect (window, "window-state-event",
 		G_CALLBACK (window_state_event_cb), watch);
 #endif
+}
+
+void
+fabulor_window_hide (GtkWindow *window)
+{
+	g_return_if_fail (GTK_IS_WINDOW (window));
+	gtk_widget_set_visible (GTK_WIDGET (window), FALSE);
+}
+
+void
+fabulor_window_present (GtkWindow *window)
+{
+	g_return_if_fail (GTK_IS_WINDOW (window));
+#if GTK_MAJOR_VERSION < 4
+	gtk_window_deiconify (window);
+#endif
+	gtk_widget_set_visible (GTK_WIDGET (window), TRUE);
+	gtk_window_present (window);
 }
 
 gpointer

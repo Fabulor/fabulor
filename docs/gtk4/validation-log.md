@@ -7149,6 +7149,54 @@ remain between 2 bytes and 64 KiB. Invalid payloads continue through normal
 window processing, and wheel messages are consumed only after successful
 same-process forwarding. GTK3 retains its existing per-window filter.
 
+### GTK4 Stage 8 Top-Level Visibility Closure
+
+Date: 2026-07-23
+
+Files/workflows converted: shared visible-state snapshots and observation,
+top-level hide/present policy, frontend GUI commands, tray hide/restore,
+plugin window-status reporting, and Win32 taskbar visibility decisions.
+
+Automated evidence:
+
+- strict MSVC GTK4 probe against GTK 4.22.4 / GLib 2.88.0: build and execution
+  pass under `/W4 /WX`; visible-state changes plus hide/present snapshots are
+  covered
+- complete isolated GTK4 frontend profile: pass; launcher and frontend module
+  link with no new warning or unresolved symbol and retain the established
+  81-warning cleanup inventory
+- full shipping MSVC x64 solution: pass; zero warnings and errors, and all 18
+  manifest/path tests pass
+- complete `tools/gtk4` Python validation: 50 tests pass
+- candidate WiX build with full ICE validation: pass; zero warnings and errors
+- extracted candidate: exactly 7,270 files; all sizes and SHA-256 hashes pass
+- packaged launcher imports: nine reviewed system modules
+- packaged frontend imports: 31 resolved runtime/application/system modules
+- packaged extension graph: ten modules, one data file, fifteen owned edges
+- frontend module: 1,595,392 bytes; SHA-256
+  `16EB63B4CC0A85399899F363869DB3CC74162973AB861489EF6E8C6994B18398`
+- candidate MSI: 100,233,884 bytes; SHA-256
+  `4F980188A7619020DBDC319207D75B311A42A1F221C2EA93FCE1523FB3506EB9`
+
+Controlled smoke evidence:
+
+- launched the exact extracted candidate from `C:\Windows` with an isolated
+  profile, disabled plugin autoload, and a local refused URL session
+- delivered `GUI HIDE` through the candidate's bounded single-instance path;
+  the native window became invisible
+- delivered `GUI SHOW`; the same window became visible and presented again
+- candidate remained responsive before and after both transitions
+- normal window close returned exit code 0; the installed Fabulor process was
+  not targeted or interrupted
+
+Behavior contract: visible, minimized, maximized, fullscreen, and focused
+state are read from one typed owner. Visibility watches report an explicit
+`FABULOR_WINDOW_STATE_VISIBLE` change, hide uses common widget visibility, and
+present preserves GTK3 deiconification before common show/present behavior.
+Frontend commands, tray policy, plugin status, and Win32 dispatch must not
+perform independent top-level visibility reads. Existing versioned lifecycle,
+geometry, and native-message owners remain unchanged.
+
 ## Stage Completion Rule
 
 A stage can move to complete in `migration-plan.md` only when:

@@ -5074,19 +5074,23 @@ check_window_state_boundary (gboolean gtk_ready)
 	current.maximized = TRUE;
 	current.fullscreen = TRUE;
 	current.focused = TRUE;
+	current.visible = TRUE;
 	changed = fabulor_window_state_changes (&previous, &current);
 	if (changed != (FABULOR_WINDOW_STATE_MAXIMIZED |
-		FABULOR_WINDOW_STATE_FULLSCREEN | FABULOR_WINDOW_STATE_FOCUSED))
+		FABULOR_WINDOW_STATE_FULLSCREEN | FABULOR_WINDOW_STATE_FOCUSED |
+		FABULOR_WINDOW_STATE_VISIBLE))
 		return FALSE;
 	previous = current;
 	current.maximized = FALSE;
 	current.fullscreen = FALSE;
 	current.minimized = TRUE;
 	current.focused = FALSE;
+	current.visible = FALSE;
 	changed = fabulor_window_state_changes (&previous, &current);
 	if (changed != (FABULOR_WINDOW_STATE_MINIMIZED |
 		FABULOR_WINDOW_STATE_MAXIMIZED |
-		FABULOR_WINDOW_STATE_FULLSCREEN | FABULOR_WINDOW_STATE_FOCUSED))
+		FABULOR_WINDOW_STATE_FULLSCREEN | FABULOR_WINDOW_STATE_FOCUSED |
+		FABULOR_WINDOW_STATE_VISIBLE))
 		return FALSE;
 	if (gtk_ready)
 	{
@@ -5095,7 +5099,21 @@ check_window_state_boundary (gboolean gtk_ready)
 		guint callback_count = 0;
 		fabulor_window_state_get (window, &state);
 		if (state.changed || state.minimized || state.maximized ||
-			state.fullscreen || state.focused)
+			state.fullscreen || state.focused || state.visible)
+		{
+			gtk_window_destroy (window);
+			return FALSE;
+		}
+		fabulor_window_present (window);
+		fabulor_window_state_get (window, &state);
+		if (!state.visible)
+		{
+			gtk_window_destroy (window);
+			return FALSE;
+		}
+		fabulor_window_hide (window);
+		fabulor_window_state_get (window, &state);
+		if (state.visible)
 		{
 			gtk_window_destroy (window);
 			return FALSE;

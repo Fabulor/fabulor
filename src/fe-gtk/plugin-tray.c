@@ -770,18 +770,13 @@ tray_get_window_status (void)
 {
 	FabulorWindowState window_state;
 	GtkWindow *win;
-	GtkWidget *widget;
 	const char *st;
 
 	win = GTK_WINDOW (zoitechat_get_info (ph, "gtkwin_ptr"));
 	if (win)
 	{
-		widget = GTK_WIDGET (win);
-		if (!gtk_widget_get_visible (widget))
-			return WS_HIDDEN;
-
 		fabulor_window_state_get (win, &window_state);
-		if (window_state.minimized)
+		if (!window_state.visible || window_state.minimized)
 			return WS_HIDDEN;
 	}
 
@@ -1060,7 +1055,7 @@ tray_toggle_visibility (gboolean force_hide)
 		fabulor_gtk_window_placement_capture (win, &placement);
 		maximized = prefs.hex_gui_win_state;
 		fullscreen = prefs.hex_gui_win_fullscreen;
-		gtk_widget_hide (GTK_WIDGET (win));
+		fabulor_window_hide (win);
 	}
 	else
 	{
@@ -1071,11 +1066,7 @@ tray_toggle_visibility (gboolean force_hide)
 			gtk_window_maximize (win);
 		if (fullscreen)
 			gtk_window_fullscreen (win);
-#if GTK_MAJOR_VERSION < 4
-		gtk_window_deiconify (win);
-#endif
-		gtk_widget_show (GTK_WIDGET (win));
-		gtk_window_present (win);
+		fabulor_window_present (win);
 	}
 
 	tray_update_toggle_item_label ();

@@ -1306,6 +1306,18 @@ GTK4 setting and theme notifications remain exclusively owned by the existing
 display-level appearance monitor. The exact 7,270-file candidate minimized and
 restored through the new filter, remained responsive, and exited normally.
 
+Stage 8 top-level visibility closure pass 96 makes visible state a first-class
+part of `FabulorWindowState`, including change detection and watched
+`notify::visible` transitions. Shared hide and present operations now own GTK3
+deiconification plus GTK3/GTK4 visibility and presentation policy. Frontend
+commands, tray hide/restore, plugin window-status reporting, and Win32 taskbar
+dispatch consume that single owner rather than mixing widget visibility with
+surface state. The source audit confirms all active top-level close,
+destruction, finalization, geometry, state, and native-message callbacks are
+already versioned or shared. An exact packaged candidate passed `/GUI HIDE`
+and `/GUI SHOW`, remained responsive, and exited normally, closing the
+top-level positioning, visibility, and lifecycle inventory.
+
 ## Functional Clusters
 
 | Cluster | Main files | GTK4 concern | Status |
