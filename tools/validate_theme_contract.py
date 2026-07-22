@@ -60,12 +60,6 @@ def validate_associations(repo: pathlib.Path) -> None:
             f"Active WiX theme associations must be exactly .hct; found {sorted(extensions)}"
         )
 
-    inno = read_text(repo / "win32" / "installer" / "zoitechat.iss.tt").casefold()
-    if 'subkey: ".hct"' not in inno or 'subkey: ".zct"' in inno:
-        raise ThemeContractError(
-            "Legacy installer template must register .hct and must not register .zct."
-        )
-
     cleanup = read_text(
         repo / "installer" / "UX" / "FabulorBootstrapperApplication.cs"
     ).casefold()

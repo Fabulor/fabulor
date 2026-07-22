@@ -25,11 +25,11 @@ Update this file in every GTK4 conversion PR. Use these status values:
 
 | Area | Current state | GTK4 target | Status |
 |---|---|---|---|
-| Meson frontend dependency | legacy fragments use `gtk+-3.0 >= 3.22`; no top-level project exists | root-driven GTK4 probe established; production integration remains | in progress |
-| MSVC headers/libraries | production uses GTK3 through `win32/zoitechat.props`; isolated GTK4 project exists | validated GTK4 root and import libraries in converted targets | in progress |
-| Windows CI build dependencies | GTK3 production archive plus GTK4 probe archive | GTK4 URL, size, SHA-256, versions, and x64 identity pinned | in progress |
-| Windows runtime payload | separate GTK4 tree already downloaded and packaged | same audited runtime used by the executable | in progress |
-| Staged release root | GTK3 DLLs and data beside `fabulor.exe` | GTK4-only final layout | not started |
+| Meson frontend dependency | historical non-Windows fragments remain outside the supported Windows profile | keep outside the Windows production build | retired |
+| MSVC headers/libraries | GTK4 root supplies GTK/GLib and related libraries; pinned vcpkg root supplies OpenSSL | retain explicit, reproducible split roots | converted |
+| Windows CI build dependencies | one pinned GTK4 archive, vcpkg OpenSSL, and explicit non-GTK support inputs | no GTK3, Lua, Perl, gendef, or MSYS2 augmentation | converted |
+| Windows runtime payload | allowlisted GTK4 runtime staged from the compile root | same audited runtime used by the executable | converted |
+| Staged release root | deterministic GTK4 runtime, support, plugin-host, and Enchant roots | GTK4-only final layout | converted |
 
 ## Compatibility Helper Boundary
 

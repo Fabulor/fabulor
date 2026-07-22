@@ -4,9 +4,6 @@
 
 		<!-- SPECIFY YOUR DEPENDENCY DIRECTORIES HERE -->
 
-		<YourDepsPath>c:\gtk-build\gtk</YourDepsPath>
-		<YourGendefPath>c:\gtk-build\gendef</YourGendefPath>
-		<YourPerlPath>c:\gtk-build\perl-5.42.0.1</YourPerlPath>
 		<YourPython3Path>c:\gtk-build\python-3.14</YourPython3Path>
 		<YourWinSparklePath>c:\gtk-build\WinSparkle</YourWinSparklePath>
 
@@ -21,53 +18,22 @@
 		<OwnFlags>GTK_DISABLE_DEPRECATED;GDK_PIXBUF_DISABLE_DEPRECATED;G_DISABLE_SINGLE_INCLUDES;GDK_PIXBUF_DISABLE_SINGLE_INCLUDES;GTK_DISABLE_SINGLE_INCLUDES;HAVE_X509_GET_SIGNATURE_NID;HAVE_SSL_CTX_GET_SSL_METHOD;DEFAULT_CERT_FILE="cert.pem";HAVE_STRTOULL;strtoull=_strtoui64;strcasecmp=stricmp;strncasecmp=strnicmp;__inline__=__inline;FABULOR_GTK4_FRONTEND_MODULE</OwnFlags>
 
 		<!-- FIXME: Add ability to use debug builds -->
-		<DepsRoot Condition="'$(DepsRoot)'==''">$(YourDepsPath)\$(ZoiteChatPlatform)\release</DepsRoot>
 		<FabulorGtk4Root Condition="'$(FabulorGtk4Root)'=='' and '$(FABULOR_GTK4_ROOT)'!=''">$(FABULOR_GTK4_ROOT)</FabulorGtk4Root>
 		<FabulorGtk4Root Condition="'$(FabulorGtk4Root)'==''">$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\Runtime\GTK4'))</FabulorGtk4Root>
+		<FabulorSupportDepsRoot Condition="'$(FabulorSupportDepsRoot)'=='' and '$(FABULOR_SUPPORT_DEPS_ROOT)'!=''">$(FABULOR_SUPPORT_DEPS_ROOT)</FabulorSupportDepsRoot>
+		<FabulorSupportDepsRoot Condition="'$(FabulorSupportDepsRoot)'==''">$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\build\vcpkg-installed\x64-windows'))</FabulorSupportDepsRoot>
+		<DepsRoot>$(FabulorGtk4Root)</DepsRoot>
 		<GtkDepsRoot>$(FabulorGtk4Root)</GtkDepsRoot>
-		<GendefPath>$(YourGendefPath)</GendefPath>
 		<WinSparklePath Condition="Exists('$(YourWinSparklePath)\$(ZoiteChatPlatform)\WinSparkle.dll') or Exists('$(YourWinSparklePath)\$(ZoiteChatPlatform)\WinSparkle.lib') or Exists('$(YourWinSparklePath)\$(ZoiteChatPlatform)\winsparkle.h')">$(YourWinSparklePath)\$(ZoiteChatPlatform)</WinSparklePath>
 		<WinSparklePath Condition="'$(WinSparklePath)'=='' and (Exists('$(YourWinSparklePath)\WinSparkle.dll') or Exists('$(YourWinSparklePath)\WinSparkle.lib') or Exists('$(YourWinSparklePath)\winsparkle.h'))">$(YourWinSparklePath)</WinSparklePath>
 		<WinSparkleIncludePath Condition="Exists('$(WinSparklePath)\include\winsparkle.h')">$(WinSparklePath)\include</WinSparkleIncludePath>
 		<WinSparkleIncludePath Condition="'$(WinSparkleIncludePath)'=='' and Exists('$(WinSparklePath)\winsparkle.h')">$(WinSparklePath)</WinSparkleIncludePath>
 		<WinSparkleIncludePath Condition="'$(WinSparkleIncludePath)'=='' and Exists('$(YourWinSparklePath)\include\winsparkle.h')">$(YourWinSparklePath)\include</WinSparkleIncludePath>
-		<PerlPath>$(YourPerlPath)\$(ZoiteChatPlatform)</PerlPath>
-		<PerlLib>perl542</PerlLib>
-
 		<Python3Path>$(YourPython3Path)\$(ZoiteChatPlatform)</Python3Path>
 		<Python3Lib>python314</Python3Lib>
 		<Python3Output>hcpython3</Python3Output>
 		<Python3Enabled Condition="Exists('$(Python3Path)\\python.exe') and Exists('$(Python3Path)\\libs\\$(Python3Lib).lib') and Exists('$(Python3Path)\\Lib\\site-packages\\cffi')">true</Python3Enabled>
 		<Python3Enabled Condition="'$(Python3Enabled)'==''">false</Python3Enabled>
-
-		<PerlEnabled Condition="Exists('$(PerlPath)\\bin\\perl.exe') and Exists('$(PerlPath)\\bin\\$(PerlLib).dll') and Exists('$(GendefPath)\\gendef.exe')">true</PerlEnabled>
-		<PerlEnabled Condition="'$(PerlEnabled)'==''">false</PerlEnabled>
-
-		<InstallerEnabled Condition="Exists('$(IsccPath)')">true</InstallerEnabled>
-		<InstallerEnabled Condition="'$(InstallerEnabled)'==''">false</InstallerEnabled>
-
-		<LuaInclude Condition="Exists('$(DepsRoot)\include\luajit-2.1\lua.h')">$(DepsRoot)\include\luajit-2.1</LuaInclude>
-		<LuaInclude Condition="'$(LuaInclude)'=='' and Exists('$(DepsRoot)\include\luajit\lua.h')">$(DepsRoot)\include\luajit</LuaInclude>
-		<LuaInclude Condition="'$(LuaInclude)'=='' and Exists('$(DepsRoot)\include\lua5.1\lua.h')">$(DepsRoot)\include\lua5.1</LuaInclude>
-		<LuaInclude Condition="'$(LuaInclude)'=='' and Exists('$(DepsRoot)\include\lua51\lua.h')">$(DepsRoot)\include\lua51</LuaInclude>
-		<LuaOutput>hclua</LuaOutput>
-
-		<LuaLib Condition="Exists('$(DepsRoot)\lib\lua51.lib')">lua51</LuaLib>
-		<LuaLib Condition="'$(LuaLib)'=='' and Exists('$(DepsRoot)\lib\luajit-5.1.lib')">luajit-5.1</LuaLib>
-		<LuaLib Condition="'$(LuaLib)'=='' and Exists('$(DepsRoot)\lib\luajit.lib')">luajit</LuaLib>
-		<LuaEnabled Condition="'$(LuaInclude)'!='' and '$(LuaLib)'!=''">true</LuaEnabled>
-
-		<LuaRuntimeDll Condition="Exists('$(DepsRoot)\bin\lua51.dll')">lua51.dll</LuaRuntimeDll>
-		<LuaRuntimeDll Condition="'$(LuaRuntimeDll)'=='' and Exists('$(DepsRoot)\bin\luajit-5.1.dll')">luajit-5.1.dll</LuaRuntimeDll>
-		<LuaRuntimeDll Condition="'$(LuaRuntimeDll)'=='' and Exists('$(DepsRoot)\bin\luajit.dll')">luajit.dll</LuaRuntimeDll>
-
-		<LuaShareDir Condition="Exists('$(DepsRoot)\share\lua\2.1\lgi\init.lua')">$(DepsRoot)\share\lua\2.1</LuaShareDir>
-		<LuaShareDir Condition="'$(LuaShareDir)'=='' and Exists('$(DepsRoot)\share\lua\5.1\lgi\init.lua')">$(DepsRoot)\share\lua\5.1</LuaShareDir>
-
-		<LuaLibDir Condition="Exists('$(DepsRoot)\lib\lua\2.1\lgi')">$(DepsRoot)\lib\lua\2.1</LuaLibDir>
-		<LuaLibDir Condition="'$(LuaLibDir)'=='' and Exists('$(DepsRoot)\lib\lua\5.1\lgi')">$(DepsRoot)\lib\lua\5.1</LuaLibDir>
-
-		<LuaEnabled Condition="'$(LuaEnabled)'==''">false</LuaEnabled>
 
 		<GlibGenMarshal Condition="Exists('$(DepsRoot)\bin\glib-genmarshal.exe')">"$(DepsRoot)\bin\glib-genmarshal.exe"</GlibGenMarshal>
 		<GlibGenMarshal Condition="'$(GlibGenMarshal)'=='' and Exists('$(DepsRoot)\bin\glib-genmarshal') and Exists('$(Python3Path)\python.exe')">"$(Python3Path)\python.exe" "$(DepsRoot)\bin\glib-genmarshal"</GlibGenMarshal>
@@ -79,14 +45,8 @@
 		<Gtk>$(Gtk4);$(GtkCommon)</Gtk>
 		<GlibCompileResources Condition="Exists('$(GtkDepsRoot)\bin\glib-compile-resources.exe')">$(GtkDepsRoot)\bin\glib-compile-resources.exe</GlibCompileResources>
 
-		<SslLegacyLib Condition="Exists('$(DepsRoot)\\lib\\ssleay32.lib')">ssleay32.lib</SslLegacyLib>
-		<CryptoLegacyLib Condition="Exists('$(DepsRoot)\\lib\\libeay32.lib')">libeay32.lib</CryptoLegacyLib>
-		<SslModernLib Condition="Exists('$(DepsRoot)\\lib\\libssl.lib')">libssl.lib</SslModernLib>
-		<CryptoModernLib Condition="Exists('$(DepsRoot)\\lib\\libcrypto.lib')">libcrypto.lib</CryptoModernLib>
-
-		<OpenSslLibs Condition="'$(SslModernLib)' != '' and '$(CryptoModernLib)' != ''">$(SslModernLib);$(CryptoModernLib)</OpenSslLibs>
-		<OpenSslLibs Condition="'$(OpenSslLibs)' == '' and '$(SslLegacyLib)' != '' and '$(CryptoLegacyLib)' != ''">$(SslLegacyLib);$(CryptoLegacyLib)</OpenSslLibs>
-		<OpenSslInclude Condition="Exists('$(DepsRoot)\\include\\openssl\\ssl.h')">$(DepsRoot)\include</OpenSslInclude>
+		<OpenSslLibs>libssl.lib;libcrypto.lib</OpenSslLibs>
+		<OpenSslInclude>$(FabulorSupportDepsRoot)\include</OpenSslInclude>
 
 		<!-- Resolve library names across dependency bundles -->
 		<IntlLib Condition="Exists('$(DepsRoot)\lib\intl.lib')">intl.lib</IntlLib>
@@ -111,23 +71,7 @@
 		<PngLib Condition="'$(PngLib)'=='' and Exists('$(DepsRoot)\lib\libpng16_static.lib')">libpng16_static.lib</PngLib>
 		<PngLib Condition="'$(PngLib)'=='' and Exists('$(DepsRoot)\lib\libpng.lib')">libpng.lib</PngLib>
 
-		<ArchiveLibDir Condition="'$(ArchiveLibDir)'==''">$(DepsRoot)\lib</ArchiveLibDir>
-
-		<ArchiveInclude Condition="Exists('$(DepsRoot)\include\archive.h') and Exists('$(DepsRoot)\include\archive_entry.h')">$(DepsRoot)\include</ArchiveInclude>
-		<ArchiveInclude Condition="'$(ArchiveInclude)'=='' and Exists('$(DepsRoot)\include\archive\archive.h')">$(DepsRoot)\include\archive</ArchiveInclude>
-		<ArchiveInclude Condition="'$(ArchiveInclude)'=='' and Exists('$(DepsRoot)\include\libarchive\archive.h')">$(DepsRoot)\include\libarchive</ArchiveInclude>
-
-		<ArchiveLib Condition="Exists('$(ArchiveLibDir)\archive.lib')">archive.lib</ArchiveLib>
-		<ArchiveLib Condition="'$(ArchiveLib)'=='' and Exists('$(ArchiveLibDir)\libarchive.lib')">libarchive.lib</ArchiveLib>
-		<ArchiveLib Condition="'$(ArchiveLib)'=='' and Exists('$(ArchiveLibDir)\archive-13.lib')">archive-13.lib</ArchiveLib>
-		<ArchiveLib Condition="'$(ArchiveLib)'=='' and Exists('$(ArchiveLibDir)\libarchive-13.lib')">libarchive-13.lib</ArchiveLib>
-		<ArchiveLib Condition="'$(ArchiveLib)'=='' and Exists('$(ArchiveLibDir)\archive_static.lib')">archive_static.lib</ArchiveLib>
-		<ArchiveLib Condition="'$(ArchiveLib)'=='' and Exists('$(ArchiveLibDir)\libarchive_static.lib')">libarchive_static.lib</ArchiveLib>
-
-		<ArchiveDefs Condition="'$(ArchiveInclude)'!='' and '$(ArchiveLib)'!=''">HAVE_LIBARCHIVE</ArchiveDefs>
-		<ArchiveDefs Condition="'$(ArchiveInclude)'!='' and ('$(ArchiveLib)'=='archive_static.lib' or '$(ArchiveLib)'=='libarchive_static.lib')">$(ArchiveDefs);LIBARCHIVE_STATIC</ArchiveDefs>
-
-		<DepLibs>gtk-4.lib;wininet.lib;winmm.lib;ws2_32.lib;advapi32.lib;gio-2.0.lib;gdk_pixbuf-2.0.lib;pangowin32-1.0.lib;pangocairo-1.0.lib;pango-1.0.lib;cairo.lib;graphene-1.0.lib;gobject-2.0.lib;gmodule-2.0.lib;glib-2.0.lib;intl.lib;$(IconvLib);$(ZlibLib);$(Xml2Lib);$(JpegLib);$(PngLib);$(ArchiveLib);$(OpenSslLibs)</DepLibs>
+		<DepLibs>gtk-4.lib;wininet.lib;winmm.lib;ws2_32.lib;advapi32.lib;gio-2.0.lib;gdk_pixbuf-2.0.lib;pangowin32-1.0.lib;pangocairo-1.0.lib;pango-1.0.lib;cairo.lib;graphene-1.0.lib;gobject-2.0.lib;gmodule-2.0.lib;glib-2.0.lib;intl.lib;$(IconvLib);$(ZlibLib);$(Xml2Lib);$(JpegLib);$(PngLib);$(OpenSslLibs)</DepLibs>
 
 		<DataDir>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\data\'))</DataDir>
 		<ZoiteChatBuild Condition="'$(ZoiteChatBuild)'==''">$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\build\gtk4-full'))</ZoiteChatBuild>
@@ -137,8 +81,6 @@
 		<ZoiteChatPdb>$(ZoiteChatBuild)\$(ZoiteChatPlatform)\pdb\</ZoiteChatPdb>
 		<ZoiteChatRel>$(ZoiteChatBuild)\$(ZoiteChatPlatform)\rel\</ZoiteChatRel>
 
-		<IsccPath Condition="'$(IsccPath)'=='' and Exists('$(ProgramFiles(x86))\Inno Setup 6\ISCC.exe')">"$(ProgramFiles(x86))\Inno Setup 6\ISCC.exe"</IsccPath>
-		<IsccPath Condition="'$(IsccPath)'=='' and Exists('$(ProgramFiles)\Inno Setup 6\ISCC.exe')">"$(ProgramFiles)\Inno Setup 6\ISCC.exe"</IsccPath>
 	</PropertyGroup>
 
 	<!-- If someone tries Win32, stop immediately. -->
@@ -152,6 +94,8 @@
 		<Error Condition="'$(FabulorGtkMajor)'!='4'" Text="Fabulor supports only the GTK4 frontend build profile." />
 		<Error Condition="!Exists('$(FabulorGtk4Root)\include\gtk-4.0\gtk\gtk.h')" Text="The GTK4 build profile requires a development root at FabulorGtk4Root ($(FabulorGtk4Root))." />
 		<Error Condition="!Exists('$(GlibCompileResources)')" Text="The GTK4 build profile requires glib-compile-resources.exe beneath FabulorGtk4Root." />
+		<Error Condition="!Exists('$(FabulorSupportDepsRoot)\include\openssl\ssl.h')" Text="The GTK4 build profile requires OpenSSL headers at FabulorSupportDepsRoot ($(FabulorSupportDepsRoot))." />
+		<Error Condition="!Exists('$(FabulorSupportDepsRoot)\lib\libssl.lib') or !Exists('$(FabulorSupportDepsRoot)\lib\libcrypto.lib')" Text="The GTK4 build profile requires OpenSSL import libraries at FabulorSupportDepsRoot ($(FabulorSupportDepsRoot))." />
 	</Target>
 
 	<PropertyGroup>
@@ -179,12 +123,13 @@
 			<FunctionLevelLinking>true</FunctionLevelLinking>
 			<IntrinsicFunctions>true</IntrinsicFunctions>
 			<MultiProcessorCompilation>true</MultiProcessorCompilation>
-			<PreProcessorDefinitions>NTDDI_VERSION=NTDDI_WIN8;_WIN32_WINNT=_WIN32_WINNT_WIN8;$(ArchiveDefs);%(PreProcessorDefinitions)</PreProcessorDefinitions>
+			<PreProcessorDefinitions>NTDDI_VERSION=NTDDI_WIN8;_WIN32_WINNT=_WIN32_WINNT_WIN8;%(PreProcessorDefinitions)</PreProcessorDefinitions>
 		</ClCompile>
 		<Lib>
 			<LinkTimeCodeGeneration>false</LinkTimeCodeGeneration>
 		</Lib>
 		<Link>
+			<AdditionalLibraryDirectories>$(FabulorSupportDepsRoot)\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
 			<ImportLibrary>$(ZoiteChatLib)$(TargetName).lib</ImportLibrary>
 			<ProgramDatabaseFile>$(ZoiteChatPdb)$(TargetName).pdb</ProgramDatabaseFile>
 			<SubSystem>Windows</SubSystem>

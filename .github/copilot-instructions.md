@@ -16,27 +16,19 @@
 
 ## Build, test, and lint commands
 
-There are two Windows build surfaces today. The WiX v4 installer under `installer\`
-is the **primary, long-term installer** and the current priority — Barry's stated
-near-term direction is to **finish the WiX v4 installer before starting the deeper
-modernisation/rebranding work** described in `To-Do.md`. The long-term plan is for
-ZoiteChat to ship exactly **two installer artefacts**, both produced from
-`installer\`: an **MSI** (`installer\Product.wxs`) and a **bootstrapper `.exe`**
-(the Burn bundle in `installer\Bootstrapper\`). The legacy `win32\` MSVC solution
-and Inno Setup script are **legacy/transitional** and are expected to be retired
-once the WiX v4 installer covers everything it currently does — kept building for
-now so nothing regresses, but not a permanent third installer path (see
-"Assumptions to verify with Barry" below for the exact cutover timing/criteria).
+The supported Windows build uses the GTK4-only MSVC solution under `win32\` and
+publishes exactly two installer artefacts from `installer\`: the Fabulor MSI and
+Burn bootstrapper. The retired Inno Setup and broad GTK3 runtime-copy projects
+must not be restored.
 
 | Task | Command |
 | --- | --- |
 | Build the WiX v4 installer bundle | `dotnet build installer\Fabulor.wixproj` (or `msbuild installer\Fabulor.wixproj /p:Configuration=Release`) from a Visual Studio developer prompt (`VsDevCmd.bat`) with the WiX v4 toolset and .NET SDK on `PATH` |
 | Rebuild the WiX v4 installer from clean | `msbuild installer\Fabulor.wixproj /t:Rebuild /p:Configuration=Release` |
 | Validate WiX authoring only, without a full package build | `wix build installer\Product.wxs -o NUL` (or the relevant `.wxs` file under `installer\Components\`) |
-| Build the legacy Windows solution (Release, x64) | `msbuild win32\zoitechat.sln /p:Configuration=Release /p:Platform=x64` (from a `VsDevCmd.bat`-initialised shell — see `.github\workflows\windows-build.yml` for the full dependency-fetch sequence: GTK3 gvsbuild bundle, WinSparkle, embedded Python 3.14, Perl, libarchive, `gendef`) |
-| Rebuild the legacy solution from clean | `msbuild win32\zoitechat.sln /t:Rebuild /p:Configuration=Release /p:Platform=x64` |
+| Build the GTK4 Windows solution (Release, x64) | `msbuild win32\zoitechat.sln /p:Configuration=Release /p:Platform=x64` from a `VsDevCmd.bat`-initialised shell; see `.github\workflows\windows-build.yml` for the pinned GTK4 and OpenSSL roots |
+| Rebuild the GTK4 solution from clean | `msbuild win32\zoitechat.sln /t:Rebuild /p:Configuration=Release /p:Platform=x64` |
 | Build spelling dictionaries for the legacy client | `win32\spelling\build-spelling.bat` |
-| Regenerate the legacy Inno Setup script from its T4 template | Re-run the T4 transform for `win32\installer\zoitechat.iss.tt` via the Visual Studio T4 tooling associated with `win32\installer\installer.vcxproj` |
 
 There is no automated unit test suite in this repository. Treat a successful build
 (WiX v4 `dotnet build`/`wix build`, and/or legacy `msbuild` when that path is
@@ -65,15 +57,9 @@ unless a task adds tests of its own.
   `Runtime\DotNet\`, and `Config\`, with Installed and Portable feature modes,
   registry entries only in Installed mode, and Fabulor's own updater (not Windows
   Update or MSIX).
-- **`win32\`** — the legacy MSVC solution (`zoitechat.sln`), its Inno Setup
-  installer (`win32\installer\zoitechat.iss.tt`, T4-templated), and supporting
-  scripts (`win32\spelling\build-spelling.bat`, `version-template.ps1`). Being
-  superseded by `installer\`: the confirmed long-term direction is exactly two
-  installer artefacts (MSI + bootstrapper `.exe`) from `installer\`, with no
-  ongoing Inno Setup output. Treat this as legacy/transitional, not a permanent
-  parallel path. **Assumption to verify with Barry:** the exact retirement
-  timeline/cutover criteria — until confirmed, keep it building rather than
-  deleting or disabling it outright.
+- **`win32\`** — the supported GTK4 MSVC solution (`zoitechat.sln`) and shared
+  Windows build properties/scripts. Inno Setup and the GTK3 runtime-copy project
+  have been retired; WiX owns all installer publication.
 - **`To-Do.md`** — the authoritative roadmap for the plugin API rework:
   - the `ZoiteChatAPI` C struct/ABI and `UserInfo` type;
   - C# binding (`ZoiteChatContext`, `IZoiteChatPlugin.Init`);
@@ -121,9 +107,9 @@ unless a task adds tests of its own.
   `IPluginLoader`, or `CallbackEntry` exists in `src\` yet, so treat these guides
   as the authoritative spec to implement against, and keep them updated in step
   with any loader/binding code you write.
-- **`.github\workflows\windows-build.yml`** — the only currently relevant CI
-  pipeline for day-to-day work; it builds the legacy `win32\zoitechat.sln` path and
-  packages the legacy Inno Setup installer.
+- **`.github\workflows\windows-build.yml`** — the production CI pipeline; it
+  builds the GTK4 frontend and supported extensions, stages allowlisted runtime
+  roots, and publishes the WiX MSI and Burn bootstrapper.
 
 ## Key conventions
 
@@ -151,10 +137,8 @@ unless a task adds tests of its own.
   not leak into Portable mode. Validate with `wix build` on the affected `.wxs`
   file, then a full `dotnet build installer\Fabulor.wixproj` (or equivalent
   `msbuild`) before considering an installer change complete.
-- **Keep the legacy `win32\` + Inno Setup path building for now.** Treat it as
-  transitional, not permanent: do not invest new long-term work there, but do not
-  let unrelated changes silently break its build either, until Barry confirms a
-  retirement plan.
+- **Keep the GTK4 `win32\zoitechat.sln` entry point building.** Inno Setup and
+  the broad GTK3 copy project are retired and must not be restored.
 - **Preserve plugin ABI compatibility as described in `To-Do.md`.** Once the
   `ZoiteChatAPI` struct, `plugin.json` manifest schema, and loader interfaces
   exist, treat them as a public contract — additive, backward-compatible changes
@@ -173,24 +157,10 @@ unless a task adds tests of its own.
 These are inferred from `To-Do.md` and repository structure, not confirmed facts.
 Treat them as open questions, not settled scope, until Barry confirms:
 
-1. Whether the existing `plugins\` directory of built-in C plugins (`checksum`,
-   `exec`, `fishlim`, `lua`, `perl`, `python`, `sysinfo`, `upd`) is being trimmed,
-   fully replaced by the new manifest-driven model, or partially retained. Note
-   that `docs\plugins\plugin-schema-and-troubleshooting.md` documents a
-   `plugins\<plugin-id>\plugin.json` + entrypoint folder layout, which does not
-   match the current flat `plugins\checksum\`, `plugins\exec\`, etc. layout — this
-   is suggestive, not confirmation, that the existing plugins will be migrated to
-   or replaced under the new layout.
-2. The exact retirement timeline/cutover criteria for `win32\zoitechat.sln` and
-   the legacy Inno Setup installer relative to the WiX v4 `installer\` path. The
-   end state is confirmed (two artefacts: MSI + bootstrapper `.exe`, both from
-   `installer\`, no ongoing Inno Setup output) — what's still open is exactly
-   when/how the cutover happens and what "installer complete" means in scope
-   (e.g. full feature parity with the legacy installer, or a defined subset).
-3. Whether the GTK front end (`src\fe-gtk\`, currently GTK3-based) is being
-   carried forward toward GTK4 as-is, or reworked as part of the plugin API
-   modernisation — `Runtime\GTK4\` currently only appears in the installer's
-   planned layout in `To-Do.md`, not in `src\` itself.
-4. Whether `meson.build`/`meson_options.txt` and deprecated non-Windows
+1. Whether historical unsupported plugin source should eventually be deleted;
+   Lua and Perl must not re-enter the supported build or package meanwhile.
+2. The order in which remaining GTK3 source branches and compatibility helpers
+   should be removed from the GTK4 frontend.
+3. Whether `meson.build`/`meson_options.txt` and deprecated non-Windows
   packaging/build artefacts are scheduled for outright removal, or simply left unmaintained
    alongside the Windows-only rework.

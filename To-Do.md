@@ -437,6 +437,7 @@ Detailed planning and evidence live in:
   - [x] Promote the validated GTK4 payload to the normal Fabulor MSI and bootstrapper without changing the production upgrade identity or selectable plugin features.
   - [x] Promote GTK4 to the sole MSVC and CI frontend build profile and remove the explicit GTK3 rollback package.
   - [ ] Remove GTK3 staging downloads, runtime-copy rules, WiX components, source branches, tests, and compatibility helpers.
+    - [x] Remove the GTK3 dependency archive, MSYS2 libarchive/hicolor augmentation, legacy copy/Inno projects, and unsupported Lua/Perl/gendef inputs from the Windows GTK4 build graph; pin the remaining OpenSSL support root.
 - [ ] Complete clean-install, upgrade, accessibility, visual, performance, plugin, and packaging validation.
 
 ## 7. Documentation & Developer Guides

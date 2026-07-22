@@ -23,10 +23,6 @@ class ThemeContractValidationTests(unittest.TestCase):
 """,
         )
         self.write(
-            "win32/installer/zoitechat.iss.tt",
-            'Root: HKCR; Subkey: ".hct"; ValueData: "Fabulor.Theme"\n',
-        )
-        self.write(
             "installer/UX/FabulorBootstrapperApplication.cs",
             'DeleteRegistryTreeIfExists(@"Software\\Classes\\.zct");\n',
         )

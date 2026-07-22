@@ -7326,6 +7326,38 @@ package only through the deterministic production-support contract. The
 transitional GTK3-named dependency bundle remains solely as a source of
 non-GTK compile dependencies and is assigned to the next cleanup pass.
 
+### GTK4 Stage 9 Legacy Build Inputs, Pass 3
+
+Date: 2026-07-23
+
+Boundary converted: Windows builds no longer download or stage the GTK3
+gvsbuild archive, MSYS2 hicolor/libarchive packages, LuaJIT, Perl, or gendef.
+The retired broad copy project and Inno installer are deleted. The supported
+dependency graph now uses the pinned GTK4 root for GTK/GLib/XML/image/gettext
+inputs and a pinned vcpkg manifest containing only OpenSSL; the production
+workflow verifies the dated Mozilla CA bundle before staging it.
+
+Automated evidence:
+
+- full GTK4 Visual Studio solution: build and link pass; all 18 native manifest
+  tests pass and the unsupported Lua project is absent
+- supported native extensions: checksum, exec, FiSHLiM, Python, sysinfo,
+  updater, and WinRT notifications build and link; Lua is absent
+- native manifest policy suite: all 18 tests pass during the solution build
+- production WiX profile tests: eight tests pass, including pinned OpenSSL and
+  absence of the retired projects/properties
+- production support staging tests: five tests pass
+- theme contract: active WiX association and import/persistence validation no
+  longer depends on the deleted Inno template
+- complete GTK4 Python tooling suite: all 57 tests pass
+- repository diff whitespace validation: pass
+
+Behaviour contract: no supported Windows target may depend on the GTK3 archive,
+MSYS2 runtime augmentation, LuaJIT, Perl, gendef, the broad runtime-copy project,
+or Inno Setup. Historical Lua/Perl and GTK3 theme source may remain in the tree,
+but it is outside the supported build and package. GTK3 source branches and
+compatibility helpers remain assigned to later Stage 9 cleanup passes.
+
 ## Stage Completion Rule
 
 A stage can move to complete in `migration-plan.md` only when:

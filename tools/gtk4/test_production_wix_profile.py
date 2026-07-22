@@ -1,4 +1,5 @@
 import pathlib
+import json
 import unittest
 import xml.etree.ElementTree as ET
 
@@ -7,6 +8,9 @@ ROOT = pathlib.Path(__file__).resolve().parents[2]
 INSTALLER = ROOT / "installer"
 PROPS = ROOT / "win32" / "zoitechat.props"
 SOLUTION = ROOT / "win32" / "zoitechat.sln"
+NATIVE_EXTENSIONS = ROOT / "tools" / "gtk4" / "gtk4-native-extensions.proj"
+VCPKG_CONFIGURATION = ROOT / "tools" / "windows-deps" / "vcpkg-configuration.json"
+VCPKG_MANIFEST = ROOT / "tools" / "windows-deps" / "vcpkg.json"
 WIX_NS = {"w": "http://wixtoolset.org/schemas/v4/wxs"}
 
 
@@ -77,7 +81,30 @@ class ProductionWixProfileTests(unittest.TestCase):
         self.assertNotIn("Gdk3Lib", props)
         self.assertNotIn('= "copy", "copy\\copy.vcxproj"', solution)
         self.assertNotIn('= "fe-text"', solution)
+        self.assertNotIn('= "lua"', solution)
         self.assertIn('= "fabulor-launcher"', solution)
+
+    def test_transitional_windows_staging_is_removed(self):
+        props = PROPS.read_text(encoding="utf-8")
+        extensions = NATIVE_EXTENSIONS.read_text(encoding="utf-8")
+
+        for token in ("YourDepsPath", "GendefPath", "PerlEnabled", "LuaEnabled",
+                      "ArchiveLib", "HAVE_LIBARCHIVE", "InstallerEnabled",
+                      "IsccPath"):
+            self.assertNotIn(token, props)
+        self.assertNotIn("plugins\\lua\\lua.vcxproj", extensions)
+        self.assertFalse((ROOT / "win32" / "copy" / "copy.vcxproj").exists())
+        legacy_installer = ROOT / "win32" / "installer"
+        self.assertFalse(legacy_installer.exists() and any(legacy_installer.iterdir()))
+
+    def test_windows_support_dependencies_are_pinned(self):
+        manifest = json.loads(VCPKG_MANIFEST.read_text(encoding="utf-8"))
+        configuration = json.loads(VCPKG_CONFIGURATION.read_text(encoding="utf-8"))
+
+        self.assertEqual(manifest["dependencies"], ["openssl"])
+        self.assertRegex(
+            configuration["default-registry"]["baseline"], r"^[0-9a-f]{40}$"
+        )
 
 
 if __name__ == "__main__":

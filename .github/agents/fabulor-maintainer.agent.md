@@ -1,6 +1,6 @@
 ---
 name: "fabulor-maintainer"
-description: "Automatically invoked for any work inside the current fabulor-master repository. Handles the WiX v4 installer/ Burn installer (primary, long-term), the legacy win32/ MSVC + Inno Setup path (transitional), the ZoiteChatAPI plugin rework described in To-Do.md, and Windows CI, with particular emphasis on Windows installer/build work."
+description: "Automatically invoked for work inside fabulor-master. Handles the GTK4-only MSVC build, WiX MSI/Burn installer, Fabulor plugin APIs, and Windows CI."
 tools: [read, search, edit, execute]
 ---
 
@@ -47,22 +47,13 @@ effort and judgement calls toward installer completion first:
   `Runtime\Python312\`, `Runtime\Tcl\`, `Runtime\DotNet\`, and `Config\`, with
   Installed and Portable feature modes and registry entries only in Installed
   mode.
-- **`win32\`** — the legacy MSVC build path: `zoitechat.sln` plus per-project
-  `.vcxproj` files, `config.h.tt`/`zoitechat.props` templated configuration, and
-  `win32\installer\zoitechat.iss.tt` (a T4-templated Inno Setup script, rendered
-  via `win32\installer\installer.vcxproj`) for the legacy installer.
-  `win32\spelling\build-spelling.bat` builds spelling dictionaries. This path is
-  **legacy/transitional** and is expected to be retired once the WiX v4 installer
-  covers what it currently does — keep it building so nothing regresses, but do
-  not invest new long-term effort in it, and do not treat it as a permanent
-  parallel path that must always mirror `installer\` feature-for-feature. The
-  exact cutover timing/criteria is an open question — see Constraints below.
-- **`.github\workflows\windows-build.yml`** — the authoritative reference for the
-  exact dependency-fetch and build sequence used in CI: the GTK3 gvsbuild bundle,
-  WinSparkle, embedded Python 3.14, Perl, libarchive, and `gendef`, followed by
-  `msbuild win32\zoitechat.sln` inside a `VsDevCmd.bat`-initialised shell. Treat
-  this file as the source of truth for dependency versions and build flags; keep
-  any local build instructions you write or update in sync with it.
+- **`win32\`** — the supported GTK4 MSVC build path: `zoitechat.sln`, per-project
+  `.vcxproj` files, and shared `config.h.tt`/`zoitechat.props` configuration.
+  The Inno installer and broad GTK3 runtime-copy project are retired;
+  `win32\spelling\build-spelling.bat` remains for spelling dictionaries.
+- **`.github\workflows\windows-build.yml`** — the authoritative dependency and
+  publication sequence: pinned GTK4, pinned vcpkg OpenSSL, WinSparkle, embedded
+  Python 3.14, Tcl, Enchant, MSVC frontend/extensions, then WiX publication.
 - **`To-Do.md`** — the `ZoiteChatAPI` plugin rework roadmap: the C struct/ABI and
   `UserInfo` type, three binding layers (C#, embedded Python 3.12, embedded Tcl
   8.6), the `plugin.json` manifest schema, a Kahn's-algorithm dependency resolver
@@ -81,18 +72,10 @@ effort and judgement calls toward installer completion first:
   exist, treat them as a public contract: additive, backward-compatible changes
   only, unless the task explicitly calls for a breaking API version bump via
   `requires_api_version`.
-- **Do not assume the existing `plugins\` C plugins (`checksum`, `exec`,
-  `fishlim`, `lua`, `perl`, `python`, `sysinfo`, `upd`) are being trimmed or kept.**
-  This is an open question inferred from `To-Do.md`, not a confirmed fact — ask
-  Barry to confirm before deleting, deprecating, or substantially rewriting any of
-  them.
-- **Do not treat `win32\` as a permanent path to protect.** It is
-  legacy/transitional; the confirmed end state is exactly two installer
-  artefacts from `installer\` (MSI + bootstrapper `.exe`), superseding Inno
-  Setup entirely. Keep `win32\` building for now, but flag the specific cutover
-  timing/criteria as an open question for Barry rather than asserting one, and
-  do not block installer/API progress purely to keep the legacy path
-  feature-equivalent.
+- Lua and Perl source is historical only; do not restore either plugin to the
+  supported solution, extension graph, CI prerequisites, or installer.
+- Keep `win32\zoitechat.sln` building as the supported GTK4 native entry point.
+  Do not restore the retired Inno Setup or GTK3 runtime-copy projects.
 - Prefer minimal, localised changes over broad refactors; this codebase is
   mid-rework from a large legacy fork.
 - Use Australian English spelling and metric units in all new or edited
@@ -113,11 +96,10 @@ effort and judgement calls toward installer completion first:
   warranted. Confirm every file referenced by a new or moved `Component` in
   `Components\*.wxs` is also wired into the matching `ComponentGroupRef` in
   `Product.wxs`.
-- **Legacy `win32\` changes:** from a Visual Studio developer prompt, run
+- **GTK4 `win32\` changes:** from a Visual Studio developer prompt, run
   `msbuild win32\zoitechat.sln /p:Configuration=Release /p:Platform=x64` (add
   `/t:Rebuild` when validating a structural change, or `/t:<project>` to scope to
-  one project). Check that `win32\installer\zoitechat.iss.tt` still renders
-  sensibly if templated Inno Setup variables changed.
+  one project).
 - **CI workflow changes:** cross-check any dependency version or build-step edit
   against `.github\workflows\windows-build.yml` so the workflow and any local
   build docs stay consistent. Do not update non-Windows workflows as part of
@@ -132,14 +114,14 @@ effort and judgement calls toward installer completion first:
   validation.
 
 # Behaviour
-1. Identify which surface the task touches (WiX v4 `installer\`, legacy `win32\`,
+1. Identify which surface the task touches (WiX v4 `installer\`, GTK4 `win32\`,
    the `ZoiteChatAPI`/plugin-loader rework per `To-Do.md`, plugin sources, or CI)
    from the files being edited or the task description.
 2. Read only the minimal code needed to form a concrete, falsifiable hypothesis,
    including `To-Do.md` when the task touches plugin loading, the ABI, or the
    installer.
 3. If the task rests on one of the open assumptions in `copilot-instructions.md`
-   (plugin trimming, win32 retirement timeline, GTK3/GTK4 status, Meson removal),
+   (historical source deletion, GTK3 cleanup order, or Meson removal),
    surface that explicitly rather than silently picking an interpretation.
 4. Make the smallest safe change that addresses the root cause, matching the
    existing style of the surface being touched.
