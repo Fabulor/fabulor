@@ -1261,6 +1261,16 @@ module, and loads the frontend through constrained search flags. A system-only
 `PATH` smoke run loaded GTK4, GLib, GObject, and GIO exclusively from the staged
 runtime and closed normally.
 
+Stage 8 candidate-MSI pass 92 gives the launcher/frontend boundary an isolated
+production WiX composition. `ProductGtk4Candidate.wxs` and
+`CoreGtk4Candidate.wxs` compile only in candidate mode, use a distinct product
+identity and install root, and combine five reviewed root files with the locked
+GTK4 component group. `validate_frontend_candidate_msi.py` verifies exact
+installed paths and hashes after cabinet extraction, then repeats PE import and
+frontend-export checks against the packaged bytes. Shipping GTK3 components,
+product identity, bootstrapper, shortcuts, protocols, and plugin runtimes do
+not enter this candidate boundary.
+
 ## Functional Clusters
 
 | Cluster | Main files | GTK4 concern | Status |

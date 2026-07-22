@@ -130,6 +130,18 @@ GObject, and GIO came from `Runtime/GTK4/bin`; normal close returned zero and no
 matching Application event was recorded. The shipping WiX payload does not yet
 install the frontend DLL and remains on the GTK3 executable until cutover.
 
+Stage 8 pass 92 composes that boundary as a distinct side-by-side MSI named
+`Fabulor GTK4 Frontend Candidate`. It has its own UpgradeCode and installs under
+`Program Files\Fabulor GTK4 Candidate` without shortcuts, protocol registration,
+plugins, Enchant, Python, Tcl, or .NET. The shipping `Fabulor.msi` and
+bootstrapper remain unchanged. Windows CI builds and uploads the candidate
+separately, then decompiles it and enforces an exact 1,437-file contract: five
+root application/OpenSSL files plus the 1,431 runtime files and generated
+manifest. Every extracted byte is hash-checked, and PE validation is repeated
+against a reconstructed installed layout so the packaged launcher remains
+system-only and the frontend resolves only reviewed runtime, OpenSSL, and
+Windows imports.
+
 ## Sources And Provenance
 
 Windows CI currently downloads both GTK3 and GTK4 archives from the

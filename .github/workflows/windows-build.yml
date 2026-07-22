@@ -234,6 +234,15 @@ jobs:
           rem Validate the shipping MSI against the deterministic GTK4 allowlist.
           python tools\gtk4\validate_runtime_msi.py --wix "%USERPROFILE%\.nuget\packages\wixtoolset.sdk\7.0.0\tools\net472\x64\wix.exe" --msi "%GITHUB_WORKSPACE%\installer\bin\${{ matrix.platform }}\Release\Fabulor.msi" --manifest "%GTK4_CANDIDATE_ROOT%\Runtime\GTK4\runtime-manifest.json"
           if errorlevel 1 exit /b 1
+
+          rem Build the isolated GTK4 frontend candidate without changing the shipping product.
+          set "GTK4_FRONTEND_MSI_ROOT=%GITHUB_WORKSPACE%\build\gtk4-frontend-candidate-installer"
+          dotnet build installer\Fabulor.wixproj -c Release /p:Platform=${{ matrix.platform }} /p:Gtk4FrontendCandidate=true /p:Gtk4FrontendRoot="%GITHUB_WORKSPACE%\build\gtk4-full\x64\rel" /p:GtkRuntimeRoot="%GTK4_CANDIDATE_ROOT%\Runtime\GTK4" /p:FabulorPayloadRoot="%FABULOR_STAGE%" /p:FabulorInstallerOutputPath="%GTK4_FRONTEND_MSI_ROOT%" /p:FabulorInstallerIntermediateOutputPath="%GITHUB_WORKSPACE%\build\gtk4-frontend-candidate-installer-obj" /verbosity:minimal
+          if errorlevel 1 exit /b 1
+
+          rem Verify the identity, exact extracted content, hashes, and PE boundary of the candidate artifact.
+          python tools\gtk4\validate_frontend_candidate_msi.py --wix "%USERPROFILE%\.nuget\packages\wixtoolset.sdk\7.0.0\tools\net472\x64\wix.exe" --msi "%GTK4_FRONTEND_MSI_ROOT%\FabulorGtk4FrontendCandidate.msi" --manifest "%GTK4_CANDIDATE_ROOT%\Runtime\GTK4\runtime-manifest.json" --frontend-root "%GITHUB_WORKSPACE%\build\gtk4-full\x64\rel" --payload-root "%FABULOR_STAGE%" --dumpbin dumpbin
+          if errorlevel 1 exit /b 1
         shell: cmd
 
       - name: Upload MSI
@@ -249,3 +258,9 @@ jobs:
         with:
           name: Fabulor Bootstrapper ${{ matrix.arch }}
           path: installer\bin\${{ matrix.platform }}\Release\FabulorSetup.exe
+
+      - name: Upload GTK4 frontend candidate MSI
+        uses: actions/upload-artifact@v6
+        with:
+          name: Fabulor GTK4 Frontend Candidate MSI ${{ matrix.arch }}
+          path: build\gtk4-frontend-candidate-installer\FabulorGtk4FrontendCandidate.msi

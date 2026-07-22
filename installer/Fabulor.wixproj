@@ -9,6 +9,9 @@
     <WixToolsetVersion>7.0.0</WixToolsetVersion>
     <FabulorPayloadRoot Condition="'$(FabulorPayloadRoot)'==''">$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\..\zoitechat-build\$(Platform)\rel\'))</FabulorPayloadRoot>
     <GtkRuntimeRoot Condition="'$(GtkRuntimeRoot)'==''">$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\build\gtk4-runtime-candidate-root\Runtime\GTK4\'))</GtkRuntimeRoot>
+    <Gtk4FrontendCandidate Condition="'$(Gtk4FrontendCandidate)'==''">false</Gtk4FrontendCandidate>
+    <Gtk4FrontendRoot Condition="'$(Gtk4FrontendRoot)'==''">$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\build\gtk4-full\$(Platform)\rel\'))</Gtk4FrontendRoot>
+    <BuildFabulorBootstrapper Condition="'$(BuildFabulorBootstrapper)'=='' and '$(Gtk4FrontendCandidate)'=='true'">false</BuildFabulorBootstrapper>
     <BuildFabulorBootstrapper Condition="'$(BuildFabulorBootstrapper)'==''">true</BuildFabulorBootstrapper>
     <OutputPath Condition="'$(FabulorInstallerOutputPath)'!=''">$(FabulorInstallerOutputPath)</OutputPath>
     <IntermediateOutputPath Condition="'$(FabulorInstallerIntermediateOutputPath)'!=''">$(FabulorInstallerIntermediateOutputPath)</IntermediateOutputPath>
@@ -22,42 +25,56 @@
     <PythonRuntimeDll>python314.dll</PythonRuntimeDll>
     <PythonRuntimeFolderName>Python314</PythonRuntimeFolderName>
     <TclRuntimeRoot>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\Runtime\Tcl\'))</TclRuntimeRoot>
-    <DefineConstants>$(DefineConstants);FabulorSemVer=$(FabulorSemVer);FabulorPayloadRoot=$(FabulorPayloadRoot);GtkRuntimeRoot=$(GtkRuntimeRoot);ManagedPluginHostRoot=$(ManagedPluginHostRoot);BundledDotNetRoot=$(BundledDotNetRoot);BundledDotNetHostFxrRoot=$(BundledDotNetHostFxrRoot);BundledDotNetSharedRuntimeRoot=$(BundledDotNetSharedRuntimeRoot);BundledDotNetRuntimeVersion=$(BundledDotNetRuntimeVersion);PythonRuntimeRoot=$(PythonRuntimeRoot);PythonRuntimeFolderName=$(PythonRuntimeFolderName);TclRuntimeRoot=$(TclRuntimeRoot)</DefineConstants>
+    <DefineConstants>$(DefineConstants);FabulorSemVer=$(FabulorSemVer);FabulorPayloadRoot=$(FabulorPayloadRoot);GtkRuntimeRoot=$(GtkRuntimeRoot);Gtk4FrontendCandidate=$(Gtk4FrontendCandidate);Gtk4FrontendRoot=$(Gtk4FrontendRoot);ManagedPluginHostRoot=$(ManagedPluginHostRoot);BundledDotNetRoot=$(BundledDotNetRoot);BundledDotNetHostFxrRoot=$(BundledDotNetHostFxrRoot);BundledDotNetSharedRuntimeRoot=$(BundledDotNetSharedRuntimeRoot);BundledDotNetRuntimeVersion=$(BundledDotNetRuntimeVersion);PythonRuntimeRoot=$(PythonRuntimeRoot);PythonRuntimeFolderName=$(PythonRuntimeFolderName);TclRuntimeRoot=$(TclRuntimeRoot)</DefineConstants>
 
     <WixProjectType>Package</WixProjectType>
-    <OutputName Condition="'$(FabulorInstallerOutputName)'==''">Fabulor</OutputName>
+    <OutputName Condition="'$(FabulorInstallerOutputName)'=='' and '$(Gtk4FrontendCandidate)'=='true'">FabulorGtk4FrontendCandidate</OutputName>
+    <OutputName Condition="'$(FabulorInstallerOutputName)'=='' and '$(Gtk4FrontendCandidate)'!='true'">Fabulor</OutputName>
     <OutputName Condition="'$(FabulorInstallerOutputName)'!=''">$(FabulorInstallerOutputName)</OutputName>
     <EnableDefaultItems>false</EnableDefaultItems>
     <SuppressIces>ICE60</SuppressIces>
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Include="Product.wxs" />
-    <Compile Include="Components\**\*.wxs" />
+    <Compile Include="Product.wxs" Condition="'$(Gtk4FrontendCandidate)'!='true'" />
+    <Compile Include="ProductGtk4Candidate.wxs" Condition="'$(Gtk4FrontendCandidate)'=='true'" />
+    <Compile Include="Components\**\*.wxs"
+             Exclude="Components\CoreGtk4Candidate.wxs"
+             Condition="'$(Gtk4FrontendCandidate)'!='true'" />
+    <Compile Include="Components\CoreGtk4Candidate.wxs"
+             Condition="'$(Gtk4FrontendCandidate)'=='true'" />
+    <Compile Include="Components\GTK4Allowlist.wxs"
+             Condition="'$(Gtk4FrontendCandidate)'=='true'" />
   </ItemGroup>
 
-  <Target Name="BuildManagedPluginHost" BeforeTargets="Compile">
+  <Target Name="BuildManagedPluginHost" BeforeTargets="Compile"
+          Condition="'$(Gtk4FrontendCandidate)'!='true'">
     <MSBuild Projects="..\src\managed\Fabulor.PluginHost\Fabulor.PluginHost.csproj"
              Targets="Restore;Build"
              Properties="Configuration=$(Configuration);Platform=$(Platform)" />
   </Target>
 
   <Target Name="ValidateInstallerPayload" BeforeTargets="Build" DependsOnTargets="BuildManagedPluginHost">
-    <Error Condition="!Exists('$(FabulorPayloadRoot)\fabulor.exe')" Text="Missing built Fabulor payload at $(FabulorPayloadRoot). Build win32\zoitechat.sln first so fabulor.exe and the staged rel payload exist." />
-    <Error Condition="!Exists('$(FabulorPayloadRoot)\libenchant-2-2.dll')" Text="Missing MSVC Enchant 2 core at $(FabulorPayloadRoot)\libenchant-2-2.dll. Run tools\build-enchant-msvc.ps1 before packaging." />
-    <Error Condition="!Exists('$(FabulorPayloadRoot)\lib\enchant-2\enchant_winspell.dll')" Text="Missing MSVC WinSpell provider under $(FabulorPayloadRoot)\lib\enchant-2. Run tools\build-enchant-msvc.ps1 before packaging." />
-    <Error Condition="!Exists('$(FabulorPayloadRoot)\share\enchant-2\enchant.ordering')" Text="Missing Enchant 2 provider ordering under $(FabulorPayloadRoot)\share\enchant-2. Run tools\build-enchant-msvc.ps1 before packaging." />
-    <Error Condition="!Exists('$(FabulorPayloadRoot)\plugins')" Text="Missing plugin payload at $(FabulorPayloadRoot)\plugins. Build win32\zoitechat.sln first so the staged rel payload exists." />
+    <Error Condition="'$(Gtk4FrontendCandidate)'!='true' and !Exists('$(FabulorPayloadRoot)\fabulor.exe')" Text="Missing built Fabulor payload at $(FabulorPayloadRoot). Build win32\zoitechat.sln first so fabulor.exe and the staged rel payload exist." />
+    <Error Condition="'$(Gtk4FrontendCandidate)'!='true' and !Exists('$(FabulorPayloadRoot)\libenchant-2-2.dll')" Text="Missing MSVC Enchant 2 core at $(FabulorPayloadRoot)\libenchant-2-2.dll. Run tools\build-enchant-msvc.ps1 before packaging." />
+    <Error Condition="'$(Gtk4FrontendCandidate)'!='true' and !Exists('$(FabulorPayloadRoot)\lib\enchant-2\enchant_winspell.dll')" Text="Missing MSVC WinSpell provider under $(FabulorPayloadRoot)\lib\enchant-2. Run tools\build-enchant-msvc.ps1 before packaging." />
+    <Error Condition="'$(Gtk4FrontendCandidate)'!='true' and !Exists('$(FabulorPayloadRoot)\share\enchant-2\enchant.ordering')" Text="Missing MSVC WinSpell provider ordering under $(FabulorPayloadRoot)\share\enchant-2." />
+    <Error Condition="'$(Gtk4FrontendCandidate)'!='true' and !Exists('$(FabulorPayloadRoot)\plugins')" Text="Missing plugin payload at $(FabulorPayloadRoot)\plugins. Build win32\zoitechat.sln first so the staged rel payload exists." />
+    <Error Condition="'$(Gtk4FrontendCandidate)'=='true' and !Exists('$(Gtk4FrontendRoot)\fabulor.exe')" Text="Missing GTK4 launcher at $(Gtk4FrontendRoot). Build tools\gtk4\gtk4-full-frontend.proj first." />
+    <Error Condition="'$(Gtk4FrontendCandidate)'=='true' and !Exists('$(Gtk4FrontendRoot)\fabulor-gtk4-frontend.dll')" Text="Missing GTK4 frontend module at $(Gtk4FrontendRoot). Build tools\gtk4\gtk4-full-frontend.proj first." />
+    <Error Condition="'$(Gtk4FrontendCandidate)'=='true' and !Exists('$(FabulorPayloadRoot)\cert.pem')" Text="Missing candidate certificate bundle at $(FabulorPayloadRoot)." />
+    <Error Condition="'$(Gtk4FrontendCandidate)'=='true' and !Exists('$(FabulorPayloadRoot)\libssl-3-x64.dll')" Text="Missing candidate OpenSSL runtime at $(FabulorPayloadRoot)." />
+    <Error Condition="'$(Gtk4FrontendCandidate)'=='true' and !Exists('$(FabulorPayloadRoot)\libcrypto-3-x64.dll')" Text="Missing candidate OpenSSL crypto runtime at $(FabulorPayloadRoot)." />
     <Error Condition="!Exists('$(GtkRuntimeRoot)\bin\gtk-4-1.dll')" Text="Missing GTK4 runtime payload at $(GtkRuntimeRoot)." />
     <Error Condition="!Exists('$(GtkRuntimeRoot)\runtime-manifest.json')" Text="Missing generated GTK4 runtime manifest at $(GtkRuntimeRoot). Stage the allowlisted runtime with tools\gtk4\stage_runtime.py before building WiX output." />
-    <Error Condition="!Exists('$(ManagedPluginHostRoot)\Fabulor.PluginHost.runtimeconfig.json')" Text="Missing managed plugin host payload at $(ManagedPluginHostRoot)." />
-    <Error Condition="!Exists('$(BundledDotNetRoot)\host\fxr')" Text="Missing .NET hostfxr root at $(BundledDotNetRoot)." />
-    <Error Condition="!Exists('$(BundledDotNetRoot)\shared\Microsoft.NETCore.App')" Text="Missing .NET shared runtime payload under $(BundledDotNetRoot)\shared\Microsoft.NETCore.App." />
-    <Error Condition="!Exists('$(PythonRuntimeRoot)\$(PythonRuntimeDll)')" Text="Missing Python 3.14 runtime payload at $(PythonRuntimeRoot)." />
-    <Error Condition="!Exists('$(FabulorPayloadRoot)\plugins\hcpython3.dll')" Text="Missing Python plugin host at $(FabulorPayloadRoot)\plugins\hcpython3.dll. Build plugins\python\python3.vcxproj first." />
-    <Error Condition="!Exists('$(FabulorPayloadRoot)\python\zoitechat.py')" Text="Missing staged Python API modules at $(FabulorPayloadRoot)\python. Build win32\copy\copy.vcxproj first." />
-    <Error Condition="$([System.IO.Directory]::GetFiles('$(FabulorPayloadRoot)', '_cffi_backend.*.pyd').Length) == 0" Text="Missing staged Python CFFI backend under $(FabulorPayloadRoot). Build win32\copy\copy.vcxproj first." />
-    <Error Condition="!Exists('$(TclRuntimeRoot)\bin\tcl86t.dll')" Text="Missing Tcl runtime payload at $(TclRuntimeRoot)." />
+    <Error Condition="'$(Gtk4FrontendCandidate)'!='true' and !Exists('$(ManagedPluginHostRoot)\Fabulor.PluginHost.runtimeconfig.json')" Text="Missing managed plugin host payload at $(ManagedPluginHostRoot)." />
+    <Error Condition="'$(Gtk4FrontendCandidate)'!='true' and !Exists('$(BundledDotNetRoot)\host\fxr')" Text="Missing .NET hostfxr root at $(BundledDotNetRoot)." />
+    <Error Condition="'$(Gtk4FrontendCandidate)'!='true' and !Exists('$(BundledDotNetRoot)\shared\Microsoft.NETCore.App')" Text="Missing .NET shared runtime payload under $(BundledDotNetRoot)\shared\Microsoft.NETCore.App." />
+    <Error Condition="'$(Gtk4FrontendCandidate)'!='true' and !Exists('$(PythonRuntimeRoot)\$(PythonRuntimeDll)')" Text="Missing Python 3.14 runtime payload at $(PythonRuntimeRoot)." />
+    <Error Condition="'$(Gtk4FrontendCandidate)'!='true' and !Exists('$(FabulorPayloadRoot)\plugins\hcpython3.dll')" Text="Missing Python plugin host at $(FabulorPayloadRoot)\plugins\hcpython3.dll. Build plugins\python\python3.vcxproj first." />
+    <Error Condition="'$(Gtk4FrontendCandidate)'!='true' and !Exists('$(FabulorPayloadRoot)\python\zoitechat.py')" Text="Missing staged Python API modules at $(FabulorPayloadRoot)\python. Build win32\copy\copy.vcxproj first." />
+    <Error Condition="'$(Gtk4FrontendCandidate)'!='true' and $([System.IO.Directory]::GetFiles('$(FabulorPayloadRoot)', '_cffi_backend.*.pyd').Length) == 0" Text="Missing staged Python CFFI backend under $(FabulorPayloadRoot). Build win32\copy\copy.vcxproj first." />
+    <Error Condition="'$(Gtk4FrontendCandidate)'!='true' and !Exists('$(TclRuntimeRoot)\bin\tcl86t.dll')" Text="Missing Tcl runtime payload at $(TclRuntimeRoot)." />
   </Target>
 
   <Target Name="BuildBootstrapper" AfterTargets="Build"

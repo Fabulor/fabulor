@@ -2459,6 +2459,18 @@ loaded GTK4/GLib/GObject/GIO from the staged runtime, closed with exit code 0,
 and produced no matching Windows Application event. Production WiX composition
 and clean-machine workflow validation remain separate cutover targets.
 
+Candidate MSI composition pass 92 (2026-07-22):
+WiX now builds the linked launcher/frontend boundary as a distinct side-by-side
+`Fabulor GTK4 Frontend Candidate` product under its own install directory and
+UpgradeCode. The minimal product has no shortcuts, protocol registration,
+plugins, Enchant, Python, Tcl, or .NET and cannot replace the shipping GTK3 MSI
+or bootstrapper. A new artifact validator decompiles the MSI, verifies its
+identity, rejects missing, duplicate, or unexpected installed paths, compares
+all 1,437 extracted file sizes and SHA-256 hashes, and repeats launcher/frontend
+PE validation against the packaged bytes. The local WiX build completes with
+zero warnings and errors. Native extension and spell-check runtime compatibility
+is the next contained packaging target before the candidate feature set grows.
+
 Deliverables:
 
 - Make GTK4 the only production frontend dependency in MSVC, Meson, and CI.
