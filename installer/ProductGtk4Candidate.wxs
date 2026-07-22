@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">
+  <Package Name="Fabulor GTK4 Frontend Candidate"
+           Manufacturer="Barry"
+           Version="$(var.FabulorSemVer)"
+           ProductCode="*"
+           UpgradeCode="B0361915-6035-48B7-B535-8E72AB7493AA"
+           InstallerVersion="500"
+           Compressed="yes"
+           Scope="perMachine">
+    <MajorUpgrade
+      DowngradeErrorMessage="A newer Fabulor GTK4 Frontend Candidate is already installed." />
+    <MediaTemplate EmbedCab="yes" />
+    <Icon Id="FabulorCandidateProductIcon" SourceFile="..\data\icons\fabulor.ico" />
+    <Property Id="ARPNOMODIFY" Value="1" />
+    <Property Id="ARPNOREPAIR" Value="1" />
+    <Property Id="ARPPRODUCTICON" Value="FabulorCandidateProductIcon" />
+    <Property Id="ARPCOMMENTS" Value="Isolated Fabulor GTK4 frontend candidate for validation only." />
+
+    <StandardDirectory Id="ProgramFiles64Folder">
+      <Directory Id="INSTALLFOLDER" Name="Fabulor GTK4 Candidate">
+        <Directory Id="RUNTIMEDIR" Name="Runtime">
+          <Directory Id="GTK4DIR" Name="GTK4">
+            <Directory Id="GTK4BINDIR" Name="bin" />
+            <Directory Id="GTK4ETCDIR" Name="etc">
+              <Directory Id="GTK4ETCFONTSDIR" Name="fonts" />
+            </Directory>
+            <Directory Id="GTK4LIBDIR" Name="lib">
+              <Directory Id="GTK4GDKPIXBUFDIR" Name="gdk-pixbuf-2.0" />
+            </Directory>
+            <Directory Id="GTK4SHAREDIR" Name="share">
+              <Directory Id="GTK4SHAREFONTCONFIGDIR" Name="fontconfig" />
+              <Directory Id="GTK4SHAREGLIBDIR" Name="glib-2.0">
+                <Directory Id="GTK4SHAREGLIBSCHEMASDIR" Name="schemas" />
+              </Directory>
+              <Directory Id="GTK4SHAREGTKDIR" Name="gtk-4.0" />
+              <Directory Id="GTK4SHAREICONSDIR" Name="icons" />
+              <Directory Id="GTK4SHARELICENSESDIR" Name="licenses" />
+              <Directory Id="GTK4SHARELOCALEDIR" Name="locale" />
+              <Directory Id="GTK4SHAREXMLDIR" Name="xml" />
+            </Directory>
+          </Directory>
+        </Directory>
+      </Directory>
+    </StandardDirectory>
+
+    <Feature Id="Gtk4CandidateFeature" Title="Fabulor GTK4 Frontend Candidate" Level="1">
+      <ComponentGroupRef Id="Gtk4CandidateCoreComponents" />
+      <ComponentGroupRef Id="GTK4Components" />
+    </Feature>
+  </Package>
+</Wix>

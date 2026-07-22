@@ -6970,6 +6970,46 @@ shipping GTK3 build and installed/user configuration roots remain untouched.
 WiX frontend-module composition and clean-machine feature workflows are the
 next packaging targets.
 
+### GTK4 Stage 8 Candidate MSI Composition
+
+Date: 2026-07-22
+
+Files/workflows converted: isolated candidate product identity and component
+composition, CI build/artifact publication, exact extracted-content validation,
+and packaged launcher/frontend PE validation.
+
+Automated evidence:
+
+- candidate WiX rebuild: pass; zero warnings and zero errors
+- ordinary shipping MSI and bootstrapper regression rebuild: pass; candidate
+  component fragments remain excluded from shipping composition; four local
+  warnings reflect the absent pinned .NET 8.0.28 directories and one retained
+  warning reflects shipping same-version upgrade policy
+- rebuilt shipping MSI GTK4 subtree: 1,432 installed entries and all hashes
+  still match the locked 1,431-file runtime manifest plus generated manifest
+- candidate identity: `Fabulor GTK4 Frontend Candidate`, distinct UpgradeCode
+  `B0361915-6035-48B7-B535-8E72AB7493AA`, and distinct install folder
+  `Program Files\Fabulor GTK4 Candidate`
+- candidate installed payload: exactly 1,437 files; five reviewed root files,
+  1,431 manifest-locked runtime files, and `runtime-manifest.json`
+- decompiled MSI content: every extracted size and SHA-256 hash verified
+- packaged launcher PE validation: nine imports, all reviewed system modules
+- packaged frontend PE validation: 31 imports, all resolved through the runtime,
+  reviewed OpenSSL application DLLs, or system allowlist; exported entry present
+- focused validator tests: five pass, including wrong identity, forbidden
+  installer side effects, unexpected GTK3 payload, and packaged-content
+  mismatch rejection
+- candidate MSI SHA-256:
+  `C4BCA3EF3CB5074C815D022490A40662012CCC790730E75A0AC09F8BBA6AF3E8`
+- shipping MSI product, bootstrapper, shortcuts, protocol registration, plugins,
+  Enchant, Python, Tcl, .NET, and user configuration remain outside this change
+
+Behavior contract: candidate mode must remain a separate, minimal product and
+must fail validation on any identity drift, unexpected installed file, content
+change, legacy GTK import, unresolved native import, or missing frontend export.
+Native plugin and Enchant compatibility remains required before those features
+can enter the GTK4 candidate package.
+
 ## Stage Completion Rule
 
 A stage can move to complete in `migration-plan.md` only when:
