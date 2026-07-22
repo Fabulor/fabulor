@@ -984,6 +984,7 @@ void
 fe_cleanup (void)
 {
 	mg_win32_message_filter_shutdown ();
+	theme_manager_shutdown ();
 }
 
 fe_preferences_save_result

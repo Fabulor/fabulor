@@ -1,17 +1,20 @@
 #ifndef FABULOR_THEME_APPEARANCE_MONITOR_GTK4_H
 #define FABULOR_THEME_APPEARANCE_MONITOR_GTK4_H
 
-#include "theme-preferences-gtk4.h"
+#include <gtk/gtk.h>
 
 typedef struct _ThemeAppearanceMonitorGtk4 ThemeAppearanceMonitorGtk4;
 
 typedef gboolean (*ThemeAppearanceGtk4QueryFunc) (gboolean *prefer_dark,
 	gboolean *high_contrast, gpointer user_data);
+typedef gboolean (*ThemeAppearanceGtk4ApplyFunc) (gboolean prefer_dark,
+	gboolean high_contrast, gpointer user_data, GError **error);
 
 ThemeAppearanceMonitorGtk4 *theme_appearance_monitor_gtk4_new (
-	GdkDisplay *display, ThemePreferencesGtk4 *preferences, GError **error);
+	GdkDisplay *display, ThemeAppearanceGtk4ApplyFunc apply,
+	gpointer user_data, GDestroyNotify user_data_destroy, GError **error);
 ThemeAppearanceMonitorGtk4 *theme_appearance_monitor_gtk4_new_with_query (
-	GdkDisplay *display, ThemePreferencesGtk4 *preferences,
+	GdkDisplay *display, ThemeAppearanceGtk4ApplyFunc apply,
 	ThemeAppearanceGtk4QueryFunc query, gpointer user_data,
 	GDestroyNotify user_data_destroy, GError **error);
 void theme_appearance_monitor_gtk4_free (

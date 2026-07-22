@@ -9,6 +9,7 @@ struct _ThemeGtk4Controller
 	ThemeGtk4Adapter *adapter;
 	GPtrArray *choices;
 	guint selected_index;
+	guint selected_variant;
 	gboolean stored_selection_available;
 	FabulorGtk4ThemeAppearanceDecision appearance;
 };
@@ -81,6 +82,7 @@ theme_gtk4_controller_refresh_from_themes (ThemeGtk4Controller *controller,
 	g_ptr_array_unref (controller->choices);
 	controller->choices = choices;
 	controller->selected_index = selected_index;
+	controller->selected_variant = appearance.variant;
 	controller->stored_selection_available = stored_selection_available;
 	controller->appearance = appearance;
 	return TRUE;
@@ -112,6 +114,12 @@ guint
 theme_gtk4_controller_selected_index (const ThemeGtk4Controller *controller)
 {
 	return controller ? controller->selected_index : 0;
+}
+
+guint
+theme_gtk4_controller_selected_variant (const ThemeGtk4Controller *controller)
+{
+	return controller ? controller->selected_variant : 0;
 }
 
 const FabulorGtk4ThemeChoice *

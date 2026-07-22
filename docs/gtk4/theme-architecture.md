@@ -1,6 +1,6 @@
 # GTK4 Theme Architecture
 
-Status: Stage 7 pass 14 complete through theme-format packaging enforcement
+Status: Stage 8 pass 97 complete through application and Preferences integration
 
 ## Scope
 
@@ -116,12 +116,13 @@ The controller owns its choice projection and provider adapter. Discovery
 metadata is borrowed only for the duration of refresh, and shutdown removes
 display-scoped providers before releasing copied preference state. It exposes
 read-only choices, selected state, appearance, active provider identity, and
-diagnostics for the future GTK4 preferences page.
+diagnostics for the bound GTK4 Preferences page and application owner.
 
 ## Preference Surface
 
 `src/fe-gtk/theme/theme-preferences-gtk4.c` owns the candidate GTK4 desktop
-theme and variant controls together with their lifecycle controller. Its
+theme and variant controls and can either own a standalone controller for
+isolated workflows or borrow the application controller. Its
 choice model is rebuilt from controller-owned metadata, while committed theme
 identifiers remain stable and source-qualified. A callback receives only
 successfully applied theme and variant values for later persistence into
@@ -134,9 +135,11 @@ high contrast suppresses custom providers while preserving the selected theme.
 Appearance refreshes do not emit persistence callbacks. Destruction disconnects
 both controls and unparents the surface before releasing controller state.
 
-The surface remains in the strict GTK4 candidate build until the production
-preferences window itself crosses the GTK4 boundary. Shipping GTK3 preferences
-and their GTK3 theme service are unchanged by this pass.
+The GTK4 Preferences page now borrows the application controller. Selection
+callbacks update the setup copy only after provider application succeeds;
+Cancel and save failure restore the opening selection through the shared
+preference-stage owner. Releasing the page leaves application CSS installed.
+Shipping GTK3 preferences and their GTK3 theme service remain unchanged.
 
 ## Appearance Monitor
 
@@ -146,7 +149,9 @@ observes only `WM_SETTINGCHANGE` and `WM_THEMECHANGED`, always continues normal
 GDK processing, and coalesces repeated messages into one main-loop refresh.
 The queued callback re-queries `AppsUseLightTheme` with
 `SystemUsesLightTheme` fallback and `SPI_GETHIGHCONTRAST`, then refreshes the
-owned preference/controller stack only when the effective state changed.
+application callback only when the effective state changed. The monitor has no
+Preferences-window dependency; application shutdown removes its display filter
+before the shared controller removes and releases display-scoped providers.
 
 If the Windows theme registry values are unavailable, GTK's system-dark
 setting supplies the fallback. Query and provider failures retain the last

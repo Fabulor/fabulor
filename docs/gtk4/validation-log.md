@@ -7197,6 +7197,53 @@ Frontend commands, tray policy, plugin status, and Win32 dispatch must not
 perform independent top-level visibility reads. Existing versioned lifecycle,
 geometry, and native-message owners remain unchanged.
 
+### GTK4 Stage 8 Theme-Controller Application Integration
+
+Date: 2026-07-23
+
+Files/workflows converted: application-lifetime GTK4 theme controller,
+display-scoped appearance callback, borrowed Preferences binding, staged
+selection rollback, and ordered frontend theme teardown.
+
+Automated evidence:
+
+- strict MSVC GTK4 probe against GTK 4.22.4 / GLib 2.88.0: build and execution
+  pass under `/W4 /WX`; owned and borrowed controller lifetimes, invalid-CSS
+  rollback, theme/variant selection, appearance refresh, and teardown are
+  covered
+- complete isolated GTK4 frontend profile: pass; launcher and frontend module
+  link with no new warning or unresolved symbol and retain the established
+  81-warning cleanup inventory
+- full shipping MSVC x64 solution: pass with zero warnings and zero errors; all
+  18 manifest/path tests pass
+- complete `tools/gtk4` Python validation: 50 tests pass
+- candidate WiX build with full ICE validation: zero warnings and zero errors
+- extracted candidate: exactly 7,270 files; every size and SHA-256 hash passes
+- packaged launcher imports: nine reviewed system modules
+- packaged frontend imports: 31 resolved runtime/application/system modules
+- packaged extension graph: ten modules, one data file, fifteen owned edges
+- frontend module: 1,572,864 bytes; SHA-256
+  `470C48CA8CE03F81EA0F9418B94AC36F008C9C920BAB042CA079E9E75FB0ED5E`
+- candidate MSI: 100,221,596 bytes; SHA-256
+  `562EA53966686F7CA8216ED9F347BFC3B37016E4CA582404DF2083B5829C1758`
+
+Controlled smoke evidence:
+
+- launched the exact extracted candidate from `C:\Windows` with an isolated
+  profile and hidden test presentation
+- application theme initialization completed, a responsive main window was
+  created, and normal close returned exit code 0
+- the existing GTK4 conversion diagnostics remained outside the changed theme
+  boundary; no theme-controller, CSS-provider, appearance-filter, or teardown
+  diagnostic was emitted
+
+Behavior contract: GTK4 owns one application-lifetime controller. Preferences
+may borrow but must not destroy it; successful previews update staged settings,
+and Cancel or save failure restores the opening theme and variant. Windows
+appearance changes use the same controller without requiring Preferences to be
+open. Shutdown removes the appearance filter before releasing CSS providers.
+The shipping GTK3 path remains unchanged.
+
 ## Stage Completion Rule
 
 A stage can move to complete in `migration-plan.md` only when:
