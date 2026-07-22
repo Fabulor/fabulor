@@ -182,17 +182,17 @@ jobs:
           python tools\gtk4\test_stage_runtime.py
           if errorlevel 1 exit /b 1
 
-          set "GTK4_CANDIDATE_ROOT=%GITHUB_WORKSPACE%\build\gtk4-runtime-candidate-root"
-          python tools\gtk4\stage_runtime.py --root "%GITHUB_WORKSPACE%\Runtime\GTK4" --output "%GTK4_CANDIDATE_ROOT%\Runtime\GTK4"
+          set "GTK4_RUNTIME_ROOT=%GITHUB_WORKSPACE%\build\gtk4-runtime-production-root"
+          python tools\gtk4\stage_runtime.py --root "%GITHUB_WORKSPACE%\Runtime\GTK4" --output "%GTK4_RUNTIME_ROOT%\Runtime\GTK4"
           if errorlevel 1 exit /b 1
 
-          python tools\gtk4\validate_runtime_imports.py --root "%GTK4_CANDIDATE_ROOT%\Runtime\GTK4" --dumpbin dumpbin
+          python tools\gtk4\validate_runtime_imports.py --root "%GTK4_RUNTIME_ROOT%\Runtime\GTK4" --dumpbin dumpbin
           if errorlevel 1 exit /b 1
 
-          msbuild tools\gtk4\runtime-root-probe.vcxproj /m /verbosity:minimal /p:Configuration=Release /p:Platform=${{ matrix.platform }} /p:FabulorGtk4StartupRoot="%GTK4_CANDIDATE_ROOT%"
+          msbuild tools\gtk4\runtime-root-probe.vcxproj /m /verbosity:minimal /p:Configuration=Release /p:Platform=${{ matrix.platform }} /p:FabulorGtk4StartupRoot="%GTK4_RUNTIME_ROOT%"
           if errorlevel 1 exit /b 1
 
-          python tools\gtk4\test_runtime_root_probe.py --candidate-root "%GTK4_CANDIDATE_ROOT%"
+          python tools\gtk4\test_runtime_root_probe.py --candidate-root "%GTK4_RUNTIME_ROOT%"
           if errorlevel 1 exit /b 1
 
           msbuild tools\gtk4\gtk4-probe.vcxproj /m /verbosity:minimal /p:Configuration=Release /p:Platform=${{ matrix.platform }} /p:FabulorGtk4Root="%GITHUB_WORKSPACE%\Runtime\GTK4"
@@ -201,7 +201,7 @@ jobs:
           msbuild tools\gtk4\gtk4-full-frontend.proj /t:Build /m:1 /verbosity:minimal /p:Configuration=Release /p:Platform=${{ matrix.platform }} /p:FabulorGtk4Root="%GITHUB_WORKSPACE%\Runtime\GTK4"
           if errorlevel 1 exit /b 1
 
-          python tools\gtk4\validate_frontend_bootstrap.py --launcher "%GITHUB_WORKSPACE%\build\gtk4-full\x64\rel\fabulor.exe" --frontend "%GITHUB_WORKSPACE%\build\gtk4-full\x64\rel\fabulor-gtk4-frontend.dll" --runtime-root "%GTK4_CANDIDATE_ROOT%\Runtime\GTK4" --dumpbin dumpbin
+          python tools\gtk4\validate_frontend_bootstrap.py --launcher "%GITHUB_WORKSPACE%\build\gtk4-full\x64\rel\fabulor.exe" --frontend "%GITHUB_WORKSPACE%\build\gtk4-full\x64\rel\fabulor-gtk4-frontend.dll" --runtime-root "%GTK4_RUNTIME_ROOT%\Runtime\GTK4" --dumpbin dumpbin
           if errorlevel 1 exit /b 1
 
           msbuild tools\gtk4\gtk4-native-extensions.proj /t:Build /m:1 /verbosity:minimal /p:Configuration=Release /p:Platform=${{ matrix.platform }} /p:FabulorGtk4Root="%GITHUB_WORKSPACE%\Runtime\GTK4"
@@ -226,38 +226,39 @@ jobs:
 
           powershell -NoProfile -ExecutionPolicy Bypass -Command "$archiveLib='C:\gtk-build\gtk\x64\release\lib\libarchive.lib'; if (-not (Test-Path $archiveLib)) { $archiveDll = Get-ChildItem 'C:\gtk-build\gtk\x64\release\bin\libarchive*.dll' | Select-Object -First 1; if ($archiveDll) { Push-Location 'C:\gtk-build\gtk\x64\release\lib'; & 'C:\gtk-build\gendef\gendef.exe' $archiveDll.FullName | Out-Null; $archiveDef = Get-ChildItem 'libarchive*.def' | Select-Object -First 1; if ($archiveDef) { & lib /def:$archiveDef.Name /machine:${{ matrix.platform }} /out:libarchive.lib | Out-Null }; Pop-Location } }"
 
-          rem Build the GTK3 rollback payload explicitly while the production package
-          rem still sources non-runtime assets from its established staging root.
-          msbuild win32\zoitechat.sln /m /verbosity:minimal /p:Configuration=Release /p:Platform=${{ matrix.platform }} /p:FabulorGtkMajor=3
-          if errorlevel 1 exit /b 1
-
           set "ENCHANT_WORK=%RUNNER_TEMP%\fabulor-enchant-msvc"
-          set "FABULOR_STAGE=%GITHUB_WORKSPACE%\..\zoitechat-build\${{ matrix.platform }}\rel"
           if not exist "%ENCHANT_WORK%" mkdir "%ENCHANT_WORK%"
           gh release download v2.8.19 --repo rrthomas/enchant --pattern enchant-2.8.19.tar.gz --dir "%ENCHANT_WORK%" --clobber
           if errorlevel 1 exit /b 1
 
-          powershell -NoProfile -ExecutionPolicy Bypass -File tools\build-enchant-msvc.ps1 -GtkRoot C:\gtk-build\gtk\x64\release -StageRoot "%FABULOR_STAGE%" -WorkRoot "%ENCHANT_WORK%"
-          if errorlevel 1 exit /b 1
-
-          rem Reconfigure the verified Enchant source against the final GTK4-era GLib.
+          rem Configure the verified Enchant source against the production GTK4 GLib.
           set "GTK4_ENCHANT_ROOT=%GITHUB_WORKSPACE%\build\gtk4-enchant-stage"
           powershell -NoProfile -ExecutionPolicy Bypass -File tools\build-enchant-msvc.ps1 -GtkRoot "%GITHUB_WORKSPACE%\Runtime\GTK4" -StageRoot "%GTK4_ENCHANT_ROOT%" -WorkRoot "%ENCHANT_WORK%"
           if errorlevel 1 exit /b 1
 
-          python tools\gtk4\validate_native_extensions.py --plugins-root "%GITHUB_WORKSPACE%\build\gtk4-full\x64\rel\plugins" --payload-root "%FABULOR_STAGE%" --enchant-root "%GTK4_ENCHANT_ROOT%" --runtime-root "%GTK4_CANDIDATE_ROOT%\Runtime\GTK4" --dumpbin dumpbin
+          set "FABULOR_STAGE=%GITHUB_WORKSPACE%\build\gtk4-production-support"
+          set "WINSPARKLE_ROOT=C:\gtk-build\WinSparkle"
+          if exist "C:\gtk-build\WinSparkle\x64\WinSparkle.dll" set "WINSPARKLE_ROOT=C:\gtk-build\WinSparkle\x64"
+          if not exist "%WINSPARKLE_ROOT%\WinSparkle.dll" (
+            echo Missing WinSparkle.dll beneath C:\gtk-build\WinSparkle
+            exit /b 1
+          )
+          python tools\gtk4\stage_production_support.py --dependency-root C:\gtk-build\gtk\x64\release --python-build-root "%pythonLocation%" --repository-root "%GITHUB_WORKSPACE%" --winsparkle-root "%WINSPARKLE_ROOT%" --output "%FABULOR_STAGE%"
+          if errorlevel 1 exit /b 1
+
+          python tools\gtk4\validate_native_extensions.py --plugins-root "%GITHUB_WORKSPACE%\build\gtk4-full\x64\rel\plugins" --payload-root "%FABULOR_STAGE%" --enchant-root "%GTK4_ENCHANT_ROOT%" --runtime-root "%GTK4_RUNTIME_ROOT%\Runtime\GTK4" --dumpbin dumpbin
           if errorlevel 1 exit /b 1
 
           rem Materialize the managed host before WiX evaluates its exact file inputs.
           dotnet build src\managed\Fabulor.PluginHost\Fabulor.PluginHost.csproj -c Release /p:Platform=${{ matrix.platform }} /verbosity:minimal
           if errorlevel 1 exit /b 1
 
-          set "GTK4_PLUGIN_HOST_ROOT=%GITHUB_WORKSPACE%\build\gtk4-plugin-host-candidate-root"
+          set "GTK4_PLUGIN_HOST_ROOT=%GITHUB_WORKSPACE%\build\gtk4-plugin-host-production-root"
           python tools\gtk4\stage_plugin_hosts.py --dotnet-root "%ProgramFiles%\dotnet" --managed-root "%GITHUB_WORKSPACE%\src\managed\Fabulor.PluginHost\bin\${{ matrix.platform }}\Release\net8.0" --payload-root "%FABULOR_STAGE%" --python-root "%GITHUB_WORKSPACE%\Runtime\Python314" --tcl-root "%GITHUB_WORKSPACE%\Runtime\Tcl" --output "%GTK4_PLUGIN_HOST_ROOT%"
           if errorlevel 1 exit /b 1
 
           rem Publish the production GTK4 MSI and bootstrapper.
-          dotnet build installer\Fabulor.wixproj -c Release /p:Platform=${{ matrix.platform }} /p:GtkRuntimeRoot="%GTK4_CANDIDATE_ROOT%\Runtime\GTK4" /verbosity:minimal
+          dotnet build installer\Fabulor.wixproj -c Release /p:Platform=${{ matrix.platform }} /p:GtkRuntimeRoot="%GTK4_RUNTIME_ROOT%\Runtime\GTK4" /p:FabulorPayloadRoot="%FABULOR_STAGE%" /p:Gtk4PluginHostRoot="%GTK4_PLUGIN_HOST_ROOT%" /verbosity:minimal
           if errorlevel 1 exit /b 1
 
           rem Validate production identity, features, absence of GTK3 files, and the
@@ -265,17 +266,7 @@ jobs:
           python tools\gtk4\validate_production_gtk4_msi.py --wix "%USERPROFILE%\.nuget\packages\wixtoolset.sdk\7.0.0\tools\net472\x64\wix.exe" --msi "%GITHUB_WORKSPACE%\installer\bin\${{ matrix.platform }}\Release\Fabulor.msi"
           if errorlevel 1 exit /b 1
 
-          python tools\gtk4\validate_runtime_msi.py --wix "%USERPROFILE%\.nuget\packages\wixtoolset.sdk\7.0.0\tools\net472\x64\wix.exe" --msi "%GITHUB_WORKSPACE%\installer\bin\${{ matrix.platform }}\Release\Fabulor.msi" --manifest "%GTK4_CANDIDATE_ROOT%\Runtime\GTK4\runtime-manifest.json"
-          if errorlevel 1 exit /b 1
-
-          rem Retain the isolated side-by-side candidate for one cutover cycle.
-          set "GTK4_FRONTEND_MSI_ROOT=%GITHUB_WORKSPACE%\build\gtk4-frontend-candidate-installer"
-
-          dotnet build installer\Fabulor.wixproj -c Release /p:Platform=${{ matrix.platform }} /p:Gtk4FrontendCandidate=true /p:Gtk4FrontendRoot="%GITHUB_WORKSPACE%\build\gtk4-full\x64\rel" /p:Gtk4EnchantRoot="%GTK4_ENCHANT_ROOT%" /p:Gtk4PluginHostRoot="%GTK4_PLUGIN_HOST_ROOT%" /p:GtkRuntimeRoot="%GTK4_CANDIDATE_ROOT%\Runtime\GTK4" /p:FabulorPayloadRoot="%FABULOR_STAGE%" /p:FabulorInstallerOutputPath="%GTK4_FRONTEND_MSI_ROOT%" /p:FabulorInstallerIntermediateOutputPath="%GITHUB_WORKSPACE%\build\gtk4-frontend-candidate-installer-obj" /verbosity:minimal
-          if errorlevel 1 exit /b 1
-
-          rem Verify the identity, exact extracted content, hashes, and PE boundary of the candidate artifact.
-          python tools\gtk4\validate_frontend_candidate_msi.py --wix "%USERPROFILE%\.nuget\packages\wixtoolset.sdk\7.0.0\tools\net472\x64\wix.exe" --msi "%GTK4_FRONTEND_MSI_ROOT%\FabulorGtk4FrontendCandidate.msi" --manifest "%GTK4_CANDIDATE_ROOT%\Runtime\GTK4\runtime-manifest.json" --frontend-root "%GITHUB_WORKSPACE%\build\gtk4-full\x64\rel" --payload-root "%FABULOR_STAGE%" --enchant-root "%GTK4_ENCHANT_ROOT%" --plugin-host-root "%GTK4_PLUGIN_HOST_ROOT%" --dumpbin dumpbin
+          python tools\gtk4\validate_runtime_msi.py --wix "%USERPROFILE%\.nuget\packages\wixtoolset.sdk\7.0.0\tools\net472\x64\wix.exe" --msi "%GITHUB_WORKSPACE%\installer\bin\${{ matrix.platform }}\Release\Fabulor.msi" --manifest "%GTK4_RUNTIME_ROOT%\Runtime\GTK4\runtime-manifest.json"
           if errorlevel 1 exit /b 1
         shell: cmd
 
@@ -292,9 +283,3 @@ jobs:
         with:
           name: Fabulor Bootstrapper ${{ matrix.arch }}
           path: installer\bin\${{ matrix.platform }}\Release\FabulorSetup.exe
-
-      - name: Upload GTK4 frontend candidate MSI
-        uses: actions/upload-artifact@v6
-        with:
-          name: Fabulor GTK4 Frontend Candidate MSI ${{ matrix.arch }}
-          path: build\gtk4-frontend-candidate-installer\FabulorGtk4FrontendCandidate.msi

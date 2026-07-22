@@ -20,26 +20,16 @@ class FrontendRuntimeBootstrapTests(unittest.TestCase):
     def test_gtk4_profile_enables_bootstrap(self):
         tree = ET.parse(PROPS_PATH)
         definitions = tree.findall(".//msbuild:OwnFlags", MSBUILD_NAMESPACE)
-        matching = [
-            node
-            for node in definitions
-            if node.get("Condition") == "'$(FabulorGtkMajor)'=='4'"
-        ]
-        self.assertEqual(len(matching), 1)
-        self.assertIn("FABULOR_GTK4_FRONTEND_MODULE", matching[0].text or "")
+        self.assertEqual(len(definitions), 1)
+        self.assertIsNone(definitions[0].get("Condition"))
+        self.assertIn("FABULOR_GTK4_FRONTEND_MODULE", definitions[0].text or "")
 
     def test_gtk4_frontend_is_a_separate_module(self):
         tree = ET.parse(PROJECT_PATH)
-        configurations = [
-            node
-            for node in tree.findall(".//msbuild:ConfigurationType", MSBUILD_NAMESPACE)
-            if node.get("Condition") == "'$(FabulorGtkMajor)'=='4'"
-        ]
-        targets = [
-            node
-            for node in tree.findall(".//msbuild:TargetName", MSBUILD_NAMESPACE)
-            if node.get("Condition") == "'$(FabulorGtkMajor)'=='4'"
-        ]
+        configurations = tree.findall(
+            ".//msbuild:ConfigurationType", MSBUILD_NAMESPACE
+        )
+        targets = tree.findall(".//msbuild:TargetName", MSBUILD_NAMESPACE)
         self.assertEqual([node.text for node in configurations], ["DynamicLibrary"])
         self.assertEqual([node.text for node in targets], ["fabulor-gtk4-frontend"])
 

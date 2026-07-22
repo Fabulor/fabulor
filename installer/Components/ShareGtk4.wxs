@@ -25,7 +25,7 @@
     </ComponentGroup>
 
     <ComponentGroup Id="TranslationsComponents" Directory="SHARELOCALEDIR">
-      <Files Include="$(var.FabulorPayloadRoot)\share\locale\**\fabulor.mo" />
+      <Files Include="$(var.Gtk4LocaleRoot)\**\fabulor.mo" />
     </ComponentGroup>
   </Fragment>
 </Wix>

@@ -7287,6 +7287,45 @@ performance checks remain assigned to the final validation stage. Promoting
 GTK4 to the sole MSVC and CI frontend build profile is the next contained
 target.
 
+### GTK4 Stage 9 Sole Build Profile, Pass 2
+
+Date: 2026-07-23
+
+Boundary converted: the supported Visual Studio solution, Windows CI workflow,
+and WiX project now expose one GTK4 production frontend and installer path. The
+temporary candidate and GTK3 rollback products are removed.
+
+Automated evidence:
+
+- GTK4-only Visual Studio solution: build completes; all 18 native manifest
+  tests pass; an explicit `FabulorGtkMajor=3` build fails at profile validation
+- production support staging: exactly 12 allowlisted files with SHA-256 hashes;
+  nonempty outputs, duplicate destinations, ambiguous globs, and reparse-point
+  source roots are rejected
+- native extension graph: ten modules, one data file, and fifteen owned import
+  edges validated
+- launcher/frontend boundary: nine launcher imports, 31 frontend imports, and
+  exported `fabulor_frontend_main` validated
+- plugin-host staging: 5,821 files and .NET 8.0.29 validated
+- production WiX and bootstrapper build: zero warnings and zero errors
+- decompiled production MSI: 7,623 installed files, zero GTK3 path markers,
+  and the established Fabulor product identity retained
+- exact GTK4 runtime validation: all 1,431 manifest entries and hashes pass;
+  1,432 installed runtime entries include the generated manifest
+- repository validation: 55 GTK4 tooling tests, 16 Python plugin tests, four
+  theme tests, and 18 native manifest tests pass
+- production MSI: 111,794,532 bytes; SHA-256
+  `90B37496A23BF7EBEB7A8AB90905065DD87B4BB4D3440723E8D3091CD39321E0`
+- production bootstrapper: 112,091,878 bytes; SHA-256
+  `35BCFBD7211F172A13BB562A44EBAC14FBBA2D4CFCEA9BD90B65D8CE80FCF30E`
+
+Behavior contract: Windows CI must produce only `Fabulor.msi` and
+`FabulorSetup.exe`; MSVC must reject non-GTK4 frontend selection; WiX must have
+one unconditional production graph; and non-GTK support files must enter the
+package only through the deterministic production-support contract. The
+transitional GTK3-named dependency bundle remains solely as a source of
+non-GTK compile dependencies and is assigned to the next cleanup pass.
+
 ## Stage Completion Rule
 
 A stage can move to complete in `migration-plan.md` only when:

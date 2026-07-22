@@ -13,7 +13,12 @@
     <MSBuild Projects="$(MSBuildThisFileDirectory)..\..\src\common\common.vcxproj" Targets="Build" Properties="$(BuildProperties)" BuildInParallel="false" />
   </Target>
 
-  <Target Name="Build" DependsOnTargets="BuildCommon">
+  <Target Name="BuildTranslations" DependsOnTargets="BuildCommon">
+    <Message Importance="high" Text="Compiling Fabulor translations for the GTK4 production payload" />
+    <MSBuild Projects="$(MSBuildThisFileDirectory)..\..\win32\nls\nls.vcxproj" Targets="Build" Properties="$(BuildProperties)" BuildInParallel="false" />
+  </Target>
+
+  <Target Name="Build" DependsOnTargets="BuildTranslations">
     <Message Importance="high" Text="Compiling the isolated full GTK4 frontend profile against $(FabulorGtk4Root)" />
     <MSBuild Projects="$(MSBuildThisFileDirectory)..\..\src\fe-gtk\fe-gtk.vcxproj" Targets="Build" Properties="$(BuildProperties)" BuildInParallel="false" />
     <Message Importance="high" Text="Compiling the isolated GTK4 startup launcher" />
@@ -24,5 +29,6 @@
     <MSBuild Projects="$(MSBuildThisFileDirectory)gtk4-launcher.vcxproj" Targets="Clean" Properties="Configuration=$(Configuration);Platform=$(Platform)" BuildInParallel="false" />
     <MSBuild Projects="$(MSBuildThisFileDirectory)..\..\src\fe-gtk\fe-gtk.vcxproj" Targets="Clean" Properties="$(BuildProperties)" BuildInParallel="false" />
     <MSBuild Projects="$(MSBuildThisFileDirectory)..\..\src\common\common.vcxproj" Targets="Clean" Properties="$(BuildProperties)" BuildInParallel="false" />
+    <MSBuild Projects="$(MSBuildThisFileDirectory)..\..\win32\nls\nls.vcxproj" Targets="Clean" Properties="$(BuildProperties)" BuildInParallel="false" />
   </Target>
 </Project>
