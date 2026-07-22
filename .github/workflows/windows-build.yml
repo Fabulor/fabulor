@@ -226,8 +226,9 @@ jobs:
 
           powershell -NoProfile -ExecutionPolicy Bypass -Command "$archiveLib='C:\gtk-build\gtk\x64\release\lib\libarchive.lib'; if (-not (Test-Path $archiveLib)) { $archiveDll = Get-ChildItem 'C:\gtk-build\gtk\x64\release\bin\libarchive*.dll' | Select-Object -First 1; if ($archiveDll) { Push-Location 'C:\gtk-build\gtk\x64\release\lib'; & 'C:\gtk-build\gendef\gendef.exe' $archiveDll.FullName | Out-Null; $archiveDef = Get-ChildItem 'libarchive*.def' | Select-Object -First 1; if ($archiveDef) { & lib /def:$archiveDef.Name /machine:${{ matrix.platform }} /out:libarchive.lib | Out-Null }; Pop-Location } }"
 
-          rem Build the legacy x64 payload only so WiX can harvest the staged application files.
-          msbuild win32\zoitechat.sln /m /verbosity:minimal /p:Configuration=Release /p:Platform=${{ matrix.platform }}
+          rem Build the GTK3 rollback payload explicitly while the production package
+          rem still sources non-runtime assets from its established staging root.
+          msbuild win32\zoitechat.sln /m /verbosity:minimal /p:Configuration=Release /p:Platform=${{ matrix.platform }} /p:FabulorGtkMajor=3
           if errorlevel 1 exit /b 1
 
           set "ENCHANT_WORK=%RUNNER_TEMP%\fabulor-enchant-msvc"
@@ -251,19 +252,24 @@ jobs:
           dotnet build src\managed\Fabulor.PluginHost\Fabulor.PluginHost.csproj -c Release /p:Platform=${{ matrix.platform }} /verbosity:minimal
           if errorlevel 1 exit /b 1
 
-          rem Publish artefacts from the WiX v4 installer surface only.
-          dotnet build installer\Fabulor.wixproj -c Release /p:Platform=${{ matrix.platform }} /p:GtkRuntimeRoot="%GTK4_CANDIDATE_ROOT%\Runtime\GTK4" /verbosity:minimal
-          if errorlevel 1 exit /b 1
-
-          rem Validate the shipping MSI against the deterministic GTK4 allowlist.
-          python tools\gtk4\validate_runtime_msi.py --wix "%USERPROFILE%\.nuget\packages\wixtoolset.sdk\7.0.0\tools\net472\x64\wix.exe" --msi "%GITHUB_WORKSPACE%\installer\bin\${{ matrix.platform }}\Release\Fabulor.msi" --manifest "%GTK4_CANDIDATE_ROOT%\Runtime\GTK4\runtime-manifest.json"
-          if errorlevel 1 exit /b 1
-
-          rem Build the isolated GTK4 frontend candidate without changing the shipping product.
-          set "GTK4_FRONTEND_MSI_ROOT=%GITHUB_WORKSPACE%\build\gtk4-frontend-candidate-installer"
           set "GTK4_PLUGIN_HOST_ROOT=%GITHUB_WORKSPACE%\build\gtk4-plugin-host-candidate-root"
           python tools\gtk4\stage_plugin_hosts.py --dotnet-root "%ProgramFiles%\dotnet" --managed-root "%GITHUB_WORKSPACE%\src\managed\Fabulor.PluginHost\bin\${{ matrix.platform }}\Release\net8.0" --payload-root "%FABULOR_STAGE%" --python-root "%GITHUB_WORKSPACE%\Runtime\Python314" --tcl-root "%GITHUB_WORKSPACE%\Runtime\Tcl" --output "%GTK4_PLUGIN_HOST_ROOT%"
           if errorlevel 1 exit /b 1
+
+          rem Publish the production GTK4 MSI and bootstrapper.
+          dotnet build installer\Fabulor.wixproj -c Release /p:Platform=${{ matrix.platform }} /p:GtkRuntimeRoot="%GTK4_CANDIDATE_ROOT%\Runtime\GTK4" /verbosity:minimal
+          if errorlevel 1 exit /b 1
+
+          rem Validate production identity, features, absence of GTK3 files, and the
+          rem deterministic GTK4 runtime allowlist.
+          python tools\gtk4\validate_production_gtk4_msi.py --wix "%USERPROFILE%\.nuget\packages\wixtoolset.sdk\7.0.0\tools\net472\x64\wix.exe" --msi "%GITHUB_WORKSPACE%\installer\bin\${{ matrix.platform }}\Release\Fabulor.msi"
+          if errorlevel 1 exit /b 1
+
+          python tools\gtk4\validate_runtime_msi.py --wix "%USERPROFILE%\.nuget\packages\wixtoolset.sdk\7.0.0\tools\net472\x64\wix.exe" --msi "%GITHUB_WORKSPACE%\installer\bin\${{ matrix.platform }}\Release\Fabulor.msi" --manifest "%GTK4_CANDIDATE_ROOT%\Runtime\GTK4\runtime-manifest.json"
+          if errorlevel 1 exit /b 1
+
+          rem Retain the isolated side-by-side candidate for one cutover cycle.
+          set "GTK4_FRONTEND_MSI_ROOT=%GITHUB_WORKSPACE%\build\gtk4-frontend-candidate-installer"
 
           dotnet build installer\Fabulor.wixproj -c Release /p:Platform=${{ matrix.platform }} /p:Gtk4FrontendCandidate=true /p:Gtk4FrontendRoot="%GITHUB_WORKSPACE%\build\gtk4-full\x64\rel" /p:Gtk4EnchantRoot="%GTK4_ENCHANT_ROOT%" /p:Gtk4PluginHostRoot="%GTK4_PLUGIN_HOST_ROOT%" /p:GtkRuntimeRoot="%GTK4_CANDIDATE_ROOT%\Runtime\GTK4" /p:FabulorPayloadRoot="%FABULOR_STAGE%" /p:FabulorInstallerOutputPath="%GTK4_FRONTEND_MSI_ROOT%" /p:FabulorInstallerIntermediateOutputPath="%GITHUB_WORKSPACE%\build\gtk4-frontend-candidate-installer-obj" /verbosity:minimal
           if errorlevel 1 exit /b 1

@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">
+  <Fragment>
+    <ComponentGroup Id="PluginHostManifestComponents" Directory="RUNTIMEDIR">
+      <Files Include="$(var.Gtk4PluginHostRoot)\Runtime\plugin-host-manifest.json" />
+    </ComponentGroup>
+
+    <ComponentGroup Id="PythonRuntimeComponents" Directory="PYDIR">
+      <Files Include="$(var.Gtk4PluginHostRoot)\Runtime\Python314\**" />
+    </ComponentGroup>
+
+    <ComponentGroup Id="TclBinComponents" Directory="TCLBINDIR">
+      <Files Include="$(var.Gtk4PluginHostRoot)\Runtime\Tcl\bin\**" />
+    </ComponentGroup>
+
+    <ComponentGroup Id="TclLibComponents" Directory="TCLLIBDIR">
+      <Files Include="$(var.Gtk4PluginHostRoot)\Runtime\Tcl\lib\**" />
+    </ComponentGroup>
+
+    <ComponentGroup Id="DotNetFolderComponents">
+      <Component Id="DotNetFolder" Guid="F7CC2553-A690-48C9-861B-52B02EB6EBC3" Directory="DOTNETDIR">
+        <CreateFolder />
+        <RemoveFolder Id="RemoveDotNetFolder" On="uninstall" />
+      </Component>
+    </ComponentGroup>
+
+    <ComponentGroup Id="ManagedPluginHostComponents" Directory="DOTNETDIR">
+      <Files Include="$(var.Gtk4PluginHostRoot)\Runtime\DotNet\Fabulor.PluginAbstractions.dll" />
+      <Files Include="$(var.Gtk4PluginHostRoot)\Runtime\DotNet\Fabulor.PluginHost.deps.json" />
+      <Files Include="$(var.Gtk4PluginHostRoot)\Runtime\DotNet\Fabulor.PluginHost.dll" />
+      <Files Include="$(var.Gtk4PluginHostRoot)\Runtime\DotNet\Fabulor.PluginHost.runtimeconfig.json" />
+    </ComponentGroup>
+
+    <ComponentGroup Id="DotNetHostFxrComponents" Directory="DOTNETFXRVERSIONDIR">
+      <Files Include="$(var.Gtk4PluginHostRoot)\Runtime\DotNet\host\fxr\$(var.BundledDotNetRuntimeVersion)\**" />
+    </ComponentGroup>
+
+    <ComponentGroup Id="DotNetSharedRuntimeComponents" Directory="DOTNETCOREAPPVERSIONDIR">
+      <Files Include="$(var.Gtk4PluginHostRoot)\Runtime\DotNet\shared\Microsoft.NETCore.App\$(var.BundledDotNetRuntimeVersion)\**" />
+    </ComponentGroup>
+  </Fragment>
+</Wix>

@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">
+  <Fragment>
+    <ComponentGroup Id="CoreComponents" Directory="INSTALLFOLDER">
+      <Files Include="$(var.Gtk4FrontendRoot)\fabulor.exe" />
+      <Files Include="$(var.Gtk4FrontendRoot)\fabulor-gtk4-frontend.dll" />
+      <Files Include="$(var.FabulorPayloadRoot)\cert.pem" />
+      <Files Include="$(var.FabulorPayloadRoot)\changelog.url" />
+      <Files Include="$(var.FabulorPayloadRoot)\libcrypto-3-x64.dll" />
+      <Files Include="$(var.FabulorPayloadRoot)\libssl-3-x64.dll" />
+      <Files Include="$(var.FabulorPayloadRoot)\readme.url" />
+    </ComponentGroup>
+  </Fragment>
+</Wix>

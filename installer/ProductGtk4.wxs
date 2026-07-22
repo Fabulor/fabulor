@@ -1,0 +1,178 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">
+
+  <Package Name="Fabulor"
+           Manufacturer="Barry"
+           Version="$(var.FabulorSemVer)"
+           ProductCode="*"
+           UpgradeCode="8F6C0C7E-9A4D-4E4C-9F8C-2B6F5A4E9C11"
+           InstallerVersion="500"
+           Compressed="yes"
+           Scope="perMachine">
+    <MajorUpgrade
+      AllowSameVersionUpgrades="yes"
+      DowngradeErrorMessage="A newer version of Fabulor is already installed." />
+    <MediaTemplate EmbedCab="yes" />
+    <Icon Id="FabulorProductIcon" SourceFile="..\data\icons\fabulor.ico" />
+    <Property Id="ARPNOMODIFY" Value="1" />
+    <Property Id="ARPNOREPAIR" Value="1" />
+    <Property Id="ARPPRODUCTICON" Value="FabulorProductIcon" />
+    <Property Id="ARPCONTACT" Value="Barry" />
+    <Property Id="ARPURLINFOABOUT" Value="https://github.com/Fabulor/fabulor/blob/main/README.md" />
+    <Property Id="ARPHELPLINK" Value="https://github.com/Fabulor/fabulor/tree/main/docs" />
+    <Property Id="ARPURLUPDATEINFO" Value="https://github.com/Fabulor/fabulor/blob/main/README.md" />
+    <Property Id="ARPCOMMENTS" Value="Fabulor is a modernised IRC client forked from HexChat." />
+    <Property Id="FABULOR_PORTABLE" Secure="yes" />
+
+    <StandardDirectory Id="ProgramFiles64Folder">
+      <Directory Id="INSTALLFOLDER" Name="Fabulor">
+        <Directory Id="LIBDIR" Name="lib">
+          <Directory Id="LEGACYENCHANTDIR" Name="enchant" />
+          <Directory Id="LIBENCHANT2DIR" Name="enchant-2" />
+        </Directory>
+        <Directory Id="SHAREDIR" Name="share">
+          <Directory Id="SHAREDOCDIR" Name="doc">
+            <Directory Id="SHAREFABULORDOCDIR" Name="fabulor" />
+            <Directory Id="SHARENOTODOCDIR" Name="NotoColorEmoji" />
+          </Directory>
+          <Directory Id="SHAREEMOJIFLAGSDIR" Name="emoji-flags" />
+          <Directory Id="SHARELEGACYENCHANTDIR" Name="enchant" />
+          <Directory Id="SHAREENCHANT2DIR" Name="enchant-2" />
+          <Directory Id="SHAREFONTSDIR" Name="fonts" />
+          <Directory Id="SHAREICONSDIR" Name="icons">
+            <Directory Id="ADWAITADIR" Name="Adwaita">
+              <Directory Id="ADWAITASYMBOLICDIR" Name="symbolic">
+                <Directory Id="ADWAITACATEGORYDIR" Name="categories" />
+              </Directory>
+            </Directory>
+            <Directory Id="HICOLORDIR" Name="hicolor">
+              <Directory Id="HICOLOR48DIR" Name="48x48">
+                <Directory Id="HICOLOR48APPDIR" Name="apps" />
+              </Directory>
+              <Directory Id="HICOLORSCALABLEDIR" Name="scalable">
+                <Directory Id="HICOLORSCALABLEAPPDIR" Name="apps" />
+              </Directory>
+            </Directory>
+          </Directory>
+          <Directory Id="SHARELOCALEDIR" Name="locale" />
+        </Directory>
+        <Directory Id="CONFIGDIR" Name="Config">
+          <Directory Id="CONFIGADDONSDIR" Name="addons" />
+          <Directory Id="CONFIGDOWNLOADSDIR" Name="downloads" />
+          <Directory Id="CONFIGSOUNDDIR" Name="sounds" />
+        </Directory>
+        <Directory Id="PLUGINDIR" Name="Plugins" />
+        <Directory Id="PYTHONAPIDIR" Name="python" />
+        <Directory Id="RUNTIMEDIR" Name="Runtime">
+          <Directory Id="DOTNETDIR" Name="DotNet">
+            <Directory Id="DOTNETHOSTDIR" Name="host">
+              <Directory Id="DOTNETFXRDIR" Name="fxr">
+                <Directory Id="DOTNETFXRVERSIONDIR" Name="$(var.BundledDotNetRuntimeVersion)" />
+              </Directory>
+            </Directory>
+            <Directory Id="DOTNETSHAREDDIR" Name="shared">
+              <Directory Id="DOTNETCOREAPPDIR" Name="Microsoft.NETCore.App">
+                <Directory Id="DOTNETCOREAPPVERSIONDIR" Name="$(var.BundledDotNetRuntimeVersion)" />
+              </Directory>
+            </Directory>
+          </Directory>
+          <Directory Id="GTK4DIR" Name="GTK4">
+            <Directory Id="GTK4BINDIR" Name="bin" />
+            <Directory Id="GTK4ETCDIR" Name="etc">
+              <Directory Id="GTK4ETCFONTSDIR" Name="fonts" />
+            </Directory>
+            <Directory Id="GTK4LIBDIR" Name="lib">
+              <Directory Id="GTK4GDKPIXBUFDIR" Name="gdk-pixbuf-2.0" />
+            </Directory>
+            <Directory Id="GTK4SHAREDIR" Name="share">
+              <Directory Id="GTK4SHAREFONTCONFIGDIR" Name="fontconfig" />
+              <Directory Id="GTK4SHAREGLIBDIR" Name="glib-2.0">
+                <Directory Id="GTK4SHAREGLIBSCHEMASDIR" Name="schemas" />
+              </Directory>
+              <Directory Id="GTK4SHAREGTKDIR" Name="gtk-4.0" />
+              <Directory Id="GTK4SHAREICONSDIR" Name="icons" />
+              <Directory Id="GTK4SHARELICENSESDIR" Name="licenses" />
+              <Directory Id="GTK4SHARELOCALEDIR" Name="locale" />
+              <Directory Id="GTK4SHAREXMLDIR" Name="xml" />
+            </Directory>
+          </Directory>
+          <Directory Id="PYDIR" Name="$(var.PythonRuntimeFolderName)" />
+          <Directory Id="TCLDIR" Name="Tcl">
+            <Directory Id="TCLBINDIR" Name="bin" />
+            <Directory Id="TCLLIBDIR" Name="lib" />
+          </Directory>
+        </Directory>
+      </Directory>
+    </StandardDirectory>
+    <StandardDirectory Id="ProgramMenuFolder">
+      <Directory Id="ApplicationProgramsFolder" Name="Fabulor" />
+    </StandardDirectory>
+    <SetProperty Id="ARPINSTALLLOCATION" Value="[INSTALLFOLDER]" After="CostFinalize" />
+
+    <Feature Id="MainFeature" Title="Fabulor" Level="1">
+      <ComponentGroupRef Id="CoreComponents" />
+      <ComponentGroupRef Id="ConfigFolderComponents" />
+      <ComponentGroupRef Id="InstalledModeCoreComponents" />
+      <ComponentGroupRef Id="PluginFolderComponents" />
+      <ComponentGroupRef Id="PluginBaseComponents" />
+      <ComponentGroupRef Id="CommonShareAssetComponents" />
+      <ComponentGroupRef Id="ApplicationDocumentationComponents" />
+      <ComponentGroupRef Id="ApplicationEmojiFlagComponents" />
+      <ComponentGroupRef Id="ApplicationFontComponents" />
+      <ComponentGroupRef Id="Enchant2ProviderComponents" />
+      <ComponentGroupRef Id="Enchant2DataComponents" />
+      <ComponentGroupRef Id="EnchantLegacyCleanupComponents" />
+      <ComponentGroupRef Id="PluginHostManifestComponents" />
+      <Feature Id="StartMenuFeature" Title="Start menu shortcuts" Level="1">
+        <ComponentGroupRef Id="StartMenuComponents" />
+      </Feature>
+      <Feature Id="ShellIntegrationFeature" Title="Protocol and theme integration" Level="1">
+        <ComponentGroupRef Id="ShellIntegrationComponents" />
+      </Feature>
+      <Feature Id="TranslationsFeature" Title="Translations" Level="1">
+        <ComponentGroupRef Id="TranslationsComponents" />
+      </Feature>
+      <Feature Id="ThemeAssetFeature" Title="Theme support assets" Level="1">
+        <ComponentGroupRef Id="ThemeAssetComponents" />
+        <ComponentGroupRef Id="AdwaitaIconThemeComponents" />
+      </Feature>
+      <Feature Id="Gtk4RuntimeFeature" Title="GTK4 runtime payload" Level="1">
+        <ComponentGroupRef Id="GTK4Components" />
+      </Feature>
+      <Feature Id="DotNetRuntimeFeature" Title="C# plugin host and bundled .NET runtime" Level="1">
+        <ComponentGroupRef Id="DotNetFolderComponents" />
+        <ComponentGroupRef Id="ManagedPluginHostComponents" />
+        <ComponentGroupRef Id="DotNetHostFxrComponents" />
+        <ComponentGroupRef Id="DotNetSharedRuntimeComponents" />
+      </Feature>
+      <Feature Id="PythonRuntimeFeature" Title="Python plugin runtime (3.14)" Level="1">
+        <ComponentGroupRef Id="PythonRuntimeComponents" />
+        <ComponentGroupRef Id="PythonHostComponents" />
+        <ComponentGroupRef Id="PythonApiComponents" />
+      </Feature>
+      <Feature Id="TclRuntimeFeature" Title="Tcl plugin runtime (8.6)" Level="1">
+        <ComponentGroupRef Id="TclBinComponents" />
+        <ComponentGroupRef Id="TclLibComponents" />
+      </Feature>
+      <Feature Id="ChecksumPluginFeature" Title="Checksum plugin" Level="1">
+        <ComponentGroupRef Id="ChecksumPluginComponents" />
+      </Feature>
+      <Feature Id="ExecPluginFeature" Title="Exec plugin" Level="1">
+        <ComponentGroupRef Id="ExecPluginComponents" />
+      </Feature>
+      <Feature Id="FishlimPluginFeature" Title="FiSHLiM plugin" Level="1">
+        <ComponentGroupRef Id="FishlimPluginComponents" />
+      </Feature>
+      <Feature Id="SysinfoPluginFeature" Title="SysInfo plugin" Level="1">
+        <ComponentGroupRef Id="SysinfoPluginComponents" />
+        <ComponentGroupRef Id="SysinfoPluginShareAssetComponents" />
+      </Feature>
+      <Feature Id="UpdatePluginFeature" Title="Update Checker plugin" Level="1">
+        <ComponentGroupRef Id="UpdatePluginComponents" />
+        <ComponentGroupRef Id="UpdatePluginShareAssetComponents" />
+      </Feature>
+      <ComponentGroupRef Id="PortableModeComponents" />
+    </Feature>
+  </Package>
+
+</Wix>

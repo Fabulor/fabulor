@@ -283,22 +283,6 @@
                 </GroupBox>
 
                 <GroupBox Margin="0,16,0,0"
-                        Header="Shared runtime payload">
-                   <StackPanel Margin="14">
-                       <TextBlock Foreground="{StaticResource TextSecondaryBrush}"
-                                  TextWrapping="Wrap"
-                                  Text="Theme support, GTK4 runtime assets, and legacy GTK compatibility data are always included. Documentation remains optional." />
-                       <CheckBox x:Name="RuntimeDocumentationCheckBox"
-                                 Margin="0,12,0,0"
-                                 Content="Runtime documentation" />
-                       <TextBlock Margin="0,12,0,0"
-                                  Foreground="{StaticResource TextSecondaryBrush}"
-                                  TextWrapping="Wrap"
-                                  Text="Documentation covers the bundled runtime payload shipped beside the main client." />
-                   </StackPanel>
-                </GroupBox>
-
-                <GroupBox Margin="0,16,0,0"
                           Header="Installed-mode integration">
                    <StackPanel Margin="14">
                        <CheckBox x:Name="StartMenuShortcutsCheckBox"

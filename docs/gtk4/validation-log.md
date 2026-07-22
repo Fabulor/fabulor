@@ -7244,6 +7244,49 @@ appearance changes use the same controller without requiring Preferences to be
 open. Shutdown removes the appearance filter before releasing CSS providers.
 The shipping GTK3 path remains unchanged.
 
+### GTK4 Stage 9 Production Package Cutover, Pass 1
+
+Date: 2026-07-23
+
+Boundary converted: the normal Fabulor product identity, feature tree, MSI,
+and bootstrapper now consume the validated GTK4 frontend and runtime payload.
+The side-by-side candidate and an explicit GTK3 rollback profile remain
+available but are not the default production artifact.
+
+Automated evidence:
+
+- production WiX build: pass with zero warnings and zero errors
+- bootstrapper application build: pass with zero warnings and zero errors
+- decompiled production MSI: `Fabulor` identity, established UpgradeCode and
+  install root retained; 7,623 installed files and zero GTK3 path markers;
+  repository-owned emoji flags, Noto Color Emoji font, and licenses are present
+- exact nested GTK4 runtime validation: all 1,431 manifest entries and hashes
+  pass; 1,432 installed entries include the generated manifest
+- retained side-by-side candidate: 7,270 files; all content hashes, nine
+  launcher imports, 31 frontend imports, ten extension modules, one extension
+  data file, fifteen import edges, 5,821 plugin-host files, and .NET 8.0.29
+  pass exact validation
+- explicit `LegacyGtk3Frontend=true` rollback MSI: builds with zero warnings
+  and zero errors; bootstrapper publication disabled
+- complete `tools/gtk4` Python validation: 54 tests pass
+- theme-contract validation: four tests pass
+- production MSI: 111,815,012 bytes; SHA-256
+  `AF827B31B0B32C0FA194CF5DABA768E462AFD8BEEAF328E5817119E136C95B4B`
+- production bootstrapper: 112,110,362 bytes; SHA-256
+  `059FCB631B76115C4F3673065007856EC8195177434F562CD293D4F1AD2DF945`
+
+Behavior contract: the default installer profile must package the GTK4
+launcher/frontend pair, mandatory allowlisted GTK4 runtime, rebuilt native
+extensions and Enchant provider, and staged C#/Python/Tcl hosts. It must retain
+the normal product upgrade identity and user-selectable plugin features while
+excluding GTK3 binaries, data, and translation catalogs. GTK3 packaging is
+permitted only when `LegacyGtk3Frontend=true` is supplied explicitly.
+
+Manual upgrade, repair, uninstall, portable-mode, accessibility, visual, and
+performance checks remain assigned to the final validation stage. Promoting
+GTK4 to the sole MSVC and CI frontend build profile is the next contained
+target.
+
 ## Stage Completion Rule
 
 A stage can move to complete in `migration-plan.md` only when:

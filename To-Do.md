@@ -434,6 +434,9 @@ Detailed planning and evidence live in:
       - [x] Compile the legacy GTK3 theme adapter only for GTK3 and provide a tested inert GTK4 contract.
   - [x] Stage the linked full-profile GTK4 launcher/frontend with its pinned runtime and perform controlled startup smoke validation.
 - [ ] Remove GTK3 code, build inputs, runtime files, installer components, and compatibility helpers.
+  - [x] Promote the validated GTK4 payload to the normal Fabulor MSI and bootstrapper without changing the production upgrade identity or selectable plugin features.
+  - [ ] Promote GTK4 to the sole MSVC and CI frontend build profile and remove the explicit GTK3 rollback package.
+  - [ ] Remove GTK3 staging downloads, runtime-copy rules, WiX components, source branches, tests, and compatibility helpers.
 - [ ] Complete clean-install, upgrade, accessibility, visual, performance, plugin, and packaging validation.
 
 ## 7. Documentation & Developer Guides

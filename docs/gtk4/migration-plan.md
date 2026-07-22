@@ -2552,6 +2552,25 @@ tests pass, and the exact 7,270-file candidate starts responsively and exits
 normally. The application/preferences theme-controller target is complete;
 GTK3 removal is the next migration boundary.
 
+Stage 9 production-package cutover pass 1 (2026-07-23):
+the normal `Fabulor.msi` and `FabulorSetup.exe` now use the linked GTK4
+launcher/frontend, rebuilt native extensions and Enchant provider, exact staged
+C#/Python/Tcl hosts, and allowlisted GTK4 runtime by default. The package keeps
+the established Fabulor name, install directory, UpgradeCode, shortcuts,
+protocol registration, portable mode, and selectable plugin features, so it is
+an in-place product upgrade rather than the side-by-side candidate. Production
+translation harvesting is restricted to `fabulor.mo`; the former broad glob
+and all GTK3 runtime, catalog, documentation, and compatibility component
+groups are absent. The bootstrapper no longer exposes retired legacy-runtime
+or runtime-documentation state. A decompiled-MSI validator now enforces product
+identity, required GTK4 files and features, application-owned emoji/font
+assets, and zero GTK3 path markers, while the existing runtime validator
+verifies every allowlisted file hash. The final local package contains 7,623
+files, zero legacy GTK files, and all 1,431
+manifest runtime entries. The isolated candidate and explicit
+`LegacyGtk3Frontend=true` package both remain buildable for one rollback cycle;
+promoting GTK4 to the sole MSVC/CI build profile is the next contained target.
+
 Deliverables:
 
 - Make GTK4 the only production frontend dependency in MSVC, Meson, and CI.
