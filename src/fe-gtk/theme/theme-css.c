@@ -72,56 +72,32 @@ gboolean
 theme_css_apply_app_provider_at_priority (GtkStyleProvider *provider,
 	guint priority)
 {
-#if GTK_MAJOR_VERSION >= 4
 	GdkDisplay *display;
-#else
-	GdkScreen *screen;
-#endif
 
 	if (!provider)
 		return FALSE;
 
-#if GTK_MAJOR_VERSION >= 4
 	display = gdk_display_get_default ();
 	if (!display)
 		return FALSE;
 
 	gtk_style_context_add_provider_for_display (display, provider, priority);
-#else
-	screen = gdk_screen_get_default ();
-	if (!screen)
-		return FALSE;
-
-	gtk_style_context_add_provider_for_screen (screen, provider, priority);
-#endif
 	return TRUE;
 }
 
 void
 theme_css_remove_app_provider (GtkStyleProvider *provider)
 {
-#if GTK_MAJOR_VERSION >= 4
 	GdkDisplay *display;
-#else
-	GdkScreen *screen;
-#endif
 
 	if (!provider)
 		return;
 
-#if GTK_MAJOR_VERSION >= 4
 	display = gdk_display_get_default ();
 	if (!display)
 		return;
 
 	gtk_style_context_remove_provider_for_display (display, provider);
-#else
-	screen = gdk_screen_get_default ();
-	if (!screen)
-		return;
-
-	gtk_style_context_remove_provider_for_screen (screen, provider);
-#endif
 }
 
 void
@@ -130,11 +106,7 @@ theme_css_provider_load_string (GtkCssProvider *provider, const char *css)
 	if (!provider || !css)
 		return;
 
-#if GTK_MAJOR_VERSION >= 4
 	gtk_css_provider_load_from_string (provider, css);
-#else
-	gtk_css_provider_load_from_data (provider, css, -1, NULL);
-#endif
 }
 
 void

@@ -1333,6 +1333,15 @@ tree views, list/tree stores, cell renderers, or tree selections. GTK4
 factory ownership remains intact. Repository lint protects the complete file
 set, and the frontend-wide version-branch inventory falls from 564 to 290.
 
+Stage 9 theme source specialization pass 8 removes the inactive GTK3
+implementations from nine theme controller and Preferences integration files.
+Theme discovery and application now use only display-scoped GTK4 CSS
+providers, semantic palette decisions, weak top-level ownership, the GTK4
+appearance monitor, and staged GTK4 theme selections. Screen-scoped provider
+registration, GTK3 style-context palette sampling, widget destruction, and
+toolkit-version switches are retired. Repository lint protects this boundary,
+and the frontend-wide version-branch inventory falls from 290 to 253.
+
 ## Functional Clusters
 
 | Cluster | Main files | GTK4 concern | Status |
@@ -1343,7 +1352,7 @@ set, and the frontend-wide version-branch inventory falls from 564 to 290.
 | Menus and commands | `menu.c`, `maingui.c`, `plugin-tray.c` | actions and menu models | in progress; retained main/context/tab presentation and GTK3-only accelerator ownership established |
 | Operational lists | `servlistgui.c`, `chanlist.c`, `userlistgui.c`, `dccgui.c`, `banlist.c`, `notifygui.c`, `ignoregui.c`, `plugingui.c`, `urlgrab.c` | list models, factories, editing | converted and specialized to GTK4; version branches and classic GTK3 tree/list implementations are retired |
 | Preferences/editors | `setup.c`, `fkeys.c`, `textgui.c`, `editlist.c` | generic edit list, Print Events, key bindings, sound events, and preference navigation converted | converted |
-| Themes | `theme/*.c`, `common/gtk4-theme-*.c`, `common/theme-archive-reader.c` | GTK4 CSS compatibility, discovery, preferences, and bounded `.hct` reading | converted; the GTK3 service and adapter are retired |
+| Themes | `theme/*.c`, `common/gtk4-theme-*.c`, `common/theme-archive-reader.c` | GTK4 CSS compatibility, discovery, preferences, and bounded `.hct` reading | converted and specialized to GTK4; the GTK3 service, adapter, screen/style branches, and version switches are retired |
 | Platform integration | `fe-gtk.c`, `plugin-tray.c`, notifications | displays, surfaces, icons, native tray | in progress; notification, tray policy, and application main-loop boundaries established |
 
 ## Theme Inventory

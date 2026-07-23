@@ -2616,6 +2616,17 @@ GTK3 tree/list APIs in this subsystem. The strict probe and complete frontend
 both compile and link successfully; remaining source branches are assigned to
 subsequent Stage 9 passes.
 
+Stage 9 theme source specialization pass 8 (2026-07-23): the nine-file GTK4
+theme controller, CSS provider, palette access, appearance monitor,
+Preferences staging, and window-lifecycle boundary now contains only its GTK4
+implementations. Retired GTK3 screen-scoped providers, style-context palette
+sampling, widget destruction, callback adapters, and toolkit-version guards
+are removed. The frontend source inventory falls from 290 to 253
+`GTK_MAJOR_VERSION` conditionals. Repository lint protects the exact file set
+and representative GTK3 theme APIs. The strict probe and complete frontend
+both compile and link successfully; remaining source branches are assigned to
+subsequent Stage 9 passes.
+
 Deliverables:
 
 - Make GTK4 the only production frontend dependency in MSVC, Meson, and CI.

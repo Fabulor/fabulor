@@ -81,69 +81,14 @@ theme_token_to_rgb16 (ThemeSemanticToken token, guint16 *red, guint16 *green, gu
 	return TRUE;
 }
 
-#if GTK_MAJOR_VERSION < 4
-static GtkStateFlags
-theme_access_state_with_base (GtkStyleContext *context, GtkStateFlags state)
-{
-	GtkStateFlags base_state;
-
-	base_state = gtk_style_context_get_state (context);
-	base_state &= (GTK_STATE_FLAG_DIR_LTR | GTK_STATE_FLAG_DIR_RTL | GTK_STATE_FLAG_BACKDROP | GTK_STATE_FLAG_FOCUSED);
-	return base_state | state;
-}
-
-static void
-theme_access_context_get_color (GtkStyleContext *context, GtkStateFlags state, GdkRGBA *out_color)
-{
-	gtk_style_context_save (context);
-	gtk_style_context_set_state (context, theme_access_state_with_base (context, state));
-	gtk_style_context_get_color (context, gtk_style_context_get_state (context), out_color);
-	gtk_style_context_restore (context);
-}
-
-static void
-theme_access_context_get_background_color (GtkStyleContext *context, GtkStateFlags state, GdkRGBA *out_color)
-{
-	gtk_style_context_save (context);
-	gtk_style_context_set_state (context, theme_access_state_with_base (context, state));
-	G_GNUC_BEGIN_IGNORE_DEPRECATIONS
-	gtk_style_context_get_background_color (context, gtk_style_context_get_state (context), out_color);
-	G_GNUC_END_IGNORE_DEPRECATIONS
-	gtk_style_context_restore (context);
-}
-#endif
 
 static gboolean
 theme_access_get_gtk_palette_map (GtkWidget *widget, ThemeGtkPaletteMap *out_map)
 {
-#if GTK_MAJOR_VERSION < 4
-	GtkStyleContext *context;
-	GdkRGBA accent;
-#endif
 
 	g_return_val_if_fail (out_map != NULL, FALSE);
-#if GTK_MAJOR_VERSION >= 4
 	(void) widget;
 	return FALSE;
-#else
-	if (widget == NULL || !GTK_IS_WIDGET (widget))
-		return FALSE;
-
-	context = gtk_widget_get_style_context (widget);
-	if (context == NULL)
-		return FALSE;
-
-	theme_access_context_get_color (context, GTK_STATE_FLAG_NORMAL, &out_map->text_foreground);
-	theme_access_context_get_background_color (context, GTK_STATE_FLAG_NORMAL, &out_map->text_background);
-	theme_access_context_get_color (context, GTK_STATE_FLAG_SELECTED, &out_map->selection_foreground);
-	theme_access_context_get_background_color (context, GTK_STATE_FLAG_SELECTED, &out_map->selection_background);
-	theme_access_context_get_color (context, GTK_STATE_FLAG_LINK, &accent);
-	if (accent.alpha <= 0.0)
-		accent = out_map->selection_background;
-	out_map->accent = accent;
-	out_map->enabled = TRUE;
-	return TRUE;
-#endif
 }
 
 gboolean

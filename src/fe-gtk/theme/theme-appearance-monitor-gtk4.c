@@ -1,8 +1,5 @@
 #include "theme-appearance-monitor-gtk4.h"
 
-#if GTK_MAJOR_VERSION < 4
-#error The GTK4 appearance monitor must compile against GTK 4.
-#endif
 
 #ifdef G_OS_WIN32
 #include <gdk/win32/gdkwin32.h>

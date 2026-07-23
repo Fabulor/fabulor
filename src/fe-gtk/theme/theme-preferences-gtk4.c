@@ -1,8 +1,5 @@
 #include "theme-preferences-gtk4.h"
 
-#if GTK_MAJOR_VERSION < 4
-#error The GTK4 theme preferences adapter must compile against GTK 4.
-#endif
 
 struct _ThemePreferencesGtk4
 {

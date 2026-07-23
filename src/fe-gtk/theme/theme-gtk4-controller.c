@@ -1,8 +1,5 @@
 #include "theme-gtk4-controller.h"
 
-#if GTK_MAJOR_VERSION < 4
-#error The GTK4 theme controller must compile against GTK 4.
-#endif
 
 struct _ThemeGtk4Controller
 {

@@ -442,6 +442,7 @@ Detailed planning and evidence live in:
     - [x] Delete the GTK3 theme service, adapter, preference branch, tests, probe coverage, saved configuration keys, and active build references.
     - [x] Specialize the active frontend compatibility header to GTK4 and enforce that version switches and representative GTK3 APIs cannot return.
     - [x] Specialize the converted operational list/model/view subsystem to GTK4 and reject restored version switches or classic GTK3 tree/list APIs.
+    - [x] Specialize the GTK4 theme controller, CSS, palette, appearance-monitor, Preferences, and window-lifecycle subsystem.
 - [ ] Complete clean-install, upgrade, accessibility, visual, performance, plugin, and packaging validation.
 
 ## 7. Documentation & Developer Guides
