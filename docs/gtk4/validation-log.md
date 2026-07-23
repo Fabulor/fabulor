@@ -7515,6 +7515,40 @@ retired GTK3 theme integration from these files. Remaining frontend source
 branches and legacy, non-configurable Meson fragments remain separate Stage 9
 cleanup targets.
 
+### GTK4 Stage 9 Window/File Helper Specialization, Pass 9
+
+Date: 2026-07-23
+
+Boundary retired: `window-state.c`, `window-geometry.c`, and
+`file-chooser-path.c` no longer carry parallel GTK3 implementations. A total of
+139 inactive GTK3 and toolkit-selection lines are removed. The frontend-wide
+`GTK_MAJOR_VERSION`-conditional inventory falls from 253 to 233.
+
+Automated evidence:
+
+- strict GTK4 MSVC probe build and execution: pass with `/W4 /WX`, zero
+  warnings and zero errors; GTK 4.22.4 / GLib 2.88.0 / x64 runtime confirmed
+- complete GTK4 frontend project build and link: pass with zero warnings and
+  zero errors in the affected incremental build
+- production profile contract suite: all 12 tests pass, including all three
+  specialized files and rejection of restored toolkit-version switches or
+  representative GTK3 window/file APIs
+- complete GTK4 tooling contract suite: all 61 tests pass
+- theme retirement/import contract suite: all 7 tests pass
+- native manifest, path, and archive suite: all 22 tests pass
+- source audit: no `GTK_MAJOR_VERSION`, GTK3 window/configure event, window
+  position/state, native `GdkWindow`, or retired file-chooser API remains in
+  the specialized source set
+- repository whitespace validation: pass
+
+Behaviour contract: state and geometry callbacks continue through GTK4
+surface/toplevel observation, native Windows handles use `GdkWin32Surface`,
+and file chooser paths remain owned local `GFile` projections. The GTK 4.10
+chooser deprecation suppression remains local to `file-chooser-path.c` pending
+the asynchronous `GtkFileDialog` replacement. Remaining frontend source
+branches and legacy, non-configurable Meson fragments remain separate Stage 9
+cleanup targets.
+
 ## Stage Completion Rule
 
 A stage can move to complete in `migration-plan.md` only when:

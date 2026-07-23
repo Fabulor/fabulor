@@ -8,10 +8,8 @@ typedef struct
 	GtkWindow *window;
 	FabulorWindowGeometryCallback callback;
 	gpointer user_data;
-#if GTK_MAJOR_VERSION >= 4
 	GdkSurface *surface;
 	gulong layout_handler;
-#endif
 } FabulorWindowGeometryWatch;
 
 void
@@ -22,7 +20,6 @@ fabulor_window_geometry_get (GtkWindow *window,
 	g_return_if_fail (geometry != NULL);
 
 	memset (geometry, 0, sizeof (*geometry));
-#if GTK_MAJOR_VERSION >= 4
 	{
 		GdkSurface *surface = gtk_native_get_surface (GTK_NATIVE (window));
 		if (GDK_IS_SURFACE (surface))
@@ -31,14 +28,8 @@ fabulor_window_geometry_get (GtkWindow *window,
 			geometry->height = gdk_surface_get_height (surface);
 		}
 	}
-#else
-	gtk_window_get_size (window, &geometry->width, &geometry->height);
-	gtk_window_get_position (window, &geometry->x, &geometry->y);
-	geometry->has_position = TRUE;
-#endif
 }
 
-#if GTK_MAJOR_VERSION >= 4
 static void
 window_geometry_layout_cb (GdkSurface *surface, gint width, gint height,
 	gpointer user_data)
@@ -87,31 +78,12 @@ window_geometry_unrealize_cb (GtkWidget *widget, gpointer user_data)
 	(void)widget;
 	window_geometry_detach_surface (user_data);
 }
-#else
-static gboolean
-window_geometry_configure_cb (GtkWidget *widget, GdkEventConfigure *event,
-	gpointer user_data)
-{
-	FabulorWindowGeometryWatch *watch = user_data;
-	FabulorWindowGeometry geometry;
-	(void)widget;
-	fabulor_window_geometry_get (watch->window, &geometry);
-	if (event->width > 0)
-		geometry.width = event->width;
-	if (event->height > 0)
-		geometry.height = event->height;
-	watch->callback (watch->window, &geometry, watch->user_data);
-	return FALSE;
-}
-#endif
 
 static void
 window_geometry_watch_free (gpointer data)
 {
 	FabulorWindowGeometryWatch *watch = data;
-#if GTK_MAJOR_VERSION >= 4
 	window_geometry_detach_surface (watch);
-#endif
 	g_free (watch);
 }
 
@@ -138,15 +110,10 @@ fabulor_window_geometry_watch (GtkWindow *window,
 	watch->callback = callback;
 	watch->user_data = user_data;
 	g_ptr_array_add (watches, watch);
-#if GTK_MAJOR_VERSION >= 4
 	g_signal_connect (window, "realize", G_CALLBACK (window_geometry_realize_cb),
 		watch);
 	g_signal_connect (window, "unrealize",
 		G_CALLBACK (window_geometry_unrealize_cb), watch);
 	if (gtk_widget_get_realized (GTK_WIDGET (window)))
 		window_geometry_attach_surface (watch);
-#else
-	g_signal_connect (window, "configure-event",
-		G_CALLBACK (window_geometry_configure_cb), watch);
-#endif
 }

@@ -1,9 +1,7 @@
 #include "file-chooser-path.h"
 
 /* GtkFileChooser is deprecated in GTK 4.10; contain it pending GtkFileDialog. */
-#if GTK_MAJOR_VERSION >= 4
 G_GNUC_BEGIN_IGNORE_DEPRECATIONS
-#endif
 
 gboolean
 fabulor_gtk_file_chooser_set_current_folder_path (GtkFileChooser *chooser,
@@ -15,11 +13,7 @@ fabulor_gtk_file_chooser_set_current_folder_path (GtkFileChooser *chooser,
 	g_return_val_if_fail (GTK_IS_FILE_CHOOSER (chooser), FALSE);
 	g_return_val_if_fail (path != NULL, FALSE);
 	folder = g_file_new_for_path (path);
-#if GTK_MAJOR_VERSION >= 4
 	changed = gtk_file_chooser_set_current_folder (chooser, folder, NULL);
-#else
-	changed = gtk_file_chooser_set_current_folder_file (chooser, folder, NULL);
-#endif
 	g_object_unref (folder);
 	return changed;
 }
@@ -30,12 +24,8 @@ fabulor_gtk_file_chooser_set_local_only (GtkFileChooser *chooser,
 {
 	g_return_if_fail (GTK_IS_FILE_CHOOSER (chooser));
 
-#if GTK_MAJOR_VERSION >= 4
 	/* GTK4 returns GFile values; owned-path conversion rejects non-local URIs. */
 	(void) local_only;
-#else
-	gtk_file_chooser_set_local_only (chooser, local_only);
-#endif
 }
 
 void
@@ -44,12 +34,8 @@ fabulor_gtk_file_chooser_set_overwrite_confirmation (GtkFileChooser *chooser,
 {
 	g_return_if_fail (GTK_IS_FILE_CHOOSER (chooser));
 
-#if GTK_MAJOR_VERSION >= 4
 	/* GTK4's native save dialog owns overwrite confirmation policy. */
 	(void) enabled;
-#else
-	gtk_file_chooser_set_do_overwrite_confirmation (chooser, enabled);
-#endif
 }
 
 gchar *
@@ -74,11 +60,7 @@ fabulor_gtk_file_chooser_dup_current_folder_path (GtkFileChooser *chooser)
 	gchar *path;
 
 	g_return_val_if_fail (GTK_IS_FILE_CHOOSER (chooser), NULL);
-#if GTK_MAJOR_VERSION >= 4
 	folder = gtk_file_chooser_get_current_folder (chooser);
-#else
-	folder = gtk_file_chooser_get_current_folder_file (chooser);
-#endif
 	if (!folder)
 		return NULL;
 	path = g_file_get_path (folder);
@@ -92,7 +74,6 @@ fabulor_gtk_file_chooser_dup_filenames (GtkFileChooser *chooser)
 	GSList *paths = NULL;
 
 	g_return_val_if_fail (GTK_IS_FILE_CHOOSER (chooser), NULL);
-#if GTK_MAJOR_VERSION >= 4
 	{
 		GListModel *files = gtk_file_chooser_get_files (chooser);
 		guint i;
@@ -108,26 +89,7 @@ fabulor_gtk_file_chooser_dup_filenames (GtkFileChooser *chooser)
 		}
 		g_clear_object (&files);
 	}
-#else
-	{
-		GSList *files = gtk_file_chooser_get_files (chooser);
-		GSList *item;
-
-		for (item = files; item; item = item->next)
-		{
-			GFile *file = item->data;
-			gchar *path = g_file_get_path (file);
-
-			if (path)
-				paths = g_slist_prepend (paths, path);
-			g_object_unref (file);
-		}
-		g_slist_free (files);
-	}
-#endif
 	return g_slist_reverse (paths);
 }
 
-#if GTK_MAJOR_VERSION >= 4
 G_GNUC_END_IGNORE_DEPRECATIONS
-#endif

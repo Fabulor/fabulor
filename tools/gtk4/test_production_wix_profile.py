@@ -45,6 +45,11 @@ GTK4_THEME_SOURCES = (
     "theme-preferences-gtk4.c",
     "theme-preferences.c",
 )
+GTK4_WINDOW_HELPER_SOURCES = (
+    "file-chooser-path.c",
+    "window-geometry.c",
+    "window-state.c",
+)
 VCPKG_CONFIGURATION = ROOT / "tools" / "windows-deps" / "vcpkg-configuration.json"
 VCPKG_MANIFEST = ROOT / "tools" / "windows-deps" / "vcpkg.json"
 WIX_NS = {"w": "http://wixtoolset.org/schemas/v4/wxs"}
@@ -182,6 +187,29 @@ class ProductionWixProfileTests(unittest.TestCase):
                 self.assertNotIn("GTK_MAJOR_VERSION", source)
                 for function in retired_functions:
                     self.assertNotRegex(source, rf"\b{function}\b")
+
+    def test_window_helper_sources_are_gtk4_only(self):
+        frontend = ROOT / "src" / "fe-gtk"
+        retired_tokens = (
+            "GdkEventConfigure",
+            "GdkEventWindowState",
+            "GdkWindowState",
+            "gtk_file_chooser_get_current_folder_file",
+            "gtk_file_chooser_set_current_folder_file",
+            "gtk_file_chooser_set_do_overwrite_confirmation",
+            "gtk_file_chooser_set_local_only",
+            "gtk_window_deiconify",
+            "gtk_window_get_position",
+            "gtk_window_get_size",
+            "gtk_widget_get_window",
+        )
+
+        for name in GTK4_WINDOW_HELPER_SOURCES:
+            source = (frontend / name).read_text(encoding="utf-8")
+            with self.subTest(source=name):
+                self.assertNotIn("GTK_MAJOR_VERSION", source)
+                for token in retired_tokens:
+                    self.assertNotRegex(source, rf"\b{token}\b")
 
     def test_transitional_windows_staging_is_removed(self):
         props = PROPS.read_text(encoding="utf-8")

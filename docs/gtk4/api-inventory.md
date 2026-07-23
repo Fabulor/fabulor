@@ -1342,6 +1342,15 @@ registration, GTK3 style-context palette sampling, widget destruction, and
 toolkit-version switches are retired. Repository lint protects this boundary,
 and the frontend-wide version-branch inventory falls from 290 to 253.
 
+Stage 9 window/file helper specialization pass 9 removes the inactive GTK3
+implementations from `window-state.c`, `window-geometry.c`, and
+`file-chooser-path.c`. Window state and geometry now flow exclusively through
+GTK4 surfaces and toplevel state/layout observation; native Windows handles use
+`GdkWin32Surface`; chooser values use owned `GFile` and `GListModel` paths.
+Legacy window/configure events, position queries, local-only/overwrite settings,
+and GTK3 file-list ownership are retired. The frontend-wide version-branch
+inventory falls from 253 to 233.
+
 ## Functional Clusters
 
 | Cluster | Main files | GTK4 concern | Status |

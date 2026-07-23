@@ -2627,6 +2627,17 @@ and representative GTK3 theme APIs. The strict probe and complete frontend
 both compile and link successfully; remaining source branches are assigned to
 subsequent Stage 9 passes.
 
+Stage 9 window/file helper specialization pass 9 (2026-07-23): window state,
+geometry observation, native-handle projection, and file-chooser path ownership
+now contain only their GTK4 implementations. Retired GTK3 `GdkWindow` state
+events, configure events, position queries, deiconification, Win32 window
+handles, local-only/overwrite settings, and file-list ownership are removed.
+The GTK 4.10 `GtkFileChooser` deprecation remains narrowly contained pending a
+later `GtkFileDialog` conversion. The frontend source inventory falls from 253
+to 233 `GTK_MAJOR_VERSION` conditionals. Repository lint protects the exact
+three-file boundary and representative GTK3 APIs; the strict probe and complete
+frontend both compile and link successfully.
+
 Deliverables:
 
 - Make GTK4 the only production frontend dependency in MSVC, Meson, and CI.
