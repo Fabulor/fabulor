@@ -35,16 +35,13 @@ channel_tree_view_free (gpointer data)
 {
 	FabulorChannelTreeView *owner = data;
 
-#if GTK_MAJOR_VERSION >= 4
 	if (owner->selection_id)
 		g_signal_handler_disconnect (
 			fabulor_channel_model_get_selection (owner->model),
 			owner->selection_id);
-#endif
 	g_free (owner);
 }
 
-#if GTK_MAJOR_VERSION >= 4
 
 typedef struct
 {
@@ -265,74 +262,6 @@ channel_tree_activate (GtkListView *view, guint position,
 	g_clear_object (&tree_row);
 }
 
-#else
-
-static void
-channel_tree_selection_changed (GtkTreeSelection *selection,
-	gpointer user_data)
-{
-	FabulorChannelTreeView *owner = user_data;
-	GtkTreeModel *tree_model;
-	GtkTreeIter iter;
-	gpointer identity = NULL;
-
-	if (!owner->selection_callback ||
-		!gtk_tree_selection_get_selected (selection, &tree_model, &iter))
-		return;
-	gtk_tree_model_get (tree_model, &iter,
-		FABULOR_CHANNEL_COLUMN_IDENTITY, &identity, -1);
-	if (identity)
-		owner->selection_callback (owner->view, identity,
-			owner->selection_data);
-}
-
-static void
-channel_tree_row_activated (GtkTreeView *view, GtkTreePath *path,
-	GtkTreeViewColumn *column, gpointer user_data)
-{
-	(void) column;
-	(void) user_data;
-	if (gtk_tree_view_row_expanded (view, path))
-		gtk_tree_view_collapse_row (view, path);
-	else
-		gtk_tree_view_expand_row (view, path, FALSE);
-}
-
-static void
-channel_tree_add_columns (FabulorChannelTreeView *owner)
-{
-	GtkTreeView *tree = GTK_TREE_VIEW (owner->view);
-	GtkCellRenderer *renderer;
-	GtkTreeViewColumn *column = gtk_tree_view_column_new ();
-
-	if (owner->use_icons)
-	{
-		renderer = gtk_cell_renderer_pixbuf_new ();
-		if (owner->compact)
-			g_object_set (renderer, "ypad", 0, NULL);
-		gtk_tree_view_column_pack_start (column, renderer, FALSE);
-		gtk_tree_view_column_set_attributes (column, renderer, "pixbuf",
-			FABULOR_CHANNEL_COLUMN_ICON, NULL);
-	}
-	renderer = gtk_cell_renderer_text_new ();
-	if (owner->compact)
-		g_object_set (renderer, "ypad", 0, NULL);
-	g_object_set (renderer, "ellipsize", PANGO_ELLIPSIZE_END, NULL);
-	gtk_cell_renderer_text_set_fixed_height_from_font (
-		GTK_CELL_RENDERER_TEXT (renderer), 1);
-	gtk_tree_view_column_pack_start (column, renderer, TRUE);
-	gtk_tree_view_column_set_attributes (column, renderer,
-		"text", FABULOR_CHANNEL_COLUMN_NAME,
-		"attributes", FABULOR_CHANNEL_COLUMN_ATTRIBUTES,
-		"underline", FABULOR_CHANNEL_COLUMN_UNDERLINE, NULL);
-	gtk_tree_view_column_set_expand (column, TRUE);
-	gtk_tree_view_column_set_sizing (column, GTK_TREE_VIEW_COLUMN_GROW_ONLY);
-	gtk_tree_view_column_set_min_width (column, 1);
-	gtk_tree_view_append_column (tree, column);
-	gtk_tree_view_set_expander_column (tree, column);
-}
-
-#endif
 
 GtkWidget *
 fabulor_channel_tree_view_new (FabulorChannelModel *model,
@@ -346,7 +275,6 @@ fabulor_channel_tree_view_new (FabulorChannelModel *model,
 	owner->model = model;
 	owner->use_icons = use_icons;
 	owner->compact = compact;
-#if GTK_MAJOR_VERSION >= 4
 	{
 		GtkListItemFactory *factory = gtk_signal_list_item_factory_new ();
 		GtkSelectionModel *selection = GTK_SELECTION_MODEL (g_object_ref (
@@ -369,32 +297,10 @@ fabulor_channel_tree_view_new (FabulorChannelModel *model,
 	}
 	(void) show_tree_lines;
 	(void) unindent_children;
-#else
-	owner->view = gtk_tree_view_new_with_model (
-		fabulor_channel_model_get_tree_model (model));
-	gtk_tree_view_set_headers_visible (GTK_TREE_VIEW (owner->view), FALSE);
-	gtk_tree_view_set_enable_tree_lines (GTK_TREE_VIEW (owner->view),
-		show_tree_lines);
-	if (unindent_children)
-	{
-		gint expander_size;
-		gint separator;
-		gtk_widget_style_get (owner->view, "expander-size", &expander_size,
-			"horizontal-separator", &separator, NULL);
-		gtk_tree_view_set_level_indentation (GTK_TREE_VIEW (owner->view),
-			-expander_size - separator);
-	}
-	channel_tree_add_columns (owner);
-	g_signal_connect (gtk_tree_view_get_selection (
-		GTK_TREE_VIEW (owner->view)), "changed",
-		G_CALLBACK (channel_tree_selection_changed), owner);
-	g_signal_connect (owner->view, "row-activated",
-		G_CALLBACK (channel_tree_row_activated), owner);
-#endif
 	gtk_widget_set_hexpand (owner->view, TRUE);
 	gtk_widget_set_vexpand (owner->view, TRUE);
 	gtk_widget_set_name (owner->view, "zoitechat-tree");
-	gtk_widget_set_can_focus (owner->view, GTK_MAJOR_VERSION >= 4);
+	gtk_widget_set_can_focus (owner->view, TRUE);
 	g_object_set_data_full (G_OBJECT (owner->view),
 		FABULOR_CHANNEL_TREE_VIEW_DATA, owner, channel_tree_view_free);
 	return owner->view;
@@ -420,7 +326,6 @@ fabulor_channel_tree_view_get_identity_at_position (GtkWidget *view,
 
 	if (!owner)
 		return NULL;
-#if GTK_MAJOR_VERSION >= 4
 	{
 		GtkWidget *picked = gtk_widget_pick (view, x, y, GTK_PICK_DEFAULT);
 		while (picked && picked != view)
@@ -434,23 +339,6 @@ fabulor_channel_tree_view_get_identity_at_position (GtkWidget *view,
 		}
 		return NULL;
 	}
-#else
-	{
-		GtkTreePath *path;
-		GtkTreeIter iter;
-		gpointer identity = NULL;
-		if (!gtk_tree_view_get_path_at_pos (GTK_TREE_VIEW (view), (gint) x,
-			(gint) y, &path, NULL, NULL, NULL))
-			return NULL;
-		if (gtk_tree_model_get_iter (
-			fabulor_channel_model_get_tree_model (owner->model), &iter, path))
-			gtk_tree_model_get (fabulor_channel_model_get_tree_model (
-				owner->model), &iter, FABULOR_CHANNEL_COLUMN_IDENTITY,
-				&identity, -1);
-		gtk_tree_path_free (path);
-		return identity;
-	}
-#endif
 }
 
 gboolean
@@ -460,7 +348,6 @@ fabulor_channel_tree_view_focus_identity (GtkWidget *view, gpointer identity)
 
 	if (!owner || !identity)
 		return FALSE;
-#if GTK_MAJOR_VERSION >= 4
 	{
 		guint position;
 		if (!fabulor_channel_model_select_identity (owner->model, identity))
@@ -473,43 +360,6 @@ fabulor_channel_tree_view_focus_identity (GtkWidget *view, gpointer identity)
 			GTK_LIST_SCROLL_FOCUS, NULL);
 		return TRUE;
 	}
-#else
-	{
-		GtkTreeIter iter;
-		GtkTreeIter parent;
-		GtkTreePath *path;
-		GtkTreeModel *tree_model = fabulor_channel_model_get_tree_model (
-			owner->model);
-		GdkRectangle cell_rect;
-		GdkRectangle visible_rect;
-		if (!fabulor_channel_model_get_iter (owner->model, identity, &iter))
-			return FALSE;
-		if (gtk_tree_model_iter_parent (tree_model, &parent, &iter))
-		{
-			path = gtk_tree_model_get_path (tree_model, &parent);
-			gtk_tree_view_expand_row (GTK_TREE_VIEW (view), path, FALSE);
-			gtk_tree_path_free (path);
-		}
-		path = gtk_tree_model_get_path (tree_model, &iter);
-		gtk_tree_view_get_background_area (GTK_TREE_VIEW (view), path, NULL,
-			&cell_rect);
-		gtk_tree_view_get_visible_rect (GTK_TREE_VIEW (view), &visible_rect);
-		gtk_tree_view_convert_widget_to_bin_window_coords (
-			GTK_TREE_VIEW (view), cell_rect.x, cell_rect.y, NULL, &cell_rect.y);
-		if (cell_rect.y < visible_rect.y ||
-			cell_rect.y + cell_rect.height >
-				visible_rect.y + visible_rect.height)
-		{
-			gint destination = cell_rect.y -
-				((visible_rect.height - cell_rect.height) / 2);
-			gtk_tree_view_scroll_to_point (GTK_TREE_VIEW (view), -1,
-				MAX (0, destination));
-		}
-		gtk_tree_view_set_cursor (GTK_TREE_VIEW (view), path, NULL, FALSE);
-		gtk_tree_path_free (path);
-		return TRUE;
-	}
-#endif
 }
 
 gboolean
@@ -523,7 +373,6 @@ fabulor_channel_tree_view_expand_parent (GtkWidget *view, gpointer identity)
 	parent_identity = fabulor_channel_model_get_parent (owner->model, identity);
 	if (!parent_identity)
 		return TRUE;
-#if GTK_MAJOR_VERSION >= 4
 	{
 		GtkTreeListRow *row = channel_tree_find_row (owner, parent_identity,
 			NULL);
@@ -533,20 +382,6 @@ fabulor_channel_tree_view_expand_parent (GtkWidget *view, gpointer identity)
 		g_object_unref (row);
 		return TRUE;
 	}
-#else
-	{
-		GtkTreeIter iter;
-		GtkTreePath *path;
-		if (!fabulor_channel_model_get_iter (owner->model, parent_identity,
-			&iter))
-			return FALSE;
-		path = gtk_tree_model_get_path (
-			fabulor_channel_model_get_tree_model (owner->model), &iter);
-		gtk_tree_view_expand_row (GTK_TREE_VIEW (view), path, FALSE);
-		gtk_tree_path_free (path);
-		return TRUE;
-	}
-#endif
 }
 
 void
@@ -556,7 +391,6 @@ fabulor_channel_tree_view_expand_all (GtkWidget *view)
 
 	if (!owner)
 		return;
-#if GTK_MAJOR_VERSION >= 4
 	{
 		guint count = fabulor_channel_model_get_root_count (owner->model);
 		guint i;
@@ -571,9 +405,6 @@ fabulor_channel_tree_view_expand_all (GtkWidget *view)
 			}
 		}
 	}
-#else
-	gtk_tree_view_expand_all (GTK_TREE_VIEW (view));
-#endif
 }
 
 gboolean
@@ -583,25 +414,10 @@ fabulor_channel_tree_view_is_expanded (GtkWidget *view, gpointer identity)
 
 	if (!owner || !identity)
 		return FALSE;
-#if GTK_MAJOR_VERSION >= 4
 	{
 		GtkTreeListRow *row = channel_tree_find_row (owner, identity, NULL);
 		gboolean expanded = row && gtk_tree_list_row_get_expanded (row);
 		g_clear_object (&row);
 		return expanded;
 	}
-#else
-	{
-		GtkTreeIter iter;
-		GtkTreePath *path;
-		gboolean expanded;
-		if (!fabulor_channel_model_get_iter (owner->model, identity, &iter))
-			return FALSE;
-		path = gtk_tree_model_get_path (
-			fabulor_channel_model_get_tree_model (owner->model), &iter);
-		expanded = gtk_tree_view_row_expanded (GTK_TREE_VIEW (view), path);
-		gtk_tree_path_free (path);
-		return expanded;
-	}
-#endif
 }

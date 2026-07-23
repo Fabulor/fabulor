@@ -19,14 +19,9 @@ struct _FabulorKeyBindingList
 	FabulorKeyBindingSelectionFunc selection_func;
 	FabulorKeyBindingNormalizeFunc normalize_func;
 	gpointer callback_data;
-#if GTK_MAJOR_VERSION >= 4
 	GListStore *store;
 	GtkSingleSelection *selection;
 	GtkStringList *actions;
-#else
-	GtkListStore *store;
-	GtkListStore *actions;
-#endif
 };
 
 void
@@ -42,7 +37,6 @@ fabulor_key_binding_record_free (FabulorKeyBindingRecord *record)
 	g_free (record);
 }
 
-#if GTK_MAJOR_VERSION >= 4
 
 typedef struct _FabulorKeyBindingRow FabulorKeyBindingRow;
 typedef struct _FabulorKeyBindingRowClass FabulorKeyBindingRowClass;
@@ -386,99 +380,6 @@ key_binding_view_key_pressed (GtkWidget *widget, guint keyval,
 	return FALSE;
 }
 
-#else
-
-enum
-{
-	KEY_COLUMN,
-	ACCEL_COLUMN,
-	ACTION_COLUMN,
-	D1_COLUMN,
-	D2_COLUMN,
-	CUSTOM_COLUMN,
-	N_COLUMNS
-};
-
-static gboolean
-key_binding_gtk3_selected_position (FabulorKeyBindingList *list, guint *position)
-{
-	GtkTreeModel *model;
-	GtkTreeIter iter;
-	GtkTreePath *path;
-	if (!list->view || !gtk_tree_selection_get_selected (
-		gtk_tree_view_get_selection (GTK_TREE_VIEW (list->view)), &model, &iter))
-		return FALSE;
-	path = gtk_tree_model_get_path (model, &iter);
-	*position = (guint) gtk_tree_path_get_indices (path)[0];
-	gtk_tree_path_free (path);
-	return TRUE;
-}
-
-static void
-key_binding_gtk3_selection_changed (GtkTreeSelection *selection,
-	gpointer user_data)
-{
-	FabulorKeyBindingList *list = user_data;
-	GtkTreeModel *model;
-	GtkTreeIter iter;
-	gchar *action = NULL;
-	gboolean custom = FALSE;
-	if (gtk_tree_selection_get_selected (selection, &model, &iter))
-		gtk_tree_model_get (model, &iter, ACTION_COLUMN, &action,
-			CUSTOM_COLUMN, &custom, -1);
-	if (list->selection_func)
-		list->selection_func (action && action[0] ? action : NULL, custom,
-			list->callback_data);
-	g_free (action);
-}
-
-static void
-key_binding_gtk3_accel_edited (GtkCellRendererAccel *renderer,
-	gchar *path_string, guint keyval, GdkModifierType modifiers,
-	guint hardware_keycode, gpointer user_data)
-{
-	FabulorKeyBindingList *list = user_data;
-	GtkTreePath *path = gtk_tree_path_new_from_string (path_string);
-	gint *indices = gtk_tree_path_get_indices (path);
-	(void) renderer;
-	(void) hardware_keycode;
-	if (indices)
-		fabulor_key_binding_list_set_accelerator_at (list,
-			(guint) indices[0], keyval, modifiers);
-	gtk_tree_path_free (path);
-}
-
-static void
-key_binding_gtk3_text_edited (GtkCellRendererText *renderer,
-	gchar *path_string, gchar *text, gpointer user_data)
-{
-	FabulorKeyBindingList *list = user_data;
-	GtkTreePath *path = gtk_tree_path_new_from_string (path_string);
-	gint *indices = gtk_tree_path_get_indices (path);
-	FabulorKeyBindingField field = (FabulorKeyBindingField) GPOINTER_TO_INT (
-		g_object_get_data (G_OBJECT (renderer), "fabulor-key-binding-field"));
-	if (indices)
-		fabulor_key_binding_list_set_text_at (list, (guint) indices[0],
-			field, text);
-	gtk_tree_path_free (path);
-}
-
-static gboolean
-key_binding_gtk3_key_press (GtkWidget *widget, GdkEventKey *event,
-	gpointer user_data)
-{
-	FabulorKeyBindingList *list = user_data;
-	(void) widget;
-	if (!(event->state & GDK_SHIFT_MASK))
-		return FALSE;
-	if (event->keyval == GDK_KEY_Up)
-		return fabulor_key_binding_list_move_selected (list, -1);
-	if (event->keyval == GDK_KEY_Down)
-		return fabulor_key_binding_list_move_selected (list, 1);
-	return FALSE;
-}
-
-#endif
 
 FabulorKeyBindingList *
 fabulor_key_binding_list_new (FabulorKeyBindingSelectionFunc selection_func,
@@ -488,17 +389,11 @@ fabulor_key_binding_list_new (FabulorKeyBindingSelectionFunc selection_func,
 	list->selection_func = selection_func;
 	list->normalize_func = normalize_func;
 	list->callback_data = user_data;
-#if GTK_MAJOR_VERSION >= 4
 	list->store = g_list_store_new (FABULOR_TYPE_KEY_BINDING_ROW);
 	list->selection = gtk_single_selection_new (G_LIST_MODEL (g_object_ref (list->store)));
 	list->actions = gtk_string_list_new (NULL);
 	g_signal_connect (list->selection, "notify::selected",
 		G_CALLBACK (key_binding_selected_changed), list);
-#else
-	list->store = gtk_list_store_new (N_COLUMNS, G_TYPE_STRING, G_TYPE_STRING,
-		G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING, G_TYPE_BOOLEAN);
-	list->actions = gtk_list_store_new (1, G_TYPE_STRING);
-#endif
 	return list;
 }
 
@@ -507,9 +402,7 @@ fabulor_key_binding_list_free (FabulorKeyBindingList *list)
 {
 	if (!list)
 		return;
-#if GTK_MAJOR_VERSION >= 4
 	g_clear_object (&list->selection);
-#endif
 	g_clear_object (&list->store);
 	g_clear_object (&list->actions);
 	g_free (list);
@@ -524,7 +417,6 @@ fabulor_key_binding_list_create_view (FabulorKeyBindingList *list,
 	GtkWidget *scroller;
 	guint i;
 	g_return_val_if_fail (list && GTK_IS_BOX (parent) && !list->view, NULL);
-#if GTK_MAJOR_VERSION >= 4
 	scroller = gtk_scrolled_window_new ();
 	for (i = 0; i < n_actions; i++)
 		gtk_string_list_append (list->actions, actions[i]);
@@ -548,59 +440,6 @@ fabulor_key_binding_list_create_view (FabulorKeyBindingList *list,
 	gtk_column_view_set_show_row_separators (GTK_COLUMN_VIEW (list->view), TRUE);
 	fabulor_gtk_widget_on_key_pressed (list->view,
 		key_binding_view_key_pressed, list);
-#else
-	{
-		GtkCellRenderer *renderer;
-		GtkTreeViewColumn *column;
-		GtkTreeIter iter;
-		scroller = gtk_scrolled_window_new (NULL, NULL);
-		list->view = gtk_tree_view_new_with_model (GTK_TREE_MODEL (g_object_ref (list->store)));
-		gtk_tree_view_set_fixed_height_mode (GTK_TREE_VIEW (list->view), TRUE);
-		gtk_tree_view_set_enable_search (GTK_TREE_VIEW (list->view), FALSE);
-		g_signal_connect (list->view, "key-press-event", G_CALLBACK (key_binding_gtk3_key_press), list);
-		g_signal_connect (gtk_tree_view_get_selection (GTK_TREE_VIEW (list->view)), "changed",
-			G_CALLBACK (key_binding_gtk3_selection_changed), list);
-		renderer = gtk_cell_renderer_accel_new ();
-		g_object_set (renderer, "editable", TRUE, NULL);
-		g_signal_connect (renderer, "accel-edited", G_CALLBACK (key_binding_gtk3_accel_edited), list);
-		gtk_tree_view_insert_column_with_attributes (GTK_TREE_VIEW (list->view), KEY_COLUMN,
-			key_title, renderer, "text", KEY_COLUMN, NULL);
-		column = gtk_tree_view_get_column (GTK_TREE_VIEW (list->view), KEY_COLUMN);
-		gtk_tree_view_column_set_fixed_width (column, 200);
-		gtk_tree_view_column_set_resizable (column, TRUE);
-		for (i = 0; i < n_actions; i++)
-		{
-			gtk_list_store_append (list->actions, &iter);
-			gtk_list_store_set (list->actions, &iter, 0, actions[i], -1);
-		}
-		renderer = gtk_cell_renderer_combo_new ();
-		g_object_set (renderer, "model", list->actions, "has-entry", FALSE,
-			"editable", TRUE, "text-column", 0, NULL);
-		g_object_set_data (G_OBJECT (renderer), "fabulor-key-binding-field",
-			GINT_TO_POINTER (FABULOR_KEY_BINDING_ACTION));
-		g_signal_connect (renderer, "edited", G_CALLBACK (key_binding_gtk3_text_edited), list);
-		gtk_tree_view_insert_column_with_attributes (GTK_TREE_VIEW (list->view), ACTION_COLUMN,
-			action_title, renderer, "text", ACTION_COLUMN, "editable", CUSTOM_COLUMN, NULL);
-		column = gtk_tree_view_get_column (GTK_TREE_VIEW (list->view), ACTION_COLUMN);
-		gtk_tree_view_column_set_fixed_width (column, 160);
-		for (i = 0; i < 2; i++)
-		{
-			gint store_column = i == 0 ? D1_COLUMN : D2_COLUMN;
-			renderer = gtk_cell_renderer_text_new ();
-			g_object_set (renderer, "editable", TRUE, NULL);
-			g_object_set_data (G_OBJECT (renderer), "fabulor-key-binding-field",
-				GINT_TO_POINTER (i == 0 ? FABULOR_KEY_BINDING_DATA1 : FABULOR_KEY_BINDING_DATA2));
-			g_signal_connect (renderer, "edited", G_CALLBACK (key_binding_gtk3_text_edited), list);
-			gtk_tree_view_insert_column_with_attributes (GTK_TREE_VIEW (list->view), store_column,
-				i == 0 ? data1_title : data2_title, renderer, "text", store_column,
-				"editable", CUSTOM_COLUMN, NULL);
-			column = gtk_tree_view_get_column (GTK_TREE_VIEW (list->view), store_column);
-			gtk_tree_view_column_set_sizing (column, GTK_TREE_VIEW_COLUMN_AUTOSIZE);
-			gtk_tree_view_column_set_min_width (column, 80);
-			gtk_tree_view_column_set_resizable (column, TRUE);
-		}
-	}
-#endif
 	gtk_scrolled_window_set_policy (GTK_SCROLLED_WINDOW (scroller),
 		GTK_POLICY_AUTOMATIC, GTK_POLICY_AUTOMATIC);
 	fabulor_gtk_scrolled_window_set_child (GTK_SCROLLED_WINDOW (scroller), list->view);
@@ -613,44 +452,25 @@ fabulor_key_binding_list_append (FabulorKeyBindingList *list,
 	const FabulorKeyBindingRecord *record)
 {
 	g_return_if_fail (list && record);
-#if GTK_MAJOR_VERSION >= 4
 	{
 		FabulorKeyBindingRow *row = key_binding_row_new (record);
 		g_list_store_append (list->store, row);
 		g_object_unref (row);
 	}
-#else
-	{
-		GtkTreeIter iter;
-		gtk_list_store_append (list->store, &iter);
-		gtk_list_store_set (list->store, &iter, KEY_COLUMN, record->key_label,
-			ACCEL_COLUMN, record->accelerator, ACTION_COLUMN, record->action,
-			D1_COLUMN, record->data1, D2_COLUMN, record->data2,
-			CUSTOM_COLUMN, record->custom, -1);
-	}
-#endif
 }
 
 void
 fabulor_key_binding_list_clear (FabulorKeyBindingList *list)
 {
 	g_return_if_fail (list != NULL);
-#if GTK_MAJOR_VERSION >= 4
 	g_list_store_remove_all (list->store);
-#else
-	gtk_list_store_clear (list->store);
-#endif
 }
 
 guint
 fabulor_key_binding_list_get_n_rows (FabulorKeyBindingList *list)
 {
 	g_return_val_if_fail (list != NULL, 0);
-#if GTK_MAJOR_VERSION >= 4
 	return g_list_model_get_n_items (G_LIST_MODEL (list->store));
-#else
-	return (guint) gtk_tree_model_iter_n_children (GTK_TREE_MODEL (list->store), NULL);
-#endif
 }
 
 guint
@@ -662,34 +482,17 @@ fabulor_key_binding_list_add_custom (FabulorKeyBindingList *list)
 	position = fabulor_key_binding_list_get_n_rows (list);
 	fabulor_key_binding_list_append (list, &record);
 	fabulor_key_binding_list_set_selected (list, position);
-#if GTK_MAJOR_VERSION >= 4
 	if (list->view)
 		gtk_column_view_scroll_to (GTK_COLUMN_VIEW (list->view), position, NULL,
 			GTK_LIST_SCROLL_FOCUS, NULL);
-#else
-	if (list->view)
-	{
-		GtkTreePath *path = gtk_tree_path_new_from_indices ((gint) position, -1);
-		GtkTreeViewColumn *column = gtk_tree_view_get_column (
-			GTK_TREE_VIEW (list->view), ACTION_COLUMN);
-		gtk_tree_view_scroll_to_cell (GTK_TREE_VIEW (list->view), path, NULL,
-			FALSE, 0.0, 0.0);
-		gtk_tree_view_set_cursor (GTK_TREE_VIEW (list->view), path, column, TRUE);
-		gtk_tree_path_free (path);
-	}
-#endif
 	return position;
 }
 
 static gboolean
 key_binding_selected_position (FabulorKeyBindingList *list, guint *position)
 {
-#if GTK_MAJOR_VERSION >= 4
 	*position = gtk_single_selection_get_selected (list->selection);
 	return *position != GTK_INVALID_LIST_POSITION;
-#else
-	return key_binding_gtk3_selected_position (list, position);
-#endif
 }
 
 gboolean
@@ -699,19 +502,7 @@ fabulor_key_binding_list_set_selected (FabulorKeyBindingList *list,
 	g_return_val_if_fail (list != NULL, FALSE);
 	if (position >= fabulor_key_binding_list_get_n_rows (list))
 		return FALSE;
-#if GTK_MAJOR_VERSION >= 4
 	return gtk_selection_model_select_item (GTK_SELECTION_MODEL (list->selection), position, TRUE);
-#else
-	if (list->view)
-	{
-		GtkTreePath *path = gtk_tree_path_new_from_indices ((gint) position, -1);
-		gtk_tree_view_set_cursor (GTK_TREE_VIEW (list->view), path, NULL, FALSE);
-		gtk_tree_view_scroll_to_cell (GTK_TREE_VIEW (list->view), path, NULL, FALSE, 0.0, 0.0);
-		gtk_tree_path_free (path);
-		return TRUE;
-	}
-	return FALSE;
-#endif
 }
 
 gboolean
@@ -729,7 +520,6 @@ fabulor_key_binding_list_set_accelerator_at (FabulorKeyBindingList *list,
 		modifiers = list->normalize_func (modifiers, list->callback_data);
 	label = gtk_accelerator_get_label (keyval, modifiers);
 	accelerator = gtk_accelerator_name (keyval, modifiers);
-#if GTK_MAJOR_VERSION >= 4
 	{
 		FabulorKeyBindingRow *row = key_binding_row_at (list, position);
 		g_free (row->key_label);
@@ -738,16 +528,6 @@ fabulor_key_binding_list_set_accelerator_at (FabulorKeyBindingList *list,
 		row->accelerator = accelerator;
 		g_object_unref (row);
 	}
-#else
-	{
-		GtkTreeIter iter;
-		gtk_tree_model_iter_nth_child (GTK_TREE_MODEL (list->store), &iter, NULL, (gint) position);
-		gtk_list_store_set (list->store, &iter, KEY_COLUMN, label,
-			ACCEL_COLUMN, accelerator, -1);
-		g_free (label);
-		g_free (accelerator);
-	}
-#endif
 	return TRUE;
 }
 
@@ -760,7 +540,6 @@ fabulor_key_binding_list_set_text_at (FabulorKeyBindingList *list,
 	if (position >= fabulor_key_binding_list_get_n_rows (list) ||
 		field < FABULOR_KEY_BINDING_ACTION || field > FABULOR_KEY_BINDING_DATA2)
 		return FALSE;
-#if GTK_MAJOR_VERSION >= 4
 	{
 		FabulorKeyBindingRow *row = key_binding_row_at (list, position);
 		gchar **value;
@@ -776,18 +555,6 @@ fabulor_key_binding_list_set_text_at (FabulorKeyBindingList *list,
 		*value = g_strdup (text ? text : "");
 		g_object_unref (row);
 	}
-#else
-	{
-		GtkTreeIter iter;
-		gint column = field == FABULOR_KEY_BINDING_ACTION ? ACTION_COLUMN :
-			field == FABULOR_KEY_BINDING_DATA1 ? D1_COLUMN : D2_COLUMN;
-		gtk_tree_model_iter_nth_child (GTK_TREE_MODEL (list->store), &iter, NULL, (gint) position);
-		gtk_tree_model_get (GTK_TREE_MODEL (list->store), &iter, CUSTOM_COLUMN, &custom, -1);
-		if (!custom)
-			return FALSE;
-		gtk_list_store_set (list->store, &iter, column, text ? text : "", -1);
-	}
-#endif
 	if (field == FABULOR_KEY_BINDING_ACTION && list->selection_func)
 		list->selection_func (text && text[0] ? text : NULL, TRUE,
 			list->callback_data);
@@ -804,7 +571,6 @@ fabulor_key_binding_list_dup_all (FabulorKeyBindingList *list)
 	for (i = 0; i < fabulor_key_binding_list_get_n_rows (list); i++)
 	{
 		FabulorKeyBindingRecord *record = g_new0 (FabulorKeyBindingRecord, 1);
-#if GTK_MAJOR_VERSION >= 4
 		FabulorKeyBindingRow *row = key_binding_row_at (list, i);
 		record->key_label = g_strdup (row->key_label);
 		record->accelerator = g_strdup (row->accelerator);
@@ -813,14 +579,6 @@ fabulor_key_binding_list_dup_all (FabulorKeyBindingList *list)
 		record->data2 = g_strdup (row->data2);
 		record->custom = row->custom;
 		g_object_unref (row);
-#else
-		GtkTreeIter iter;
-		gtk_tree_model_iter_nth_child (GTK_TREE_MODEL (list->store), &iter, NULL, (gint) i);
-		gtk_tree_model_get (GTK_TREE_MODEL (list->store), &iter,
-			KEY_COLUMN, &record->key_label, ACCEL_COLUMN, &record->accelerator,
-			ACTION_COLUMN, &record->action, D1_COLUMN, &record->data1,
-			D2_COLUMN, &record->data2, CUSTOM_COLUMN, &record->custom, -1);
-#endif
 		g_ptr_array_add (rows, record);
 	}
 	return rows;
@@ -844,15 +602,7 @@ fabulor_key_binding_list_remove_selected (FabulorKeyBindingList *list)
 		return FALSE;
 	}
 	g_ptr_array_unref (rows);
-#if GTK_MAJOR_VERSION >= 4
 	g_list_store_remove (list->store, position);
-#else
-	{
-		GtkTreeIter iter;
-		gtk_tree_model_iter_nth_child (GTK_TREE_MODEL (list->store), &iter, NULL, (gint) position);
-		gtk_list_store_remove (list->store, &iter);
-	}
-#endif
 	count = fabulor_key_binding_list_get_n_rows (list);
 	if (position < count)
 		fabulor_key_binding_list_set_selected (list, position);
@@ -882,22 +632,12 @@ fabulor_key_binding_list_move_selected (FabulorKeyBindingList *list, gint delta)
 		return FALSE;
 	}
 	g_ptr_array_unref (rows);
-#if GTK_MAJOR_VERSION >= 4
 	{
 		FabulorKeyBindingRow *row = key_binding_row_at (list, position);
 		g_list_store_remove (list->store, position);
 		g_list_store_insert (list->store, (guint) target, row);
 		g_object_unref (row);
 	}
-#else
-	{
-		GtkTreeIter a;
-		GtkTreeIter b;
-		gtk_tree_model_iter_nth_child (GTK_TREE_MODEL (list->store), &a, NULL, (gint) position);
-		gtk_tree_model_iter_nth_child (GTK_TREE_MODEL (list->store), &b, NULL, target);
-		gtk_list_store_swap (list->store, &a, &b);
-	}
-#endif
 	fabulor_key_binding_list_set_selected (list, (guint) target);
 	return TRUE;
 }

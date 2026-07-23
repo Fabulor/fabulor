@@ -11,12 +11,7 @@
 
 #include "gtk-compat.h"
 
-#if GTK_MAJOR_VERSION >= 4
 #include "gtk4-list-models.h"
-#else
-#include "gtkutil.h"
-#include "theme/theme-gtk.h"
-#endif
 
 typedef struct
 {
@@ -40,11 +35,7 @@ struct _FabulorNotifyList
 	gulong selection_handler;
 	GObject *selection_source;
 	GtkWidget *view;
-#if GTK_MAJOR_VERSION >= 4
 	FabulorGtk4FlatModelStack *models;
-#else
-	GtkListStore *store;
-#endif
 };
 
 static FabulorNotifyPendingRow *
@@ -112,7 +103,6 @@ notify_selection_changed (FabulorNotifyList *list)
 		list->selection_changed (list->selection_data);
 }
 
-#if GTK_MAJOR_VERSION >= 4
 
 typedef struct _FabulorNotifyRow FabulorNotifyRow;
 typedef struct _FabulorNotifyRowClass FabulorNotifyRowClass;
@@ -474,84 +464,6 @@ notify_gtk4_apply_pending (FabulorNotifyList *list)
 	g_ptr_array_unref (items);
 }
 
-#else
-
-enum
-{
-	NOTIFY_COLUMN_NAME,
-	NOTIFY_COLUMN_STATUS,
-	NOTIFY_COLUMN_NETWORK,
-	NOTIFY_COLUMN_LAST_SEEN,
-	NOTIFY_COLUMN_FOREGROUND,
-	NOTIFY_COLUMN_OWNER_NAME,
-	NOTIFY_COLUMN_OWNER,
-	NOTIFY_COLUMN_SERVER_DATA,
-	N_NOTIFY_COLUMNS
-};
-
-static void
-notify_treecell_property_mapper (GtkTreeViewColumn *column,
-							 GtkCellRenderer *cell, GtkTreeModel *model,
-							 GtkTreeIter *iter, gpointer user_data)
-{
-	gchar *text;
-	GdkRGBA *colour;
-	gint model_column = GPOINTER_TO_INT (user_data);
-
-	(void) column;
-	gtk_tree_model_get (model, iter, NOTIFY_COLUMN_FOREGROUND, &colour,
-		model_column, &text, -1);
-	g_object_set (cell, "text", text, THEME_GTK_FOREGROUND_PROPERTY, colour,
-		NULL);
-	if (colour)
-		gdk_rgba_free (colour);
-	g_free (text);
-}
-
-static void
-notify_gtk3_selection_changed (GtkTreeSelection *selection, gpointer user_data)
-{
-	(void) selection;
-	notify_selection_changed (user_data);
-}
-
-static gboolean
-notify_gtk3_get_selected (FabulorNotifyList *list, GtkTreeIter *iter)
-{
-	GtkTreeSelection *selection;
-
-	if (!list->view)
-		return FALSE;
-	selection = gtk_tree_view_get_selection (GTK_TREE_VIEW (list->view));
-	return gtk_tree_selection_get_selected (selection, NULL, iter);
-}
-
-static void
-notify_gtk3_apply_pending (FabulorNotifyList *list)
-{
-	guint i;
-
-	gtk_list_store_clear (list->store);
-	for (i = 0; i < list->pending->len; i++)
-	{
-		FabulorNotifyPendingRow *row = g_ptr_array_index (list->pending, i);
-		GtkTreeIter iter;
-
-		gtk_list_store_append (list->store, &iter);
-		gtk_list_store_set (list->store, &iter,
-			NOTIFY_COLUMN_NAME, row->display_name,
-			NOTIFY_COLUMN_STATUS, row->status,
-			NOTIFY_COLUMN_NETWORK, row->network,
-			NOTIFY_COLUMN_LAST_SEEN, row->last_seen,
-			NOTIFY_COLUMN_FOREGROUND,
-			row->has_foreground ? &row->foreground : NULL,
-			NOTIFY_COLUMN_OWNER_NAME, row->owner_name,
-			NOTIFY_COLUMN_OWNER, row->owner,
-			NOTIFY_COLUMN_SERVER_DATA, row->server_data, -1);
-	}
-}
-
-#endif
 
 FabulorNotifyList *
 fabulor_notify_list_new (
@@ -563,7 +475,6 @@ fabulor_notify_list_new (
 	list->pending = g_ptr_array_new_with_free_func (pending_row_free);
 	list->selection_changed = selection_changed;
 	list->selection_data = user_data;
-#if GTK_MAJOR_VERSION >= 4
 	list->models = fabulor_gtk4_flat_model_stack_new (FABULOR_TYPE_NOTIFY_ROW,
 		NULL, FABULOR_GTK4_SELECTION_SINGLE);
 	if (!list->models)
@@ -575,11 +486,6 @@ fabulor_notify_list_new (
 		fabulor_gtk4_flat_model_stack_get_selection (list->models)));
 	list->selection_handler = g_signal_connect (list->selection_source,
 		"selection-changed", G_CALLBACK (notify_gtk4_selection_changed), list);
-#else
-	list->store = gtk_list_store_new (N_NOTIFY_COLUMNS, G_TYPE_STRING,
-		G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING, THEME_GTK_COLOR_TYPE,
-		G_TYPE_STRING, G_TYPE_POINTER, G_TYPE_POINTER);
-#endif
 	return list;
 }
 
@@ -589,19 +495,11 @@ fabulor_notify_list_free (FabulorNotifyList *list)
 	if (!list)
 		return;
 
-#if GTK_MAJOR_VERSION >= 4
 	if (list->selection_handler && list->selection_source)
 		g_signal_handler_disconnect (list->selection_source,
 			list->selection_handler);
 	g_clear_object (&list->selection_source);
 	fabulor_gtk4_flat_model_stack_free (list->models);
-#else
-	if (list->selection_handler && list->selection_source)
-		g_signal_handler_disconnect (list->selection_source,
-			list->selection_handler);
-	g_clear_object (&list->selection_source);
-	g_clear_object (&list->store);
-#endif
 	g_ptr_array_unref (list->pending);
 	g_free (list);
 }
@@ -617,7 +515,6 @@ fabulor_notify_list_create_view (FabulorNotifyList *list, GtkBox *parent,
 	g_return_val_if_fail (GTK_IS_BOX (parent), NULL);
 	g_return_val_if_fail (list->view == NULL, NULL);
 
-#if GTK_MAJOR_VERSION >= 4
 	{
 		GtkWidget *scroller = gtk_scrolled_window_new ();
 		GtkSelectionModel *selection =
@@ -643,34 +540,6 @@ fabulor_notify_list_create_view (FabulorNotifyList *list, GtkBox *parent,
 		gtk_widget_set_hexpand (scroller, TRUE);
 		fabulor_gtk_box_append (parent, scroller, TRUE, TRUE, 0);
 	}
-#else
-	list->view = gtkutil_treeview_new (parent,
-		GTK_TREE_MODEL (g_object_ref (list->store)),
-		notify_treecell_property_mapper,
-		NOTIFY_COLUMN_NAME, (gchar *) name_title,
-		NOTIFY_COLUMN_STATUS, (gchar *) status_title,
-		NOTIFY_COLUMN_NETWORK, (gchar *) network_title,
-		NOTIFY_COLUMN_LAST_SEEN, (gchar *) last_seen_title, -1);
-	if (list->view)
-	{
-		GtkTreeViewColumn *column;
-		gint column_id;
-		GtkWidget *scroller = gtk_widget_get_parent (list->view);
-
-		gtk_box_set_child_packing (parent, scroller, TRUE, TRUE, 0,
-			GTK_PACK_START);
-		gtk_tree_view_column_set_expand (gtk_tree_view_get_column (
-			GTK_TREE_VIEW (list->view), 0), TRUE);
-		for (column_id = 0; (column = gtk_tree_view_get_column (
-			GTK_TREE_VIEW (list->view), column_id)); column_id++)
-			gtk_tree_view_column_set_alignment (column, 0.5f);
-		list->selection_source = g_object_ref (gtk_tree_view_get_selection (
-			GTK_TREE_VIEW (list->view)));
-		list->selection_handler = g_signal_connect (list->selection_source, "changed",
-			G_CALLBACK (notify_gtk3_selection_changed), list);
-		gtk_widget_show (list->view);
-	}
-#endif
 	return list->view;
 }
 
@@ -714,7 +583,6 @@ static gboolean
 notify_list_get_selected_identity (FabulorNotifyList *list, gpointer *owner,
 								   gpointer *server_data)
 {
-#if GTK_MAJOR_VERSION >= 4
 	FabulorNotifyRow *row = notify_gtk4_selected_row (list);
 
 	if (!row)
@@ -722,15 +590,6 @@ notify_list_get_selected_identity (FabulorNotifyList *list, gpointer *owner,
 	*owner = row->data->owner;
 	*server_data = row->data->server_data;
 	return TRUE;
-#else
-	GtkTreeIter iter;
-
-	if (!notify_gtk3_get_selected (list, &iter))
-		return FALSE;
-	gtk_tree_model_get (GTK_TREE_MODEL (list->store), &iter,
-		NOTIFY_COLUMN_OWNER, owner, NOTIFY_COLUMN_SERVER_DATA, server_data, -1);
-	return TRUE;
-#endif
 }
 
 void
@@ -746,28 +605,16 @@ fabulor_notify_list_end_update (FabulorNotifyList *list)
 		&selected_server);
 	if (list->selection_handler)
 	{
-#if GTK_MAJOR_VERSION >= 4
 		g_signal_handler_block (list->selection_source, list->selection_handler);
-#else
-		g_signal_handler_block (list->selection_source, list->selection_handler);
-#endif
 	}
 
-#if GTK_MAJOR_VERSION >= 4
 	notify_gtk4_apply_pending (list);
-#else
-	notify_gtk3_apply_pending (list);
-#endif
 	if (had_selection)
 		fabulor_notify_list_select_identity (list, selected_owner, selected_server);
 
 	if (list->selection_handler)
 	{
-#if GTK_MAJOR_VERSION >= 4
 		g_signal_handler_unblock (list->selection_source, list->selection_handler);
-#else
-		g_signal_handler_unblock (list->selection_source, list->selection_handler);
-#endif
 	}
 	list->updating = FALSE;
 	g_ptr_array_set_size (list->pending, 0);
@@ -778,13 +625,8 @@ guint
 fabulor_notify_list_get_n_rows (FabulorNotifyList *list)
 {
 	g_return_val_if_fail (list != NULL, 0);
-#if GTK_MAJOR_VERSION >= 4
 	return g_list_model_get_n_items (G_LIST_MODEL (
 		fabulor_gtk4_flat_model_stack_get_store (list->models)));
-#else
-	return (guint) gtk_tree_model_iter_n_children (
-		GTK_TREE_MODEL (list->store), NULL);
-#endif
 }
 
 gboolean
@@ -801,21 +643,10 @@ gchar *
 fabulor_notify_list_dup_selected_name (FabulorNotifyList *list)
 {
 	g_return_val_if_fail (list != NULL, NULL);
-#if GTK_MAJOR_VERSION >= 4
 	{
 		FabulorNotifyRow *row = notify_gtk4_selected_row (list);
 		return row ? g_strdup (row->data->owner_name) : NULL;
 	}
-#else
-	{
-		GtkTreeIter iter;
-		gchar *name = NULL;
-		if (notify_gtk3_get_selected (list, &iter))
-			gtk_tree_model_get (GTK_TREE_MODEL (list->store), &iter,
-				NOTIFY_COLUMN_OWNER_NAME, &name, -1);
-		return name;
-	}
-#endif
 }
 
 gpointer
@@ -840,7 +671,6 @@ fabulor_notify_list_select_identity (FabulorNotifyList *list, gpointer owner,
 	g_return_val_if_fail (list != NULL, FALSE);
 	g_return_val_if_fail (owner != NULL, FALSE);
 
-#if GTK_MAJOR_VERSION >= 4
 	{
 		GListModel *model = G_LIST_MODEL (
 			fabulor_gtk4_flat_model_stack_get_store (list->models));
@@ -866,44 +696,4 @@ fabulor_notify_list_select_identity (FabulorNotifyList *list, gpointer owner,
 		gtk_selection_model_unselect_all (selection);
 		return FALSE;
 	}
-#else
-	{
-		GtkTreeIter iter;
-		GtkTreeIter fallback;
-		gboolean valid = gtk_tree_model_get_iter_first (
-			GTK_TREE_MODEL (list->store), &iter);
-		gboolean have_fallback = FALSE;
-		GtkTreeSelection *selection;
-
-		if (!list->view)
-			return FALSE;
-		selection = gtk_tree_view_get_selection (GTK_TREE_VIEW (list->view));
-		while (valid)
-		{
-			gpointer row_owner;
-			gpointer row_server;
-			gtk_tree_model_get (GTK_TREE_MODEL (list->store), &iter,
-				NOTIFY_COLUMN_OWNER, &row_owner,
-				NOTIFY_COLUMN_SERVER_DATA, &row_server, -1);
-			if (row_owner == owner && !have_fallback)
-			{
-				fallback = iter;
-				have_fallback = TRUE;
-			}
-			if (row_owner == owner && row_server == server_data)
-			{
-				gtk_tree_selection_select_iter (selection, &iter);
-				return TRUE;
-			}
-			valid = gtk_tree_model_iter_next (GTK_TREE_MODEL (list->store), &iter);
-		}
-		if (have_fallback)
-		{
-			gtk_tree_selection_select_iter (selection, &fallback);
-			return TRUE;
-		}
-		gtk_tree_selection_unselect_all (selection);
-		return FALSE;
-	}
-#endif
 }

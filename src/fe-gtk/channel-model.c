@@ -9,9 +9,7 @@
 
 #include "channel-model.h"
 
-#if GTK_MAJOR_VERSION >= 4
 #include "gtk4-list-models.h"
-#endif
 
 typedef struct _FabulorChannelRecord FabulorChannelRecord;
 typedef struct _FabulorChannelRecordClass FabulorChannelRecordClass;
@@ -26,11 +24,7 @@ struct _FabulorChannelRecord
 	PangoAttrList *attributes;
 	GdkPixbuf *icon;
 	PangoUnderline underline;
-#if GTK_MAJOR_VERSION >= 4
 	GListStore *child_store;
-#else
-	GtkTreeRowReference *reference;
-#endif
 };
 
 struct _FabulorChannelRecordClass
@@ -42,11 +36,7 @@ struct _FabulorChannelModel
 {
 	GHashTable *records;
 	GPtrArray *roots;
-#if GTK_MAJOR_VERSION >= 4
 	FabulorGtk4TreeModelStack *models;
-#else
-	GtkTreeStore *store;
-#endif
 };
 
 enum
@@ -97,12 +87,7 @@ fabulor_channel_record_finalize (GObject *object)
 {
 	FabulorChannelRecord *record = FABULOR_CHANNEL_RECORD (object);
 
-#if GTK_MAJOR_VERSION >= 4
 	g_clear_object (&record->child_store);
-#else
-	if (record->reference)
-		gtk_tree_row_reference_free (record->reference);
-#endif
 	g_clear_pointer (&record->children, g_ptr_array_unref);
 	g_clear_pointer (&record->attributes, pango_attr_list_unref);
 	g_clear_object (&record->icon);
@@ -137,9 +122,7 @@ static void
 fabulor_channel_record_init (FabulorChannelRecord *record)
 {
 	record->children = g_ptr_array_new ();
-#if GTK_MAJOR_VERSION >= 4
 	record->child_store = g_list_store_new (FABULOR_TYPE_CHANNEL_RECORD);
-#endif
 }
 
 static FabulorChannelRecord *
@@ -222,7 +205,6 @@ channel_record_siblings (FabulorChannelModel *model,
 	return record->parent ? record->parent->children : model->roots;
 }
 
-#if GTK_MAJOR_VERSION >= 4
 
 static GListStore *
 channel_record_store (FabulorChannelModel *model, FabulorChannelRecord *parent)
@@ -298,59 +280,6 @@ fabulor_channel_model_select_identity (FabulorChannelModel *model,
 	return FALSE;
 }
 
-#else
-
-static gboolean
-channel_record_get_iter (FabulorChannelRecord *record, GtkTreeIter *iter)
-{
-	GtkTreePath *path;
-	GtkTreeModel *model;
-
-	if (!record || !record->reference)
-		return FALSE;
-	path = gtk_tree_row_reference_get_path (record->reference);
-	if (!path)
-		return FALSE;
-	model = gtk_tree_row_reference_get_model (record->reference);
-	if (!gtk_tree_model_get_iter (model, iter, path))
-	{
-		gtk_tree_path_free (path);
-		return FALSE;
-	}
-	gtk_tree_path_free (path);
-	return TRUE;
-}
-
-static gboolean
-channel_record_insert_gtk3 (FabulorChannelModel *model,
-	FabulorChannelRecord *record, FabulorChannelRecord *parent, guint position)
-{
-	GtkTreeIter iter;
-	GtkTreeIter parent_iter;
-	GtkTreeIter *parent_ptr = NULL;
-	GtkTreePath *path;
-
-	if (parent)
-	{
-		if (!channel_record_get_iter (parent, &parent_iter))
-			return FALSE;
-		parent_ptr = &parent_iter;
-	}
-	gtk_tree_store_insert (model->store, &iter, parent_ptr, (gint) position);
-	gtk_tree_store_set (model->store, &iter,
-		FABULOR_CHANNEL_COLUMN_NAME, record->name,
-		FABULOR_CHANNEL_COLUMN_IDENTITY, record->identity,
-		FABULOR_CHANNEL_COLUMN_ATTRIBUTES, record->attributes,
-		FABULOR_CHANNEL_COLUMN_ICON, record->icon,
-		FABULOR_CHANNEL_COLUMN_UNDERLINE, record->underline, -1);
-	path = gtk_tree_model_get_path (GTK_TREE_MODEL (model->store), &iter);
-	record->reference = gtk_tree_row_reference_new (
-		GTK_TREE_MODEL (model->store), path);
-	gtk_tree_path_free (path);
-	return record->reference != NULL;
-}
-
-#endif
 
 FabulorChannelModel *
 fabulor_channel_model_new (void)
@@ -360,7 +289,6 @@ fabulor_channel_model_new (void)
 	model->records = g_hash_table_new_full (g_direct_hash, g_direct_equal,
 		NULL, g_object_unref);
 	model->roots = g_ptr_array_new ();
-#if GTK_MAJOR_VERSION >= 4
 	model->models = fabulor_gtk4_tree_model_stack_new (
 		FABULOR_TYPE_CHANNEL_RECORD, FALSE, channel_record_create_children,
 		NULL, NULL);
@@ -369,11 +297,6 @@ fabulor_channel_model_new (void)
 		fabulor_channel_model_free (model);
 		return NULL;
 	}
-#else
-	model->store = gtk_tree_store_new (FABULOR_CHANNEL_N_COLUMNS,
-		G_TYPE_STRING, G_TYPE_POINTER, PANGO_TYPE_ATTR_LIST, GDK_TYPE_PIXBUF,
-		G_TYPE_INT);
-#endif
 	return model;
 }
 
@@ -383,11 +306,7 @@ fabulor_channel_model_free (FabulorChannelModel *model)
 	if (!model)
 		return;
 	g_clear_pointer (&model->records, g_hash_table_destroy);
-#if GTK_MAJOR_VERSION >= 4
 	fabulor_gtk4_tree_model_stack_free (model->models);
-#else
-	g_clear_object (&model->store);
-#endif
 	g_clear_pointer (&model->roots, g_ptr_array_unref);
 	g_free (model);
 }
@@ -400,10 +319,8 @@ fabulor_channel_model_insert (FabulorChannelModel *model,
 		parent_identity);
 	FabulorChannelRecord *record;
 	GPtrArray *siblings;
-#if GTK_MAJOR_VERSION >= 4
 	gpointer selected_identity = fabulor_channel_model_get_selected_identity (
 		model);
-#endif
 
 	g_return_val_if_fail (model != NULL, FALSE);
 	g_return_val_if_fail (row != NULL && row->identity != NULL, FALSE);
@@ -416,17 +333,8 @@ fabulor_channel_model_insert (FabulorChannelModel *model,
 	position = MIN (position, siblings->len);
 	g_ptr_array_insert (siblings, position, record);
 	g_hash_table_insert (model->records, row->identity, record);
-#if GTK_MAJOR_VERSION >= 4
 	g_list_store_insert (channel_record_store (model, parent), position, record);
 	fabulor_channel_model_select_identity (model, selected_identity);
-#else
-	if (!channel_record_insert_gtk3 (model, record, parent, position))
-	{
-		g_ptr_array_remove_index (siblings, position);
-		g_hash_table_remove (model->records, row->identity);
-		return FALSE;
-	}
-#endif
 	return TRUE;
 }
 
@@ -442,18 +350,6 @@ fabulor_channel_model_update (FabulorChannelModel *model,
 	if (!record)
 		return FALSE;
 	channel_record_update (record, row);
-#if GTK_MAJOR_VERSION < 4
-	{
-		GtkTreeIter iter;
-		if (!channel_record_get_iter (record, &iter))
-			return FALSE;
-		gtk_tree_store_set (model->store, &iter,
-			FABULOR_CHANNEL_COLUMN_NAME, record->name,
-			FABULOR_CHANNEL_COLUMN_ATTRIBUTES, record->attributes,
-			FABULOR_CHANNEL_COLUMN_ICON, record->icon,
-			FABULOR_CHANNEL_COLUMN_UNDERLINE, record->underline, -1);
-	}
-#endif
 	return TRUE;
 }
 
@@ -463,10 +359,8 @@ fabulor_channel_model_remove (FabulorChannelModel *model, gpointer identity)
 	FabulorChannelRecord *record = channel_record_lookup (model, identity);
 	GPtrArray *siblings;
 	guint position;
-#if GTK_MAJOR_VERSION >= 4
 	gpointer selected_identity = fabulor_channel_model_get_selected_identity (
 		model);
-#endif
 
 	if (!record || record->children->len != 0)
 		return FALSE;
@@ -474,22 +368,11 @@ fabulor_channel_model_remove (FabulorChannelModel *model, gpointer identity)
 	position = channel_array_index (siblings, record);
 	if (position == G_MAXUINT)
 		return FALSE;
-#if GTK_MAJOR_VERSION >= 4
 	g_list_store_remove (channel_record_store (model, record->parent), position);
-#else
-	{
-		GtkTreeIter iter;
-		if (!channel_record_get_iter (record, &iter))
-			return FALSE;
-		gtk_tree_store_remove (model->store, &iter);
-	}
-#endif
 	g_ptr_array_remove_index (siblings, position);
 	g_hash_table_remove (model->records, identity);
-#if GTK_MAJOR_VERSION >= 4
 	fabulor_channel_model_select_identity (model,
 		selected_identity == identity ? NULL : selected_identity);
-#endif
 	return TRUE;
 }
 
@@ -504,10 +387,8 @@ fabulor_channel_model_reparent (FabulorChannelModel *model, gpointer identity,
 	GPtrArray *old_siblings;
 	GPtrArray *new_siblings;
 	guint old_position;
-#if GTK_MAJOR_VERSION >= 4
 	gpointer selected_identity = fabulor_channel_model_get_selected_identity (
 		model);
-#endif
 
 	if (!record || record->children->len != 0 || record == parent ||
 		(parent_identity && (!parent || parent->parent)))
@@ -522,29 +403,13 @@ fabulor_channel_model_reparent (FabulorChannelModel *model, gpointer identity,
 		position--;
 	position = MIN (position, new_siblings->len -
 		(old_siblings == new_siblings ? 1 : 0));
-#if GTK_MAJOR_VERSION >= 4
 	g_list_store_remove (channel_record_store (model, old_parent), old_position);
-#else
-	{
-		GtkTreeIter iter;
-		if (!channel_record_get_iter (record, &iter))
-			return FALSE;
-		gtk_tree_store_remove (model->store, &iter);
-		gtk_tree_row_reference_free (record->reference);
-		record->reference = NULL;
-	}
-#endif
 	g_ptr_array_remove_index (old_siblings, old_position);
 	record->parent = parent;
 	position = MIN (position, new_siblings->len);
 	g_ptr_array_insert (new_siblings, position, record);
-#if GTK_MAJOR_VERSION >= 4
 	g_list_store_insert (channel_record_store (model, parent), position, record);
 	fabulor_channel_model_select_identity (model, selected_identity);
-#else
-	if (!channel_record_insert_gtk3 (model, record, parent, position))
-		return FALSE;
-#endif
 	return TRUE;
 }
 
@@ -557,10 +422,8 @@ fabulor_channel_model_move_cyclic (FabulorChannelModel *model,
 	guint old_position;
 	guint new_position;
 	gint normalized;
-#if GTK_MAJOR_VERSION >= 4
 	gpointer selected_identity = fabulor_channel_model_get_selected_identity (
 		model);
-#endif
 
 	if (!record)
 		return FALSE;
@@ -578,33 +441,12 @@ fabulor_channel_model_move_cyclic (FabulorChannelModel *model,
 		return TRUE;
 	g_ptr_array_remove_index (siblings, old_position);
 	g_ptr_array_insert (siblings, new_position, record);
-#if GTK_MAJOR_VERSION >= 4
 	{
 		GListStore *store = channel_record_store (model, record->parent);
 		g_list_store_remove (store, old_position);
 		g_list_store_insert (store, new_position, record);
 		fabulor_channel_model_select_identity (model, selected_identity);
 	}
-#else
-	{
-		GtkTreeIter iter;
-		GtkTreeIter successor;
-		FabulorChannelRecord *next = new_position + 1 < siblings->len ?
-			g_ptr_array_index (siblings, new_position + 1) : NULL;
-		if (!channel_record_get_iter (record, &iter))
-			return FALSE;
-		if (next)
-		{
-			if (!channel_record_get_iter (next, &successor))
-				return FALSE;
-			gtk_tree_store_move_before (model->store, &iter, &successor);
-		}
-		else
-		{
-			gtk_tree_store_move_before (model->store, &iter, NULL);
-		}
-	}
-#endif
 	return TRUE;
 }
 
@@ -722,7 +564,6 @@ fabulor_channel_model_ref_attributes (FabulorChannelModel *model,
 		pango_attr_list_ref (record->attributes) : NULL;
 }
 
-#if GTK_MAJOR_VERSION >= 4
 
 GtkTreeListModel *
 fabulor_channel_model_get_tree (FabulorChannelModel *model)
@@ -776,21 +617,3 @@ fabulor_channel_model_get_item_underline (gpointer item)
 		FABULOR_TYPE_CHANNEL_RECORD), PANGO_UNDERLINE_NONE);
 	return FABULOR_CHANNEL_RECORD (item)->underline;
 }
-
-#else
-
-GtkTreeModel *
-fabulor_channel_model_get_tree_model (FabulorChannelModel *model)
-{
-	return model ? GTK_TREE_MODEL (model->store) : NULL;
-}
-
-gboolean
-fabulor_channel_model_get_iter (FabulorChannelModel *model, gpointer identity,
-	GtkTreeIter *iter)
-{
-	return channel_record_get_iter (channel_record_lookup (model, identity),
-		iter);
-}
-
-#endif

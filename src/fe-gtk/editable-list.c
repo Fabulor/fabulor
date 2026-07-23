@@ -11,19 +11,13 @@
 
 #include "gtk-compat.h"
 
-#if GTK_MAJOR_VERSION >= 4
 #include "gtk4-list-models.h"
-#endif
 
 struct _FabulorEditableList
 {
 	GtkWidget *view;
-#if GTK_MAJOR_VERSION >= 4
 	FabulorGtk4FlatModelStack *models;
 	GObject *edit_row;
-#else
-	GtkListStore *store;
-#endif
 };
 
 void
@@ -36,7 +30,6 @@ fabulor_editable_list_record_free (FabulorEditableListRecord *record)
 	g_free (record);
 }
 
-#if GTK_MAJOR_VERSION >= 4
 
 typedef struct _FabulorEditableRow FabulorEditableRow;
 typedef struct _FabulorEditableRowClass FabulorEditableRowClass;
@@ -374,62 +367,12 @@ editable_column_new (FabulorEditableList *list, const gchar *title,
 	return column;
 }
 
-#else
-
-enum
-{
-	EDITABLE_NAME_COLUMN,
-	EDITABLE_COMMAND_COLUMN,
-	N_EDITABLE_COLUMNS
-};
-
-static void
-editable_gtk3_edited (GtkCellRendererText *renderer, gchar *path_string,
-	gchar *new_text, gpointer user_data)
-{
-	FabulorEditableList *list = user_data;
-	GtkTreePath *path = gtk_tree_path_new_from_string (path_string);
-	GtkTreeIter iter;
-	gint column = GPOINTER_TO_INT (g_object_get_data (G_OBJECT (renderer),
-		"fabulor-editable-column"));
-
-	if (gtk_tree_model_get_iter (GTK_TREE_MODEL (list->store), &iter, path))
-		gtk_list_store_set (list->store, &iter, column,
-			new_text ? new_text : "", -1);
-	gtk_tree_path_free (path);
-}
-
-static void
-editable_gtk3_add_column (FabulorEditableList *list, const gchar *title,
-	gint column_id)
-{
-	GtkCellRenderer *renderer = gtk_cell_renderer_text_new ();
-	GtkTreeViewColumn *column;
-
-	g_object_set (renderer, "editable", TRUE, NULL);
-	g_object_set_data (G_OBJECT (renderer), "fabulor-editable-column",
-		GINT_TO_POINTER (column_id));
-	g_signal_connect (renderer, "edited", G_CALLBACK (editable_gtk3_edited),
-		list);
-	gtk_tree_view_insert_column_with_attributes (GTK_TREE_VIEW (list->view),
-		column_id, title, renderer, "text", column_id, NULL);
-	column = gtk_tree_view_get_column (GTK_TREE_VIEW (list->view), column_id);
-	gtk_tree_view_column_set_resizable (column, TRUE);
-	if (column_id == EDITABLE_NAME_COLUMN)
-	{
-		gtk_tree_view_column_set_sizing (column, GTK_TREE_VIEW_COLUMN_AUTOSIZE);
-		gtk_tree_view_column_set_min_width (column, 100);
-	}
-}
-
-#endif
 
 FabulorEditableList *
 fabulor_editable_list_new (void)
 {
 	FabulorEditableList *list = g_new0 (FabulorEditableList, 1);
 
-#if GTK_MAJOR_VERSION >= 4
 	list->models = fabulor_gtk4_flat_model_stack_new (FABULOR_TYPE_EDITABLE_ROW,
 		NULL, FABULOR_GTK4_SELECTION_SINGLE);
 	if (!list->models)
@@ -437,10 +380,6 @@ fabulor_editable_list_new (void)
 		g_free (list);
 		return NULL;
 	}
-#else
-	list->store = gtk_list_store_new (N_EDITABLE_COLUMNS, G_TYPE_STRING,
-		G_TYPE_STRING);
-#endif
 	return list;
 }
 
@@ -449,12 +388,8 @@ fabulor_editable_list_free (FabulorEditableList *list)
 {
 	if (!list)
 		return;
-#if GTK_MAJOR_VERSION >= 4
 	g_clear_object (&list->edit_row);
 	fabulor_gtk4_flat_model_stack_free (list->models);
-#else
-	g_clear_object (&list->store);
-#endif
 	g_free (list);
 }
 
@@ -465,7 +400,6 @@ fabulor_editable_list_create_view (FabulorEditableList *list, GtkBox *parent,
 	GtkWidget *scroller;
 
 	g_return_val_if_fail (list && GTK_IS_BOX (parent) && !list->view, NULL);
-#if GTK_MAJOR_VERSION >= 4
 	scroller = gtk_scrolled_window_new ();
 	list->view = gtk_column_view_new (GTK_SELECTION_MODEL (g_object_ref (
 		fabulor_gtk4_flat_model_stack_get_selection (list->models))));
@@ -476,21 +410,6 @@ fabulor_editable_list_create_view (FabulorEditableList *list, GtkBox *parent,
 		editable_column_new (list, command_title, FABULOR_EDITABLE_LIST_COMMAND,
 		TRUE));
 	gtk_column_view_set_show_row_separators (GTK_COLUMN_VIEW (list->view), TRUE);
-#else
-	scroller = gtk_scrolled_window_new (NULL, NULL);
-	gtk_scrolled_window_set_shadow_type (GTK_SCROLLED_WINDOW (scroller),
-		GTK_SHADOW_IN);
-	list->view = gtk_tree_view_new_with_model (GTK_TREE_MODEL (
-		g_object_ref (list->store)));
-	gtk_tree_view_set_fixed_height_mode (GTK_TREE_VIEW (list->view), TRUE);
-	gtk_tree_view_set_enable_search (GTK_TREE_VIEW (list->view), FALSE);
-	gtk_tree_view_set_reorderable (GTK_TREE_VIEW (list->view), TRUE);
-	gtk_tree_view_set_grid_lines (GTK_TREE_VIEW (list->view),
-		GTK_TREE_VIEW_GRID_LINES_HORIZONTAL);
-	editable_gtk3_add_column (list, name_title, EDITABLE_NAME_COLUMN);
-	editable_gtk3_add_column (list, command_title, EDITABLE_COMMAND_COLUMN);
-	gtk_widget_show (list->view);
-#endif
 	gtk_scrolled_window_set_policy (GTK_SCROLLED_WINDOW (scroller),
 		GTK_POLICY_AUTOMATIC, GTK_POLICY_AUTOMATIC);
 	fabulor_gtk_scrolled_window_set_child (GTK_SCROLLED_WINDOW (scroller),
@@ -498,9 +417,6 @@ fabulor_editable_list_create_view (FabulorEditableList *list, GtkBox *parent,
 	gtk_widget_set_hexpand (scroller, TRUE);
 	gtk_widget_set_vexpand (scroller, TRUE);
 	fabulor_gtk_box_append (parent, scroller, TRUE, TRUE, 0);
-#if GTK_MAJOR_VERSION < 4
-	gtk_widget_show (scroller);
-#endif
 	return list->view;
 }
 
@@ -509,33 +425,18 @@ fabulor_editable_list_append (FabulorEditableList *list, const gchar *name,
 	const gchar *command)
 {
 	g_return_if_fail (list != NULL);
-#if GTK_MAJOR_VERSION >= 4
 	{
 		FabulorEditableRow *row = editable_row_new (name, command);
 		g_list_store_append (editable_store (list), row);
 		g_object_unref (row);
 	}
-#else
-	{
-		GtkTreeIter iter;
-		gtk_list_store_append (list->store, &iter);
-		gtk_list_store_set (list->store, &iter,
-			EDITABLE_NAME_COLUMN, name ? name : "",
-			EDITABLE_COMMAND_COLUMN, command ? command : "", -1);
-	}
-#endif
 }
 
 guint
 fabulor_editable_list_get_n_rows (FabulorEditableList *list)
 {
 	g_return_val_if_fail (list != NULL, 0);
-#if GTK_MAJOR_VERSION >= 4
 	return g_list_model_get_n_items (G_LIST_MODEL (editable_store (list)));
-#else
-	return (guint) gtk_tree_model_iter_n_children (
-		GTK_TREE_MODEL (list->store), NULL);
-#endif
 }
 
 gboolean
@@ -544,7 +445,6 @@ fabulor_editable_list_set_selected (FabulorEditableList *list, guint position)
 	g_return_val_if_fail (list != NULL, FALSE);
 	if (position >= fabulor_editable_list_get_n_rows (list))
 		return FALSE;
-#if GTK_MAJOR_VERSION >= 4
 	if (!gtk_selection_model_select_item (editable_selection (list), position,
 		TRUE))
 		return FALSE;
@@ -552,16 +452,6 @@ fabulor_editable_list_set_selected (FabulorEditableList *list, guint position)
 		gtk_column_view_scroll_to (GTK_COLUMN_VIEW (list->view), position, NULL,
 			GTK_LIST_SCROLL_FOCUS, NULL);
 	return TRUE;
-#else
-	if (list->view)
-	{
-		GtkTreePath *path = gtk_tree_path_new_from_indices ((gint) position, -1);
-		gtk_tree_view_set_cursor (GTK_TREE_VIEW (list->view), path, NULL, FALSE);
-		gtk_tree_path_free (path);
-		return TRUE;
-	}
-	return FALSE;
-#endif
 }
 
 void
@@ -572,7 +462,6 @@ fabulor_editable_list_add_empty (FabulorEditableList *list)
 	g_return_if_fail (list != NULL);
 	position = fabulor_editable_list_get_n_rows (list);
 	fabulor_editable_list_append (list, "", "");
-#if GTK_MAJOR_VERSION >= 4
 	{
 		FabulorEditableRow *row = editable_row_at (list, position);
 		g_set_object (&list->edit_row, G_OBJECT (row));
@@ -582,48 +471,17 @@ fabulor_editable_list_add_empty (FabulorEditableList *list)
 			gtk_column_view_scroll_to (GTK_COLUMN_VIEW (list->view), position,
 				NULL, GTK_LIST_SCROLL_FOCUS, NULL);
 	}
-#else
-	if (list->view)
-	{
-		GtkTreePath *path = gtk_tree_path_new_from_indices ((gint) position, -1);
-		GtkTreeViewColumn *column = gtk_tree_view_get_column (
-			GTK_TREE_VIEW (list->view), EDITABLE_NAME_COLUMN);
-		gtk_tree_view_scroll_to_cell (GTK_TREE_VIEW (list->view), path, NULL,
-			FALSE, 0.0f, 0.0f);
-		gtk_tree_view_set_cursor (GTK_TREE_VIEW (list->view), path, column, TRUE);
-		gtk_tree_path_free (path);
-	}
-#endif
 }
 
 static gboolean
 editable_list_selected_position (FabulorEditableList *list, guint *position)
 {
-#if GTK_MAJOR_VERSION >= 4
 	guint selected = gtk_single_selection_get_selected (GTK_SINGLE_SELECTION (
 		editable_selection (list)));
 	if (selected == GTK_INVALID_LIST_POSITION)
 		return FALSE;
 	*position = selected;
 	return TRUE;
-#else
-	if (list->view)
-	{
-		GtkTreeIter iter;
-		GtkTreeModel *model;
-		GtkTreePath *path;
-		gint *indices;
-		if (!gtk_tree_selection_get_selected (gtk_tree_view_get_selection (
-			GTK_TREE_VIEW (list->view)), &model, &iter))
-			return FALSE;
-		path = gtk_tree_model_get_path (model, &iter);
-		indices = gtk_tree_path_get_indices (path);
-		*position = (guint) indices[0];
-		gtk_tree_path_free (path);
-		return TRUE;
-	}
-	return FALSE;
-#endif
 }
 
 gboolean
@@ -635,17 +493,7 @@ fabulor_editable_list_remove_selected (FabulorEditableList *list)
 	g_return_val_if_fail (list != NULL, FALSE);
 	if (!editable_list_selected_position (list, &position))
 		return FALSE;
-#if GTK_MAJOR_VERSION >= 4
 	g_list_store_remove (editable_store (list), position);
-#else
-	{
-		GtkTreeIter iter;
-		if (!gtk_tree_model_iter_nth_child (GTK_TREE_MODEL (list->store), &iter,
-			NULL, (gint) position))
-			return FALSE;
-		gtk_list_store_remove (list->store, &iter);
-	}
-#endif
 	count = fabulor_editable_list_get_n_rows (list);
 	if (position < count)
 		fabulor_editable_list_set_selected (list, position);
@@ -665,24 +513,12 @@ fabulor_editable_list_move_selected (FabulorEditableList *list, gint delta)
 	target = (gint) position + delta;
 	if (target < 0 || (guint) target >= fabulor_editable_list_get_n_rows (list))
 		return FALSE;
-#if GTK_MAJOR_VERSION >= 4
 	{
 		FabulorEditableRow *row = editable_row_at (list, position);
 		g_list_store_remove (editable_store (list), position);
 		g_list_store_insert (editable_store (list), (guint) target, row);
 		g_object_unref (row);
 	}
-#else
-	{
-		GtkTreeIter first;
-		GtkTreeIter second;
-		gtk_tree_model_iter_nth_child (GTK_TREE_MODEL (list->store), &first,
-			NULL, (gint) position);
-		gtk_tree_model_iter_nth_child (GTK_TREE_MODEL (list->store), &second,
-			NULL, target);
-		gtk_list_store_swap (list->store, &first, &second);
-	}
-#endif
 	fabulor_editable_list_set_selected (list, (guint) target);
 	return TRUE;
 }
@@ -696,22 +532,11 @@ fabulor_editable_list_set_text_at (FabulorEditableList *list, guint position,
 		(field != FABULOR_EDITABLE_LIST_NAME &&
 		 field != FABULOR_EDITABLE_LIST_COMMAND))
 		return FALSE;
-#if GTK_MAJOR_VERSION >= 4
 	{
 		FabulorEditableRow *row = editable_row_at (list, position);
 		editable_row_set_text (row, field, text);
 		g_object_unref (row);
 	}
-#else
-	{
-		GtkTreeIter iter;
-		gtk_tree_model_iter_nth_child (GTK_TREE_MODEL (list->store), &iter,
-			NULL, (gint) position);
-		gtk_list_store_set (list->store, &iter,
-			field == FABULOR_EDITABLE_LIST_NAME ? EDITABLE_NAME_COLUMN :
-			EDITABLE_COMMAND_COLUMN, text ? text : "", -1);
-	}
-#endif
 	return TRUE;
 }
 
@@ -729,19 +554,10 @@ fabulor_editable_list_dup_all (FabulorEditableList *list)
 	{
 		FabulorEditableListRecord *record = g_new0 (
 			FabulorEditableListRecord, 1);
-#if GTK_MAJOR_VERSION >= 4
 		FabulorEditableRow *row = editable_row_at (list, i);
 		record->name = g_strdup (row->name);
 		record->command = g_strdup (row->command);
 		g_object_unref (row);
-#else
-		GtkTreeIter iter;
-		gtk_tree_model_iter_nth_child (GTK_TREE_MODEL (list->store), &iter,
-			NULL, (gint) i);
-		gtk_tree_model_get (GTK_TREE_MODEL (list->store), &iter,
-			EDITABLE_NAME_COLUMN, &record->name,
-			EDITABLE_COMMAND_COLUMN, &record->command, -1);
-#endif
 		g_ptr_array_add (records, record);
 	}
 	return records;

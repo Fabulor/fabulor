@@ -11,23 +11,14 @@
 
 #include "gtk-compat.h"
 
-#if GTK_MAJOR_VERSION >= 4
 #include "gtk4-list-models.h"
-#else
-#include "gtkutil.h"
-#endif
 
 struct _FabulorAddonList
 {
 	GtkWidget *view;
-#if GTK_MAJOR_VERSION >= 4
 	FabulorGtk4FlatModelStack *models;
-#else
-	GtkListStore *store;
-#endif
 };
 
-#if GTK_MAJOR_VERSION >= 4
 
 typedef struct _FabulorAddonRow FabulorAddonRow;
 typedef struct _FabulorAddonRowClass FabulorAddonRowClass;
@@ -172,26 +163,12 @@ addon_selected_row (FabulorAddonList *list)
 		GTK_SINGLE_SELECTION (selection)));
 }
 
-#else
-
-enum
-{
-	ADDON_COLUMN_NAME,
-	ADDON_COLUMN_VERSION,
-	ADDON_COLUMN_FILE,
-	ADDON_COLUMN_DESCRIPTION,
-	ADDON_COLUMN_FILEPATH,
-	N_ADDON_COLUMNS
-};
-
-#endif
 
 FabulorAddonList *
 fabulor_addon_list_new (void)
 {
 	FabulorAddonList *list = g_new0 (FabulorAddonList, 1);
 
-#if GTK_MAJOR_VERSION >= 4
 	list->models = fabulor_gtk4_flat_model_stack_new (FABULOR_TYPE_ADDON_ROW,
 		NULL, FABULOR_GTK4_SELECTION_SINGLE);
 	if (!list->models)
@@ -199,10 +176,6 @@ fabulor_addon_list_new (void)
 		g_free (list);
 		return NULL;
 	}
-#else
-	list->store = gtk_list_store_new (N_ADDON_COLUMNS, G_TYPE_STRING,
-		G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING);
-#endif
 	return list;
 }
 
@@ -211,11 +184,7 @@ fabulor_addon_list_free (FabulorAddonList *list)
 {
 	if (!list)
 		return;
-#if GTK_MAJOR_VERSION >= 4
 	fabulor_gtk4_flat_model_stack_free (list->models);
-#else
-	g_clear_object (&list->store);
-#endif
 	g_free (list);
 }
 
@@ -230,7 +199,6 @@ fabulor_addon_list_create_view (FabulorAddonList *list, GtkBox *parent,
 	g_return_val_if_fail (GTK_IS_BOX (parent), NULL);
 	g_return_val_if_fail (list->view == NULL, NULL);
 
-#if GTK_MAJOR_VERSION >= 4
 	{
 		GtkWidget *scroller = gtk_scrolled_window_new ();
 		GtkSelectionModel *selection =
@@ -254,29 +222,6 @@ fabulor_addon_list_create_view (FabulorAddonList *list, GtkBox *parent,
 		gtk_widget_set_vexpand (scroller, TRUE);
 		fabulor_gtk_box_append (parent, scroller, TRUE, TRUE, 0);
 	}
-#else
-	list->view = gtkutil_treeview_new (parent,
-		GTK_TREE_MODEL (g_object_ref (list->store)), NULL,
-		ADDON_COLUMN_NAME, (gchar *) name_title,
-		ADDON_COLUMN_VERSION, (gchar *) version_title,
-		ADDON_COLUMN_FILE, (gchar *) file_title,
-		ADDON_COLUMN_DESCRIPTION, (gchar *) description_title, -1);
-	if (list->view)
-	{
-		GtkTreeViewColumn *column;
-		gint column_id;
-		GtkWidget *scroller = gtk_widget_get_parent (list->view);
-
-		gtk_box_set_child_packing (parent, scroller, TRUE, TRUE, 0,
-			GTK_PACK_START);
-		for (column_id = 0; (column = gtk_tree_view_get_column (
-			GTK_TREE_VIEW (list->view), column_id)); column_id++)
-			gtk_tree_view_column_set_alignment (column, 0.5f);
-		gtk_tree_view_set_grid_lines (GTK_TREE_VIEW (list->view),
-			GTK_TREE_VIEW_GRID_LINES_HORIZONTAL);
-		gtk_widget_show (list->view);
-	}
-#endif
 	return list->view;
 }
 
@@ -284,11 +229,7 @@ void
 fabulor_addon_list_clear (FabulorAddonList *list)
 {
 	g_return_if_fail (list != NULL);
-#if GTK_MAJOR_VERSION >= 4
 	fabulor_gtk4_flat_model_stack_clear (list->models);
-#else
-	gtk_list_store_clear (list->store);
-#endif
 }
 
 void
@@ -298,36 +239,20 @@ fabulor_addon_list_append (FabulorAddonList *list, const gchar *name,
 {
 	g_return_if_fail (list != NULL);
 
-#if GTK_MAJOR_VERSION >= 4
 	{
 		FabulorAddonRow *row = addon_row_new (name, version, file, description,
 			filepath);
 		fabulor_gtk4_flat_model_stack_append (list->models, row);
 		g_object_unref (row);
 	}
-#else
-	{
-		GtkTreeIter iter;
-		gtk_list_store_append (list->store, &iter);
-		gtk_list_store_set (list->store, &iter,
-			ADDON_COLUMN_NAME, name, ADDON_COLUMN_VERSION, version,
-			ADDON_COLUMN_FILE, file, ADDON_COLUMN_DESCRIPTION, description,
-			ADDON_COLUMN_FILEPATH, filepath, -1);
-	}
-#endif
 }
 
 guint
 fabulor_addon_list_get_n_rows (FabulorAddonList *list)
 {
 	g_return_val_if_fail (list != NULL, 0);
-#if GTK_MAJOR_VERSION >= 4
 	return g_list_model_get_n_items (G_LIST_MODEL (
 		fabulor_gtk4_flat_model_stack_get_store (list->models)));
-#else
-	return (guint) gtk_tree_model_iter_n_children (
-		GTK_TREE_MODEL (list->store), NULL);
-#endif
 }
 
 gboolean
@@ -340,7 +265,6 @@ fabulor_addon_list_dup_selected (FabulorAddonList *list, gchar **name,
 	*name = NULL;
 	*filepath = NULL;
 
-#if GTK_MAJOR_VERSION >= 4
 	{
 		FabulorAddonRow *row = addon_selected_row (list);
 		if (!row)
@@ -348,19 +272,6 @@ fabulor_addon_list_dup_selected (FabulorAddonList *list, gchar **name,
 		*name = g_strdup (row->name);
 		*filepath = g_strdup (row->filepath);
 	}
-#else
-	{
-		GtkTreeIter iter;
-		GtkTreeSelection *selection;
-		if (!list->view)
-			return FALSE;
-		selection = gtk_tree_view_get_selection (GTK_TREE_VIEW (list->view));
-		if (!gtk_tree_selection_get_selected (selection, NULL, &iter))
-			return FALSE;
-		gtk_tree_model_get (GTK_TREE_MODEL (list->store), &iter,
-			ADDON_COLUMN_NAME, name, ADDON_COLUMN_FILEPATH, filepath, -1);
-	}
-#endif
 	return TRUE;
 }
 

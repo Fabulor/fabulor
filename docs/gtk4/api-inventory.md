@@ -1325,6 +1325,14 @@ recursive-show calls. Repository lint protects that boundary. Direct
 toolkit-version branches outside the header remain in the source inventory for
 subsequent Stage 9 removal passes.
 
+Stage 9 operational-list source specialization pass 7 removes the inactive
+GTK3 implementations from 22 converted list, model, and view sources. The
+operational-list boundary now contains no toolkit-version switches, classic
+tree views, list/tree stores, cell renderers, or tree selections. GTK4
+`GListModel`, selection model, list view, column view, tree-list, expander, and
+factory ownership remains intact. Repository lint protects the complete file
+set, and the frontend-wide version-branch inventory falls from 564 to 290.
+
 ## Functional Clusters
 
 | Cluster | Main files | GTK4 concern | Status |
@@ -1333,7 +1341,7 @@ subsequent Stage 9 removal passes.
 | Transcript | `xtext.c`, `xtext.h`, `xtext-render-target.c` | snapshot rendering and event model | in progress; render destination ownership established and private Win32 GDK header retired |
 | Edit box and spell check | `maingui.c`, `emoji-picker.c`, `sexy-spell-entry.c`, `spell-entry-*.c` | production interaction and latency validation | in progress; typed entry text/width, word, lifecycle, styling, menu, URL, and emoji-picker boundaries established |
 | Menus and commands | `menu.c`, `maingui.c`, `plugin-tray.c` | actions and menu models | in progress; retained main/context/tab presentation and GTK3-only accelerator ownership established |
-| Operational lists | `servlistgui.c`, `chanlist.c`, `userlistgui.c`, `dccgui.c`, `banlist.c`, `notifygui.c`, `ignoregui.c`, `plugingui.c`, `urlgrab.c` | list models, factories, editing | converted; toolkit-specific models and views are contained and the shared GTK4 model stack is a production candidate input |
+| Operational lists | `servlistgui.c`, `chanlist.c`, `userlistgui.c`, `dccgui.c`, `banlist.c`, `notifygui.c`, `ignoregui.c`, `plugingui.c`, `urlgrab.c` | list models, factories, editing | converted and specialized to GTK4; version branches and classic GTK3 tree/list implementations are retired |
 | Preferences/editors | `setup.c`, `fkeys.c`, `textgui.c`, `editlist.c` | generic edit list, Print Events, key bindings, sound events, and preference navigation converted | converted |
 | Themes | `theme/*.c`, `common/gtk4-theme-*.c`, `common/theme-archive-reader.c` | GTK4 CSS compatibility, discovery, preferences, and bounded `.hct` reading | converted; the GTK3 service and adapter are retired |
 | Platform integration | `fe-gtk.c`, `plugin-tray.c`, notifications | displays, surfaces, icons, native tray | in progress; notification, tray policy, and application main-loop boundaries established |

@@ -16,15 +16,10 @@ struct _FabulorSoundEventList
 	GtkWidget *view;
 	FabulorSoundEventSelectionFunc selection_func;
 	gpointer callback_data;
-#if GTK_MAJOR_VERSION >= 4
 	GListStore *store;
 	GtkSingleSelection *selection;
-#else
-	GtkListStore *store;
-#endif
 };
 
-#if GTK_MAJOR_VERSION >= 4
 
 typedef struct _FabulorSoundEventRow FabulorSoundEventRow;
 typedef struct _FabulorSoundEventRowClass FabulorSoundEventRowClass;
@@ -245,27 +240,6 @@ sound_event_selection_changed (GtkSingleSelection *selection,
 			list->callback_data);
 }
 
-#else
-
-enum
-{
-	SOUND_EVENT_NAME_COLUMN,
-	SOUND_EVENT_FILE_COLUMN,
-	SOUND_EVENT_INDEX_COLUMN,
-	N_SOUND_EVENT_COLUMNS
-};
-
-static void
-sound_event_selection_changed (GtkTreeSelection *selection, gpointer user_data)
-{
-	FabulorSoundEventList *list = user_data;
-	(void) selection;
-	if (list->selection_func)
-		list->selection_func (fabulor_sound_event_list_get_selected_event (list),
-			list->callback_data);
-}
-
-#endif
 
 FabulorSoundEventList *
 fabulor_sound_event_list_new (FabulorSoundEventSelectionFunc selection_func,
@@ -274,16 +248,11 @@ fabulor_sound_event_list_new (FabulorSoundEventSelectionFunc selection_func,
 	FabulorSoundEventList *list = g_new0 (FabulorSoundEventList, 1);
 	list->selection_func = selection_func;
 	list->callback_data = user_data;
-#if GTK_MAJOR_VERSION >= 4
 	list->store = g_list_store_new (FABULOR_TYPE_SOUND_EVENT_ROW);
 	list->selection = gtk_single_selection_new (G_LIST_MODEL (g_object_ref (list->store)));
 	gtk_single_selection_set_autoselect (list->selection, FALSE);
 	g_signal_connect (list->selection, "notify::selected",
 		G_CALLBACK (sound_event_selection_changed), list);
-#else
-	list->store = gtk_list_store_new (N_SOUND_EVENT_COLUMNS, G_TYPE_STRING,
-		G_TYPE_STRING, G_TYPE_INT);
-#endif
 	return list;
 }
 
@@ -292,9 +261,7 @@ fabulor_sound_event_list_free (FabulorSoundEventList *list)
 {
 	if (!list)
 		return;
-#if GTK_MAJOR_VERSION >= 4
 	g_clear_object (&list->selection);
-#endif
 	g_clear_object (&list->store);
 	g_free (list);
 }
@@ -305,7 +272,6 @@ fabulor_sound_event_list_create_view (FabulorSoundEventList *list,
 {
 	GtkWidget *scroller;
 	g_return_val_if_fail (list && GTK_IS_BOX (parent) && !list->view, NULL);
-#if GTK_MAJOR_VERSION >= 4
 	scroller = gtk_scrolled_window_new ();
 	list->view = gtk_column_view_new (GTK_SELECTION_MODEL (g_object_ref (list->selection)));
 	gtk_column_view_append_column (GTK_COLUMN_VIEW (list->view),
@@ -315,33 +281,10 @@ fabulor_sound_event_list_create_view (FabulorSoundEventList *list,
 		sound_event_column_new (file_title, "notify::sound-file",
 			sound_event_row_properties[PROP_SOUND_EVENT_ROW_SOUND_FILE], TRUE));
 	gtk_column_view_set_show_row_separators (GTK_COLUMN_VIEW (list->view), TRUE);
-#else
-	{
-		GtkCellRenderer *renderer;
-		scroller = gtk_scrolled_window_new (NULL, NULL);
-		gtk_scrolled_window_set_shadow_type (GTK_SCROLLED_WINDOW (scroller), GTK_SHADOW_IN);
-		list->view = gtk_tree_view_new_with_model (GTK_TREE_MODEL (g_object_ref (list->store)));
-		gtk_tree_selection_set_mode (gtk_tree_view_get_selection (GTK_TREE_VIEW (list->view)),
-			GTK_SELECTION_SINGLE);
-		g_signal_connect (gtk_tree_view_get_selection (GTK_TREE_VIEW (list->view)),
-			"changed", G_CALLBACK (sound_event_selection_changed), list);
-		renderer = gtk_cell_renderer_text_new ();
-		gtk_tree_view_insert_column_with_attributes (GTK_TREE_VIEW (list->view), -1,
-			event_title, renderer, "text", SOUND_EVENT_NAME_COLUMN, NULL);
-		renderer = gtk_cell_renderer_text_new ();
-		gtk_tree_view_insert_column_with_attributes (GTK_TREE_VIEW (list->view), -1,
-			file_title, renderer, "text", SOUND_EVENT_FILE_COLUMN, NULL);
-		gtk_tree_view_set_grid_lines (GTK_TREE_VIEW (list->view),
-			GTK_TREE_VIEW_GRID_LINES_HORIZONTAL);
-	}
-#endif
 	gtk_scrolled_window_set_policy (GTK_SCROLLED_WINDOW (scroller),
 		GTK_POLICY_AUTOMATIC, GTK_POLICY_ALWAYS);
 	fabulor_gtk_scrolled_window_set_child (GTK_SCROLLED_WINDOW (scroller), list->view);
 	fabulor_gtk_box_append (parent, scroller, TRUE, TRUE, 0);
-#if GTK_MAJOR_VERSION < 4
-	gtk_widget_show_all (scroller);
-#endif
 	return list->view;
 }
 
@@ -350,62 +293,35 @@ fabulor_sound_event_list_append (FabulorSoundEventList *list,
 	const gchar *event_name, const gchar *sound_file, gint event_index)
 {
 	g_return_if_fail (list != NULL);
-#if GTK_MAJOR_VERSION >= 4
 	{
 		FabulorSoundEventRow *row = sound_event_row_new (event_name, sound_file,
 			event_index);
 		g_list_store_append (list->store, row);
 		g_object_unref (row);
 	}
-#else
-	{
-		GtkTreeIter iter;
-		gtk_list_store_append (list->store, &iter);
-		gtk_list_store_set (list->store, &iter,
-			SOUND_EVENT_NAME_COLUMN, event_name ? event_name : "",
-			SOUND_EVENT_FILE_COLUMN, sound_file ? sound_file : "",
-			SOUND_EVENT_INDEX_COLUMN, event_index, -1);
-	}
-#endif
 }
 
 void
 fabulor_sound_event_list_clear (FabulorSoundEventList *list)
 {
 	g_return_if_fail (list != NULL);
-#if GTK_MAJOR_VERSION >= 4
 	g_list_store_remove_all (list->store);
-#else
-	gtk_list_store_clear (list->store);
-#endif
 }
 
 guint
 fabulor_sound_event_list_get_n_rows (FabulorSoundEventList *list)
 {
 	g_return_val_if_fail (list != NULL, 0);
-#if GTK_MAJOR_VERSION >= 4
 	return g_list_model_get_n_items (G_LIST_MODEL (list->store));
-#else
-	return (guint) gtk_tree_model_iter_n_children (GTK_TREE_MODEL (list->store), NULL);
-#endif
 }
 
 static gint
 sound_event_index_at (FabulorSoundEventList *list, guint position)
 {
 	gint event_index = -1;
-#if GTK_MAJOR_VERSION >= 4
 	FabulorSoundEventRow *row = sound_event_row_at (list, position);
 	event_index = row->event_index;
 	g_object_unref (row);
-#else
-	GtkTreeIter iter;
-	gtk_tree_model_iter_nth_child (GTK_TREE_MODEL (list->store), &iter, NULL,
-		(gint) position);
-	gtk_tree_model_get (GTK_TREE_MODEL (list->store), &iter,
-		SOUND_EVENT_INDEX_COLUMN, &event_index, -1);
-#endif
 	return event_index;
 }
 
@@ -432,7 +348,6 @@ fabulor_sound_event_list_update_file (FabulorSoundEventList *list,
 	g_return_val_if_fail (list != NULL, FALSE);
 	if (!sound_event_find (list, event_index, &position))
 		return FALSE;
-#if GTK_MAJOR_VERSION >= 4
 	{
 		FabulorSoundEventRow *row = sound_event_row_at (list, position);
 		if (g_strcmp0 (row->sound_file, sound_file ? sound_file : "") != 0)
@@ -444,15 +359,6 @@ fabulor_sound_event_list_update_file (FabulorSoundEventList *list,
 		}
 		g_object_unref (row);
 	}
-#else
-	{
-		GtkTreeIter iter;
-		gtk_tree_model_iter_nth_child (GTK_TREE_MODEL (list->store), &iter, NULL,
-			(gint) position);
-		gtk_list_store_set (list->store, &iter, SOUND_EVENT_FILE_COLUMN,
-			sound_file ? sound_file : "", -1);
-	}
-#endif
 	return TRUE;
 }
 
@@ -464,23 +370,12 @@ fabulor_sound_event_list_select_event (FabulorSoundEventList *list,
 	g_return_val_if_fail (list != NULL, FALSE);
 	if (!sound_event_find (list, event_index, &position))
 		return FALSE;
-#if GTK_MAJOR_VERSION >= 4
 	if (!gtk_selection_model_select_item (GTK_SELECTION_MODEL (list->selection),
 		position, TRUE))
 		return FALSE;
 	if (list->view)
 		gtk_column_view_scroll_to (GTK_COLUMN_VIEW (list->view), position, NULL,
 			GTK_LIST_SCROLL_FOCUS, NULL);
-#else
-	if (list->view)
-	{
-		GtkTreePath *path = gtk_tree_path_new_from_indices ((gint) position, -1);
-		gtk_tree_view_set_cursor (GTK_TREE_VIEW (list->view), path, NULL, FALSE);
-		gtk_tree_view_scroll_to_cell (GTK_TREE_VIEW (list->view), path, NULL,
-			TRUE, 0.5, 0.5);
-		gtk_tree_path_free (path);
-	}
-#endif
 	return TRUE;
 }
 
@@ -488,27 +383,11 @@ gint
 fabulor_sound_event_list_get_selected_event (FabulorSoundEventList *list)
 {
 	g_return_val_if_fail (list != NULL, -1);
-#if GTK_MAJOR_VERSION >= 4
 	{
 		guint position = gtk_single_selection_get_selected (list->selection);
 		return position == GTK_INVALID_LIST_POSITION ? -1 :
 			sound_event_index_at (list, position);
 	}
-#else
-	if (list->view)
-	{
-		GtkTreeModel *model;
-		GtkTreeIter iter;
-		gint event_index;
-		if (!gtk_tree_selection_get_selected (gtk_tree_view_get_selection (
-			GTK_TREE_VIEW (list->view)), &model, &iter))
-			return -1;
-		gtk_tree_model_get (model, &iter, SOUND_EVENT_INDEX_COLUMN,
-			&event_index, -1);
-		return event_index;
-	}
-	return -1;
-#endif
 }
 
 gchar *
@@ -520,20 +399,10 @@ fabulor_sound_event_list_dup_file (FabulorSoundEventList *list,
 	g_return_val_if_fail (list != NULL, NULL);
 	if (!sound_event_find (list, event_index, &position))
 		return NULL;
-#if GTK_MAJOR_VERSION >= 4
 	{
 		FabulorSoundEventRow *row = sound_event_row_at (list, position);
 		sound_file = g_strdup (row->sound_file);
 		g_object_unref (row);
 	}
-#else
-	{
-		GtkTreeIter iter;
-		gtk_tree_model_iter_nth_child (GTK_TREE_MODEL (list->store), &iter, NULL,
-			(gint) position);
-		gtk_tree_model_get (GTK_TREE_MODEL (list->store), &iter,
-			SOUND_EVENT_FILE_COLUMN, &sound_file, -1);
-	}
-#endif
 	return sound_file;
 }
