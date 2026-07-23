@@ -1,8 +1,5 @@
 #include "theme-gtk4.h"
 
-#if GTK_MAJOR_VERSION < 4
-#error The GTK4 theme adapter must compile against GTK 4.
-#endif
 
 #include <glib/gstdio.h>
 

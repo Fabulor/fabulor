@@ -7481,6 +7481,40 @@ implementation from these files. The remaining frontend source branches and
 legacy, non-configurable Meson fragments remain separate Stage 9 cleanup
 targets.
 
+### GTK4 Stage 9 Theme Source Specialization, Pass 8
+
+Date: 2026-07-23
+
+Boundary retired: nine GTK4 theme controller, CSS provider, palette,
+appearance-monitor, Preferences staging, and window-lifecycle files no longer
+carry parallel GTK3 implementations. A total of 205 inactive GTK3 and
+toolkit-selection lines are removed. The frontend-wide
+`GTK_MAJOR_VERSION`-conditional inventory falls from 290 to 253.
+
+Automated evidence:
+
+- strict GTK4 MSVC probe build and execution: pass with `/W4 /WX`, zero
+  warnings and zero errors; GTK 4.22.4 / GLib 2.88.0 / x64 runtime confirmed
+- complete GTK4 frontend project build and link: pass with zero errors; the
+  affected build reports only the existing frontend warning inventory
+- production profile contract suite: all 11 tests pass, including all nine
+  specialized files and rejection of restored toolkit-version switches or
+  representative GTK3 theme APIs
+- complete GTK4 tooling contract suite: all 60 tests pass
+- theme retirement/import contract suite: all 7 tests pass
+- native manifest, path, and archive suite: all 22 tests pass
+- source audit: no `GTK_MAJOR_VERSION`, screen-scoped CSS provider,
+  style-context palette, legacy CSS loading, or widget-destruction API remains
+  in the specialized source set
+- repository whitespace validation: pass
+
+Behaviour contract: theme discovery, application, Preferences staging,
+appearance refresh, CSS-provider ownership, and top-level finalization continue
+through the reviewed GTK4 implementations. No supported build can select the
+retired GTK3 theme integration from these files. Remaining frontend source
+branches and legacy, non-configurable Meson fragments remain separate Stage 9
+cleanup targets.
+
 ## Stage Completion Rule
 
 A stage can move to complete in `migration-plan.md` only when:

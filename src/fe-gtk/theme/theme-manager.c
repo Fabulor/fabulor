@@ -35,10 +35,8 @@
 #include "../../common/zoitechat.h"
 #include "../../common/zoitechatc.h"
 #include "../../common/cfgfiles.h"
-#if GTK_MAJOR_VERSION >= 4
 #include "theme-appearance-monitor-gtk4.h"
 #include "theme-gtk4-controller.h"
-#endif
 
 void theme_runtime_reset_mode_colors (gboolean dark_mode);
 
@@ -54,9 +52,7 @@ static GHashTable *theme_manager_listeners;
 static guint theme_manager_next_listener_id = 1;
 static guint theme_manager_setup_listener_id;
 static const char theme_manager_window_destroy_handler_key[] = "theme-manager-window-destroy-handler";
-#if GTK_MAJOR_VERSION >= 4
 static const char theme_manager_window_weak_owner[] = "theme-manager-window-weak-owner";
-#endif
 
 typedef struct
 {
@@ -66,14 +62,11 @@ typedef struct
 } ThemeManagerAutoRefreshCache;
 
 static ThemeManagerAutoRefreshCache theme_manager_auto_refresh_cache;
-#if GTK_MAJOR_VERSION >= 4
 static ThemeGtk4Controller *theme_manager_gtk4_theme_controller;
 static ThemeAppearanceMonitorGtk4 *theme_manager_gtk4_appearance_monitor;
-#endif
 
 static void theme_manager_apply_platform_window_theme (GtkWidget *window);
 
-#if GTK_MAJOR_VERSION >= 4
 static gboolean
 theme_manager_gtk4_apply_appearance (gboolean prefer_dark,
 	gboolean high_contrast, gpointer user_data, GError **error)
@@ -98,7 +91,6 @@ theme_manager_gtk4_apply_appearance (gboolean prefer_dark,
 			THEME_CHANGED_REASON_WIDGET_STYLE | THEME_CHANGED_REASON_MODE);
 	return TRUE;
 }
-#endif
 
 static void
 theme_manager_apply_to_toplevel_windows (void)
@@ -166,13 +158,11 @@ theme_manager_synthesize_preference_reasons (const struct zoitechatprefs *old_pr
 	    strcmp (old_prefs->hex_text_font_main, new_prefs->hex_text_font_main) != 0 ||
 	    strcmp (old_prefs->hex_text_font_alternative, new_prefs->hex_text_font_alternative) != 0)
 		reasons |= THEME_CHANGED_REASON_WIDGET_STYLE;
-#if GTK_MAJOR_VERSION >= 4
 	if (g_strcmp0 (old_prefs->hex_gui_gtk4_theme,
 		new_prefs->hex_gui_gtk4_theme) != 0 ||
 		old_prefs->hex_gui_gtk4_variant != new_prefs->hex_gui_gtk4_variant)
 		reasons |= THEME_CHANGED_REASON_THEME_PACK |
 			THEME_CHANGED_REASON_WIDGET_STYLE | THEME_CHANGED_REASON_MODE;
-#endif
 
 	if (reasons != THEME_CHANGED_REASON_NONE)
 		reasons |= THEME_CHANGED_REASON_WIDGET_STYLE;
@@ -255,7 +245,6 @@ theme_manager_init (void)
 
 	fe_set_auto_dark_mode_state (theme_policy_is_dark_mode_active (ZOITECHAT_DARK_MODE_AUTO));
 	theme_application_apply_mode (prefs.hex_gui_dark_mode, NULL);
-#if GTK_MAJOR_VERSION >= 4
 	if (!theme_manager_gtk4_theme_controller)
 	{
 		GError *error = NULL;
@@ -283,19 +272,16 @@ theme_manager_init (void)
 			g_clear_error (&error);
 		}
 	}
-#endif
 	zoitechat_set_theme_post_apply_callback (theme_manager_handle_theme_applied);
 }
 
 void
 theme_manager_shutdown (void)
 {
-#if GTK_MAJOR_VERSION >= 4
 	g_clear_pointer (&theme_manager_gtk4_appearance_monitor,
 		theme_appearance_monitor_gtk4_free);
 	g_clear_pointer (&theme_manager_gtk4_theme_controller,
 		theme_gtk4_controller_free);
-#endif
 	zoitechat_set_theme_post_apply_callback (NULL);
 	if (theme_manager_auto_refresh_source)
 	{
@@ -312,7 +298,6 @@ theme_manager_shutdown (void)
 		sizeof (theme_manager_auto_refresh_cache));
 }
 
-#if GTK_MAJOR_VERSION >= 4
 ThemeGtk4Controller *
 theme_manager_gtk4_controller (void)
 {
@@ -351,7 +336,6 @@ theme_manager_gtk4_high_contrast (void)
 		theme_appearance_monitor_gtk4_high_contrast (
 			theme_manager_gtk4_appearance_monitor);
 }
-#endif
 
 gboolean
 theme_manager_apply_mode (unsigned int mode, gboolean *palette_changed)
@@ -520,15 +504,11 @@ theme_manager_handle_theme_applied (void)
 static void
 theme_manager_apply_platform_window_theme (GtkWidget *window)
 {
-#if GTK_MAJOR_VERSION < 4
-	GtkStyleContext *context;
-#endif
 	gboolean dark;
 
 	if (!window)
 		return;
 
-#if GTK_MAJOR_VERSION >= 4
 	{
 		const FabulorGtk4ThemeAppearanceDecision *appearance =
 			theme_gtk4_controller_appearance (
@@ -537,44 +517,22 @@ theme_manager_apply_platform_window_theme (GtkWidget *window)
 		dark = appearance ? appearance->prefer_dark :
 			theme_runtime_is_dark_active ();
 	}
-#else
-	dark = theme_runtime_is_dark_active ();
-#endif
 
-#if GTK_MAJOR_VERSION >= 4
 	gtk_widget_remove_css_class (window, "zoitechat-dark");
 	gtk_widget_remove_css_class (window, "zoitechat-light");
 	gtk_widget_add_css_class (window,
 		dark ? "zoitechat-dark" : "zoitechat-light");
-#else
-	context = gtk_widget_get_style_context (window);
-	if (context)
-	{
-		gtk_style_context_remove_class (context, "zoitechat-dark");
-		gtk_style_context_remove_class (context, "zoitechat-light");
-		gtk_style_context_add_class (context, dark ? "zoitechat-dark" : "zoitechat-light");
-	}
-#endif
 #ifdef G_OS_WIN32
 	fe_win32_apply_native_titlebar (window, dark);
 #endif
 }
 
-#if GTK_MAJOR_VERSION >= 4
 static void
 theme_manager_window_finalized_cb (gpointer userdata, GObject *window)
 {
 	(void) userdata;
 	(void) window;
 }
-#else
-static void
-theme_manager_window_destroy_cb (GtkWidget *window, gpointer userdata)
-{
-	(void) userdata;
-	g_object_set_data (G_OBJECT (window), theme_manager_window_destroy_handler_key, NULL);
-}
-#endif
 
 void
 theme_manager_apply_to_window (GtkWidget *window)
@@ -588,16 +546,11 @@ theme_manager_apply_to_window (GtkWidget *window)
 void
 theme_manager_attach_window (GtkWidget *window)
 {
-#if GTK_MAJOR_VERSION >= 4
 	gpointer owner;
-#else
-	gulong *handler_id;
-#endif
 
 	if (!window)
 		return;
 
-#if GTK_MAJOR_VERSION >= 4
 	owner = g_object_get_data (G_OBJECT (window), theme_manager_window_destroy_handler_key);
 	if (!owner)
 	{
@@ -605,15 +558,6 @@ theme_manager_attach_window (GtkWidget *window)
 		g_object_set_data (G_OBJECT (window), theme_manager_window_destroy_handler_key,
 			(gpointer) theme_manager_window_weak_owner);
 	}
-#else
-	handler_id = g_object_get_data (G_OBJECT (window), theme_manager_window_destroy_handler_key);
-	if (!handler_id)
-	{
-		handler_id = g_new (gulong, 1);
-		*handler_id = g_signal_connect (G_OBJECT (window), "destroy", G_CALLBACK (theme_manager_window_destroy_cb), NULL);
-		g_object_set_data_full (G_OBJECT (window), theme_manager_window_destroy_handler_key, handler_id, g_free);
-	}
-#endif
 
 	theme_manager_apply_to_window (window);
 }
@@ -621,30 +565,17 @@ theme_manager_attach_window (GtkWidget *window)
 void
 theme_manager_detach_window (GtkWidget *window)
 {
-#if GTK_MAJOR_VERSION >= 4
 	gpointer owner;
-#else
-	gulong *handler_id;
-#endif
 
 	if (!window)
 		return;
 
-#if GTK_MAJOR_VERSION >= 4
 	owner = g_object_get_data (G_OBJECT (window), theme_manager_window_destroy_handler_key);
 	if (owner)
 	{
 		g_object_weak_unref (G_OBJECT (window), theme_manager_window_finalized_cb, NULL);
 		g_object_set_data (G_OBJECT (window), theme_manager_window_destroy_handler_key, NULL);
 	}
-#else
-	handler_id = g_object_get_data (G_OBJECT (window), theme_manager_window_destroy_handler_key);
-	if (handler_id)
-	{
-		g_signal_handler_disconnect (G_OBJECT (window), *handler_id);
-		g_object_set_data (G_OBJECT (window), theme_manager_window_destroy_handler_key, NULL);
-	}
-#endif
 }
 
 void

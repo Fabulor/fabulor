@@ -45,11 +45,7 @@ typedef struct
 {
         GWeakRef owner;
         GWeakRef parent;
-#if GTK_MAJOR_VERSION >= 4
         gboolean parent_watch_active;
-#else
-        gulong parent_destroy_handler;
-#endif
 } theme_preferences_native_import_data;
 
 typedef struct
@@ -107,10 +103,8 @@ typedef struct
         gboolean staged_valid[THEME_TOKEN_COUNT];
         GdkRGBA snapshot[THEME_TOKEN_COUNT];
         GdkRGBA staged[THEME_TOKEN_COUNT];
-#if GTK_MAJOR_VERSION >= 4
 	char gtk4_theme_snapshot[sizeof prefs.hex_gui_gtk4_theme];
 	guint gtk4_variant_snapshot;
-#endif
 } theme_preferences_stage_state;
 
 static theme_preferences_stage_state theme_preferences_stage;
@@ -221,12 +215,10 @@ theme_preferences_stage_begin (void)
         memset (&theme_preferences_stage, 0, sizeof (theme_preferences_stage));
         theme_preferences_stage.active = TRUE;
         theme_preferences_stage.mode = theme_preferences_current_color_mode ();
-#if GTK_MAJOR_VERSION >= 4
 	g_strlcpy (theme_preferences_stage.gtk4_theme_snapshot,
 		prefs.hex_gui_gtk4_theme,
 		sizeof (theme_preferences_stage.gtk4_theme_snapshot));
 	theme_preferences_stage.gtk4_variant_snapshot = prefs.hex_gui_gtk4_variant;
-#endif
 
         for (token = THEME_TOKEN_MIRC_0; token < THEME_TOKEN_COUNT; token++)
         {
@@ -268,11 +260,9 @@ theme_preferences_stage_discard (void)
                 return;
 
         theme_preferences_stage_sync_runtime_to_snapshot ();
-#if GTK_MAJOR_VERSION >= 4
 	theme_manager_gtk4_apply_selection (
 		theme_preferences_stage.gtk4_theme_snapshot,
 		theme_preferences_stage.gtk4_variant_snapshot, NULL);
-#endif
         memset (&theme_preferences_stage, 0, sizeof (theme_preferences_stage));
 }
 
@@ -299,16 +289,11 @@ theme_preferences_native_import_parent_gone (GtkNativeDialog *dialog)
 
         data = g_object_get_data (G_OBJECT (dialog), "fabulor-theme-native-import-data");
         if (data)
-#if GTK_MAJOR_VERSION >= 4
                 data->parent_watch_active = FALSE;
-#else
-                data->parent_destroy_handler = 0;
-#endif
         gtk_native_dialog_hide (dialog);
         g_object_unref (dialog);
 }
 
-#if GTK_MAJOR_VERSION >= 4
 static void
 theme_preferences_native_import_parent_finalized_cb (gpointer user_data,
                                                       GObject *parent)
@@ -317,16 +302,6 @@ theme_preferences_native_import_parent_finalized_cb (gpointer user_data,
         theme_preferences_native_import_parent_gone (
                 GTK_NATIVE_DIALOG (user_data));
 }
-#else
-static void
-theme_preferences_native_import_parent_destroy_cb (GtkWidget *parent,
-                                                    gpointer user_data)
-{
-        (void) parent;
-        theme_preferences_native_import_parent_gone (
-                GTK_NATIVE_DIALOG (user_data));
-}
-#endif
 
 static theme_preferences_native_import_data *
 theme_preferences_native_import_data_new (GtkNativeDialog *dialog,
@@ -340,16 +315,10 @@ theme_preferences_native_import_data_new (GtkNativeDialog *dialog,
         g_weak_ref_init (&data->parent, parent);
         g_object_set_data_full (G_OBJECT (dialog), "fabulor-theme-native-import-data",
                                 data, theme_preferences_native_import_data_free);
-#if GTK_MAJOR_VERSION >= 4
         data->parent_watch_active = TRUE;
         g_object_weak_ref (G_OBJECT (parent),
                            theme_preferences_native_import_parent_finalized_cb,
                            dialog);
-#else
-        data->parent_destroy_handler = g_signal_connect (
-                parent, "destroy",
-                G_CALLBACK (theme_preferences_native_import_parent_destroy_cb), dialog);
-#endif
         return data;
 }
 
@@ -363,7 +332,6 @@ theme_preferences_native_import_acquire_owner (GtkNativeDialog *dialog,
         parent = g_weak_ref_get (&data->parent);
         if (parent)
         {
-#if GTK_MAJOR_VERSION >= 4
                 if (data->parent_watch_active)
                 {
                         g_object_weak_unref (G_OBJECT (parent),
@@ -371,13 +339,6 @@ theme_preferences_native_import_acquire_owner (GtkNativeDialog *dialog,
                                              dialog);
                         data->parent_watch_active = FALSE;
                 }
-#else
-                if (data->parent_destroy_handler)
-                {
-                        g_signal_handler_disconnect (parent, data->parent_destroy_handler);
-                        data->parent_destroy_handler = 0;
-                }
-#endif
                 owner = g_weak_ref_get (&data->owner);
         }
         g_clear_object (&parent);

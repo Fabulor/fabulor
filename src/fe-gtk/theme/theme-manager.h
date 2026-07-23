@@ -59,14 +59,12 @@ typedef guint (*ThemeManagerIdleAddFunc) (GSourceFunc function, gpointer data);
 
 void theme_manager_init (void);
 void theme_manager_shutdown (void);
-#if GTK_MAJOR_VERSION >= 4
 typedef struct _ThemeGtk4Controller ThemeGtk4Controller;
 ThemeGtk4Controller *theme_manager_gtk4_controller (void);
 gboolean theme_manager_gtk4_apply_selection (const char *theme_id,
 	guint variant, GError **error);
 gboolean theme_manager_gtk4_prefers_dark (void);
 gboolean theme_manager_gtk4_high_contrast (void);
-#endif
 gboolean theme_manager_apply_mode (unsigned int mode, gboolean *palette_changed);
 void theme_manager_set_mode (unsigned int mode, gboolean *palette_changed);
 void theme_manager_set_token_color (unsigned int mode, ThemeSemanticToken token, const GdkRGBA *color, gboolean *palette_changed);

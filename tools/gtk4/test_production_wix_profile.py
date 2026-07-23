@@ -34,6 +34,17 @@ GTK4_OPERATIONAL_LIST_SOURCES = (
     "user-list-model.h",
     "user-list-view.c",
 )
+GTK4_THEME_SOURCES = (
+    "theme-access.c",
+    "theme-appearance-monitor-gtk4.c",
+    "theme-css.c",
+    "theme-gtk4-controller.c",
+    "theme-gtk4.c",
+    "theme-manager.c",
+    "theme-manager.h",
+    "theme-preferences-gtk4.c",
+    "theme-preferences.c",
+)
 VCPKG_CONFIGURATION = ROOT / "tools" / "windows-deps" / "vcpkg-configuration.json"
 VCPKG_MANIFEST = ROOT / "tools" / "windows-deps" / "vcpkg.json"
 WIX_NS = {"w": "http://wixtoolset.org/schemas/v4/wxs"}
@@ -151,6 +162,26 @@ class ProductionWixProfileTests(unittest.TestCase):
                     self.assertNotRegex(source, rf"\b{type_name}\b")
                 for function in retired_functions:
                     self.assertNotRegex(source, rf"\b{function}")
+
+    def test_theme_sources_are_gtk4_only(self):
+        theme = ROOT / "src" / "fe-gtk" / "theme"
+        retired_functions = (
+            "gdk_screen_get_default",
+            "gtk_css_provider_load_from_data",
+            "gtk_style_context_add_provider_for_screen",
+            "gtk_style_context_get_background_color",
+            "gtk_style_context_get_border_color",
+            "gtk_style_context_get_color",
+            "gtk_style_context_remove_provider_for_screen",
+            "gtk_widget_destroy",
+        )
+
+        for name in GTK4_THEME_SOURCES:
+            source = (theme / name).read_text(encoding="utf-8")
+            with self.subTest(source=name):
+                self.assertNotIn("GTK_MAJOR_VERSION", source)
+                for function in retired_functions:
+                    self.assertNotRegex(source, rf"\b{function}\b")
 
     def test_transitional_windows_staging_is_removed(self):
         props = PROPS.read_text(encoding="utf-8")
