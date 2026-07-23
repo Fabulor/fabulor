@@ -11,12 +11,7 @@
 
 #include "gtk-compat.h"
 
-#if GTK_MAJOR_VERSION >= 4
 #include "gtk4-list-models.h"
-#else
-#include "gtkutil.h"
-#include "theme/theme-gtk.h"
-#endif
 
 struct _FabulorDccTransferList
 {
@@ -24,12 +19,8 @@ struct _FabulorDccTransferList
 	FabulorDccTransferSelectionFunc selection_func;
 	FabulorDccTransferActivateFunc activate_func;
 	gpointer callback_data;
-#if GTK_MAJOR_VERSION >= 4
 	FabulorGtk4FlatModelStack *models;
 	GHashTable *rows;
-#else
-	GtkListStore *store;
-#endif
 };
 
 static void
@@ -39,7 +30,6 @@ dcc_transfer_selection_changed (FabulorDccTransferList *list)
 		list->selection_func (list->callback_data);
 }
 
-#if GTK_MAJOR_VERSION >= 4
 
 typedef struct _FabulorDccTransferRow FabulorDccTransferRow;
 typedef struct _FabulorDccTransferRowClass FabulorDccTransferRowClass;
@@ -422,99 +412,6 @@ dcc_transfer_activate_cb (GtkColumnView *view, guint position,
 	g_clear_object (&row);
 }
 
-#else
-
-enum
-{
-	TRANSFER_COLUMN_DIRECTION,
-	TRANSFER_COLUMN_STATUS,
-	TRANSFER_COLUMN_FILE,
-	TRANSFER_COLUMN_SIZE,
-	TRANSFER_COLUMN_POSITION,
-	TRANSFER_COLUMN_PERCENTAGE,
-	TRANSFER_COLUMN_SPEED,
-	TRANSFER_COLUMN_ETA,
-	TRANSFER_COLUMN_NICK,
-	TRANSFER_COLUMN_IDENTITY,
-	TRANSFER_COLUMN_COLOR,
-	N_TRANSFER_COLUMNS
-};
-
-static gboolean
-dcc_transfer_find_iter (FabulorDccTransferList *list, gpointer identity,
-	GtkTreeIter *iter)
-{
-	gpointer row_identity;
-	if (!gtk_tree_model_get_iter_first (GTK_TREE_MODEL (list->store), iter))
-		return FALSE;
-	do
-	{
-		gtk_tree_model_get (GTK_TREE_MODEL (list->store), iter,
-			TRANSFER_COLUMN_IDENTITY, &row_identity, -1);
-		if (row_identity == identity)
-			return TRUE;
-	} while (gtk_tree_model_iter_next (GTK_TREE_MODEL (list->store), iter));
-	return FALSE;
-}
-
-static void
-dcc_transfer_gtk3_set (FabulorDccTransferList *list, GtkTreeIter *iter,
-	const FabulorDccTransferSnapshot *snapshot)
-{
-	const GdkRGBA *color = snapshot->has_color ? &snapshot->color : NULL;
-	gtk_list_store_set (list->store, iter,
-		TRANSFER_COLUMN_DIRECTION, snapshot->upload ? "go-up" : "go-down",
-		TRANSFER_COLUMN_STATUS, snapshot->status,
-		TRANSFER_COLUMN_FILE, snapshot->file,
-		TRANSFER_COLUMN_SIZE, snapshot->size,
-		TRANSFER_COLUMN_POSITION, snapshot->position,
-		TRANSFER_COLUMN_PERCENTAGE, snapshot->percentage,
-		TRANSFER_COLUMN_SPEED, snapshot->speed,
-		TRANSFER_COLUMN_ETA, snapshot->eta,
-		TRANSFER_COLUMN_NICK, snapshot->nick,
-		TRANSFER_COLUMN_IDENTITY, snapshot->identity,
-		TRANSFER_COLUMN_COLOR, color, -1);
-}
-
-static void
-dcc_transfer_gtk3_add_column (GtkWidget *view, gint text_column,
-	const gchar *title, gboolean right_justified)
-{
-	GtkCellRenderer *renderer = gtk_cell_renderer_text_new ();
-	if (right_justified)
-		g_object_set (renderer, "xalign", 1.0f, NULL);
-	gtk_tree_view_insert_column_with_attributes (GTK_TREE_VIEW (view), -1,
-		title, renderer, "text", text_column, THEME_GTK_FOREGROUND_PROPERTY,
-		TRANSFER_COLUMN_COLOR, NULL);
-	gtk_cell_renderer_text_set_fixed_height_from_font (
-		GTK_CELL_RENDERER_TEXT (renderer), 1);
-}
-
-static void
-dcc_transfer_selection_changed_cb (GtkTreeSelection *selection,
-	gpointer user_data)
-{
-	(void) selection;
-	dcc_transfer_selection_changed (user_data);
-}
-
-static void
-dcc_transfer_activate_cb (GtkTreeView *view, GtkTreePath *path,
-	GtkTreeViewColumn *column, gpointer user_data)
-{
-	FabulorDccTransferList *list = user_data;
-	GtkTreeIter iter;
-	gpointer identity = NULL;
-	(void) view;
-	(void) column;
-	if (gtk_tree_model_get_iter (GTK_TREE_MODEL (list->store), &iter, path))
-		gtk_tree_model_get (GTK_TREE_MODEL (list->store), &iter,
-			TRANSFER_COLUMN_IDENTITY, &identity, -1);
-	if (identity && list->activate_func)
-		list->activate_func (identity, list->callback_data);
-}
-
-#endif
 
 FabulorDccTransferList *
 fabulor_dcc_transfer_list_new (
@@ -525,7 +422,6 @@ fabulor_dcc_transfer_list_new (
 	list->selection_func = selection_func;
 	list->activate_func = activate_func;
 	list->callback_data = user_data;
-#if GTK_MAJOR_VERSION >= 4
 	list->models = fabulor_gtk4_flat_model_stack_new (
 		FABULOR_TYPE_DCC_TRANSFER_ROW, NULL, FABULOR_GTK4_SELECTION_MULTIPLE);
 	if (!list->models)
@@ -536,12 +432,6 @@ fabulor_dcc_transfer_list_new (
 	list->rows = g_hash_table_new (g_direct_hash, g_direct_equal);
 	g_signal_connect (fabulor_gtk4_flat_model_stack_get_selection (list->models),
 		"selection-changed", G_CALLBACK (dcc_transfer_selection_changed_cb), list);
-#else
-	list->store = gtk_list_store_new (N_TRANSFER_COLUMNS, G_TYPE_STRING,
-		G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING,
-		G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING,
-		G_TYPE_POINTER, THEME_GTK_COLOR_TYPE);
-#endif
 	return list;
 }
 
@@ -550,12 +440,8 @@ fabulor_dcc_transfer_list_free (FabulorDccTransferList *list)
 {
 	if (!list)
 		return;
-#if GTK_MAJOR_VERSION >= 4
 	g_hash_table_unref (list->rows);
 	fabulor_gtk4_flat_model_stack_free (list->models);
-#else
-	g_clear_object (&list->store);
-#endif
 	g_free (list);
 }
 
@@ -568,7 +454,6 @@ fabulor_dcc_transfer_list_create_view (FabulorDccTransferList *list,
 {
 	g_return_val_if_fail (list != NULL && GTK_IS_BOX (parent), NULL);
 	g_return_val_if_fail (list->view == NULL, NULL);
-#if GTK_MAJOR_VERSION >= 4
 	{
 		GtkWidget *scroller = gtk_scrolled_window_new ();
 		GtkSelectionModel *selection =
@@ -609,45 +494,6 @@ fabulor_dcc_transfer_list_create_view (FabulorDccTransferList *list,
 		gtk_widget_set_vexpand (scroller, TRUE);
 		fabulor_gtk_box_append (parent, scroller, TRUE, TRUE, 0);
 	}
-#else
-	{
-		GtkTreeSelection *selection;
-		list->view = gtkutil_treeview_new (parent,
-			GTK_TREE_MODEL (g_object_ref (list->store)), NULL, -1);
-		gtk_tree_view_set_grid_lines (GTK_TREE_VIEW (list->view),
-			GTK_TREE_VIEW_GRID_LINES_HORIZONTAL);
-		gtk_tree_view_insert_column_with_attributes (GTK_TREE_VIEW (list->view),
-			-1, NULL, gtk_cell_renderer_pixbuf_new (), "icon-name",
-			TRANSFER_COLUMN_DIRECTION, NULL);
-		dcc_transfer_gtk3_add_column (list->view, TRANSFER_COLUMN_STATUS,
-			status_title, FALSE);
-		dcc_transfer_gtk3_add_column (list->view, TRANSFER_COLUMN_FILE,
-			file_title, FALSE);
-		dcc_transfer_gtk3_add_column (list->view, TRANSFER_COLUMN_SIZE,
-			size_title, TRUE);
-		dcc_transfer_gtk3_add_column (list->view, TRANSFER_COLUMN_POSITION,
-			position_title, TRUE);
-		dcc_transfer_gtk3_add_column (list->view, TRANSFER_COLUMN_PERCENTAGE,
-			percentage_title, TRUE);
-		dcc_transfer_gtk3_add_column (list->view, TRANSFER_COLUMN_SPEED,
-			speed_title, TRUE);
-		dcc_transfer_gtk3_add_column (list->view, TRANSFER_COLUMN_ETA,
-			eta_title, FALSE);
-		dcc_transfer_gtk3_add_column (list->view, TRANSFER_COLUMN_NICK,
-			nick_title, FALSE);
-		gtk_tree_view_column_set_expand (gtk_tree_view_get_column (
-			GTK_TREE_VIEW (list->view), 2), TRUE);
-		gtk_tree_view_column_set_expand (gtk_tree_view_get_column (
-			GTK_TREE_VIEW (list->view), 8), TRUE);
-		selection = gtk_tree_view_get_selection (GTK_TREE_VIEW (list->view));
-		gtk_tree_selection_set_mode (selection, GTK_SELECTION_MULTIPLE);
-		g_signal_connect (selection, "changed",
-			G_CALLBACK (dcc_transfer_selection_changed_cb), list);
-		g_signal_connect (list->view, "row-activated",
-			G_CALLBACK (dcc_transfer_activate_cb), list);
-		gtk_widget_show (list->view);
-	}
-#endif
 	return list->view;
 }
 
@@ -657,7 +503,6 @@ fabulor_dcc_transfer_list_append (FabulorDccTransferList *list,
 {
 	g_return_val_if_fail (list != NULL && snapshot != NULL &&
 		snapshot->identity != NULL, FALSE);
-#if GTK_MAJOR_VERSION >= 4
 	{
 		FabulorDccTransferRow *row;
 		GListStore *store;
@@ -672,18 +517,6 @@ fabulor_dcc_transfer_list_append (FabulorDccTransferList *list,
 		g_hash_table_insert (list->rows, snapshot->identity, row);
 		g_object_unref (row);
 	}
-#else
-	{
-		GtkTreeIter iter;
-		if (dcc_transfer_find_iter (list, snapshot->identity, &iter))
-			return FALSE;
-		if (prepend)
-			gtk_list_store_prepend (list->store, &iter);
-		else
-			gtk_list_store_append (list->store, &iter);
-		dcc_transfer_gtk3_set (list, &iter, snapshot);
-	}
-#endif
 	return TRUE;
 }
 
@@ -692,7 +525,6 @@ fabulor_dcc_transfer_list_update (FabulorDccTransferList *list,
 	const FabulorDccTransferSnapshot *snapshot)
 {
 	g_return_val_if_fail (list != NULL && snapshot != NULL, FALSE);
-#if GTK_MAJOR_VERSION >= 4
 	{
 		FabulorDccTransferRow *row = g_hash_table_lookup (list->rows,
 			snapshot->identity);
@@ -700,14 +532,6 @@ fabulor_dcc_transfer_list_update (FabulorDccTransferList *list,
 			return FALSE;
 		dcc_transfer_row_assign (row, snapshot, TRUE);
 	}
-#else
-	{
-		GtkTreeIter iter;
-		if (!dcc_transfer_find_iter (list, snapshot->identity, &iter))
-			return FALSE;
-		dcc_transfer_gtk3_set (list, &iter, snapshot);
-	}
-#endif
 	return TRUE;
 }
 
@@ -716,7 +540,6 @@ fabulor_dcc_transfer_list_remove (FabulorDccTransferList *list,
 	gpointer identity)
 {
 	g_return_val_if_fail (list != NULL && identity != NULL, FALSE);
-#if GTK_MAJOR_VERSION >= 4
 	{
 		FabulorDccTransferRow *row = g_hash_table_lookup (list->rows, identity);
 		if (!row)
@@ -726,14 +549,6 @@ fabulor_dcc_transfer_list_remove (FabulorDccTransferList *list,
 		fabulor_gtk4_flat_model_stack_remove (list->models, row);
 		g_object_unref (row);
 	}
-#else
-	{
-		GtkTreeIter iter;
-		if (!dcc_transfer_find_iter (list, identity, &iter))
-			return FALSE;
-		gtk_list_store_remove (list->store, &iter);
-	}
-#endif
 	return TRUE;
 }
 
@@ -741,12 +556,8 @@ void
 fabulor_dcc_transfer_list_clear (FabulorDccTransferList *list)
 {
 	g_return_if_fail (list != NULL);
-#if GTK_MAJOR_VERSION >= 4
 	g_hash_table_remove_all (list->rows);
 	fabulor_gtk4_flat_model_stack_clear (list->models);
-#else
-	gtk_list_store_clear (list->store);
-#endif
 	dcc_transfer_selection_changed (list);
 }
 
@@ -754,20 +565,14 @@ guint
 fabulor_dcc_transfer_list_get_n_rows (FabulorDccTransferList *list)
 {
 	g_return_val_if_fail (list != NULL, 0);
-#if GTK_MAJOR_VERSION >= 4
 	return g_list_model_get_n_items (G_LIST_MODEL (
 		fabulor_gtk4_flat_model_stack_get_sorted (list->models)));
-#else
-	return (guint) gtk_tree_model_iter_n_children (
-		GTK_TREE_MODEL (list->store), NULL);
-#endif
 }
 
 guint
 fabulor_dcc_transfer_list_get_n_selected (FabulorDccTransferList *list)
 {
 	g_return_val_if_fail (list != NULL, 0);
-#if GTK_MAJOR_VERSION >= 4
 	{
 		GtkBitset *selected = gtk_selection_model_get_selection (
 			fabulor_gtk4_flat_model_stack_get_selection (list->models));
@@ -775,17 +580,6 @@ fabulor_dcc_transfer_list_get_n_selected (FabulorDccTransferList *list)
 		gtk_bitset_unref (selected);
 		return count;
 	}
-#else
-	if (list->view)
-	{
-		GList *rows = gtk_tree_selection_get_selected_rows (
-			gtk_tree_view_get_selection (GTK_TREE_VIEW (list->view)), NULL);
-		guint count = g_list_length (rows);
-		g_list_free_full (rows, (GDestroyNotify) gtk_tree_path_free);
-		return count;
-	}
-	return 0;
-#endif
 }
 
 gboolean
@@ -795,30 +589,12 @@ fabulor_dcc_transfer_list_set_selected (FabulorDccTransferList *list,
 	g_return_val_if_fail (list != NULL, FALSE);
 	if (position >= fabulor_dcc_transfer_list_get_n_rows (list))
 		return FALSE;
-#if GTK_MAJOR_VERSION >= 4
 	if (selected)
 		return gtk_selection_model_select_item (
 			fabulor_gtk4_flat_model_stack_get_selection (list->models), position,
 			FALSE);
 	return gtk_selection_model_unselect_item (
 		fabulor_gtk4_flat_model_stack_get_selection (list->models), position);
-#else
-	if (list->view)
-	{
-		GtkTreeIter iter;
-		GtkTreeSelection *selection = gtk_tree_view_get_selection (
-			GTK_TREE_VIEW (list->view));
-		if (!gtk_tree_model_iter_nth_child (GTK_TREE_MODEL (list->store), &iter,
-			NULL, (gint) position))
-			return FALSE;
-		if (selected)
-			gtk_tree_selection_select_iter (selection, &iter);
-		else
-			gtk_tree_selection_unselect_iter (selection, &iter);
-		return TRUE;
-	}
-	return FALSE;
-#endif
 }
 
 gboolean
@@ -835,7 +611,6 @@ fabulor_dcc_transfer_list_dup_all (FabulorDccTransferList *list)
 	guint i;
 	g_return_val_if_fail (list != NULL, identities);
 	count = fabulor_dcc_transfer_list_get_n_rows (list);
-#if GTK_MAJOR_VERSION >= 4
 	for (i = 0; i < count; i++)
 	{
 		FabulorDccTransferRow *row = g_list_model_get_item (G_LIST_MODEL (
@@ -843,20 +618,6 @@ fabulor_dcc_transfer_list_dup_all (FabulorDccTransferList *list)
 		g_ptr_array_add (identities, row->identity);
 		g_object_unref (row);
 	}
-#else
-	for (i = 0; i < count; i++)
-	{
-		GtkTreeIter iter;
-		gpointer identity;
-		if (gtk_tree_model_iter_nth_child (GTK_TREE_MODEL (list->store), &iter,
-			NULL, (gint) i))
-		{
-			gtk_tree_model_get (GTK_TREE_MODEL (list->store), &iter,
-				TRANSFER_COLUMN_IDENTITY, &identity, -1);
-			g_ptr_array_add (identities, identity);
-		}
-	}
-#endif
 	return identities;
 }
 
@@ -868,7 +629,6 @@ fabulor_dcc_transfer_list_dup_selected (FabulorDccTransferList *list)
 	guint i;
 	g_return_val_if_fail (list != NULL, identities);
 	count = fabulor_dcc_transfer_list_get_n_rows (list);
-#if GTK_MAJOR_VERSION >= 4
 	for (i = 0; i < count; i++)
 	{
 		FabulorDccTransferRow *row;
@@ -880,25 +640,6 @@ fabulor_dcc_transfer_list_dup_selected (FabulorDccTransferList *list)
 		g_ptr_array_add (identities, row->identity);
 		g_object_unref (row);
 	}
-#else
-	if (list->view)
-	{
-		GtkTreeSelection *selection = gtk_tree_view_get_selection (
-			GTK_TREE_VIEW (list->view));
-		for (i = 0; i < count; i++)
-		{
-			GtkTreeIter iter;
-			gpointer identity;
-			if (!gtk_tree_model_iter_nth_child (GTK_TREE_MODEL (list->store), &iter,
-				NULL, (gint) i) ||
-				!gtk_tree_selection_iter_is_selected (selection, &iter))
-				continue;
-			gtk_tree_model_get (GTK_TREE_MODEL (list->store), &iter,
-				TRANSFER_COLUMN_IDENTITY, &identity, -1);
-			g_ptr_array_add (identities, identity);
-		}
-	}
-#endif
 	return identities;
 }
 

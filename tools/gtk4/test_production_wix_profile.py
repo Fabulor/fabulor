@@ -10,6 +10,30 @@ PROPS = ROOT / "win32" / "zoitechat.props"
 SOLUTION = ROOT / "win32" / "zoitechat.sln"
 NATIVE_EXTENSIONS = ROOT / "tools" / "gtk4" / "gtk4-native-extensions.proj"
 GTK_COMPAT = ROOT / "src" / "fe-gtk" / "gtk-compat.h"
+GTK4_OPERATIONAL_LIST_SOURCES = (
+    "addon-list.c",
+    "ban-list.c",
+    "channel-list.c",
+    "channel-model.c",
+    "channel-model.h",
+    "channel-tree-view.c",
+    "dcc-chat-list.c",
+    "dcc-transfer-list.c",
+    "editable-list.c",
+    "gtk4-list-models.h",
+    "ignore-list.c",
+    "key-binding-list.c",
+    "notify-list.c",
+    "preferences-category-list.c",
+    "print-event-list.c",
+    "server-entry-list.c",
+    "server-network-list.c",
+    "sound-event-list.c",
+    "url-list.c",
+    "user-list-model.c",
+    "user-list-model.h",
+    "user-list-view.c",
+)
 VCPKG_CONFIGURATION = ROOT / "tools" / "windows-deps" / "vcpkg-configuration.json"
 VCPKG_MANIFEST = ROOT / "tools" / "windows-deps" / "vcpkg.json"
 WIX_NS = {"w": "http://wixtoolset.org/schemas/v4/wxs"}
@@ -101,6 +125,32 @@ class ProductionWixProfileTests(unittest.TestCase):
             self.assertNotRegex(source, rf"\b{token}")
         for type_name in ("GtkButtonBox", "GtkIconSize", "GdkEventButton"):
             self.assertNotRegex(source, rf"\b{type_name}\b")
+
+    def test_operational_list_sources_are_gtk4_only(self):
+        frontend = ROOT / "src" / "fe-gtk"
+        retired_types = (
+            "GtkTreeView",
+            "GtkListStore",
+            "GtkTreeStore",
+            "GtkCellRenderer",
+            "GtkTreeSelection",
+        )
+        retired_functions = (
+            "gtk_tree_view_",
+            "gtk_list_store_",
+            "gtk_tree_store_",
+            "gtk_cell_renderer_",
+            "gtk_tree_selection_",
+        )
+
+        for name in GTK4_OPERATIONAL_LIST_SOURCES:
+            source = (frontend / name).read_text(encoding="utf-8")
+            with self.subTest(source=name):
+                self.assertNotIn("GTK_MAJOR_VERSION", source)
+                for type_name in retired_types:
+                    self.assertNotRegex(source, rf"\b{type_name}\b")
+                for function in retired_functions:
+                    self.assertNotRegex(source, rf"\b{function}")
 
     def test_transitional_windows_staging_is_removed(self):
         props = PROPS.read_text(encoding="utf-8")

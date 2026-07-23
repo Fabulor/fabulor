@@ -11,23 +11,14 @@
 
 #include "gtk-compat.h"
 
-#if GTK_MAJOR_VERSION >= 4
 #include "gtk4-list-models.h"
-#else
-#include "gtkutil.h"
-#endif
 
 struct _FabulorUrlList
 {
 	GtkWidget *view;
-#if GTK_MAJOR_VERSION >= 4
 	FabulorGtk4FlatModelStack *models;
-#else
-	GtkListStore *store;
-#endif
 };
 
-#if GTK_MAJOR_VERSION >= 4
 
 typedef struct _FabulorUrlRow FabulorUrlRow;
 typedef struct _FabulorUrlRowClass FabulorUrlRowClass;
@@ -154,22 +145,12 @@ url_list_selected_row (FabulorUrlList *list)
 		GTK_SINGLE_SELECTION (selection)));
 }
 
-#else
-
-enum
-{
-	URL_LIST_COLUMN,
-	N_URL_LIST_COLUMNS
-};
-
-#endif
 
 FabulorUrlList *
 fabulor_url_list_new (void)
 {
 	FabulorUrlList *list = g_new0 (FabulorUrlList, 1);
 
-#if GTK_MAJOR_VERSION >= 4
 	list->models = fabulor_gtk4_flat_model_stack_new (FABULOR_TYPE_URL_ROW,
 		NULL, FABULOR_GTK4_SELECTION_SINGLE);
 	if (!list->models)
@@ -177,9 +158,6 @@ fabulor_url_list_new (void)
 		g_free (list);
 		return NULL;
 	}
-#else
-	list->store = gtk_list_store_new (N_URL_LIST_COLUMNS, G_TYPE_STRING);
-#endif
 	return list;
 }
 
@@ -188,11 +166,7 @@ fabulor_url_list_free (FabulorUrlList *list)
 {
 	if (!list)
 		return;
-#if GTK_MAJOR_VERSION >= 4
 	fabulor_gtk4_flat_model_stack_free (list->models);
-#else
-	g_clear_object (&list->store);
-#endif
 	g_free (list);
 }
 
@@ -204,7 +178,6 @@ fabulor_url_list_create_view (FabulorUrlList *list, GtkBox *parent,
 	g_return_val_if_fail (GTK_IS_BOX (parent), NULL);
 	g_return_val_if_fail (list->view == NULL, NULL);
 
-#if GTK_MAJOR_VERSION >= 4
 	{
 		GtkWidget *scroller = gtk_scrolled_window_new ();
 		GtkListItemFactory *factory = gtk_signal_list_item_factory_new ();
@@ -225,19 +198,6 @@ fabulor_url_list_create_view (FabulorUrlList *list, GtkBox *parent,
 		gtk_widget_set_vexpand (scroller, TRUE);
 		fabulor_gtk_box_append (parent, scroller, TRUE, TRUE, 0);
 	}
-#else
-	list->view = gtkutil_treeview_new (parent,
-		GTK_TREE_MODEL (g_object_ref (list->store)), NULL,
-		URL_LIST_COLUMN, (gchar *) title, -1);
-	if (list->view)
-	{
-		GtkWidget *scroller = gtk_widget_get_parent (list->view);
-		gtk_widget_set_hexpand (scroller, TRUE);
-		gtk_widget_set_vexpand (scroller, TRUE);
-		gtk_tree_view_set_headers_visible (GTK_TREE_VIEW (list->view), FALSE);
-		gtk_widget_show (list->view);
-	}
-#endif
 	return list->view;
 }
 
@@ -252,11 +212,7 @@ void
 fabulor_url_list_clear (FabulorUrlList *list)
 {
 	g_return_if_fail (list != NULL);
-#if GTK_MAJOR_VERSION >= 4
 	fabulor_gtk4_flat_model_stack_clear (list->models);
-#else
-	gtk_list_store_clear (list->store);
-#endif
 }
 
 void
@@ -265,7 +221,6 @@ fabulor_url_list_prepend (FabulorUrlList *list, const gchar *url, guint limit)
 	g_return_if_fail (list != NULL);
 	g_return_if_fail (url != NULL);
 
-#if GTK_MAJOR_VERSION >= 4
 	{
 		GListStore *store = fabulor_gtk4_flat_model_stack_get_store (list->models);
 		FabulorUrlRow *row = url_row_new (url);
@@ -277,42 +232,20 @@ fabulor_url_list_prepend (FabulorUrlList *list, const gchar *url, guint limit)
 		if (limit > 0 && count > limit)
 			g_list_store_splice (store, limit, count - limit, NULL, 0);
 	}
-#else
-	{
-		GtkTreeIter iter;
-		gboolean valid;
-
-		gtk_list_store_prepend (list->store, &iter);
-		gtk_list_store_set (list->store, &iter, URL_LIST_COLUMN, url, -1);
-		if (limit > 0)
-		{
-			valid = gtk_tree_model_iter_nth_child (GTK_TREE_MODEL (list->store),
-				&iter, NULL, (gint) limit);
-			while (valid)
-				valid = gtk_list_store_remove (list->store, &iter);
-		}
-	}
-#endif
 }
 
 guint
 fabulor_url_list_get_n_rows (FabulorUrlList *list)
 {
 	g_return_val_if_fail (list != NULL, 0);
-#if GTK_MAJOR_VERSION >= 4
 	return g_list_model_get_n_items (G_LIST_MODEL (
 		fabulor_gtk4_flat_model_stack_get_store (list->models)));
-#else
-	return (guint) gtk_tree_model_iter_n_children (
-		GTK_TREE_MODEL (list->store), NULL);
-#endif
 }
 
 gchar *
 fabulor_url_list_dup_at (FabulorUrlList *list, guint position)
 {
 	g_return_val_if_fail (list != NULL, NULL);
-#if GTK_MAJOR_VERSION >= 4
 	{
 		FabulorUrlRow *row = g_list_model_get_item (G_LIST_MODEL (
 			fabulor_gtk4_flat_model_stack_get_store (list->models)), position);
@@ -323,42 +256,16 @@ fabulor_url_list_dup_at (FabulorUrlList *list, guint position)
 		g_object_unref (row);
 		return url;
 	}
-#else
-	{
-		GtkTreeIter iter;
-		gchar *url = NULL;
-		if (gtk_tree_model_iter_nth_child (GTK_TREE_MODEL (list->store), &iter,
-			NULL, (gint) position))
-			gtk_tree_model_get (GTK_TREE_MODEL (list->store), &iter,
-				URL_LIST_COLUMN, &url, -1);
-		return url;
-	}
-#endif
 }
 
 gchar *
 fabulor_url_list_dup_selected (FabulorUrlList *list)
 {
 	g_return_val_if_fail (list != NULL, NULL);
-#if GTK_MAJOR_VERSION >= 4
 	{
 		FabulorUrlRow *row = url_list_selected_row (list);
 		return row ? g_strdup (row->url) : NULL;
 	}
-#else
-	{
-		GtkTreeIter iter;
-		GtkTreeSelection *selection;
-		gchar *url = NULL;
-		if (!list->view)
-			return NULL;
-		selection = gtk_tree_view_get_selection (GTK_TREE_VIEW (list->view));
-		if (gtk_tree_selection_get_selected (selection, NULL, &iter))
-			gtk_tree_model_get (GTK_TREE_MODEL (list->store), &iter,
-				URL_LIST_COLUMN, &url, -1);
-		return url;
-	}
-#endif
 }
 
 gchar *
@@ -367,7 +274,6 @@ fabulor_url_list_select_and_dup_at_point (FabulorUrlList *list,
 {
 	g_return_val_if_fail (list != NULL, NULL);
 	g_return_val_if_fail (list->view != NULL, NULL);
-#if GTK_MAJOR_VERSION >= 4
 	{
 		GtkSelectionModel *selection =
 			fabulor_gtk4_flat_model_stack_get_selection (list->models);
@@ -387,24 +293,4 @@ fabulor_url_list_select_and_dup_at_point (FabulorUrlList *list,
 		g_object_unref (row);
 		return url;
 	}
-#else
-	{
-		GtkTreePath *path;
-		GtkTreeIter iter;
-		GtkTreeSelection *selection;
-		gchar *url = NULL;
-
-		if (!gtk_tree_view_get_path_at_pos (GTK_TREE_VIEW (list->view),
-			(gint) x, (gint) y, &path, NULL, NULL, NULL))
-			return NULL;
-		selection = gtk_tree_view_get_selection (GTK_TREE_VIEW (list->view));
-		gtk_tree_selection_unselect_all (selection);
-		gtk_tree_selection_select_path (selection, path);
-		if (gtk_tree_model_get_iter (GTK_TREE_MODEL (list->store), &iter, path))
-			gtk_tree_model_get (GTK_TREE_MODEL (list->store), &iter,
-				URL_LIST_COLUMN, &url, -1);
-		gtk_tree_path_free (path);
-		return url;
-	}
-#endif
 }

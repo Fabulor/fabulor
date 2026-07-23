@@ -7448,6 +7448,39 @@ but no supported build can select a GTK3 implementation from the compatibility
 header. Direct GTK3 branches in individual source files and legacy,
 non-configurable Meson fragments remain separate Stage 9 cleanup targets.
 
+### GTK4 Stage 9 Operational List Source Specialization, Pass 7
+
+Date: 2026-07-23
+
+Boundary retired: 22 converted operational list, model, and view sources no
+longer carry parallel GTK3 implementations. A total of 3,707 inactive GTK3 and
+toolkit-selection lines are removed. The frontend-wide
+`GTK_MAJOR_VERSION`-conditional inventory falls from 564 to 290.
+
+Automated evidence:
+
+- strict GTK4 MSVC probe build and execution: pass with `/W4 /WX`, zero
+  warnings and zero errors; GTK 4.22.4 / GLib 2.88.0 / x64 runtime confirmed
+- complete GTK4 frontend project build and link: pass with zero errors; the
+  affected incremental build reports 7 existing warnings
+- production profile contract suite: all 10 tests pass, including all 22
+  specialized files and rejection of restored toolkit-version switches or
+  classic GTK3 tree/list APIs
+- complete GTK4 tooling contract suite: all 59 tests pass
+- theme retirement/import contract suite: all 7 tests pass
+- native manifest, path, and archive suite: all 22 tests pass
+- source audit: no `GTK_MAJOR_VERSION`, `GtkTreeView`, `GtkListStore`,
+  `GtkTreeStore`, `GtkCellRenderer`, `GtkTreeSelection`, or matching classic
+  function family remains in the specialized source set
+- repository whitespace validation: pass
+
+Behaviour contract: operational list behavior continues through the reviewed
+GTK4 models, selection owners, factories, list/column views, tree-list rows,
+and tree expanders. No supported build can select the retired GTK3
+implementation from these files. The remaining frontend source branches and
+legacy, non-configurable Meson fragments remain separate Stage 9 cleanup
+targets.
+
 ## Stage Completion Rule
 
 A stage can move to complete in `migration-plan.md` only when:

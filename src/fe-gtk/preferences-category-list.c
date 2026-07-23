@@ -20,9 +20,7 @@ struct _FabulorPreferencesCategoryRow
 	gchar *title;
 	gint page_index;
 	GPtrArray *children;
-#if GTK_MAJOR_VERSION >= 4
 	GListStore *child_store;
-#endif
 };
 
 struct _FabulorPreferencesCategoryRowClass
@@ -42,14 +40,10 @@ struct _FabulorPreferencesCategoryList
 	FabulorPreferencesCategorySelectionFunc selection_func;
 	gpointer callback_data;
 	gboolean changing_selection;
-#if GTK_MAJOR_VERSION >= 4
 	GListStore *roots;
 	GtkTreeListModel *tree;
 	GtkSingleSelection *selection;
 	gulong selection_id;
-#else
-	GtkTreeStore *store;
-#endif
 };
 
 static void
@@ -60,9 +54,7 @@ fabulor_preferences_category_row_finalize (GObject *object)
 
 	g_free (row->title);
 	g_ptr_array_unref (row->children);
-#if GTK_MAJOR_VERSION >= 4
 	g_clear_object (&row->child_store);
-#endif
 	G_OBJECT_CLASS (fabulor_preferences_category_row_parent_class)->finalize (
 		object);
 }
@@ -80,10 +72,8 @@ fabulor_preferences_category_row_init (FabulorPreferencesCategoryRow *row)
 {
 	row->page_index = -1;
 	row->children = g_ptr_array_new_with_free_func (g_object_unref);
-#if GTK_MAJOR_VERSION >= 4
 	row->child_store = g_list_store_new (
 		fabulor_preferences_category_row_get_type ());
-#endif
 }
 
 static FabulorPreferencesCategoryRow *
@@ -131,7 +121,6 @@ preferences_category_commit_selection (FabulorPreferencesCategoryList *list,
 		list->selection_func (page_index, list->callback_data);
 }
 
-#if GTK_MAJOR_VERSION >= 4
 
 static GListModel *
 preferences_category_create_children (gpointer item, gpointer user_data)
@@ -261,46 +250,6 @@ preferences_category_factory_unbind (GtkSignalListItemFactory *factory,
 	gtk_tree_expander_set_list_row (GTK_TREE_EXPANDER (expander), NULL);
 }
 
-#else
-
-enum
-{
-	PREFERENCES_CATEGORY_TITLE_COLUMN,
-	PREFERENCES_CATEGORY_PAGE_COLUMN,
-	N_PREFERENCES_CATEGORY_COLUMNS
-};
-
-static gboolean
-preferences_category_select_filter (GtkTreeSelection *selection,
-	GtkTreeModel *model, GtkTreePath *path, gboolean path_selected,
-	gpointer user_data)
-{
-	(void) selection;
-	(void) model;
-	(void) path_selected;
-	(void) user_data;
-	return gtk_tree_path_get_depth (path) > 1;
-}
-
-static void
-preferences_category_selection_changed (GtkTreeSelection *selection,
-	gpointer user_data)
-{
-	FabulorPreferencesCategoryList *list = user_data;
-	GtkTreeModel *model;
-	GtkTreeIter iter;
-	gint page_index;
-
-	if (list->changing_selection ||
-		!gtk_tree_selection_get_selected (selection, &model, &iter))
-		return;
-	gtk_tree_model_get (model, &iter, PREFERENCES_CATEGORY_PAGE_COLUMN,
-		&page_index, -1);
-	if (page_index >= 0)
-		preferences_category_commit_selection (list, page_index);
-}
-
-#endif
 
 FabulorPreferencesCategoryList *
 fabulor_preferences_category_list_new (
@@ -313,7 +262,6 @@ fabulor_preferences_category_list_new (
 	list->selected_page = -1;
 	list->selection_func = selection_func;
 	list->callback_data = user_data;
-#if GTK_MAJOR_VERSION >= 4
 	list->roots = g_list_store_new (
 		fabulor_preferences_category_row_get_type ());
 	list->tree = gtk_tree_list_model_new (
@@ -325,10 +273,6 @@ fabulor_preferences_category_list_new (
 	gtk_single_selection_set_can_unselect (list->selection, TRUE);
 	list->selection_id = g_signal_connect (list->selection, "notify::selected",
 		G_CALLBACK (preferences_category_selection_changed), list);
-#else
-	list->store = gtk_tree_store_new (N_PREFERENCES_CATEGORY_COLUMNS,
-		G_TYPE_STRING, G_TYPE_INT);
-#endif
 	return list;
 }
 
@@ -338,15 +282,11 @@ fabulor_preferences_category_list_free (
 {
 	if (!list)
 		return;
-#if GTK_MAJOR_VERSION >= 4
 	if (list->selection_id)
 		g_signal_handler_disconnect (list->selection, list->selection_id);
 	g_clear_object (&list->selection);
 	g_clear_object (&list->tree);
 	g_clear_object (&list->roots);
-#else
-	g_clear_object (&list->store);
-#endif
 	g_ptr_array_unref (list->categories);
 	g_free (list);
 }
@@ -362,17 +302,7 @@ fabulor_preferences_category_list_append_category (
 	category = preferences_category_row_new (title, -1);
 	position = list->categories->len;
 	g_ptr_array_add (list->categories, category);
-#if GTK_MAJOR_VERSION >= 4
 	g_list_store_append (list->roots, category);
-#else
-	{
-		GtkTreeIter iter;
-		gtk_tree_store_append (list->store, &iter, NULL);
-		gtk_tree_store_set (list->store, &iter,
-			PREFERENCES_CATEGORY_TITLE_COLUMN, category->title,
-			PREFERENCES_CATEGORY_PAGE_COLUMN, -1, -1);
-	}
-#endif
 	return position;
 }
 
@@ -391,20 +321,7 @@ fabulor_preferences_category_list_append_page (
 	category = g_ptr_array_index (list->categories, category_position);
 	page = preferences_category_row_new (title, page_index);
 	g_ptr_array_add (category->children, page);
-#if GTK_MAJOR_VERSION >= 4
 	g_list_store_append (category->child_store, page);
-#else
-	{
-		GtkTreeIter category_iter;
-		GtkTreeIter page_iter;
-		gtk_tree_model_iter_nth_child (GTK_TREE_MODEL (list->store),
-			&category_iter, NULL, (gint) category_position);
-		gtk_tree_store_append (list->store, &page_iter, &category_iter);
-		gtk_tree_store_set (list->store, &page_iter,
-			PREFERENCES_CATEGORY_TITLE_COLUMN, page->title,
-			PREFERENCES_CATEGORY_PAGE_COLUMN, page_index, -1);
-	}
-#endif
 	list->page_count++;
 }
 
@@ -416,7 +333,6 @@ fabulor_preferences_category_list_create_view (
 	GtkWidget *frame;
 
 	g_return_val_if_fail (list && GTK_IS_BOX (parent) && !list->view, NULL);
-#if GTK_MAJOR_VERSION >= 4
 	{
 		GtkListItemFactory *factory = gtk_signal_list_item_factory_new ();
 		g_signal_connect (factory, "setup",
@@ -429,31 +345,8 @@ fabulor_preferences_category_list_create_view (
 			GTK_SELECTION_MODEL (g_object_ref (list->selection)), factory);
 		frame = gtk_frame_new (column_title);
 	}
-#else
-	{
-		GtkCellRenderer *renderer = gtk_cell_renderer_text_new ();
-		GtkTreeSelection *selection;
-
-		list->view = gtk_tree_view_new_with_model (
-			GTK_TREE_MODEL (g_object_ref (list->store)));
-		selection = gtk_tree_view_get_selection (GTK_TREE_VIEW (list->view));
-		gtk_tree_selection_set_mode (selection, GTK_SELECTION_BROWSE);
-		gtk_tree_selection_set_select_function (selection,
-			preferences_category_select_filter, NULL, NULL);
-		g_signal_connect (selection, "changed",
-			G_CALLBACK (preferences_category_selection_changed), list);
-		gtk_tree_view_insert_column_with_attributes (
-			GTK_TREE_VIEW (list->view), -1, column_title, renderer, "text",
-			PREFERENCES_CATEGORY_TITLE_COLUMN, NULL);
-		gtk_tree_view_expand_all (GTK_TREE_VIEW (list->view));
-		frame = gtk_frame_new (NULL);
-	}
-#endif
 	fabulor_gtk_frame_set_child (GTK_FRAME (frame), list->view);
 	fabulor_gtk_box_append (parent, frame, FALSE, FALSE, 0);
-#if GTK_MAJOR_VERSION < 4
-	gtk_widget_show_all (frame);
-#endif
 	return list->view;
 }
 
@@ -480,7 +373,6 @@ fabulor_preferences_category_list_select_page (
 	g_return_val_if_fail (list != NULL, FALSE);
 	if (!preferences_category_find_page (list, page_index))
 		return FALSE;
-#if GTK_MAJOR_VERSION >= 4
 	{
 		guint position;
 		if (!preferences_category_find_position (list, page_index, &position))
@@ -489,37 +381,6 @@ fabulor_preferences_category_list_select_page (
 			gtk_single_selection_set_selected (list->selection, position);
 		preferences_category_commit_selection (list, page_index);
 	}
-#else
-	if (list->view)
-	{
-		GtkTreeIter category_iter;
-		gboolean category_valid = gtk_tree_model_get_iter_first (
-			GTK_TREE_MODEL (list->store), &category_iter);
-		while (category_valid)
-		{
-			GtkTreeIter page_iter;
-			gboolean page_valid = gtk_tree_model_iter_children (
-				GTK_TREE_MODEL (list->store), &page_iter, &category_iter);
-			while (page_valid)
-			{
-				gint candidate;
-				gtk_tree_model_get (GTK_TREE_MODEL (list->store), &page_iter,
-					PREFERENCES_CATEGORY_PAGE_COLUMN, &candidate, -1);
-				if (candidate == page_index)
-				{
-					gtk_tree_selection_select_iter (gtk_tree_view_get_selection (
-						GTK_TREE_VIEW (list->view)), &page_iter);
-					return TRUE;
-				}
-				page_valid = gtk_tree_model_iter_next (
-					GTK_TREE_MODEL (list->store), &page_iter);
-			}
-			category_valid = gtk_tree_model_iter_next (
-				GTK_TREE_MODEL (list->store), &category_iter);
-		}
-	}
-	else
-#endif
 		preferences_category_commit_selection (list, page_index);
 	return TRUE;
 }

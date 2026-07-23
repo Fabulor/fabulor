@@ -11,25 +11,16 @@
 
 #include "gtk-compat.h"
 
-#if GTK_MAJOR_VERSION >= 4
 #include "gtk4-list-models.h"
-#else
-#include "custom-list.h"
-#include "gtkutil.h"
-#endif
 
 struct _FabulorChannelList
 {
 	GtkWidget *view;
 	FabulorChannelListActivateFunc activate_func;
 	gpointer callback_data;
-#if GTK_MAJOR_VERSION >= 4
 	FabulorGtk4FlatModelStack *models;
 	GHashTable *rows;
 	GtkColumnViewColumn *columns[3];
-#else
-	CustomList *store;
-#endif
 };
 
 void
@@ -42,7 +33,6 @@ fabulor_channel_list_record_free (FabulorChannelListRecord *record)
 	g_free (record);
 }
 
-#if GTK_MAJOR_VERSION >= 4
 
 typedef struct _FabulorChannelRow FabulorChannelRow;
 typedef struct _FabulorChannelRowClass FabulorChannelRowClass;
@@ -269,49 +259,6 @@ channel_activate_cb (GtkColumnView *view, guint position, gpointer user_data)
 		list->activate_func (list->callback_data);
 }
 
-#else
-
-static void
-channel_activate_cb (GtkTreeView *view, GtkTreePath *path,
-	GtkTreeViewColumn *column, gpointer user_data)
-{
-	FabulorChannelList *list = user_data;
-	(void) view;
-	(void) path;
-	(void) column;
-	if (list->activate_func)
-		list->activate_func (list->callback_data);
-}
-
-static void
-channel_gtk3_add_column (GtkWidget *view, gint text_column, gint size,
-	const gchar *title, gboolean right_justified)
-{
-	GtkCellRenderer *renderer = gtk_cell_renderer_text_new ();
-	GtkTreeViewColumn *column;
-	if (right_justified)
-		g_object_set (renderer, "xalign", 1.0f, NULL);
-	g_object_set (renderer, "ypad", 0, NULL);
-	gtk_tree_view_insert_column_with_attributes (GTK_TREE_VIEW (view), -1,
-		title, renderer, "text", text_column, NULL);
-	gtk_cell_renderer_text_set_fixed_height_from_font (
-		GTK_CELL_RENDERER_TEXT (renderer), 1);
-	column = gtk_tree_view_get_column (GTK_TREE_VIEW (view), text_column);
-	gtk_tree_view_column_set_sort_column_id (column, text_column);
-	gtk_tree_view_column_set_resizable (column, TRUE);
-	if (text_column == CUSTOM_LIST_COL_NAME)
-	{
-		gtk_tree_view_column_set_sizing (column, GTK_TREE_VIEW_COLUMN_FIXED);
-		gtk_tree_view_column_set_fixed_width (column, size);
-	}
-	else if (text_column == CUSTOM_LIST_COL_USERS)
-	{
-		gtk_tree_view_column_set_sizing (column, GTK_TREE_VIEW_COLUMN_AUTOSIZE);
-		gtk_tree_view_column_set_resizable (column, FALSE);
-	}
-}
-
-#endif
 
 FabulorChannelList *
 fabulor_channel_list_new (FabulorChannelListActivateFunc activate_func,
@@ -320,7 +267,6 @@ fabulor_channel_list_new (FabulorChannelListActivateFunc activate_func,
 	FabulorChannelList *list = g_new0 (FabulorChannelList, 1);
 	list->activate_func = activate_func;
 	list->callback_data = user_data;
-#if GTK_MAJOR_VERSION >= 4
 	{
 		GtkExpression *expression = gtk_property_expression_new (
 			FABULOR_TYPE_CHANNEL_ROW, NULL, "collation-key");
@@ -335,9 +281,6 @@ fabulor_channel_list_new (FabulorChannelListActivateFunc activate_func,
 		return NULL;
 	}
 	list->rows = g_hash_table_new (g_direct_hash, g_direct_equal);
-#else
-	list->store = custom_list_new ();
-#endif
 	return list;
 }
 
@@ -346,12 +289,8 @@ fabulor_channel_list_free (FabulorChannelList *list)
 {
 	if (!list)
 		return;
-#if GTK_MAJOR_VERSION >= 4
 	g_hash_table_unref (list->rows);
 	fabulor_gtk4_flat_model_stack_free (list->models);
-#else
-	g_clear_object (&list->store);
-#endif
 	g_free (list);
 }
 
@@ -362,7 +301,6 @@ fabulor_channel_list_create_view (FabulorChannelList *list, GtkBox *parent,
 	gint topic_width)
 {
 	g_return_val_if_fail (list && GTK_IS_BOX (parent) && !list->view, NULL);
-#if GTK_MAJOR_VERSION >= 4
 	{
 		GtkWidget *scroller = gtk_scrolled_window_new ();
 		GtkSelectionModel *selection =
@@ -397,46 +335,6 @@ fabulor_channel_list_create_view (FabulorChannelList *list, GtkBox *parent,
 		gtk_widget_set_vexpand (scroller, TRUE);
 		fabulor_gtk_box_append (parent, scroller, TRUE, TRUE, 0);
 	}
-#else
-	{
-		GtkTreeSelection *selection;
-		list->view = gtkutil_treeview_new (parent,
-			GTK_TREE_MODEL (g_object_ref (list->store)), NULL, -1);
-		gtk_scrolled_window_set_shadow_type (GTK_SCROLLED_WINDOW (
-			gtk_widget_get_parent (list->view)), GTK_SHADOW_IN);
-		channel_gtk3_add_column (list->view, CUSTOM_LIST_COL_NAME, 96,
-			channel_title, FALSE);
-		channel_gtk3_add_column (list->view, CUSTOM_LIST_COL_USERS, 50,
-			users_title, TRUE);
-		channel_gtk3_add_column (list->view, CUSTOM_LIST_COL_TOPIC, 50,
-			topic_title, FALSE);
-		if (channel_width > 0)
-			gtk_tree_view_column_set_fixed_width (gtk_tree_view_get_column (
-				GTK_TREE_VIEW (list->view), 0), channel_width);
-		if (users_width > 0)
-		{
-			GtkTreeViewColumn *column = gtk_tree_view_get_column (
-				GTK_TREE_VIEW (list->view), 1);
-			gtk_tree_view_column_set_sizing (column, GTK_TREE_VIEW_COLUMN_FIXED);
-			gtk_tree_view_column_set_fixed_width (column, users_width);
-			gtk_tree_view_column_set_resizable (column, FALSE);
-		}
-		if (topic_width > 0)
-		{
-			GtkTreeViewColumn *column = gtk_tree_view_get_column (
-				GTK_TREE_VIEW (list->view), 2);
-			gtk_tree_view_column_set_sizing (column, GTK_TREE_VIEW_COLUMN_FIXED);
-			gtk_tree_view_column_set_fixed_width (column, topic_width);
-		}
-		gtk_tree_view_set_grid_lines (GTK_TREE_VIEW (list->view),
-			GTK_TREE_VIEW_GRID_LINES_HORIZONTAL);
-		selection = gtk_tree_view_get_selection (GTK_TREE_VIEW (list->view));
-		gtk_tree_selection_set_mode (selection, GTK_SELECTION_MULTIPLE);
-		g_signal_connect (list->view, "row-activated",
-			G_CALLBACK (channel_activate_cb), list);
-		gtk_widget_show (list->view);
-	}
-#endif
 	return list->view;
 }
 
@@ -452,7 +350,6 @@ fabulor_channel_list_append (FabulorChannelList *list,
 {
 	g_return_val_if_fail (list && snapshot && snapshot->identity &&
 		snapshot->channel, FALSE);
-#if GTK_MAJOR_VERSION >= 4
 	{
 		FabulorChannelRow *row;
 		if (g_hash_table_contains (list->rows, snapshot->identity))
@@ -462,9 +359,6 @@ fabulor_channel_list_append (FabulorChannelList *list,
 		g_hash_table_insert (list->rows, snapshot->identity, row);
 		g_object_unref (row);
 	}
-#else
-	custom_list_append (list->store, snapshot->identity);
-#endif
 	return TRUE;
 }
 
@@ -472,37 +366,25 @@ void
 fabulor_channel_list_clear (FabulorChannelList *list)
 {
 	g_return_if_fail (list != NULL);
-#if GTK_MAJOR_VERSION >= 4
 	g_hash_table_remove_all (list->rows);
 	fabulor_gtk4_flat_model_stack_clear (list->models);
-#else
-	custom_list_clear (list->store);
-#endif
 }
 
 void
 fabulor_channel_list_resort (FabulorChannelList *list)
 {
 	g_return_if_fail (list != NULL);
-#if GTK_MAJOR_VERSION >= 4
 	if (list->view)
 		gtk_sorter_changed (gtk_column_view_get_sorter (
 			GTK_COLUMN_VIEW (list->view)), GTK_SORTER_CHANGE_DIFFERENT);
-#else
-	custom_list_resort (list->store);
-#endif
 }
 
 guint
 fabulor_channel_list_get_n_rows (FabulorChannelList *list)
 {
 	g_return_val_if_fail (list != NULL, 0);
-#if GTK_MAJOR_VERSION >= 4
 	return g_list_model_get_n_items (G_LIST_MODEL (
 		fabulor_gtk4_flat_model_stack_get_sorted (list->models)));
-#else
-	return list->store->num_rows;
-#endif
 }
 
 gboolean
@@ -512,30 +394,12 @@ fabulor_channel_list_set_selected (FabulorChannelList *list, guint position,
 	g_return_val_if_fail (list != NULL, FALSE);
 	if (position >= fabulor_channel_list_get_n_rows (list))
 		return FALSE;
-#if GTK_MAJOR_VERSION >= 4
 	if (selected)
 		return gtk_selection_model_select_item (
 			fabulor_gtk4_flat_model_stack_get_selection (list->models), position,
 			FALSE);
 	return gtk_selection_model_unselect_item (
 		fabulor_gtk4_flat_model_stack_get_selection (list->models), position);
-#else
-	if (list->view)
-	{
-		GtkTreeIter iter;
-		GtkTreeSelection *selection = gtk_tree_view_get_selection (
-			GTK_TREE_VIEW (list->view));
-		if (!gtk_tree_model_iter_nth_child (GTK_TREE_MODEL (list->store), &iter,
-			NULL, (gint) position))
-			return FALSE;
-		if (selected)
-			gtk_tree_selection_select_iter (selection, &iter);
-		else
-			gtk_tree_selection_unselect_iter (selection, &iter);
-		return TRUE;
-	}
-	return FALSE;
-#endif
 }
 
 gboolean
@@ -543,7 +407,6 @@ fabulor_channel_list_select_at_point (FabulorChannelList *list, gdouble x,
 	gdouble y)
 {
 	g_return_val_if_fail (list && list->view, FALSE);
-#if GTK_MAJOR_VERSION >= 4
 	{
 		guint position;
 		GtkSelectionModel *selection =
@@ -554,23 +417,6 @@ fabulor_channel_list_select_at_point (FabulorChannelList *list, gdouble x,
 			gtk_selection_model_select_item (selection, position, TRUE);
 		return TRUE;
 	}
-#else
-	{
-		GtkTreePath *path;
-		GtkTreeSelection *selection;
-		if (!gtk_tree_view_get_path_at_pos (GTK_TREE_VIEW (list->view),
-			(gint) x, (gint) y, &path, NULL, NULL, NULL))
-			return FALSE;
-		selection = gtk_tree_view_get_selection (GTK_TREE_VIEW (list->view));
-		if (!gtk_tree_selection_path_is_selected (selection, path))
-		{
-			gtk_tree_selection_unselect_all (selection);
-			gtk_tree_selection_select_path (selection, path);
-		}
-		gtk_tree_path_free (path);
-		return TRUE;
-	}
-#endif
 }
 
 GPtrArray *
@@ -582,7 +428,6 @@ fabulor_channel_list_dup_selected_text (FabulorChannelList *list,
 	guint i;
 	g_return_val_if_fail (list != NULL, values);
 	count = fabulor_channel_list_get_n_rows (list);
-#if GTK_MAJOR_VERSION >= 4
 	for (i = 0; i < count; i++)
 	{
 		FabulorChannelRow *row;
@@ -595,26 +440,6 @@ fabulor_channel_list_dup_selected_text (FabulorChannelList *list,
 			field == FABULOR_CHANNEL_LIST_CHANNEL ? row->channel : row->topic));
 		g_object_unref (row);
 	}
-#else
-	if (list->view)
-	{
-		GtkTreeSelection *selection = gtk_tree_view_get_selection (
-			GTK_TREE_VIEW (list->view));
-		for (i = 0; i < count; i++)
-		{
-			GtkTreeIter iter;
-			gchar *value;
-			if (!gtk_tree_model_iter_nth_child (GTK_TREE_MODEL (list->store), &iter,
-				NULL, (gint) i) ||
-				!gtk_tree_selection_iter_is_selected (selection, &iter))
-				continue;
-			gtk_tree_model_get (GTK_TREE_MODEL (list->store), &iter,
-				field == FABULOR_CHANNEL_LIST_CHANNEL ? CUSTOM_LIST_COL_NAME :
-				CUSTOM_LIST_COL_TOPIC, &value, -1);
-			g_ptr_array_add (values, value);
-		}
-	}
-#endif
 	return values;
 }
 
@@ -642,7 +467,6 @@ fabulor_channel_list_dup_all (FabulorChannelList *list)
 	guint i;
 	g_return_val_if_fail (list != NULL, records);
 	count = fabulor_channel_list_get_n_rows (list);
-#if GTK_MAJOR_VERSION >= 4
 	for (i = 0; i < count; i++)
 	{
 		FabulorChannelRow *row = g_list_model_get_item (G_LIST_MODEL (
@@ -655,22 +479,6 @@ fabulor_channel_list_dup_all (FabulorChannelList *list)
 		g_ptr_array_add (records, record);
 		g_object_unref (row);
 	}
-#else
-	for (i = 0; i < count; i++)
-	{
-		GtkTreeIter iter;
-		FabulorChannelListRecord *record;
-		if (!gtk_tree_model_iter_nth_child (GTK_TREE_MODEL (list->store), &iter,
-			NULL, (gint) i))
-			continue;
-		record = g_new0 (FabulorChannelListRecord, 1);
-		gtk_tree_model_get (GTK_TREE_MODEL (list->store), &iter,
-			CUSTOM_LIST_COL_NAME, &record->channel,
-			CUSTOM_LIST_COL_USERS, &record->users,
-			CUSTOM_LIST_COL_TOPIC, &record->topic, -1);
-		g_ptr_array_add (records, record);
-	}
-#endif
 	return records;
 }
 
@@ -679,22 +487,10 @@ fabulor_channel_list_get_column_widths (FabulorChannelList *list,
 	gint *channel_width, gint *users_width, gint *topic_width)
 {
 	g_return_if_fail (list && list->view);
-#if GTK_MAJOR_VERSION >= 4
 	if (channel_width)
 		*channel_width = gtk_column_view_column_get_fixed_width (list->columns[0]);
 	if (users_width)
 		*users_width = gtk_column_view_column_get_fixed_width (list->columns[1]);
 	if (topic_width)
 		*topic_width = gtk_column_view_column_get_fixed_width (list->columns[2]);
-#else
-	if (channel_width)
-		*channel_width = gtk_tree_view_column_get_width (gtk_tree_view_get_column (
-			GTK_TREE_VIEW (list->view), 0));
-	if (users_width)
-		*users_width = gtk_tree_view_column_get_width (gtk_tree_view_get_column (
-			GTK_TREE_VIEW (list->view), 1));
-	if (topic_width)
-		*topic_width = gtk_tree_view_column_get_width (gtk_tree_view_get_column (
-			GTK_TREE_VIEW (list->view), 2));
-#endif
 }

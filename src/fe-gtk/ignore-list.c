@@ -11,11 +11,7 @@
 
 #include "gtk-compat.h"
 
-#if GTK_MAJOR_VERSION >= 4
 #include "gtk4-list-models.h"
-#else
-#include "gtkutil.h"
-#endif
 
 enum
 {
@@ -43,14 +39,9 @@ struct _FabulorIgnoreList
 	FabulorIgnoreListRenameFunc rename_func;
 	FabulorIgnoreListFlagsFunc flags_func;
 	gpointer callback_data;
-#if GTK_MAJOR_VERSION >= 4
 	FabulorGtk4FlatModelStack *models;
-#else
-	GtkListStore *store;
-#endif
 };
 
-#if GTK_MAJOR_VERSION >= 4
 
 typedef struct _FabulorIgnoreRow FabulorIgnoreRow;
 typedef struct _FabulorIgnoreRowClass FabulorIgnoreRowClass;
@@ -466,110 +457,6 @@ ignore_toggle_column_new (FabulorIgnoreList *list, const gchar *title,
 	return column;
 }
 
-#else
-
-enum
-{
-	IGNORE_COLUMN_MASK,
-	IGNORE_COLUMN_CHANNEL,
-	IGNORE_COLUMN_PRIVATE,
-	IGNORE_COLUMN_NOTICE,
-	IGNORE_COLUMN_CTCP,
-	IGNORE_COLUMN_DCC,
-	IGNORE_COLUMN_INVITE,
-	IGNORE_COLUMN_UNIGNORE,
-	IGNORE_COLUMN_FLAGS,
-	N_IGNORE_COLUMNS
-};
-
-typedef struct
-{
-	FabulorIgnoreList *owner;
-	guint flag;
-} IgnoreToggleBinding;
-
-static guint
-ignore_gtk3_flags (GtkTreeModel *model, GtkTreeIter *iter)
-{
-	guint flags;
-
-	gtk_tree_model_get (model, iter, IGNORE_COLUMN_FLAGS, &flags, -1);
-	return flags;
-}
-
-static gint
-ignore_gtk3_column_for_flag (guint flag)
-{
-	switch (flag)
-	{
-	case IGNORE_FLAG_CHANNEL: return IGNORE_COLUMN_CHANNEL;
-	case IGNORE_FLAG_PRIVATE: return IGNORE_COLUMN_PRIVATE;
-	case IGNORE_FLAG_NOTICE: return IGNORE_COLUMN_NOTICE;
-	case IGNORE_FLAG_CTCP: return IGNORE_COLUMN_CTCP;
-	case IGNORE_FLAG_DCC: return IGNORE_COLUMN_DCC;
-	case IGNORE_FLAG_INVITE: return IGNORE_COLUMN_INVITE;
-	case IGNORE_FLAG_UNIGNORE: return IGNORE_COLUMN_UNIGNORE;
-	default: return -1;
-	}
-}
-
-static void
-ignore_toggle_binding_free (gpointer data, GClosure *closure)
-{
-	(void) closure;
-	g_free (data);
-}
-
-static void
-ignore_gtk3_mask_edited (GtkCellRendererText *renderer, gchar *path_text,
-	gchar *new_mask, gpointer user_data)
-{
-	FabulorIgnoreList *list = user_data;
-	GtkTreeIter iter;
-	gchar *old_mask;
-	guint flags;
-
-	(void) renderer;
-	if (!gtk_tree_model_get_iter_from_string (GTK_TREE_MODEL (list->store),
-		&iter, path_text))
-		return;
-	gtk_tree_model_get (GTK_TREE_MODEL (list->store), &iter,
-		IGNORE_COLUMN_MASK, &old_mask, -1);
-	flags = ignore_gtk3_flags (GTK_TREE_MODEL (list->store), &iter);
-	if (g_strcmp0 (old_mask, new_mask) != 0 && new_mask && *new_mask &&
-		(!list->rename_func || list->rename_func (old_mask, new_mask, flags,
-			list->callback_data)))
-		gtk_list_store_set (list->store, &iter, IGNORE_COLUMN_MASK, new_mask, -1);
-	g_free (old_mask);
-}
-
-static void
-ignore_gtk3_option_toggled (GtkCellRendererToggle *renderer, gchar *path_text,
-	gpointer user_data)
-{
-	IgnoreToggleBinding *binding = user_data;
-	FabulorIgnoreList *list = binding->owner;
-	GtkTreeIter iter;
-	gint column = ignore_gtk3_column_for_flag (binding->flag);
-	gboolean active;
-	gchar *mask;
-	guint flags;
-
-	(void) renderer;
-	if (!gtk_tree_model_get_iter_from_string (GTK_TREE_MODEL (list->store),
-		&iter, path_text))
-		return;
-	gtk_tree_model_get (GTK_TREE_MODEL (list->store), &iter, column, &active,
-		IGNORE_COLUMN_MASK, &mask, IGNORE_COLUMN_FLAGS, &flags, -1);
-	flags = active ? flags & ~binding->flag : flags | binding->flag;
-	gtk_list_store_set (list->store, &iter, column, !active,
-		IGNORE_COLUMN_FLAGS, flags, -1);
-	if (list->flags_func)
-		list->flags_func (mask, flags, list->callback_data);
-	g_free (mask);
-}
-
-#endif
 
 FabulorIgnoreList *
 fabulor_ignore_list_new (FabulorIgnoreListRenameFunc rename_func,
@@ -580,7 +467,6 @@ fabulor_ignore_list_new (FabulorIgnoreListRenameFunc rename_func,
 	list->rename_func = rename_func;
 	list->flags_func = flags_func;
 	list->callback_data = user_data;
-#if GTK_MAJOR_VERSION >= 4
 	list->models = fabulor_gtk4_flat_model_stack_new (FABULOR_TYPE_IGNORE_ROW,
 		NULL, FABULOR_GTK4_SELECTION_SINGLE);
 	if (!list->models)
@@ -588,11 +474,6 @@ fabulor_ignore_list_new (FabulorIgnoreListRenameFunc rename_func,
 		g_free (list);
 		return NULL;
 	}
-#else
-	list->store = gtk_list_store_new (N_IGNORE_COLUMNS, G_TYPE_STRING,
-		G_TYPE_BOOLEAN, G_TYPE_BOOLEAN, G_TYPE_BOOLEAN, G_TYPE_BOOLEAN,
-		G_TYPE_BOOLEAN, G_TYPE_BOOLEAN, G_TYPE_BOOLEAN, G_TYPE_UINT);
-#endif
 	return list;
 }
 
@@ -601,11 +482,7 @@ fabulor_ignore_list_free (FabulorIgnoreList *list)
 {
 	if (!list)
 		return;
-#if GTK_MAJOR_VERSION >= 4
 	fabulor_gtk4_flat_model_stack_free (list->models);
-#else
-	g_clear_object (&list->store);
-#endif
 	g_free (list);
 }
 
@@ -619,7 +496,6 @@ fabulor_ignore_list_create_view (FabulorIgnoreList *list, GtkBox *parent,
 	g_return_val_if_fail (list != NULL, NULL);
 	g_return_val_if_fail (GTK_IS_BOX (parent), NULL);
 	g_return_val_if_fail (list->view == NULL, NULL);
-#if GTK_MAJOR_VERSION >= 4
 	{
 		const gchar *titles[] = { channel_title, private_title, notice_title,
 			ctcp_title, dcc_title, invite_title, unignore_title };
@@ -652,56 +528,6 @@ fabulor_ignore_list_create_view (FabulorIgnoreList *list, GtkBox *parent,
 		gtk_widget_set_vexpand (scroller, TRUE);
 		fabulor_gtk_box_append (parent, scroller, TRUE, TRUE, 0);
 	}
-#else
-	{
-		GtkTreeViewColumn *column;
-		const guint flags[] = { IGNORE_FLAG_CHANNEL, IGNORE_FLAG_PRIVATE,
-			IGNORE_FLAG_NOTICE, IGNORE_FLAG_CTCP, IGNORE_FLAG_DCC,
-			IGNORE_FLAG_INVITE, IGNORE_FLAG_UNIGNORE };
-		gint column_id;
-
-		list->view = gtkutil_treeview_new (parent,
-			GTK_TREE_MODEL (g_object_ref (list->store)), NULL,
-			IGNORE_COLUMN_MASK, (gchar *) mask_title,
-			IGNORE_COLUMN_CHANNEL, (gchar *) channel_title,
-			IGNORE_COLUMN_PRIVATE, (gchar *) private_title,
-			IGNORE_COLUMN_NOTICE, (gchar *) notice_title,
-			IGNORE_COLUMN_CTCP, (gchar *) ctcp_title,
-			IGNORE_COLUMN_DCC, (gchar *) dcc_title,
-			IGNORE_COLUMN_INVITE, (gchar *) invite_title,
-			IGNORE_COLUMN_UNIGNORE, (gchar *) unignore_title, -1);
-		gtk_tree_view_set_grid_lines (GTK_TREE_VIEW (list->view),
-			GTK_TREE_VIEW_GRID_LINES_HORIZONTAL);
-		gtk_tree_view_column_set_expand (gtk_tree_view_get_column (
-			GTK_TREE_VIEW (list->view), 0), TRUE);
-		for (column_id = 0; (column = gtk_tree_view_get_column (
-			GTK_TREE_VIEW (list->view), column_id)); column_id++)
-		{
-			GList *cells = gtk_cell_layout_get_cells (GTK_CELL_LAYOUT (column));
-			GtkCellRenderer *renderer = cells ? cells->data : NULL;
-			if (renderer && column_id == 0)
-			{
-				g_object_set (renderer, "editable", TRUE, NULL);
-				g_signal_connect (renderer, "edited",
-					G_CALLBACK (ignore_gtk3_mask_edited), list);
-				gtk_tree_view_column_set_sort_column_id (column, column_id);
-				gtk_tree_view_column_set_min_width (column, 272);
-			}
-			else if (renderer)
-			{
-				IgnoreToggleBinding *binding = g_new (IgnoreToggleBinding, 1);
-				binding->owner = list;
-				binding->flag = flags[column_id - 1];
-				g_signal_connect_data (renderer, "toggled",
-					G_CALLBACK (ignore_gtk3_option_toggled), binding,
-					ignore_toggle_binding_free, 0);
-			}
-			gtk_tree_view_column_set_alignment (column, 0.5f);
-			g_list_free (cells);
-		}
-		gtk_widget_show (list->view);
-	}
-#endif
 	return list->view;
 }
 
@@ -711,7 +537,6 @@ fabulor_ignore_list_append (FabulorIgnoreList *list, const gchar *mask,
 {
 	g_return_if_fail (list != NULL);
 	g_return_if_fail (mask != NULL);
-#if GTK_MAJOR_VERSION >= 4
 	{
 		FabulorIgnoreRow *row = ignore_row_new (mask, flags);
 		fabulor_gtk4_flat_model_stack_append (list->models, row);
@@ -719,62 +544,27 @@ fabulor_ignore_list_append (FabulorIgnoreList *list, const gchar *mask,
 			ignore_list_select_row (list, row, TRUE);
 		g_object_unref (row);
 	}
-#else
-	{
-		GtkTreeIter iter;
-		gtk_list_store_append (list->store, &iter);
-		gtk_list_store_set (list->store, &iter,
-			IGNORE_COLUMN_MASK, mask,
-			IGNORE_COLUMN_CHANNEL, (flags & IGNORE_FLAG_CHANNEL) != 0,
-			IGNORE_COLUMN_PRIVATE, (flags & IGNORE_FLAG_PRIVATE) != 0,
-			IGNORE_COLUMN_NOTICE, (flags & IGNORE_FLAG_NOTICE) != 0,
-			IGNORE_COLUMN_CTCP, (flags & IGNORE_FLAG_CTCP) != 0,
-			IGNORE_COLUMN_DCC, (flags & IGNORE_FLAG_DCC) != 0,
-			IGNORE_COLUMN_INVITE, (flags & IGNORE_FLAG_INVITE) != 0,
-			IGNORE_COLUMN_UNIGNORE, (flags & IGNORE_FLAG_UNIGNORE) != 0,
-			IGNORE_COLUMN_FLAGS, flags, -1);
-		if (select && list->view)
-		{
-			GtkTreePath *path = gtk_tree_model_get_path (
-				GTK_TREE_MODEL (list->store), &iter);
-			gtk_tree_view_scroll_to_cell (GTK_TREE_VIEW (list->view), path, NULL,
-				TRUE, 1.0f, 0.0f);
-			gtk_tree_view_set_cursor (GTK_TREE_VIEW (list->view), path, NULL, FALSE);
-			gtk_tree_path_free (path);
-		}
-	}
-#endif
 }
 
 void
 fabulor_ignore_list_clear (FabulorIgnoreList *list)
 {
 	g_return_if_fail (list != NULL);
-#if GTK_MAJOR_VERSION >= 4
 	fabulor_gtk4_flat_model_stack_clear (list->models);
-#else
-	gtk_list_store_clear (list->store);
-#endif
 }
 
 guint
 fabulor_ignore_list_get_n_rows (FabulorIgnoreList *list)
 {
 	g_return_val_if_fail (list != NULL, 0);
-#if GTK_MAJOR_VERSION >= 4
 	return g_list_model_get_n_items (G_LIST_MODEL (
 		fabulor_gtk4_flat_model_stack_get_sorted (list->models)));
-#else
-	return (guint) gtk_tree_model_iter_n_children (
-		GTK_TREE_MODEL (list->store), NULL);
-#endif
 }
 
 gchar *
 fabulor_ignore_list_dup_mask_at (FabulorIgnoreList *list, guint position)
 {
 	g_return_val_if_fail (list != NULL, NULL);
-#if GTK_MAJOR_VERSION >= 4
 	{
 		FabulorIgnoreRow *row = ignore_row_at (list, position);
 		gchar *mask;
@@ -784,38 +574,18 @@ fabulor_ignore_list_dup_mask_at (FabulorIgnoreList *list, guint position)
 		g_object_unref (row);
 		return mask;
 	}
-#else
-	{
-		GtkTreeIter iter;
-		gchar *mask = NULL;
-		if (gtk_tree_model_iter_nth_child (GTK_TREE_MODEL (list->store), &iter,
-			NULL, (gint) position))
-			gtk_tree_model_get (GTK_TREE_MODEL (list->store), &iter,
-				IGNORE_COLUMN_MASK, &mask, -1);
-		return mask;
-	}
-#endif
 }
 
 guint
 fabulor_ignore_list_get_flags_at (FabulorIgnoreList *list, guint position)
 {
 	g_return_val_if_fail (list != NULL, 0);
-#if GTK_MAJOR_VERSION >= 4
 	{
 		FabulorIgnoreRow *row = ignore_row_at (list, position);
 		guint flags = row ? row->flags : 0;
 		g_clear_object (&row);
 		return flags;
 	}
-#else
-	{
-		GtkTreeIter iter;
-		return gtk_tree_model_iter_nth_child (GTK_TREE_MODEL (list->store), &iter,
-			NULL, (gint) position) ?
-			ignore_gtk3_flags (GTK_TREE_MODEL (list->store), &iter) : 0;
-	}
-#endif
 }
 
 gboolean
@@ -823,7 +593,6 @@ fabulor_ignore_list_rename_at (FabulorIgnoreList *list, guint position,
 	const gchar *new_mask)
 {
 	g_return_val_if_fail (list != NULL, FALSE);
-#if GTK_MAJOR_VERSION >= 4
 	{
 		FabulorIgnoreRow *row = ignore_row_at (list, position);
 		gboolean result;
@@ -833,28 +602,6 @@ fabulor_ignore_list_rename_at (FabulorIgnoreList *list, guint position,
 		g_object_unref (row);
 		return result;
 	}
-#else
-	{
-		GtkTreeIter iter;
-		gchar *old_mask;
-		guint flags;
-		gboolean result;
-		if (!gtk_tree_model_iter_nth_child (GTK_TREE_MODEL (list->store), &iter,
-			NULL, (gint) position))
-			return FALSE;
-		gtk_tree_model_get (GTK_TREE_MODEL (list->store), &iter,
-			IGNORE_COLUMN_MASK, &old_mask, -1);
-		flags = ignore_gtk3_flags (GTK_TREE_MODEL (list->store), &iter);
-		result = new_mask && *new_mask &&
-			(g_strcmp0 (old_mask, new_mask) == 0 || !list->rename_func ||
-			 list->rename_func (old_mask, new_mask, flags, list->callback_data));
-		if (result)
-			gtk_list_store_set (list->store, &iter, IGNORE_COLUMN_MASK, new_mask,
-				-1);
-		g_free (old_mask);
-		return result;
-	}
-#endif
 }
 
 gboolean
@@ -864,7 +611,6 @@ fabulor_ignore_list_set_flag_at (FabulorIgnoreList *list, guint position,
 	g_return_val_if_fail (list != NULL, FALSE);
 	if (!ignore_flag_is_valid (flag))
 		return FALSE;
-#if GTK_MAJOR_VERSION >= 4
 	{
 		FabulorIgnoreRow *row = ignore_row_at (list, position);
 		if (!row)
@@ -873,35 +619,12 @@ fabulor_ignore_list_set_flag_at (FabulorIgnoreList *list, guint position,
 		g_object_unref (row);
 		return TRUE;
 	}
-#else
-	{
-		GtkTreeIter iter;
-		gint column = ignore_gtk3_column_for_flag (flag);
-		gchar *mask;
-		guint flags;
-		if (!gtk_tree_model_iter_nth_child (GTK_TREE_MODEL (list->store), &iter,
-			NULL, (gint) position))
-			return FALSE;
-		gtk_tree_model_get (GTK_TREE_MODEL (list->store), &iter,
-			IGNORE_COLUMN_FLAGS, &flags, -1);
-		flags = active ? flags | flag : flags & ~flag;
-		gtk_list_store_set (list->store, &iter, column, active,
-			IGNORE_COLUMN_FLAGS, flags, -1);
-		gtk_tree_model_get (GTK_TREE_MODEL (list->store), &iter,
-			IGNORE_COLUMN_MASK, &mask, -1);
-		if (list->flags_func)
-			list->flags_func (mask, flags, list->callback_data);
-		g_free (mask);
-		return TRUE;
-	}
-#endif
 }
 
 gchar *
 fabulor_ignore_list_remove_selected (FabulorIgnoreList *list)
 {
 	g_return_val_if_fail (list != NULL, NULL);
-#if GTK_MAJOR_VERSION >= 4
 	{
 		GtkSingleSelection *selection = GTK_SINGLE_SELECTION (
 			fabulor_gtk4_flat_model_stack_get_selection (list->models));
@@ -925,30 +648,6 @@ fabulor_ignore_list_remove_selected (FabulorIgnoreList *list)
 				selected, TRUE);
 		return mask;
 	}
-#else
-	{
-		GtkTreeSelection *selection;
-		GtkTreeIter iter;
-		gchar *mask;
-		if (!list->view)
-			return NULL;
-		selection = gtk_tree_view_get_selection (GTK_TREE_VIEW (list->view));
-		if (!gtk_tree_selection_get_selected (selection, NULL, &iter))
-			return NULL;
-		gtk_tree_model_get (GTK_TREE_MODEL (list->store), &iter,
-			IGNORE_COLUMN_MASK, &mask, -1);
-		if (gtk_list_store_remove (list->store, &iter))
-		{
-			GtkTreePath *path = gtk_tree_model_get_path (
-				GTK_TREE_MODEL (list->store), &iter);
-			gtk_tree_view_scroll_to_cell (GTK_TREE_VIEW (list->view), path, NULL,
-				TRUE, 1.0f, 0.0f);
-			gtk_tree_view_set_cursor (GTK_TREE_VIEW (list->view), path, NULL, FALSE);
-			gtk_tree_path_free (path);
-		}
-		return mask;
-	}
-#endif
 }
 
 GPtrArray *

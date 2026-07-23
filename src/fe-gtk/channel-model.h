@@ -71,7 +71,6 @@ const gchar *fabulor_channel_model_get_name (FabulorChannelModel *model,
 PangoAttrList *fabulor_channel_model_ref_attributes (
 	FabulorChannelModel *model, gpointer identity);
 
-#if GTK_MAJOR_VERSION >= 4
 GtkTreeListModel *fabulor_channel_model_get_tree (FabulorChannelModel *model);
 GtkSingleSelection *fabulor_channel_model_get_selection (
 	FabulorChannelModel *model);
@@ -84,12 +83,6 @@ const gchar *fabulor_channel_model_get_item_name (gpointer item);
 PangoAttrList *fabulor_channel_model_get_item_attributes (gpointer item);
 GdkPixbuf *fabulor_channel_model_get_item_icon (gpointer item);
 PangoUnderline fabulor_channel_model_get_item_underline (gpointer item);
-#else
-GtkTreeModel *fabulor_channel_model_get_tree_model (
-	FabulorChannelModel *model);
-gboolean fabulor_channel_model_get_iter (FabulorChannelModel *model,
-	gpointer identity, GtkTreeIter *iter);
-#endif
 
 G_END_DECLS
 

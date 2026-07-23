@@ -11,9 +11,7 @@
 
 #include "gtk-compat.h"
 
-#if GTK_MAJOR_VERSION >= 4
 #include "gtk4-list-models.h"
-#endif
 
 struct _FabulorServerEntryList
 {
@@ -23,16 +21,11 @@ struct _FabulorServerEntryList
 	FabulorServerEntrySelectionFunc selection_func;
 	FabulorServerEntryEditFunc edit_func;
 	gpointer callback_data;
-#if GTK_MAJOR_VERSION >= 4
 	FabulorGtk4FlatModelStack *models;
 	gulong selection_id;
 	GHashTable *primary_bindings;
-#else
-	GtkListStore *store;
-#endif
 };
 
-#if GTK_MAJOR_VERSION >= 4
 
 typedef struct _FabulorServerEntryRow FabulorServerEntryRow;
 typedef struct _FabulorServerEntryRowClass FabulorServerEntryRowClass;
@@ -329,84 +322,6 @@ server_entry_column_new (FabulorServerEntryList *list, const gchar *title,
 	return column;
 }
 
-#else
-
-enum
-{
-	SERVER_ENTRY_COLUMN_PRIMARY,
-	SERVER_ENTRY_COLUMN_SECONDARY,
-	SERVER_ENTRY_COLUMN_EDITABLE,
-	SERVER_ENTRY_COLUMN_IDENTITY,
-	N_SERVER_ENTRY_COLUMNS
-};
-
-typedef struct
-{
-	FabulorServerEntryList *owner;
-	FabulorServerEntryField field;
-} ServerEntryRendererData;
-
-static void
-server_entry_selection_changed (GtkTreeSelection *selection,
-	gpointer user_data)
-{
-	FabulorServerEntryList *list = user_data;
-	GtkTreeIter iter;
-	gpointer identity = NULL;
-	if (gtk_tree_selection_get_selected (selection, NULL, &iter))
-		gtk_tree_model_get (GTK_TREE_MODEL (list->store), &iter,
-			SERVER_ENTRY_COLUMN_IDENTITY, &identity, -1);
-	if (list->selection_func)
-		list->selection_func (identity, list->callback_data);
-}
-
-static void
-server_entry_renderer_data_free (gpointer data, GClosure *closure)
-{
-	(void) closure;
-	g_free (data);
-}
-
-static void
-server_entry_edited (GtkCellRendererText *renderer, gchar *path_text,
-	gchar *new_text, gpointer user_data)
-{
-	ServerEntryRendererData *data = user_data;
-	GtkTreePath *path = gtk_tree_path_new_from_string (path_text);
-	GtkTreeIter iter;
-	gpointer identity = NULL;
-	(void) renderer;
-	if (path && gtk_tree_model_get_iter (GTK_TREE_MODEL (data->owner->store),
-		&iter, path))
-		gtk_tree_model_get (GTK_TREE_MODEL (data->owner->store), &iter,
-			SERVER_ENTRY_COLUMN_IDENTITY, &identity, -1);
-	if (identity && data->owner->edit_func && data->owner->edit_func (identity,
-		data->field, new_text, data->owner->callback_data))
-		fabulor_server_entry_list_update (data->owner, identity, data->field,
-			new_text);
-	if (path)
-		gtk_tree_path_free (path);
-}
-
-static void
-server_entry_append_column (FabulorServerEntryList *list,
-	const gchar *title, FabulorServerEntryField field)
-{
-	GtkCellRenderer *renderer = gtk_cell_renderer_text_new ();
-	ServerEntryRendererData *data = g_new (ServerEntryRendererData, 1);
-	data->owner = list;
-	data->field = field;
-	g_signal_connect_data (renderer, "edited", G_CALLBACK (server_entry_edited),
-		data, server_entry_renderer_data_free, 0);
-	gtk_tree_view_insert_column_with_attributes (GTK_TREE_VIEW (list->view),
-		-1, title, renderer, "text", field == FABULOR_SERVER_ENTRY_PRIMARY ?
-		SERVER_ENTRY_COLUMN_PRIMARY : SERVER_ENTRY_COLUMN_SECONDARY,
-		"editable", SERVER_ENTRY_COLUMN_EDITABLE, NULL);
-	gtk_tree_view_column_set_expand (gtk_tree_view_get_column (
-		GTK_TREE_VIEW (list->view), field), TRUE);
-}
-
-#endif
 
 static gboolean
 server_entry_find (FabulorServerEntryList *list, gpointer identity,
@@ -434,16 +349,11 @@ fabulor_server_entry_list_new (gboolean has_secondary,
 	list->selection_func = selection_func;
 	list->edit_func = edit_func;
 	list->callback_data = user_data;
-#if GTK_MAJOR_VERSION >= 4
 	list->models = fabulor_gtk4_flat_model_stack_new (
 		FABULOR_TYPE_SERVER_ENTRY_ROW, NULL, FABULOR_GTK4_SELECTION_SINGLE);
 	list->primary_bindings = g_hash_table_new (g_direct_hash, g_direct_equal);
 	list->selection_id = g_signal_connect (server_entry_selection (list),
 		"notify::selected", G_CALLBACK (server_entry_selection_changed), list);
-#else
-	list->store = gtk_list_store_new (N_SERVER_ENTRY_COLUMNS, G_TYPE_STRING,
-		G_TYPE_STRING, G_TYPE_BOOLEAN, G_TYPE_POINTER);
-#endif
 	return list;
 }
 
@@ -452,15 +362,11 @@ fabulor_server_entry_list_free (FabulorServerEntryList *list)
 {
 	if (!list)
 		return;
-#if GTK_MAJOR_VERSION >= 4
 	if (list->selection_id)
 		g_signal_handler_disconnect (server_entry_selection (list),
 			list->selection_id);
 	g_hash_table_unref (list->primary_bindings);
 	fabulor_gtk4_flat_model_stack_free (list->models);
-#else
-	g_clear_object (&list->store);
-#endif
 	g_free (list);
 }
 
@@ -471,7 +377,6 @@ fabulor_server_entry_list_create_view (FabulorServerEntryList *list,
 {
 	g_return_val_if_fail (list && GTK_IS_SCROLLED_WINDOW (scroller) &&
 		!list->view, NULL);
-#if GTK_MAJOR_VERSION >= 4
 	{
 		GtkColumnViewColumn *column;
 		(void) headers_visible;
@@ -491,22 +396,7 @@ fabulor_server_entry_list_create_view (FabulorServerEntryList *list,
 		gtk_column_view_set_show_column_separators (GTK_COLUMN_VIEW (list->view),
 			list->has_secondary);
 	}
-#else
-	list->view = gtk_tree_view_new_with_model (GTK_TREE_MODEL (list->store));
-	server_entry_append_column (list, primary_title,
-		FABULOR_SERVER_ENTRY_PRIMARY);
-	if (list->has_secondary)
-		server_entry_append_column (list, secondary_title,
-			FABULOR_SERVER_ENTRY_SECONDARY);
-	gtk_tree_view_set_headers_visible (GTK_TREE_VIEW (list->view),
-		headers_visible);
-	g_signal_connect (gtk_tree_view_get_selection (GTK_TREE_VIEW (list->view)),
-		"changed", G_CALLBACK (server_entry_selection_changed), list);
-#endif
 	fabulor_gtk_scrolled_window_set_child (scroller, list->view);
-#if GTK_MAJOR_VERSION < 4
-	gtk_widget_show (list->view);
-#endif
 	return list->view;
 }
 
@@ -517,24 +407,12 @@ fabulor_server_entry_list_append (FabulorServerEntryList *list,
 	g_return_val_if_fail (list && identity, FALSE);
 	if (server_entry_find (list, identity, NULL))
 		return FALSE;
-#if GTK_MAJOR_VERSION >= 4
 	{
 		FabulorServerEntryRow *row = server_entry_row_new (identity, primary,
 			secondary);
 		g_list_store_append (server_entry_store (list), row);
 		g_object_unref (row);
 	}
-#else
-	{
-		GtkTreeIter iter;
-		gtk_list_store_append (list->store, &iter);
-		gtk_list_store_set (list->store, &iter,
-			SERVER_ENTRY_COLUMN_PRIMARY, primary ? primary : "",
-			SERVER_ENTRY_COLUMN_SECONDARY, secondary ? secondary : "",
-			SERVER_ENTRY_COLUMN_EDITABLE, TRUE,
-			SERVER_ENTRY_COLUMN_IDENTITY, identity, -1);
-	}
-#endif
 	return TRUE;
 }
 
@@ -542,23 +420,14 @@ void
 fabulor_server_entry_list_clear (FabulorServerEntryList *list)
 {
 	g_return_if_fail (list != NULL);
-#if GTK_MAJOR_VERSION >= 4
 	g_list_store_remove_all (server_entry_store (list));
-#else
-	gtk_list_store_clear (list->store);
-#endif
 }
 
 guint
 fabulor_server_entry_list_get_n_rows (FabulorServerEntryList *list)
 {
 	g_return_val_if_fail (list != NULL, 0);
-#if GTK_MAJOR_VERSION >= 4
 	return g_list_model_get_n_items (G_LIST_MODEL (server_entry_store (list)));
-#else
-	return (guint) gtk_tree_model_iter_n_children (
-		GTK_TREE_MODEL (list->store), NULL);
-#endif
 }
 
 gpointer
@@ -568,24 +437,12 @@ fabulor_server_entry_list_get_identity_at (FabulorServerEntryList *list,
 	g_return_val_if_fail (list != NULL, NULL);
 	if (position >= fabulor_server_entry_list_get_n_rows (list))
 		return NULL;
-#if GTK_MAJOR_VERSION >= 4
 	{
 		FabulorServerEntryRow *row = server_entry_row_at (list, position);
 		gpointer identity = row->identity;
 		g_object_unref (row);
 		return identity;
 	}
-#else
-	{
-		GtkTreeIter iter;
-		gpointer identity = NULL;
-		gtk_tree_model_iter_nth_child (GTK_TREE_MODEL (list->store), &iter,
-			NULL, (gint) position);
-		gtk_tree_model_get (GTK_TREE_MODEL (list->store), &iter,
-			SERVER_ENTRY_COLUMN_IDENTITY, &identity, -1);
-		return identity;
-	}
-#endif
 }
 
 gchar *
@@ -598,22 +455,11 @@ fabulor_server_entry_list_dup_text (FabulorServerEntryList *list,
 	if (!server_entry_find (list, identity, &position) ||
 		(field == FABULOR_SERVER_ENTRY_SECONDARY && !list->has_secondary))
 		return NULL;
-#if GTK_MAJOR_VERSION >= 4
 	{
 		FabulorServerEntryRow *row = server_entry_row_at (list, position);
 		text = g_strdup (server_entry_row_text (row, field));
 		g_object_unref (row);
 	}
-#else
-	{
-		GtkTreeIter iter;
-		gtk_tree_model_iter_nth_child (GTK_TREE_MODEL (list->store), &iter,
-			NULL, (gint) position);
-		gtk_tree_model_get (GTK_TREE_MODEL (list->store), &iter,
-			field == FABULOR_SERVER_ENTRY_PRIMARY ? SERVER_ENTRY_COLUMN_PRIMARY :
-			SERVER_ENTRY_COLUMN_SECONDARY, &text, -1);
-	}
-#endif
 	return text;
 }
 
@@ -621,25 +467,11 @@ gpointer
 fabulor_server_entry_list_get_selected (FabulorServerEntryList *list)
 {
 	g_return_val_if_fail (list != NULL, NULL);
-#if GTK_MAJOR_VERSION >= 4
 	{
 		FabulorServerEntryRow *row = FABULOR_SERVER_ENTRY_ROW (
 			gtk_single_selection_get_selected_item (server_entry_selection (list)));
 		return row ? row->identity : NULL;
 	}
-#else
-	if (list->view)
-	{
-		GtkTreeIter iter;
-		gpointer identity = NULL;
-		if (gtk_tree_selection_get_selected (gtk_tree_view_get_selection (
-			GTK_TREE_VIEW (list->view)), NULL, &iter))
-			gtk_tree_model_get (GTK_TREE_MODEL (list->store), &iter,
-				SERVER_ENTRY_COLUMN_IDENTITY, &identity, -1);
-		return identity;
-	}
-	return NULL;
-#endif
 }
 
 gboolean
@@ -650,21 +482,10 @@ fabulor_server_entry_list_select (FabulorServerEntryList *list,
 	g_return_val_if_fail (list != NULL, FALSE);
 	if (!server_entry_find (list, identity, &position))
 		return FALSE;
-#if GTK_MAJOR_VERSION >= 4
 	gtk_single_selection_set_selected (server_entry_selection (list), position);
 	if (list->view)
 		gtk_column_view_scroll_to (GTK_COLUMN_VIEW (list->view), position, NULL,
 			GTK_LIST_SCROLL_FOCUS, NULL);
-#else
-	if (list->view)
-	{
-		GtkTreePath *path = gtk_tree_path_new_from_indices ((gint) position, -1);
-		gtk_tree_view_set_cursor (GTK_TREE_VIEW (list->view), path, NULL, FALSE);
-		gtk_tree_view_scroll_to_cell (GTK_TREE_VIEW (list->view), path, NULL,
-			TRUE, 0.5, 0.5);
-		gtk_tree_path_free (path);
-	}
-#endif
 	return TRUE;
 }
 
@@ -676,16 +497,7 @@ fabulor_server_entry_list_remove (FabulorServerEntryList *list,
 	g_return_val_if_fail (list != NULL, FALSE);
 	if (!server_entry_find (list, identity, &position))
 		return FALSE;
-#if GTK_MAJOR_VERSION >= 4
 	g_list_store_remove (server_entry_store (list), position);
-#else
-	{
-		GtkTreeIter iter;
-		gtk_tree_model_iter_nth_child (GTK_TREE_MODEL (list->store), &iter,
-			NULL, (gint) position);
-		gtk_list_store_remove (list->store, &iter);
-	}
-#endif
 	return TRUE;
 }
 
@@ -703,24 +515,12 @@ fabulor_server_entry_list_move (FabulorServerEntryList *list,
 	if (target < 0 || target >= (gint) fabulor_server_entry_list_get_n_rows (
 		list))
 		return FALSE;
-#if GTK_MAJOR_VERSION >= 4
 	{
 		FabulorServerEntryRow *row = server_entry_row_at (list, position);
 		g_list_store_remove (server_entry_store (list), position);
 		g_list_store_insert (server_entry_store (list), (guint) target, row);
 		g_object_unref (row);
 	}
-#else
-	{
-		GtkTreeIter iter;
-		GtkTreeIter other;
-		gtk_tree_model_iter_nth_child (GTK_TREE_MODEL (list->store), &iter,
-			NULL, (gint) position);
-		gtk_tree_model_iter_nth_child (GTK_TREE_MODEL (list->store), &other,
-			NULL, target);
-		gtk_list_store_swap (list->store, &iter, &other);
-	}
-#endif
 	fabulor_server_entry_list_select (list, identity);
 	return TRUE;
 }
@@ -734,7 +534,6 @@ fabulor_server_entry_list_update (FabulorServerEntryList *list,
 	if (!server_entry_find (list, identity, &position) ||
 		(field == FABULOR_SERVER_ENTRY_SECONDARY && !list->has_secondary))
 		return FALSE;
-#if GTK_MAJOR_VERSION >= 4
 	{
 		FabulorServerEntryRow *row = server_entry_row_at (list, position);
 		gchar **value = field == FABULOR_SERVER_ENTRY_PRIMARY ? &row->primary :
@@ -750,16 +549,6 @@ fabulor_server_entry_list_update (FabulorServerEntryList *list,
 		}
 		g_object_unref (row);
 	}
-#else
-	{
-		GtkTreeIter iter;
-		gtk_tree_model_iter_nth_child (GTK_TREE_MODEL (list->store), &iter,
-			NULL, (gint) position);
-		gtk_list_store_set (list->store, &iter,
-			field == FABULOR_SERVER_ENTRY_PRIMARY ? SERVER_ENTRY_COLUMN_PRIMARY :
-			SERVER_ENTRY_COLUMN_SECONDARY, text ? text : "", -1);
-	}
-#endif
 	return TRUE;
 }
 
@@ -772,7 +561,6 @@ fabulor_server_entry_list_start_editing_selected (FabulorServerEntryList *list)
 	if (!identity || !list->view)
 		return;
 	list->pending_edit_identity = identity;
-#if GTK_MAJOR_VERSION >= 4
 	{
 		ServerEntryBinding *binding = g_hash_table_lookup (
 			list->primary_bindings, identity);
@@ -782,16 +570,4 @@ fabulor_server_entry_list_start_editing_selected (FabulorServerEntryList *list)
 			gtk_editable_label_start_editing (binding->label);
 		}
 	}
-#else
-	{
-		guint position;
-		GtkTreePath *path;
-		server_entry_find (list, identity, &position);
-		path = gtk_tree_path_new_from_indices ((gint) position, -1);
-		gtk_tree_view_set_cursor (GTK_TREE_VIEW (list->view), path,
-			gtk_tree_view_get_column (GTK_TREE_VIEW (list->view), 0), TRUE);
-		gtk_tree_path_free (path);
-		list->pending_edit_identity = NULL;
-	}
-#endif
 }

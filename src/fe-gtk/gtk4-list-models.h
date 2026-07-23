@@ -12,9 +12,6 @@
 
 #include <gtk/gtk.h>
 
-#if GTK_MAJOR_VERSION < 4
-#error Fabulor GTK4 list model stacks require GTK 4.
-#endif
 
 G_BEGIN_DECLS
 

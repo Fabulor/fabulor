@@ -57,7 +57,6 @@ guint fabulor_user_list_model_get_n_rows (FabulorUserListModel *model);
 gpointer fabulor_user_list_model_get_user_at (FabulorUserListModel *model,
 	guint position);
 
-#if GTK_MAJOR_VERSION >= 4
 GListModel *fabulor_user_list_model_get_list_model (
 	FabulorUserListModel *model);
 GtkSelectionModel *fabulor_user_list_model_get_selection (
@@ -68,12 +67,6 @@ const gchar *fabulor_user_list_model_get_item_prefix (gpointer item);
 const gchar *fabulor_user_list_model_get_item_nick (gpointer item);
 const gchar *fabulor_user_list_model_get_item_host (gpointer item);
 const GdkRGBA *fabulor_user_list_model_get_item_foreground (gpointer item);
-#else
-GtkTreeModel *fabulor_user_list_model_get_tree_model (
-	FabulorUserListModel *model);
-gboolean fabulor_user_list_model_get_iter (FabulorUserListModel *model,
-	gpointer user, GtkTreeIter *iter);
-#endif
 
 G_END_DECLS
 

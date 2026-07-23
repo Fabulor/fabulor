@@ -2605,6 +2605,17 @@ frontend compiles and links with the unchanged warning inventory. Direct GTK3
 branches in individual frontend sources and the non-configurable legacy Meson
 fragments remain assigned to later Stage 9 passes.
 
+Stage 9 operational-list source specialization pass 7 (2026-07-23): the 22
+converted operational list, model, and view sources now contain only their
+GTK4 implementations. Retired GTK3 tree views, stores, cell renderers,
+selections, callback adapters, and toolkit-version branches are removed while
+the reviewed GTK4 list-model and factory behavior remains unchanged. The
+frontend source inventory falls from 564 to 290 `GTK_MAJOR_VERSION`
+conditionals. Repository lint rejects restored version switches and classic
+GTK3 tree/list APIs in this subsystem. The strict probe and complete frontend
+both compile and link successfully; remaining source branches are assigned to
+subsequent Stage 9 passes.
+
 Deliverables:
 
 - Make GTK4 the only production frontend dependency in MSVC, Meson, and CI.
