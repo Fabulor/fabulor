@@ -50,6 +50,11 @@ GTK4_WINDOW_HELPER_SOURCES = (
     "window-geometry.c",
     "window-state.c",
 )
+GTK4_SPELL_INPUT_SOURCES = (
+    "emoji-picker.c",
+    "sexy-spell-entry.c",
+    "spell-entry-widget.c",
+)
 VCPKG_CONFIGURATION = ROOT / "tools" / "windows-deps" / "vcpkg-configuration.json"
 VCPKG_MANIFEST = ROOT / "tools" / "windows-deps" / "vcpkg.json"
 WIX_NS = {"w": "http://wixtoolset.org/schemas/v4/wxs"}
@@ -210,6 +215,30 @@ class ProductionWixProfileTests(unittest.TestCase):
                 self.assertNotIn("GTK_MAJOR_VERSION", source)
                 for token in retired_tokens:
                     self.assertNotRegex(source, rf"\b{token}\b")
+
+    def test_spell_input_sources_are_gtk4_only(self):
+        frontend = ROOT / "src" / "fe-gtk"
+        retired_tokens = (
+            "GtkMenu",
+            "gtk_container_add",
+            "gtk_css_provider_load_from_data",
+            "gtk_entry_get_layout",
+            "gtk_entry_get_layout_offsets",
+            "gtk_entry_get_text",
+            "gtk_menu_item_",
+            "gtk_menu_new",
+            "gtk_menu_shell_",
+            "gtk_popover_set_modal",
+            "gtk_widget_destroy",
+            "gtk_widget_show_all",
+        )
+
+        for name in GTK4_SPELL_INPUT_SOURCES:
+            source = (frontend / name).read_text(encoding="utf-8")
+            with self.subTest(source=name):
+                self.assertNotIn("GTK_MAJOR_VERSION", source)
+                for token in retired_tokens:
+                    self.assertNotRegex(source, rf"\b{token}")
 
     def test_transitional_windows_staging_is_removed(self):
         props = PROPS.read_text(encoding="utf-8")

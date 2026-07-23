@@ -85,12 +85,8 @@ fabulor_emoji_picker_codepoint_sequence (gunichar codepoint)
 static void
 fabulor_emoji_picker_popover_free (GtkPopover *popover)
 {
-#if GTK_MAJOR_VERSION >= 4
 	if (gtk_widget_get_parent (GTK_WIDGET (popover)))
 		gtk_widget_unparent (GTK_WIDGET (popover));
-#else
-	gtk_widget_destroy (GTK_WIDGET (popover));
-#endif
 	g_object_unref (popover);
 }
 
@@ -113,21 +109,12 @@ fabulor_emoji_picker_popover_ensure (GtkEntry *entry)
 	if (popover)
 		return popover;
 
-#if GTK_MAJOR_VERSION >= 4
 	popover = GTK_POPOVER (gtk_popover_new ());
 	gtk_widget_set_parent (GTK_WIDGET (popover), GTK_WIDGET (entry));
-#else
-	popover = GTK_POPOVER (gtk_popover_new (GTK_WIDGET (entry)));
-#endif
 	g_object_ref_sink (popover);
 	g_object_set_data_full (G_OBJECT (entry), FABULOR_EMOJI_POPOVER_DATA,
 		popover, (GDestroyNotify) fabulor_emoji_picker_popover_free);
 	gtk_popover_set_position (popover, GTK_POS_TOP);
-#if GTK_MAJOR_VERSION >= 4
 	gtk_popover_set_autohide (popover, TRUE);
-#else
-	gtk_popover_set_modal (popover, TRUE);
-	gtk_popover_set_transitions_enabled (popover, FALSE);
-#endif
 	return popover;
 }
