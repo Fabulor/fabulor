@@ -145,10 +145,8 @@ struct _SexySpellEntryPriv
 	guint                 theme_listener_id;
 	gboolean              checked;
 	gboolean              parseattr;
-#if GTK_MAJOR_VERSION >= 4
 	GSimpleActionGroup    *menu_actions;
 	GMenuModel            *menu_model;
-#endif
 };
 
 static void sexy_spell_entry_class_init(SexySpellEntryClass *klass);
@@ -177,9 +175,7 @@ static gboolean   sexy_spell_entry_activate_language_internal (SexySpellEntry   
 static gchar     *get_lang_from_dict                          (struct EnchantDict   *dict);
 static void       sexy_spell_entry_recheck_all                (SexySpellEntry       *entry);
 static void       sexy_spell_entry_refresh_words              (SexySpellEntry       *entry);
-#if GTK_MAJOR_VERSION >= 4
 static void       sexy_spell_entry_update_menu                (SexySpellEntry       *entry);
-#endif
 
 static GtkEntryClass *parent_class = NULL;
 
@@ -192,11 +188,7 @@ G_DEFINE_TYPE(SexySpellEntry, sexy_spell_entry, GTK_TYPE_ENTRY)
 static const gchar *
 sexy_spell_entry_get_text (SexySpellEntry *entry)
 {
-#if GTK_MAJOR_VERSION >= 4
 	return gtk_editable_get_text (GTK_EDITABLE (entry));
-#else
-	return gtk_entry_get_text (GTK_ENTRY (entry));
-#endif
 }
 
 enum
@@ -391,11 +383,7 @@ sexy_spell_entry_apply_caret_style (SexySpellEntry *entry)
 	}
 	g_snprintf (css, sizeof (css), "#zoitechat-inputbox, #zoitechat-inputbox text { caret-color: #%02x%02x%02x; }",
 		caret, caret, caret);
-#if GTK_MAJOR_VERSION >= 4
 	gtk_css_provider_load_from_string (provider, css);
-#else
-	gtk_css_provider_load_from_data (provider, css, -1, NULL);
-#endif
 	context = gtk_widget_get_style_context (GTK_WIDGET (entry));
 	gtk_style_context_add_provider (context, GTK_STYLE_PROVIDER (provider), GTK_STYLE_PROVIDER_PRIORITY_USER);
 }
@@ -522,250 +510,7 @@ replace_current_word (SexySpellEntry *entry, struct EnchantDict *dict,
 	g_free(oldword);
 }
 
-#if GTK_MAJOR_VERSION < 4
-static void
-add_to_dictionary (GtkWidget *menuitem, SexySpellEntry *entry)
-{
-	add_current_word_to_dictionary (entry,
-		(struct EnchantDict *) g_object_get_data (G_OBJECT (menuitem),
-			"enchant-dict"));
-}
 
-static void
-ignore_all (GtkWidget *menuitem, SexySpellEntry *entry)
-{
-	(void) menuitem;
-	ignore_current_word (entry);
-}
-
-static void
-replace_word (GtkWidget *menuitem, SexySpellEntry *entry)
-{
-	const char *newword = gtk_menu_item_get_label (GTK_MENU_ITEM (menuitem));
-
-	if (newword)
-		replace_current_word (entry,
-			(struct EnchantDict *) g_object_get_data (G_OBJECT (menuitem),
-				"enchant-dict"), newword);
-}
-
-static void
-build_suggestion_menu(SexySpellEntry *entry, GtkWidget *menu, struct EnchantDict *dict, const gchar *word)
-{
-	GtkWidget *mi;
-	gchar **suggestions;
-	size_t n_suggestions, i;
-
-	if (!have_enchant)
-		return;
-
-	suggestions = enchant_dict_suggest(dict, word, -1, &n_suggestions);
-
-	if (suggestions == NULL || n_suggestions == 0) {
-		/* no suggestions.  put something in the menu anyway... */
-		GtkWidget *label = gtk_label_new("");
-		gtk_label_set_markup(GTK_LABEL(label), _("<i>(no suggestions)</i>"));
-
-		mi = gtk_separator_menu_item_new();
-		gtk_container_add(GTK_CONTAINER(mi), label);
-		gtk_widget_show_all(mi);
-		gtk_menu_shell_prepend(GTK_MENU_SHELL(menu), mi);
-	} else {
-		/* build a set of menus with suggestions */
-		for (i = 0; i < n_suggestions; i++) {
-			if ((i != 0) && (i % 10 == 0)) {
-				mi = gtk_separator_menu_item_new();
-				gtk_widget_show(mi);
-				gtk_menu_shell_append(GTK_MENU_SHELL(menu), mi);
-
-				mi = gtk_menu_item_new_with_label(_("More..."));
-				gtk_widget_show(mi);
-				gtk_menu_shell_append(GTK_MENU_SHELL(menu), mi);
-
-				menu = gtk_menu_new();
-				gtk_menu_item_set_submenu(GTK_MENU_ITEM(mi), menu);
-			}
-
-			mi = gtk_menu_item_new_with_label(suggestions[i]);
-			g_object_set_data(G_OBJECT(mi), "enchant-dict", dict);
-			g_signal_connect(G_OBJECT(mi), "activate", G_CALLBACK(replace_word), entry);
-			gtk_widget_show(mi);
-			gtk_menu_shell_append(GTK_MENU_SHELL(menu), mi);
-		}
-	}
-
-	enchant_dict_free_suggestions(dict, suggestions);
-}
-
-static GtkWidget *
-sexy_spell_entry_icon_menu_item (const char *label, const char *stock_name)
-{
-	GtkWidget *item;
-	const char *icon_name;
-	GtkWidget *box;
-	GtkWidget *image = NULL;
-	GtkWidget *label_widget;
-
-	icon_name = gtkutil_icon_name_from_stock (stock_name);
-	if (!icon_name)
-		icon_name = stock_name;
-	item = gtk_menu_item_new ();
-	box = gtk_box_new (GTK_ORIENTATION_HORIZONTAL, 6);
-	if (icon_name)
-		image = gtkutil_image_new_from_stock (icon_name, FABULOR_GTK_ICON_SIZE_MENU);
-	label_widget = gtk_label_new_with_mnemonic (label);
-	if (image)
-		gtk_box_pack_start (GTK_BOX (box), image, FALSE, FALSE, 0);
-	gtk_box_pack_start (GTK_BOX (box), label_widget, FALSE, FALSE, 0);
-	gtk_container_add (GTK_CONTAINER (item), box);
-
-	return item;
-}
-
-static GtkWidget *
-build_spelling_menu(SexySpellEntry *entry, const gchar *word)
-{
-	struct EnchantDict *dict;
-	GtkWidget *topmenu, *mi;
-	gchar *label;
-
-	if (!have_enchant)
-		return NULL;
-
-	topmenu = gtk_menu_new();
-
-	if (entry->priv->dict_list == NULL)
-		return topmenu;
-
-	/* Suggestions */
-	if (g_slist_length(entry->priv->dict_list) == 1) {
-		dict = (struct EnchantDict *) entry->priv->dict_list->data;
-		build_suggestion_menu(entry, topmenu, dict, word);
-	} else {
-		GSList *li;
-		GtkWidget *menu;
-		gchar *lang, *lang_name;
-
-		for (li = entry->priv->dict_list; li; li = g_slist_next (li)) {
-			dict = (struct EnchantDict *) li->data;
-			lang = get_lang_from_dict(dict);
-			lang_name = sexy_spell_entry_get_language_name (entry, lang);
-			if (lang_name)
-			{
-				mi = gtk_menu_item_new_with_label(lang_name);
-				g_free (lang_name);
-			}
-			else
-			{
-				mi = gtk_menu_item_new_with_label(lang);
-			}
-			g_free(lang);
-
-			gtk_widget_show(mi);
-			gtk_menu_shell_append(GTK_MENU_SHELL(topmenu), mi);
-			menu = gtk_menu_new();
-			gtk_menu_item_set_submenu(GTK_MENU_ITEM(mi), menu);
-			build_suggestion_menu(entry, menu, dict, word);
-		}
-	}
-
-	/* Separator */
-	mi = gtk_separator_menu_item_new ();
-	gtk_widget_show(mi);
-	gtk_menu_shell_append(GTK_MENU_SHELL(topmenu), mi);
-
-	/* + Add to Dictionary */
-	label = g_strdup_printf(_("Add \"%s\" to Dictionary"), word);
-	mi = sexy_spell_entry_icon_menu_item (label, ICON_ADD);
-	g_free(label);
-
-	if (g_slist_length(entry->priv->dict_list) == 1) {
-		dict = (struct EnchantDict *) entry->priv->dict_list->data;
-		g_object_set_data(G_OBJECT(mi), "enchant-dict", dict);
-		g_signal_connect(G_OBJECT(mi), "activate", G_CALLBACK(add_to_dictionary), entry);
-	} else {
-		GSList *li;
-		GtkWidget *menu, *submi;
-		gchar *lang, *lang_name;
-
-		menu = gtk_menu_new();
-		gtk_menu_item_set_submenu(GTK_MENU_ITEM(mi), menu);
-
-		for (li = entry->priv->dict_list; li; li = g_slist_next(li)) {
-			dict = (struct EnchantDict *)li->data;
-			lang = get_lang_from_dict(dict);
-			lang_name = sexy_spell_entry_get_language_name (entry, lang);
-			if (lang_name)
-			{
-				submi = gtk_menu_item_new_with_label(lang_name);
-				g_free (lang_name);
-			}
-			else 
-			{
-				submi = gtk_menu_item_new_with_label(lang);
-			}
-			g_free(lang);
-			g_object_set_data(G_OBJECT(submi), "enchant-dict", dict);
-
-			g_signal_connect(G_OBJECT(submi), "activate", G_CALLBACK(add_to_dictionary), entry);
-
-			gtk_widget_show(submi);
-			gtk_menu_shell_append(GTK_MENU_SHELL(menu), submi);
-		}
-	}
-
-	gtk_widget_show_all(mi);
-	gtk_menu_shell_append(GTK_MENU_SHELL(topmenu), mi);
-
-	/* - Ignore All */
-	mi = sexy_spell_entry_icon_menu_item (_("Ignore All"), ICON_REMOVE);
-	g_signal_connect(G_OBJECT(mi), "activate", G_CALLBACK(ignore_all), entry);
-	gtk_widget_show_all(mi);
-	gtk_menu_shell_append(GTK_MENU_SHELL(topmenu), mi);
-
-	return topmenu;
-}
-
-static void
-sexy_spell_entry_populate_popup(SexySpellEntry *entry, GtkMenu *menu, gpointer data)
-{
-	GtkWidget *mi;
-	FabulorSpellWordRange range;
-	gchar *word;
-
-	if ((have_enchant == FALSE) || (entry->priv->checked == FALSE))
-		return;
-
-	if (g_slist_length(entry->priv->dict_list) == 0)
-		return;
-
-	if (!get_word_range_from_position (entry, entry->priv->mark_character,
-		&range))
-		return;
-	if (!word_misspelled (entry, (gint) range.byte_start,
-		(gint) range.byte_end))
-		return;
-
-	/* separator */
-	mi = gtk_separator_menu_item_new();
-	gtk_widget_show(mi);
-	gtk_menu_shell_prepend(GTK_MENU_SHELL(menu), mi);
-
-	/* Above the separator, show the suggestions menu */
-	mi = sexy_spell_entry_icon_menu_item (_("Spelling Suggestions"), ICON_SPELL_CHECK);
-
-	word = gtk_editable_get_chars (GTK_EDITABLE (entry),
-		(gint) range.character_start, (gint) range.character_end);
-	g_assert(word != NULL);
-	gtk_menu_item_set_submenu(GTK_MENU_ITEM(mi), build_spelling_menu(entry, word));
-	g_free(word);
-
-	gtk_widget_show_all(mi);
-	gtk_menu_shell_prepend(GTK_MENU_SHELL(menu), mi);
-}
-#endif
-
-#if GTK_MAJOR_VERSION >= 4
 static struct EnchantDict *
 dictionary_for_language (SexySpellEntry *entry, const gchar *language)
 {
@@ -983,7 +728,6 @@ sexy_spell_entry_context_key (GtkWidget *widget, guint keyval,
 	}
 	return FALSE;
 }
-#endif
 
 static void
 sexy_spell_entry_init(SexySpellEntry *entry)
@@ -1006,16 +750,10 @@ sexy_spell_entry_init(SexySpellEntry *entry)
 		sexy_spell_entry_activate_default_languages(entry);
 	}
 
-#if GTK_MAJOR_VERSION < 4
-	g_signal_connect(G_OBJECT(entry), "popup-menu", G_CALLBACK(sexy_spell_entry_popup_menu), entry);
-	g_signal_connect(G_OBJECT(entry), "populate-popup", G_CALLBACK(sexy_spell_entry_populate_popup), NULL);
-	g_signal_connect(G_OBJECT(entry), "style-updated", G_CALLBACK(sexy_spell_entry_style_updated), NULL);
-#else
 	sexy_spell_entry_init_menu_actions (entry);
 	sexy_spell_entry_update_menu (entry);
 	fabulor_gtk_widget_on_key_pressed (GTK_WIDGET (entry),
 		sexy_spell_entry_context_key, NULL);
-#endif
 	g_signal_connect(G_OBJECT(entry), "changed", G_CALLBACK(sexy_spell_entry_changed), NULL);
 	fabulor_gtk_widget_on_multi_click (GTK_WIDGET (entry), sexy_spell_entry_button_press, NULL);
 	entry->priv->theme_listener_id = theme_listener_register (
@@ -1038,10 +776,8 @@ sexy_spell_entry_finalize(GObject *obj)
 	if (entry->priv->dict_hash)
 		g_hash_table_destroy(entry->priv->dict_hash);
 	fabulor_spell_words_free (entry->priv->words);
-#if GTK_MAJOR_VERSION >= 4
 	g_clear_object (&entry->priv->menu_model);
 	g_clear_object (&entry->priv->menu_actions);
-#endif
 
 	if (have_enchant) {
 		if (entry->priv->broker) {
@@ -1208,10 +944,8 @@ sexy_spell_entry_button_press (GtkWidget *widget, guint button, guint n_press,
 	(void) user_data;
 	entry->priv->mark_character = fabulor_spell_entry_pointer_position (
 		GTK_ENTRY (widget), x);
-#if GTK_MAJOR_VERSION >= 4
 	if (button == GDK_BUTTON_SECONDARY)
 		sexy_spell_entry_update_menu (entry);
-#endif
 	return FALSE;
 }
 
@@ -1628,7 +1362,6 @@ sexy_spell_entry_set_checked(SexySpellEntry *entry, gboolean checked)
 	entry->priv->checked = checked;
 	widget = GTK_WIDGET(entry);
 
-#if GTK_MAJOR_VERSION >= 4
 	{
 		GAction *action = g_action_map_lookup_action (
 			G_ACTION_MAP (entry->priv->menu_actions), "enabled");
@@ -1637,7 +1370,6 @@ sexy_spell_entry_set_checked(SexySpellEntry *entry, gboolean checked)
 			g_simple_action_set_state (G_SIMPLE_ACTION (action),
 				g_variant_new_boolean (checked));
 	}
-#endif
 
 	if (checked == FALSE && gtk_widget_get_realized (widget))
 	{
@@ -1650,9 +1382,7 @@ sexy_spell_entry_set_checked(SexySpellEntry *entry, gboolean checked)
 		sexy_spell_entry_recheck_all(entry);
 	}
 
-#if GTK_MAJOR_VERSION >= 4
 	sexy_spell_entry_update_menu (entry);
-#endif
 }
 
 /**

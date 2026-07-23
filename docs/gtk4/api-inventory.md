@@ -1351,13 +1351,23 @@ Legacy window/configure events, position queries, local-only/overwrite settings,
 and GTK3 file-list ownership are retired. The frontend-wide version-branch
 inventory falls from 253 to 233.
 
+Stage 9 spell-input source specialization pass 10 removes the inactive GTK3
+implementations from `sexy-spell-entry.c`, `spell-entry-widget.c`, and
+`emoji-picker.c`. Spell suggestions and dictionary/language commands now flow
+exclusively through the GTK4 action/menu model, text uses `GtkEditable`, caret
+styling uses CSS strings, pointer position uses the reviewed delegate boundary,
+and the emoji popover has explicit parent/autohide ownership. GTK3 widget menus,
+entry-layout inspection, popup population, container attachment, recursive
+reveal, and widget destruction are retired. The frontend-wide version-branch
+inventory falls from 233 to 218.
+
 ## Functional Clusters
 
 | Cluster | Main files | GTK4 concern | Status |
 |---|---|---|---|
 | Main windows and tabs | `maingui.c`, `chanview*.c` | child ownership, gestures, DnD, focus | in progress |
 | Transcript | `xtext.c`, `xtext.h`, `xtext-render-target.c` | snapshot rendering and event model | in progress; render destination ownership established and private Win32 GDK header retired |
-| Edit box and spell check | `maingui.c`, `emoji-picker.c`, `sexy-spell-entry.c`, `spell-entry-*.c` | production interaction and latency validation | in progress; typed entry text/width, word, lifecycle, styling, menu, URL, and emoji-picker boundaries established |
+| Edit box and spell check | `maingui.c`, `emoji-picker.c`, `sexy-spell-entry.c`, `spell-entry-*.c` | production interaction and latency validation | in progress; spell-entry and emoji ownership are specialized to GTK4, while remaining main-edit-box branches await retirement |
 | Menus and commands | `menu.c`, `maingui.c`, `plugin-tray.c` | actions and menu models | in progress; retained main/context/tab presentation and GTK3-only accelerator ownership established |
 | Operational lists | `servlistgui.c`, `chanlist.c`, `userlistgui.c`, `dccgui.c`, `banlist.c`, `notifygui.c`, `ignoregui.c`, `plugingui.c`, `urlgrab.c` | list models, factories, editing | converted and specialized to GTK4; version branches and classic GTK3 tree/list implementations are retired |
 | Preferences/editors | `setup.c`, `fkeys.c`, `textgui.c`, `editlist.c` | generic edit list, Print Events, key bindings, sound events, and preference navigation converted | converted |

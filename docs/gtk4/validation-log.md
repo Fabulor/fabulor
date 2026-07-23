@@ -7549,6 +7549,39 @@ the asynchronous `GtkFileDialog` replacement. Remaining frontend source
 branches and legacy, non-configurable Meson fragments remain separate Stage 9
 cleanup targets.
 
+### GTK4 Stage 9 Spell-Input Source Specialization, Pass 10
+
+Date: 2026-07-23
+
+Boundary retired: `sexy-spell-entry.c`, `spell-entry-widget.c`, and
+`emoji-picker.c` no longer carry parallel GTK3 implementations. A total of 303
+inactive GTK3 and toolkit-selection lines are removed. The frontend-wide
+`GTK_MAJOR_VERSION`-conditional inventory falls from 233 to 218.
+
+Automated evidence:
+
+- strict GTK4 MSVC probe build and execution: pass with `/W4 /WX`, zero
+  warnings and zero errors; GTK 4.22.4 / GLib 2.88.0 / x64 runtime confirmed
+- complete GTK4 frontend project build and link: pass with zero warnings and
+  zero errors in the affected incremental build
+- production profile contract suite: all 13 tests pass, including all three
+  specialized files and rejection of restored toolkit-version switches or
+  representative GTK3 spell/menu APIs
+- complete GTK4 tooling contract suite: all 62 tests pass
+- theme retirement/import contract suite: all 7 tests pass
+- native manifest, path, and archive suite: all 22 tests pass
+- source audit: no `GTK_MAJOR_VERSION`, GTK3 widget-menu, entry-layout,
+  CSS-data loading, container attachment, recursive reveal, or widget
+  destruction API remains in the specialized source set
+- repository whitespace validation: pass
+
+Behaviour contract: spell checking, personal dictionaries, language choices,
+suggestion replacement, checked-state actions, caret styling, pointer
+positioning, and emoji insertion continue through the reviewed GTK4
+implementations. No supported build can select the retired GTK3 spell-input
+path from these files. Remaining main edit-box and frontend source branches
+remain separate Stage 9 cleanup targets.
+
 ## Stage Completion Rule
 
 A stage can move to complete in `migration-plan.md` only when:

@@ -2638,6 +2638,18 @@ to 233 `GTK_MAJOR_VERSION` conditionals. Repository lint protects the exact
 three-file boundary and representative GTK3 APIs; the strict probe and complete
 frontend both compile and link successfully.
 
+Stage 9 spell-input source specialization pass 10 (2026-07-23): the spell
+entry, spell-entry widget adapter, and emoji popover now contain only their
+GTK4 implementations. Editable text, CSS caret styling, spelling suggestions,
+dictionary/language actions, checked-state updates, pointer positioning,
+popover parenting, and teardown remain on the reviewed GTK4 paths. Retired
+GTK3 widget menus, entry layouts, popup population, container ownership,
+recursive reveal, CSS-data loading, and widget destruction are removed. The
+frontend source inventory falls from 233 to 218 `GTK_MAJOR_VERSION`
+conditionals. Repository lint protects the exact three-file boundary and
+representative GTK3 spell/menu APIs; the strict probe and complete frontend
+both compile and link successfully.
+
 Deliverables:
 
 - Make GTK4 the only production frontend dependency in MSVC, Meson, and CI.
