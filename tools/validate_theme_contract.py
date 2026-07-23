@@ -79,6 +79,39 @@ def validate_import_contract(repo: pathlib.Path) -> None:
         )
     if '".zct"' in preferences or '"*.zct"' in preferences:
         raise ThemeContractError("The active theme importer must not accept retired .zct files.")
+    if "fabulor_theme_archive_read_text_file" not in preferences:
+        raise ThemeContractError("The active .hct importer must use the bounded archive reader.")
+    if "zoitechat_gtk3_theme_service_read_archive_text_file" in preferences:
+        raise ThemeContractError("The active .hct importer must not depend on the GTK3 theme service.")
+
+    archive_reader = read_text(
+        repo / "src" / "common" / "theme-archive-reader.c"
+    )
+    required_reader_tokens = (
+        "FABULOR_THEME_ARCHIVE_MAX_BYTES",
+        "FABULOR_THEME_ARCHIVE_LIST_MAX_BYTES",
+        "FABULOR_THEME_ARCHIVE_TEXT_MAX_BYTES",
+        "GetSystemDirectoryW",
+        "g_subprocess_newv",
+        "theme_archive_entry_is_safe",
+    )
+    missing_reader = [
+        token for token in required_reader_tokens if token not in archive_reader
+    ]
+    if missing_reader:
+        raise ThemeContractError(
+            "The .hct archive reader is missing containment tokens: "
+            + ", ".join(missing_reader)
+        )
+    forbidden_reader_tokens = ("G_SPAWN_SEARCH_PATH", "g_spawn_command_line")
+    present_forbidden = [
+        token for token in forbidden_reader_tokens if token in archive_reader
+    ]
+    if present_forbidden:
+        raise ThemeContractError(
+            "The .hct archive reader uses unsafe process discovery/invocation: "
+            + ", ".join(present_forbidden)
+        )
 
     runtime = read_text(
         repo / "src" / "fe-gtk" / "theme" / "theme-runtime.c"

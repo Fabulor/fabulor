@@ -7,6 +7,7 @@ common_sources = [
   'gtk4-theme-discovery.c',
   'gtk4-theme-preferences.c',
   'gtk3-theme-service.c',
+  'theme-archive-reader.c',
   'zoitechat.c',
   'history.c',
   'ignore.c',

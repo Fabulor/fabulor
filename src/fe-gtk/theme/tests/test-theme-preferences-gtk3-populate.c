@@ -23,6 +23,7 @@
 #include "../../../common/zoitechat.h"
 #include "../../../common/zoitechatc.h"
 #include "../../../common/gtk3-theme-service.h"
+#include "../../../common/theme-archive-reader.h"
 #include "../theme-gtk3.h"
 #include "../theme-manager.h"
 
@@ -211,7 +212,7 @@ zoitechat_gtk3_theme_service_import (const char *source_path, char **imported_id
 }
 
 gboolean
-zoitechat_gtk3_theme_service_read_archive_text_file (const char *archive_path, const char *name, char **contents, GError **error)
+fabulor_theme_archive_read_text_file (const char *archive_path, const char *name, char **contents, GError **error)
 {
         (void)archive_path;
         (void)name;

@@ -28,7 +28,15 @@ class ThemeContractValidationTests(unittest.TestCase):
         )
         self.write(
             "src/fe-gtk/theme/theme-preferences.c",
-            '".hct" "*.hct" "colors.conf" "pevents.conf"\n',
+            '".hct" "*.hct" "colors.conf" "pevents.conf" '
+            "fabulor_theme_archive_read_text_file\n",
+        )
+        self.write(
+            "src/common/theme-archive-reader.c",
+            "FABULOR_THEME_ARCHIVE_MAX_BYTES "
+            "FABULOR_THEME_ARCHIVE_LIST_MAX_BYTES "
+            "FABULOR_THEME_ARCHIVE_TEXT_MAX_BYTES GetSystemDirectoryW "
+            "g_subprocess_newv theme_archive_entry_is_safe\n",
         )
         self.write(
             "src/fe-gtk/theme/theme-runtime.c",
@@ -88,6 +96,15 @@ class ThemeContractValidationTests(unittest.TestCase):
             """<?xml version="1.0"?>
 <Wix><Files Include="$(var.FabulorPayloadRoot)\\share\\themes\\**" /></Wix>
 """,
+            encoding="utf-8",
+        )
+        with self.assertRaises(validate_theme_contract.ThemeContractError):
+            validate_theme_contract.validate(self.repo)
+
+    def test_archive_reader_path_search_is_rejected(self) -> None:
+        path = self.repo / "src/common/theme-archive-reader.c"
+        path.write_text(
+            path.read_text(encoding="utf-8") + "G_SPAWN_SEARCH_PATH\n",
             encoding="utf-8",
         )
         with self.assertRaises(validate_theme_contract.ThemeContractError):

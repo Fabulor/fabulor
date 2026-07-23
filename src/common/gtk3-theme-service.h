@@ -48,6 +48,5 @@ gboolean zoitechat_gtk3_theme_service_remove_user_theme (const char *theme_id, G
 char *zoitechat_gtk3_theme_pick_css_dir_for_minor (const char *theme_root, int preferred_minor);
 char *zoitechat_gtk3_theme_pick_css_dir (const char *theme_root);
 GPtrArray *zoitechat_gtk3_theme_build_inheritance_chain (const char *theme_root);
-gboolean zoitechat_gtk3_theme_service_read_archive_text_file (const char *archive_path, const char *name, char **contents, GError **error);
 
 #endif
