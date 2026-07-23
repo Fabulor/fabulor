@@ -9,6 +9,7 @@ INSTALLER = ROOT / "installer"
 PROPS = ROOT / "win32" / "zoitechat.props"
 SOLUTION = ROOT / "win32" / "zoitechat.sln"
 NATIVE_EXTENSIONS = ROOT / "tools" / "gtk4" / "gtk4-native-extensions.proj"
+GTK_COMPAT = ROOT / "src" / "fe-gtk" / "gtk-compat.h"
 VCPKG_CONFIGURATION = ROOT / "tools" / "windows-deps" / "vcpkg-configuration.json"
 VCPKG_MANIFEST = ROOT / "tools" / "windows-deps" / "vcpkg.json"
 WIX_NS = {"w": "http://wixtoolset.org/schemas/v4/wxs"}
@@ -83,6 +84,23 @@ class ProductionWixProfileTests(unittest.TestCase):
         self.assertNotIn('= "fe-text"', solution)
         self.assertNotIn('= "lua"', solution)
         self.assertIn('= "fabulor-launcher"', solution)
+
+    def test_frontend_compatibility_header_is_gtk4_only(self):
+        source = GTK_COMPAT.read_text(encoding="utf-8")
+
+        for token in (
+            "GTK_MAJOR_VERSION",
+            "gtk_bin_",
+            "gtk_box_pack_",
+            "gtk_container_",
+            "gtk_dialog_run",
+            "gtk_selection_",
+            "gtk_widget_destroy",
+            "gtk_widget_show_all",
+        ):
+            self.assertNotRegex(source, rf"\b{token}")
+        for type_name in ("GtkButtonBox", "GtkIconSize", "GdkEventButton"):
+            self.assertNotRegex(source, rf"\b{type_name}\b")
 
     def test_transitional_windows_staging_is_removed(self):
         props = PROPS.read_text(encoding="utf-8")

@@ -26,8 +26,9 @@ the validation matrix in [validation-log.md](validation-log.md) passes.
   the active Windows build graph.
 - The GTK3 theme service, adapter, preference branch, tests, probe contract,
   `%APPDATA%\Fabulor\gtk3-themes` workflow, and saved configuration keys are
-  removed. Other GTK3 source branches and compatibility helpers remain the
-  next cleanup boundary; historical plugin source trees remain retained but
+  removed. The active frontend compatibility header now contains only GTK4
+  implementations; GTK3 branches in individual source files remain the next
+  cleanup boundary. Historical plugin source trees remain retained but
   unsupported.
 - Retained `.hct` imports no longer depend on the GTK3 theme service. The
   format-specific reader invokes only the absolute system archive tool, reads
@@ -2592,6 +2593,17 @@ GTK3-named dependency download with explicit non-GTK dependencies, remove the
 inactive runtime-copy implementation, and then delete source-level GTK3 branches,
 tests, and compatibility helpers. Existing GTK4 compiler diagnostics in those
 source branches remain assigned to that pass rather than being hidden here.
+
+Stage 9 GTK4 compatibility specialization pass 6 (2026-07-23): the active
+frontend compatibility header is specialized to its GTK4 implementations.
+All toolkit-version conditionals, GTK3 callback adapters, container ownership,
+event delivery, selection, dialog, icon-size, and widget-destruction branches
+are removed while the caller-facing helper API remains stable. Repository lint
+rejects restored version switches and representative GTK3-only types and
+functions. The strict probe builds and runs with `/W4 /WX`, and the complete
+frontend compiles and links with the unchanged warning inventory. Direct GTK3
+branches in individual frontend sources and the non-configurable legacy Meson
+fragments remain assigned to later Stage 9 passes.
 
 Deliverables:
 

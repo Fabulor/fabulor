@@ -7416,6 +7416,38 @@ restore the retired `%APPDATA%\Fabulor\gtk3-themes` service, adapter, or saved
 keys. Historical extraction findings remain in the security audit as evidence,
 but their vulnerable implementation is no longer present.
 
+### GTK4 Stage 9 Compatibility Header Specialization, Pass 6
+
+Date: 2026-07-23
+
+Boundary retired: `src/fe-gtk/gtk-compat.h` no longer supports two toolkit
+majors. Its stable helper API now contains only the selected GTK4
+implementations; 898 lines of GTK3 branches and version directives are
+removed.
+
+Automated evidence:
+
+- strict GTK4 MSVC probe build and execution: pass with `/W4 /WX`, zero
+  warnings and zero errors; GTK 4.22.4 / GLib 2.88.0 / x64 runtime confirmed
+- complete GTK4 frontend project build and link: pass with zero errors and the
+  unchanged 81-warning inventory
+- production profile contract suite: all 9 tests pass, including rejection of
+  restored toolkit-version switches and representative GTK3-only APIs
+- source audit: no `GTK_MAJOR_VERSION`, GTK3 event type, container/bin,
+  selection, synchronous-dialog, widget-destruction, or recursive-show API
+  remains in the compatibility header
+- repository whitespace validation: pass
+
+The full orchestration's common-library prebuild was not rerun locally because
+its public-suffix download is blocked by the execution sandbox; the unchanged
+common library and complete frontend link validated the affected boundary.
+GitHub's clean-environment build remains the final orchestration check.
+
+Behaviour contract: callers retain the reviewed helper API and GTK4 behavior,
+but no supported build can select a GTK3 implementation from the compatibility
+header. Direct GTK3 branches in individual source files and legacy,
+non-configurable Meson fragments remain separate Stage 9 cleanup targets.
+
 ## Stage Completion Rule
 
 A stage can move to complete in `migration-plan.md` only when:

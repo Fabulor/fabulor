@@ -440,6 +440,7 @@ Detailed planning and evidence live in:
     - [x] Remove the GTK3 dependency archive, MSYS2 libarchive/hicolor augmentation, legacy copy/Inno projects, and unsupported Lua/Perl/gendef inputs from the Windows GTK4 build graph; pin the remaining OpenSSL support root.
     - [x] Move retained `.hct` text import out of the GTK3 theme service and enforce absolute system-tool execution, entry validation, duplicate rejection, and archive/output limits.
     - [x] Delete the GTK3 theme service, adapter, preference branch, tests, probe coverage, saved configuration keys, and active build references.
+    - [x] Specialize the active frontend compatibility header to GTK4 and enforce that version switches and representative GTK3 APIs cannot return.
 - [ ] Complete clean-install, upgrade, accessibility, visual, performance, plugin, and packaging validation.
 
 ## 7. Documentation & Developer Guides
