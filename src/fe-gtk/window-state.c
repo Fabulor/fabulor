@@ -6,11 +6,7 @@
 #ifdef G_OS_WIN32
 #include <windows.h>
 #include <shellapi.h>
-#if GTK_MAJOR_VERSION >= 4
 #include <gdk/win32/gdkwin32.h>
-#else
-#include <gdk/gdkwin32.h>
-#endif
 #endif
 
 typedef struct
@@ -19,10 +15,8 @@ typedef struct
 	FabulorWindowStateCallback callback;
 	gpointer user_data;
 	FabulorWindowState previous;
-#if GTK_MAJOR_VERSION >= 4
 	GdkToplevel *toplevel;
 	gulong state_handler;
-#endif
 } FabulorWindowStateWatch;
 
 guint
@@ -53,7 +47,6 @@ fabulor_window_state_get (GtkWindow *window, FabulorWindowState *state)
 
 	memset (state, 0, sizeof (*state));
 	state->visible = gtk_widget_get_visible (GTK_WIDGET (window));
-#if GTK_MAJOR_VERSION >= 4
 	{
 		GdkSurface *surface = gtk_native_get_surface (GTK_NATIVE (window));
 		if (GDK_IS_TOPLEVEL (surface))
@@ -66,19 +59,6 @@ fabulor_window_state_get (GtkWindow *window, FabulorWindowState *state)
 			state->focused = (value & GDK_TOPLEVEL_STATE_FOCUSED) != 0;
 		}
 	}
-#else
-	{
-		GdkWindow *gdk_window = gtk_widget_get_window (GTK_WIDGET (window));
-		if (gdk_window)
-		{
-			GdkWindowState value = gdk_window_get_state (gdk_window);
-			state->minimized = (value & GDK_WINDOW_STATE_ICONIFIED) != 0;
-			state->maximized = (value & GDK_WINDOW_STATE_MAXIMIZED) != 0;
-			state->fullscreen = (value & GDK_WINDOW_STATE_FULLSCREEN) != 0;
-			state->focused = (value & GDK_WINDOW_STATE_FOCUSED) != 0;
-		}
-	}
-#endif
 }
 
 static void
@@ -102,7 +82,6 @@ window_state_visible_notify_cb (GObject *object, GParamSpec *pspec,
 	window_state_emit (user_data);
 }
 
-#if GTK_MAJOR_VERSION >= 4
 static void
 window_state_notify_cb (GObject *object, GParamSpec *pspec, gpointer user_data)
 {
@@ -147,43 +126,12 @@ window_state_unrealize_cb (GtkWidget *widget, gpointer user_data)
 	(void)widget;
 	window_state_detach_surface (user_data);
 }
-#else
-static gboolean
-window_state_event_cb (GtkWidget *widget, GdkEventWindowState *event,
-	gpointer user_data)
-{
-	FabulorWindowStateWatch *watch = user_data;
-	FabulorWindowState current = { 0 };
-	(void)widget;
-	if (event->changed_mask & GDK_WINDOW_STATE_ICONIFIED)
-		current.changed |= FABULOR_WINDOW_STATE_MINIMIZED;
-	if (event->changed_mask & GDK_WINDOW_STATE_MAXIMIZED)
-		current.changed |= FABULOR_WINDOW_STATE_MAXIMIZED;
-	if (event->changed_mask & GDK_WINDOW_STATE_FULLSCREEN)
-		current.changed |= FABULOR_WINDOW_STATE_FULLSCREEN;
-	if (event->changed_mask & GDK_WINDOW_STATE_FOCUSED)
-		current.changed |= FABULOR_WINDOW_STATE_FOCUSED;
-	current.minimized = (event->new_window_state & GDK_WINDOW_STATE_ICONIFIED) != 0;
-	current.maximized = (event->new_window_state & GDK_WINDOW_STATE_MAXIMIZED) != 0;
-	current.fullscreen = (event->new_window_state & GDK_WINDOW_STATE_FULLSCREEN) != 0;
-	current.focused = (event->new_window_state & GDK_WINDOW_STATE_FOCUSED) != 0;
-	current.visible = gtk_widget_get_visible (GTK_WIDGET (watch->window));
-	if (watch->previous.visible != current.visible)
-		current.changed |= FABULOR_WINDOW_STATE_VISIBLE;
-	watch->previous = current;
-	watch->previous.changed = 0;
-	watch->callback (watch->window, &current, watch->user_data);
-	return FALSE;
-}
-#endif
 
 static void
 window_state_watch_free (gpointer data)
 {
 	FabulorWindowStateWatch *watch = data;
-#if GTK_MAJOR_VERSION >= 4
 	window_state_detach_surface (watch);
-#endif
 	g_free (watch);
 }
 
@@ -211,15 +159,10 @@ fabulor_window_state_watch (GtkWindow *window,
 	g_ptr_array_add (watches, watch);
 	g_signal_connect (window, "notify::visible",
 		G_CALLBACK (window_state_visible_notify_cb), watch);
-#if GTK_MAJOR_VERSION >= 4
 	g_signal_connect (window, "realize", G_CALLBACK (window_state_realize_cb), watch);
 	g_signal_connect (window, "unrealize", G_CALLBACK (window_state_unrealize_cb), watch);
 	if (gtk_widget_get_realized (GTK_WIDGET (window)))
 		window_state_attach_surface (watch);
-#else
-	g_signal_connect (window, "window-state-event",
-		G_CALLBACK (window_state_event_cb), watch);
-#endif
 }
 
 void
@@ -233,9 +176,6 @@ void
 fabulor_window_present (GtkWindow *window)
 {
 	g_return_if_fail (GTK_IS_WINDOW (window));
-#if GTK_MAJOR_VERSION < 4
-	gtk_window_deiconify (window);
-#endif
 	gtk_widget_set_visible (GTK_WIDGET (window), TRUE);
 	gtk_window_present (window);
 }
@@ -246,19 +186,11 @@ fabulor_window_native_handle (GtkWindow *window)
 #ifdef G_OS_WIN32
 	if (!GTK_IS_WINDOW (window))
 		return NULL;
-#if GTK_MAJOR_VERSION >= 4
 	{
 		GdkSurface *surface = gtk_native_get_surface (GTK_NATIVE (window));
 		return GDK_IS_WIN32_SURFACE (surface) ?
 			(gpointer) gdk_win32_surface_get_handle (surface) : NULL;
 	}
-#else
-	{
-		GdkWindow *gdk_window = gtk_widget_get_window (GTK_WIDGET (window));
-		return gdk_window ?
-			(gpointer) gdk_win32_window_get_handle (gdk_window) : NULL;
-	}
-#endif
 #else
 	(void)window;
 	return NULL;
