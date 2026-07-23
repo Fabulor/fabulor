@@ -12,10 +12,6 @@
 
 #include <gtk/gtk.h>
 
-#if GTK_MAJOR_VERSION != 3 && GTK_MAJOR_VERSION != 4
-#error Fabulor GTK compatibility helpers support GTK 3 and GTK 4 only.
-#endif
-
 G_BEGIN_DECLS
 
 enum
@@ -39,13 +35,9 @@ typedef enum
 static inline GtkIconTheme *
 fabulor_gtk_icon_theme_get_default (void)
 {
-#if GTK_MAJOR_VERSION >= 4
 	GdkDisplay *display = gdk_display_get_default ();
 
 	return display ? gtk_icon_theme_get_for_display (display) : NULL;
-#else
-	return gtk_icon_theme_get_default ();
-#endif
 }
 
 static inline void
@@ -55,11 +47,7 @@ fabulor_gtk_icon_theme_add_search_path (GtkIconTheme *theme,
 	g_return_if_fail (GTK_IS_ICON_THEME (theme));
 	g_return_if_fail (path != NULL);
 
-#if GTK_MAJOR_VERSION >= 4
 	gtk_icon_theme_add_search_path (theme, path);
-#else
-	gtk_icon_theme_append_search_path (theme, path);
-#endif
 }
 
 static inline void
@@ -69,12 +57,7 @@ fabulor_gtk_icon_theme_set_name (GtkIconTheme *theme,
 	g_return_if_fail (GTK_IS_ICON_THEME (theme));
 	g_return_if_fail (theme_name != NULL);
 
-#if GTK_MAJOR_VERSION >= 4
 	gtk_icon_theme_set_theme_name (theme, theme_name);
-#else
-	gtk_icon_theme_set_custom_theme (theme, theme_name);
-	gtk_icon_theme_rescan_if_needed (theme);
-#endif
 }
 
 static inline GtkWidget *
@@ -88,7 +71,6 @@ fabulor_gtk_button_box_new (GtkOrientation orientation,
 		layout <= FABULOR_GTK_BUTTON_BOX_SPREAD, NULL);
 	g_return_val_if_fail (spacing >= 0, NULL);
 
-#if GTK_MAJOR_VERSION >= 4
 	GtkWidget *box = gtk_box_new (orientation, spacing);
 
 	if (layout == FABULOR_GTK_BUTTON_BOX_SPREAD)
@@ -101,37 +83,8 @@ fabulor_gtk_button_box_new (GtkOrientation orientation,
 			GTK_ALIGN_END : GTK_ALIGN_START);
 
 	return box;
-#else
-	GtkWidget *box = gtk_button_box_new (orientation);
-	GtkButtonBoxStyle gtk_layout;
-
-	switch (layout)
-	{
-	case FABULOR_GTK_BUTTON_BOX_START:
-		gtk_layout = GTK_BUTTONBOX_START;
-		break;
-	case FABULOR_GTK_BUTTON_BOX_END:
-		gtk_layout = GTK_BUTTONBOX_END;
-		break;
-	default:
-		gtk_layout = GTK_BUTTONBOX_SPREAD;
-		break;
-	}
-
-	gtk_button_box_set_layout (GTK_BUTTON_BOX (box), gtk_layout);
-	gtk_box_set_spacing (GTK_BOX (box), spacing);
-	return box;
-#endif
 }
 
-#if GTK_MAJOR_VERSION < 4
-static inline GtkIconSize
-fabulor_gtk_icon_size_to_gtk3 (FabulorGtkIconSize size)
-{
-	return size == FABULOR_GTK_ICON_SIZE_LARGE_TOOLBAR ?
-		GTK_ICON_SIZE_LARGE_TOOLBAR : GTK_ICON_SIZE_MENU;
-}
-#endif
 
 static inline gint
 fabulor_gtk_icon_size_get_pixels (FabulorGtkIconSize size)
@@ -147,14 +100,9 @@ fabulor_gtk_image_new_from_icon_name (const gchar *icon_name,
 
 	g_return_val_if_fail (icon_name != NULL, NULL);
 
-#if GTK_MAJOR_VERSION >= 4
 	image = gtk_image_new_from_icon_name (icon_name);
 	gtk_image_set_pixel_size (GTK_IMAGE (image),
 		fabulor_gtk_icon_size_get_pixels (size));
-#else
-	image = gtk_image_new_from_icon_name (icon_name,
-		fabulor_gtk_icon_size_to_gtk3 (size));
-#endif
 	return image;
 }
 
@@ -167,14 +115,10 @@ fabulor_gtk_image_new_from_pixbuf (GdkPixbuf *pixbuf)
 
 	g_return_val_if_fail (GDK_IS_PIXBUF (pixbuf), NULL);
 
-#if GTK_MAJOR_VERSION >= 4
 	GdkTexture *texture = gdk_texture_new_for_pixbuf (pixbuf);
 
 	image = gtk_image_new_from_paintable (GDK_PAINTABLE (texture));
 	g_object_unref (texture);
-#else
-	image = gtk_image_new_from_pixbuf (pixbuf);
-#endif
 	g_object_set_data_full (G_OBJECT (image),
 		FABULOR_GTK_IMAGE_SOURCE_PIXBUF_DATA, g_object_ref (pixbuf),
 		(GDestroyNotify) g_object_unref);
@@ -197,14 +141,10 @@ fabulor_gtk_about_dialog_set_logo_from_pixbuf (GtkAboutDialog *dialog,
 	g_return_if_fail (GTK_IS_ABOUT_DIALOG (dialog));
 	g_return_if_fail (GDK_IS_PIXBUF (pixbuf));
 
-#if GTK_MAJOR_VERSION >= 4
 	GdkTexture *texture = gdk_texture_new_for_pixbuf (pixbuf);
 
 	gtk_about_dialog_set_logo (dialog, GDK_PAINTABLE (texture));
 	g_object_unref (texture);
-#else
-	gtk_about_dialog_set_logo (dialog, pixbuf);
-#endif
 }
 
 static inline GtkWidget *
@@ -218,7 +158,6 @@ fabulor_gtk_button_new_with_icon_and_mnemonic (const gchar *label,
 	g_return_val_if_fail (label != NULL, NULL);
 	g_return_val_if_fail (icon_name != NULL, NULL);
 
-#if GTK_MAJOR_VERSION >= 4
 	GtkWidget *box;
 	GtkWidget *label_widget;
 
@@ -230,12 +169,6 @@ fabulor_gtk_button_new_with_icon_and_mnemonic (const gchar *label,
 	gtk_box_append (GTK_BOX (box), image);
 	gtk_box_append (GTK_BOX (box), label_widget);
 	gtk_button_set_child (GTK_BUTTON (button), box);
-#else
-	button = gtk_button_new_with_mnemonic (label);
-	image = fabulor_gtk_image_new_from_icon_name (icon_name, size);
-	gtk_button_set_image (GTK_BUTTON (button), image);
-	gtk_button_set_use_underline (GTK_BUTTON (button), TRUE);
-#endif
 
 	return button;
 }
@@ -246,7 +179,6 @@ fabulor_gtk_radio_button_new_with_mnemonic (GtkWidget *group_member,
 {
 	g_return_val_if_fail (label != NULL, NULL);
 
-#if GTK_MAJOR_VERSION >= 4
 	GtkWidget *button;
 
 	g_return_val_if_fail (group_member == NULL ||
@@ -258,36 +190,20 @@ fabulor_gtk_radio_button_new_with_mnemonic (GtkWidget *group_member,
 	else
 		gtk_check_button_set_active (GTK_CHECK_BUTTON (button), TRUE);
 	return button;
-#else
-	g_return_val_if_fail (group_member == NULL ||
-		GTK_IS_RADIO_BUTTON (group_member), NULL);
-	return gtk_radio_button_new_with_mnemonic_from_widget (
-		group_member ? GTK_RADIO_BUTTON (group_member) : NULL, label);
-#endif
 }
 
 static inline gboolean
 fabulor_gtk_check_button_get_active (GtkWidget *button)
 {
-#if GTK_MAJOR_VERSION >= 4
 	g_return_val_if_fail (GTK_IS_CHECK_BUTTON (button), FALSE);
 	return gtk_check_button_get_active (GTK_CHECK_BUTTON (button));
-#else
-	g_return_val_if_fail (GTK_IS_TOGGLE_BUTTON (button), FALSE);
-	return gtk_toggle_button_get_active (GTK_TOGGLE_BUTTON (button));
-#endif
 }
 
 static inline void
 fabulor_gtk_check_button_set_active (GtkWidget *button, gboolean active)
 {
-#if GTK_MAJOR_VERSION >= 4
 	g_return_if_fail (GTK_IS_CHECK_BUTTON (button));
 	gtk_check_button_set_active (GTK_CHECK_BUTTON (button), active);
-#else
-	g_return_if_fail (GTK_IS_TOGGLE_BUTTON (button));
-	gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (button), active);
-#endif
 }
 
 static inline void
@@ -295,17 +211,11 @@ fabulor_gtk_combo_box_set_single_column (GtkComboBox *combo_box)
 {
 	g_return_if_fail (GTK_IS_COMBO_BOX (combo_box));
 
-#if GTK_MAJOR_VERSION < 4
-	gtk_combo_box_set_wrap_width (combo_box, 1);
-#else
 	/* GTK4 combo popups already present their items in one column. */
 	(void) combo_box;
-#endif
 }
 
-#if GTK_MAJOR_VERSION >= 4
 G_GNUC_BEGIN_IGNORE_DEPRECATIONS
-#endif
 static inline GtkEntry *
 fabulor_gtk_combo_box_get_entry (GtkComboBox *combo_box)
 {
@@ -313,28 +223,18 @@ fabulor_gtk_combo_box_get_entry (GtkComboBox *combo_box)
 
 	g_return_val_if_fail (GTK_IS_COMBO_BOX (combo_box), NULL);
 
-#if GTK_MAJOR_VERSION >= 4
 	child = gtk_combo_box_get_child (combo_box);
-#else
-	child = gtk_bin_get_child (GTK_BIN (combo_box));
-#endif
 
 	return GTK_IS_ENTRY (child) ? GTK_ENTRY (child) : NULL;
 }
-#if GTK_MAJOR_VERSION >= 4
 G_GNUC_END_IGNORE_DEPRECATIONS
-#endif
 
 static inline void
 fabulor_gtk_label_set_wrap (GtkLabel *label, gboolean wrap)
 {
 	g_return_if_fail (GTK_IS_LABEL (label));
 
-#if GTK_MAJOR_VERSION >= 4
 	gtk_label_set_wrap (label, wrap);
-#else
-	gtk_label_set_line_wrap (label, wrap);
-#endif
 }
 
 static inline const gchar *
@@ -342,11 +242,7 @@ fabulor_gtk_entry_get_text (GtkEntry *entry)
 {
 	g_return_val_if_fail (GTK_IS_ENTRY (entry), NULL);
 
-#if GTK_MAJOR_VERSION >= 4
 	return gtk_editable_get_text (GTK_EDITABLE (entry));
-#else
-	return gtk_entry_get_text (entry);
-#endif
 }
 
 static inline void
@@ -355,11 +251,7 @@ fabulor_gtk_entry_set_text (GtkEntry *entry, const gchar *text)
 	g_return_if_fail (GTK_IS_ENTRY (entry));
 	g_return_if_fail (text != NULL);
 
-#if GTK_MAJOR_VERSION >= 4
 	gtk_editable_set_text (GTK_EDITABLE (entry), text);
-#else
-	gtk_entry_set_text (entry, text);
-#endif
 }
 
 static inline void
@@ -368,11 +260,7 @@ fabulor_gtk_entry_set_width_chars (GtkEntry *entry, gint width_chars)
 	g_return_if_fail (GTK_IS_ENTRY (entry));
 	g_return_if_fail (width_chars >= -1);
 
-#if GTK_MAJOR_VERSION >= 4
 	gtk_editable_set_width_chars (GTK_EDITABLE (entry), width_chars);
-#else
-	gtk_entry_set_width_chars (entry, width_chars);
-#endif
 }
 
 static inline GtkWidget *
@@ -380,18 +268,13 @@ fabulor_gtk_dialog_icon_new (const gchar *icon_name)
 {
 	g_return_val_if_fail (icon_name != NULL, NULL);
 
-#if GTK_MAJOR_VERSION >= 4
 	GtkWidget *image = gtk_image_new_from_icon_name (icon_name);
 
 	gtk_image_set_pixel_size (GTK_IMAGE (image),
 		FABULOR_GTK_DIALOG_ICON_PIXEL_SIZE);
 	return image;
-#else
-	return gtk_image_new_from_icon_name (icon_name, GTK_ICON_SIZE_DIALOG);
-#endif
 }
 
-#if GTK_MAJOR_VERSION >= 4
 static inline gint
 fabulor_gtk_margin_with_padding (gint margin, guint padding)
 {
@@ -400,11 +283,9 @@ fabulor_gtk_margin_with_padding (gint margin, guint padding)
 
 	return margin + (gint) padding;
 }
-#endif
 
 #define FABULOR_GTK_WINDOW_INSET_DATA "fabulor-gtk-window-inset"
 
-#if GTK_MAJOR_VERSION >= 4
 static inline void
 fabulor_gtk_widget_set_uniform_margin (GtkWidget *widget, guint inset)
 {
@@ -415,14 +296,12 @@ fabulor_gtk_widget_set_uniform_margin (GtkWidget *widget, guint inset)
 	gtk_widget_set_margin_top (widget, margin);
 	gtk_widget_set_margin_bottom (widget, margin);
 }
-#endif
 
 static inline void
 fabulor_gtk_container_set_uniform_inset (GtkWidget *widget, guint inset)
 {
 	g_return_if_fail (GTK_IS_WIDGET (widget));
 
-#if GTK_MAJOR_VERSION >= 4
 	if (GTK_IS_WINDOW (widget))
 	{
 		GtkWidget *child = gtk_window_get_child (GTK_WINDOW (widget));
@@ -438,10 +317,6 @@ fabulor_gtk_container_set_uniform_inset (GtkWidget *widget, guint inset)
 	{
 		fabulor_gtk_widget_set_uniform_margin (widget, inset);
 	}
-#else
-	g_return_if_fail (GTK_IS_CONTAINER (widget));
-	gtk_container_set_border_width (GTK_CONTAINER (widget), inset);
-#endif
 }
 
 static inline void
@@ -451,7 +326,6 @@ fabulor_gtk_box_append (GtkBox *box, GtkWidget *child, gboolean expand,
 	g_return_if_fail (GTK_IS_BOX (box));
 	g_return_if_fail (GTK_IS_WIDGET (child));
 
-#if GTK_MAJOR_VERSION >= 4
 	if (gtk_orientable_get_orientation (GTK_ORIENTABLE (box)) ==
 		GTK_ORIENTATION_HORIZONTAL)
 	{
@@ -477,9 +351,6 @@ fabulor_gtk_box_append (GtkBox *box, GtkWidget *child, gboolean expand,
 	}
 
 	gtk_box_append (box, child);
-#else
-	gtk_box_pack_start (box, child, expand, fill, padding);
-#endif
 }
 
 static inline void
@@ -490,13 +361,9 @@ fabulor_gtk_horizontal_box_append_trailing (GtkBox *box, GtkWidget *child)
 	g_return_if_fail (gtk_orientable_get_orientation (GTK_ORIENTABLE (box)) ==
 					  GTK_ORIENTATION_HORIZONTAL);
 
-#if GTK_MAJOR_VERSION >= 4
 	gtk_widget_set_hexpand (child, TRUE);
 	gtk_widget_set_halign (child, GTK_ALIGN_END);
 	gtk_box_append (box, child);
-#else
-	gtk_box_pack_end (box, child, FALSE, FALSE, 0);
-#endif
 }
 
 static inline void
@@ -508,16 +375,12 @@ fabulor_gtk_box_insert_before_trailing (GtkBox *box, GtkWidget *child,
 	g_return_if_fail (GTK_IS_WIDGET (trailing));
 	g_return_if_fail (gtk_widget_get_parent (trailing) == GTK_WIDGET (box));
 
-#if GTK_MAJOR_VERSION >= 4
 	GtkWidget *previous = gtk_widget_get_prev_sibling (trailing);
 
 	if (previous)
 		gtk_box_insert_child_after (box, child, previous);
 	else
 		gtk_box_prepend (box, child);
-#else
-	gtk_box_pack_start (box, child, FALSE, FALSE, 0);
-#endif
 }
 
 static inline void
@@ -528,15 +391,10 @@ fabulor_gtk_box_append_trailing_pair (GtkBox *box, GtkWidget *leading,
 	g_return_if_fail (GTK_IS_WIDGET (leading));
 	g_return_if_fail (GTK_IS_WIDGET (trailing));
 
-#if GTK_MAJOR_VERSION >= 4
-	/* GTK3 pack_end reverses call order and keeps this pair at the box end. */
+	/* Keep this pair at the box end without changing call-site ordering. */
 	gtk_widget_set_halign (GTK_WIDGET (box), GTK_ALIGN_END);
 	gtk_box_append (box, leading);
 	gtk_box_append (box, trailing);
-#else
-	gtk_box_pack_end (box, trailing, FALSE, FALSE, 0);
-	gtk_box_pack_end (box, leading, FALSE, FALSE, 0);
-#endif
 }
 
 static inline void
@@ -547,7 +405,6 @@ fabulor_gtk_box_reorder_child (GtkBox *box, GtkWidget *child, gint position)
 	g_return_if_fail (gtk_widget_get_parent (child) == GTK_WIDGET (box));
 	g_return_if_fail (position >= 0);
 
-#if GTK_MAJOR_VERSION >= 4
 	GtkWidget *sibling = NULL;
 	GtkWidget *candidate;
 	gint index = 0;
@@ -562,9 +419,6 @@ fabulor_gtk_box_reorder_child (GtkBox *box, GtkWidget *child, gint position)
 		sibling = candidate;
 	}
 	gtk_box_reorder_child_after (box, child, sibling);
-#else
-	gtk_box_reorder_child (box, child, position);
-#endif
 }
 
 static inline void
@@ -574,26 +428,14 @@ fabulor_gtk_box_remove_child (GtkBox *box, GtkWidget *child)
 	g_return_if_fail (GTK_IS_WIDGET (child));
 	g_return_if_fail (gtk_widget_get_parent (child) == GTK_WIDGET (box));
 
-#if GTK_MAJOR_VERSION >= 4
 	gtk_box_remove (box, child);
-#else
-	gtk_widget_destroy (child);
-#endif
 }
 
 static inline GtkWidget *
 fabulor_gtk_content_surface_new (gboolean visible_background)
 {
-#if GTK_MAJOR_VERSION >= 4
 	(void) visible_background;
 	return gtk_box_new (GTK_ORIENTATION_VERTICAL, 0);
-#else
-	GtkWidget *surface = gtk_event_box_new ();
-
-	gtk_event_box_set_visible_window (GTK_EVENT_BOX (surface),
-		visible_background);
-	return surface;
-#endif
 }
 
 static inline void
@@ -602,13 +444,8 @@ fabulor_gtk_content_surface_set_child (GtkWidget *surface, GtkWidget *child)
 	g_return_if_fail (GTK_IS_WIDGET (surface));
 	g_return_if_fail (GTK_IS_WIDGET (child));
 
-#if GTK_MAJOR_VERSION >= 4
 	g_return_if_fail (GTK_IS_BOX (surface));
 	gtk_box_append (GTK_BOX (surface), child);
-#else
-	g_return_if_fail (GTK_IS_EVENT_BOX (surface));
-	gtk_container_add (GTK_CONTAINER (surface), child);
-#endif
 }
 
 static inline void
@@ -617,11 +454,7 @@ fabulor_gtk_list_box_row_set_child (GtkListBoxRow *row, GtkWidget *child)
 	g_return_if_fail (GTK_IS_LIST_BOX_ROW (row));
 	g_return_if_fail (GTK_IS_WIDGET (child));
 
-#if GTK_MAJOR_VERSION >= 4
 	gtk_list_box_row_set_child (row, child);
-#else
-	gtk_container_add (GTK_CONTAINER (row), child);
-#endif
 }
 
 static inline void
@@ -630,11 +463,7 @@ fabulor_gtk_list_box_append (GtkListBox *list, GtkWidget *row)
 	g_return_if_fail (GTK_IS_LIST_BOX (list));
 	g_return_if_fail (GTK_IS_WIDGET (row));
 
-#if GTK_MAJOR_VERSION >= 4
 	gtk_list_box_append (list, row);
-#else
-	gtk_container_add (GTK_CONTAINER (list), row);
-#endif
 }
 
 static inline void
@@ -643,11 +472,7 @@ fabulor_gtk_widget_add_css_class (GtkWidget *widget, const gchar *name)
 	g_return_if_fail (GTK_IS_WIDGET (widget));
 	g_return_if_fail (name != NULL);
 
-#if GTK_MAJOR_VERSION >= 4
 	gtk_widget_add_css_class (widget, name);
-#else
-	gtk_style_context_add_class (gtk_widget_get_style_context (widget), name);
-#endif
 }
 
 static inline PangoFontDescription *
@@ -655,7 +480,6 @@ fabulor_gtk_widget_dup_font_description (GtkWidget *widget)
 {
 	g_return_val_if_fail (GTK_IS_WIDGET (widget), NULL);
 
-#if GTK_MAJOR_VERSION >= 4
 	{
 		PangoContext *context = gtk_widget_get_pango_context (widget);
 		const PangoFontDescription *description;
@@ -665,18 +489,6 @@ fabulor_gtk_widget_dup_font_description (GtkWidget *widget)
 		description = pango_context_get_font_description (context);
 		return description ? pango_font_description_copy (description) : NULL;
 	}
-#else
-	{
-		GtkStyleContext *context = gtk_widget_get_style_context (widget);
-		PangoFontDescription *description = NULL;
-
-		if (!context)
-			return NULL;
-		gtk_style_context_get (context, GTK_STATE_FLAG_NORMAL,
-			"font", &description, NULL);
-		return description;
-	}
-#endif
 }
 
 static inline void
@@ -684,11 +496,7 @@ fabulor_gtk_button_set_flat (GtkButton *button)
 {
 	g_return_if_fail (GTK_IS_BUTTON (button));
 
-#if GTK_MAJOR_VERSION >= 4
 	gtk_widget_add_css_class (GTK_WIDGET (button), "flat");
-#else
-	gtk_button_set_relief (button, GTK_RELIEF_NONE);
-#endif
 }
 
 static inline void
@@ -696,11 +504,7 @@ fabulor_gtk_button_set_always_show_image (GtkButton *button, gboolean always)
 {
 	g_return_if_fail (GTK_IS_BUTTON (button));
 
-#if GTK_MAJOR_VERSION >= 4
 	(void) always;
-#else
-	gtk_button_set_always_show_image (button, always);
-#endif
 }
 
 static inline GtkWidget *
@@ -708,11 +512,7 @@ fabulor_gtk_icon_button_new (const gchar *icon_name)
 {
 	g_return_val_if_fail (icon_name != NULL, NULL);
 
-#if GTK_MAJOR_VERSION >= 4
 	return gtk_button_new_from_icon_name (icon_name);
-#else
-	return gtk_button_new_from_icon_name (icon_name, GTK_ICON_SIZE_BUTTON);
-#endif
 }
 
 static inline void
@@ -722,12 +522,8 @@ fabulor_gtk_widget_set_accessible_label (GtkWidget *widget,
 	g_return_if_fail (GTK_IS_WIDGET (widget));
 	g_return_if_fail (label != NULL);
 
-#if GTK_MAJOR_VERSION >= 4
 	gtk_accessible_update_property (GTK_ACCESSIBLE (widget),
 		GTK_ACCESSIBLE_PROPERTY_LABEL, label, -1);
-#else
-	atk_object_set_name (gtk_widget_get_accessible (widget), label);
-#endif
 }
 
 static inline void
@@ -736,15 +532,11 @@ fabulor_gtk_widget_queue_draw_region (GtkWidget *widget, gint x, gint y,
 {
 	g_return_if_fail (GTK_IS_WIDGET (widget));
 
-#if GTK_MAJOR_VERSION >= 4
 	(void) x;
 	(void) y;
 	(void) width;
 	(void) height;
 	gtk_widget_queue_draw (widget);
-#else
-	gtk_widget_queue_draw_area (widget, x, y, width, height);
-#endif
 }
 
 static inline gboolean
@@ -752,14 +544,8 @@ fabulor_gtk_widget_has_toplevel_focus (GtkWidget *widget)
 {
 	g_return_val_if_fail (GTK_IS_WIDGET (widget), FALSE);
 
-#if GTK_MAJOR_VERSION >= 4
 	GtkRoot *root = gtk_widget_get_root (widget);
 	return GTK_IS_WINDOW (root) && gtk_window_is_active (GTK_WINDOW (root));
-#else
-	GtkWidget *toplevel = gtk_widget_get_toplevel (widget);
-	return GTK_IS_WINDOW (toplevel) &&
-		gtk_window_has_toplevel_focus (GTK_WINDOW (toplevel));
-#endif
 }
 
 static inline GtkWindow *
@@ -767,13 +553,8 @@ fabulor_gtk_widget_get_root_window (GtkWidget *widget)
 {
 	g_return_val_if_fail (GTK_IS_WIDGET (widget), NULL);
 
-#if GTK_MAJOR_VERSION >= 4
 	GtkRoot *root = gtk_widget_get_root (widget);
 	return GTK_IS_WINDOW (root) ? GTK_WINDOW (root) : NULL;
-#else
-	GtkWidget *root = gtk_widget_get_toplevel (widget);
-	return GTK_IS_WINDOW (root) ? GTK_WINDOW (root) : NULL;
-#endif
 }
 
 static inline void
@@ -782,7 +563,6 @@ fabulor_gtk_copy_text_to_clipboards (GtkWidget *widget, const gchar *text)
 	g_return_if_fail (GTK_IS_WIDGET (widget));
 	g_return_if_fail (text != NULL);
 
-#if GTK_MAJOR_VERSION >= 4
 	GdkDisplay *display = gtk_widget_get_display (widget);
 	GdkClipboard *clipboard;
 	GdkClipboard *primary;
@@ -795,20 +575,6 @@ fabulor_gtk_copy_text_to_clipboards (GtkWidget *widget, const gchar *text)
 	gdk_clipboard_set_text (clipboard, text);
 	if (primary && primary != clipboard)
 		gdk_clipboard_set_text (primary, text);
-#else
-	GtkWidget *window = gtk_widget_get_toplevel (widget);
-	GtkClipboard *clipboard;
-	GtkClipboard *primary;
-
-	if (!gtk_widget_is_toplevel (window))
-		return;
-
-	clipboard = gtk_widget_get_clipboard (window, GDK_SELECTION_CLIPBOARD);
-	primary = gtk_widget_get_clipboard (window, GDK_SELECTION_PRIMARY);
-	gtk_clipboard_set_text (clipboard, text, -1);
-	if (primary != clipboard)
-		gtk_clipboard_set_text (primary, text, -1);
-#endif
 }
 
 typedef void (*FabulorGtkWidgetInteractionFunc) (GtkWidget *widget,
@@ -839,7 +605,6 @@ fabulor_gtk_widget_interaction_free (gpointer data, GClosure *closure)
 	g_free (data);
 }
 
-#if GTK_MAJOR_VERSION >= 4
 static inline void
 fabulor_gtk_pointer_enter_cb (GtkEventControllerMotion *controller,
 								gdouble x, gdouble y, gpointer user_data)
@@ -861,29 +626,6 @@ fabulor_gtk_focus_change_cb (GtkEventControllerFocus *controller,
 	interaction->callback (gtk_event_controller_get_widget (GTK_EVENT_CONTROLLER (controller)),
 						   interaction->user_data);
 }
-#else
-static inline gboolean
-fabulor_gtk_pointer_enter_cb (GtkWidget *widget, GdkEventCrossing *event,
-								gpointer user_data)
-{
-	FabulorGtkWidgetInteraction *interaction = user_data;
-
-	(void) event;
-	interaction->callback (widget, interaction->user_data);
-	return FALSE;
-}
-
-static inline gboolean
-fabulor_gtk_focus_change_cb (GtkWidget *widget, GdkEventFocus *event,
-							gpointer user_data)
-{
-	FabulorGtkWidgetInteraction *interaction = user_data;
-
-	(void) event;
-	interaction->callback (widget, interaction->user_data);
-	return FALSE;
-}
-#endif
 
 static inline void
 fabulor_gtk_widget_on_pointer_enter (GtkWidget *widget,
@@ -896,18 +638,12 @@ fabulor_gtk_widget_on_pointer_enter (GtkWidget *widget,
 	g_return_if_fail (callback != NULL);
 	interaction = fabulor_gtk_widget_interaction_new (callback, user_data);
 
-#if GTK_MAJOR_VERSION >= 4
 	GtkEventController *controller = gtk_event_controller_motion_new ();
 
 	g_signal_connect_data (controller, "enter",
 		G_CALLBACK (fabulor_gtk_pointer_enter_cb), interaction,
 		fabulor_gtk_widget_interaction_free, 0);
 	gtk_widget_add_controller (widget, controller);
-#else
-	g_signal_connect_data (widget, "enter-notify-event",
-		G_CALLBACK (fabulor_gtk_pointer_enter_cb), interaction,
-		fabulor_gtk_widget_interaction_free, 0);
-#endif
 }
 
 static inline void
@@ -921,22 +657,12 @@ fabulor_gtk_widget_on_focus_change (GtkWidget *widget, gboolean entering,
 	g_return_if_fail (callback != NULL);
 	interaction = fabulor_gtk_widget_interaction_new (callback, user_data);
 
-#if GTK_MAJOR_VERSION >= 4
 	GtkEventController *controller = gtk_event_controller_focus_new ();
 
 	g_signal_connect_data (controller, entering ? "enter" : "leave",
 		G_CALLBACK (fabulor_gtk_focus_change_cb), interaction,
 		fabulor_gtk_widget_interaction_free, 0);
 	gtk_widget_add_controller (widget, controller);
-#else
-	const gchar *legacy_signal = entering
-		? "focus-in-event"
-		: "focus-out-event";
-
-	g_signal_connect_data (widget, legacy_signal,
-		G_CALLBACK (fabulor_gtk_focus_change_cb), interaction,
-		fabulor_gtk_widget_interaction_free, 0);
-#endif
 }
 
 static inline void
@@ -982,7 +708,6 @@ fabulor_gtk_pointer_tracking_free (gpointer data, GClosure *closure)
 		g_free (tracking);
 }
 
-#if GTK_MAJOR_VERSION >= 4
 static inline void
 fabulor_gtk_pointer_motion_cb (GtkEventControllerMotion *controller,
 								   gdouble x, gdouble y, gpointer user_data)
@@ -1010,33 +735,6 @@ fabulor_gtk_pointer_leave_cb (GtkEventControllerMotion *controller,
 		gtk_event_controller_get_widget (GTK_EVENT_CONTROLLER (controller)),
 		tracking->user_data);
 }
-#else
-static inline gboolean
-fabulor_gtk_pointer_motion_cb (GtkWidget *widget, GdkEventMotion *event,
-								   gpointer user_data)
-{
-	FabulorGtkPointerTracking *tracking = user_data;
-
-	if (tracking->motion_state_callback)
-		tracking->motion_state_callback (widget, event->x, event->y,
-			event->state, tracking->user_data);
-	else
-		tracking->motion_callback (widget, event->x, event->y,
-			tracking->user_data);
-	return FALSE;
-}
-
-static inline gboolean
-fabulor_gtk_pointer_leave_cb (GtkWidget *widget, GdkEventCrossing *event,
-								  gpointer user_data)
-{
-	FabulorGtkPointerTracking *tracking = user_data;
-
-	(void) event;
-	tracking->leave_callback (widget, tracking->user_data);
-	return FALSE;
-}
-#endif
 
 static inline void
 fabulor_gtk_widget_on_pointer_motion_full (GtkWidget *widget,
@@ -1057,7 +755,6 @@ fabulor_gtk_widget_on_pointer_motion_full (GtkWidget *widget,
 	tracking->user_data = user_data;
 	tracking->references = 2;
 
-#if GTK_MAJOR_VERSION >= 4
 	GtkEventController *controller = gtk_event_controller_motion_new ();
 
 	g_signal_connect_data (controller, "motion",
@@ -1067,16 +764,6 @@ fabulor_gtk_widget_on_pointer_motion_full (GtkWidget *widget,
 		G_CALLBACK (fabulor_gtk_pointer_leave_cb), tracking,
 		fabulor_gtk_pointer_tracking_free, 0);
 	gtk_widget_add_controller (widget, controller);
-#else
-	gtk_widget_add_events (widget,
-		GDK_POINTER_MOTION_MASK | GDK_LEAVE_NOTIFY_MASK);
-	g_signal_connect_data (widget, "motion-notify-event",
-		G_CALLBACK (fabulor_gtk_pointer_motion_cb), tracking,
-		fabulor_gtk_pointer_tracking_free, 0);
-	g_signal_connect_data (widget, "leave-notify-event",
-		G_CALLBACK (fabulor_gtk_pointer_leave_cb), tracking,
-		fabulor_gtk_pointer_tracking_free, 0);
-#endif
 }
 
 static inline void
@@ -1108,7 +795,6 @@ fabulor_gtk_widget_set_prelight (GtkWidget *widget, gboolean prelight)
 		gtk_widget_unset_state_flags (widget, GTK_STATE_FLAG_PRELIGHT);
 }
 
-#if GTK_MAJOR_VERSION >= 4
 static inline void
 fabulor_gtk_suppress_prelight_enter_cb (GtkEventControllerMotion *controller,
 									gdouble x, gdouble y, gpointer user_data)
@@ -1130,24 +816,12 @@ fabulor_gtk_suppress_prelight_leave_cb (GtkEventControllerMotion *controller,
 		gtk_event_controller_get_widget (GTK_EVENT_CONTROLLER (controller)),
 		FALSE);
 }
-#else
-static inline gboolean
-fabulor_gtk_suppress_prelight_cb (GtkWidget *widget, GdkEventCrossing *event,
-								  gpointer user_data)
-{
-	(void) event;
-	(void) user_data;
-	fabulor_gtk_widget_set_prelight (widget, FALSE);
-	return TRUE;
-}
-#endif
 
 static inline void
 fabulor_gtk_widget_suppress_pointer_prelight (GtkWidget *widget)
 {
 	g_return_if_fail (GTK_IS_WIDGET (widget));
 
-#if GTK_MAJOR_VERSION >= 4
 	GtkEventController *controller = gtk_event_controller_motion_new ();
 
 	g_signal_connect (controller, "enter",
@@ -1155,12 +829,6 @@ fabulor_gtk_widget_suppress_pointer_prelight (GtkWidget *widget)
 	g_signal_connect (controller, "leave",
 		G_CALLBACK (fabulor_gtk_suppress_prelight_leave_cb), NULL);
 	gtk_widget_add_controller (widget, controller);
-#else
-	g_signal_connect (widget, "enter-notify-event",
-		G_CALLBACK (fabulor_gtk_suppress_prelight_cb), NULL);
-	g_signal_connect (widget, "leave-notify-event",
-		G_CALLBACK (fabulor_gtk_suppress_prelight_cb), NULL);
-#endif
 }
 
 static inline gboolean
@@ -1174,7 +842,6 @@ fabulor_gtk_widget_get_descendant_origin (GtkWidget *widget,
 	g_return_val_if_fail (x != NULL, FALSE);
 	g_return_val_if_fail (y != NULL, FALSE);
 
-#if GTK_MAJOR_VERSION >= 4
 	graphene_point_t source = GRAPHENE_POINT_INIT (0.0f, 0.0f);
 	graphene_point_t target;
 
@@ -1182,16 +849,6 @@ fabulor_gtk_widget_get_descendant_origin (GtkWidget *widget,
 		return FALSE;
 	*x = target.x;
 	*y = target.y;
-#else
-	gint descendant_x;
-	gint descendant_y;
-
-	if (!gtk_widget_translate_coordinates (descendant, widget, 0, 0,
-		&descendant_x, &descendant_y))
-		return FALSE;
-	*x = descendant_x;
-	*y = descendant_y;
-#endif
 	return TRUE;
 }
 
@@ -1204,25 +861,12 @@ fabulor_gtk_widget_contains_descendant_point (GtkWidget *widget,
 	g_return_val_if_fail (GTK_IS_WIDGET (descendant), FALSE);
 	g_return_val_if_fail (gtk_widget_is_ancestor (descendant, widget), FALSE);
 
-#if GTK_MAJOR_VERSION >= 4
 	graphene_point_t source = GRAPHENE_POINT_INIT ((float) x, (float) y);
 	graphene_point_t target;
 
 	if (!gtk_widget_compute_point (widget, descendant, &source, &target))
 		return FALSE;
 	return gtk_widget_contains (descendant, target.x, target.y);
-#else
-	gint descendant_x;
-	gint descendant_y;
-	GtkAllocation allocation;
-
-	if (!gtk_widget_translate_coordinates (descendant, widget, 0, 0,
-		&descendant_x, &descendant_y))
-		return FALSE;
-	gtk_widget_get_allocation (descendant, &allocation);
-	return x >= descendant_x && x < descendant_x + allocation.width &&
-		y >= descendant_y && y < descendant_y + allocation.height;
-#endif
 }
 
 static inline void
@@ -1230,23 +874,7 @@ fabulor_gtk_widget_set_pointing_cursor (GtkWidget *widget, gboolean pointing)
 {
 	g_return_if_fail (GTK_IS_WIDGET (widget));
 
-#if GTK_MAJOR_VERSION >= 4
 	gtk_widget_set_cursor_from_name (widget, pointing ? "pointer" : NULL);
-#else
-	GdkWindow *window = gtk_widget_get_window (widget);
-
-	if (window)
-	{
-		GdkCursor *cursor = NULL;
-
-		if (pointing)
-			cursor = gdk_cursor_new_for_display (
-				gtk_widget_get_display (widget), GDK_HAND2);
-		gdk_window_set_cursor (window, cursor);
-		if (cursor)
-			g_object_unref (cursor);
-	}
-#endif
 }
 
 static inline void
@@ -1255,23 +883,8 @@ fabulor_gtk_text_view_set_pointing_cursor (GtkTextView *text_view,
 {
 	g_return_if_fail (GTK_IS_TEXT_VIEW (text_view));
 
-#if GTK_MAJOR_VERSION >= 4
 	gtk_widget_set_cursor_from_name (GTK_WIDGET (text_view),
 		pointing ? "pointer" : "text");
-#else
-	GdkWindow *text_window = gtk_text_view_get_window (
-		text_view, GTK_TEXT_WINDOW_TEXT);
-
-	if (text_window)
-	{
-		GdkCursor *cursor = gdk_cursor_new_for_display (
-			gdk_window_get_display (text_window),
-			pointing ? GDK_HAND2 : GDK_XTERM);
-
-		gdk_window_set_cursor (text_window, cursor);
-		g_object_unref (cursor);
-	}
-#endif
 }
 
 typedef gboolean (*FabulorGtkClickFunc) (GtkWidget *widget, guint button,
@@ -1292,7 +905,6 @@ fabulor_gtk_click_interaction_free (gpointer data, GClosure *closure)
 	g_free (data);
 }
 
-#if GTK_MAJOR_VERSION >= 4
 static inline void
 fabulor_gtk_click_released_cb (GtkGestureClick *gesture, gint n_press,
 								   gdouble x, gdouble y, gpointer user_data)
@@ -1311,17 +923,6 @@ fabulor_gtk_click_released_cb (GtkGestureClick *gesture, gint n_press,
 			GTK_EVENT_SEQUENCE_CLAIMED);
 	}
 }
-#else
-static inline gboolean
-fabulor_gtk_click_released_cb (GtkWidget *widget, GdkEventButton *event,
-								   gpointer user_data)
-{
-	FabulorGtkClickInteraction *interaction = user_data;
-
-	return interaction->callback (widget, event->button, event->x, event->y,
-		event->state, interaction->user_data);
-}
-#endif
 
 static inline void
 fabulor_gtk_widget_on_click_released (GtkWidget *widget,
@@ -1337,7 +938,6 @@ fabulor_gtk_widget_on_click_released (GtkWidget *widget,
 	interaction->callback = callback;
 	interaction->user_data = user_data;
 
-#if GTK_MAJOR_VERSION >= 4
 	GtkGesture *gesture = gtk_gesture_click_new ();
 
 	gtk_gesture_single_set_button (GTK_GESTURE_SINGLE (gesture), 0);
@@ -1345,13 +945,6 @@ fabulor_gtk_widget_on_click_released (GtkWidget *widget,
 		G_CALLBACK (fabulor_gtk_click_released_cb), interaction,
 		fabulor_gtk_click_interaction_free, 0);
 	gtk_widget_add_controller (widget, GTK_EVENT_CONTROLLER (gesture));
-#else
-	gtk_widget_add_events (widget,
-		GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK);
-	g_signal_connect_data (widget, "button-release-event",
-		G_CALLBACK (fabulor_gtk_click_released_cb), interaction,
-		fabulor_gtk_click_interaction_free, 0);
-#endif
 }
 
 typedef gboolean (*FabulorGtkMultiClickFunc) (GtkWidget *widget,
@@ -1373,7 +966,6 @@ fabulor_gtk_multi_click_interaction_free (gpointer data, GClosure *closure)
 	g_free (data);
 }
 
-#if GTK_MAJOR_VERSION >= 4
 static inline void
 fabulor_gtk_multi_click_pressed_cb (GtkGestureClick *gesture, gint n_press,
 	gdouble x, gdouble y, gpointer user_data)
@@ -1391,19 +983,6 @@ fabulor_gtk_multi_click_pressed_cb (GtkGestureClick *gesture, gint n_press,
 			GTK_EVENT_SEQUENCE_CLAIMED);
 	}
 }
-#else
-static inline gboolean
-fabulor_gtk_multi_click_pressed_cb (GtkWidget *widget,
-	GdkEventButton *event, gpointer user_data)
-{
-	FabulorGtkMultiClickInteraction *interaction = user_data;
-	guint n_press = event->type == GDK_2BUTTON_PRESS ? 2 :
-		event->type == GDK_3BUTTON_PRESS ? 3 : 1;
-
-	return interaction->callback (widget, event->button, n_press,
-		event->x, event->y, event->state, interaction->user_data);
-}
-#endif
 
 static inline void
 fabulor_gtk_widget_on_multi_click (GtkWidget *widget,
@@ -1416,7 +995,6 @@ fabulor_gtk_widget_on_multi_click (GtkWidget *widget,
 	interaction = g_new (FabulorGtkMultiClickInteraction, 1);
 	interaction->callback = callback;
 	interaction->user_data = user_data;
-#if GTK_MAJOR_VERSION >= 4
 	{
 		GtkGesture *gesture = gtk_gesture_click_new ();
 		gtk_gesture_single_set_button (GTK_GESTURE_SINGLE (gesture), 0);
@@ -1425,12 +1003,6 @@ fabulor_gtk_widget_on_multi_click (GtkWidget *widget,
 			fabulor_gtk_multi_click_interaction_free, 0);
 		gtk_widget_add_controller (widget, GTK_EVENT_CONTROLLER (gesture));
 	}
-#else
-	gtk_widget_add_events (widget, GDK_BUTTON_PRESS_MASK);
-	g_signal_connect_data (widget, "button-press-event",
-		G_CALLBACK (fabulor_gtk_multi_click_pressed_cb), interaction,
-		fabulor_gtk_multi_click_interaction_free, 0);
-#endif
 }
 
 typedef gboolean (*FabulorGtkFileDropFunc) (GtkWidget *widget, gdouble x,
@@ -1460,7 +1032,6 @@ fabulor_gtk_file_drop_finish (FabulorGtkFileDropInteraction *interaction,
 	interaction->active = FALSE;
 }
 
-#if GTK_MAJOR_VERSION >= 4
 static inline GdkDragAction
 fabulor_gtk_file_drag_motion_cb (GtkDropTarget *target, gdouble x,
 								 gdouble y, gpointer user_data)
@@ -1545,94 +1116,6 @@ fabulor_gtk_file_drop_cb (GtkDropTarget *target, const GValue *value,
 	g_string_free (uris, TRUE);
 	return FALSE;
 }
-#else
-static inline gboolean
-fabulor_gtk_drag_context_has_target (GdkDragContext *context,
-									 const gchar *expected_name)
-{
-	GList *target;
-
-	if (!context || !expected_name)
-		return FALSE;
-
-	for (target = gdk_drag_context_list_targets (context); target;
-		 target = target->next)
-	{
-		gchar *target_name = gdk_atom_name (GDK_POINTER_TO_ATOM (target->data));
-		gboolean matches = g_strcmp0 (target_name, expected_name) == 0;
-
-		g_free (target_name);
-		if (matches)
-			return TRUE;
-	}
-
-	return FALSE;
-}
-
-static inline gboolean
-fabulor_gtk_file_drag_motion_cb (GtkWidget *widget, GdkDragContext *context,
-								 gint x, gint y, guint32 time,
-								 gpointer user_data)
-{
-	FabulorGtkFileDropInteraction *interaction = user_data;
-	GdkDragAction action;
-
-	if (!fabulor_gtk_drag_context_has_target (context, "text/uri-list") ||
-		!interaction->motion_callback ||
-		!interaction->motion_callback (widget, x, y, interaction->user_data))
-	{
-		interaction->active = FALSE;
-		return FALSE;
-	}
-
-	interaction->active = TRUE;
-	action = gdk_drag_context_get_suggested_action (context);
-	gdk_drag_status (context, action, time);
-	return TRUE;
-}
-
-static inline void
-fabulor_gtk_file_drag_leave_cb (GtkWidget *widget, GdkDragContext *context,
-								guint32 time, gpointer user_data)
-{
-	FabulorGtkFileDropInteraction *interaction = user_data;
-
-	(void) context;
-	(void) time;
-	if (interaction->active && interaction->leave_callback)
-		interaction->leave_callback (widget, interaction->user_data);
-	interaction->active = FALSE;
-}
-
-static inline void
-fabulor_gtk_file_drop_cb (GtkWidget *widget, GdkDragContext *context,
-						  gint x, gint y, GtkSelectionData *selection_data,
-						  guint info, guint32 time, gpointer user_data)
-{
-	FabulorGtkFileDropInteraction *interaction = user_data;
-	gint length = gtk_selection_data_get_length (selection_data);
-	gchar *target_name;
-	gchar *uri_list;
-
-	(void) context;
-	(void) info;
-	(void) time;
-
-	target_name = gdk_atom_name (gtk_selection_data_get_target (selection_data));
-	if (!target_name || strcmp (target_name, "text/uri-list") != 0 || length <= 0)
-	{
-		g_free (target_name);
-		return;
-	}
-	g_free (target_name);
-
-	uri_list = g_strndup ((const gchar *) gtk_selection_data_get_data (selection_data),
-		length);
-	interaction->callback (widget, x, y, uri_list, interaction->user_data);
-	fabulor_gtk_file_drop_finish (interaction, widget);
-	g_free (uri_list);
-}
-#endif
 
 static inline void
 fabulor_gtk_widget_on_file_drop_full (GtkWidget *widget,
@@ -1654,7 +1137,6 @@ fabulor_gtk_widget_on_file_drop_full (GtkWidget *widget,
 	interaction->user_data = user_data;
 	interaction->active = FALSE;
 
-#if GTK_MAJOR_VERSION >= 4
 	GtkDropTarget *target = gtk_drop_target_new (GDK_TYPE_FILE_LIST, actions);
 
 	gtk_drop_target_set_preload (target, motion_callback != NULL);
@@ -1669,19 +1151,6 @@ fabulor_gtk_widget_on_file_drop_full (GtkWidget *widget,
 	g_signal_connect (target, "drop",
 		G_CALLBACK (fabulor_gtk_file_drop_cb), interaction);
 	gtk_widget_add_controller (widget, GTK_EVENT_CONTROLLER (target));
-#else
-	gtk_drag_dest_add_uri_targets (widget);
-	g_object_set_data_full (G_OBJECT (widget),
-		"fabulor-file-drop-interaction", interaction, g_free);
-	if (motion_callback)
-		g_signal_connect (widget, "drag-motion",
-			G_CALLBACK (fabulor_gtk_file_drag_motion_cb), interaction);
-	if (leave_callback)
-		g_signal_connect (widget, "drag-leave",
-			G_CALLBACK (fabulor_gtk_file_drag_leave_cb), interaction);
-	g_signal_connect (widget, "drag-data-received",
-		G_CALLBACK (fabulor_gtk_file_drop_cb), interaction);
-#endif
 }
 
 static inline void
@@ -1758,7 +1227,6 @@ fabulor_gtk_internal_drag_kind_is_accepted (FabulorGtkInternalDragKind kind,
 		(accepted_kinds & FABULOR_GTK_INTERNAL_DRAG_ACCEPT (kind)) != 0;
 }
 
-#if GTK_MAJOR_VERSION >= 4
 static inline FabulorGtkInternalDragKind
 fabulor_gtk_internal_drag_kind_from_value (const GValue *value)
 {
@@ -1855,97 +1323,6 @@ fabulor_gtk_internal_drag_drop_cb (GtkDropTarget *controller,
 	fabulor_gtk_internal_drag_finish (target, widget);
 	return handled;
 }
-#else
-static inline const gchar *
-fabulor_gtk_internal_drag_target_name (FabulorGtkInternalDragKind kind)
-{
-	if (kind == FABULOR_GTK_INTERNAL_DRAG_CHANNEL_VIEW)
-		return "ZOITECHAT_CHANVIEW";
-	if (kind == FABULOR_GTK_INTERNAL_DRAG_USER_LIST)
-		return "ZOITECHAT_USERLIST";
-	return NULL;
-}
-
-static inline FabulorGtkInternalDragKind
-fabulor_gtk_internal_drag_kind_from_context (GdkDragContext *context)
-{
-	if (fabulor_gtk_drag_context_has_target (context, "ZOITECHAT_CHANVIEW"))
-		return FABULOR_GTK_INTERNAL_DRAG_CHANNEL_VIEW;
-	if (fabulor_gtk_drag_context_has_target (context, "ZOITECHAT_USERLIST"))
-		return FABULOR_GTK_INTERNAL_DRAG_USER_LIST;
-	return FABULOR_GTK_INTERNAL_DRAG_NONE;
-}
-
-static inline void
-fabulor_gtk_internal_drag_begin_cb (GtkWidget *widget,
-									GdkDragContext *context,
-									gpointer user_data)
-{
-	FabulorGtkInternalDragSource *source = user_data;
-	GdkPixbuf *icon;
-
-	if (!source->icon_callback)
-		return;
-	icon = source->icon_callback (widget, source->user_data);
-	if (!icon)
-		return;
-	gtk_drag_set_icon_pixbuf (context, icon, 0, 0);
-	g_object_unref (icon);
-}
-
-static inline gboolean
-fabulor_gtk_internal_drag_motion_cb (GtkWidget *widget,
-									GdkDragContext *context,
-									gint x, gint y, guint32 time,
-									gpointer user_data)
-{
-	FabulorGtkInternalDropTarget *target = user_data;
-	FabulorGtkInternalDragKind kind = fabulor_gtk_internal_drag_kind_from_context (context);
-
-	if (!fabulor_gtk_internal_drag_kind_is_accepted (kind, target->accepted_kinds) ||
-		!target->motion_callback ||
-		!target->motion_callback (widget, kind, x, y, target->user_data))
-	{
-		target->active_kind = FABULOR_GTK_INTERNAL_DRAG_NONE;
-		return FALSE;
-	}
-
-	target->active_kind = kind;
-	gdk_drag_status (context, fabulor_gtk_internal_drag_action (kind), time);
-	return TRUE;
-}
-
-static inline void
-fabulor_gtk_internal_drag_leave_cb (GtkWidget *widget,
-									GdkDragContext *context, guint32 time,
-									gpointer user_data)
-{
-	FabulorGtkInternalDropTarget *target = user_data;
-
-	(void) context;
-	(void) time;
-	if (target->active_kind != FABULOR_GTK_INTERNAL_DRAG_NONE &&
-		target->leave_callback)
-		target->leave_callback (widget, target->active_kind, target->user_data);
-	target->active_kind = FABULOR_GTK_INTERNAL_DRAG_NONE;
-}
-
-static inline gboolean
-fabulor_gtk_internal_drag_drop_cb (GtkWidget *widget,
-								  GdkDragContext *context, gint x,
-								  gint y, guint32 time, gpointer user_data)
-{
-	FabulorGtkInternalDropTarget *target = user_data;
-	FabulorGtkInternalDragKind kind = fabulor_gtk_internal_drag_kind_from_context (context);
-	gboolean handled;
-
-	(void) time;
-	handled = fabulor_gtk_internal_drag_kind_is_accepted (kind, target->accepted_kinds) &&
-		target->drop_callback (widget, kind, x, y, target->user_data);
-	fabulor_gtk_internal_drag_finish (target, widget);
-	return handled;
-}
-#endif
 
 static inline void
 fabulor_gtk_widget_enable_internal_drag_source (
@@ -1963,7 +1340,6 @@ fabulor_gtk_widget_enable_internal_drag_source (
 	source->icon_callback = icon_callback;
 	source->user_data = user_data;
 
-#if GTK_MAJOR_VERSION >= 4
 	GtkDragSource *controller = gtk_drag_source_new ();
 
 	gtk_drag_source_set_actions (controller, fabulor_gtk_internal_drag_action (kind));
@@ -1974,20 +1350,6 @@ fabulor_gtk_widget_enable_internal_drag_source (
 	g_signal_connect (controller, "drag-begin",
 		G_CALLBACK (fabulor_gtk_internal_drag_begin_cb), source);
 	gtk_widget_add_controller (widget, GTK_EVENT_CONTROLLER (controller));
-#else
-	GtkTargetEntry entry = {
-		(gchar *) fabulor_gtk_internal_drag_target_name (kind),
-		GTK_TARGET_SAME_APP,
-		(guint) kind
-	};
-
-	gtk_drag_source_set (widget, GDK_BUTTON1_MASK, &entry, 1,
-		fabulor_gtk_internal_drag_action (kind));
-	g_object_set_data_full (G_OBJECT (widget),
-		"fabulor-internal-drag-source", source, g_free);
-	g_signal_connect (widget, "drag-begin",
-		G_CALLBACK (fabulor_gtk_internal_drag_begin_cb), source);
-#endif
 }
 
 static inline void
@@ -2010,7 +1372,6 @@ fabulor_gtk_widget_enable_internal_drop_target (
 	target->drop_callback = drop_callback;
 	target->user_data = user_data;
 
-#if GTK_MAJOR_VERSION >= 4
 	GtkDropTarget *controller = gtk_drop_target_new (G_TYPE_POINTER,
 		GDK_ACTION_MOVE | GDK_ACTION_COPY);
 
@@ -2026,38 +1387,6 @@ fabulor_gtk_widget_enable_internal_drop_target (
 	g_signal_connect (controller, "drop",
 		G_CALLBACK (fabulor_gtk_internal_drag_drop_cb), target);
 	gtk_widget_add_controller (widget, GTK_EVENT_CONTROLLER (controller));
-#else
-	GtkTargetEntry entries[2];
-	guint entry_count = 0;
-
-	if (fabulor_gtk_internal_drag_kind_is_accepted (
-			FABULOR_GTK_INTERNAL_DRAG_CHANNEL_VIEW, accepted_kinds))
-	{
-		entries[entry_count].target = "ZOITECHAT_CHANVIEW";
-		entries[entry_count].flags = GTK_TARGET_SAME_APP;
-		entries[entry_count++].info = FABULOR_GTK_INTERNAL_DRAG_CHANNEL_VIEW;
-	}
-	if (fabulor_gtk_internal_drag_kind_is_accepted (
-			FABULOR_GTK_INTERNAL_DRAG_USER_LIST, accepted_kinds))
-	{
-		entries[entry_count].target = "ZOITECHAT_USERLIST";
-		entries[entry_count].flags = GTK_TARGET_SAME_APP;
-		entries[entry_count++].info = FABULOR_GTK_INTERNAL_DRAG_USER_LIST;
-	}
-
-	gtk_drag_dest_set (widget, GTK_DEST_DEFAULT_ALL, entries, entry_count,
-		GDK_ACTION_MOVE | GDK_ACTION_COPY);
-	g_object_set_data_full (G_OBJECT (widget),
-		"fabulor-internal-drop-target", target, g_free);
-	if (motion_callback)
-		g_signal_connect (widget, "drag-motion",
-			G_CALLBACK (fabulor_gtk_internal_drag_motion_cb), target);
-	if (leave_callback)
-		g_signal_connect (widget, "drag-leave",
-			G_CALLBACK (fabulor_gtk_internal_drag_leave_cb), target);
-	g_signal_connect (widget, "drag-drop",
-		G_CALLBACK (fabulor_gtk_internal_drag_drop_cb), target);
-#endif
 }
 
 typedef gboolean (*FabulorGtkKeyFunc) (GtkWidget *widget, guint keyval,
@@ -2077,7 +1406,6 @@ fabulor_gtk_key_interaction_free (gpointer data, GClosure *closure)
 	g_free (data);
 }
 
-#if GTK_MAJOR_VERSION >= 4
 static inline gboolean
 fabulor_gtk_key_pressed_cb (GtkEventControllerKey *controller, guint keyval,
 							guint keycode, GdkModifierType state,
@@ -2090,17 +1418,6 @@ fabulor_gtk_key_pressed_cb (GtkEventControllerKey *controller, guint keyval,
 		gtk_event_controller_get_widget (GTK_EVENT_CONTROLLER (controller)),
 		keyval, state, interaction->user_data);
 }
-#else
-static inline gboolean
-fabulor_gtk_key_pressed_cb (GtkWidget *widget, GdkEventKey *event,
-							gpointer user_data)
-{
-	FabulorGtkKeyInteraction *interaction = user_data;
-
-	return interaction->callback (widget, event->keyval, event->state,
-		interaction->user_data);
-}
-#endif
 
 static inline void
 fabulor_gtk_widget_on_key_pressed (GtkWidget *widget,
@@ -2116,7 +1433,6 @@ fabulor_gtk_widget_on_key_pressed (GtkWidget *widget,
 	interaction->callback = callback;
 	interaction->user_data = user_data;
 
-#if GTK_MAJOR_VERSION >= 4
 	GtkEventController *controller = gtk_event_controller_key_new ();
 
 	gtk_event_controller_set_propagation_phase (controller, GTK_PHASE_BUBBLE);
@@ -2124,11 +1440,6 @@ fabulor_gtk_widget_on_key_pressed (GtkWidget *widget,
 		G_CALLBACK (fabulor_gtk_key_pressed_cb), interaction,
 		fabulor_gtk_key_interaction_free, 0);
 	gtk_widget_add_controller (widget, controller);
-#else
-	g_signal_connect_data (widget, "key-press-event",
-		G_CALLBACK (fabulor_gtk_key_pressed_cb), interaction,
-		fabulor_gtk_key_interaction_free, 0);
-#endif
 }
 
 typedef gboolean (*FabulorGtkScrollFunc) (GtkWidget *widget, gdouble dx,
@@ -2147,7 +1458,6 @@ fabulor_gtk_scroll_interaction_free (gpointer data, GClosure *closure)
 	g_free (data);
 }
 
-#if GTK_MAJOR_VERSION >= 4
 static inline gboolean
 fabulor_gtk_scroll_cb (GtkEventControllerScroll *controller, gdouble dx,
 					   gdouble dy, gpointer user_data)
@@ -2158,40 +1468,6 @@ fabulor_gtk_scroll_cb (GtkEventControllerScroll *controller, gdouble dx,
 		gtk_event_controller_get_widget (GTK_EVENT_CONTROLLER (controller)),
 		dx, dy, interaction->user_data);
 }
-#else
-static inline gboolean
-fabulor_gtk_scroll_cb (GtkWidget *widget, GdkEventScroll *event,
-					   gpointer user_data)
-{
-	FabulorGtkScrollInteraction *interaction = user_data;
-	gdouble dx = 0.0;
-	gdouble dy = 0.0;
-
-	if (event->direction != GDK_SCROLL_SMOOTH ||
-		!gdk_event_get_scroll_deltas ((GdkEvent *) event, &dx, &dy))
-	{
-		switch (event->direction)
-		{
-		case GDK_SCROLL_UP:
-			dy = -1.0;
-			break;
-		case GDK_SCROLL_DOWN:
-			dy = 1.0;
-			break;
-		case GDK_SCROLL_LEFT:
-			dx = -1.0;
-			break;
-		case GDK_SCROLL_RIGHT:
-			dx = 1.0;
-			break;
-		default:
-			break;
-		}
-	}
-
-	return interaction->callback (widget, dx, dy, interaction->user_data);
-}
-#endif
 
 static inline void
 fabulor_gtk_widget_on_scroll (GtkWidget *widget,
@@ -2206,7 +1482,6 @@ fabulor_gtk_widget_on_scroll (GtkWidget *widget,
 	interaction->callback = callback;
 	interaction->user_data = user_data;
 
-#if GTK_MAJOR_VERSION >= 4
 	GtkEventController *controller = gtk_event_controller_scroll_new (
 		GTK_EVENT_CONTROLLER_SCROLL_BOTH_AXES);
 
@@ -2215,22 +1490,12 @@ fabulor_gtk_widget_on_scroll (GtkWidget *widget,
 		G_CALLBACK (fabulor_gtk_scroll_cb), interaction,
 		fabulor_gtk_scroll_interaction_free, 0);
 	gtk_widget_add_controller (widget, controller);
-#else
-	gtk_widget_add_events (widget, GDK_SCROLL_MASK | GDK_SMOOTH_SCROLL_MASK);
-	g_signal_connect_data (widget, "scroll-event",
-		G_CALLBACK (fabulor_gtk_scroll_cb), interaction,
-		fabulor_gtk_scroll_interaction_free, 0);
-#endif
 }
 
 static inline GtkWidget *
 fabulor_gtk_window_new (void)
 {
-#if GTK_MAJOR_VERSION >= 4
 	return gtk_window_new ();
-#else
-	return gtk_window_new (GTK_WINDOW_TOPLEVEL);
-#endif
 }
 
 static inline void
@@ -2239,16 +1504,12 @@ fabulor_gtk_window_set_child (GtkWindow *window, GtkWidget *child)
 	g_return_if_fail (GTK_IS_WINDOW (window));
 	g_return_if_fail (GTK_IS_WIDGET (child));
 
-#if GTK_MAJOR_VERSION >= 4
 	guint *inset;
 
 	gtk_window_set_child (window, child);
 	inset = g_object_get_data (G_OBJECT (window), FABULOR_GTK_WINDOW_INSET_DATA);
 	if (inset)
 		fabulor_gtk_widget_set_uniform_margin (child, *inset);
-#else
-	gtk_container_add (GTK_CONTAINER (window), child);
-#endif
 }
 
 static inline void
@@ -2257,11 +1518,7 @@ fabulor_gtk_window_set_role (GtkWindow *window, const gchar *role)
 	g_return_if_fail (GTK_IS_WINDOW (window));
 	g_return_if_fail (role != NULL);
 
-#if GTK_MAJOR_VERSION >= 4
 	(void) role;
-#else
-	gtk_window_set_role (window, role);
-#endif
 }
 
 static inline gboolean
@@ -2269,7 +1526,6 @@ fabulor_gtk_window_minimize (GtkWindow *window)
 {
 	g_return_val_if_fail (GTK_IS_WINDOW (window), FALSE);
 
-#if GTK_MAJOR_VERSION >= 4
 	{
 		GdkSurface *surface = gtk_native_get_surface (GTK_NATIVE (window));
 
@@ -2277,10 +1533,6 @@ fabulor_gtk_window_minimize (GtkWindow *window)
 			return FALSE;
 		return gdk_toplevel_minimize (GDK_TOPLEVEL (surface));
 	}
-#else
-	gtk_window_iconify (window);
-	return TRUE;
-#endif
 }
 
 static inline void
@@ -2288,12 +1540,8 @@ fabulor_gtk_window_set_urgent (GtkWindow *window, gboolean urgent)
 {
 	g_return_if_fail (GTK_IS_WINDOW (window));
 
-#if GTK_MAJOR_VERSION >= 4
 	/* GTK4 deliberately has no urgency-hint API. */
 	(void) urgent;
-#else
-	gtk_window_set_urgency_hint (window, urgent);
-#endif
 }
 
 static inline void
@@ -2304,13 +1552,9 @@ fabulor_gtk_window_set_wm_class (GtkWindow *window, const gchar *name,
 	g_return_if_fail (name != NULL);
 	g_return_if_fail (class_name != NULL);
 
-#if GTK_MAJOR_VERSION >= 4
 	/* GTK4 derives application identity from the process/application setup. */
 	(void) name;
 	(void) class_name;
-#else
-	gtk_window_set_wmclass (window, name, class_name);
-#endif
 }
 
 static inline void
@@ -2318,11 +1562,7 @@ fabulor_gtk_window_resize (GtkWindow *window, gint width, gint height)
 {
 	g_return_if_fail (GTK_IS_WINDOW (window));
 
-#if GTK_MAJOR_VERSION >= 4
 	gtk_window_set_default_size (window, width, height);
-#else
-	gtk_window_resize (window, width, height);
-#endif
 }
 
 static inline void
@@ -2330,11 +1570,7 @@ fabulor_gtk_widget_set_can_default (GtkWidget *widget, gboolean can_default)
 {
 	g_return_if_fail (GTK_IS_WIDGET (widget));
 
-#if GTK_MAJOR_VERSION >= 4
 	(void) can_default;
-#else
-	gtk_widget_set_can_default (widget, can_default);
-#endif
 }
 
 static inline void
@@ -2343,21 +1579,13 @@ fabulor_gtk_window_set_default_widget (GtkWindow *window, GtkWidget *widget)
 	g_return_if_fail (GTK_IS_WINDOW (window));
 	g_return_if_fail (GTK_IS_WIDGET (widget));
 
-#if GTK_MAJOR_VERSION >= 4
 	gtk_window_set_default_widget (window, widget);
-#else
-	gtk_widget_set_can_default (widget, TRUE);
-	gtk_widget_grab_default (widget);
-#endif
 }
 
 typedef struct
 {
 	gint x;
 	gint y;
-#if GTK_MAJOR_VERSION < 4
-	GdkScreen *screen;
-#endif
 } FabulorGtkWindowPlacement;
 
 static inline void
@@ -2365,9 +1593,6 @@ fabulor_gtk_window_position_at_pointer (GtkWindow *window)
 {
 	g_return_if_fail (GTK_IS_WINDOW (window));
 
-#if GTK_MAJOR_VERSION < 4
-	gtk_window_set_position (window, GTK_WIN_POS_MOUSE);
-#endif
 }
 
 static inline void
@@ -2375,9 +1600,6 @@ fabulor_gtk_window_position_center (GtkWindow *window)
 {
 	g_return_if_fail (GTK_IS_WINDOW (window));
 
-#if GTK_MAJOR_VERSION < 4
-	gtk_window_set_position (window, GTK_WIN_POS_CENTER);
-#endif
 }
 
 static inline void
@@ -2385,9 +1607,6 @@ fabulor_gtk_window_position_center_on_parent (GtkWindow *window)
 {
 	g_return_if_fail (GTK_IS_WINDOW (window));
 
-#if GTK_MAJOR_VERSION < 4
-	gtk_window_set_position (window, GTK_WIN_POS_CENTER_ON_PARENT);
-#endif
 }
 
 static inline void
@@ -2395,12 +1614,8 @@ fabulor_gtk_window_move (GtkWindow *window, gint x, gint y)
 {
 	g_return_if_fail (GTK_IS_WINDOW (window));
 
-#if GTK_MAJOR_VERSION >= 4
 	(void) x;
 	(void) y;
-#else
-	gtk_window_move (window, x, y);
-#endif
 }
 
 static inline gboolean
@@ -2410,14 +1625,9 @@ fabulor_gtk_window_get_position (GtkWindow *window, gint *x, gint *y)
 	g_return_val_if_fail (x != NULL, FALSE);
 	g_return_val_if_fail (y != NULL, FALSE);
 
-#if GTK_MAJOR_VERSION >= 4
 	*x = 0;
 	*y = 0;
 	return FALSE;
-#else
-	gtk_window_get_position (window, x, y);
-	return TRUE;
-#endif
 }
 
 static inline void
@@ -2425,9 +1635,6 @@ fabulor_gtk_window_set_dialog_hint (GtkWindow *window)
 {
 	g_return_if_fail (GTK_IS_WINDOW (window));
 
-#if GTK_MAJOR_VERSION < 4
-	gtk_window_set_type_hint (window, GDK_WINDOW_TYPE_HINT_DIALOG);
-#endif
 }
 
 static inline void
@@ -2438,9 +1645,6 @@ fabulor_gtk_window_placement_capture (GtkWindow *window,
 	g_return_if_fail (placement != NULL);
 
 	fabulor_gtk_window_get_position (window, &placement->x, &placement->y);
-#if GTK_MAJOR_VERSION < 4
-	placement->screen = gtk_window_get_screen (window);
-#endif
 }
 
 static inline void
@@ -2450,21 +1654,12 @@ fabulor_gtk_window_placement_restore (GtkWindow *window,
 	g_return_if_fail (GTK_IS_WINDOW (window));
 	g_return_if_fail (placement != NULL);
 
-#if GTK_MAJOR_VERSION < 4
-	if (placement->screen)
-		gtk_window_set_screen (window, placement->screen);
-	gtk_window_move (window, placement->x, placement->y);
-#endif
 }
 
 static inline GtkWidget *
 fabulor_gtk_scrolled_window_new (void)
 {
-#if GTK_MAJOR_VERSION >= 4
 	return gtk_scrolled_window_new ();
-#else
-	return gtk_scrolled_window_new (NULL, NULL);
-#endif
 }
 
 static inline void
@@ -2474,11 +1669,7 @@ fabulor_gtk_scrolled_window_set_child (GtkScrolledWindow *window,
 	g_return_if_fail (GTK_IS_SCROLLED_WINDOW (window));
 	g_return_if_fail (GTK_IS_WIDGET (child));
 
-#if GTK_MAJOR_VERSION >= 4
 	gtk_scrolled_window_set_child (window, child);
-#else
-	gtk_container_add (GTK_CONTAINER (window), child);
-#endif
 }
 
 static inline void
@@ -2487,15 +1678,10 @@ fabulor_gtk_scrolled_window_set_framed (GtkScrolledWindow *window,
 {
 	g_return_if_fail (GTK_IS_SCROLLED_WINDOW (window));
 
-#if GTK_MAJOR_VERSION >= 4
 	if (framed)
 		gtk_widget_add_css_class (GTK_WIDGET (window), "frame");
 	else
 		gtk_widget_remove_css_class (GTK_WIDGET (window), "frame");
-#else
-	gtk_scrolled_window_set_shadow_type (window,
-		framed ? GTK_SHADOW_IN : GTK_SHADOW_NONE);
-#endif
 }
 
 static inline void
@@ -2504,13 +1690,9 @@ fabulor_gtk_paned_set_start_child (GtkPaned *paned, GtkWidget *child,
 {
 	g_return_if_fail (GTK_IS_PANED (paned));
 
-#if GTK_MAJOR_VERSION >= 4
 	(void) resize;
 	(void) shrink;
 	gtk_paned_set_start_child (paned, child);
-#else
-	gtk_paned_pack1 (paned, child, resize, shrink);
-#endif
 }
 
 static inline void
@@ -2519,13 +1701,9 @@ fabulor_gtk_paned_set_end_child (GtkPaned *paned, GtkWidget *child,
 {
 	g_return_if_fail (GTK_IS_PANED (paned));
 
-#if GTK_MAJOR_VERSION >= 4
 	(void) resize;
 	(void) shrink;
 	gtk_paned_set_end_child (paned, child);
-#else
-	gtk_paned_pack2 (paned, child, resize, shrink);
-#endif
 }
 
 static inline GtkWidget *
@@ -2533,11 +1711,7 @@ fabulor_gtk_paned_get_start_child (GtkPaned *paned)
 {
 	g_return_val_if_fail (GTK_IS_PANED (paned), NULL);
 
-#if GTK_MAJOR_VERSION >= 4
 	return gtk_paned_get_start_child (paned);
-#else
-	return gtk_paned_get_child1 (paned);
-#endif
 }
 
 static inline GtkWidget *
@@ -2545,11 +1719,7 @@ fabulor_gtk_paned_get_end_child (GtkPaned *paned)
 {
 	g_return_val_if_fail (GTK_IS_PANED (paned), NULL);
 
-#if GTK_MAJOR_VERSION >= 4
 	return gtk_paned_get_end_child (paned);
-#else
-	return gtk_paned_get_child2 (paned);
-#endif
 }
 
 static inline gint
@@ -2557,7 +1727,6 @@ fabulor_gtk_paned_get_handle_size (GtkPaned *paned)
 {
 	g_return_val_if_fail (GTK_IS_PANED (paned), 0);
 
-#if GTK_MAJOR_VERSION >= 4
 	GtkWidget *end_child = gtk_paned_get_end_child (paned);
 	gint handle_size;
 
@@ -2576,12 +1745,6 @@ fabulor_gtk_paned_get_handle_size (GtkPaned *paned)
 			gtk_paned_get_position (paned) - gtk_widget_get_height (end_child);
 	}
 	return MAX (handle_size, 0);
-#else
-	gint handle_size = 0;
-
-	gtk_widget_style_get (GTK_WIDGET (paned), "handle-size", &handle_size, NULL);
-	return handle_size;
-#endif
 }
 
 static inline gint
@@ -2589,14 +1752,7 @@ fabulor_gtk_widget_get_allocated_width (GtkWidget *widget)
 {
 	g_return_val_if_fail (GTK_IS_WIDGET (widget), 0);
 
-#if GTK_MAJOR_VERSION >= 4
 	return gtk_widget_get_width (widget);
-#else
-	GtkAllocation allocation;
-
-	gtk_widget_get_allocation (widget, &allocation);
-	return allocation.width;
-#endif
 }
 
 static inline gboolean
@@ -2612,7 +1768,6 @@ fabulor_gtk_layout_retain_and_detach_child (GtkWidget *child)
 	g_return_val_if_fail (GTK_IS_PANED (parent) || GTK_IS_GRID (parent),
 		FALSE);
 
-#if GTK_MAJOR_VERSION >= 4
 	if (GTK_IS_PANED (parent))
 	{
 		GtkPaned *paned = GTK_PANED (parent);
@@ -2637,10 +1792,6 @@ fabulor_gtk_layout_retain_and_detach_child (GtkWidget *child)
 		g_object_ref (child);
 		gtk_grid_remove (GTK_GRID (parent), child);
 	}
-#else
-	g_object_ref (child);
-	gtk_container_remove (GTK_CONTAINER (parent), child);
-#endif
 
 	return TRUE;
 }
@@ -2651,11 +1802,7 @@ fabulor_gtk_frame_set_child (GtkFrame *frame, GtkWidget *child)
 	g_return_if_fail (GTK_IS_FRAME (frame));
 	g_return_if_fail (GTK_IS_WIDGET (child));
 
-#if GTK_MAJOR_VERSION >= 4
 	gtk_frame_set_child (frame, child);
-#else
-	gtk_container_add (GTK_CONTAINER (frame), child);
-#endif
 }
 
 static inline void
@@ -2663,9 +1810,6 @@ fabulor_gtk_frame_set_outlined (GtkFrame *frame)
 {
 	g_return_if_fail (GTK_IS_FRAME (frame));
 
-#if GTK_MAJOR_VERSION < 4
-	gtk_frame_set_shadow_type (frame, GTK_SHADOW_OUT);
-#endif
 }
 
 static inline void
@@ -2674,11 +1818,7 @@ fabulor_gtk_button_set_child (GtkButton *button, GtkWidget *child)
 	g_return_if_fail (GTK_IS_BUTTON (button));
 	g_return_if_fail (GTK_IS_WIDGET (child));
 
-#if GTK_MAJOR_VERSION >= 4
 	gtk_button_set_child (button, child);
-#else
-	gtk_container_add (GTK_CONTAINER (button), child);
-#endif
 }
 
 static inline GtkWidget *
@@ -2686,11 +1826,7 @@ fabulor_gtk_button_get_child (GtkButton *button)
 {
 	g_return_val_if_fail (GTK_IS_BUTTON (button), NULL);
 
-#if GTK_MAJOR_VERSION >= 4
 	return gtk_button_get_child (button);
-#else
-	return gtk_bin_get_child (GTK_BIN (button));
-#endif
 }
 
 static inline void
@@ -2699,11 +1835,7 @@ fabulor_gtk_overlay_set_child (GtkOverlay *overlay, GtkWidget *child)
 	g_return_if_fail (GTK_IS_OVERLAY (overlay));
 	g_return_if_fail (GTK_IS_WIDGET (child));
 
-#if GTK_MAJOR_VERSION >= 4
 	gtk_overlay_set_child (overlay, child);
-#else
-	gtk_container_add (GTK_CONTAINER (overlay), child);
-#endif
 }
 
 static inline void
@@ -2712,11 +1844,7 @@ fabulor_gtk_popover_set_child (GtkPopover *popover, GtkWidget *child)
 	g_return_if_fail (GTK_IS_POPOVER (popover));
 	g_return_if_fail (GTK_IS_WIDGET (child));
 
-#if GTK_MAJOR_VERSION >= 4
 	gtk_popover_set_child (popover, child);
-#else
-	gtk_container_add (GTK_CONTAINER (popover), child);
-#endif
 }
 
 static inline void
@@ -2724,12 +1852,8 @@ fabulor_gtk_widget_reveal_tree (GtkWidget *widget)
 {
 	g_return_if_fail (GTK_IS_WIDGET (widget));
 
-#if GTK_MAJOR_VERSION >= 4
 	/* GTK4 descendants are visible by default once the completed root is shown. */
 	gtk_widget_set_visible (widget, TRUE);
-#else
-	gtk_widget_show_all (widget);
-#endif
 }
 
 static inline void
@@ -2737,29 +1861,15 @@ fabulor_gtk_widget_hide_until_explicitly_shown (GtkWidget *widget)
 {
 	g_return_if_fail (GTK_IS_WIDGET (widget));
 
-#if GTK_MAJOR_VERSION >= 4
 	gtk_widget_set_visible (widget, FALSE);
-#else
-	gtk_widget_set_no_show_all (widget, TRUE);
-	gtk_widget_hide (widget);
-#endif
 }
 
-#if GTK_MAJOR_VERSION < 4
-static inline void
-fabulor_gtk_widget_reveal_child_cb (GtkWidget *child, gpointer user_data)
-{
-	(void) user_data;
-	gtk_widget_show (child);
-}
-#endif
 
 static inline void
 fabulor_gtk_widget_reveal_children (GtkWidget *widget)
 {
 	g_return_if_fail (GTK_IS_WIDGET (widget));
 
-#if GTK_MAJOR_VERSION >= 4
 	GtkWidget *child;
 
 	for (child = gtk_widget_get_first_child (widget); child;
@@ -2767,11 +1877,6 @@ fabulor_gtk_widget_reveal_children (GtkWidget *widget)
 	{
 		gtk_widget_set_visible (child, TRUE);
 	}
-#else
-	g_return_if_fail (GTK_IS_CONTAINER (widget));
-	gtk_container_foreach (GTK_CONTAINER (widget),
-		fabulor_gtk_widget_reveal_child_cb, NULL);
-#endif
 }
 
 static inline void
@@ -2779,11 +1884,7 @@ fabulor_gtk_window_destroy (GtkWindow *window)
 {
 	g_return_if_fail (GTK_IS_WINDOW (window));
 
-#if GTK_MAJOR_VERSION >= 4
 	gtk_window_destroy (window);
-#else
-	gtk_widget_destroy (GTK_WIDGET (window));
-#endif
 }
 
 static inline void

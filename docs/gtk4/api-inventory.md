@@ -1315,6 +1315,16 @@ already versioned or shared. An exact packaged candidate passed `/GUI HIDE`
 and `/GUI SHOW`, remained responsive, and exited normally, closing the
 top-level positioning, visibility, and lifecycle inventory.
 
+Stage 9 GTK4 compatibility specialization pass 6 removes the dual-toolkit
+implementation from `gtk-compat.h`. Its public helper names remain stable for
+incremental caller cleanup, but every helper now has exactly one GTK4
+implementation. The header no longer contains `GTK_MAJOR_VERSION` switches,
+GTK3 event structures, container/bin ownership, synchronous dialog and
+selection APIs, legacy icon/button-box types, or widget-wide destruction and
+recursive-show calls. Repository lint protects that boundary. Direct
+toolkit-version branches outside the header remain in the source inventory for
+subsequent Stage 9 removal passes.
+
 ## Functional Clusters
 
 | Cluster | Main files | GTK4 concern | Status |
