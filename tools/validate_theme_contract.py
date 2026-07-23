@@ -14,6 +14,49 @@ class ThemeContractError(RuntimeError):
     pass
 
 
+def validate_gtk3_theme_retirement(repo: pathlib.Path) -> None:
+    retired_paths = (
+        repo / "src" / "common" / "gtk3-theme-service.c",
+        repo / "src" / "common" / "gtk3-theme-service.h",
+        repo / "src" / "common" / "tests" / "test-gtk3-theme-service.c",
+        repo / "src" / "fe-gtk" / "theme" / "theme-gtk3.c",
+        repo / "src" / "fe-gtk" / "theme" / "theme-gtk3.h",
+        repo / "src" / "fe-gtk" / "theme" / "tests" / "test-theme-gtk3-stub.c",
+        repo / "src" / "fe-gtk" / "theme" / "tests" / "test-theme-gtk3-settings.c",
+        repo / "src" / "fe-gtk" / "theme" / "tests" / "test-theme-preferences-gtk3-populate.c",
+    )
+    present_paths = [str(path.relative_to(repo)) for path in retired_paths if path.exists()]
+    if present_paths:
+        raise ThemeContractError(
+            "Retired GTK3 theme files are present: " + ", ".join(present_paths)
+        )
+
+    forbidden_tokens = (
+        "gtk3-theme-service",
+        "theme-gtk3",
+        "theme_gtk3",
+        "hex_gui_gtk3_",
+        "gui_gtk3_",
+    )
+    source_roots = (repo / "src", repo / "tools" / "gtk4")
+    allowed_suffixes = {".c", ".h", ".build", ".vcxproj", ".filters"}
+    violations = []
+    for root in source_roots:
+        if not root.exists():
+            continue
+        for path in root.rglob("*"):
+            if not path.is_file() or path.suffix.lower() not in allowed_suffixes:
+                continue
+            contents = path.read_text(encoding="utf-8")
+            for token in forbidden_tokens:
+                if token in contents:
+                    violations.append(f"{path.relative_to(repo)}: {token}")
+    if violations:
+        raise ThemeContractError(
+            "Retired GTK3 theme references are present: " + ", ".join(violations)
+        )
+
+
 def read_text(path: pathlib.Path) -> str:
     try:
         return path.read_text(encoding="utf-8")
@@ -173,6 +216,7 @@ def validate_wix_harvest(repo: pathlib.Path) -> None:
 
 
 def validate(repo: pathlib.Path) -> None:
+    validate_gtk3_theme_retirement(repo)
     validate_associations(repo)
     validate_import_contract(repo)
     validate_repository_payload(repo)

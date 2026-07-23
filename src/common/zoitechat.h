@@ -139,7 +139,6 @@ struct zoitechatprefs
 	unsigned int hex_gui_tab_dots;
 	unsigned int hex_gui_tab_icons;
 	unsigned int hex_gui_dark_mode;
-	unsigned int hex_gui_gtk3_variant;
 	unsigned int hex_gui_gtk4_variant;
 	unsigned int hex_gui_tab_scrollchans;
 	unsigned int hex_gui_tab_server;
@@ -335,7 +334,6 @@ struct zoitechatprefs
 	char hex_text_font[4 * FONTNAMELEN + 1];
 	char hex_text_font_main[FONTNAMELEN + 1];
 	char hex_text_font_alternative[3 * FONTNAMELEN + 1];
-	char hex_gui_gtk3_theme[256];
 	char hex_gui_gtk4_theme[256];
 	char hex_text_spell_langs[64];
 

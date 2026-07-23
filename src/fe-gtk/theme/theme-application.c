@@ -24,7 +24,6 @@
 #include "../../common/zoitechatc.h"
 #include "theme-css.h"
 #include "theme-runtime.h"
-#include "theme-gtk3.h"
 #include "../maingui.h"
 #include <gtk/gtk.h>
 
@@ -49,20 +48,11 @@ theme_application_apply_toplevel_theme (gboolean dark)
 	GtkSettings *settings = gtk_settings_get_default ();
 	static GtkCssProvider *theme_provider = NULL;
 	static gboolean theme_provider_installed = FALSE;
-	gboolean prefer_dark = dark;
 	char *css;
-
-	if (theme_gtk3_is_active ())
-	{
-		if (prefs.hex_gui_gtk3_variant == THEME_GTK3_VARIANT_PREFER_DARK)
-			prefer_dark = TRUE;
-		else if (prefs.hex_gui_gtk3_variant == THEME_GTK3_VARIANT_PREFER_LIGHT)
-			prefer_dark = FALSE;
-	}
 
 	if (settings && g_object_class_find_property (G_OBJECT_GET_CLASS (settings),
 	                                              "gtk-application-prefer-dark-theme"))
-		g_object_set (settings, "gtk-application-prefer-dark-theme", prefer_dark, NULL);
+		g_object_set (settings, "gtk-application-prefer-dark-theme", dark, NULL);
 
 	if (!theme_provider)
 		theme_provider = gtk_css_provider_new ();

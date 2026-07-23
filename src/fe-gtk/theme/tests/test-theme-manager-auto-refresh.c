@@ -21,7 +21,6 @@
 #include "../../fe-gtk.h"
 
 #include "../theme-manager.h"
-#include "../theme-gtk3.h"
 #include "../../../common/zoitechat.h"
 #include "../../../common/zoitechatc.h"
 
@@ -38,9 +37,6 @@ static int listener_calls;
 static ThemeChangedEvent last_event;
 static int idle_add_calls;
 static guint next_idle_source_id = 33;
-
-void test_theme_gtk3_stub_reset (void);
-int test_theme_gtk3_stub_apply_current_calls (void);
 
 void setup_apply_real (const ThemeChangedEvent *event)
 {
@@ -202,8 +198,6 @@ reset_state (void)
 	listener_calls = 0;
 	idle_add_calls = 0;
 	next_idle_source_id = 33;
-	prefs.hex_gui_gtk3_variant = THEME_GTK3_VARIANT_FOLLOW_SYSTEM;
-	test_theme_gtk3_stub_reset ();
 }
 
 static void
@@ -224,7 +218,6 @@ test_auto_refresh_dispatches_mode_palette_and_style_reasons (void)
 	g_assert_cmpint (auto_state_calls, ==, 2);
 	g_assert_true (last_auto_state);
 	g_assert_cmpint (listener_calls, ==, 1);
-	g_assert_cmpint (test_theme_gtk3_stub_apply_current_calls (), ==, 1);
 	g_assert_true (theme_changed_event_has_reason (&last_event, THEME_CHANGED_REASON_PALETTE));
 	g_assert_true (theme_changed_event_has_reason (&last_event, THEME_CHANGED_REASON_WIDGET_STYLE));
 	g_assert_true (theme_changed_event_has_reason (&last_event, THEME_CHANGED_REASON_USERLIST));
@@ -250,29 +243,6 @@ test_auto_refresh_ignores_non_auto_mode (void)
 	g_assert_cmpint (idle_add_calls, ==, 1);
 	g_assert_cmpint (auto_state_calls, ==, 0);
 	g_assert_cmpint (listener_calls, ==, 0);
-	g_assert_cmpint (test_theme_gtk3_stub_apply_current_calls (), ==, 0);
-
-	theme_manager_set_idle_add_func (NULL);
-	theme_listener_unregister (listener_id);
-}
-
-static void
-test_auto_refresh_reapplies_gtk3_for_follow_system_variant (void)
-{
-	guint listener_id;
-
-	reset_state ();
-	prefs.hex_gui_dark_mode = ZOITECHAT_DARK_MODE_DARK;
-	prefs.hex_gui_gtk3_variant = THEME_GTK3_VARIANT_FOLLOW_SYSTEM;
-	listener_id = theme_listener_register ("auto.gtk3", auto_listener, NULL);
-	theme_manager_set_idle_add_func (immediate_idle_add);
-
-	theme_manager_refresh_auto_mode ();
-
-	g_assert_cmpint (idle_add_calls, ==, 1);
-	g_assert_cmpint (auto_state_calls, ==, 0);
-	g_assert_cmpint (listener_calls, ==, 0);
-	g_assert_cmpint (test_theme_gtk3_stub_apply_current_calls (), ==, 1);
 
 	theme_manager_set_idle_add_func (NULL);
 	theme_listener_unregister (listener_id);
@@ -286,7 +256,5 @@ main (int argc, char **argv)
 			 test_auto_refresh_dispatches_mode_palette_and_style_reasons);
 	g_test_add_func ("/theme/manager/auto_refresh_ignores_non_auto_mode",
 			 test_auto_refresh_ignores_non_auto_mode);
-	g_test_add_func ("/theme/manager/auto_refresh_reapplies_gtk3_for_follow_system_variant",
-			 test_auto_refresh_reapplies_gtk3_for_follow_system_variant);
 	return g_test_run ();
 }

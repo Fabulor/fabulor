@@ -21,7 +21,6 @@
 #include "theme-css.h"
 
 #include "theme-runtime.h"
-#include "theme-gtk3.h"
 #include "theme-access.h"
 #include "../gtkutil.h"
 #include <string.h>

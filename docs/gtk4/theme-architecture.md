@@ -1,6 +1,6 @@
 # GTK4 Theme Architecture
 
-Status: Stage 8 pass 97 complete through application and Preferences integration
+Status: Stage 9 GTK3 theme service and adapter retired
 
 ## Scope
 
@@ -56,8 +56,8 @@ active source identifier, variant policy, and diagnostics. Disable and final
 teardown remove installed providers from the display before releasing them and
 reset all active identity and variant state.
 
-The provider pass does not itself own preferences. The shipping GTK3 adapter
-remains unchanged while the GTK4 adapter is exercised through the strict probe.
+The provider pass does not itself own preferences. The former GTK3 adapter and
+its inert GTK4 compatibility surface have been deleted.
 
 ## Preference Projection
 
@@ -73,10 +73,9 @@ also resolves safely to the system default while reporting that the stored
 selection is unavailable, allowing the production preferences UI to explain or
 replace it deliberately. Unknown variant values normalize to follow-system.
 
-`fabulor.conf` reserves `gui_gtk4_theme` and `gui_gtk4_variant` independently
-from the existing GTK3 keys. This prevents the migration from treating a GTK3
-theme identifier or variant as GTK4-compatible. Production GTK4 widgets and
-adapter application remain a cutover task.
+`fabulor.conf` persists only `gui_gtk4_theme` and `gui_gtk4_variant` for desktop
+CSS selection. Retired `gui_gtk3_theme` and `gui_gtk3_variant` keys are ignored
+when an older configuration is loaded and are no longer written.
 
 ## Windows Appearance Policy
 

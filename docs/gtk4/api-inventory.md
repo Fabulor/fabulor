@@ -1325,7 +1325,7 @@ top-level positioning, visibility, and lifecycle inventory.
 | Menus and commands | `menu.c`, `maingui.c`, `plugin-tray.c` | actions and menu models | in progress; retained main/context/tab presentation and GTK3-only accelerator ownership established |
 | Operational lists | `servlistgui.c`, `chanlist.c`, `userlistgui.c`, `dccgui.c`, `banlist.c`, `notifygui.c`, `ignoregui.c`, `plugingui.c`, `urlgrab.c` | list models, factories, editing | converted; toolkit-specific models and views are contained and the shared GTK4 model stack is a production candidate input |
 | Preferences/editors | `setup.c`, `fkeys.c`, `textgui.c`, `editlist.c` | generic edit list, Print Events, key bindings, sound events, and preference navigation converted | converted |
-| Themes | `theme/*.c`, `common/gtk3-theme-service.c`, `common/gtk4-theme-*.c` | GTK4 CSS compatibility and adapter policy | converted; retained `.hct` reading now has an independent bounded archive-reader boundary, leaving the GTK3 service removable without affecting the supported format |
+| Themes | `theme/*.c`, `common/gtk4-theme-*.c`, `common/theme-archive-reader.c` | GTK4 CSS compatibility, discovery, preferences, and bounded `.hct` reading | converted; the GTK3 service and adapter are retired |
 | Platform integration | `fe-gtk.c`, `plugin-tray.c`, notifications | displays, surfaces, icons, native tray | in progress; notification, tray policy, and application main-loop boundaries established |
 
 ## Theme Inventory
@@ -1333,13 +1333,11 @@ top-level positioning, visibility, and lifecycle inventory.
 - `theme/theme-manager.c`, `theme-policy.c`, `theme-runtime.c`,
   `theme-application.c`, and `theme-css.c` should remain toolkit-neutral where
   practical.
-- `theme/theme-gtk3.c` is the explicit GTK3 adapter. Its implementation is
-  compiled only for GTK3; its tested GTK4 branch is inert compatibility code
-  pending final removal with the rest of the GTK3 frontend.
-- `common/gtk3-theme-service.c` discovers/imports GTK3 CSS directories such as
-  `gtk-3.0` and `gtk-3.24`. GTK3 CSS is not assumed to be valid GTK4 CSS.
-- Existing extraction containment protections remain mandatory regardless of
-  the eventual GTK4 theme import policy.
+- The GTK3 theme adapter, discovery/import service, `%APPDATA%\Fabulor\gtk3-themes`
+  workflow, dedicated tests, and saved GTK3 theme keys are retired. GTK3 CSS is
+  never treated as valid GTK4 CSS.
+- Retained `.hct` imports use `common/theme-archive-reader.c`; GTK4 desktop CSS
+  discovery and application remain independent of palette/event archives.
 - Stage 8 pass 97 makes `theme-manager.c` the application-lifetime GTK4 theme
   owner. The Preferences surface borrows that controller, successful choices
   update only staged settings, cancel or save failure restores the original
