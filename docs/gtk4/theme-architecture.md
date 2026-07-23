@@ -13,6 +13,14 @@ Fabulor keeps three independent theme surfaces during the GTK4 migration:
 GTK4 discovery does not treat GTK3 CSS as compatible, does not package a mock
 Windows theme, and does not replace `.hct` or `colors.conf`.
 
+`.hct` text import is owned by `common/theme-archive-reader.c`, not by a GTK
+theme adapter. On Windows it obtains the absolute system directory through the
+Windows API and invokes `tar.exe` there with an argument vector, never PATH
+lookup or command-string interpolation. It reads
+only `colors.conf` and `pevents.conf` to bounded memory, rejects unsafe or
+duplicate matching entries, and does not extract the archive to a filesystem
+tree.
+
 ## Discovery Ownership
 
 `src/common/gtk4-theme-discovery.c` is a GTK-independent owner for immutable

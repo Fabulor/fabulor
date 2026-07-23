@@ -1325,7 +1325,7 @@ top-level positioning, visibility, and lifecycle inventory.
 | Menus and commands | `menu.c`, `maingui.c`, `plugin-tray.c` | actions and menu models | in progress; retained main/context/tab presentation and GTK3-only accelerator ownership established |
 | Operational lists | `servlistgui.c`, `chanlist.c`, `userlistgui.c`, `dccgui.c`, `banlist.c`, `notifygui.c`, `ignoregui.c`, `plugingui.c`, `urlgrab.c` | list models, factories, editing | converted; toolkit-specific models and views are contained and the shared GTK4 model stack is a production candidate input |
 | Preferences/editors | `setup.c`, `fkeys.c`, `textgui.c`, `editlist.c` | generic edit list, Print Events, key bindings, sound events, and preference navigation converted | converted |
-| Themes | `theme/*.c`, `common/gtk3-theme-service.c`, `common/gtk4-theme-*.c` | GTK4 CSS compatibility and adapter policy | converted for the GTK4 candidate; application startup, Preferences preview/rollback, Windows appearance refresh, and shutdown share one lifecycle controller |
+| Themes | `theme/*.c`, `common/gtk3-theme-service.c`, `common/gtk4-theme-*.c` | GTK4 CSS compatibility and adapter policy | converted; retained `.hct` reading now has an independent bounded archive-reader boundary, leaving the GTK3 service removable without affecting the supported format |
 | Platform integration | `fe-gtk.c`, `plugin-tray.c`, notifications | displays, surfaces, icons, native tray | in progress; notification, tray policy, and application main-loop boundaries established |
 
 ## Theme Inventory

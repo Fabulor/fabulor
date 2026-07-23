@@ -26,6 +26,10 @@ the validation matrix in [validation-log.md](validation-log.md) passes.
   the active Windows build graph.
 - GTK3 source branches and compatibility helpers remain the next cleanup
   boundary; historical plugin source trees remain retained but unsupported.
+- Retained `.hct` imports no longer depend on the GTK3 theme service. The
+  format-specific reader invokes only the absolute system archive tool, reads
+  selected text without extracting a filesystem tree, and enforces archive,
+  listing, output, path-depth, and duplicate-entry limits.
 
 ## Migration Rules
 

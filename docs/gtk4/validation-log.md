@@ -7358,6 +7358,36 @@ or Inno Setup. Historical Lua/Perl and GTK3 theme source may remain in the tree,
 but it is outside the supported build and package. GTK3 source branches and
 compatibility helpers remain assigned to later Stage 9 cleanup passes.
 
+### GTK4 Stage 9 HCT Archive Ownership, Pass 4
+
+Date: 2026-07-23
+
+Boundary converted: supported `.hct` palette/event import no longer calls into
+the GTK3 theme service or its extract-to-directory helper. A dedicated common
+reader now lists and streams only `colors.conf` or `pevents.conf` through the
+absolute system archive executable. Windows resolves that directory through
+the system API rather than a mutable environment variable.
+
+Automated evidence:
+
+- full GTK4 common/frontend/launcher build and link: pass
+- native validation executable: all 22 tests pass
+- theme contract suite: all 5 tests pass
+- GTK4 tooling contract suite: all 57 tests pass
+- real ZIP-form HCT fixture read: pass
+- duplicate matching archive entries: rejected
+- text expanding beyond 1 MiB: terminated and rejected
+- non-allowlisted archive filename: rejected before filesystem access
+- project XML parse and repository whitespace validation: pass
+
+Behaviour contract: `.hct` input must be an absolute regular file no larger
+than 16 MiB. Archive listings and selected text are independently capped at
+1 MiB; matching entry paths must be relative, free of control characters,
+backslashes, colons, and parent components, and no deeper than eight components.
+The reader must not search PATH, interpolate a command string, or extract an
+archive tree. Legacy GTK3 desktop-theme archive import remains assigned to the
+next removal pass.
+
 ## Stage Completion Rule
 
 A stage can move to complete in `migration-plan.md` only when:

@@ -34,6 +34,7 @@
 #include "../../common/cfgfiles.h"
 #include "../../common/util.h"
 #include "../../common/gtk3-theme-service.h"
+#include "../../common/theme-archive-reader.h"
 #include "theme-gtk3.h"
 #include "theme-manager.h"
 #include "theme-preferences.h"
@@ -1241,7 +1242,7 @@ theme_preferences_import_colors_conf_path (GtkWidget *button,
         if (g_str_has_suffix (lower_path, ".hct"))
         {
                 imported_from_hct = TRUE;
-                if (!zoitechat_gtk3_theme_service_read_archive_text_file (path, "colors.conf", &cfg, &error))
+                if (!fabulor_theme_archive_read_text_file (path, "colors.conf", &cfg, &error))
                 {
                         theme_preferences_show_import_error (button, _("Failed to read colors.conf from .hct file."));
                         g_clear_error (&error);
@@ -1249,7 +1250,7 @@ theme_preferences_import_colors_conf_path (GtkWidget *button,
                         g_free (path);
                         return;
                 }
-                if (zoitechat_gtk3_theme_service_read_archive_text_file (path, "pevents.conf", &pevents_cfg, &error))
+                if (fabulor_theme_archive_read_text_file (path, "pevents.conf", &pevents_cfg, &error))
                 {
                         char *pevents_path = g_build_filename (get_xdir (), "pevents.conf", NULL);
                         if (g_file_set_contents (pevents_path, pevents_cfg, -1, &error))
