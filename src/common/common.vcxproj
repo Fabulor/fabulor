@@ -53,7 +53,6 @@
     <ClInclude Include="zoitechat.h" />
     <ClInclude Include="zoitechatc.h" />
     <ClInclude Include="theme-service.h" />
-    <ClInclude Include="gtk3-theme-service.h" />
     <ClInclude Include="theme-archive-reader.h" />
     <ClInclude Include="gtk4-theme-discovery.h" />
     <ClInclude Include="gtk4-theme-preferences.h" />
@@ -94,7 +93,6 @@
     <ClCompile Include="util.c" />
     <ClCompile Include="zoitechat.c" />
     <ClCompile Include="theme-service.c" />
-    <ClCompile Include="gtk3-theme-service.c" />
     <ClCompile Include="theme-archive-reader.c" />
     <ClCompile Include="gtk4-theme-discovery.c" />
     <ClCompile Include="gtk4-theme-preferences.c" />

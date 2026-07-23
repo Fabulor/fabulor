@@ -24,8 +24,11 @@ the validation matrix in [validation-log.md](validation-log.md) passes.
 - The GTK3 gvsbuild archive, MSYS2 hicolor/libarchive augmentation, LuaJIT,
   Perl, gendef, broad runtime-copy project, and Inno installer are absent from
   the active Windows build graph.
-- GTK3 source branches and compatibility helpers remain the next cleanup
-  boundary; historical plugin source trees remain retained but unsupported.
+- The GTK3 theme service, adapter, preference branch, tests, probe contract,
+  `%APPDATA%\Fabulor\gtk3-themes` workflow, and saved configuration keys are
+  removed. Other GTK3 source branches and compatibility helpers remain the
+  next cleanup boundary; historical plugin source trees remain retained but
+  unsupported.
 - Retained `.hct` imports no longer depend on the GTK3 theme service. The
   format-specific reader invokes only the absolute system archive tool, reads
   selected text without extracting a filesystem tree, and enforces archive,

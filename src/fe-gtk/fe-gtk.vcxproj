@@ -144,7 +144,6 @@ FOR %%I IN ("$(ZoiteChatLib)fabulor.rc") DO IF %%~zI EQU 0 (
     <ClInclude Include="theme\theme-runtime.h" />
     <ClInclude Include="theme\theme-access.h" />
     <ClInclude Include="theme\theme-gtk.h" />
-    <ClInclude Include="theme\theme-gtk3.h" />
     <ClInclude Include="theme\theme-gtk4.h" />
     <ClInclude Include="theme\theme-gtk4-controller.h" />
     <ClInclude Include="theme\theme-preferences-gtk4.h" />
@@ -242,7 +241,6 @@ FOR %%I IN ("$(ZoiteChatLib)fabulor.rc") DO IF %%~zI EQU 0 (
     <ClCompile Include="theme\theme-css.c" />
     <ClCompile Include="theme\theme-runtime.c" />
     <ClCompile Include="theme\theme-access.c" />
-    <ClCompile Include="theme\theme-gtk3.c" />
     <ClCompile Include="theme\theme-gtk4.c" />
     <ClCompile Include="theme\theme-gtk4-controller.c" />
     <ClCompile Include="theme\theme-preferences-gtk4.c" />

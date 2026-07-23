@@ -576,9 +576,9 @@ Fix status, 2026-07-12:
 - Libarchive secure extraction flags are enabled when compatible with the absolute temp-root destination rewrite: `ARCHIVE_EXTRACT_SECURE_NODOTDOT` and `ARCHIVE_EXTRACT_SECURE_SYMLINKS`. Absolute archive paths are rejected by explicit entry validation before the destination is rewritten.
 - Each destination is built under the canonical extraction root and checked for a root-prefix match before it is passed to libarchive.
 - Build files now define `HAVE_LIBARCHIVE` when libarchive is configured: Meson does this when `dependency('libarchive')` is found, and the MSBuild props do this only when both `ArchiveInclude` and `ArchiveLib` are present.
-- Windows GTK3 builds used the same libarchive-contained extractor when `HAVE_LIBARCHIVE` was set. Stage 9 removed libarchive from the supported GTK4 Windows dependency graph. The legacy GTK3 service remains compiled temporarily for source-cleanup sequencing, but its desktop-theme workflow is not reachable from the production GTK4 frontend.
+- Windows GTK3 builds used the same libarchive-contained extractor when `HAVE_LIBARCHIVE` was set. Stage 9 first removed libarchive from the supported GTK4 Windows dependency graph, then deleted the GTK3 theme service, adapter, preference workflow, saved keys, and dedicated tests entirely.
 - Stage 9 also removed retained `.hct` reading from this GTK3 extraction path. `src/common/theme-archive-reader.c` now reads only `colors.conf` or `pevents.conf` through the absolute Windows system `tar.exe`, resolving the system directory through the Windows API rather than the environment and avoiding PATH search, command-string interpolation, or filesystem-tree extraction. It limits archive, listing, and output sizes; validates entry components and depth; and rejects duplicate matching files. Four native ZIP-fixture tests cover successful reads, duplicate rejection, decompression-size rejection, and the filename allowlist.
-- Added non-Windows regression coverage for `..` traversal with partial-extraction cleanup, absolute archive paths, symlink entries, and hardlink entries in `src/common/tests/test-gtk3-theme-service.c`.
+- Historical non-Windows regression coverage verified `..` traversal cleanup plus absolute-path, symlink, and hardlink rejection before the GTK3 importer and its dedicated tests were retired in Stage 9.
 - Verification: `git diff --check` passed; the focused WSL GTK3 theme-service test binary compiled with GLib/GIO/libarchive and passed all 18 tests; `src\common\common.vcxproj` built successfully with 15 pre-existing conversion warnings and 0 errors; `src\fe-gtk\fe-gtk.vcxproj` built and linked successfully with 1 pre-existing const-qualifier warning and 0 errors.
 
 ## Finding: Exec Plugin Uses Unbounded Command Construction
@@ -727,7 +727,7 @@ No remotely triggered markup injection path was identified in this pass. `/GUI M
 
 Suggested ordering:
 
-1. Add archive extraction containment and tests for GTK3 theme import. Status: addressed for libarchive extraction on 2026-07-12. The supported `.hct` reader no longer extracts archives; the Windows external-helper fallback remains only in the legacy GTK3 theme-package importer pending source retirement.
+1. Add archive extraction containment and tests for GTK3 theme import. Status: closed. The legacy GTK3 theme-package importer and its external-helper fallback were deleted in Stage 9; the supported `.hct` reader does not extract an archive tree and retains bounded ZIP-fixture coverage.
 2. Fix or disable-by-default the Exec plugin command construction.
 3. Constrain bare-name DLL loading for Enchant and Perl. Status: Enchant now uses app-local absolute loading first; Perl is documented as legacy/not packaged in the Fabulor C#/Python/Tcl plugin model.
 4. Canonicalize add-on GUI containment and avoid `/LOAD` command-string interpolation. Status: addressed for Add-ons GUI load/unload/reload paths on 2026-07-12; script runtimes still receive command-hook requests after path validation.

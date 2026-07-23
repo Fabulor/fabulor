@@ -29,7 +29,6 @@
 #include "theme-runtime.h"
 #include "theme-access.h"
 #include "theme-css.h"
-#include "theme-gtk3.h"
 #include "../gtkutil.h"
 #include "../maingui.h"
 #include "../setup.h"
@@ -58,16 +57,12 @@ static const char theme_manager_window_destroy_handler_key[] = "theme-manager-wi
 #if GTK_MAJOR_VERSION >= 4
 static const char theme_manager_window_weak_owner[] = "theme-manager-window-weak-owner";
 #endif
-#if GTK_MAJOR_VERSION < 4
-static const char theme_manager_window_csd_headerbar_key[] = "theme-manager-window-csd-headerbar";
-#endif
 
 typedef struct
 {
 	gboolean initialized;
 	gboolean resolved_dark_preference;
-	char gtk3_theme_id[sizeof prefs.hex_gui_gtk3_theme];
-	int gtk3_variant;
+	unsigned int dark_mode;
 } ThemeManagerAutoRefreshCache;
 
 static ThemeManagerAutoRefreshCache theme_manager_auto_refresh_cache;
@@ -185,18 +180,10 @@ theme_manager_synthesize_preference_reasons (const struct zoitechatprefs *old_pr
 	return reasons;
 }
 
-static gboolean
-theme_manager_should_refresh_gtk3 (void)
-{
-	return prefs.hex_gui_gtk3_variant == THEME_GTK3_VARIANT_FOLLOW_SYSTEM;
-}
-
 static void
 theme_manager_auto_dark_mode_changed (GtkSettings *settings, GParamSpec *pspec, gpointer data)
 {
 	gboolean color_change = FALSE;
-	gboolean should_refresh_gtk3;
-	gboolean gtk3_refresh;
 	gboolean resolved_dark_preference;
 	static gboolean in_handler = FALSE;
 
@@ -205,23 +192,17 @@ theme_manager_auto_dark_mode_changed (GtkSettings *settings, GParamSpec *pspec, 
 	(void) data;
 
 	resolved_dark_preference = theme_policy_system_prefers_dark ();
-	gtk3_refresh = theme_manager_should_refresh_gtk3 ();
-	should_refresh_gtk3 = gtk3_refresh || prefs.hex_gui_dark_mode == ZOITECHAT_DARK_MODE_AUTO;
 
 	if (theme_manager_auto_refresh_cache.initialized &&
 	    theme_manager_auto_refresh_cache.resolved_dark_preference == resolved_dark_preference &&
-	    theme_manager_auto_refresh_cache.gtk3_variant == prefs.hex_gui_gtk3_variant &&
-	    g_strcmp0 (theme_manager_auto_refresh_cache.gtk3_theme_id, prefs.hex_gui_gtk3_theme) == 0)
+	    theme_manager_auto_refresh_cache.dark_mode == prefs.hex_gui_dark_mode)
 		return;
 
 	theme_manager_auto_refresh_cache.initialized = TRUE;
 	theme_manager_auto_refresh_cache.resolved_dark_preference = resolved_dark_preference;
-	theme_manager_auto_refresh_cache.gtk3_variant = prefs.hex_gui_gtk3_variant;
-	g_strlcpy (theme_manager_auto_refresh_cache.gtk3_theme_id,
-		   prefs.hex_gui_gtk3_theme,
-		   sizeof (theme_manager_auto_refresh_cache.gtk3_theme_id));
+	theme_manager_auto_refresh_cache.dark_mode = prefs.hex_gui_dark_mode;
 
-	if (prefs.hex_gui_dark_mode != ZOITECHAT_DARK_MODE_AUTO && !gtk3_refresh)
+	if (prefs.hex_gui_dark_mode != ZOITECHAT_DARK_MODE_AUTO)
 		return;
 	if (in_handler)
 		return;
@@ -235,9 +216,6 @@ theme_manager_auto_dark_mode_changed (GtkSettings *settings, GParamSpec *pspec, 
 		if (color_change)
 			theme_manager_dispatch_changed (THEME_CHANGED_REASON_PALETTE | THEME_CHANGED_REASON_WIDGET_STYLE | THEME_CHANGED_REASON_USERLIST | THEME_CHANGED_REASON_MODE);
 	}
-
-	if (should_refresh_gtk3)
-		theme_gtk3_apply_current (NULL);
 
 	in_handler = FALSE;
 }
@@ -277,7 +255,6 @@ theme_manager_init (void)
 
 	fe_set_auto_dark_mode_state (theme_policy_is_dark_mode_active (ZOITECHAT_DARK_MODE_AUTO));
 	theme_application_apply_mode (prefs.hex_gui_dark_mode, NULL);
-	theme_gtk3_init ();
 #if GTK_MAJOR_VERSION >= 4
 	if (!theme_manager_gtk4_theme_controller)
 	{
@@ -535,126 +512,10 @@ theme_listener_unregister (guint listener_id)
 void
 theme_manager_handle_theme_applied (void)
 {
-	theme_gtk3_invalidate_provider_cache ();
-	if (prefs.hex_gui_gtk3_theme[0])
-		theme_gtk3_refresh (prefs.hex_gui_gtk3_theme, (ThemeGtk3Variant) prefs.hex_gui_gtk3_variant, NULL);
 	theme_application_apply_mode (prefs.hex_gui_dark_mode, NULL);
 	theme_manager_dispatch_changed (THEME_CHANGED_REASON_THEME_PACK | THEME_CHANGED_REASON_PALETTE | THEME_CHANGED_REASON_WIDGET_STYLE | THEME_CHANGED_REASON_USERLIST | THEME_CHANGED_REASON_MODE);
 }
 
-
-#if GTK_MAJOR_VERSION < 4
-static gboolean
-theme_manager_is_kde_wayland (void)
-{
-	const char *wayland_display;
-	const char *desktop;
-	char *desktop_lower;
-	gboolean is_kde;
-
-	wayland_display = g_getenv ("WAYLAND_DISPLAY");
-	if (!wayland_display || !wayland_display[0])
-		return FALSE;
-
-	desktop = g_getenv ("XDG_CURRENT_DESKTOP");
-	if (!desktop || !desktop[0])
-		desktop = g_getenv ("XDG_SESSION_DESKTOP");
-	if (!desktop || !desktop[0])
-		return FALSE;
-
-	desktop_lower = g_ascii_strdown (desktop, -1);
-	is_kde = strstr (desktop_lower, "kde") != NULL || strstr (desktop_lower, "plasma") != NULL;
-	g_free (desktop_lower);
-	return is_kde;
-}
-
-static gint
-theme_manager_get_system_headerbar_height (void)
-{
-	GtkWidget *probe;
-	gint minimum;
-	gint natural;
-
-	probe = gtk_header_bar_new ();
-	gtk_header_bar_set_show_close_button (GTK_HEADER_BAR (probe), TRUE);
-	gtk_header_bar_set_decoration_layout (GTK_HEADER_BAR (probe), "menu:minimize,maximize,close");
-	gtk_widget_show (probe);
-	gtk_widget_get_preferred_height (probe, &minimum, &natural);
-	gtk_widget_destroy (probe);
-	if (natural > 0)
-		return natural;
-	return minimum;
-}
-
-static void
-theme_manager_apply_wayland_kde_csd (GtkWidget *window)
-{
-	GtkWindow *gtk_window;
-	GtkWidget *headerbar;
-	gboolean enable_csd;
-
-	if (!window || !GTK_IS_WINDOW (window))
-		return;
-
-	gtk_window = GTK_WINDOW (window);
-	enable_csd = theme_gtk3_is_active () && theme_manager_is_kde_wayland ();
-	headerbar = g_object_get_data (G_OBJECT (window), theme_manager_window_csd_headerbar_key);
-
-	if (enable_csd)
-	{
-		if (!headerbar)
-		{
-			GtkWidget *icon_image;
-			GdkPixbuf *icon_pixbuf;
-
-			if (gtk_widget_get_realized (window))
-				return;
-
-			headerbar = gtk_header_bar_new ();
-			gtk_header_bar_set_show_close_button (GTK_HEADER_BAR (headerbar), TRUE);
-			gtk_header_bar_set_decoration_layout (GTK_HEADER_BAR (headerbar), "menu:minimize,maximize,close");
-			g_object_set (G_OBJECT (headerbar), "spacing", 0, NULL);
-			gtk_widget_set_size_request (headerbar, -1, theme_manager_get_system_headerbar_height ());
-			icon_pixbuf = gdk_pixbuf_new_from_resource_at_scale ("/icons/fabulor.svg", 24, 24, TRUE, NULL);
-			if (!icon_pixbuf)
-				icon_pixbuf = gdk_pixbuf_new_from_resource_at_scale ("/icons/fabulor.png", 24, 24, TRUE, NULL);
-			icon_image = icon_pixbuf ? gtk_image_new_from_pixbuf (icon_pixbuf) : gtk_image_new_from_resource ("/icons/fabulor.png");
-			gtk_widget_set_margin_start (icon_image, 0);
-			gtk_widget_set_margin_end (icon_image, 0);
-			gtk_widget_set_margin_top (icon_image, 0);
-			gtk_widget_set_margin_bottom (icon_image, 0);
-			if (icon_pixbuf)
-				g_object_unref (icon_pixbuf);
-			gtk_header_bar_pack_start (GTK_HEADER_BAR (headerbar), icon_image);
-			gtk_widget_show (icon_image);
-			gtk_window_set_titlebar (gtk_window, headerbar);
-			g_object_set_data (G_OBJECT (window), theme_manager_window_csd_headerbar_key, headerbar);
-		}
-		gtk_header_bar_set_title (GTK_HEADER_BAR (headerbar), gtk_window_get_title (gtk_window));
-		gtk_widget_show (headerbar);
-		{
-			GdkScreen *screen = gdk_screen_get_default ();
-			if (screen)
-				gtk_style_context_reset_widgets (screen);
-		}
-		return;
-	}
-
-	if (headerbar)
-	{
-		if (gtk_widget_get_realized (window))
-			return;
-		gtk_window_set_titlebar (gtk_window, NULL);
-		g_object_set_data (G_OBJECT (window), theme_manager_window_csd_headerbar_key, NULL);
-	}
-
-	{
-		GdkScreen *screen = gdk_screen_get_default ();
-		if (screen)
-			gtk_style_context_reset_widgets (screen);
-	}
-}
-#endif
 
 static void
 theme_manager_apply_platform_window_theme (GtkWidget *window)
@@ -677,14 +538,7 @@ theme_manager_apply_platform_window_theme (GtkWidget *window)
 			theme_runtime_is_dark_active ();
 	}
 #else
-	if (theme_gtk3_is_active ())
-	{
-		dark = prefs.hex_gui_gtk3_variant == THEME_GTK3_VARIANT_PREFER_DARK;
-		if (prefs.hex_gui_gtk3_variant == THEME_GTK3_VARIANT_FOLLOW_SYSTEM)
-			dark = theme_policy_system_prefers_dark ();
-	}
-	else
-		dark = theme_runtime_is_dark_active ();
+	dark = theme_runtime_is_dark_active ();
 #endif
 
 #if GTK_MAJOR_VERSION >= 4
@@ -703,10 +557,6 @@ theme_manager_apply_platform_window_theme (GtkWidget *window)
 #endif
 #ifdef G_OS_WIN32
 	fe_win32_apply_native_titlebar (window, dark);
-#else
-#if GTK_MAJOR_VERSION < 4
-	theme_manager_apply_wayland_kde_csd (window);
-#endif
 #endif
 }
 

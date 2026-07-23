@@ -110,6 +110,20 @@ class ThemeContractValidationTests(unittest.TestCase):
         with self.assertRaises(validate_theme_contract.ThemeContractError):
             validate_theme_contract.validate(self.repo)
 
+    def test_retired_gtk3_theme_file_is_rejected(self) -> None:
+        self.write("src/common/gtk3-theme-service.c", "retired\n")
+        with self.assertRaises(validate_theme_contract.ThemeContractError):
+            validate_theme_contract.validate(self.repo)
+
+    def test_retired_gtk3_theme_reference_is_rejected(self) -> None:
+        path = self.repo / "src/fe-gtk/theme/theme-preferences.c"
+        path.write_text(
+            path.read_text(encoding="utf-8") + "theme_gtk3_apply_current\n",
+            encoding="utf-8",
+        )
+        with self.assertRaises(validate_theme_contract.ThemeContractError):
+            validate_theme_contract.validate(self.repo)
+
 
 if __name__ == "__main__":
     unittest.main()

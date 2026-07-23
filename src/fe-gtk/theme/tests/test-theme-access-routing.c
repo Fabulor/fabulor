@@ -34,7 +34,6 @@ struct session *lastact_sess;
 struct zoitechatprefs prefs;
 
 static gboolean stub_dark_active;
-static gboolean stub_gtk3_active;
 static ThemeSemanticToken stub_last_color_token;
 static int stub_runtime_get_color_calls;
 static int stub_runtime_widget_calls;
@@ -167,12 +166,6 @@ theme_runtime_get_xtext_colors_mapped (const ThemeGtkPaletteMap *gtk_map, XTextC
 	}
 }
 
-gboolean
-theme_gtk3_is_active (void)
-{
-	return stub_gtk3_active;
-}
-
 static gboolean
 rgba_equal (const GdkRGBA *a, const GdkRGBA *b)
 {
@@ -194,7 +187,6 @@ reset_stubs (void)
 	stub_runtime_xtext_mapped_calls = 0;
 	stub_runtime_xtext_last_len = 0;
 	stub_last_gtk_map_valid = FALSE;
-	stub_gtk3_active = FALSE;
 	for (i = 0; i < THEME_TOKEN_COUNT; i++)
 	{
 		g_snprintf (light, sizeof (light), "#%02x%02x%02x", (unsigned int) (i + 1), 0x11, 0x22);
@@ -319,7 +311,6 @@ test_access_xtext_palette_widget_mapping_when_gtk3_active (void)
 	}
 
 	reset_stubs ();
-	stub_gtk3_active = TRUE;
 	window = gtk_window_new (GTK_WINDOW_TOPLEVEL);
 	label = gtk_label_new ("mapped");
 	gtk_container_add (GTK_CONTAINER (window), label);

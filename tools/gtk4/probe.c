@@ -10,7 +10,6 @@
 #include "../../src/common/gtk4-theme-discovery.h"
 #include "../../src/common/gtk4-theme-preferences.h"
 #include "../../src/fe-gtk/emoji-picker.h"
-#include "../../src/fe-gtk/theme/theme-gtk3.h"
 #include "../../src/fe-gtk/theme/theme-gtk4.h"
 #include "../../src/fe-gtk/theme/theme-gtk4-controller.h"
 #include "../../src/fe-gtk/theme/theme-preferences-gtk4.h"
@@ -2635,29 +2634,6 @@ probe_make_gtk4_theme (const char *base, const char *directory_name,
 	g_free (css);
 	g_free (gtk_dir);
 	return root;
-}
-
-static gboolean
-check_gtk3_theme_adapter_containment (void)
-{
-	GError *error = NULL;
-	gboolean valid;
-
-	theme_gtk3_init ();
-	valid = !theme_gtk3_is_active () &&
-		theme_gtk3_apply_current (&error) && error == NULL &&
-		theme_gtk3_apply ("legacy-theme", THEME_GTK3_VARIANT_PREFER_DARK,
-			&error) && error == NULL &&
-		theme_gtk3_refresh ("legacy-theme", THEME_GTK3_VARIANT_PREFER_LIGHT,
-			&error) && error == NULL &&
-		theme_gtk3_variant_for_theme ("legacy-theme") ==
-			THEME_GTK3_VARIANT_PREFER_LIGHT &&
-		!theme_gtk3_is_active ();
-	theme_gtk3_invalidate_provider_cache ();
-	theme_gtk3_disable ();
-	valid = valid && !theme_gtk3_is_active ();
-	g_clear_error (&error);
-	return valid;
 }
 
 static gboolean
@@ -5491,11 +5467,6 @@ main (void)
 	if (!check_emoji_picker_policy ())
 	{
 		fprintf (stderr, "GTK4 emoji-picker ownership policy mismatch\n");
-		return 1;
-	}
-	if (!check_gtk3_theme_adapter_containment ())
-	{
-		fprintf (stderr, "GTK3 theme adapter containment mismatch\n");
 		return 1;
 	}
 	if (!check_gtk4_theme_discovery_policy ())

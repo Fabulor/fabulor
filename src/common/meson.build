@@ -6,7 +6,6 @@ common_sources = [
   'fabulor-plugin-enable-policy.c',
   'gtk4-theme-discovery.c',
   'gtk4-theme-preferences.c',
-  'gtk3-theme-service.c',
   'theme-archive-reader.c',
   'zoitechat.c',
   'history.c',
@@ -156,20 +155,4 @@ zoitechat_plugin_dep = declare_dependency(
   include_directories: common_includes,
   compile_args: common_cflags,
   dependencies: global_deps,
-)
-
-
-gtk3_theme_service_tests = executable('gtk3_theme_service_tests',
-  [
-    'tests/test-gtk3-theme-service.c',
-    'gtk3-theme-service.c',
-  ],
-  include_directories: [config_h_include, include_directories('.')],
-  dependencies: [libgio_dep] + (libarchive_dep.found() ? [libarchive_dep] : []),
-  c_args: common_cflags,
-)
-
-test('GTK3 Theme Service Tests', gtk3_theme_service_tests,
-  protocol: 'tap',
-  timeout: 120,
 )

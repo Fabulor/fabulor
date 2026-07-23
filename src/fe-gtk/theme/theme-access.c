@@ -21,7 +21,6 @@
 #include "theme-access.h"
 
 #include "theme-runtime.h"
-#include "theme-gtk3.h"
 
 
 
@@ -127,7 +126,7 @@ theme_access_get_gtk_palette_map (GtkWidget *widget, ThemeGtkPaletteMap *out_map
 	(void) widget;
 	return FALSE;
 #else
-	if (!theme_gtk3_is_active () || widget == NULL || !GTK_IS_WIDGET (widget))
+	if (widget == NULL || !GTK_IS_WIDGET (widget))
 		return FALSE;
 
 	context = gtk_widget_get_style_context (widget);

@@ -330,7 +330,7 @@ Detailed planning and evidence live in:
   - [x] Bind discovered GTK4 themes and variant policy to owned preference controls with transactional persistence callbacks.
   - [x] Refresh GTK4 theme appearance from queued Windows light/dark and high-contrast signals without GTK3 window filters.
   - [x] Retain `.hct` and `colors.conf` without packaging an optional default Fabulor theme.
-  - [ ] Remove GTK3 theme discovery and `%APPDATA%\Fabulor\gtk3-themes` use only after the GTK4 adapter is ready.
+  - [x] Remove GTK3 theme discovery and `%APPDATA%\Fabulor\gtk3-themes` use after the GTK4 adapter is ready.
 - [ ] Cut production builds, CI, staging, and WiX packaging over to an allowlisted GTK4 runtime.
   - [x] Establish deterministic candidate staging with a pinned file/tree contract and source-bound SHA-256 manifest.
   - [x] Build and publish a parallel candidate MSI without replacing the shipping installer or bootstrapper.
@@ -439,6 +439,7 @@ Detailed planning and evidence live in:
   - [ ] Remove GTK3 staging downloads, runtime-copy rules, WiX components, source branches, tests, and compatibility helpers.
     - [x] Remove the GTK3 dependency archive, MSYS2 libarchive/hicolor augmentation, legacy copy/Inno projects, and unsupported Lua/Perl/gendef inputs from the Windows GTK4 build graph; pin the remaining OpenSSL support root.
     - [x] Move retained `.hct` text import out of the GTK3 theme service and enforce absolute system-tool execution, entry validation, duplicate rejection, and archive/output limits.
+    - [x] Delete the GTK3 theme service, adapter, preference branch, tests, probe coverage, saved configuration keys, and active build references.
 - [ ] Complete clean-install, upgrade, accessibility, visual, performance, plugin, and packaging validation.
 
 ## 7. Documentation & Developer Guides

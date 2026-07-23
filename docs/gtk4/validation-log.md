@@ -7388,6 +7388,34 @@ The reader must not search PATH, interpolate a command string, or extract an
 archive tree. Legacy GTK3 desktop-theme archive import remains assigned to the
 next removal pass.
 
+### GTK4 Stage 9 GTK3 Theme Retirement, Pass 5
+
+Date: 2026-07-23
+
+Boundary retired: the GTK3 desktop-theme discovery/import service, frontend
+adapter, GTK3 preference branch, dedicated tests/stubs, and strict-probe
+compatibility check are deleted. MSVC and Meson source lists no longer compile
+the service or adapter. `gui_gtk3_theme` and `gui_gtk3_variant` are no longer
+members of the saved preference contract; older keys are ignored on load.
+
+Automated evidence:
+
+- complete GTK4 common/frontend/launcher build and link: pass
+- strict GTK4 MSVC probe build and execution: pass
+- native manifest/path/HCT suite: all 22 tests pass
+- theme retirement/import contract suite: all 7 tests pass
+- GTK4 tooling contract suite: all 57 tests pass
+- repository scan: no GTK3 theme service, adapter, test, call-site, or config
+  symbol remains under active source/build/probe roots
+- project XML parse and repository whitespace validation: pass
+
+Behaviour contract: GTK4 desktop CSS remains owned by discovery, controller,
+provider, Preferences, and appearance-monitor components. `.hct` palette/event
+imports remain owned by the bounded archive reader. Neither workflow may
+restore the retired `%APPDATA%\Fabulor\gtk3-themes` service, adapter, or saved
+keys. Historical extraction findings remain in the security audit as evidence,
+but their vulnerable implementation is no longer present.
+
 ## Stage Completion Rule
 
 A stage can move to complete in `migration-plan.md` only when:
