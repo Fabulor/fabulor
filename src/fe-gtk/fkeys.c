@@ -864,7 +864,7 @@ key_dialog_show ()
 			"}"
 			"treeview#fkeys-treeview row:nth-child(even) {"
 			" background-color: shade(@theme_base_color, 0.96);"
-			"}", -1, NULL);
+			"}", -1);
 		theme_css_apply_widget_provider (view, GTK_STYLE_PROVIDER (provider));
 		g_object_unref (provider);
 	}

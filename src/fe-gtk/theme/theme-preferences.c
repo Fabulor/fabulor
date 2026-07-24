@@ -891,7 +891,7 @@ theme_preferences_create_color_manager_dialog (GtkWindow *parent, gboolean *colo
         fabulor_gtk_box_append (GTK_BOX (left_box), search, FALSE, FALSE, 0);
         ui->search_entry = search;
 
-        scroller = gtk_scrolled_window_new (NULL, NULL);
+        scroller = gtk_scrolled_window_new ();
         gtk_widget_set_hexpand (scroller, TRUE);
         gtk_widget_set_vexpand (scroller, TRUE);
         gtk_scrolled_window_set_policy (GTK_SCROLLED_WINDOW (scroller), GTK_POLICY_NEVER, GTK_POLICY_AUTOMATIC);

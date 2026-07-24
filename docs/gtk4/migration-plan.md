@@ -2727,6 +2727,18 @@ toolkit-version branches are removed. The frontend source inventory falls from
 sources against restored GTK3 lifecycle and viewport APIs. The strict GTK4
 probe and complete frontend compile and link cleanly.
 
+Stage 9 Channel View/helper source specialization pass 18 (2026-07-24):
+Channel View now uses only GTK4 weak finalization; system icons load through
+`GtkIconPaintable`; tray capability follows the retained explicit unavailable
+backend policy; and key modifiers use the GTK4 Alt mask. The obsolete GTK3/X11
+tray probe, GTK3 icon loader, and three unreferenced generic tree-view helpers
+and declarations are removed. Residual CSS-provider, scroller-constructor, and
+RGBA initializer signatures are corrected for GTK4. The frontend source
+inventory falls from 119 to 113 `GTK_MAJOR_VERSION` conditionals, all of which
+are now confined to `maingui.c`, `menu.c`, and their headers. A clean frontend
+rebuild links successfully with zero errors; its remaining 14 warnings are
+likewise confined to `maingui.c` and `menu.c`.
+
 Deliverables:
 
 - Make GTK4 the only production frontend dependency in MSVC, Meson, and CI.

@@ -371,7 +371,7 @@ pevent_dialog_show ()
 	}
 	pevent_dialog_fill ();
 
-	wid = gtk_scrolled_window_new (NULL, NULL);
+	wid = gtk_scrolled_window_new ();
 	gtk_scrolled_window_set_policy (GTK_SCROLLED_WINDOW (wid), GTK_POLICY_NEVER, GTK_POLICY_ALWAYS);
 	fabulor_gtk_box_append (GTK_BOX (vbox), wid, FALSE, TRUE, 0);
 

@@ -292,7 +292,6 @@ chanview_destroy (chanview *cv)
 	g_free (cv);
 }
 
-#if GTK_MAJOR_VERSION >= 4
 static void
 chanview_box_finalized_cb (gpointer user_data, GObject *box)
 {
@@ -302,15 +301,6 @@ chanview_box_finalized_cb (gpointer user_data, GObject *box)
 	cv->box = NULL;
 	chanview_destroy (cv);
 }
-#else
-static void
-chanview_box_destroy_cb (GtkWidget *box, chanview *cv)
-{
-	(void) box;
-	cv->box = NULL;
-	chanview_destroy (cv);
-}
-#endif
 
 chanview *
 chanview_new (int type, int trunc_len, gboolean sort, gboolean use_icons,
@@ -330,12 +320,7 @@ chanview_new (int type, int trunc_len, gboolean sort, gboolean use_icons,
 	chanview_set_impl (cv, type);
 	cv->theme_listener_id = theme_listener_register ("chanview", chanview_theme_changed, cv);
 
-#if GTK_MAJOR_VERSION >= 4
 	g_object_weak_ref (G_OBJECT (cv->box), chanview_box_finalized_cb, cv);
-#else
-	g_signal_connect (G_OBJECT (cv->box), "destroy",
-		G_CALLBACK (chanview_box_destroy_cb), cv);
-#endif
 
 	return cv;
 }

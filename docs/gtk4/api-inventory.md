@@ -1423,11 +1423,20 @@ callbacks, `GtkBin` child inspection, viewport shadow mutation, and all
 toolkit-version branches in these sources are retired. The frontend-wide
 version-branch inventory falls from 127 to 119.
 
+Stage 9 Channel View/helper source specialization pass 18 removes the inactive
+GTK3 lifecycle, icon-loading, tray-detection, modifier-mask, and compile-guard
+branches from `chanview.c`, `pixmaps.c`, `gtkutil.c`, `fkeys.h`, and the GTK4
+context-menu presenter. Three unused generic GTK3 tree-view helpers and their
+public declarations are retired. Residual GTK4 CSS, scroller, and `GdkRGBA`
+initializers use their exact current signatures and scalar types. The
+frontend-wide version-branch inventory falls from 119 to 113, now entirely
+contained in `maingui.c`, `menu.c`, `maingui.h`, and `menu.h`.
+
 ## Functional Clusters
 
 | Cluster | Main files | GTK4 concern | Status |
 |---|---|---|---|
-| Main windows and tabs | `maingui.c`, `chanview*.c` | child ownership, gestures, DnD, focus | in progress |
+| Main windows and tabs | `maingui.c`, `chanview*.c` | child ownership, gestures, DnD, focus | in progress; Channel View is specialized to GTK4 while the main-window source awaits retirement |
 | Transcript | `xtext.c`, `xtext.h`, `xtext-render-target.c` | snapshot rendering and event model | converted and specialized to GTK4; renderer, selection, accessibility, geometry, widget-class, and render-target GTK3 branches are retired |
 | Edit box and spell check | `maingui.c`, `emoji-picker.c`, `sexy-spell-entry.c`, `spell-entry-*.c` | production interaction and latency validation | in progress; spell-entry and emoji ownership are specialized to GTK4, while remaining main-edit-box branches await retirement |
 | Menus and commands | `menu.c`, `maingui.c`, `plugin-tray.c` | actions and menu models | in progress; retained main/context/tab presentation and GTK3-only accelerator ownership established |

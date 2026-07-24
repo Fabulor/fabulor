@@ -41,7 +41,7 @@
 #include "../../common/cfgfiles.h"
 #include "../../common/typedef.h"
 
-#define PALETTE_COLOR_INIT(r, g, b) { (r) / 65535.0, (g) / 65535.0, (b) / 65535.0, 1.0 }
+#define PALETTE_COLOR_INIT(r, g, b) { (r) / 65535.0f, (g) / 65535.0f, (b) / 65535.0f, 1.0f }
 
 static const GdkRGBA legacy_light_defaults[THEME_LEGACY_MAX + 1] = {
 	PALETTE_COLOR_INIT (0xd3d3, 0xd7d7, 0xcfcf),
