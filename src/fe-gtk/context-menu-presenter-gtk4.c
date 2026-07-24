@@ -10,10 +10,6 @@
 #include "context-menu-presenter-gtk4.h"
 #include "menu-action-namespaces.h"
 
-#if GTK_MAJOR_VERSION < 4
-#error The GTK4 context menu presenter must compile against GTK 4.
-#endif
-
 struct _FabulorContextMenuPresenterGtk4
 {
 	GtkPopoverMenu *popover;

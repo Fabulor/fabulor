@@ -81,6 +81,13 @@ GTK4_PREFERENCES_JOIN_SOURCES = (
     "joind.c",
     "setup.c",
 )
+GTK4_SMALL_HELPER_SOURCES = (
+    "chanview.c",
+    "context-menu-presenter-gtk4.c",
+    "fkeys.h",
+    "gtkutil.c",
+    "pixmaps.c",
+)
 VCPKG_CONFIGURATION = ROOT / "tools" / "windows-deps" / "vcpkg-configuration.json"
 VCPKG_MANIFEST = ROOT / "tools" / "windows-deps" / "vcpkg.json"
 WIX_NS = {"w": "http://wixtoolset.org/schemas/v4/wxs"}
@@ -424,6 +431,58 @@ class ProductionWixProfileTests(unittest.TestCase):
         self.assertIn("setup_window_finalized_cb", setup_source)
         self.assertIn("g_object_weak_ref", join_source)
         self.assertIn("g_object_weak_ref", setup_source)
+
+    def test_channel_view_and_small_helpers_are_gtk4_only(self):
+        frontend = ROOT / "src" / "fe-gtk"
+        retired_tokens = (
+            "GDK_MOD1_MASK",
+            "GdkScreen",
+            "GTK_ICON_LOOKUP_FORCE_SIZE",
+            "HAVE_APPINDICATOR",
+            "HAVE_AYATANA_APPINDICATOR",
+            "chanview_box_destroy_cb",
+            "gdk_x11_",
+            "gtk_icon_theme_get_default",
+            "gtk_icon_theme_load_icon",
+            "gtkutil_treemodel_string_to_iter",
+            "gtkutil_treeview_get_selected",
+            "gtkutil_treeview_new",
+            "gtk_window_get_screen",
+        )
+
+        for name in GTK4_SMALL_HELPER_SOURCES:
+            source = (frontend / name).read_text(encoding="utf-8")
+            with self.subTest(source=name):
+                self.assertNotIn("GTK_MAJOR_VERSION", source)
+                for token in retired_tokens:
+                    self.assertNotRegex(source, rf"\b{token}")
+
+        channel_view = (frontend / "chanview.c").read_text(encoding="utf-8")
+        icon_source = (frontend / "pixmaps.c").read_text(encoding="utf-8")
+        utility_header = (frontend / "gtkutil.h").read_text(encoding="utf-8")
+        key_header = (frontend / "fkeys.h").read_text(encoding="utf-8")
+        key_source = (frontend / "fkeys.c").read_text(encoding="utf-8")
+        text_editor = (frontend / "textgui.c").read_text(encoding="utf-8")
+        theme_preferences = (
+            frontend / "theme" / "theme-preferences.c"
+        ).read_text(encoding="utf-8")
+        theme_runtime = (
+            frontend / "theme" / "theme-runtime.c"
+        ).read_text(encoding="utf-8")
+        self.assertIn("chanview_box_finalized_cb", channel_view)
+        self.assertIn("g_object_weak_ref", channel_view)
+        self.assertIn("gtk_icon_paintable_get_file", icon_source)
+        self.assertIn("GDK_ALT_MASK", key_header)
+        self.assertNotIn("gtkutil_treeview_", utility_header)
+        self.assertNotIn('}", -1, NULL);', key_source)
+        self.assertNotRegex(
+            text_editor, r"\bgtk_scrolled_window_new\s*\(\s*(?:NULL|0)"
+        )
+        self.assertNotRegex(
+            theme_preferences, r"\bgtk_scrolled_window_new\s*\(\s*(?:NULL|0)"
+        )
+        self.assertIn("65535.0f", theme_runtime)
+        self.assertIn("1.0f }", theme_runtime)
 
     def test_transitional_windows_staging_is_removed(self):
         props = PROPS.read_text(encoding="utf-8")

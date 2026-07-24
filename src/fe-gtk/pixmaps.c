@@ -192,7 +192,6 @@ load_system_icon_pixbuf (const char *icon_name, FabulorGtkIconSize size)
 {
 	const int pixels = fabulor_gtk_icon_size_get_pixels (size);
 
-#if GTK_MAJOR_VERSION >= 4
 	GdkDisplay *display = gdk_display_get_default ();
 	GdkPixbuf *pixbuf = NULL;
 	GFile *file;
@@ -217,12 +216,6 @@ load_system_icon_pixbuf (const char *icon_name, FabulorGtkIconSize size)
 	g_object_unref (paintable);
 
 	return pixbuf;
-#else
-	GtkIconTheme *theme = gtk_icon_theme_get_default ();
-
-	return theme ? gtk_icon_theme_load_icon (theme, icon_name, pixels,
-		GTK_ICON_LOOKUP_FORCE_SIZE, NULL) : NULL;
-#endif
 }
 
 /* load custom icons from <config>/icons, don't mess in system folders */

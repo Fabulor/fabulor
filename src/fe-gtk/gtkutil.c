@@ -19,7 +19,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <stdarg.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
@@ -29,10 +28,6 @@
 #include <gdk/gdkkeysyms.h>
 #if defined (WIN32)
 #include <pango/pangocairo.h>
-#endif
-
-#ifdef GDK_WINDOWING_X11
-#include <gdk/gdkx.h>
 #endif
 
 #include "../common/zoitechat.h"
@@ -837,134 +832,11 @@ gtkutil_copy_to_clipboard (GtkWidget *widget, const gchar *str)
 	fabulor_gtk_copy_text_to_clipboards (widget, str);
 }
 
-/* Treeview util functions */
-
-GtkWidget *
-gtkutil_treeview_new (GtkBox *box, GtkTreeModel *model,
-                      GtkTreeCellDataFunc mapper, ...)
-{
-	GtkWidget *win, *view;
-	GtkCellRenderer *renderer = NULL;
-	GtkTreeViewColumn *col;
-	va_list args;
-	int col_id = 0;
-	GType type;
-	char *title, *attr;
-
-	win = gtk_scrolled_window_new (0, 0);
-	fabulor_gtk_box_append (box, win, TRUE, TRUE, 0);
-	gtk_scrolled_window_set_policy (GTK_SCROLLED_WINDOW (win),
-									  GTK_POLICY_AUTOMATIC, GTK_POLICY_AUTOMATIC);
-	gtk_widget_set_vexpand (win, TRUE);
-	gtk_widget_set_hexpand (win, TRUE);
-	gtk_widget_show (win);
-
-	view = gtk_tree_view_new_with_model (model);
-	/* the view now has a ref on the model, we can unref it */
-	g_object_unref (G_OBJECT (model));
-	fabulor_gtk_scrolled_window_set_child (GTK_SCROLLED_WINDOW (win), view);
-
-	va_start (args, mapper);
-	for (col_id = va_arg (args, int); col_id != -1; col_id = va_arg (args, int))
-	{
-		type = gtk_tree_model_get_column_type (model, col_id);
-		switch (type)
-		{
-			case G_TYPE_BOOLEAN:
-				renderer = gtk_cell_renderer_toggle_new ();
-				attr = "active";
-				break;
-			case G_TYPE_STRING:	/* fall through */
-			default:
-				renderer = gtk_cell_renderer_text_new ();
-				attr = "text";
-				break;
-		}
-
-		title = va_arg (args, char *);
-		if (mapper)	/* user-specified function to set renderer attributes */
-		{
-			col = gtk_tree_view_column_new_with_attributes (title, renderer, NULL);
-			gtk_tree_view_column_set_cell_data_func (col, renderer, mapper,
-			                                         GINT_TO_POINTER (col_id), NULL);
-		} else
-		{
-			/* just set the typical attribute for this type of renderer */
-			col = gtk_tree_view_column_new_with_attributes (title, renderer,
-			                                                attr, col_id, NULL);
-		}
-		gtk_tree_view_append_column (GTK_TREE_VIEW (view), col);
-		if (title == NULL)
-			gtk_tree_view_column_set_visible (col, FALSE);
-	}
-
-	va_end (args);
-
-	return view;
-}
-
-gboolean
-gtkutil_treemodel_string_to_iter (GtkTreeModel *model, gchar *pathstr, GtkTreeIter *iter_ret)
-{
-	GtkTreePath *path = gtk_tree_path_new_from_string (pathstr);
-	gboolean success;
-
-	success = gtk_tree_model_get_iter (model, iter_ret, path);
-	gtk_tree_path_free (path);
-	return success;
-}
-
-gboolean
-gtkutil_treeview_get_selected (GtkTreeView *view, GtkTreeIter *iter_ret, ...)
-{
-	GtkTreeModel *store;
-	GtkTreeSelection *select;
-	gboolean has_selected;
-	va_list args;
-	
-	select = gtk_tree_view_get_selection (view);
-	has_selected = gtk_tree_selection_get_selected (select, &store, iter_ret);
-
-	if (has_selected) {
-		va_start (args, iter_ret);
-		gtk_tree_model_get_valist (store, iter_ret, args);
-		va_end (args);
-	}
-
-	return has_selected;
-}
-
 gboolean
 gtkutil_tray_icon_supported (GtkWindow *window)
 {
-#if defined(HAVE_AYATANA_APPINDICATOR) || defined(HAVE_APPINDICATOR)
-	return TRUE;
-#elif GTK_MAJOR_VERSION >= 4
 	(void) window;
 	return FALSE;
-#elif defined(GDK_WINDOWING_X11)
-	GdkScreen *screen = gtk_window_get_screen (window);
-	GdkDisplay *display = gdk_screen_get_display (screen);
-	if (!GDK_IS_X11_DISPLAY (display))
-		return FALSE;
-	int screen_number = gdk_x11_screen_get_screen_number (screen);
-	Display *xdisplay = gdk_x11_display_get_xdisplay (display);
-	char *selection_name = g_strdup_printf ("_NET_SYSTEM_TRAY_S%d", screen_number);
-	Atom selection_atom = XInternAtom (xdisplay, selection_name, False);
-	Window tray_window = None;
-
-	XGrabServer (xdisplay);
-
-	tray_window = XGetSelectionOwner (xdisplay, selection_atom);
-
-	XUngrabServer (xdisplay);
-	XFlush (xdisplay);
-	g_free (selection_name);
-
-	return (tray_window != None);
-#else
-	return TRUE;
-#endif
 }
 
 #if defined (WIN32)

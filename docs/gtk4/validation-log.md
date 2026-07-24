@@ -7819,6 +7819,42 @@ construction. No supported build can select the retired GTK3 lifecycle path.
 Remaining main UI, menu, channel-view, and small helper source branches remain
 separate Stage 9 cleanup targets.
 
+### GTK4 Stage 9 Channel View/Helper Source Specialization, Pass 18
+
+Date: 2026-07-24
+
+Boundary retired: Channel View finalization, system-icon loading, tray-support
+policy, the Alt modifier alias, and the GTK4 context-menu presenter no longer
+carry toolkit-version branches. Three unreferenced generic GTK3 tree-view
+helpers and their declarations are removed. A total of 163 inactive or dead
+source lines are removed, and four residual GTK4 call/initializer signatures
+are corrected. The frontend-wide `GTK_MAJOR_VERSION`-conditional inventory
+falls from 119 to 113.
+
+Automated evidence:
+
+- strict GTK4 MSVC probe build and execution: pass with `/W4 /WX`, zero
+  warnings and zero errors; GTK 4.22.4 / GLib 2.88.0 / x64 runtime confirmed
+- clean GTK4 frontend project rebuild and link: pass with zero errors; all 14
+  remaining warnings are confined to `maingui.c` and `menu.c`
+- affected source units compile and link with zero warnings and zero errors
+- production profile contract suite: all 21 tests pass, including rejection of
+  restored toolkit-version switches, GTK3 icon/tray APIs, tree-view helpers,
+  destroy callbacks, old modifier masks, or GTK3 call signatures
+- complete GTK4 tooling contract suite: all 70 tests pass
+- theme retirement/import contract suite: all 7 tests pass
+- native manifest, path, and archive suite: all 22 tests pass
+- source audit: the remaining 113 `GTK_MAJOR_VERSION` conditionals are confined
+  to `maingui.c`, `menu.c`, `maingui.h`, and `menu.h`
+- repository whitespace validation: pass
+
+Behaviour contract: Channel View retains its model, listener, and implementation
+cleanup through GTK4 weak finalization. System icons retain theme lookup and
+scaled stream loading through `GtkIconPaintable`. Tray availability continues
+to report false until a genuine GTK4 backend exists. Palette values and editor
+presentation are unchanged by their type/signature corrections. The main
+window and menu sources are the only remaining source-specialization targets.
+
 ## Stage Completion Rule
 
 A stage can move to complete in `migration-plan.md` only when:
