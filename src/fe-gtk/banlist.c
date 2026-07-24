@@ -308,23 +308,19 @@ banlist_copyentry (GtkWidget *item, banlist_info *banl)
 	if (str && *str)
 		gtkutil_copy_to_clipboard (item, str);
 	g_free (str);
-#if GTK_MAJOR_VERSION >= 4
 	{
 		GtkWidget *popover = gtk_widget_get_ancestor (item, GTK_TYPE_POPOVER);
 		if (popover)
 			gtk_popover_popdown (GTK_POPOVER (popover));
 	}
-#endif
 }
 
-#if GTK_MAJOR_VERSION >= 4
 static void
 banlist_popover_closed (GtkPopover *popover, gpointer user_data)
 {
 	(void) user_data;
 	gtk_widget_unparent (GTK_WIDGET (popover));
 }
-#endif
 
 static gboolean
 banlist_button_pressed (GtkWidget *wid, guint button, guint n_press,
@@ -338,7 +334,6 @@ banlist_button_pressed (GtkWidget *wid, guint button, guint n_press,
 
 	if (button == 3 && fabulor_ban_list_select_at_point (banl->list, x, y))
 	{
-#if GTK_MAJOR_VERSION >= 4
 		GtkWidget *box = gtk_box_new (GTK_ORIENTATION_VERTICAL, 0);
 		GdkRectangle point = { (gint) x, (gint) y, 1, 1 };
 		menu = gtk_popover_new ();
@@ -355,19 +350,6 @@ banlist_button_pressed (GtkWidget *wid, guint button, guint n_press,
 		gtk_popover_set_pointing_to (GTK_POPOVER (menu), &point);
 		g_signal_connect (menu, "closed", G_CALLBACK (banlist_popover_closed), NULL);
 		gtk_popover_popup (GTK_POPOVER (menu));
-#else
-			menu = gtk_menu_new ();
-			maskitem = gtk_menu_item_new_with_label (_("Copy mask"));
-			allitem = gtk_menu_item_new_with_label (_("Copy entry"));
-			g_object_set_data (G_OBJECT (allitem), "fabulor-ban-copy-entry",
-				GINT_TO_POINTER (TRUE));
-			g_signal_connect (maskitem, "activate", G_CALLBACK (banlist_copyentry), banl);
-			g_signal_connect (allitem, "activate", G_CALLBACK (banlist_copyentry), banl);
-			gtk_menu_shell_append (GTK_MENU_SHELL(menu), maskitem);
-			gtk_menu_shell_append (GTK_MENU_SHELL(menu), allitem);
-			gtk_widget_show_all (menu);
-			gtk_menu_popup_at_pointer (GTK_MENU (menu), NULL);
-#endif
 		return TRUE;
 	}
 	return FALSE;
