@@ -71,6 +71,7 @@ GTK4_TRAY_SOURCES = (
     "tray-menu-presenter-gtk4.c",
 )
 FRONTEND_MESON = ROOT / "src" / "fe-gtk" / "meson.build"
+GTK4_APPLICATION_SOURCE = ROOT / "src" / "fe-gtk" / "fe-gtk.c"
 VCPKG_CONFIGURATION = ROOT / "tools" / "windows-deps" / "vcpkg-configuration.json"
 VCPKG_MANIFEST = ROOT / "tools" / "windows-deps" / "vcpkg.json"
 WIX_NS = {"w": "http://wixtoolset.org/schemas/v4/wxs"}
@@ -338,6 +339,17 @@ class ProductionWixProfileTests(unittest.TestCase):
 
         meson = FRONTEND_MESON.read_text(encoding="utf-8")
         self.assertNotRegex(meson, r"\b(?:ayatana-)?appindicator")
+
+    def test_application_lifecycle_is_gtk4_only(self):
+        source = GTK4_APPLICATION_SOURCE.read_text(encoding="utf-8")
+
+        self.assertNotIn("GTK_MAJOR_VERSION", source)
+        self.assertNotRegex(source, r"\bgtk_get_option_group\b")
+        self.assertNotRegex(source, r"\bgtk_main(?:_quit)?\b")
+        self.assertNotRegex(source, r"\bgtk_init\s*\(&")
+        self.assertIn("fabulor_application_main_loop_run", source)
+        self.assertIn("fabulor_application_main_loop_request_quit", source)
+        self.assertIn('"Runtime", "GTK4"', source)
 
     def test_transitional_windows_staging_is_removed(self):
         props = PROPS.read_text(encoding="utf-8")

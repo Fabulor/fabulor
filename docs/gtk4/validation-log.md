@@ -7684,6 +7684,39 @@ backend until a GTK4-native StatusNotifier implementation is added. Remaining
 application, main UI, menu, and dialog source branches remain separate Stage 9
 cleanup targets.
 
+### GTK4 Stage 9 Application-Lifecycle Source Specialization, Pass 14
+
+Date: 2026-07-24
+
+Boundary retired: `fe-gtk.c` no longer carries parallel GTK3 initialization,
+option parsing, icon validation, main-loop, or quit implementations. A total of
+41 inactive GTK3 and toolkit-selection lines are removed. The frontend-wide
+`GTK_MAJOR_VERSION`-conditional inventory falls from 159 to 150.
+
+Automated evidence:
+
+- strict GTK4 MSVC application-main-loop probe build and execution: pass with
+  `/W4 /WX`, zero warnings and zero errors; GTK 4.22.4 / GLib 2.88.0 / x64
+  runtime confirmed
+- complete GTK4 frontend project build and link: pass with zero warnings and
+  zero errors in the affected incremental build
+- production profile contract suite: all 17 tests pass, including rejection of
+  restored toolkit-version switches, GTK3 option groups, argument-taking
+  initialization, or legacy main-loop APIs
+- complete GTK4 tooling contract suite: all 66 tests pass
+- theme retirement/import contract suite: all 7 tests pass
+- native manifest, path, and archive suite: all 22 tests pass
+- source audit: no `GTK_MAJOR_VERSION`, `gtk_get_option_group`, `gtk_main`,
+  `gtk_main_quit`, or GTK3 `gtk_init` call remains in `fe-gtk.c`
+- repository whitespace validation: pass
+
+Behaviour contract: command-line handling, GTK initialization, Windows icon
+theme discovery, frontend run-loop ownership, and quit dispatch continue
+through the reviewed GTK4 implementation and `FabulorApplicationMainLoop`.
+No supported build can select the retired GTK3 lifecycle path. Remaining main
+UI, menu, server-list, and dialog source branches remain separate Stage 9
+cleanup targets.
+
 ## Stage Completion Rule
 
 A stage can move to complete in `migration-plan.md` only when:
