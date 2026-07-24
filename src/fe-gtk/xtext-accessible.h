@@ -56,10 +56,8 @@ void fabulor_xtext_accessible_attach (GtkWidget *widget,
 void fabulor_xtext_accessible_notify (GtkWidget *widget,
 	const FabulorXTextAccessibleChange *change);
 
-#if GTK_MAJOR_VERSION >= 4
 void fabulor_xtext_accessible_text_interface_init (
 	GtkAccessibleTextInterface *iface);
-#endif
 
 G_END_DECLS
 

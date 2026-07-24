@@ -55,6 +55,16 @@ GTK4_SPELL_INPUT_SOURCES = (
     "sexy-spell-entry.c",
     "spell-entry-widget.c",
 )
+GTK4_TRANSCRIPT_HELPER_SOURCES = (
+    "xtext-accessible.c",
+    "xtext-accessible.h",
+    "xtext-geometry.c",
+    "xtext-render-target.c",
+    "xtext-render-target.h",
+    "xtext-selection.c",
+    "xtext-widget-class.c",
+    "xtext.h",
+)
 VCPKG_CONFIGURATION = ROOT / "tools" / "windows-deps" / "vcpkg-configuration.json"
 VCPKG_MANIFEST = ROOT / "tools" / "windows-deps" / "vcpkg.json"
 WIX_NS = {"w": "http://wixtoolset.org/schemas/v4/wxs"}
@@ -234,6 +244,36 @@ class ProductionWixProfileTests(unittest.TestCase):
         )
 
         for name in GTK4_SPELL_INPUT_SOURCES:
+            source = (frontend / name).read_text(encoding="utf-8")
+            with self.subTest(source=name):
+                self.assertNotIn("GTK_MAJOR_VERSION", source)
+                for token in retired_tokens:
+                    self.assertNotRegex(source, rf"\b{token}")
+
+    def test_transcript_helper_sources_are_gtk4_only(self):
+        frontend = ROOT / "src" / "fe-gtk"
+        retired_tokens = (
+            "AtkObject",
+            "GdkEventSelection",
+            "GdkWindow",
+            "GtkAllocation",
+            "GtkClipboard",
+            "GtkSelectionData",
+            "GtkTargetEntry",
+            "atk_object_set_name",
+            "gdk_cairo_create",
+            "gdk_cairo_get_clip_rectangle",
+            "gtk_clipboard_",
+            "gtk_selection_",
+            "gtk_widget_get_accessible",
+            "gtk_widget_get_allocated_height",
+            "gtk_widget_get_allocated_width",
+            "gtk_widget_get_allocation",
+            "gtk_widget_get_clipboard",
+            "gtk_widget_get_window",
+        )
+
+        for name in GTK4_TRANSCRIPT_HELPER_SOURCES:
             source = (frontend / name).read_text(encoding="utf-8")
             with self.subTest(source=name):
                 self.assertNotIn("GTK_MAJOR_VERSION", source)

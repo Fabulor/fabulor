@@ -445,6 +445,7 @@ Detailed planning and evidence live in:
     - [x] Specialize the GTK4 theme controller, CSS, palette, appearance-monitor, Preferences, and window-lifecycle subsystem.
     - [x] Specialize window state, geometry, native-handle, and file-chooser path helpers to GTK4.
     - [x] Specialize spell-entry text, styling, action menus, pointer handling, and emoji-popover ownership to GTK4.
+    - [x] Specialize transcript selection, render-target, widget-class, accessibility, geometry, and supporting headers to GTK4.
 - [ ] Complete clean-install, upgrade, accessibility, visual, performance, plugin, and packaging validation.
 
 ## 7. Documentation & Developer Guides

@@ -281,7 +281,6 @@ fabulor_xtext_accessible_notify (GtkWidget *widget,
 {
 	g_return_if_fail (GTK_IS_WIDGET (widget));
 	g_return_if_fail (change != NULL);
-#if GTK_MAJOR_VERSION >= 4
 	g_return_if_fail (GTK_IS_ACCESSIBLE_TEXT (widget));
 	if (change->remove_end > change->remove_start)
 		gtk_accessible_text_update_contents (GTK_ACCESSIBLE_TEXT (widget),
@@ -292,12 +291,8 @@ fabulor_xtext_accessible_notify (GtkWidget *widget,
 			GTK_ACCESSIBLE_TEXT_CONTENT_CHANGE_INSERT, change->insert_start,
 			change->insert_end);
 	gtk_accessible_text_update_caret_position (GTK_ACCESSIBLE_TEXT (widget));
-#else
-	(void) change;
-#endif
 }
 
-#if GTK_MAJOR_VERSION >= 4
 
 static FabulorXTextAccessible *
 xtext_accessible_from_interface (GtkAccessibleText *self)
@@ -426,5 +421,3 @@ fabulor_xtext_accessible_text_interface_init (GtkAccessibleTextInterface *iface)
 	iface->set_caret_position = xtext_accessible_set_caret_position;
 	iface->set_selection = xtext_accessible_set_selection;
 }
-
-#endif
