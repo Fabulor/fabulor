@@ -2687,6 +2687,16 @@ StatusNotifier boundary. The frontend source inventory falls from 168 to 159
 Meson graph; the strict tray-policy probe and complete frontend both build
 cleanly.
 
+Stage 9 application-lifecycle source specialization pass 14 (2026-07-24):
+`fe-gtk.c` now contains only GTK4 initialization, argument handling, icon-theme
+validation, application-main-loop ownership, and quit dispatch. The GTK3
+option group, argument-taking `gtk_init`, `gtk_main`, `gtk_main_quit`, legacy
+Windows icon-index rejection, and dual runtime icon path are removed. The
+frontend source inventory falls from 159 to 150 `GTK_MAJOR_VERSION`
+conditionals. Repository lint protects the application source against restored
+version switches and legacy main-loop APIs. The strict application-loop probe
+and complete frontend compile, link, and execute cleanly.
+
 Deliverables:
 
 - Make GTK4 the only production frontend dependency in MSVC, Meson, and CI.

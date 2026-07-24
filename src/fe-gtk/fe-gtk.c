@@ -60,9 +60,7 @@
 #include "theme/theme-application.h"
 #include "preferences-persistence.h"
 #include "window-state.h"
-#if GTK_MAJOR_VERSION >= 4
 #include "application-main-loop.h"
-#endif
 
 #ifdef USE_LIBCANBERRA
 #include <canberra.h>
@@ -70,9 +68,7 @@
 
 cairo_surface_t *channelwin_pix;
 
-#if GTK_MAJOR_VERSION >= 4
 static FabulorApplicationMainLoop *application_main_loop;
-#endif
 
 #ifdef USE_LIBCANBERRA
 static ca_context *ca_con;
@@ -555,22 +551,7 @@ win32_icon_path_has_payload (const char *path)
 static gboolean
 win32_icon_path_is_supported (const char *path)
 {
-#if GTK_MAJOR_VERSION < 4
-	char *index_theme;
-	gboolean has_index_theme;
-
-	if (!path || !g_file_test (path, G_FILE_TEST_IS_DIR))
-		return FALSE;
-
-	index_theme = g_build_filename (path, "hicolor", "index.theme", NULL);
-	has_index_theme = g_file_test (index_theme, G_FILE_TEST_EXISTS);
-	g_free (index_theme);
-
-	/* The Windows GTK3 runtime can fail-fast while scanning a hicolor index.theme. */
-	return !has_index_theme;
-#else
 	return path && g_file_test (path, G_FILE_TEST_IS_DIR);
-#endif
 }
 
 static void
@@ -630,7 +611,6 @@ win32_configure_icon_theme (void)
 		WIN32_SET_ICON_PATH ("module base/share/icons", icons_path);
 		g_free (icons_path);
 
-#if GTK_MAJOR_VERSION >= 4
 		adwaita_index_theme = g_build_filename (base_path, "Runtime", "GTK4",
 			"share", "icons", "Adwaita", "index.theme", NULL);
 		if (!g_file_test (adwaita_index_theme, G_FILE_TEST_IS_REGULAR))
@@ -639,10 +619,6 @@ win32_configure_icon_theme (void)
 			adwaita_index_theme = g_build_filename (base_path, "share", "icons",
 				"Adwaita", "index.theme", NULL);
 		}
-#else
-		adwaita_index_theme = g_build_filename (base_path, "share", "icons",
-			"Adwaita", "index.theme", NULL);
-#endif
 		if (g_file_test (adwaita_index_theme, G_FILE_TEST_IS_REGULAR))
 			fabulor_gtk_icon_theme_set_name (theme, "Adwaita");
 		g_free (adwaita_index_theme);
@@ -719,9 +695,6 @@ fe_args (int argc, char *argv[])
 	g_option_context_set_help_enabled (context, FALSE);	/* disable stdout help as stdout is unavailable for subsystem:windows */
 #endif
 	g_option_context_add_main_entries (context, gopt_entries, GETTEXT_PACKAGE);
-#if GTK_MAJOR_VERSION < 4
-	g_option_context_add_group (context, gtk_get_option_group (FALSE));
-#endif
 	g_option_context_parse (context, &argc, &argv, &error);
 
 #ifdef WIN32
@@ -824,11 +797,7 @@ fe_args (int argc, char *argv[])
 #ifndef WIN32
 	gdk_set_program_class (desktop_id);
 #endif
-#if GTK_MAJOR_VERSION < 4
-	gtk_init (&argc, &argv);
-#else
 	gtk_init ();
-#endif
 
 #ifdef WIN32
 	win32_configure_icon_theme ();
@@ -948,9 +917,7 @@ fe_dark_mode_is_enabled (void)
 void
 fe_init (void)
 {
-#if GTK_MAJOR_VERSION >= 4
 	application_main_loop = fabulor_application_main_loop_new ();
-#endif
 	theme_manager_init ();
 	mg_win32_message_filter_init ();
 	key_init ();
@@ -964,15 +931,11 @@ fe_init (void)
 void
 fe_main (void)
 {
-#if GTK_MAJOR_VERSION < 4
-	gtk_main ();
-#else
 	if (!application_main_loop)
 		application_main_loop = fabulor_application_main_loop_new ();
 	fabulor_application_main_loop_run (application_main_loop);
 	g_clear_pointer (&application_main_loop,
 		fabulor_application_main_loop_free);
-#endif
 
 	/* sleep for 2 seconds so any QUIT messages are not lost. The  */
 	/* GUI is closed at this point, so the user doesn't even know! */
@@ -1005,12 +968,8 @@ fe_preferences_persistence_save_all (void)
 void
 fe_exit (void)
 {
-#if GTK_MAJOR_VERSION < 4
-	gtk_main_quit ();
-#else
 	if (application_main_loop)
 		fabulor_application_main_loop_request_quit (application_main_loop);
-#endif
 }
 
 int
