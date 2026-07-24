@@ -70,7 +70,6 @@ joind_entryfocus_cb (GtkWidget *entry, gpointer user_data)
 	fabulor_gtk_check_button_set_active (serv->gui->joind_radio2, TRUE);
 }
 
-#if GTK_MAJOR_VERSION >= 4
 static void
 joind_finalized_cb (gpointer user_data, GObject *window)
 {
@@ -80,15 +79,6 @@ joind_finalized_cb (gpointer user_data, GObject *window)
 	if (is_server (serv))
 		serv->gui->joind_win = NULL;
 }
-#else
-static void
-joind_destroy_cb (GtkWidget *window, server *serv)
-{
-	(void) window;
-	if (is_server (serv))
-		serv->gui->joind_win = NULL;
-}
-#endif
 
 static void
 joind_ok_cb (GtkWidget *ok, server *serv)
@@ -258,12 +248,7 @@ joind_show_dialog (server *serv)
 	gtk_dialog_add_action_widget (GTK_DIALOG (dialog1), okbutton1, GTK_RESPONSE_OK);
 	gtk_dialog_set_default_response (GTK_DIALOG (dialog1), GTK_RESPONSE_OK);
 
-#if GTK_MAJOR_VERSION >= 4
 	g_object_weak_ref (G_OBJECT (dialog1), joind_finalized_cb, serv);
-#else
-	g_signal_connect (G_OBJECT (dialog1), "destroy",
-		G_CALLBACK (joind_destroy_cb), serv);
-#endif
 	fabulor_gtk_widget_on_focus_enter (entry1, joind_entryfocus_cb, serv);
 	g_signal_connect (G_OBJECT (entry1), "activate",
 							G_CALLBACK (joind_entryenter_cb), okbutton1);

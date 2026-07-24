@@ -77,6 +77,10 @@ GTK4_CHANNEL_BAN_DIALOG_SOURCES = (
     "banlist.c",
     "chanlist.c",
 )
+GTK4_PREFERENCES_JOIN_SOURCES = (
+    "joind.c",
+    "setup.c",
+)
 VCPKG_CONFIGURATION = ROOT / "tools" / "windows-deps" / "vcpkg-configuration.json"
 VCPKG_MANIFEST = ROOT / "tools" / "windows-deps" / "vcpkg.json"
 WIX_NS = {"w": "http://wixtoolset.org/schemas/v4/wxs"}
@@ -395,6 +399,31 @@ class ProductionWixProfileTests(unittest.TestCase):
                 self.assertNotIn("GTK_MAJOR_VERSION", source)
                 for token in retired_tokens:
                     self.assertNotRegex(source, rf"\b{token}")
+
+    def test_preferences_and_join_dialogs_are_gtk4_only(self):
+        frontend = ROOT / "src" / "fe-gtk"
+        retired_tokens = (
+            "GTK_BIN",
+            "joind_destroy_cb",
+            "setup_close_cb",
+            "gtk_bin_get_child",
+            "gtk_viewport_set_shadow_type",
+        )
+
+        for name in GTK4_PREFERENCES_JOIN_SOURCES:
+            source = (frontend / name).read_text(encoding="utf-8")
+            with self.subTest(source=name):
+                self.assertNotIn("GTK_MAJOR_VERSION", source)
+                for token in retired_tokens:
+                    self.assertNotRegex(source, rf"\b{token}")
+
+        join_source = (frontend / "joind.c").read_text(encoding="utf-8")
+        setup_source = (frontend / "setup.c").read_text(encoding="utf-8")
+        self.assertIn("joind_finalized_cb", join_source)
+        self.assertIn("setup_fontchooser_finalized_cb", setup_source)
+        self.assertIn("setup_window_finalized_cb", setup_source)
+        self.assertIn("g_object_weak_ref", join_source)
+        self.assertIn("g_object_weak_ref", setup_source)
 
     def test_transitional_windows_staging_is_removed(self):
         props = PROPS.read_text(encoding="utf-8")

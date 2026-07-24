@@ -2717,6 +2717,16 @@ Repository lint protects both dialog sources against restored GTK3 widget-menu
 APIs. The strict list/context-menu probe and complete frontend compile and link
 cleanly.
 
+Stage 9 Preferences/Join source specialization pass 17 (2026-07-24):
+`setup.c` and `joind.c` now contain only GTK4 weak-finalization ownership for
+the Preferences window, font chooser, and Join dialog. Preferences page
+scrollers retain their explicit child attachment without inspecting a GTK3
+`GtkBin` or its auto-created viewport. Retired destroy-signal callbacks and
+toolkit-version branches are removed. The frontend source inventory falls from
+127 to 119 `GTK_MAJOR_VERSION` conditionals. Repository lint protects both
+sources against restored GTK3 lifecycle and viewport APIs. The strict GTK4
+probe and complete frontend compile and link cleanly.
+
 Deliverables:
 
 - Make GTK4 the only production frontend dependency in MSVC, Meson, and CI.
