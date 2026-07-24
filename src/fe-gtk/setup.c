@@ -1358,7 +1358,6 @@ setup_browsefile_cb (GtkWidget *button, GtkWidget *entry)
 }
 
 
-#if GTK_MAJOR_VERSION >= 4
 static void
 setup_fontchooser_finalized_cb (gpointer user_data, GObject *dialog)
 {
@@ -1366,7 +1365,6 @@ setup_fontchooser_finalized_cb (gpointer user_data, GObject *dialog)
         if (font_dialog == (GtkWidget *) dialog)
                 font_dialog = NULL;
 }
-#endif
 
 static void
 setup_fontchooser_response (GtkDialog *dialog, gint response, GtkWidget *entry)
@@ -1403,9 +1401,7 @@ setup_browsefont_cb (GtkWidget *button, GtkWidget *entry)
         dialog = gtk_font_chooser_dialog_new (_("Select font"), GTK_WINDOW (setup_window));
 	theme_manager_attach_window (dialog);
         font_dialog = dialog;      /* global var */
-#if GTK_MAJOR_VERSION >= 4
         g_object_weak_ref (G_OBJECT (dialog), setup_fontchooser_finalized_cb, NULL);
-#endif
 
         gtk_window_set_modal (GTK_WINDOW (dialog), TRUE);
 
@@ -1893,9 +1889,6 @@ static void
 setup_add_page (const char *title, GtkWidget *book, GtkWidget *tab)
 {
         GtkWidget *label, *vvbox;
-#if GTK_MAJOR_VERSION < 4
-        GtkWidget *viewport;
-#endif
         GtkScrolledWindow *sw;
         char buf[128];
 
@@ -1919,11 +1912,6 @@ setup_add_page (const char *title, GtkWidget *book, GtkWidget *tab)
         fabulor_gtk_scrolled_window_set_framed (sw, TRUE);
         gtk_scrolled_window_set_policy (sw, GTK_POLICY_NEVER, GTK_POLICY_AUTOMATIC);
         fabulor_gtk_scrolled_window_set_child (sw, vvbox);
-
-#if GTK_MAJOR_VERSION < 4
-        viewport = gtk_bin_get_child (GTK_BIN (sw));
-        gtk_viewport_set_shadow_type (GTK_VIEWPORT (viewport), GTK_SHADOW_NONE);
-#endif
 
         gtk_notebook_append_page (GTK_NOTEBOOK (book), GTK_WIDGET(sw), NULL);
 }
@@ -2465,21 +2453,12 @@ setup_window_release (GtkWidget *window)
         }
 }
 
-#if GTK_MAJOR_VERSION >= 4
 static void
 setup_window_finalized_cb (gpointer user_data, GObject *window)
 {
         (void) user_data;
         setup_window_release ((GtkWidget *) window);
 }
-#else
-static void
-setup_close_cb (GtkWidget *window, gpointer user_data)
-{
-        (void) user_data;
-        setup_window_release (window);
-}
-#endif
 
 void
 setup_open (void)
@@ -2496,11 +2475,6 @@ setup_open (void)
         theme_preferences_stage_begin ();
         setup_window = setup_window_open ();
 
-#if GTK_MAJOR_VERSION >= 4
         g_object_weak_ref (G_OBJECT (setup_window),
                           setup_window_finalized_cb, NULL);
-#else
-        g_signal_connect (G_OBJECT (setup_window), "destroy",
-                          G_CALLBACK (setup_close_cb), NULL);
-#endif
 }

@@ -7786,6 +7786,39 @@ build can select the retired GTK3 widget-menu path. Remaining main UI, menu,
 setup, join-dialog, and channel-view source branches remain separate Stage 9
 cleanup targets.
 
+### GTK4 Stage 9 Preferences/Join Source Specialization, Pass 17
+
+Date: 2026-07-24
+
+Boundary retired: `setup.c` and `joind.c` no longer carry parallel GTK3
+destroy-signal callbacks or Preferences viewport inspection. A total of 41
+inactive GTK3 and toolkit-selection lines are removed. The frontend-wide
+`GTK_MAJOR_VERSION`-conditional inventory falls from 127 to 119.
+
+Automated evidence:
+
+- strict GTK4 MSVC probe build and execution: pass with `/W4 /WX`, zero
+  warnings and zero errors; GTK 4.22.4 / GLib 2.88.0 / x64 runtime confirmed
+- complete GTK4 frontend project build and link: pass with zero warnings and
+  zero errors in the affected incremental build
+- production profile contract suite: all 20 tests pass, including rejection of
+  restored toolkit-version switches, GTK3 destroy callbacks, `GtkBin` child
+  inspection, or viewport shadow mutation
+- complete GTK4 tooling contract suite: all 69 tests pass
+- theme retirement/import contract suite: all 7 tests pass
+- native manifest, path, and archive suite: all 22 tests pass
+- source audit: no `GTK_MAJOR_VERSION`, `GTK_BIN`, `gtk_bin_get_child`,
+  `gtk_viewport_set_shadow_type`, `joind_destroy_cb`, or `setup_close_cb`
+  remains in the specialized sources
+- repository whitespace validation: pass
+
+Behaviour contract: Preferences, its font chooser, and the Join dialog retain
+their reviewed GTK4 weak-finalization cleanup. Preferences pages retain
+explicit scroller child ownership without depending on GTK3 internal viewport
+construction. No supported build can select the retired GTK3 lifecycle path.
+Remaining main UI, menu, channel-view, and small helper source branches remain
+separate Stage 9 cleanup targets.
+
 ## Stage Completion Rule
 
 A stage can move to complete in `migration-plan.md` only when:

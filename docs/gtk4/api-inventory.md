@@ -1415,6 +1415,14 @@ cleanup. GTK3 widget menus, menu-shell/item ownership, box packing, recursive
 reveal, pointer popup, and destroy callbacks are retired. The frontend-wide
 version-branch inventory falls from 135 to 127.
 
+Stage 9 Preferences/Join source specialization pass 17 removes the inactive
+GTK3 lifecycle and viewport implementations from `setup.c` and `joind.c`.
+Preferences, its font chooser, and the Join dialog use GTK4 weak finalization;
+Preferences page scrollers use explicit child ownership. GTK3 destroy-signal
+callbacks, `GtkBin` child inspection, viewport shadow mutation, and all
+toolkit-version branches in these sources are retired. The frontend-wide
+version-branch inventory falls from 127 to 119.
+
 ## Functional Clusters
 
 | Cluster | Main files | GTK4 concern | Status |
@@ -1424,7 +1432,7 @@ version-branch inventory falls from 135 to 127.
 | Edit box and spell check | `maingui.c`, `emoji-picker.c`, `sexy-spell-entry.c`, `spell-entry-*.c` | production interaction and latency validation | in progress; spell-entry and emoji ownership are specialized to GTK4, while remaining main-edit-box branches await retirement |
 | Menus and commands | `menu.c`, `maingui.c`, `plugin-tray.c` | actions and menu models | in progress; retained main/context/tab presentation and GTK3-only accelerator ownership established |
 | Operational lists | `servlistgui.c`, `chanlist.c`, `userlistgui.c`, `dccgui.c`, `banlist.c`, `notifygui.c`, `ignoregui.c`, `plugingui.c`, `urlgrab.c` | list models, factories, editing | converted and specialized to GTK4; classic GTK3 tree/list and Channel/Ban widget-menu implementations are retired |
-| Preferences/editors | `setup.c`, `fkeys.c`, `textgui.c`, `editlist.c` | generic edit list, Print Events, key bindings, sound events, and preference navigation converted | converted; Server List/network editor lifecycle is specialized to GTK4 |
+| Preferences/editors | `setup.c`, `fkeys.c`, `textgui.c`, `editlist.c` | generic edit list, Print Events, key bindings, sound events, and preference navigation converted | converted; Preferences page ownership, window, and font-chooser lifecycle are specialized to GTK4 |
 | Themes | `theme/*.c`, `common/gtk4-theme-*.c`, `common/theme-archive-reader.c` | GTK4 CSS compatibility, discovery, preferences, and bounded `.hct` reading | converted and specialized to GTK4; the GTK3 service, adapter, screen/style branches, and version switches are retired |
 | Platform integration | `fe-gtk.c`, `plugin-tray.c`, notifications | displays, surfaces, icons, native tray | converted and specialized to GTK4; application lifecycle and tray sources contain no toolkit-version branches |
 
