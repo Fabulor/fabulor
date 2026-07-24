@@ -88,6 +88,10 @@ GTK4_SMALL_HELPER_SOURCES = (
     "gtkutil.c",
     "pixmaps.c",
 )
+GTK4_MAIN_WINDOW_SOURCES = (
+    "maingui.c",
+    "maingui.h",
+)
 VCPKG_CONFIGURATION = ROOT / "tools" / "windows-deps" / "vcpkg-configuration.json"
 VCPKG_MANIFEST = ROOT / "tools" / "windows-deps" / "vcpkg.json"
 WIX_NS = {"w": "http://wixtoolset.org/schemas/v4/wxs"}
@@ -483,6 +487,52 @@ class ProductionWixProfileTests(unittest.TestCase):
         )
         self.assertIn("65535.0f", theme_runtime)
         self.assertIn("1.0f }", theme_runtime)
+
+    def test_main_window_sources_are_gtk4_only(self):
+        frontend = ROOT / "src" / "fe-gtk"
+        retired_tokens = (
+            "GdkEvent",
+            "GdkWindow",
+            "GtkAccelGroup",
+            "GtkCheckMenuItem",
+            "GtkMenu",
+            "gdk_event_free",
+            "gdk_window_",
+            "gtk_accel_group_new",
+            "gtk_bin_get_child",
+            "gtk_check_menu_item_get_active",
+            "gtk_container_get_children",
+            "gtk_drag_dest_set",
+            "gtk_get_current_event",
+            "gtk_menu_",
+            "gtk_paned_get_child1",
+            "gtk_paned_get_child2",
+            "gtk_widget_destroy",
+            "gtk_widget_get_window",
+            "gtk_widget_queue_draw_area",
+            "gtk_window_add_accel_group",
+            "mg_create_icon_item",
+            "mg_submenu",
+        )
+
+        for name in GTK4_MAIN_WINDOW_SOURCES:
+            source = (frontend / name).read_text(encoding="utf-8")
+            with self.subTest(source=name):
+                self.assertNotIn("GTK_MAJOR_VERSION", source)
+                for token in retired_tokens:
+                    self.assertNotRegex(source, rf"\b{token}")
+
+        main_source = (frontend / "maingui.c").read_text(encoding="utf-8")
+        self.assertIn("mg_tabwindow_finalized_cb", main_source)
+        self.assertIn("mg_win32_display_filter", main_source)
+        self.assertIn("FabulorGtkInternalDragKind kind", main_source)
+        self.assertNotRegex(
+            main_source, r"\bgtk_scrolled_window_new\s*\(\s*(?:NULL|0)"
+        )
+        self.assertNotRegex(
+            main_source,
+            r"\bmg_inputbox_icon_release_cb\s*\([^;{]*\bGdkEvent\b",
+        )
 
     def test_transitional_windows_staging_is_removed(self):
         props = PROPS.read_text(encoding="utf-8")

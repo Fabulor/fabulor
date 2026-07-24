@@ -2739,6 +2739,18 @@ are now confined to `maingui.c`, `menu.c`, and their headers. A clean frontend
 rebuild links successfully with zero errors; its remaining 14 warnings are
 likewise confined to `maingui.c` and `menu.c`.
 
+Stage 9 main-window source specialization pass 19 (2026-07-24):
+`maingui.c` and `maingui.h` now contain only GTK4 main/tab window construction,
+layout, context-menu projection, entry and emoji handling, drag-and-drop,
+theme/lifecycle ownership, pane restoration, close requests, and Windows
+display filtering. Retired GTK3 widget menus, accelerator groups, event/window
+drawing, drag destinations, container inspection, destroy callbacks, and
+Win32 window filters are removed. The frontend source inventory falls from 113
+to 56 `GTK_MAJOR_VERSION` conditionals, all now confined to `menu.c` and
+`menu.h`. A clean frontend rebuild links with zero errors; `maingui.c` is
+warning-free, and all seven remaining warnings belong to the final menu source
+boundary.
+
 Deliverables:
 
 - Make GTK4 the only production frontend dependency in MSVC, Meson, and CI.

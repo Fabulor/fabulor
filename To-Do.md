@@ -453,6 +453,7 @@ Detailed planning and evidence live in:
     - [x] Specialize Channel List and Ban List context-menu presentation, ownership, copying, and cleanup to GTK4.
     - [x] Specialize Preferences, font-chooser, and Join dialog finalization plus Preferences page ownership to GTK4.
     - [x] Specialize Channel View finalization, icon loading, tray-support policy, modifier aliases, and residual helper signatures to GTK4; retire unused tree-view utilities.
+    - [x] Specialize main-window construction, layout, lifecycle, context menus, input, emoji, drag-and-drop, and Windows display filtering to GTK4.
 - [ ] Complete clean-install, upgrade, accessibility, visual, performance, plugin, and packaging validation.
 
 ## 7. Documentation & Developer Guides

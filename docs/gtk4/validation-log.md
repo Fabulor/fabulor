@@ -7855,6 +7855,41 @@ to report false until a genuine GTK4 backend exists. Palette values and editor
 presentation are unchanged by their type/signature corrections. The main
 window and menu sources are the only remaining source-specialization targets.
 
+### GTK4 Stage 9 Main-Window Source Specialization, Pass 19
+
+Date: 2026-07-24
+
+Boundary retired: `maingui.c` and `maingui.h` no longer carry parallel GTK3
+main/tab window, context-menu, layout, entry, emoji, lifecycle, drag-and-drop,
+or Windows event-filter implementations. A total of 801 inactive GTK3 and
+toolkit-selection lines are removed; nine retained GTK4 declarations, calls,
+and Windows guards are made exact. The frontend-wide `GTK_MAJOR_VERSION`
+conditional inventory falls from 113 to 56.
+
+Automated evidence:
+
+- strict GTK4 MSVC probe build and execution: pass with `/W4 /WX`, zero
+  warnings and zero errors; GTK 4.22.4 / GLib 2.88.0 / x64 runtime confirmed
+- clean GTK4 frontend project rebuild and link: pass with zero errors;
+  `maingui.c` is warning-free and all seven remaining warnings are confined to
+  `menu.c`
+- production profile contract suite: all 22 tests pass, including rejection of
+  restored toolkit-version switches, GTK3 widget menus, accelerator groups,
+  GDK window/event paths, drag destinations, container inspection, or legacy
+  main-window helper declarations
+- complete GTK4 tooling contract suite: all 71 tests pass
+- theme retirement/import contract suite: all 7 tests pass
+- native manifest, path, and archive suite: all 22 tests pass
+- source audit: the remaining 56 `GTK_MAJOR_VERSION` conditionals are confined
+  to `menu.c` and `menu.h`
+- repository whitespace validation: pass
+
+Behaviour contract: main and tab windows retain the reviewed GTK4 construction,
+layout, action-model context menus, weak finalization, close requests, pane
+restoration, input/emoji behavior, typed drag-and-drop, and native Windows
+display filtering. No supported build can select the retired GTK3 paths.
+`menu.c` and `menu.h` are the sole remaining source-specialization target.
+
 ## Stage Completion Rule
 
 A stage can move to complete in `migration-plan.md` only when:
