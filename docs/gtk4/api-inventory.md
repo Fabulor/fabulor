@@ -1371,12 +1371,22 @@ selection atoms/data, widget clipboards, `GdkWindow` contexts, draw and
 preferred-size hooks, allocation queries, and ATK naming are retired. The
 frontend-wide version-branch inventory falls from 218 to 197.
 
+Stage 9 transcript-renderer source specialization pass 12 removes the inactive
+GTK3 implementation from `xtext.c`. The widget now uses only its GTK4
+accessible-text interface, snapshot path, event-controller pointer state,
+widget cursor names, allocated geometry, full-redraw fallback, and scheduled
+accessibility updates. Child `GdkWindow` creation, native scroll-copy capture,
+window pointer/device polling, style-updated callbacks, widget grabs, direct
+allocation/window mutation, and GTK3 paint fallback are retired. The
+frontend-wide version-branch inventory falls from 197 to 168, completing
+source specialization for the transcript subsystem.
+
 ## Functional Clusters
 
 | Cluster | Main files | GTK4 concern | Status |
 |---|---|---|---|
 | Main windows and tabs | `maingui.c`, `chanview*.c` | child ownership, gestures, DnD, focus | in progress |
-| Transcript | `xtext.c`, `xtext.h`, `xtext-render-target.c` | snapshot rendering and event model | in progress; support modules and headers are specialized to GTK4, while the main renderer's remaining branches await retirement |
+| Transcript | `xtext.c`, `xtext.h`, `xtext-render-target.c` | snapshot rendering and event model | converted and specialized to GTK4; renderer, selection, accessibility, geometry, widget-class, and render-target GTK3 branches are retired |
 | Edit box and spell check | `maingui.c`, `emoji-picker.c`, `sexy-spell-entry.c`, `spell-entry-*.c` | production interaction and latency validation | in progress; spell-entry and emoji ownership are specialized to GTK4, while remaining main-edit-box branches await retirement |
 | Menus and commands | `menu.c`, `maingui.c`, `plugin-tray.c` | actions and menu models | in progress; retained main/context/tab presentation and GTK3-only accelerator ownership established |
 | Operational lists | `servlistgui.c`, `chanlist.c`, `userlistgui.c`, `dccgui.c`, `banlist.c`, `notifygui.c`, `ignoregui.c`, `plugingui.c`, `urlgrab.c` | list models, factories, editing | converted and specialized to GTK4; version branches and classic GTK3 tree/list implementations are retired |

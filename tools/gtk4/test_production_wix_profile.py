@@ -65,6 +65,7 @@ GTK4_TRANSCRIPT_HELPER_SOURCES = (
     "xtext-widget-class.c",
     "xtext.h",
 )
+GTK4_TRANSCRIPT_RENDERER = ROOT / "src" / "fe-gtk" / "xtext.c"
 VCPKG_CONFIGURATION = ROOT / "tools" / "windows-deps" / "vcpkg-configuration.json"
 VCPKG_MANIFEST = ROOT / "tools" / "windows-deps" / "vcpkg.json"
 WIX_NS = {"w": "http://wixtoolset.org/schemas/v4/wxs"}
@@ -279,6 +280,30 @@ class ProductionWixProfileTests(unittest.TestCase):
                 self.assertNotIn("GTK_MAJOR_VERSION", source)
                 for token in retired_tokens:
                     self.assertNotRegex(source, rf"\b{token}")
+
+    def test_transcript_renderer_is_gtk4_only(self):
+        source = GTK4_TRANSCRIPT_RENDERER.read_text(encoding="utf-8")
+        retired_tokens = (
+            "gdk_cairo_set_source_window",
+            "gdk_cursor_new_for_display",
+            "gdk_device_",
+            "gdk_window_",
+            "gtk_grab_",
+            "gtk_widget_get_events",
+            "gtk_widget_get_parent_window",
+            "gtk_widget_get_window",
+            "gtk_widget_set_allocation",
+            "gtk_widget_set_realized",
+            "gtk_widget_set_window",
+            "gtk_xtext_clear_background",
+            "gtk_xtext_get_pointer",
+            "gtk_xtext_style_updated",
+            "xtext_surface_from_window",
+        )
+
+        self.assertNotIn("GTK_MAJOR_VERSION", source)
+        for token in retired_tokens:
+            self.assertNotRegex(source, rf"\b{token}")
 
     def test_transitional_windows_staging_is_removed(self):
         props = PROPS.read_text(encoding="utf-8")

@@ -114,15 +114,10 @@ enum
 
 static guint xtext_signals[LAST_SIGNAL];
 
-#if GTK_MAJOR_VERSION >= 4
 G_DEFINE_TYPE_WITH_CODE (GtkXText, gtk_xtext, GTK_TYPE_WIDGET,
 	G_IMPLEMENT_INTERFACE (GTK_TYPE_SCROLLABLE, NULL)
 	G_IMPLEMENT_INTERFACE (GTK_TYPE_ACCESSIBLE_TEXT,
 		fabulor_xtext_accessible_text_interface_init))
-#else
-G_DEFINE_TYPE_WITH_CODE (GtkXText, gtk_xtext, GTK_TYPE_WIDGET,
-	G_IMPLEMENT_INTERFACE (GTK_TYPE_SCROLLABLE, NULL))
-#endif
 
 char *nocasestrstr (const char *text, const char *tofind);	/* util.c */
 int xtext_get_stamp_str (time_t, char **);
@@ -175,11 +170,8 @@ static gboolean gtk_xtext_button_release (GtkWidget *widget, guint button,
 static gboolean gtk_xtext_scroll (GtkWidget *widget, gdouble dx,
 	gdouble dy, gpointer user_data);
 static void gtk_xtext_focus_changed (GtkWidget *widget, gpointer user_data);
-#if GTK_MAJOR_VERSION >= 4
 static void gtk_xtext_accessible_schedule (GtkXText *xtext);
-#endif
 
-#if GTK_MAJOR_VERSION >= 4
 
 static gchar *
 gtk_xtext_accessible_build (GtkXText *xtext)
@@ -266,7 +258,6 @@ gtk_xtext_accessible_schedule (GtkXText *xtext)
 			xtext);
 }
 
-#endif
 
 static inline void
 gtk_xtext_cursor_unref (GdkCursor *cursor)
@@ -352,38 +343,6 @@ xtext_adj_set_page_increment (GtkAdjustment *adj, gdouble page_increment)
 	gtk_adjustment_set_page_increment (adj, page_increment);
 }
 
-#if GTK_MAJOR_VERSION < 4
-static cairo_surface_t *
-xtext_surface_from_window (GdkWindow *window)
-{
-	cairo_surface_t *surface = NULL;
-	int width;
-	int height;
-	cairo_t *cr;
-
-	if (!window || !GDK_IS_WINDOW (window))
-		return NULL;
-
-	width = gdk_window_get_width (window);
-	height = gdk_window_get_height (window);
-	if (width <= 0 || height <= 0)
-		return NULL;
-
-	surface = cairo_image_surface_create (CAIRO_FORMAT_ARGB32, width, height);
-	if (cairo_surface_status (surface) != CAIRO_STATUS_SUCCESS)
-	{
-		cairo_surface_destroy (surface);
-		return NULL;
-	}
-
-	cr = cairo_create (surface);
-	gdk_cairo_set_source_window (cr, window, 0.0, 0.0);
-	cairo_paint (cr);
-	cairo_destroy (cr);
-
-	return surface;
-}
-#endif
 
 static cairo_t *
 xtext_create_context (GtkXText *xtext)
@@ -921,14 +880,6 @@ gtk_xtext_sync_palette_from_theme (GtkXText *xtext)
 	gtk_xtext_set_palette (xtext, palette);
 }
 
-#if GTK_MAJOR_VERSION < 4
-static void
-gtk_xtext_style_updated (GtkWidget *widget, gpointer user_data)
-{
-	(void) user_data;
-	gtk_xtext_sync_palette_from_theme (GTK_XTEXT (widget));
-}
-#endif
 
 static void
 gtk_xtext_init (GtkXText * xtext)
@@ -940,13 +891,11 @@ gtk_xtext_init (GtkXText * xtext)
 	xtext->render_target = fabulor_xtext_render_target_new ();
 	xtext->selection = fabulor_xtext_selection_new (GTK_WIDGET (xtext),
 		gtk_xtext_selection_text, gtk_xtext_selection_lost, NULL);
-#if GTK_MAJOR_VERSION >= 4
 	xtext->accessible_text = fabulor_xtext_accessible_new (
 		gtk_xtext_accessible_refresh, xtext);
 	fabulor_xtext_accessible_attach (GTK_WIDGET (xtext),
 		xtext->accessible_text);
 	xtext->accessible_dirty = TRUE;
-#endif
 	xtext->io_tag = 0;
 	xtext->add_io_tag = 0;
 	xtext->scroll_tag = 0;
@@ -996,9 +945,6 @@ gtk_xtext_init (GtkXText * xtext)
 		gtk_xtext_focus_changed, NULL);
 
 	fabulor_gtk_widget_add_css_class (GTK_WIDGET (xtext), "view");
-#if GTK_MAJOR_VERSION < 4
-	g_signal_connect (G_OBJECT (xtext), "style-updated", G_CALLBACK (gtk_xtext_style_updated), NULL);
-#endif
 }
 
 static void
@@ -1156,9 +1102,7 @@ gtk_xtext_new (const XTextColor *palette, int separator)
 	xtext->wordwrap = TRUE;
 	xtext->buffer = gtk_xtext_buffer_new (xtext);
 	xtext->orig_buffer = xtext->buffer;
-#if GTK_MAJOR_VERSION >= 4
 	gtk_xtext_accessible_schedule (xtext);
-#endif
 
 	/* GTK3 already uses the GTK render pipeline; no manual double-buffering toggle. */
 	gtk_xtext_set_palette (xtext, palette);
@@ -1188,7 +1132,6 @@ gtk_xtext_cleanup (GtkXText *xtext)
 		xtext->io_tag = 0;
 	}
 
-#if GTK_MAJOR_VERSION >= 4
 	if (xtext->accessible_update_tag)
 	{
 		g_source_remove (xtext->accessible_update_tag);
@@ -1200,7 +1143,6 @@ gtk_xtext_cleanup (GtkXText *xtext)
 		fabulor_xtext_accessible_free (xtext->accessible_text);
 		xtext->accessible_text = NULL;
 	}
-#endif
 
 	if (xtext->background)
 	{
@@ -1289,180 +1231,15 @@ gtk_xtext_unrealize (GtkWidget * widget)
 {
 	GtkXText *xtext = GTK_XTEXT (widget);
 	backend_deinit (xtext);
-#if GTK_MAJOR_VERSION < 4
-	FabulorXTextRenderTarget *target = xtext->render_target;
-	if (target)
-		fabulor_xtext_render_target_set_window (target, NULL);
-
-	/*
-	 * Keep GtkWidget/GdkWindow association intact until parent unrealize.
-	 * GtkWidget's unrealize path unregisters the window and expects
-	 * gdk_window_get_user_data(window) == widget.
-	 */
-
 	if (GTK_WIDGET_CLASS (gtk_xtext_parent_class)->unrealize)
 		(*GTK_WIDGET_CLASS (gtk_xtext_parent_class)->unrealize) (widget);
-
-	gtk_widget_set_window (widget, NULL);
-	gtk_widget_set_realized (widget, FALSE);
-#else
-	if (GTK_WIDGET_CLASS (gtk_xtext_parent_class)->unrealize)
-		(*GTK_WIDGET_CLASS (gtk_xtext_parent_class)->unrealize) (widget);
-#endif
 }
 
-#if GTK_MAJOR_VERSION < 4
-static void
-gtk_xtext_get_pointer (GdkWindow *window, gint *x, gint *y, GdkModifierType *mask)
-{
-	GdkDisplay *display;
-	GdkSeat *seat;
-	GdkDevice *device;
-	gint root_x = 0;
-	gint root_y = 0;
-	gint win_x = 0;
-	gint win_y = 0;
-
-	if (!window || !GDK_IS_WINDOW (window))
-	{
-		if (x)
-			*x = 0;
-		if (y)
-			*y = 0;
-		if (mask)
-			*mask = 0;
-		return;
-	}
-
-	display = gdk_window_get_display (window);
-	if (!display)
-	{
-		if (x)
-			*x = 0;
-		if (y)
-			*y = 0;
-		if (mask)
-			*mask = 0;
-		return;
-	}
-
-	seat = gdk_display_get_default_seat (display);
-	device = gdk_seat_get_pointer (seat);
-	if (!device)
-	{
-		if (x)
-			*x = 0;
-		if (y)
-			*y = 0;
-		if (mask)
-			*mask = 0;
-		return;
-	}
-
-	gdk_device_get_position (device, NULL, &root_x, &root_y);
-	gdk_window_get_origin (window, &win_x, &win_y);
-
-	if (x)
-		*x = root_x - win_x;
-	if (y)
-		*y = root_y - win_y;
-	if (mask)
-		gdk_device_get_state (device, window, NULL, mask);
-}
-
-static inline void
-gtk_xtext_clear_background (GtkWidget *widget)
-{
-	GdkWindow *window = gtk_widget_get_window (widget);
-	G_GNUC_BEGIN_IGNORE_DEPRECATIONS
-	if (window)
-		gdk_window_set_background_pattern (window, NULL);
-	G_GNUC_END_IGNORE_DEPRECATIONS
-}
-#endif
 
 static void
 gtk_xtext_realize (GtkWidget * widget)
 {
 	GtkXText *xtext;
-#if GTK_MAJOR_VERSION < 4
-	GdkWindowAttr attributes;
-	GdkWindow *window;
-	GtkAllocation allocation;
-	GdkWindow *parent_window;
-	gint attributes_mask;
-
-	xtext = GTK_XTEXT (widget);
-
-	gtk_widget_set_realized (widget, TRUE);
-	gtk_widget_get_allocation (widget, &allocation);
-	parent_window = gtk_widget_get_parent_window (widget);
-	attributes.visual = gtk_widget_get_visual (widget);
-	attributes_mask = GDK_WA_X | GDK_WA_Y | GDK_WA_VISUAL;
-
-	attributes.x = allocation.x;
-	attributes.y = allocation.y;
-	attributes.width = allocation.width;
-	attributes.height = allocation.height;
-	attributes.wclass = GDK_INPUT_OUTPUT;
-	attributes.window_type = GDK_WINDOW_CHILD;
-	attributes.event_mask = gtk_widget_get_events (widget) |
-		GDK_EXPOSURE_MASK | GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK
-		| GDK_POINTER_MOTION_MASK | GDK_LEAVE_NOTIFY_MASK | GDK_SCROLL_MASK;
-	
-	window = gdk_window_new (parent_window, &attributes, attributes_mask);
-
-	gtk_widget_set_window (widget, window);
-
-	gdk_window_set_user_data (window, widget);
-
-	xtext->depth = gdk_visual_get_depth (gdk_window_get_visual (window));
-
-	/* for the separator bar (light) */
-	xtext->light_gc.red = 1.0;
-	xtext->light_gc.green = 1.0;
-	xtext->light_gc.blue = 1.0;
-	xtext->light_gc.alpha = 1.0;
-
-	/* for the separator bar (dark) */
-	xtext->dark_gc.red = 0x1111 / 65535.0;
-	xtext->dark_gc.green = 0x1111 / 65535.0;
-	xtext->dark_gc.blue = 0x1111 / 65535.0;
-	xtext->dark_gc.alpha = 1.0;
-
-	/* for the separator bar (thinline) */
-	xtext->thin_gc.red = 0x8e38 / 65535.0;
-	xtext->thin_gc.green = 0x8e38 / 65535.0;
-	xtext->thin_gc.blue = 0x9f38 / 65535.0;
-	xtext->thin_gc.alpha = 1.0;
-
-	/* for the marker bar (marker) */
-	xtext->marker_gc = xtext->palette[XTEXT_MARKER];
-
-	xtext_set_fg (xtext, XTEXT_FG);
-	xtext_set_bg (xtext, XTEXT_BG);
-
-	/* Keep the GTK3 fallback contained behind the render target. */
-	fabulor_xtext_render_target_set_window (xtext->render_target, window);
-
-	if (fabulor_xtext_background_has_surface (xtext->background))
-	{
-		xtext->ts_x = xtext->ts_y = 0;
-	}
-
-	if (window && GDK_IS_WINDOW (window))
-	{
-		GdkDisplay *display = gdk_window_get_display (window);
-
-		if (display)
-		{
-			xtext->hand_cursor = gdk_cursor_new_for_display (display, GDK_HAND1);
-			xtext->resize_cursor = gdk_cursor_new_for_display (display, GDK_LEFT_SIDE);
-		}
-	}
-
-	gtk_xtext_clear_background (widget);
-#else
 	xtext = GTK_XTEXT (widget);
 	if (GTK_WIDGET_CLASS (gtk_xtext_parent_class)->realize)
 		(*GTK_WIDGET_CLASS (gtk_xtext_parent_class)->realize) (widget);
@@ -1484,7 +1261,6 @@ gtk_xtext_realize (GtkWidget * widget)
 	xtext_set_bg (xtext, XTEXT_BG);
 	if (fabulor_xtext_background_has_surface (xtext->background))
 		xtext->ts_x = xtext->ts_y = 0;
-#endif
 	backend_init (xtext);
 }
 
@@ -1495,27 +1271,12 @@ gtk_xtext_allocate (GtkWidget *widget,
 	GtkXText *xtext = GTK_XTEXT (widget);
 	int height_only = !fabulor_xtext_widget_width_changed (
 		xtext->buffer->window_width, allocation->width);
-#if GTK_MAJOR_VERSION < 4
-	GtkAllocation gtk_allocation = {
-		allocation->x, allocation->y, allocation->width, allocation->height
-	};
-	GdkWindow *window;
-
-	gtk_widget_set_allocation (widget, &gtk_allocation);
-#else
 	(void) allocation->baseline;
-#endif
 	if (gtk_widget_get_realized (GTK_WIDGET(widget)))
 	{
 		xtext->buffer->window_width = allocation->width;
 		xtext->buffer->window_height = allocation->height;
 
-#if GTK_MAJOR_VERSION < 4
-		window = gtk_widget_get_window (widget);
-		if (window)
-			gdk_window_move_resize (window, allocation->x, allocation->y,
-									allocation->width, allocation->height);
-#endif
 		dontscroll (xtext->buffer);	/* force scrolling off */
 		if (!height_only)
 			gtk_xtext_calc_lines (xtext->buffer, FALSE);
@@ -2201,17 +1962,9 @@ gtk_xtext_scrolldown_timeout (GtkXText * xtext)
 	FabulorXTextGeometry geometry;
 	xtext_buffer *buf = xtext->buffer;
 	GtkAdjustment *adj = xtext->adj;
-#if GTK_MAJOR_VERSION < 4
-	GdkWindow *window;
-	window = gtk_widget_get_window (GTK_WIDGET (xtext));
-	if (!window)
-		return 0;
-	gtk_xtext_get_pointer (window, NULL, &p_y, NULL);
-#else
 	if (!xtext->pointer_valid)
 		return 0;
 	p_y = (int) xtext->pointer_y;
-#endif
 	if (!fabulor_xtext_geometry_from_widget (GTK_WIDGET (xtext), &geometry))
 		return 0;
 	win_height = geometry.height;
@@ -2247,17 +2000,9 @@ gtk_xtext_scrollup_timeout (GtkXText * xtext)
 	xtext_buffer *buf = xtext->buffer;
 	GtkAdjustment *adj = xtext->adj;
 	int delta_y;
-#if GTK_MAJOR_VERSION < 4
-	GdkWindow *window;
-	window = gtk_widget_get_window (GTK_WIDGET (xtext));
-	if (!window)
-		return 0;
-	gtk_xtext_get_pointer (window, NULL, &p_y, NULL);
-#else
 	if (!xtext->pointer_valid)
 		return 0;
 	p_y = (int) xtext->pointer_y;
-#endif
 
 	if (buf->last_ent_start == NULL ||	/* If context has changed OR */
 		 buf->pagetop_ent == NULL ||		/* pagetop_ent is reset OR */
@@ -2475,18 +2220,7 @@ gtk_xtext_unrender_hilight (GtkXText *xtext)
 static void
 gtk_xtext_set_pointer_cursor (GtkXText *xtext, const gchar *name)
 {
-#if GTK_MAJOR_VERSION >= 4
 	gtk_widget_set_cursor_from_name (GTK_WIDGET (xtext), name);
-#else
-	GdkWindow *window = gtk_widget_get_window (GTK_WIDGET (xtext));
-	GdkCursor *cursor = NULL;
-	if (g_strcmp0 (name, "pointer") == 0)
-		cursor = xtext->hand_cursor;
-	else if (g_strcmp0 (name, "col-resize") == 0)
-		cursor = xtext->resize_cursor;
-	if (window)
-		gdk_window_set_cursor (window, cursor);
-#endif
 }
 
 static gboolean
@@ -2643,9 +2377,6 @@ gtk_xtext_motion (GtkWidget *widget, gdouble event_x, gdouble event_y,
 	if (xtext->button_down)
 	{
 		redraw = gtk_xtext_check_mark_stamp (xtext, state);
-#if GTK_MAJOR_VERSION < 4
-		gtk_grab_add (widget);
-#endif
 		/*gdk_pointer_grab (widget->window, TRUE,
 									GDK_BUTTON_RELEASE_MASK |
 									GDK_BUTTON_MOTION_MASK, NULL, NULL, 0);*/
@@ -2868,9 +2599,6 @@ gtk_xtext_button_release (GtkWidget *widget, guint button, gdouble x,
 			xtext->scroll_tag = 0;
 		}
 
-#if GTK_MAJOR_VERSION < 4
-		gtk_grab_remove (widget);
-#endif
 		/*gdk_pointer_ungrab (0);*/
 
 		/* got a new selection? */
@@ -4688,9 +4416,6 @@ gtk_xtext_render_page (GtkXText * xtext)
 	gdouble adj_page_size = xtext_adj_get_page_size (xtext->adj);
 	int startline = adj_value;
 	int pos, overlap;
-#if GTK_MAJOR_VERSION < 4
-	GdkWindow *window;
-#endif
 
 	if(!gtk_widget_get_realized(GTK_WIDGET(xtext)))
 	  return;
@@ -4702,11 +4427,6 @@ gtk_xtext_render_page (GtkXText * xtext)
 		return;
 	width = geometry.width;
 	height = geometry.height;
-#if GTK_MAJOR_VERSION < 4
-	window = gtk_widget_get_window (GTK_WIDGET (xtext));
-	if (!window)
-		return;
-#endif
 
 	if (width < 34 || height < xtext->fontsize || width < xtext->buffer->indent + 32)
 		return;
@@ -4734,51 +4454,13 @@ gtk_xtext_render_page (GtkXText * xtext)
 	{
 		FabulorXTextScrollCopy copy;
 		gboolean native_capture = FALSE;
-#if GTK_MAJOR_VERSION < 4
-		native_capture = window != NULL;
-#endif
 
 		if (fabulor_xtext_scroll_copy_plan (overlap, height,
 			xtext->fontsize, xtext->font->descent, native_capture, &copy))
 		{
-#if GTK_MAJOR_VERSION < 4
-			GdkRectangle area;
-			cairo_t *cr;
-			cairo_surface_t *surface;
-
-			cr = xtext_create_context (xtext);
-			cairo_save (cr);
-			cairo_set_operator (cr, CAIRO_OPERATOR_SOURCE);
-			surface = xtext_surface_from_window (window);
-			if (!surface)
-			{
-				cairo_restore (cr);
-				cairo_destroy (cr);
-				goto full_redraw;
-			}
-			cairo_set_source_surface (cr, surface, 0.0,
-				(double) (copy.destination_y - copy.source_y));
-			cairo_surface_destroy (surface);
-			cairo_rectangle (cr, 0.0, (double) copy.destination_y,
-				(double) width, (double) copy.copy_height);
-			cairo_fill (cr);
-			cairo_restore (cr);
-			cairo_destroy (cr);
-
-			area.x = 0;
-			area.y = copy.damage_y;
-			area.width = width;
-			area.height = copy.damage_height;
-			gtk_xtext_paint (GTK_WIDGET (xtext), &area);
-
-			return;
-#endif
 		}
 	}
 
-#if GTK_MAJOR_VERSION < 4
-full_redraw:
-#endif
 	width -= MARGIN;
 	lines_max = ((height + xtext->pixel_offset) / xtext->fontsize) + 1;
 
@@ -5018,10 +4700,8 @@ gtk_xtext_clear (xtext_buffer *buf, int lines)
 
 	if (marker_reset)
 		buf->marker_state = MARKER_RESET_BY_CLEAR;
-#if GTK_MAJOR_VERSION >= 4
 	if (buf->xtext->buffer == buf)
 		gtk_xtext_accessible_schedule (buf->xtext);
-#endif
 }
 
 static gboolean
@@ -5604,10 +5284,8 @@ gtk_xtext_append_entry (xtext_buffer *buf, textentry * ent, time_t stamp)
 		gl = gtk_xtext_search_textentry (buf, ent);
 		gtk_xtext_search_textentry_add (buf, ent, gl, FALSE);
 	}
-#if GTK_MAJOR_VERSION >= 4
 	if (buf->xtext->buffer == buf)
 		gtk_xtext_accessible_schedule (buf->xtext);
-#endif
 }
 
 /* the main two public functions */
@@ -5833,10 +5511,8 @@ void
 gtk_xtext_set_time_stamp (xtext_buffer *buf, gboolean time_stamp)
 {
 	buf->time_stamp = time_stamp;
-#if GTK_MAJOR_VERSION >= 4
 	if (buf->xtext->buffer == buf)
 		gtk_xtext_accessible_schedule (buf->xtext);
-#endif
 }
 
 void
@@ -5954,9 +5630,7 @@ gtk_xtext_buffer_show (GtkXText *xtext, xtext_buffer *buf, int render)
 
 	/* now change to the new buffer */
 	xtext->buffer = buf;
-#if GTK_MAJOR_VERSION >= 4
 	gtk_xtext_accessible_schedule (xtext);
-#endif
 	dontscroll (buf);	/* force scrolling off */
 	{
 		gdouble lower = 0;
@@ -6057,9 +5731,7 @@ gtk_xtext_buffer_free (xtext_buffer *buf)
 	if (buf->xtext->buffer == buf)
 	{
 		buf->xtext->buffer = buf->xtext->orig_buffer;
-#if GTK_MAJOR_VERSION >= 4
 		gtk_xtext_accessible_schedule (buf->xtext);
-#endif
 	}
 
 	if (buf->xtext->selection_buffer == buf)

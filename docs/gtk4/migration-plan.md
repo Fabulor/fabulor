@@ -2662,6 +2662,18 @@ inventory falls from 218 to 197 `GTK_MAJOR_VERSION` conditionals. Repository
 lint protects the eight-file boundary and representative GTK3 transcript APIs;
 the strict probe and complete frontend both compile and link successfully.
 
+Stage 9 transcript-renderer source specialization pass 12 (2026-07-24):
+`xtext.c` now contains only its GTK4 type, realization, accessibility,
+snapshot, pointer, cursor, sizing, redraw, scrolling, and buffer-update paths.
+Retired GTK3 child-`GdkWindow` creation, native surface capture/copy, window
+pointer polling, device state, style-updated callbacks, widget grabs,
+allocation/window mutation, and direct paint fallback are removed. The
+frontend source inventory falls from 197 to 168 `GTK_MAJOR_VERSION`
+conditionals. Repository lint protects the renderer against restored version
+switches and representative GTK3 window/event/rendering APIs. The production
+frontend compiles and links cleanly, and the strict transcript policy probe
+passes with `/W4 /WX`.
+
 Deliverables:
 
 - Make GTK4 the only production frontend dependency in MSVC, Meson, and CI.
