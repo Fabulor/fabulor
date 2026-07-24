@@ -2697,6 +2697,16 @@ conditionals. Repository lint protects the application source against restored
 version switches and legacy main-loop APIs. The strict application-loop probe
 and complete frontend compile, link, and execute cleanly.
 
+Stage 9 Server List source specialization pass 15 (2026-07-24):
+`servlistgui.c` now contains only GTK4 certificate-dialog parent ownership,
+network-editor and Server List close requests, weak finalization, geometry
+observation, and model release ordering. Retired GTK3 destroy handlers,
+`delete-event` callbacks, `GdkEventAny` signatures, and parent signal IDs are
+removed. The frontend source inventory falls from 150 to 135
+`GTK_MAJOR_VERSION` conditionals. Repository lint protects the Server List
+lifecycle against restored GTK3 callback and ownership paths. The complete
+frontend and strict list/lifecycle probe build cleanly.
+
 Deliverables:
 
 - Make GTK4 the only production frontend dependency in MSVC, Meson, and CI.

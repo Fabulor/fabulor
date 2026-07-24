@@ -449,6 +449,7 @@ Detailed planning and evidence live in:
     - [x] Specialize the main transcript renderer, realization, pointer, cursor, redraw, scroll, and accessibility scheduling paths to GTK4.
     - [x] Retire GTK3 AppIndicator/StatusIcon tray backends, widget menus, and Meson dependencies while retaining the GTK4 action model and explicit unavailable-backend policy.
     - [x] Specialize application initialization, option parsing, icon-theme validation, main-loop ownership, and quit dispatch to GTK4.
+    - [x] Specialize Server List, network-editor, certificate-dialog parent, close-request, and finalization ownership to GTK4.
 - [ ] Complete clean-install, upgrade, accessibility, visual, performance, plugin, and packaging validation.
 
 ## 7. Documentation & Developer Guides

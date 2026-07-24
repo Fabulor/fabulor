@@ -112,11 +112,7 @@ static GtkWidget *edit_button_cert_delete;
 typedef struct
 {
 	GWeakRef parent;
-#if GTK_MAJOR_VERSION >= 4
 	gboolean parent_watch_active;
-#else
-	gulong parent_destroy_handler;
-#endif
 	char *network_name;
 	char *cert_dir;
 	char *cert_file;
@@ -353,30 +349,17 @@ servlist_cert_import_parent_gone (GtkNativeDialog *dialog)
 
 	data = g_object_get_data (G_OBJECT (dialog), "fabulor-cert-import-data");
 	if (data)
-#if GTK_MAJOR_VERSION >= 4
 		data->parent_watch_active = FALSE;
-#else
-		data->parent_destroy_handler = 0;
-#endif
 	gtk_native_dialog_hide (dialog);
 	g_object_unref (dialog);
 }
 
-#if GTK_MAJOR_VERSION >= 4
 static void
 servlist_cert_import_parent_finalized_cb (gpointer user_data, GObject *parent)
 {
 	(void) parent;
 	servlist_cert_import_parent_gone (GTK_NATIVE_DIALOG (user_data));
 }
-#else
-static void
-servlist_cert_import_parent_destroy_cb (GtkWidget *parent, gpointer user_data)
-{
-	(void) parent;
-	servlist_cert_import_parent_gone (GTK_NATIVE_DIALOG (user_data));
-}
-#endif
 
 static void
 servlist_cert_import_response_cb (GtkNativeDialog *dialog, gint response_id,
@@ -393,20 +376,12 @@ servlist_cert_import_response_cb (GtkNativeDialog *dialog, gint response_id,
 	parent = g_weak_ref_get (&data->parent);
 	if (parent)
 	{
-#if GTK_MAJOR_VERSION >= 4
 		if (data->parent_watch_active)
 		{
 			g_object_weak_unref (G_OBJECT (parent),
 				servlist_cert_import_parent_finalized_cb, dialog);
 			data->parent_watch_active = FALSE;
 		}
-#else
-		if (data->parent_destroy_handler)
-		{
-			g_signal_handler_disconnect (parent, data->parent_destroy_handler);
-			data->parent_destroy_handler = 0;
-		}
-#endif
 	}
 
 	if (parent && response_id == GTK_RESPONSE_ACCEPT)
@@ -495,14 +470,9 @@ servlist_import_client_cert_cb (GtkWidget *button, gpointer userdata)
 
 	g_object_set_data_full (G_OBJECT (dialog), "fabulor-cert-import-data",
 								data, servlist_cert_import_data_free);
-#if GTK_MAJOR_VERSION >= 4
 	data->parent_watch_active = TRUE;
 	g_object_weak_ref (G_OBJECT (parent),
 		servlist_cert_import_parent_finalized_cb, dialog);
-#else
-	data->parent_destroy_handler = g_signal_connect (parent, "destroy",
-		G_CALLBACK (servlist_cert_import_parent_destroy_cb), dialog);
-#endif
 	g_signal_connect (dialog, "response",
 		G_CALLBACK (servlist_cert_import_response_cb), data);
 	gtk_native_dialog_show (GTK_NATIVE_DIALOG (dialog));
@@ -1282,21 +1252,12 @@ servlist_edit_release (GtkWidget *window)
 	}
 }
 
-#if GTK_MAJOR_VERSION >= 4
 static void
 servlist_edit_finalized_cb (gpointer user_data, GObject *window)
 {
 	(void) user_data;
 	servlist_edit_release ((GtkWidget *) window);
 }
-#else
-static void
-servlist_edit_destroy_cb (GtkWidget *window, gpointer user_data)
-{
-	(void) user_data;
-	servlist_edit_release (window);
-}
-#endif
 
 static void
 servlist_edit_close_cb (GtkWidget *button, gpointer userdata)
@@ -1311,18 +1272,10 @@ servlist_edit_close_cb (GtkWidget *button, gpointer userdata)
 		fabulor_gtk_window_destroy (GTK_WINDOW (window));
 }
 
-#if GTK_MAJOR_VERSION >= 4
 static gboolean
 servlist_editwin_close_request_cb (GtkWindow *win, gpointer none)
-#else
-static gboolean
-servlist_editwin_delete_cb (GtkWidget *win, GdkEventAny *event, gpointer none)
-#endif
 {
 	(void) win;
-#if GTK_MAJOR_VERSION < 4
-	(void) event;
-#endif
 	(void) none;
 	servlist_edit_close_cb (NULL, NULL);
 	return TRUE;
@@ -1367,13 +1320,8 @@ servlist_edit_cb (GtkWidget *but, gpointer none)
 	servlist_servers_populate (selected_net);
 	servlist_channels_populate (selected_net);
 	servlist_commands_populate (selected_net);
-#if GTK_MAJOR_VERSION >= 4
 	g_signal_connect (G_OBJECT (edit_win), "close-request",
 							G_CALLBACK (servlist_editwin_close_request_cb), NULL);
-#else
-	g_signal_connect (G_OBJECT (edit_win), "delete-event",
-							G_CALLBACK (servlist_editwin_delete_cb), NULL);
-#endif
 	fabulor_window_geometry_watch (GTK_WINDOW (edit_win),
 		servlist_edit_geometry_cb, NULL);
 	gtk_widget_show (edit_win);
@@ -1875,34 +1823,17 @@ servlist_window_release (GtkWidget *window)
 	servlist_network_list_release ();
 }
 
-#if GTK_MAJOR_VERSION >= 4
 static void
 servlist_window_finalized_cb (gpointer user_data, GObject *window)
 {
 	(void) user_data;
 	servlist_window_release ((GtkWidget *) window);
 }
-#else
-static void
-servlist_window_destroy_cb (GtkWidget *window, gpointer user_data)
-{
-	(void) user_data;
-	servlist_window_release (window);
-}
-#endif
 
-#if GTK_MAJOR_VERSION >= 4
 static gboolean
 servlist_delete_cb (GtkWindow *win, gpointer userdata)
-#else
-static gboolean
-servlist_delete_cb (GtkWidget *win, GdkEventAny *event, gpointer userdata)
-#endif
 {
 	(void) win;
-#if GTK_MAJOR_VERSION < 4
-	(void) event;
-#endif
 	(void) userdata;
 	servlist_savegui ();
 
@@ -2317,12 +2248,7 @@ servlist_open_edit (GtkWidget *parent, ircnet *net)
 	g_object_set_data_full (G_OBJECT (editwindow), "command-entry-list",
 		edit_lists[CMD_TREE],
 		servlist_entry_list_free_notify);
-#if GTK_MAJOR_VERSION >= 4
 	g_object_weak_ref (G_OBJECT (editwindow), servlist_edit_finalized_cb, NULL);
-#else
-	g_signal_connect (editwindow, "destroy",
-		G_CALLBACK (servlist_edit_destroy_cb), NULL);
-#endif
 
 	fabulor_gtk_widget_on_key_pressed (treeview_servers,
 		servlist_keypress_cb, notebook);
@@ -2835,22 +2761,12 @@ fe_serverlist_open (session *sess)
 
 	servlist_networks_populate (network_list);
 
-#if GTK_MAJOR_VERSION >= 4
 	g_signal_connect (G_OBJECT (serverlist_win), "close-request",
 							G_CALLBACK (servlist_delete_cb), NULL);
-#else
-	g_signal_connect (G_OBJECT (serverlist_win), "delete-event",
-							G_CALLBACK (servlist_delete_cb), NULL);
-#endif
 	fabulor_window_geometry_watch (GTK_WINDOW (serverlist_win),
 		servlist_geometry_cb, NULL);
-#if GTK_MAJOR_VERSION >= 4
 	g_object_weak_ref (G_OBJECT (serverlist_win),
 		servlist_window_finalized_cb, NULL);
-#else
-	g_signal_connect (G_OBJECT (serverlist_win), "destroy",
-		G_CALLBACK (servlist_window_destroy_cb), NULL);
-#endif
 	fabulor_gtk_widget_on_key_pressed (networks_tree,
 		servlist_net_keypress_cb, NULL);
 
