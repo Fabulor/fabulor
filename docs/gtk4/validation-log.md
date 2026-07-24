@@ -7615,6 +7615,40 @@ through the reviewed GTK4 implementations. No supported build can select the
 retired GTK3 transcript-helper path. The main `xtext.c` renderer and remaining
 frontend source branches remain separate Stage 9 cleanup targets.
 
+### GTK4 Stage 9 Transcript Renderer Source Specialization, Pass 12
+
+Date: 2026-07-24
+
+Boundary retired: `xtext.c` no longer carries its parallel GTK3 renderer,
+window, pointer, scrolling, and lifecycle implementation. A total of 328
+inactive GTK3 and toolkit-selection lines are removed. The frontend-wide
+`GTK_MAJOR_VERSION`-conditional inventory falls from 197 to 168.
+
+Automated evidence:
+
+- complete GTK4 frontend project build and link: pass with zero warnings and
+  zero errors in the affected incremental build
+- strict GTK4 MSVC transcript-policy probe build and execution: pass with
+  `/W4 /WX`, zero warnings and zero errors; GTK 4.22.4 / GLib 2.88.0 / x64
+  runtime confirmed
+- production profile contract suite: all 15 tests pass, including rejection of
+  restored renderer version switches or representative GTK3
+  window/event/rendering APIs
+- complete GTK4 tooling contract suite: all 64 tests pass
+- theme retirement/import contract suite: all 7 tests pass
+- native manifest, path, and archive suite: all 22 tests pass
+- source audit: no `GTK_MAJOR_VERSION`, GTK3 window/device, direct Cairo window
+  source, widget window/allocation mutation, widget grab, style-updated, or
+  native scroll-copy API remains in `xtext.c`
+- repository whitespace validation: pass
+
+Behaviour contract: transcript realization, snapshot rendering, pointer and
+cursor state, selection interaction, full-redraw fallback, scrolling,
+accessible text, and buffer-change notifications continue through the reviewed
+GTK4 implementation and extracted policy helpers. No supported build can select
+the retired GTK3 transcript renderer. Remaining main UI, menu, platform, and
+dialog source branches remain separate Stage 9 cleanup targets.
+
 ## Stage Completion Rule
 
 A stage can move to complete in `migration-plan.md` only when:
