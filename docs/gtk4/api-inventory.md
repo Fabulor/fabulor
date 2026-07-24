@@ -1381,6 +1381,15 @@ allocation/window mutation, and GTK3 paint fallback are retired. The
 frontend-wide version-branch inventory falls from 197 to 168, completing
 source specialization for the transcript subsystem.
 
+Stage 9 tray source specialization pass 13 retires the GTK3 AppIndicator and
+`GtkStatusIcon` implementations from `plugin-tray.c`, the version guard from
+the GTK4 presenter, and the `appindicator3` dependency probes from the frontend
+Meson fragment. The retained tray boundary consists of the GTK4 action/menu
+model, backend policy, popover presenter, window-state integration, and native
+Windows menu projection. Non-Windows GTK4 builds deliberately expose no
+compiled tray backend until a GTK4-native StatusNotifier implementation
+exists. The frontend-wide version-branch inventory falls from 168 to 159.
+
 ## Functional Clusters
 
 | Cluster | Main files | GTK4 concern | Status |
@@ -1392,7 +1401,7 @@ source specialization for the transcript subsystem.
 | Operational lists | `servlistgui.c`, `chanlist.c`, `userlistgui.c`, `dccgui.c`, `banlist.c`, `notifygui.c`, `ignoregui.c`, `plugingui.c`, `urlgrab.c` | list models, factories, editing | converted and specialized to GTK4; version branches and classic GTK3 tree/list implementations are retired |
 | Preferences/editors | `setup.c`, `fkeys.c`, `textgui.c`, `editlist.c` | generic edit list, Print Events, key bindings, sound events, and preference navigation converted | converted |
 | Themes | `theme/*.c`, `common/gtk4-theme-*.c`, `common/theme-archive-reader.c` | GTK4 CSS compatibility, discovery, preferences, and bounded `.hct` reading | converted and specialized to GTK4; the GTK3 service, adapter, screen/style branches, and version switches are retired |
-| Platform integration | `fe-gtk.c`, `plugin-tray.c`, notifications | displays, surfaces, icons, native tray | in progress; notification, tray policy, and application main-loop boundaries established |
+| Platform integration | `fe-gtk.c`, `plugin-tray.c`, notifications | displays, surfaces, icons, native tray | in progress; GTK3 tray backends are retired, GTK4 policy/action presentation remains, and application startup branches await specialization |
 
 ## Theme Inventory
 

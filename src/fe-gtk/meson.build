@@ -93,26 +93,6 @@ gtk_dep = dependency('gtk+-3.0', version: '>= 3.22')
 
 zoitechat_theme_deps = [gtk_dep]
 
-if host_machine.system() != 'windows'
-  appindicator_opt = get_option('appindicator')
-
-  if appindicator_opt.allowed()
-    appindicator_dep = dependency('ayatana-appindicator3-0.1', required: false)
-    if appindicator_dep.found()
-      zoitechat_gtk_deps += appindicator_dep
-      zoitechat_gtk_cflags += '-DHAVE_AYATANA_APPINDICATOR'
-    else
-      appindicator_dep = dependency('appindicator3-0.1', required: false)
-      if appindicator_dep.found()
-        zoitechat_gtk_deps += appindicator_dep
-        zoitechat_gtk_cflags += '-DHAVE_APPINDICATOR'
-      elif appindicator_opt.enabled() or (appindicator_opt.auto() and host_machine.system() == 'linux')
-        error('tray support requires ayatana-appindicator3-0.1 or appindicator3-0.1 on Linux (use -Dappindicator=disabled to override)')
-      endif
-    endif
-  endif
-endif
-
 zoitechat_gtk_deps += gtk_dep
 
 if host_machine.system() != 'windows'
