@@ -63,6 +63,8 @@ class ValidateProductionBundleTests(unittest.TestCase):
                 "wix.exe",
                 "burn",
                 "extract",
+                "-acceptEula",
+                "wix7",
                 "FabulorSetup.exe",
                 "-o",
                 "chain",

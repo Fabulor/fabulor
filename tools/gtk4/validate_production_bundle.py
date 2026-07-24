@@ -78,6 +78,8 @@ def extract_bundle(wix, bundle, chain_root, ba_root):
         str(wix),
         "burn",
         "extract",
+        "-acceptEula",
+        "wix7",
         str(bundle),
         "-o",
         str(chain_root),
