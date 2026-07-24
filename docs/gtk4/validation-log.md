@@ -7924,6 +7924,48 @@ No supported source path can select or expose the retired GTK3 widget-menu
 implementation. GTK3 source retirement is complete; final runtime and
 packaging validation remains tracked separately.
 
+### GTK4 Stage 9 Production Artifact Validation, Pass 21
+
+Date: 2026-07-24
+
+Boundary hardened: the separately published production MSI and Burn
+bootstrapper are now validated as one release pair. The validator extracts the
+bundle and rejects changes to the established bundle or MSI upgrade identity,
+project version, per-machine scope, single-package chain, embedded payload
+relationship, or exact bootstrapper application file set. The extracted
+`Fabulor.msi` must match the separately published MSI in size and SHA-256.
+
+Automated evidence:
+
+- production WiX MSI and bootstrapper rebuild: pass with zero warnings and
+  zero errors
+- production MSI identity/payload validation: 7,623 installed files, all
+  required features and paths present, zero GTK3 path markers
+- exact GTK4 runtime validation: all 1,431 manifest entries plus the packaged
+  manifest pass installed-path, size, and SHA-256 comparison
+- production bundle validation: version `1.0.3`, one embedded MSI chain,
+  established bundle/MSI upgrade codes, exact ten-file bootstrapper
+  application payload, and byte-for-byte published/embedded MSI equality
+- bundle validator unit suite: all 6 tests pass, covering extraction arguments,
+  valid identity, version ownership, upgrade-code drift, unexpected
+  bootstrapper files, and mismatched MSI content
+- complete GTK4 tooling contract suite: all 78 tests pass
+- theme retirement/import contract suite: all 7 tests pass
+- Python capability/isolation suites: all 16 tests pass
+- native manifest, path, and archive suite: all 22 tests pass
+- production MSI: 111,786,340 bytes; SHA-256
+  `CADF5CCE03650AE31EF089DA7F4CD6995EB653D34FDF25E8E9C3CBCC2C243061`
+- production bootstrapper: 112,084,516 bytes; SHA-256
+  `49376D82009D1D902EAE35E6560F6282314BF0E95E2D78CC7E0CCEFBF3A90301`
+- repository whitespace validation: pass
+
+Behaviour contract: CI cannot publish a bootstrapper whose version, upgrade
+identity, chain, application payload, or embedded MSI differs from the
+reviewed production contract or the accompanying MSI artifact. This closes
+the automated production packaging boundary. Clean-install, in-place upgrade,
+repair, uninstall, accessibility, visual, performance, and live plugin
+acceptance remain open and require controlled installed-client testing.
+
 ## Stage Completion Rule
 
 A stage can move to complete in `migration-plan.md` only when:

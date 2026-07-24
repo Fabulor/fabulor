@@ -107,7 +107,14 @@ placement and the packaged manifest itself:
 ```powershell
 python tools\gtk4\test_validate_runtime_msi.py
 python tools\gtk4\validate_runtime_msi.py --wix C:\path\to\wix.exe --msi C:\path\to\Fabulor.msi --manifest C:\path\to\runtime-manifest.json
+python tools\gtk4\test_validate_production_bundle.py
+python tools\gtk4\validate_production_bundle.py --wix C:\path\to\wix.exe --bundle C:\path\to\FabulorSetup.exe --msi C:\path\to\Fabulor.msi --version-props installer\Directory.Build.props
 ```
+
+The bundle validator extracts the Burn bootstrapper and fails closed unless its
+upgrade identity, version, single MSI chain, application payload, and embedded
+package relationship match the production contract. The embedded MSI must be
+byte-for-byte identical to the separately published `Fabulor.msi`.
 
 `win32-gtk4-runtime.c` defines the early Windows loader boundary for the future
 production GTK4 target. It derives `Runtime\GTK4\bin` from the executable path,
