@@ -23,9 +23,6 @@
 #include "menu-action-namespaces.h"
 
 GtkWidget *menu_create_main (
-#if GTK_MAJOR_VERSION < 4
-								 GtkAccelGroup *accel_group,
-#endif
 								 int bar, int away,
 								 int away_sensitive, int disconnect_sensitive,
 								 int join_sensitive, int toplevel,
@@ -34,10 +31,6 @@ void menu_urlmenu_at (GtkWidget *origin, gdouble x, gdouble y,
 	GdkModifierType state, char *url);
 void menu_chanmenu_at (session *sess, GtkWidget *origin, gdouble x,
 	gdouble y, GdkModifierType state, char *chan);
-#if GTK_MAJOR_VERSION < 4
-void menu_addfavoritemenu (server *serv, GtkWidget *menu, char *channel, gboolean istree);
-void menu_addconnectmenu (server *serv, GtkWidget *menu);
-#endif
 void menu_nickmenu_at (session *sess, GtkWidget *origin, gdouble x,
 	gdouble y, GdkModifierType state, char *nick, int num_sel);
 void menu_middlemenu_at (session *sess, GtkWidget *origin, gdouble x,
@@ -45,16 +38,6 @@ void menu_middlemenu_at (session *sess, GtkWidget *origin, gdouble x,
 void userlist_button_cb (GtkWidget * button, char *cmd);
 void nick_command_parse (session *sess, char *cmd, char *nick, char *allnick);
 void usermenu_update (void);
-#if GTK_MAJOR_VERSION < 4
-GtkWidget *menu_toggle_item (char *label, GtkWidget *menu, void *callback, void *userdata, int state);
-GtkWidget *menu_quick_item (char *cmd, char *label, GtkWidget * menu, int flags, gpointer userdata, char *icon);
-GtkWidget *menu_quick_sub (char *name, GtkWidget *menu, GtkWidget **sub_item_ret, int flags, int pos);
-void menu_create (GtkWidget *menu, GSList *list, char *target, int check_path);
-#endif
-#if GTK_MAJOR_VERSION < 4
-GtkWidget *create_icon_menu (char *labeltext, void *stock_name, int is_stock);
-void menu_add_plugin_items (GtkWidget *menu, char *root, char *target);
-#endif
 void menu_bar_toggle (void);
 void menu_add_plugin_model (GObject *owner, const char *root, const char *target);
 GMenuModel *menu_plugin_context_model (GObject *owner);

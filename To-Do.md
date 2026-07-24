@@ -436,7 +436,7 @@ Detailed planning and evidence live in:
 - [ ] Remove GTK3 code, build inputs, runtime files, installer components, and compatibility helpers.
   - [x] Promote the validated GTK4 payload to the normal Fabulor MSI and bootstrapper without changing the production upgrade identity or selectable plugin features.
   - [x] Promote GTK4 to the sole MSVC and CI frontend build profile and remove the explicit GTK3 rollback package.
-  - [ ] Remove GTK3 staging downloads, runtime-copy rules, WiX components, source branches, tests, and compatibility helpers.
+  - [x] Remove GTK3 staging downloads, runtime-copy rules, WiX components, source branches, tests, and compatibility helpers.
     - [x] Remove the GTK3 dependency archive, MSYS2 libarchive/hicolor augmentation, legacy copy/Inno projects, and unsupported Lua/Perl/gendef inputs from the Windows GTK4 build graph; pin the remaining OpenSSL support root.
     - [x] Move retained `.hct` text import out of the GTK3 theme service and enforce absolute system-tool execution, entry validation, duplicate rejection, and archive/output limits.
     - [x] Delete the GTK3 theme service, adapter, preference branch, tests, probe coverage, saved configuration keys, and active build references.
@@ -454,6 +454,7 @@ Detailed planning and evidence live in:
     - [x] Specialize Preferences, font-chooser, and Join dialog finalization plus Preferences page ownership to GTK4.
     - [x] Specialize Channel View finalization, icon loading, tray-support policy, modifier aliases, and residual helper signatures to GTK4; retire unused tree-view utilities.
     - [x] Specialize main-window construction, layout, lifecycle, context menus, input, emoji, drag-and-drop, and Windows display filtering to GTK4.
+    - [x] Specialize main, context, plugin, Usermenu, and stateful menu action/model ownership to GTK4 and retire all remaining GTK3 widget-menu sources.
 - [ ] Complete clean-install, upgrade, accessibility, visual, performance, plugin, and packaging validation.
 
 ## 7. Documentation & Developer Guides
