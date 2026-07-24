@@ -54,10 +54,6 @@ void mg_change_layout (int type);
 void mg_update_meters (session_gui *);
 void mg_inputbox_cb (GtkWidget *igad, session_gui *gui);
 void mg_reply_update (session *sess);
-#if GTK_MAJOR_VERSION < 4
-void mg_create_icon_item (char *label, char *stock, GtkWidget *menu, void *callback, void *userdata);
-GtkWidget *mg_submenu (GtkWidget *menu, char *text);
-#endif
 /* DND */
 GdkPixbuf *mg_internal_drag_icon (GtkWidget *widget, gpointer user_data);
 gboolean mg_internal_drag_drop (GtkWidget *widget,
