@@ -48,11 +48,9 @@
 
 #include "channel-list.h"
 
-#if GTK_MAJOR_VERSION >= 4
 #include "channel-list-context-menu-model.h"
 #include "context-menu-presenter-gtk4.h"
 #include "menu-action-namespaces.h"
-#endif
 
 #define ICON_CHANLIST_JOIN "zc-menu-join"
 #define ICON_CHANLIST_COPY "zc-menu-copy"
@@ -140,30 +138,6 @@ chanlist_icon_button (const char *label, const char *icon_name,
 	return button;
 }
 
-#if GTK_MAJOR_VERSION < 4
-static GtkWidget *
-chanlist_icon_menu_item (const char *label, const char *icon_name,
-								 GCallback callback, gpointer userdata)
-{
-	GtkWidget *item;
-	GtkWidget *box;
-	GtkWidget *image = NULL;
-	GtkWidget *label_widget;
-
-	item = gtk_menu_item_new ();
-	box = gtk_box_new (GTK_ORIENTATION_HORIZONTAL, 6);
-	image = icon_name ? gtkutil_image_new_from_stock (icon_name, FABULOR_GTK_ICON_SIZE_MENU) : NULL;
-	label_widget = gtk_label_new_with_mnemonic (label);
-	if (image)
-		gtk_box_pack_start (GTK_BOX (box), image, FALSE, FALSE, 0);
-	gtk_box_pack_start (GTK_BOX (box), label_widget, FALSE, FALSE, 0);
-	gtk_container_add (GTK_CONTAINER (item), box);
-	g_signal_connect (G_OBJECT (item), "activate", callback, userdata);
-	gtk_widget_show_all (item);
-
-	return item;
-}
-#endif
 
 
 static gboolean
@@ -651,68 +625,6 @@ chanlist_maxusers (GtkSpinButton *wid, server *serv)
 		fe_message (_("Could not save fabulor.conf."), FE_MSG_WARN);
 }
 
-#if GTK_MAJOR_VERSION < 4
-static void
-chanlist_menu_destroy (GtkWidget *menu, gpointer userdata)
-{
-	gtk_widget_destroy (menu);
-	g_object_unref (menu);
-}
-
-static void
-chanlist_copychannel (GtkWidget *item, server *serv)
-{
-	GPtrArray *selection = fabulor_channel_list_dup_selected_text (
-		serv->gui->chanlist_model, FABULOR_CHANNEL_LIST_CHANNEL);
-	GString *text;
-	guint i;
-
-	if (!selection->len)
-	{
-		g_ptr_array_unref (selection);
-		return;
-	}
-
-	text = g_string_new ("");
-	for (i = 0; i < selection->len; i++)
-	{
-		if (text->len)
-			g_string_append_c (text, '\n');
-		g_string_append (text, g_ptr_array_index (selection, i));
-	}
-
-	gtkutil_copy_to_clipboard (item, text->str);
-	g_string_free (text, TRUE);
-	g_ptr_array_unref (selection);
-}
-
-static void
-chanlist_copytopic (GtkWidget *item, server *serv)
-{
-	GPtrArray *selection = fabulor_channel_list_dup_selected_text (
-		serv->gui->chanlist_model, FABULOR_CHANNEL_LIST_TOPIC);
-	GString *text;
-	guint i;
-
-	if (!selection->len)
-	{
-		g_ptr_array_unref (selection);
-		return;
-	}
-
-	text = g_string_new ("");
-	for (i = 0; i < selection->len; i++)
-	{
-		if (text->len)
-			g_string_append_c (text, '\n');
-		g_string_append (text, g_ptr_array_index (selection, i));
-	}
-
-	gtkutil_copy_to_clipboard (item, text->str);
-	g_string_free (text, TRUE);
-	g_ptr_array_unref (selection);
-}
-#else
 #define FABULOR_CHANNEL_LIST_CONTEXT_POPUP \
 	"fabulor-channel-list-context-popup"
 
@@ -854,7 +766,6 @@ chanlist_context_popup (server *serv, GtkWidget *origin, gdouble x, gdouble y)
 	return fabulor_context_menu_presenter_gtk4_popup_at (popup->presenter,
 		origin, x, y);
 }
-#endif
 
 static gboolean
 chanlist_button_cb (GtkWidget *view, guint button, guint n_press,
@@ -862,10 +773,6 @@ chanlist_button_cb (GtkWidget *view, guint button, guint n_press,
 {
 	server *serv = data;
 
-#if GTK_MAJOR_VERSION < 4
-	GtkWidget *menu;
-	char *chan;
-#endif
 
 	(void) view;
 	(void) n_press;
@@ -874,40 +781,7 @@ chanlist_button_cb (GtkWidget *view, guint button, guint n_press,
 		serv->gui->chanlist_model, x, y))
 		return FALSE;
 
-#if GTK_MAJOR_VERSION >= 4
 	return chanlist_context_popup (serv, view, x, y);
-#else
-	menu = gtk_menu_new ();
-	g_object_ref (menu);
-	g_object_ref_sink (menu);
-	g_object_unref (menu);
-	g_signal_connect (G_OBJECT (menu), "selection-done",
-							G_CALLBACK (chanlist_menu_destroy), NULL);
-	{
-		GtkWidget *item;
-
-		item = chanlist_icon_menu_item (_("_Join Channel"), ICON_CHANLIST_JOIN,
-												G_CALLBACK (chanlist_join), serv);
-		gtk_menu_shell_append (GTK_MENU_SHELL (menu), item);
-
-		item = chanlist_icon_menu_item (_("_Copy Channel Name"), ICON_CHANLIST_COPY,
-												G_CALLBACK (chanlist_copychannel), serv);
-		gtk_menu_shell_append (GTK_MENU_SHELL (menu), item);
-
-		item = chanlist_icon_menu_item (_("Copy _Topic Text"), ICON_CHANLIST_COPY,
-												G_CALLBACK (chanlist_copytopic), serv);
-		gtk_menu_shell_append (GTK_MENU_SHELL (menu), item);
-	}
-
-	chan = fabulor_channel_list_dup_first_selected_channel (
-		serv->gui->chanlist_model);
-	menu_addfavoritemenu (serv, menu, chan, FALSE);
-	g_free (chan);
-
-	gtk_menu_popup_at_pointer (GTK_MENU (menu), NULL);
-
-	return TRUE;
-#endif
 }
 
 static void

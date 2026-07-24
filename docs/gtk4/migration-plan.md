@@ -2707,6 +2707,16 @@ removed. The frontend source inventory falls from 150 to 135
 lifecycle against restored GTK3 callback and ownership paths. The complete
 frontend and strict list/lifecycle probe build cleanly.
 
+Stage 9 Channel/Ban List source specialization pass 16 (2026-07-24):
+`chanlist.c` and `banlist.c` now contain only their GTK4 context-menu model,
+popover presentation, selection, copy, and cleanup paths. Retired GTK3
+`GtkMenu`/menu-item construction, box packing, container attachment, recursive
+reveal, pointer popup, and widget-destroy callbacks are removed. The frontend
+source inventory falls from 135 to 127 `GTK_MAJOR_VERSION` conditionals.
+Repository lint protects both dialog sources against restored GTK3 widget-menu
+APIs. The strict list/context-menu probe and complete frontend compile and link
+cleanly.
+
 Deliverables:
 
 - Make GTK4 the only production frontend dependency in MSVC, Meson, and CI.

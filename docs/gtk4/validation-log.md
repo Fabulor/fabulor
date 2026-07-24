@@ -7752,6 +7752,40 @@ finalization. No supported build can select the retired GTK3 lifecycle path.
 Remaining main UI, menu, setup, and dialog source branches remain separate
 Stage 9 cleanup targets.
 
+### GTK4 Stage 9 Channel/Ban List Source Specialization, Pass 16
+
+Date: 2026-07-24
+
+Boundary retired: `chanlist.c` and `banlist.c` no longer carry parallel GTK3
+context-menu construction, presentation, copy, and cleanup implementations. A
+total of 144 inactive GTK3 and toolkit-selection lines are removed. The
+frontend-wide `GTK_MAJOR_VERSION`-conditional inventory falls from 135 to 127.
+
+Automated evidence:
+
+- strict GTK4 MSVC list/context-menu probe build and execution: pass with
+  `/W4 /WX`, zero warnings and zero errors; GTK 4.22.4 / GLib 2.88.0 / x64
+  runtime confirmed
+- complete GTK4 frontend project build and link: pass with zero warnings and
+  zero errors in the affected incremental build
+- production profile contract suite: all 19 tests pass, including rejection of
+  restored toolkit-version switches, GTK3 widget menus, menu-shell/item
+  ownership, box packing, recursive reveal, or widget destruction
+- complete GTK4 tooling contract suite: all 68 tests pass
+- theme retirement/import contract suite: all 7 tests pass
+- native manifest, path, and archive suite: all 22 tests pass
+- source audit: no `GTK_MAJOR_VERSION`, `gtk_menu_*`, `gtk_menu_shell_*`,
+  `gtk_box_pack_start`, `gtk_container_add`, `gtk_widget_show_all`, or
+  `gtk_widget_destroy` remains in the specialized dialog sources
+- repository whitespace validation: pass
+
+Behaviour contract: Channel List join/copy/autojoin commands continue through
+the reviewed GTK4 context-menu action/model presenter, and Ban List copy
+commands continue through explicit popover ownership and cleanup. No supported
+build can select the retired GTK3 widget-menu path. Remaining main UI, menu,
+setup, join-dialog, and channel-view source branches remain separate Stage 9
+cleanup targets.
+
 ## Stage Completion Rule
 
 A stage can move to complete in `migration-plan.md` only when:

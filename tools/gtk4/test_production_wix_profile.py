@@ -73,6 +73,10 @@ GTK4_TRAY_SOURCES = (
 FRONTEND_MESON = ROOT / "src" / "fe-gtk" / "meson.build"
 GTK4_APPLICATION_SOURCE = ROOT / "src" / "fe-gtk" / "fe-gtk.c"
 GTK4_SERVER_LIST_SOURCE = ROOT / "src" / "fe-gtk" / "servlistgui.c"
+GTK4_CHANNEL_BAN_DIALOG_SOURCES = (
+    "banlist.c",
+    "chanlist.c",
+)
 VCPKG_CONFIGURATION = ROOT / "tools" / "windows-deps" / "vcpkg-configuration.json"
 VCPKG_MANIFEST = ROOT / "tools" / "windows-deps" / "vcpkg.json"
 WIX_NS = {"w": "http://wixtoolset.org/schemas/v4/wxs"}
@@ -369,6 +373,28 @@ class ProductionWixProfileTests(unittest.TestCase):
             self.assertNotRegex(source, rf"\b{token}")
         self.assertIn('"close-request"', source)
         self.assertIn("g_object_weak_ref", source)
+
+    def test_channel_and_ban_dialogs_are_gtk4_only(self):
+        frontend = ROOT / "src" / "fe-gtk"
+        retired_tokens = (
+            "chanlist_copychannel",
+            "chanlist_copytopic",
+            "chanlist_icon_menu_item",
+            "chanlist_menu_destroy",
+            "gtk_box_pack_start",
+            "gtk_container_add",
+            "gtk_menu_",
+            "gtk_menu_shell_",
+            "gtk_widget_destroy",
+            "gtk_widget_show_all",
+        )
+
+        for name in GTK4_CHANNEL_BAN_DIALOG_SOURCES:
+            source = (frontend / name).read_text(encoding="utf-8")
+            with self.subTest(source=name):
+                self.assertNotIn("GTK_MAJOR_VERSION", source)
+                for token in retired_tokens:
+                    self.assertNotRegex(source, rf"\b{token}")
 
     def test_transitional_windows_staging_is_removed(self):
         props = PROPS.read_text(encoding="utf-8")
