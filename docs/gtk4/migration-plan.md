@@ -2650,6 +2650,18 @@ conditionals. Repository lint protects the exact three-file boundary and
 representative GTK3 spell/menu APIs; the strict probe and complete frontend
 both compile and link successfully.
 
+Stage 9 transcript-helper source specialization pass 11 (2026-07-24):
+selection ownership, render targets, widget-class hooks, accessible text,
+allocated geometry, and their supporting headers now contain only GTK4
+implementations. Primary selection uses `GdkClipboard` and content providers;
+rendering uses snapshots and explicit Cairo contexts; widget sizing uses
+measure/snapshot hooks; accessibility uses `GtkAccessibleText`. Retired GTK3
+selection atoms/data, `GtkClipboard`, `GdkWindow` rendering, draw/preferred-size
+hooks, allocation queries, and ATK naming are removed. The frontend source
+inventory falls from 218 to 197 `GTK_MAJOR_VERSION` conditionals. Repository
+lint protects the eight-file boundary and representative GTK3 transcript APIs;
+the strict probe and complete frontend both compile and link successfully.
+
 Deliverables:
 
 - Make GTK4 the only production frontend dependency in MSVC, Meson, and CI.

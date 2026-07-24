@@ -141,11 +141,9 @@ struct _GtkXText
 	FabulorXTextDecoration *decoration;
 	FabulorXTextRenderTarget *render_target;
 	FabulorXTextSelection *selection;
-#if GTK_MAJOR_VERSION >= 4
 	FabulorXTextAccessible *accessible_text;
 	guint accessible_update_tag;
 	gboolean accessible_dirty;
-#endif
 	GdkCursor *hand_cursor;
 	GdkCursor *resize_cursor;
 

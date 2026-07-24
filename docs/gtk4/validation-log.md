@@ -7582,6 +7582,39 @@ implementations. No supported build can select the retired GTK3 spell-input
 path from these files. Remaining main edit-box and frontend source branches
 remain separate Stage 9 cleanup targets.
 
+### GTK4 Stage 9 Transcript-Helper Source Specialization, Pass 11
+
+Date: 2026-07-24
+
+Boundary retired: eight transcript selection, render-target, widget-class,
+accessibility, geometry, and header files no longer carry parallel GTK3
+implementations. A total of 274 inactive GTK3 and toolkit-selection lines are
+removed. The frontend-wide `GTK_MAJOR_VERSION`-conditional inventory falls
+from 218 to 197.
+
+Automated evidence:
+
+- strict GTK4 MSVC probe build and execution: pass with `/W4 /WX`, zero
+  warnings and zero errors; GTK 4.22.4 / GLib 2.88.0 / x64 runtime confirmed
+- complete GTK4 frontend project build and link: pass with zero errors; its
+  affected rebuild reports 16 existing warnings from remaining caller branches
+- production profile contract suite: all 14 tests pass, including all eight
+  specialized files and rejection of restored toolkit-version switches or
+  representative GTK3 transcript APIs
+- complete GTK4 tooling contract suite: all 63 tests pass
+- theme retirement/import contract suite: all 7 tests pass
+- native manifest, path, and archive suite: all 22 tests pass
+- source audit: no `GTK_MAJOR_VERSION`, GTK3 selection/clipboard, `GdkWindow`
+  render context, draw/preferred-size, allocation-query, or ATK naming API
+  remains in the specialized source set
+- repository whitespace validation: pass
+
+Behaviour contract: primary selection, snapshot rendering, explicit Cairo
+targets, widget measurement, accessible text updates, and geometry continue
+through the reviewed GTK4 implementations. No supported build can select the
+retired GTK3 transcript-helper path. The main `xtext.c` renderer and remaining
+frontend source branches remain separate Stage 9 cleanup targets.
+
 ## Stage Completion Rule
 
 A stage can move to complete in `migration-plan.md` only when:

@@ -30,12 +30,6 @@ fabulor_xtext_geometry_from_widget (GtkWidget *widget,
 {
 	if (!GTK_IS_WIDGET (widget))
 		return fabulor_xtext_geometry_init (geometry, 0, 0);
-#if GTK_MAJOR_VERSION >= 4
 	return fabulor_xtext_geometry_init (geometry,
 		gtk_widget_get_width (widget), gtk_widget_get_height (widget));
-#else
-	return fabulor_xtext_geometry_init (geometry,
-		gtk_widget_get_allocated_width (widget),
-		gtk_widget_get_allocated_height (widget));
-#endif
 }

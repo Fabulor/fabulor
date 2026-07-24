@@ -74,7 +74,6 @@ xtext_widget_unrealize (GtkWidget *widget)
 	callbacks->unrealize (widget);
 }
 
-#if GTK_MAJOR_VERSION >= 4
 
 static void
 xtext_widget_measure (GtkWidget *widget, GtkOrientation orientation,
@@ -124,68 +123,6 @@ xtext_widget_snapshot (GtkWidget *widget, GtkSnapshot *snapshot)
 	fabulor_xtext_render_target_end_snapshot (target, context);
 }
 
-#else
-
-static void
-xtext_widget_get_preferred_width (GtkWidget *widget, gint *minimum,
-	gint *natural)
-{
-	(void) widget;
-	fabulor_xtext_widget_measure (GTK_ORIENTATION_HORIZONTAL, minimum,
-		natural, NULL, NULL);
-}
-
-static void
-xtext_widget_get_preferred_height (GtkWidget *widget, gint *minimum,
-	gint *natural)
-{
-	(void) widget;
-	fabulor_xtext_widget_measure (GTK_ORIENTATION_VERTICAL, minimum,
-		natural, NULL, NULL);
-}
-
-static void
-xtext_widget_get_preferred_height_for_width (GtkWidget *widget, gint width,
-	gint *minimum, gint *natural)
-{
-	(void) widget;
-	(void) width;
-	fabulor_xtext_widget_measure (GTK_ORIENTATION_VERTICAL, minimum,
-		natural, NULL, NULL);
-}
-
-static void
-xtext_widget_size_allocate (GtkWidget *widget, GtkAllocation *allocation)
-{
-	const FabulorXTextWidgetCallbacks *callbacks =
-		xtext_widget_callbacks (widget);
-	FabulorXTextAllocation xtext_allocation = {
-		allocation->x, allocation->y, allocation->width, allocation->height, -1
-	};
-	callbacks->allocate (widget, &xtext_allocation);
-}
-
-static gboolean
-xtext_widget_draw (GtkWidget *widget, cairo_t *context)
-{
-	const FabulorXTextWidgetCallbacks *callbacks =
-		xtext_widget_callbacks (widget);
-	GdkRectangle area;
-
-	if (!gdk_cairo_get_clip_rectangle (context, &area))
-	{
-		GtkAllocation allocation;
-		gtk_widget_get_allocation (widget, &allocation);
-		area.x = 0;
-		area.y = 0;
-		area.width = allocation.width;
-		area.height = allocation.height;
-	}
-	callbacks->render (widget, &area, context);
-	return FALSE;
-}
-
-#endif
 
 void
 fabulor_xtext_widget_accessibility_init (GtkWidget *widget,
@@ -193,12 +130,8 @@ fabulor_xtext_widget_accessibility_init (GtkWidget *widget,
 {
 	g_return_if_fail (GTK_IS_WIDGET (widget));
 	g_return_if_fail (label != NULL && *label != '\0');
-#if GTK_MAJOR_VERSION >= 4
 	gtk_accessible_update_property (GTK_ACCESSIBLE (widget),
 		GTK_ACCESSIBLE_PROPERTY_LABEL, label, -1);
-#else
-	atk_object_set_name (gtk_widget_get_accessible (widget), label);
-#endif
 }
 
 void
@@ -216,17 +149,8 @@ fabulor_xtext_widget_class_install (GtkWidgetClass *widget_class,
 	widget_class->realize = xtext_widget_realize;
 	widget_class->unrealize = xtext_widget_unrealize;
 	widget_class->size_allocate = xtext_widget_size_allocate;
-#if GTK_MAJOR_VERSION >= 4
 	gtk_widget_class_set_accessible_role (widget_class,
 		GTK_ACCESSIBLE_ROLE_LOG);
 	widget_class->measure = xtext_widget_measure;
 	widget_class->snapshot = xtext_widget_snapshot;
-#else
-	gtk_widget_class_set_accessible_role (widget_class, ATK_ROLE_LOG);
-	widget_class->draw = xtext_widget_draw;
-	widget_class->get_preferred_width = xtext_widget_get_preferred_width;
-	widget_class->get_preferred_height = xtext_widget_get_preferred_height;
-	widget_class->get_preferred_height_for_width =
-		xtext_widget_get_preferred_height_for_width;
-#endif
 }

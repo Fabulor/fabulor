@@ -13,9 +13,6 @@ struct _FabulorXTextRenderTarget
 {
 	cairo_surface_t *surface;
 	cairo_t *active_context;
-#if GTK_MAJOR_VERSION < 4
-	GdkWindow *window;
-#endif
 };
 
 FabulorXTextRenderTarget *
@@ -41,15 +38,6 @@ fabulor_xtext_render_target_set_surface (FabulorXTextRenderTarget *target,
 	target->surface = surface;
 }
 
-#if GTK_MAJOR_VERSION < 4
-void
-fabulor_xtext_render_target_set_window (FabulorXTextRenderTarget *target,
-	GdkWindow *window)
-{
-	g_return_if_fail (target != NULL);
-	target->window = window;
-}
-#endif
 
 cairo_t *
 fabulor_xtext_render_target_exchange_context (
@@ -78,20 +66,9 @@ fabulor_xtext_render_target_create_context (FabulorXTextRenderTarget *target)
 		return cairo_create (target->surface);
 	if (target->active_context)
 		return cairo_reference (target->active_context);
-#if GTK_MAJOR_VERSION < 4
-	if (target->window && GDK_IS_WINDOW (target->window))
-	{
-		cairo_t *context;
-		G_GNUC_BEGIN_IGNORE_DEPRECATIONS
-		context = gdk_cairo_create (target->window);
-		G_GNUC_END_IGNORE_DEPRECATIONS
-		return context;
-	}
-#endif
 	return NULL;
 }
 
-#if GTK_MAJOR_VERSION >= 4
 cairo_t *
 fabulor_xtext_render_target_begin_snapshot (FabulorXTextRenderTarget *target,
 	GtkSnapshot *snapshot, gint width, gint height)
@@ -116,4 +93,3 @@ fabulor_xtext_render_target_end_snapshot (FabulorXTextRenderTarget *target,
 	target->active_context = NULL;
 	cairo_destroy (context);
 }
-#endif
