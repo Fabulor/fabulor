@@ -7717,6 +7717,41 @@ No supported build can select the retired GTK3 lifecycle path. Remaining main
 UI, menu, server-list, and dialog source branches remain separate Stage 9
 cleanup targets.
 
+### GTK4 Stage 9 Server List Source Specialization, Pass 15
+
+Date: 2026-07-24
+
+Boundary retired: `servlistgui.c` no longer carries parallel GTK3
+certificate-dialog parent, editor/window close, destroy, and finalization
+implementations. A total of 84 inactive GTK3 and toolkit-selection lines are
+removed. The frontend-wide `GTK_MAJOR_VERSION`-conditional inventory falls
+from 150 to 135.
+
+Automated evidence:
+
+- complete GTK4 frontend project build and link: pass with zero warnings and
+  zero errors in the affected incremental build
+- strict GTK4 MSVC list/lifecycle probe build and execution: pass with
+  `/W4 /WX`, zero warnings and zero errors; GTK 4.22.4 / GLib 2.88.0 / x64
+  runtime confirmed
+- production profile contract suite: all 18 tests pass, including rejection of
+  restored toolkit-version switches, GTK3 delete/destroy callbacks,
+  `GdkEventAny`, or parent signal-ID ownership
+- complete GTK4 tooling contract suite: all 67 tests pass
+- theme retirement/import contract suite: all 7 tests pass
+- native manifest, path, and archive suite: all 22 tests pass
+- source audit: no `GTK_MAJOR_VERSION`, `delete-event`, `GdkEventAny`, legacy
+  parent destroy handler, editor destroy callback, or Server List destroy
+  callback remains in `servlistgui.c`
+- repository whitespace validation: pass
+
+Behaviour contract: Server List and network-editor save/close behavior,
+geometry persistence, model release, certificate chooser parenting, and
+top-level pointer cleanup continue through typed GTK4 close requests and weak
+finalization. No supported build can select the retired GTK3 lifecycle path.
+Remaining main UI, menu, setup, and dialog source branches remain separate
+Stage 9 cleanup targets.
+
 ## Stage Completion Rule
 
 A stage can move to complete in `migration-plan.md` only when:
