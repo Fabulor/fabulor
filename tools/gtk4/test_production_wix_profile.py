@@ -92,6 +92,10 @@ GTK4_MAIN_WINDOW_SOURCES = (
     "maingui.c",
     "maingui.h",
 )
+GTK4_MENU_SOURCES = (
+    "menu.c",
+    "menu.h",
+)
 VCPKG_CONFIGURATION = ROOT / "tools" / "windows-deps" / "vcpkg-configuration.json"
 VCPKG_MANIFEST = ROOT / "tools" / "windows-deps" / "vcpkg.json"
 WIX_NS = {"w": "http://wixtoolset.org/schemas/v4/wxs"}
@@ -533,6 +537,55 @@ class ProductionWixProfileTests(unittest.TestCase):
             main_source,
             r"\bmg_inputbox_icon_release_cb\s*\([^;{]*\bGdkEvent\b",
         )
+
+    def test_menu_sources_complete_frontend_gtk4_specialization(self):
+        frontend = ROOT / "src" / "fe-gtk"
+        retired_tokens = (
+            "GdkEvent",
+            "GdkWindow",
+            "GtkAccelGroup",
+            "GtkCheckMenuItem",
+            "GtkMenu",
+            "GtkMenuItem",
+            "GtkRadioMenuItem",
+            "gtk_accel_group_new",
+            "gtk_bin_get_child",
+            "gtk_box_pack_start",
+            "gtk_check_menu_item_",
+            "gtk_container_add",
+            "gtk_container_get_children",
+            "gtk_image_menu_item_new_with_markup",
+            "gtk_menu_",
+            "gtk_radio_menu_item_",
+            "gtk_separator_menu_item_new",
+            "gtk_widget_add_accelerator",
+            "gtk_widget_destroy",
+            "gtk_widget_remove_accelerator",
+            "gtk_widget_show_all",
+            "usermenu_create",
+            "usermenu_destroy",
+        )
+
+        for name in GTK4_MENU_SOURCES:
+            source = (frontend / name).read_text(encoding="utf-8")
+            with self.subTest(source=name):
+                self.assertNotIn("GTK_MAJOR_VERSION", source)
+                for token in retired_tokens:
+                    self.assertNotRegex(source, rf"\b{token}")
+
+        menu_source = (frontend / "menu.c").read_text(encoding="utf-8")
+        menu_header = (frontend / "menu.h").read_text(encoding="utf-8")
+        self.assertIn("GSimpleActionGroup", menu_source)
+        self.assertIn("FabulorContextMenuPresenterGtk4", menu_source)
+        self.assertIn("menu_main_composed_model_refresh", menu_source)
+        self.assertIn("menu_plugin_context_model", menu_header)
+
+        frontend_sources = list(frontend.rglob("*.c")) + list(frontend.rglob("*.h"))
+        for path in frontend_sources:
+            with self.subTest(frontend_source=path.relative_to(frontend)):
+                self.assertNotIn(
+                    "GTK_MAJOR_VERSION", path.read_text(encoding="utf-8")
+                )
 
     def test_transitional_windows_staging_is_removed(self):
         props = PROPS.read_text(encoding="utf-8")

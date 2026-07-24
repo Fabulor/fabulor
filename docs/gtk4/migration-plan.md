@@ -2751,6 +2751,18 @@ to 56 `GTK_MAJOR_VERSION` conditionals, all now confined to `menu.c` and
 warning-free, and all seven remaining warnings belong to the final menu source
 boundary.
 
+Stage 9 menu source specialization pass 20 (2026-07-24): `menu.c` and `menu.h`
+now contain only GTK4 action groups, retained menu models, popover presenters,
+plugin overlays, Usermenu projection, command dispatch, and state/sensitivity
+synchronization. Retired GTK3 widget menus, menu/radio/check items, accelerator
+groups, container ownership, pointer popup, and widget destruction are
+removed, including two orphaned Usermenu widget helpers. The frontend source
+inventory falls from 56 to zero `GTK_MAJOR_VERSION` conditionals. A clean
+frontend rebuild compiles and links with zero warnings and zero errors.
+Repository guards now reject toolkit-version switches across every frontend C
+and header source. GTK3 source retirement is complete; clean-install, upgrade,
+accessibility, visual, performance, plugin, and packaging validation remains.
+
 Deliverables:
 
 - Make GTK4 the only production frontend dependency in MSVC, Meson, and CI.

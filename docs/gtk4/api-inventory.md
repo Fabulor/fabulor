@@ -1442,6 +1442,15 @@ container inspection, and legacy drag destinations are retired. The
 frontend-wide version-branch inventory falls from 113 to 56, entirely in
 `menu.c` and `menu.h`.
 
+Stage 9 menu source specialization pass 20 removes every inactive GTK3
+implementation and toolkit switch from `menu.c` and `menu.h`. Main, context,
+nick, channel, middle-click, tab, plugin, and Usermenu presentation retain
+`GAction`, `GMenuModel`, and owned GTK4 popover boundaries. GTK3 widget-menu
+construction, check/radio items, accelerators, pointer popup, container
+inspection, and destruction are retired. The frontend-wide version-branch
+inventory falls from 56 to zero. The clean MSVC frontend inventory is also zero
+warnings and zero errors.
+
 ## Functional Clusters
 
 | Cluster | Main files | GTK4 concern | Status |
@@ -1449,7 +1458,7 @@ frontend-wide version-branch inventory falls from 113 to 56, entirely in
 | Main windows and tabs | `maingui.c`, `chanview*.c` | child ownership, gestures, DnD, focus | converted and specialized to GTK4; main/tab windows and Channel View contain no toolkit-version branches |
 | Transcript | `xtext.c`, `xtext.h`, `xtext-render-target.c` | snapshot rendering and event model | converted and specialized to GTK4; renderer, selection, accessibility, geometry, widget-class, and render-target GTK3 branches are retired |
 | Edit box and spell check | `maingui.c`, `emoji-picker.c`, `sexy-spell-entry.c`, `spell-entry-*.c` | production interaction and latency validation | converted and specialized to GTK4; input, spell-entry, emoji, focus, and drag-and-drop paths contain no toolkit-version branches |
-| Menus and commands | `menu.c`, `maingui.c`, `plugin-tray.c` | actions and menu models | in progress; main/tab context presentation and tray sources are specialized to GTK4, while `menu.c` is the final source boundary |
+| Menus and commands | `menu.c`, `maingui.c`, `plugin-tray.c` | actions and menu models | converted and specialized to GTK4; main/context/plugin/Usermenu action models and popover presenters contain no toolkit-version branches |
 | Operational lists | `servlistgui.c`, `chanlist.c`, `userlistgui.c`, `dccgui.c`, `banlist.c`, `notifygui.c`, `ignoregui.c`, `plugingui.c`, `urlgrab.c` | list models, factories, editing | converted and specialized to GTK4; classic GTK3 tree/list and Channel/Ban widget-menu implementations are retired |
 | Preferences/editors | `setup.c`, `fkeys.c`, `textgui.c`, `editlist.c` | generic edit list, Print Events, key bindings, sound events, and preference navigation converted | converted; Preferences page ownership, window, and font-chooser lifecycle are specialized to GTK4 |
 | Themes | `theme/*.c`, `common/gtk4-theme-*.c`, `common/theme-archive-reader.c` | GTK4 CSS compatibility, discovery, preferences, and bounded `.hct` reading | converted and specialized to GTK4; the GTK3 service, adapter, screen/style branches, and version switches are retired |

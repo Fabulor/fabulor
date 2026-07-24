@@ -7890,6 +7890,40 @@ restoration, input/emoji behavior, typed drag-and-drop, and native Windows
 display filtering. No supported build can select the retired GTK3 paths.
 `menu.c` and `menu.h` are the sole remaining source-specialization target.
 
+### GTK4 Stage 9 Menu Source Specialization, Pass 20
+
+Date: 2026-07-24
+
+Boundary retired: `menu.c` and `menu.h` no longer carry parallel GTK3 main,
+context, plugin, Usermenu, check/radio, accelerator, popup, or lifecycle
+implementations. Two orphaned GTK3 Usermenu widget helpers are also removed. A
+total of 1,665 inactive or dead source lines are removed. The frontend-wide
+`GTK_MAJOR_VERSION` conditional inventory falls from 56 to zero.
+
+Automated evidence:
+
+- strict GTK4 MSVC probe build and execution: pass with `/W4 /WX`, zero
+  warnings and zero errors; GTK 4.22.4 / GLib 2.88.0 / x64 runtime confirmed
+- clean GTK4 frontend project rebuild and link: pass with zero warnings and
+  zero errors
+- production profile contract suite: all 23 tests pass, including rejection of
+  restored toolkit-version switches across every frontend C/header source and
+  rejection of GTK3 widget-menu, check/radio item, accelerator, popup,
+  container, and destruction APIs in the menu boundary
+- complete GTK4 tooling contract suite: all 72 tests pass
+- theme retirement/import contract suite: all 7 tests pass
+- native manifest, path, and archive suite: all 22 tests pass
+- source audit: zero `GTK_MAJOR_VERSION` conditionals remain under
+  `src/fe-gtk`
+- repository whitespace validation: pass
+
+Behaviour contract: main and contextual menus retain canonical GTK4 actions,
+state and sensitivity synchronization, retained `GMenuModel` composition,
+owned popover presenters, plugin overlays, and recursive Usermenu projection.
+No supported source path can select or expose the retired GTK3 widget-menu
+implementation. GTK3 source retirement is complete; final runtime and
+packaging validation remains tracked separately.
+
 ## Stage Completion Rule
 
 A stage can move to complete in `migration-plan.md` only when:
