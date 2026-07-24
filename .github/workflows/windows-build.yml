@@ -250,6 +250,11 @@ jobs:
 
           python tools\gtk4\validate_runtime_msi.py --wix "%USERPROFILE%\.nuget\packages\wixtoolset.sdk\7.0.0\tools\net472\x64\wix.exe" --msi "%GITHUB_WORKSPACE%\installer\bin\${{ matrix.platform }}\Release\Fabulor.msi" --manifest "%GTK4_RUNTIME_ROOT%\Runtime\GTK4\runtime-manifest.json"
           if errorlevel 1 exit /b 1
+
+          rem Validate bootstrapper identity, chain metadata, exact BA payload,
+          rem and byte-for-byte equality with the separately published MSI.
+          python tools\gtk4\validate_production_bundle.py --wix "%USERPROFILE%\.nuget\packages\wixtoolset.sdk\7.0.0\tools\net472\x64\wix.exe" --bundle "%GITHUB_WORKSPACE%\installer\bin\${{ matrix.platform }}\Release\FabulorSetup.exe" --msi "%GITHUB_WORKSPACE%\installer\bin\${{ matrix.platform }}\Release\Fabulor.msi" --version-props "%GITHUB_WORKSPACE%\installer\Directory.Build.props"
+          if errorlevel 1 exit /b 1
         shell: cmd
 
       - name: Upload MSI

@@ -456,6 +456,7 @@ Detailed planning and evidence live in:
     - [x] Specialize main-window construction, layout, lifecycle, context menus, input, emoji, drag-and-drop, and Windows display filtering to GTK4.
     - [x] Specialize main, context, plugin, Usermenu, and stateful menu action/model ownership to GTK4 and retire all remaining GTK3 widget-menu sources.
 - [ ] Complete clean-install, upgrade, accessibility, visual, performance, plugin, and packaging validation.
+  - [x] Validate the production bootstrapper/MSI release pair, stable upgrade identities, version alignment, exact Burn application payload, single embedded chain, GTK4-only installed payload, and byte-for-byte embedded MSI equality.
 
 ## 7. Documentation & Developer Guides
 

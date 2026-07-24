@@ -2763,6 +2763,19 @@ Repository guards now reject toolkit-version switches across every frontend C
 and header source. GTK3 source retirement is complete; clean-install, upgrade,
 accessibility, visual, performance, plugin, and packaging validation remains.
 
+Stage 9 production artifact validation pass 21 (2026-07-24): the production
+bootstrapper and MSI now form one CI-validated release pair. A new validator
+extracts the Burn bundle and verifies the established bundle and MSI upgrade
+codes, project version, per-machine scope, one embedded MSI chain, exact
+bootstrapper application payload, and chain metadata. The extracted MSI must
+be byte-for-byte identical to the separately published `Fabulor.msi`. The
+existing MSI validators continue to enforce the Fabulor product identity,
+required features, GTK4-only installed paths, and all runtime-manifest hashes.
+The current production build completes with zero warnings and zero errors and
+passes all three artifact validators. Hands-on clean-install, in-place upgrade,
+repair, uninstall, accessibility, visual, performance, and plugin workflows
+remain assigned to final acceptance.
+
 Deliverables:
 
 - Make GTK4 the only production frontend dependency in MSVC, Meson, and CI.

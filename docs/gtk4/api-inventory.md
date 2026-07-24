@@ -1451,6 +1451,14 @@ inspection, and destruction are retired. The frontend-wide version-branch
 inventory falls from 56 to zero. The clean MSVC frontend inventory is also zero
 warnings and zero errors.
 
+Stage 9 production artifact validation pass 21 adds a fail-closed Burn release
+pair contract. CI extracts `FabulorSetup.exe`, validates the stable bundle and
+MSI upgrade identities, project version, per-machine registration, exact
+bootstrapper application files, and single embedded MSI chain, then compares
+the extracted MSI byte-for-byte with the separately uploaded `Fabulor.msi`.
+The existing decompiled-MSI and runtime-manifest checks remain authoritative
+for installed paths, required features, GTK3 absence, and GTK4 runtime content.
+
 ## Functional Clusters
 
 | Cluster | Main files | GTK4 concern | Status |

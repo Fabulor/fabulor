@@ -208,6 +208,7 @@ jobs:
           python plugins/python/test_manifest_isolation.py
           python tools/gtk4/test_stage_runtime.py
           python tools/gtk4/test_validate_runtime_msi.py
+          python tools/gtk4/test_validate_production_bundle.py
           python tools/gtk4/test_validate_runtime_imports.py
           python tools/gtk4/test_frontend_runtime_bootstrap.py
           python tools/gtk4/test_stage_production_support.py
