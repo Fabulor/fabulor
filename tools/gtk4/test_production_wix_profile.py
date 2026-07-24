@@ -66,6 +66,11 @@ GTK4_TRANSCRIPT_HELPER_SOURCES = (
     "xtext.h",
 )
 GTK4_TRANSCRIPT_RENDERER = ROOT / "src" / "fe-gtk" / "xtext.c"
+GTK4_TRAY_SOURCES = (
+    "plugin-tray.c",
+    "tray-menu-presenter-gtk4.c",
+)
+FRONTEND_MESON = ROOT / "src" / "fe-gtk" / "meson.build"
 VCPKG_CONFIGURATION = ROOT / "tools" / "windows-deps" / "vcpkg-configuration.json"
 VCPKG_MANIFEST = ROOT / "tools" / "windows-deps" / "vcpkg.json"
 WIX_NS = {"w": "http://wixtoolset.org/schemas/v4/wxs"}
@@ -304,6 +309,35 @@ class ProductionWixProfileTests(unittest.TestCase):
         self.assertNotIn("GTK_MAJOR_VERSION", source)
         for token in retired_tokens:
             self.assertNotRegex(source, rf"\b{token}")
+
+    def test_tray_sources_are_gtk4_only(self):
+        frontend = ROOT / "src" / "fe-gtk"
+        retired_tokens = (
+            "AppIndicator",
+            "GtkCheckMenuItem",
+            "GtkStatusIcon",
+            "HAVE_APPINDICATOR",
+            "HAVE_AYATANA_APPINDICATOR",
+            "HAVE_LEGACY_STATUS_ICON_BACKEND",
+            "app_indicator_",
+            "gtk_check_menu_item_",
+            "gtk_menu_item_",
+            "gtk_menu_shell_",
+            "gtk_status_icon_",
+            "gtk_widget_destroy",
+        )
+
+        for name in GTK4_TRAY_SOURCES:
+            source = (frontend / name).read_text(encoding="utf-8")
+            with self.subTest(source=name):
+                self.assertNotIn("GTK_MAJOR_VERSION", source)
+                for token in retired_tokens:
+                    self.assertNotRegex(source, rf"\b{token}")
+        plugin_source = (frontend / "plugin-tray.c").read_text(encoding="utf-8")
+        self.assertIn("environment.toolkit_major = 4;", plugin_source)
+
+        meson = FRONTEND_MESON.read_text(encoding="utf-8")
+        self.assertNotRegex(meson, r"\b(?:ayatana-)?appindicator")
 
     def test_transitional_windows_staging_is_removed(self):
         props = PROPS.read_text(encoding="utf-8")

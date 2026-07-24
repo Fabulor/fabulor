@@ -2674,6 +2674,19 @@ switches and representative GTK3 window/event/rendering APIs. The production
 frontend compiles and links cleanly, and the strict transcript policy probe
 passes with `/W4 /WX`.
 
+Stage 9 tray source specialization pass 13 (2026-07-24): tray integration now
+contains only the GTK4 action/menu model, backend policy, GTK4 popover
+presenter, window-state observation, and retained native Windows menu
+projection. The GTK3 AppIndicator and `GtkStatusIcon` backends, widget-menu
+construction/refresh, icon-theme adapter, restore polling, and all
+`appindicator3` Meson discovery are removed. Non-Windows GTK4 builds now report
+no compiled tray backend rather than accepting an ABI-incompatible GTK3
+dependency; a future tray implementation must provide a genuine GTK4
+StatusNotifier boundary. The frontend source inventory falls from 168 to 159
+`GTK_MAJOR_VERSION` conditionals. Repository lint protects the tray sources and
+Meson graph; the strict tray-policy probe and complete frontend both build
+cleanly.
+
 Deliverables:
 
 - Make GTK4 the only production frontend dependency in MSVC, Meson, and CI.
@@ -2718,5 +2731,6 @@ PR. Each PR must keep the shipping build usable and identify its rollback point.
 - GTK4 list widget choices for each large editable model.
 - Whether the spell-check entry remains a custom widget or becomes a composed
   input control.
-- Which Unix tray backend remains supportable after GTK4 cutover.
+- Which GTK4-native Unix StatusNotifier implementation should replace the
+  retired GTK3 AppIndicator backend.
 - The final allowlisted Windows runtime payload and provenance mechanism.

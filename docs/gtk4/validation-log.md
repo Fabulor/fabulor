@@ -7649,6 +7649,41 @@ GTK4 implementation and extracted policy helpers. No supported build can select
 the retired GTK3 transcript renderer. Remaining main UI, menu, platform, and
 dialog source branches remain separate Stage 9 cleanup targets.
 
+### GTK4 Stage 9 Tray Source Specialization, Pass 13
+
+Date: 2026-07-24
+
+Boundary retired: `plugin-tray.c` and the GTK4 tray presenter no longer carry
+parallel GTK3 integration. A total of 755 inactive GTK3 tray-source lines and
+20 obsolete AppIndicator Meson dependency lines are removed. The frontend-wide
+`GTK_MAJOR_VERSION`-conditional inventory falls from 168 to 159.
+
+Automated evidence:
+
+- strict GTK4 MSVC tray-policy/presenter probe build and execution: pass with
+  `/W4 /WX`, zero warnings and zero errors; GTK 4.22.4 / GLib 2.88.0 / x64
+  runtime confirmed
+- complete GTK4 frontend project build and link: pass with zero warnings and
+  zero errors in the affected incremental build
+- production profile contract suite: all 16 tests pass, including rejection of
+  restored toolkit-version switches, AppIndicator/StatusIcon APIs, GTK3 widget
+  menus, and Meson AppIndicator dependencies
+- complete GTK4 tooling contract suite: all 65 tests pass
+- theme retirement/import contract suite: all 7 tests pass
+- native manifest, path, and archive suite: all 22 tests pass
+- source audit: no `GTK_MAJOR_VERSION`, `GtkStatusIcon`, AppIndicator,
+  `GtkCheckMenuItem`, GTK3 menu-shell/item, or legacy backend macro remains in
+  the tray source set
+- repository whitespace validation: pass
+
+Behaviour contract: tray commands continue through the reviewed GTK4
+action/menu model, window-state observer, presenter, and retained native Windows
+menu projection. No GTK4 build may load or compile against the GTK3
+AppIndicator or `GtkStatusIcon` ABI. Non-Windows builds report no usable tray
+backend until a GTK4-native StatusNotifier implementation is added. Remaining
+application, main UI, menu, and dialog source branches remain separate Stage 9
+cleanup targets.
+
 ## Stage Completion Rule
 
 A stage can move to complete in `migration-plan.md` only when:
