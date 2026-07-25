@@ -2653,6 +2653,8 @@ check_emoji_picker_policy (void)
 	gchar *eu;
 	gchar *lowercase_eu;
 	gchar *grinning;
+	gint viewport_width;
+	gint viewport_height;
 	gboolean valid;
 
 	page = fabulor_emoji_picker_page_new (items, FALSE);
@@ -2660,6 +2662,8 @@ check_emoji_picker_policy (void)
 	eu = fabulor_emoji_picker_flag_sequence ("EU");
 	lowercase_eu = fabulor_emoji_picker_flag_sequence ("eu");
 	grinning = fabulor_emoji_picker_codepoint_sequence (0x1F600);
+	fabulor_emoji_picker_viewport_size (668, 429,
+		&viewport_width, &viewport_height);
 	valid = popover_get != NULL && popover_ensure != NULL &&
 		page != NULL && flags_page != NULL &&
 		fabulor_emoji_picker_page_items (page) == items &&
@@ -2676,7 +2680,14 @@ check_emoji_picker_policy (void)
 		fabulor_emoji_picker_flag_sequence ("EUU") == NULL &&
 		fabulor_emoji_picker_flag_sequence ("E1") == NULL &&
 		fabulor_emoji_picker_codepoint_sequence (0) == NULL &&
-		fabulor_emoji_picker_codepoint_sequence (0xD800) == NULL;
+		fabulor_emoji_picker_codepoint_sequence (0xD800) == NULL &&
+		viewport_width == 520 && viewport_height == 289;
+	fabulor_emoji_picker_viewport_size (1920, 1080,
+		&viewport_width, &viewport_height);
+	valid = valid && viewport_width == 520 && viewport_height == 320;
+	fabulor_emoji_picker_viewport_size (300, 200,
+		&viewport_width, &viewport_height);
+	valid = valid && viewport_width == 320 && viewport_height == 240;
 
 	g_free (eu);
 	g_free (lowercase_eu);

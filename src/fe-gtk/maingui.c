@@ -4419,6 +4419,12 @@ typedef struct
 } EmojiPickerPage;
 
 #define MG_EMOJI_PAGE_DATA "fabulor-emoji-page"
+#define MG_EMOJI_BUTTON_WIDTH 52
+#define MG_EMOJI_BUTTON_HEIGHT 48
+#define MG_EMOJI_FLAG_WIDTH 42
+#define MG_EMOJI_FLAG_HEIGHT 28
+#define MG_EMOJI_FLAG_SOURCE_WIDTH (MG_EMOJI_FLAG_WIDTH * 2)
+#define MG_EMOJI_FLAG_SOURCE_HEIGHT (MG_EMOJI_FLAG_HEIGHT * 2)
 
 static const char *mg_emoji_flag_codes[] = {
         "AC", "AD", "AE", "AF", "AG", "AI", "AL", "AM", "AO", "AQ", "AR", "AS",
@@ -4568,7 +4574,9 @@ mg_emoji_flag_load_pixbuf (const char *code)
         if (base_path)
         {
                 path = g_build_filename (base_path, "share", "emoji-flags", name, NULL);
-                pixbuf = gdk_pixbuf_new_from_file_at_scale (path, 34, 28, TRUE, &error);
+                pixbuf = gdk_pixbuf_new_from_file_at_scale (
+                                path, MG_EMOJI_FLAG_SOURCE_WIDTH,
+                                MG_EMOJI_FLAG_SOURCE_HEIGHT, TRUE, &error);
                 g_free (path);
                 if (pixbuf)
                         goto cleanup;
@@ -4577,7 +4585,9 @@ mg_emoji_flag_load_pixbuf (const char *code)
 #endif
 
         path = g_build_filename ("share", "emoji-flags", name, NULL);
-        pixbuf = gdk_pixbuf_new_from_file_at_scale (path, 34, 28, TRUE, &error);
+        pixbuf = gdk_pixbuf_new_from_file_at_scale (
+                        path, MG_EMOJI_FLAG_SOURCE_WIDTH,
+                        MG_EMOJI_FLAG_SOURCE_HEIGHT, TRUE, &error);
 
         if (!pixbuf)
         {
@@ -4627,8 +4637,11 @@ mg_emoji_grid_scroller_new (GtkWidget **grid_out)
         GtkWidget *grid;
 
         scrolled = gtk_scrolled_window_new ();
-        gtk_scrolled_window_set_policy (GTK_SCROLLED_WINDOW (scrolled), GTK_POLICY_NEVER, GTK_POLICY_AUTOMATIC);
-        gtk_widget_set_size_request (scrolled, 500, 330);
+        gtk_scrolled_window_set_policy (GTK_SCROLLED_WINDOW (scrolled),
+                                        GTK_POLICY_AUTOMATIC,
+                                        GTK_POLICY_AUTOMATIC);
+        gtk_widget_set_hexpand (scrolled, TRUE);
+        gtk_widget_set_vexpand (scrolled, TRUE);
 
         grid = gtk_grid_new ();
         gtk_grid_set_row_spacing (GTK_GRID (grid), 4);
@@ -4671,7 +4684,9 @@ static void
 mg_emoji_add_button (GtkWidget *grid, GtkEntry *entry, GtkWidget *popover, GtkWidget *child,
                      const char *sequence, const char *tooltip, int index)
 {
-        mg_emoji_add_button_sized (grid, entry, popover, child, sequence, tooltip, index, 46, 46);
+        mg_emoji_add_button_sized (grid, entry, popover, child, sequence,
+                                   tooltip, index, MG_EMOJI_BUTTON_WIDTH,
+                                   MG_EMOJI_BUTTON_HEIGHT);
 }
 
 static GtkWidget *
@@ -4696,7 +4711,8 @@ mg_emoji_codepoint_page_new (GtkEntry *entry, GtkWidget *popover, const gunichar
                 gtk_label_set_attributes (GTK_LABEL (label), attrs);
                 pango_attr_list_unref (attrs);
                 mg_apply_emoji_fallback_widget (label);
-                mg_emoji_add_button_sized (grid, entry, popover, label, sequence, sequence, i, 52, 48);
+                mg_emoji_add_button (grid, entry, popover, label, sequence,
+                                     sequence, i);
                 g_free (sequence);
         }
 
@@ -4732,7 +4748,15 @@ mg_emoji_flags_page_new (GtkEntry *entry, GtkWidget *popover)
                         box = gtk_box_new (GTK_ORIENTATION_VERTICAL, 1);
                         {
                                 GdkTexture *texture = gdk_texture_new_for_pixbuf (pixbuf);
-                                image = gtk_image_new_from_paintable (GDK_PAINTABLE (texture));
+                                image = gtk_picture_new_for_paintable (
+                                                GDK_PAINTABLE (texture));
+                                gtk_picture_set_content_fit (GTK_PICTURE (image),
+                                                GTK_CONTENT_FIT_CONTAIN);
+                                gtk_picture_set_can_shrink (GTK_PICTURE (image),
+                                                FALSE);
+                                gtk_widget_set_size_request (image,
+                                                MG_EMOJI_FLAG_WIDTH,
+                                                MG_EMOJI_FLAG_HEIGHT);
                                 g_object_unref (texture);
                         }
                         g_object_unref (pixbuf);
@@ -4822,12 +4846,32 @@ mg_emoji_stack_visible_child_cb (GObject *object, GParamSpec *pspec,
 }
 
 static void
+mg_emoji_popover_apply_size (GtkEntry *entry, GtkPopover *popover)
+{
+        GtkWidget *outer;
+        GtkWidget *root;
+        int viewport_width;
+        int viewport_height;
+
+        outer = gtk_popover_get_child (popover);
+        if (!outer)
+                return;
+        root = GTK_WIDGET (gtk_widget_get_root (GTK_WIDGET (entry)));
+        fabulor_emoji_picker_viewport_size (
+                root ? fabulor_gtk_widget_get_allocated_width (root) : 0,
+                root ? gtk_widget_get_height (root) : 0,
+                &viewport_width, &viewport_height);
+        gtk_widget_set_size_request (outer, viewport_width, viewport_height);
+}
+
+static void
 mg_show_emoji_popover (GtkEntry *entry)
 {
         GtkWidget *popover;
         GtkWidget *outer;
         GtkWidget *stack;
         GtkWidget *switcher;
+        GtkWidget *switcher_scroller;
         GtkWidget *page;
         gchar *name;
         int i;
@@ -4835,6 +4879,7 @@ mg_show_emoji_popover (GtkEntry *entry)
         popover = GTK_WIDGET (fabulor_emoji_picker_popover_get (entry));
         if (popover)
         {
+                mg_emoji_popover_apply_size (entry, GTK_POPOVER (popover));
                 gtk_popover_popup (GTK_POPOVER (popover));
                 return;
         }
@@ -4851,10 +4896,24 @@ mg_show_emoji_popover (GtkEntry *entry)
         fabulor_gtk_popover_set_child (GTK_POPOVER (popover), outer);
 
         stack = gtk_stack_new ();
+        gtk_widget_set_hexpand (stack, TRUE);
+        gtk_widget_set_vexpand (stack, TRUE);
         gtk_stack_set_transition_type (GTK_STACK (stack), GTK_STACK_TRANSITION_TYPE_NONE);
         switcher = gtk_stack_switcher_new ();
         gtk_stack_switcher_set_stack (GTK_STACK_SWITCHER (switcher), GTK_STACK (stack));
-        fabulor_gtk_box_append (GTK_BOX (outer), switcher, FALSE, FALSE, 0);
+        switcher_scroller = gtk_scrolled_window_new ();
+        gtk_scrolled_window_set_policy (
+                        GTK_SCROLLED_WINDOW (switcher_scroller),
+                        GTK_POLICY_AUTOMATIC, GTK_POLICY_NEVER);
+        gtk_scrolled_window_set_propagate_natural_width (
+                        GTK_SCROLLED_WINDOW (switcher_scroller), FALSE);
+        gtk_scrolled_window_set_min_content_width (
+                        GTK_SCROLLED_WINDOW (switcher_scroller), 1);
+        gtk_widget_set_hexpand (switcher_scroller, TRUE);
+        fabulor_gtk_scrolled_window_set_child (
+                        GTK_SCROLLED_WINDOW (switcher_scroller), switcher);
+        fabulor_gtk_box_append (GTK_BOX (outer), switcher_scroller,
+                               FALSE, FALSE, 0);
         fabulor_gtk_box_append (GTK_BOX (outer), stack, TRUE, TRUE, 0);
 
         for (i = 0; mg_emoji_categories[i].title != NULL; i++)
@@ -4873,6 +4932,7 @@ mg_show_emoji_popover (GtkEntry *entry)
         page = gtk_stack_get_visible_child (GTK_STACK (stack));
         mg_emoji_lazy_page_load (page);
 
+        mg_emoji_popover_apply_size (entry, GTK_POPOVER (popover));
         fabulor_gtk_widget_reveal_tree (popover);
         gtk_popover_popup (GTK_POPOVER (popover));
 }
