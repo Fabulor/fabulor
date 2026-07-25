@@ -683,6 +683,57 @@ check_box_reorder_ownership (gboolean gtk_ready)
 }
 
 static gboolean
+probe_input_controller_key (GtkWidget *widget, guint keyval,
+	GdkModifierType state, gpointer user_data)
+{
+	(void) widget;
+	(void) keyval;
+	(void) state;
+	(void) user_data;
+	return FALSE;
+}
+
+static gboolean
+probe_input_controller_click (GtkWidget *widget, guint button, guint n_press,
+	gdouble x, gdouble y, GdkModifierType state, gpointer user_data)
+{
+	(void) widget;
+	(void) button;
+	(void) n_press;
+	(void) x;
+	(void) y;
+	(void) state;
+	(void) user_data;
+	return FALSE;
+}
+
+static gboolean
+check_input_controller_phase (gboolean gtk_ready)
+{
+	GtkWidget *entry;
+	GtkEventController *key;
+	GtkEventController *click;
+	gboolean valid;
+
+	if (!gtk_ready)
+		return TRUE;
+
+	entry = gtk_entry_new ();
+	g_object_ref_sink (entry);
+	key = fabulor_gtk_widget_on_key_pressed_phase (entry,
+		GTK_PHASE_CAPTURE, probe_input_controller_key, NULL);
+	click = fabulor_gtk_widget_on_multi_click_phase (entry,
+		GTK_PHASE_CAPTURE, probe_input_controller_click, NULL);
+	valid = key && click &&
+		gtk_event_controller_get_propagation_phase (key) ==
+			GTK_PHASE_CAPTURE &&
+		gtk_event_controller_get_propagation_phase (click) ==
+			GTK_PHASE_CAPTURE;
+	g_object_unref (entry);
+	return valid;
+}
+
+static gboolean
 check_layout_reparent_ownership (gboolean gtk_ready)
 {
 	GtkWidget *paned;
@@ -5336,6 +5387,11 @@ main (void)
 	if (!check_layout_reparent_ownership (gtk_ready))
 	{
 		fprintf (stderr, "GTK4 layout reparent ownership mismatch\n");
+		return 1;
+	}
+	if (!check_input_controller_phase (gtk_ready))
+	{
+		fprintf (stderr, "GTK4 input controller phase mismatch\n");
 		return 1;
 	}
 	if (!check_entry_text (gtk_ready))
