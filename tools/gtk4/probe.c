@@ -823,6 +823,54 @@ check_icon_button (gboolean gtk_ready)
 }
 
 static gboolean
+check_scroll_to_bottom_contract (gboolean gtk_ready)
+{
+	GtkAdjustment *adjustment;
+	GtkWidget *overlay;
+	GtkWidget *content;
+	GtkWidget *button;
+	GtkWidget *icon;
+	gboolean valid;
+
+	adjustment = gtk_adjustment_new (0.0, 0.0, 100.0, 1.0, 10.0, 20.0);
+	valid = !fabulor_gtk_adjustment_is_at_end (adjustment, 0.5);
+	gtk_adjustment_set_value (adjustment, 79.6);
+	valid = valid && fabulor_gtk_adjustment_is_at_end (adjustment, 0.5);
+	gtk_adjustment_set_value (adjustment, 0.0);
+	fabulor_gtk_adjustment_scroll_to_end (adjustment);
+	valid = valid && gtk_adjustment_get_value (adjustment) == 80.0;
+	g_object_unref (adjustment);
+
+	if (!gtk_ready)
+		return valid;
+
+	overlay = gtk_overlay_new ();
+	content = gtk_label_new ("transcript");
+	button = gtk_button_new ();
+	icon = fabulor_gtk_chevron_down_new (24, 18);
+	gtk_button_set_child (GTK_BUTTON (button), icon);
+	g_object_ref_sink (overlay);
+	fabulor_gtk_overlay_set_child (GTK_OVERLAY (overlay), content);
+	gtk_widget_set_halign (button, GTK_ALIGN_END);
+	gtk_widget_set_valign (button, GTK_ALIGN_END);
+	gtk_widget_set_margin_end (button, 22);
+	gtk_widget_set_margin_bottom (button, 12);
+	gtk_overlay_add_overlay (GTK_OVERLAY (overlay), button);
+	gtk_overlay_set_clip_overlay (GTK_OVERLAY (overlay), button, FALSE);
+	valid = valid && gtk_widget_get_parent (button) == overlay &&
+		GTK_IS_DRAWING_AREA (icon) &&
+		gtk_drawing_area_get_content_width (GTK_DRAWING_AREA (icon)) == 24 &&
+		gtk_drawing_area_get_content_height (GTK_DRAWING_AREA (icon)) == 18 &&
+		gtk_widget_get_halign (button) == GTK_ALIGN_END &&
+		gtk_widget_get_valign (button) == GTK_ALIGN_END &&
+		gtk_widget_get_margin_end (button) == 22 &&
+		gtk_widget_get_margin_bottom (button) == 12 &&
+		!gtk_overlay_get_clip_overlay (GTK_OVERLAY (overlay), button);
+	g_object_unref (overlay);
+	return valid;
+}
+
+static gboolean
 check_icon_mnemonic_button (gboolean gtk_ready)
 {
 	GtkWidget *button;
@@ -5407,6 +5455,11 @@ main (void)
 	if (!check_icon_button (gtk_ready))
 	{
 		fprintf (stderr, "GTK4 icon button contract mismatch\n");
+		return 1;
+	}
+	if (!check_scroll_to_bottom_contract (gtk_ready))
+	{
+		fprintf (stderr, "GTK4 scroll-to-bottom contract mismatch\n");
 		return 1;
 	}
 	if (!check_icon_mnemonic_button (gtk_ready))

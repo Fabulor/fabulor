@@ -5484,6 +5484,25 @@ gtk_xtext_set_max_indent (GtkXText *xtext, int max_auto_indent)
 }
 
 void
+gtk_xtext_scroll_to_bottom (GtkXText *xtext)
+{
+	g_return_if_fail (GTK_IS_XTEXT (xtext));
+	if (!xtext->buffer || !xtext->adj)
+		return;
+
+	xtext->buffer->scrollbar_down = TRUE;
+	fabulor_gtk_adjustment_scroll_to_end (xtext->adj);
+	gtk_widget_queue_draw (GTK_WIDGET (xtext));
+}
+
+gboolean
+gtk_xtext_is_at_bottom (GtkXText *xtext)
+{
+	g_return_val_if_fail (GTK_IS_XTEXT (xtext), TRUE);
+	return !xtext->buffer || xtext->buffer->scrollbar_down;
+}
+
+void
 gtk_xtext_set_max_lines (GtkXText *xtext, int max_lines)
 {
 	xtext->max_lines = max_lines;

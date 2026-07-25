@@ -1447,11 +1447,21 @@ fabulor_gtk_widget_on_key_pressed_phase (GtkWidget *widget,
 
 	GtkEventController *controller = gtk_event_controller_key_new ();
 
-	gtk_event_controller_set_propagation_phase (controller, GTK_PHASE_BUBBLE);
+	gtk_event_controller_set_propagation_phase (controller, phase);
 	g_signal_connect_data (controller, "key-pressed",
 		G_CALLBACK (fabulor_gtk_key_pressed_cb), interaction,
 		fabulor_gtk_key_interaction_free, 0);
 	gtk_widget_add_controller (widget, controller);
+	return controller;
+}
+
+static inline void
+fabulor_gtk_widget_on_key_pressed (GtkWidget *widget,
+								FabulorGtkKeyFunc callback,
+								gpointer user_data)
+{
+	(void) fabulor_gtk_widget_on_key_pressed_phase (widget,
+		GTK_PHASE_BUBBLE, callback, user_data);
 }
 
 typedef gboolean (*FabulorGtkScrollFunc) (GtkWidget *widget, gdouble dx,
@@ -1848,6 +1858,73 @@ fabulor_gtk_overlay_set_child (GtkOverlay *overlay, GtkWidget *child)
 	g_return_if_fail (GTK_IS_WIDGET (child));
 
 	gtk_overlay_set_child (overlay, child);
+}
+
+static inline gboolean
+fabulor_gtk_adjustment_is_at_end (GtkAdjustment *adjustment,
+	gdouble tolerance)
+{
+	gdouble lower;
+	gdouble target;
+
+	g_return_val_if_fail (GTK_IS_ADJUSTMENT (adjustment), TRUE);
+	lower = gtk_adjustment_get_lower (adjustment);
+	target = MAX (lower, gtk_adjustment_get_upper (adjustment) -
+		gtk_adjustment_get_page_size (adjustment));
+	return gtk_adjustment_get_value (adjustment) >=
+		target - MAX (tolerance, 0.0);
+}
+
+static inline void
+fabulor_gtk_adjustment_scroll_to_end (GtkAdjustment *adjustment)
+{
+	gdouble lower;
+	gdouble target;
+
+	g_return_if_fail (GTK_IS_ADJUSTMENT (adjustment));
+	lower = gtk_adjustment_get_lower (adjustment);
+	target = MAX (lower, gtk_adjustment_get_upper (adjustment) -
+		gtk_adjustment_get_page_size (adjustment));
+	gtk_adjustment_set_value (adjustment, target);
+}
+
+static inline void
+fabulor_gtk_chevron_down_draw (GtkDrawingArea *area, cairo_t *cr,
+	gint width, gint height, gpointer user_data)
+{
+	GdkRGBA color;
+	gdouble inset;
+	gdouble top;
+	gdouble bottom;
+
+	(void) user_data;
+	gtk_widget_get_color (GTK_WIDGET (area), &color);
+	inset = MAX (2.0, width * 0.12);
+	top = MAX (2.0, height * 0.22);
+	bottom = MIN (height - 2.0, height * 0.78);
+	gdk_cairo_set_source_rgba (cr, &color);
+	cairo_set_line_width (cr, MAX (2.0, MIN (width, height) * 0.18));
+	cairo_set_line_cap (cr, CAIRO_LINE_CAP_ROUND);
+	cairo_set_line_join (cr, CAIRO_LINE_JOIN_ROUND);
+	cairo_move_to (cr, inset, top);
+	cairo_line_to (cr, width / 2.0, bottom);
+	cairo_line_to (cr, width - inset, top);
+	cairo_stroke (cr);
+}
+
+static inline GtkWidget *
+fabulor_gtk_chevron_down_new (gint width, gint height)
+{
+	GtkWidget *area;
+
+	g_return_val_if_fail (width > 0, NULL);
+	g_return_val_if_fail (height > 0, NULL);
+	area = gtk_drawing_area_new ();
+	gtk_drawing_area_set_content_width (GTK_DRAWING_AREA (area), width);
+	gtk_drawing_area_set_content_height (GTK_DRAWING_AREA (area), height);
+	gtk_drawing_area_set_draw_func (GTK_DRAWING_AREA (area),
+		fabulor_gtk_chevron_down_draw, NULL, NULL);
+	return area;
 }
 
 static inline void
