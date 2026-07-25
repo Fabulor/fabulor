@@ -4461,41 +4461,80 @@ check_middle_context_menu_model (void)
 {
 	GMenu *fabulor = g_menu_new ();
 	GMenu *view = g_menu_new ();
+	GMenu *settings = g_menu_new ();
+	GMenu *window = g_menu_new ();
 	GMenu *plugin_root = g_menu_new ();
+	GMenu *plugin_root_section = g_menu_new ();
 	GMenu *plugin_fabulor = g_menu_new ();
+	GMenu *plugin_fabulor_extra = g_menu_new ();
+	GMenu *plugin_settings = g_menu_new ();
+	GMenu *plugin_window = g_menu_new ();
 	GMenu *plugin_tools = g_menu_new ();
 	FabulorMiddleContextMenuModel *model;
-	FabulorMiddleContextSection sections[2];
+	FabulorMiddleContextSection sections[4];
 	GMenuModel *menu;
 	GMenuModel *fabulor_submenu;
 	GMenuModel *plugin_section;
+	GMenuModel *settings_submenu;
+	GMenuModel *window_submenu;
 	char *fabulor_label = g_strdup ("Fabulor");
 	char *view_label = g_strdup ("View");
+	char *settings_label = g_strdup ("Settings");
+	char *window_label = g_strdup ("Window");
 	char *label = NULL;
 	gboolean passed;
 
 	g_menu_append (fabulor, "Networks", "fabulor.networks");
 	g_menu_append (view, "Menu Bar", "fabulor.menu-bar");
+	g_menu_append (settings, "Preferences", "fabulor.preferences");
+	g_menu_append (window, "Ban List", "fabulor.ban-list");
 	g_menu_append (plugin_fabulor, "Plugin Command", "fabulor.plugin-0");
+	g_menu_append (plugin_fabulor_extra, "Second Plugin Command",
+		"fabulor.plugin-2");
+	g_menu_append (plugin_settings, "Ignore Queries", "fabulor.plugin-3");
+	g_menu_append (plugin_window, "Display System Info",
+		"fabulor.plugin-4");
 	g_menu_append (plugin_tools, "Tool Command", "fabulor.plugin-1");
 	g_menu_append_submenu (plugin_root, "_Fabulor",
 		G_MENU_MODEL (plugin_fabulor));
+	g_menu_append_submenu (plugin_root, "Fabulor",
+		G_MENU_MODEL (plugin_fabulor_extra));
+	g_menu_append_submenu (plugin_root, "_Settings",
+		G_MENU_MODEL (plugin_settings));
+	g_menu_append_submenu (plugin_root, "Window",
+		G_MENU_MODEL (plugin_window));
 	g_menu_append_submenu (plugin_root, "Tools", G_MENU_MODEL (plugin_tools));
+	g_menu_append_section (plugin_root_section, NULL,
+		G_MENU_MODEL (plugin_root));
 	sections[0].label = fabulor_label;
 	sections[0].plugin_path = "Fabulor";
 	sections[0].model = G_MENU_MODEL (fabulor);
 	sections[1].label = view_label;
 	sections[1].plugin_path = "View";
 	sections[1].model = G_MENU_MODEL (view);
+	sections[2].label = settings_label;
+	sections[2].plugin_path = "Settings";
+	sections[2].model = G_MENU_MODEL (settings);
+	sections[3].label = window_label;
+	sections[3].plugin_path = "_Window";
+	sections[3].model = G_MENU_MODEL (window);
 	model = fabulor_middle_context_menu_model_new (sections,
-		G_N_ELEMENTS (sections), G_MENU_MODEL (plugin_root));
+		G_N_ELEMENTS (sections), G_MENU_MODEL (plugin_root_section));
 	g_free (fabulor_label);
 	g_free (view_label);
+	g_free (settings_label);
+	g_free (window_label);
 	g_object_unref (fabulor);
 	g_object_unref (view);
+	g_object_unref (settings);
+	g_object_unref (window);
 	g_object_unref (plugin_fabulor);
+	g_object_unref (plugin_fabulor_extra);
+	g_object_unref (plugin_settings);
+	g_object_unref (plugin_window);
 	g_object_unref (plugin_tools);
 	g_object_unref (plugin_root);
+	g_object_unref (plugin_root_section);
 	if (!model)
 		return FALSE;
 	menu = fabulor_middle_context_menu_model_get_menu (model);
@@ -4503,18 +4542,28 @@ check_middle_context_menu_model (void)
 		G_MENU_LINK_SUBMENU);
 	plugin_section = fabulor_submenu ? g_menu_model_get_item_link (
 		fabulor_submenu, 1, G_MENU_LINK_SECTION) : NULL;
-	passed = g_menu_model_get_n_items (menu) == 3 && fabulor_submenu &&
+	settings_submenu = g_menu_model_get_item_link (menu, 2,
+		G_MENU_LINK_SUBMENU);
+	window_submenu = g_menu_model_get_item_link (menu, 3,
+		G_MENU_LINK_SUBMENU);
+	passed = g_menu_model_get_n_items (menu) == 5 && fabulor_submenu &&
 		g_menu_model_get_n_items (fabulor_submenu) == 2 && plugin_section &&
-		g_menu_model_get_n_items (plugin_section) == 1 &&
+		g_menu_model_get_n_items (plugin_section) == 2 &&
 		g_menu_model_get_item_attribute (plugin_section, 0,
 			G_MENU_ATTRIBUTE_LABEL, "s", &label) &&
-		g_strcmp0 (label, "Plugin Command") == 0;
+		g_strcmp0 (label, "Plugin Command") == 0 &&
+		settings_submenu &&
+		g_menu_model_get_n_items (settings_submenu) == 2 &&
+		window_submenu &&
+		g_menu_model_get_n_items (window_submenu) == 2;
 	g_free (label);
 	label = NULL;
-	passed = passed && g_menu_model_get_item_attribute (menu, 2,
+	passed = passed && g_menu_model_get_item_attribute (menu, 4,
 		G_MENU_ATTRIBUTE_LABEL, "s", &label) &&
 		g_strcmp0 (label, "Tools") == 0;
 	g_free (label);
+	g_clear_object (&window_submenu);
+	g_clear_object (&settings_submenu);
 	g_clear_object (&plugin_section);
 	g_clear_object (&fabulor_submenu);
 	fabulor_middle_context_menu_model_free (model);
