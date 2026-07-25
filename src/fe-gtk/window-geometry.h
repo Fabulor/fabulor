@@ -20,5 +20,7 @@ void fabulor_window_geometry_get (GtkWindow *window,
 	FabulorWindowGeometry *geometry);
 void fabulor_window_geometry_watch (GtkWindow *window,
 	FabulorWindowGeometryCallback callback, gpointer user_data);
+gint fabulor_pane_clamp_end_size (gint saved_size, gint minimum_size,
+	gint pane_width, gint handle_size);
 
 #endif

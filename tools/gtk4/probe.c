@@ -700,11 +700,16 @@ check_layout_reparent_ownership (gboolean gtk_ready)
 	g_object_ref_sink (paned);
 	fabulor_gtk_paned_set_start_child (GTK_PANED (paned), paned_child,
 		FALSE, TRUE);
-	valid = fabulor_gtk_layout_retain_and_detach_child (paned_child) &&
+	valid = !gtk_paned_get_resize_start_child (GTK_PANED (paned)) &&
+		gtk_paned_get_shrink_start_child (GTK_PANED (paned)) &&
+		fabulor_gtk_layout_retain_and_detach_child (paned_child) &&
 		gtk_widget_get_parent (paned_child) == NULL;
 	fabulor_gtk_paned_set_end_child (GTK_PANED (paned), paned_child,
-		FALSE, TRUE);
-	valid = valid && gtk_widget_get_parent (paned_child) == paned;
+		TRUE, FALSE);
+	valid = valid &&
+		gtk_paned_get_resize_end_child (GTK_PANED (paned)) &&
+		!gtk_paned_get_shrink_end_child (GTK_PANED (paned)) &&
+		gtk_widget_get_parent (paned_child) == paned;
 	g_object_unref (paned_child);
 	g_object_unref (paned);
 
@@ -5213,6 +5218,11 @@ check_window_geometry_boundary (gboolean gtk_ready)
 	FabulorWindowGeometry geometry;
 	ProbeWindowGeometry probe = { 0 };
 
+	if (fabulor_pane_clamp_end_size (2, 80, 500, 6) != 80 ||
+		fabulor_pane_clamp_end_size (120, 80, 500, 6) != 120 ||
+		fabulor_pane_clamp_end_size (600, 80, 500, 6) != 494 ||
+		fabulor_pane_clamp_end_size (2, 80, 4, 6) != 0)
+		return FALSE;
 	if (!gtk_ready)
 		return TRUE;
 	window = GTK_WINDOW (fabulor_gtk_window_new ());

@@ -12,6 +12,20 @@ typedef struct
 	gulong layout_handler;
 } FabulorWindowGeometryWatch;
 
+gint
+fabulor_pane_clamp_end_size (gint saved_size, gint minimum_size,
+	gint pane_width, gint handle_size)
+{
+	gint available;
+	gint normalized;
+
+	available = pane_width - MAX (handle_size, 0);
+	if (available < 1)
+		return 0;
+	normalized = MAX (saved_size, MAX (minimum_size, 1));
+	return MIN (normalized, available);
+}
+
 void
 fabulor_window_geometry_get (GtkWindow *window,
 	FabulorWindowGeometry *geometry)

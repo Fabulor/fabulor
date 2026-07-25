@@ -181,6 +181,7 @@ typedef struct session_gui
 
 	guint16 is_tab;	/* is tab or toplevel? */
 	guint16 ul_hidden;	/* userlist hidden? */
+	guint16 pane_right_restoring; /* initial GTK4 allocation is not user input */
 
 } session_gui;
 

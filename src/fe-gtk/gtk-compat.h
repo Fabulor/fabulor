@@ -1690,9 +1690,9 @@ fabulor_gtk_paned_set_start_child (GtkPaned *paned, GtkWidget *child,
 {
 	g_return_if_fail (GTK_IS_PANED (paned));
 
-	(void) resize;
-	(void) shrink;
 	gtk_paned_set_start_child (paned, child);
+	gtk_paned_set_resize_start_child (paned, resize);
+	gtk_paned_set_shrink_start_child (paned, shrink);
 }
 
 static inline void
@@ -1701,9 +1701,9 @@ fabulor_gtk_paned_set_end_child (GtkPaned *paned, GtkWidget *child,
 {
 	g_return_if_fail (GTK_IS_PANED (paned));
 
-	(void) resize;
-	(void) shrink;
 	gtk_paned_set_end_child (paned, child);
+	gtk_paned_set_resize_end_child (paned, resize);
+	gtk_paned_set_shrink_end_child (paned, shrink);
 }
 
 static inline GtkWidget *

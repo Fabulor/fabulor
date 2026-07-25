@@ -3703,11 +3703,12 @@ mg_create_scroll_to_bottom_button (session_gui *gui, GtkOverlay *overlay)
         fabulor_gtk_widget_add_css_class (gui->scroll_bottom_button,
                                           "zoitechat-scroll-bottom-button");
         gtk_overlay_add_overlay (overlay, gui->scroll_bottom_button);
+        gtk_overlay_set_clip_overlay (overlay, gui->scroll_bottom_button, FALSE);
 
 	g_signal_connect (G_OBJECT (gui->scroll_bottom_button), "clicked",
 	                  G_CALLBACK (mg_scroll_to_bottom_clicked), gui);
 
-        adj = gtk_range_get_adjustment (GTK_RANGE (gui->vscrollbar));
+        adj = gtk_scrollable_get_vadjustment (GTK_SCROLLABLE (gui->xtext));
         g_signal_connect_object (G_OBJECT (adj), "value-changed",
                                  G_CALLBACK (mg_scroll_to_bottom_adjustment_changed), gui->scroll_bottom_button, 0);
         g_signal_connect_object (G_OBJECT (adj), "changed",
@@ -4076,12 +4077,19 @@ mg_rightpane_cb (GtkPaned *pane, GParamSpec *param, session_gui *gui)
 {
         int handle_size;
         int pane_width;
+        int right_size;
 
+        (void) param;
+        if (gui->pane_right_restoring || !gui->user_box ||
+                !gtk_widget_get_visible (gui->user_box) ||
+                fabulor_gtk_widget_get_allocated_width (gui->user_box) < 1)
+                return;
         handle_size = fabulor_gtk_paned_get_handle_size (pane);
         /* record the position from the RIGHT side */
         pane_width = fabulor_gtk_widget_get_allocated_width (GTK_WIDGET (pane));
-        prefs.hex_gui_pane_right_size = pane_width -
-                gtk_paned_get_position (pane) - handle_size;
+        right_size = pane_width - gtk_paned_get_position (pane) - handle_size;
+        prefs.hex_gui_pane_right_size = fabulor_pane_clamp_end_size (right_size,
+                prefs.hex_gui_pane_right_size_min, pane_width, handle_size);
 }
 
 static void
@@ -4092,9 +4100,11 @@ mg_restore_rightpane (GtkPaned *pane, int pane_width, gpointer data)
         /* use the value captured at connect time, since notify::position may
          * have already overwritten prefs.hex_gui_pane_right_size during layout */
         saved_size = GPOINTER_TO_INT (data);
+        handle_size = fabulor_gtk_paned_get_handle_size (pane);
+        saved_size = fabulor_pane_clamp_end_size (saved_size,
+                prefs.hex_gui_pane_right_size_min, pane_width, handle_size);
         if (saved_size < 1)
                 return;
-        handle_size = fabulor_gtk_paned_get_handle_size (pane);
         gtk_paned_set_position (pane, pane_width - saved_size - handle_size);
 }
 
@@ -4102,6 +4112,7 @@ static gboolean
 mg_restore_rightpane_tick_cb (GtkWidget *widget, GdkFrameClock *frame_clock,
                               gpointer data)
 {
+        session_gui *gui = data;
         GtkPaned *pane = GTK_PANED (widget);
         GtkWidget *end_child = fabulor_gtk_paned_get_end_child (pane);
         int pane_width = fabulor_gtk_widget_get_allocated_width (widget);
@@ -4111,7 +4122,9 @@ mg_restore_rightpane_tick_cb (GtkWidget *widget, GdkFrameClock *frame_clock,
                 fabulor_gtk_widget_get_allocated_width (end_child) < 1)
                 return G_SOURCE_CONTINUE;
 
-        mg_restore_rightpane (pane, pane_width, data);
+        mg_restore_rightpane (pane, pane_width,
+                GINT_TO_POINTER (gui->pane_right_size));
+        gui->pane_right_restoring = 0;
         return G_SOURCE_REMOVE;
 }
 
@@ -4150,9 +4163,11 @@ mg_create_center (session *sess, session_gui *gui, GtkWidget *box)
 
 	/* Restore after the first complete allocation. Capture the saved size before
 	 * notify::position can overwrite it during initial layout. */
+	gui->pane_right_size = prefs.hex_gui_pane_right_size;
+	gui->pane_right_restoring = 1;
 	gtk_widget_add_tick_callback (gui->hpane_right,
 		mg_restore_rightpane_tick_cb,
-		GINT_TO_POINTER (prefs.hex_gui_pane_right_size), NULL);
+		gui, NULL);
 
         if (prefs.hex_gui_win_swap)
         {
