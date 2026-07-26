@@ -1603,6 +1603,12 @@ restored pane falls back to the configured nickname/minimum width. Clean
 install testing confirms stable geometry across every channel with no observed
 switching lag.
 
+Stage 9 inert-configuration retirement pass 37 removes `text_transparent`.
+The setting survived only in the persisted schema and preference structure;
+the GTK4 renderer, background-image support, theme application, and all other
+frontend behavior had no reader for it. Existing saved values are ignored and
+disappear on the next canonical configuration write.
+
 ## Functional Clusters
 
 | Cluster | Main files | GTK4 concern | Status |

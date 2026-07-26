@@ -609,7 +609,6 @@ const struct prefs vars[] =
 	{"text_stripcolor_replay", P_OFFINT (hex_text_stripcolor_replay), TYPE_BOOL},
 	{"text_stripcolor_topic", P_OFFINT (hex_text_stripcolor_topic), TYPE_BOOL},
 	{"text_thin_sep", P_OFFINT (hex_text_thin_sep), TYPE_BOOL},
-	{"text_transparent", P_OFFINT (hex_text_transparent), TYPE_BOOL},
 	{"text_wordwrap", P_OFFINT (hex_text_wordwrap), TYPE_BOOL},
 
 	{"url_grabber", P_OFFINT (hex_url_grabber), TYPE_BOOL},

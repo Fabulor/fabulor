@@ -8617,6 +8617,43 @@ Installed acceptance: pass after clean uninstall/install. The user-list pane
 remains stable while switching through all channels, and no channel-switch lag
 was observed.
 
+### GTK4 Stage 9 Inert Configuration Retirement, Pass 37
+
+Date: 2026-07-26
+
+`text_transparent` survived as a persisted compatibility setting despite
+having no behavioral reader in the common core, GTK4 frontend, plugin bridge,
+tests, build, or packaging paths.
+
+Removal and compatibility:
+
+- remove `text_transparent` from the persisted preference schema
+- remove `hex_text_transparent` from `zoitechatprefs`
+- ignore old saved values and omit them on the next canonical configuration
+  write
+- retain background-image and GTK4 theme behavior unchanged
+
+Automated evidence:
+
+- complete production-source audit contains no remaining
+  `text_transparent` references
+- common-core rebuild: zero warnings and zero errors
+- full GTK4 frontend rebuild: zero warnings and zero errors
+- GTK4 tooling contract suite: 79/79 passed
+- theme contract suite: 7/7 passed
+- production MSI and bootstrapper rebuild: zero warnings and zero errors
+- production MSI validation: 7,624 installed files and zero GTK3 path markers
+- runtime validation: all 1,431 manifest entries and content hashes verified
+- production bundle validation: version `1.0.4`, one embedded MSI, and exact
+  embedded/published MSI equality
+- production MSI SHA-256:
+  `35B41BEFCFE0B5E67A61505CBF72909976F29EB8585F5C746542EDE2058DF35B`
+- production bootstrapper SHA-256:
+  `A3E234D5E61F18A71D1218FC27C09B439A15C2C9E8976F7CF104682F318BE904`
+
+Installed acceptance: pass. `/SET text_transparent` reports no such variable
+and supported appearance behavior remains operational.
+
 ## Stage Completion Rule
 
 A stage can move to complete in `migration-plan.md` only when:

@@ -2973,6 +2973,15 @@ recovers to the configured nickname or minimum width. Clean uninstall/install
 testing and switching through all channels confirm stable pane dimensions and
 no apparent channel-switch lag.
 
+Stage 9 inert-configuration retirement pass 37 (2026-07-26):
+`text_transparent` is removed from the persisted schema and preference
+structure after a mechanical audit found no behavioral reader. Existing saved
+values are ignored and omitted on the next canonical write. Common core,
+frontend, and installer builds complete with zero warnings and errors; all 86
+GTK4 and theme tooling tests and all production package validators pass.
+Installed testing confirms `/SET text_transparent` reports no such variable
+and supported appearance behavior remains operational.
+
 Deliverables:
 
 - Make GTK4 the only production frontend dependency in MSVC, Meson, and CI.

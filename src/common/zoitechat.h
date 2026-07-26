@@ -220,7 +220,6 @@ struct zoitechatprefs
 	unsigned int hex_text_stripcolor_replay;
 	unsigned int hex_text_stripcolor_topic;
 	unsigned int hex_text_thin_sep;
-	unsigned int hex_text_transparent;
 	unsigned int hex_text_wordwrap;
 	unsigned int hex_url_grabber;
 	unsigned int hex_url_logging;

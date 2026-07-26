@@ -32,7 +32,7 @@ obsolete, unsafe, inert, or outside Fabulor's product scope.
 | 3 | Wingate proxy mode | Published | Preserve all other proxy numeric values; treat saved Wingate selection value `1` as disabled. |
 | 4 | SOCKS4 proxy mode | Proposed | Review usage, security, DNS, IPv6, and migration impact before deciding. |
 | 5 | Retained Perl source and residual configuration | Deferred | Keep source until the final repository cleanup; it remains outside the packaged C#/Python/Tcl plugin model. |
-| 6 | Other inert configuration keys | Proposed | Audit individually; do not remove a key until all runtime readers and migration effects are understood. |
+| 6 | Other inert configuration keys | Accepted | `text_transparent` is retired and accepted; audit remaining keys individually. |
 
 ## Published Retirements
 
@@ -223,7 +223,7 @@ plugin paths.
 
 ### Other Inert Configuration Keys
 
-Status: `Proposed`
+Status: `Accepted`
 
 Perform a mechanical reference audit over every persisted preference. A key is
 a retirement candidate when it has no behavioral reader beyond schema,
@@ -232,6 +232,44 @@ defaults, structure storage, tests, or historical documentation.
 Each key must be handled as a separate contained stage unless several keys
 share one inseparable behavior boundary. Saved-key handling and `/SET`
 compatibility must be recorded before implementation.
+
+#### `text_transparent`
+
+Status: `Accepted`
+
+The mechanical reference audit found that `text_transparent` survived only in
+the persisted preference schema and `zoitechatprefs` structure. No core,
+frontend, plugin, test, build, or packaging behavior read it.
+
+Compatibility policy:
+
+- ignore an existing saved `text_transparent` value
+- omit the key on the next canonical configuration write
+- report no such variable for `/SET text_transparent`
+- retain supported background-image and GTK4 theme behavior unchanged
+
+Automated evidence:
+
+- complete source audit contains no remaining `text_transparent` references
+- common core and GTK4 frontend rebuild with zero warnings and errors
+- all 86 GTK4 and theme tooling tests pass
+- production MSI and bootstrapper rebuild with zero warnings and errors
+- all production package and embedded-payload validators pass
+
+Installed acceptance:
+
+- `/SET text_transparent` reports no such variable
+- supported appearance behavior remains operational
+
+Publication remains pending.
+
+#### Remaining Audit Results
+
+- `irc_cap_server_time` is inert as a preference because server-time
+  capabilities are requested unconditionally. Its user-facing toggle and
+  always-enabled runtime policy require a separate contained decision.
+- `perl_warnings` remains deferred with the retained Perl source.
+- `gui_single` is already commented out and is not a live persisted key.
 
 ## Retirement Workflow
 
