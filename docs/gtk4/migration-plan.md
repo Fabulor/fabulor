@@ -2940,6 +2940,17 @@ switching repeatedly across all Preferences pages. The strict probe and
 frontend rebuild with zero warnings and errors; all 79 GTK4 tooling tests and
 all production package validators pass.
 
+Stage 9 obsolete Wingate proxy retirement pass 34 (2026-07-26): Wingate is
+removed from Preferences and from the IRC and DCC proxy dispatch paths. A
+shared proxy policy preserves the established numeric values for SOCKS4,
+SOCKS5, HTTP, and Auto, maps the retired saved value `1` to disabled, and
+normalizes invalid values before use or canonical save. Focused probe coverage
+checks values `0` through `5`, invalid values, sparse Preferences row mapping,
+authentication support, and DCC proxy eligibility. Installed testing confirms
+the retired value reports as `0` and both ZNC and direct IRC connections work
+normally. Common core, frontend, and installer rebuilds have zero warnings and
+errors; all 79 GTK4 tooling tests and all production package validators pass.
+
 Deliverables:
 
 - Make GTK4 the only production frontend dependency in MSVC, Meson, and CI.

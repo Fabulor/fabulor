@@ -33,6 +33,7 @@
 #include "../common/util.h"
 #include "../common/zoitechatc.h"
 #include "../common/outbound.h"
+#include "../common/proxy-policy.h"
 #include "fe-gtk.h"
 #include "theme/theme-manager.h"
 #include "theme/theme-preferences.h"
@@ -635,7 +636,6 @@ static const setting logging_settings[] =
 static const char *const proxytypes[] =
 {
         N_("(Disabled)"),
-        N_("Wingate"),
         N_("SOCKS4"),
         N_("SOCKS5"),
         N_("HTTP"),
@@ -1106,15 +1106,21 @@ static void
 setup_menu_cb (GtkWidget *cbox, const setting *set)
 {
         int n = gtk_combo_box_get_active (GTK_COMBO_BOX (cbox));
+        int value = n + set->extra;
+
+        if (set->list == proxytypes)
+                value = fabulor_proxy_type_from_menu_index (n);
 
         /* set the prefs.<field> */
-        setup_set_int (&setup_prefs, set, n + set->extra);
+        setup_set_int (&setup_prefs, set, value);
 
         if (set->list == proxytypes)
         {
                 /* only HTTP and SOCKS5 can use a username/pass */
-                gtk_widget_set_sensitive (proxy_user, (n == 3 || n == 4 || n == 5));
-                gtk_widget_set_sensitive (proxy_pass, (n == 3 || n == 4 || n == 5));
+                gtk_widget_set_sensitive (proxy_user,
+                        fabulor_proxy_type_supports_auth (value));
+                gtk_widget_set_sensitive (proxy_pass,
+                        fabulor_proxy_type_supports_auth (value));
         }
 }
 
@@ -1264,8 +1270,11 @@ setup_create_menu (GtkWidget *table, int row, const setting *set)
         for (i = 0; text[i]; i++)
                 gtk_combo_box_text_append_text (GTK_COMBO_BOX_TEXT (cbox), _(text[i]));
 
-        gtk_combo_box_set_active (GTK_COMBO_BOX (cbox),
-                                                                          setup_get_int (&setup_prefs, set) - set->extra);
+        i = setup_get_int (&setup_prefs, set) - set->extra;
+        if (set->list == proxytypes)
+                i = fabulor_proxy_type_to_menu_index (
+                        setup_get_int (&setup_prefs, set));
+        gtk_combo_box_set_active (GTK_COMBO_BOX (cbox), i);
         g_signal_connect (G_OBJECT (cbox), "changed",
                                                         G_CALLBACK (setup_menu_cb), (gpointer)set);
 
@@ -1478,7 +1487,8 @@ setup_create_entry (GtkWidget *table, int row, const setting *set)
         /* only http and Socks5 can auth */
         if ( (set->offset == P_OFFSETNL(hex_net_proxy_pass) ||
                         set->offset == P_OFFSETNL(hex_net_proxy_user)) &&
-             (setup_prefs.hex_net_proxy_type != 4 && setup_prefs.hex_net_proxy_type != 3 && setup_prefs.hex_net_proxy_type != 5) )
+             !fabulor_proxy_type_supports_auth (
+                     setup_prefs.hex_net_proxy_type) )
                 gtk_widget_set_sensitive (wid, FALSE);
 
         if (set->type == ST_ENTRY)

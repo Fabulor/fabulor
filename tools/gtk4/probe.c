@@ -9,6 +9,7 @@
 #include "../../src/fe-gtk/gtk4-list-models.h"
 #include "../../src/common/gtk4-theme-discovery.h"
 #include "../../src/common/gtk4-theme-preferences.h"
+#include "../../src/common/proxy-policy.h"
 #include "../../src/fe-gtk/emoji-picker.h"
 #include "../../src/fe-gtk/theme/theme-gtk4.h"
 #include "../../src/fe-gtk/theme/theme-gtk4-controller.h"
@@ -71,6 +72,51 @@
 #if GLIB_SIZEOF_VOID_P != 8
 #error The initial GTK4 probe requires a 64-bit GLib build.
 #endif
+
+static gboolean
+check_proxy_policy (void)
+{
+	return
+		fabulor_proxy_type_normalize (FABULOR_PROXY_DISABLED) ==
+			FABULOR_PROXY_DISABLED &&
+		fabulor_proxy_type_normalize (FABULOR_PROXY_RETIRED_WINGATE) ==
+			FABULOR_PROXY_DISABLED &&
+		fabulor_proxy_type_normalize (FABULOR_PROXY_SOCKS4) ==
+			FABULOR_PROXY_SOCKS4 &&
+		fabulor_proxy_type_normalize (FABULOR_PROXY_SOCKS5) ==
+			FABULOR_PROXY_SOCKS5 &&
+		fabulor_proxy_type_normalize (FABULOR_PROXY_HTTP) ==
+			FABULOR_PROXY_HTTP &&
+		fabulor_proxy_type_normalize (FABULOR_PROXY_AUTO) ==
+			FABULOR_PROXY_AUTO &&
+		fabulor_proxy_type_normalize (-1) == FABULOR_PROXY_DISABLED &&
+		fabulor_proxy_type_normalize (6) == FABULOR_PROXY_DISABLED &&
+		fabulor_proxy_type_from_menu_index (0) == FABULOR_PROXY_DISABLED &&
+		fabulor_proxy_type_from_menu_index (1) == FABULOR_PROXY_SOCKS4 &&
+		fabulor_proxy_type_from_menu_index (2) == FABULOR_PROXY_SOCKS5 &&
+		fabulor_proxy_type_from_menu_index (3) == FABULOR_PROXY_HTTP &&
+		fabulor_proxy_type_from_menu_index (4) == FABULOR_PROXY_AUTO &&
+		fabulor_proxy_type_from_menu_index (5) == FABULOR_PROXY_DISABLED &&
+		fabulor_proxy_type_to_menu_index (FABULOR_PROXY_DISABLED) == 0 &&
+		fabulor_proxy_type_to_menu_index (
+			FABULOR_PROXY_RETIRED_WINGATE) == 0 &&
+		fabulor_proxy_type_to_menu_index (FABULOR_PROXY_SOCKS4) == 1 &&
+		fabulor_proxy_type_to_menu_index (FABULOR_PROXY_SOCKS5) == 2 &&
+		fabulor_proxy_type_to_menu_index (FABULOR_PROXY_HTTP) == 3 &&
+		fabulor_proxy_type_to_menu_index (FABULOR_PROXY_AUTO) == 4 &&
+		!fabulor_proxy_type_supports_auth (FABULOR_PROXY_DISABLED) &&
+		!fabulor_proxy_type_supports_auth (FABULOR_PROXY_SOCKS4) &&
+		fabulor_proxy_type_supports_auth (FABULOR_PROXY_SOCKS5) &&
+		fabulor_proxy_type_supports_auth (FABULOR_PROXY_HTTP) &&
+		fabulor_proxy_type_supports_auth (FABULOR_PROXY_AUTO) &&
+		!fabulor_proxy_type_uses_dcc_proxy (FABULOR_PROXY_DISABLED) &&
+		!fabulor_proxy_type_uses_dcc_proxy (
+			FABULOR_PROXY_RETIRED_WINGATE) &&
+		fabulor_proxy_type_uses_dcc_proxy (FABULOR_PROXY_SOCKS4) &&
+		fabulor_proxy_type_uses_dcc_proxy (FABULOR_PROXY_SOCKS5) &&
+		fabulor_proxy_type_uses_dcc_proxy (FABULOR_PROXY_HTTP) &&
+		!fabulor_proxy_type_uses_dcc_proxy (FABULOR_PROXY_AUTO);
+}
 
 typedef struct
 {
@@ -5559,6 +5605,11 @@ main (void)
 	check_compatibility_helper_signatures ();
 	check_user_list_view_signatures ();
 	check_channel_tree_view_signatures ();
+	if (!check_proxy_policy ())
+	{
+		fprintf (stderr, "Proxy compatibility policy mismatch\n");
+		return 1;
+	}
 	if (!check_application_main_loop ())
 	{
 		fprintf (stderr, "GTK4 application main-loop contract mismatch\n");

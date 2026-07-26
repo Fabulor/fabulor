@@ -53,6 +53,7 @@
 #include "inbound.h"
 #include "network.h"
 #include "plugin.h"
+#include "proxy-policy.h"
 #include "server.h"
 #include "text.h"
 #include "url.h"
@@ -328,7 +329,9 @@ dcc_lookup_proxy (char *host, struct sockaddr_in *addr)
 	return FALSE;
 }
 
-#define DCC_USE_PROXY() (prefs.hex_net_proxy_host[0] && prefs.hex_net_proxy_type>0 && prefs.hex_net_proxy_type<5 && prefs.hex_net_proxy_use!=1)
+#define DCC_USE_PROXY() (prefs.hex_net_proxy_host[0] && \
+	fabulor_proxy_type_uses_dcc_proxy (prefs.hex_net_proxy_type) && \
+	prefs.hex_net_proxy_use != 1)
 
 static int
 dcc_connect_sok (struct DCC *dcc)
@@ -953,31 +956,6 @@ proxy_read_line (struct DCC *dcc)
 	}
 }
 
-static gboolean
-dcc_wingate_proxy_traverse (GIOChannel *source, GIOCondition condition, struct DCC *dcc)
-{
-	struct proxy_state *proxy = dcc->proxy;
-	if (proxy->phase == 0)
-	{
-		proxy->buffersize = g_snprintf ((char*) proxy->buffer, MAX_PROXY_BUFFER,
-										"%s %d\r\n", net_ip(dcc->addr),
-										dcc->port);
-		proxy->bufferused = 0;
-		dcc->wiotag = fe_input_add (dcc->sok, FIA_WRITE|FIA_EX,
-									dcc_wingate_proxy_traverse, dcc);
-		++proxy->phase;
-	}
-	if (proxy->phase == 1)
-	{
-		if (!read_proxy (dcc))
-			return TRUE;
-		fe_input_remove (dcc->wiotag);
-		dcc->wiotag = 0;
-		dcc_connect_finished (source, 0, dcc);
-	}
-	return TRUE;
-}
-
 struct sock_connect
 {
 	char version;
@@ -1346,10 +1324,12 @@ dcc_proxy_connect (GIOChannel *source, GIOCondition condition, struct DCC *dcc)
 
 	switch (prefs.hex_net_proxy_type)
 	{
-		case 1: return dcc_wingate_proxy_traverse (source, condition, dcc);
-		case 2: return dcc_socks_proxy_traverse (source, condition, dcc);
-		case 3: return dcc_socks5_proxy_traverse (source, condition, dcc);
-		case 4: return dcc_http_proxy_traverse (source, condition, dcc);
+		case FABULOR_PROXY_SOCKS4:
+			return dcc_socks_proxy_traverse (source, condition, dcc);
+		case FABULOR_PROXY_SOCKS5:
+			return dcc_socks5_proxy_traverse (source, condition, dcc);
+		case FABULOR_PROXY_HTTP:
+			return dcc_http_proxy_traverse (source, condition, dcc);
 	}
 	return TRUE;
 }

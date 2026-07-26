@@ -52,6 +52,7 @@
 #include "util.h"
 #include "url.h"
 #include "proto-irc.h"
+#include "proxy-policy.h"
 #include "servlist.h"
 #include "server.h"
 #include "sts.h"
@@ -1243,17 +1244,6 @@ read_error:
 	return 1;
 }
 
-static int
-traverse_wingate (int print_fd, int sok, char *serverAddr, int port)
-{
-	char buf[128];
-
-	g_snprintf (buf, sizeof (buf), "%s %d\r\n", serverAddr, port);
-	send (sok, buf, strlen (buf), 0);
-
-	return 0;
-}
-
 /* stuff for HTTP auth is here */
 
 static void
@@ -1369,13 +1359,11 @@ traverse_proxy (int proxy_type, int print_fd, int sok, char *ip, int port, netst
 {
 	switch (proxy_type)
 	{
-	case 1:
-		return traverse_wingate (print_fd, sok, ip, port);
-	case 2:
+	case FABULOR_PROXY_SOCKS4:
 		return traverse_socks (print_fd, sok, ip, port);
-	case 3:
+	case FABULOR_PROXY_SOCKS5:
 		return traverse_socks5 (print_fd, sok, ip, port);
-	case 4:
+	case FABULOR_PROXY_HTTP:
 		return traverse_http (print_fd, sok, ip, port);
 	}
 
@@ -1402,6 +1390,8 @@ server_child (server * serv)
 	char buf[512];
 	char bound = 0;
 	int proxy_type = 0;
+	int configured_proxy_type =
+		fabulor_proxy_type_normalize (prefs.hex_net_proxy_type);
 	char *proxy_host = NULL;
 	int proxy_port;
 
@@ -1427,7 +1417,7 @@ server_child (server * serv)
 
 	if (!serv->dont_use_proxy) /* blocked in serverlist? */
 	{
-		if (prefs.hex_net_proxy_type == 5)
+		if (configured_proxy_type == FABULOR_PROXY_AUTO)
 		{
 			char **proxy_list;
 			char *url, *proxy;
@@ -1452,13 +1442,13 @@ server_child (server * serv)
 				/* can use only one */
 				proxy = proxy_list[0];
 				if (!strncmp (proxy, "direct", 6))
-					proxy_type = 0;
+					proxy_type = FABULOR_PROXY_DISABLED;
 				else if (!strncmp (proxy, "http", 4))
-					proxy_type = 4;
+					proxy_type = FABULOR_PROXY_HTTP;
 				else if (!strncmp (proxy, "socks5", 6))
-					proxy_type = 3;
+					proxy_type = FABULOR_PROXY_SOCKS5;
 				else if (!strncmp (proxy, "socks", 5))
-					proxy_type = 2;
+					proxy_type = FABULOR_PROXY_SOCKS4;
 			} else {
 				write_error ("Failed to lookup proxy", &error);
 			}
@@ -1479,10 +1469,10 @@ server_child (server * serv)
 		}
 
 		if (prefs.hex_net_proxy_host[0] &&
-			   prefs.hex_net_proxy_type > 0 &&
+			   configured_proxy_type > FABULOR_PROXY_DISABLED &&
 			   prefs.hex_net_proxy_use != 2) /* proxy is NOT dcc-only */
 		{
-			proxy_type = prefs.hex_net_proxy_type;
+			proxy_type = configured_proxy_type;
 			proxy_host = g_strdup (prefs.hex_net_proxy_host);
 			proxy_port = prefs.hex_net_proxy_port;
 		}
@@ -1505,7 +1495,8 @@ server_child (server * serv)
 		connect_port = proxy_port;
 
 		/* if using socks4 or MS Proxy, attempt to resolve ip for irc server */
-		if ((proxy_type == 2) || (proxy_type == 5))
+		if ((proxy_type == FABULOR_PROXY_SOCKS4) ||
+			(proxy_type == FABULOR_PROXY_AUTO))
 		{
 			ns_proxy = net_store_new ();
 			proxy_ip = net_resolve (ns_proxy, hostname, port, &real_hostname);
@@ -1531,7 +1522,7 @@ server_child (server * serv)
 				 real_hostname, ip, connect_port);
 	write (serv->childwrite, buf, strlen (buf));
 
-	if (!serv->dont_use_proxy && (proxy_type == 5))
+	if (!serv->dont_use_proxy && (proxy_type == FABULOR_PROXY_AUTO))
 		error = net_connect (ns_server, serv->proxy_sok4, serv->proxy_sok6, &psok);
 	else
 	{

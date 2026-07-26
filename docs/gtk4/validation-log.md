@@ -8501,6 +8501,47 @@ Installed acceptance: pass. Repeated selection across Appearance, General,
 Alerts, Logging, Advanced, Network setup, and File transfers leaves the
 category pane stable and its labels readable.
 
+### GTK4 Stage 9 Obsolete Wingate Proxy Retirement, Pass 34
+
+Date: 2026-07-26
+
+Wingate occupied persisted proxy value `1` and retained separate IRC and DCC
+traversal implementations. Removing the obsolete protocol must not renumber or
+change the behavior of the retained proxy modes.
+
+Removal and compatibility:
+
+- remove Wingate from the Preferences proxy list
+- remove Wingate IRC and DCC traversal and dispatch
+- reserve persisted value `1` as the retired Wingate slot
+- normalize value `1` and invalid values to disabled
+- retain SOCKS4 `2`, SOCKS5 `3`, HTTP `4`, and Auto `5`
+- centralize stored/display mapping, authentication support, DCC eligibility,
+  configuration normalization, and canonical-save behavior
+
+Automated evidence:
+
+- focused proxy-policy probe covers values `0` through `5`, invalid values,
+  sparse menu mapping, authentication support, and DCC proxy eligibility
+- common-core rebuild: zero warnings and zero errors
+- strict native GTK4 probe builds and executes with zero warnings and errors
+- full GTK4 frontend rebuild: zero warnings and zero errors
+- complete GTK4 tooling contract suite: all 79 tests pass
+- production MSI and bootstrapper rebuild: zero warnings and zero errors
+- production MSI validation: 7,624 installed files and zero GTK3 path markers
+- runtime validation: all 1,431 manifest entries and content hashes verified
+- production bundle validation: version `1.0.4`, one embedded MSI, and exact
+  embedded/published MSI equality
+- production MSI SHA-256:
+  `3F2DBBD4D06D4092CC860372464595E2F9F3C4FBA754AEDBC9E2EDB450138EFE`
+- production bootstrapper SHA-256:
+  `8483270883F7EDCE69868A77E7D8702A825E6FB93DE92609BC45683096CEFADA`
+
+Installed acceptance: pass. `/SET net_proxy_type 1` reports normalized value
+`0`, a subsequent query remains `0`, and both ZNC and direct IRC connections
+operate normally. The ordinary unproxied DCC implementation is unchanged; its
+proxy eligibility boundary is covered by the focused policy probe.
+
 ## Stage Completion Rule
 
 A stage can move to complete in `migration-plan.md` only when:

@@ -27,6 +27,7 @@
 #include "cfgfiles.h"
 #include "util.h"
 #include "fe.h"
+#include "proxy-policy.h"
 #include "text.h"
 #include "zoitechatc.h"
 #include "typedef.h"
@@ -53,6 +54,13 @@ const char * const languages[LANGUAGES_LENGTH] = {
 	"pt_BR", "pa", "ru", "sr", "sk", "sl", "es", "sv", "th", "tr",       /* 40 .. 49 */
 	"uk", "vi", "wa"                                                     /* 50 .. */
 };
+
+static void
+normalize_proxy_type (void)
+{
+	prefs.hex_net_proxy_type =
+		fabulor_proxy_type_normalize (prefs.hex_net_proxy_type);
+}
 
 void
 list_addentry (GSList ** list, char *cmd, char *name)
@@ -1066,6 +1074,7 @@ load_config (void)
 	while (vars[i].name);
 
 	g_free (cfg);
+	normalize_proxy_type ();
 
 	if (prefs.hex_gui_win_height < 138)
 		prefs.hex_gui_win_height = 138;
@@ -1084,6 +1093,7 @@ save_config_write_to_fd (int fh)
 {
 	int i;
 
+	normalize_proxy_type ();
 	if (!cfg_put_str (fh, "version", PACKAGE_VERSION))
 		return 0;
 
@@ -1412,6 +1422,9 @@ cmd_set (struct session *sess, char *tbuf, char *word[], char *word_eol[])
 						{
 							*((int *) &prefs + vars[i].offset) = atoi (val);
 						}
+						if (vars[i].offset ==
+							P_OFFINTNL (hex_net_proxy_type))
+							normalize_proxy_type ();
 					}
 					if (!quiet)
 					{

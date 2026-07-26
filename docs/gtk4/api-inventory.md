@@ -1579,6 +1579,14 @@ collapse the navigation pane when lazy page creation changes the notebook's
 minimum allocation, while unusually long translated labels can still
 ellipsize within the retained column.
 
+Stage 9 obsolete Wingate proxy retirement pass 34 removes the Wingate menu
+entry and its separate IRC and DCC traversal implementations. A shared proxy
+policy preserves the stored numeric values of SOCKS4, SOCKS5, HTTP, and Auto,
+while retired value `1` and invalid values normalize to disabled. The
+Preferences display mapping, authentication sensitivity, connection dispatch,
+DCC proxy eligibility, configuration loading, canonical saving, and `/SET`
+updates now consume that policy instead of relying on contiguous menu rows.
+
 ## Functional Clusters
 
 | Cluster | Main files | GTK4 concern | Status |

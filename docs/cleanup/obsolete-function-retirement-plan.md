@@ -29,7 +29,7 @@ obsolete, unsafe, inert, or outside Fabulor's product scope.
 |---|---|---|---|
 | 1 | Built-in Identd service | Published | Ignore old `identd_server` and `identd_port` keys and omit them on the next canonical configuration write. |
 | 2 | `gui_ulist_style` | Published | Ignore the inert saved key and omit it on the next canonical configuration write. |
-| 3 | Wingate proxy mode | Approved | Preserve all other proxy numeric values; treat saved Wingate selection value `1` as disabled. |
+| 3 | Wingate proxy mode | Published | Preserve all other proxy numeric values; treat saved Wingate selection value `1` as disabled. |
 | 4 | SOCKS4 proxy mode | Proposed | Review usage, security, DNS, IPv6, and migration impact before deciding. |
 | 5 | Retained Perl source and residual configuration | Deferred | Keep source until the final repository cleanup; it remains outside the packaged C#/Python/Tcl plugin model. |
 | 6 | Other inert configuration keys | Proposed | Audit individually; do not remove a key until all runtime readers and migration effects are understood. |
@@ -89,11 +89,11 @@ Validation:
 
 Published in PR #242.
 
-## Approved Next Retirement
+## Published Retirement
 
 ### Wingate Proxy Mode
 
-Status: `Approved`
+Status: `Published`
 
 Reason:
 
@@ -138,6 +138,18 @@ Required installed validation:
 - direct IRC and ZNC connections remain operational
 - retained proxy choices display with the correct persisted values
 - ordinary DCC behavior is unchanged when no proxy is selected
+
+Acceptance:
+
+- the production installer passed the complete build and package validation
+  suite
+- `/SET net_proxy_type 1` normalizes the retired value to `0`
+- `/SET net_proxy_type` subsequently reports `0`
+- installed ZNC and direct IRC connections operate normally
+- the focused proxy-policy probe verifies retained menu/value mappings,
+  authentication eligibility, and the unchanged non-proxied DCC boundary
+
+Published in PR #242.
 
 ## Review Candidates
 
