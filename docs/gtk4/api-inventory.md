@@ -1573,6 +1573,12 @@ initialization, and preference structure; no frontend or core behavior read it.
 Existing saved values are ignored and disappear when the canonical
 configuration is next written.
 
+Stage 9 Preferences navigation sizing pass 33 gives the category frame a
+stable 220-logical-pixel minimum. Ellipsized category labels can no longer
+collapse the navigation pane when lazy page creation changes the notebook's
+minimum allocation, while unusually long translated labels can still
+ellipsize within the retained column.
+
 ## Functional Clusters
 
 | Cluster | Main files | GTK4 concern | Status |

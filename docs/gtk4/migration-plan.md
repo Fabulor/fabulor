@@ -2930,6 +2930,16 @@ variable while normal user-list appearance and behavior remain unchanged.
 Common core, frontend, and installer rebuilds have zero warnings and errors;
 all 79 GTK4 tooling tests and all production package validators pass.
 
+Stage 9 Preferences navigation sizing pass 33 (2026-07-26): the category frame
+now retains a 220-logical-pixel minimum width. GTK4 label ellipsizing had
+reduced the frame's minimum request enough that creating a wider Preferences
+page could reclaim the navigation column and truncate every category. The
+focused native probe now verifies the width contract when a display is
+available. Installed testing confirms the pane and labels remain stable while
+switching repeatedly across all Preferences pages. The strict probe and
+frontend rebuild with zero warnings and errors; all 79 GTK4 tooling tests and
+all production package validators pass.
+
 Deliverables:
 
 - Make GTK4 the only production frontend dependency in MSVC, Meson, and CI.

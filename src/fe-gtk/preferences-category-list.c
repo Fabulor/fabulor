@@ -11,6 +11,8 @@
 
 #include "gtk-compat.h"
 
+#define PREFERENCES_CATEGORY_MIN_WIDTH 220
+
 typedef struct _FabulorPreferencesCategoryRow FabulorPreferencesCategoryRow;
 typedef struct _FabulorPreferencesCategoryRowClass FabulorPreferencesCategoryRowClass;
 
@@ -345,6 +347,7 @@ fabulor_preferences_category_list_create_view (
 			GTK_SELECTION_MODEL (g_object_ref (list->selection)), factory);
 		frame = gtk_frame_new (column_title);
 	}
+	gtk_widget_set_size_request (frame, PREFERENCES_CATEGORY_MIN_WIDTH, -1);
 	fabulor_gtk_frame_set_child (GTK_FRAME (frame), list->view);
 	fabulor_gtk_box_append (parent, frame, FALSE, FALSE, 0);
 	return list->view;

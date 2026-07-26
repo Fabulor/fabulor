@@ -2242,7 +2242,7 @@ probe_preferences_category_selection (gint page_index, gpointer user_data)
 }
 
 static gboolean
-check_preferences_category_list_model (void)
+check_preferences_category_list_model (gboolean gtk_ready)
 {
 	ProbePreferencesCategorySelection selection = { -1, 0 };
 	FabulorPreferencesCategoryList *list =
@@ -2282,6 +2282,22 @@ check_preferences_category_list_model (void)
 		valid = fabulor_preferences_category_list_select_page (list, 0) &&
 			fabulor_preferences_category_list_get_selected_page (list) == 0 &&
 			selection.calls == 2 && selection.page_index == 0;
+	}
+	if (valid && gtk_ready)
+	{
+		GtkWidget *parent = gtk_box_new (GTK_ORIENTATION_HORIZONTAL, 0);
+		GtkWidget *view;
+		GtkWidget *frame;
+		gint minimum_width = -1;
+
+		g_object_ref_sink (parent);
+		view = fabulor_preferences_category_list_create_view (list,
+			GTK_BOX (parent), "Categories");
+		frame = view ? gtk_widget_get_parent (view) : NULL;
+		if (frame)
+			gtk_widget_get_size_request (frame, &minimum_width, NULL);
+		valid = frame != NULL && minimum_width >= 220;
+		g_object_unref (parent);
 	}
 	fabulor_preferences_category_list_free (list);
 	return valid;
@@ -5728,7 +5744,7 @@ main (void)
 		fprintf (stderr, "GTK4 sound-event list contract mismatch\n");
 		return 1;
 	}
-	if (!check_preferences_category_list_model ())
+	if (!check_preferences_category_list_model (gtk_ready))
 	{
 		fprintf (stderr, "GTK4 Preferences category list contract mismatch\n");
 		return 1;

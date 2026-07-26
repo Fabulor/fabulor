@@ -8466,6 +8466,41 @@ Automated evidence:
 Installed acceptance: pass. `/SET gui_ulist_style` reports no such variable,
 and normal user-list appearance and behavior remain unchanged.
 
+### GTK4 Stage 9 Preferences Navigation Sizing, Pass 33
+
+Date: 2026-07-26
+
+The ellipsized labels in the Preferences category list supplied a very small
+minimum width. Lazy creation of a page with wider content could therefore
+reallocate most of the category frame's width to the notebook and truncate all
+navigation labels.
+
+Fix:
+
+- give the category frame a stable 220-logical-pixel minimum width
+- retain end ellipsis for translated labels that exceed the navigation column
+- extend the focused native GTK4 probe to verify the frame's minimum-width
+  contract when a display is available
+
+Automated evidence:
+
+- strict native GTK4 probe builds and executes with zero warnings and errors
+- full GTK4 frontend rebuild: zero warnings and zero errors
+- complete GTK4 tooling contract suite: all 79 tests pass
+- production MSI and bootstrapper rebuild: zero warnings and zero errors
+- production MSI validation: 7,624 installed files and zero GTK3 path markers
+- runtime validation: all 1,431 manifest entries and content hashes verified
+- production bundle validation: version `1.0.4`, one embedded MSI, and exact
+  embedded/published MSI equality
+- production MSI SHA-256:
+  `A94CB706940AD5D8C12B590D7B48BD9E5745A21032F73E4D62EA4FCB24F24645`
+- production bootstrapper SHA-256:
+  `3D828886ED611C9707C56A7024B202130D430C4363BF4987AC30F854D489228F`
+
+Installed acceptance: pass. Repeated selection across Appearance, General,
+Alerts, Logging, Advanced, Network setup, and File transfers leaves the
+category pane stable and its labels readable.
+
 ## Stage Completion Rule
 
 A stage can move to complete in `migration-plan.md` only when:
