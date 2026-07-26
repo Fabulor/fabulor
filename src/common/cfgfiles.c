@@ -483,7 +483,6 @@ const struct prefs vars[] =
 	{"gui_ulist_host_width", P_OFFINT (hex_gui_ulist_host_width), TYPE_INT},
 	{"gui_ulist_show_hosts", P_OFFINT(hex_gui_ulist_show_hosts), TYPE_BOOL},
 	{"gui_ulist_sort", P_OFFINT (hex_gui_ulist_sort), TYPE_INT},
-	{"gui_ulist_style", P_OFFINT (hex_gui_ulist_style), TYPE_BOOL},
 	{"gui_url_mod", P_OFFINT (hex_gui_url_mod), TYPE_INT},
 	{"gui_usermenu", P_OFFINT (hex_gui_usermenu), TYPE_BOOL},
 	{"gui_win_height", P_OFFINT (hex_gui_win_height), TYPE_INT},
@@ -801,7 +800,6 @@ load_default_config(void)
 	prefs.hex_gui_ulist_color = 1;
 	prefs.hex_gui_ulist_count = 1;
 	prefs.hex_gui_ulist_icons = 1;
-	prefs.hex_gui_ulist_style = 1;
 	prefs.hex_gui_win_nick = 1;
 	prefs.hex_gui_win_save = 1;
 	prefs.hex_input_filter_beep = 1;

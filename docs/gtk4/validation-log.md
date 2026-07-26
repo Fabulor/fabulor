@@ -8431,6 +8431,41 @@ Automated evidence:
 Installed acceptance: pass. Identd is absent from Preferences and the startup
 plugin report, while normal client operation remains intact.
 
+### GTK4 Stage 9 Obsolete User-List Configuration Retirement, Pass 32
+
+Date: 2026-07-26
+
+`gui_ulist_style` survived as an inert compatibility setting. Its only
+remaining references were the configuration schema, default initialization,
+and preference structure; no runtime or frontend behavior read it.
+
+Removal:
+
+- remove `gui_ulist_style` from the persisted preference schema
+- remove its unused default initialization
+- remove `hex_gui_ulist_style` from the preference structure
+- allow old saved values to be ignored and omitted on the next canonical
+  configuration write
+
+Automated evidence:
+
+- complete source audit contains no remaining `gui_ulist_style` references
+- common-core rebuild: zero warnings and zero errors
+- full GTK4 frontend rebuild: zero warnings and zero errors
+- complete GTK4 tooling contract suite: all 79 tests pass
+- production MSI and bootstrapper rebuild: zero warnings and zero errors
+- production MSI validation: 7,624 installed files and zero GTK3 path markers
+- runtime validation: all 1,431 manifest entries and content hashes verified
+- production bundle validation: version `1.0.4`, one embedded MSI, and exact
+  embedded/published MSI equality
+- production MSI SHA-256:
+  `74564D62FC6BA6615B74868FAC1D4B782E711B7652375E4F63D56C15C6AA25BD`
+- production bootstrapper SHA-256:
+  `E8418A0FF644AF06BBF964B0097CFA763C5A091097108A31269ADB0C25450396`
+
+Installed acceptance: pass. `/SET gui_ulist_style` reports no such variable,
+and normal user-list appearance and behavior remain unchanged.
+
 ## Stage Completion Rule
 
 A stage can move to complete in `migration-plan.md` only when:

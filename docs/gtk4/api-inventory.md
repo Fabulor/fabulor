@@ -1567,6 +1567,12 @@ change reason are retired together. Existing saved `identd_server` and
 `identd_port` keys are ignored and disappear when the canonical configuration
 is next written.
 
+Stage 9 obsolete-configuration retirement pass 32 removes
+`gui_ulist_style`. The key survived only in the configuration schema, default
+initialization, and preference structure; no frontend or core behavior read it.
+Existing saved values are ignored and disappear when the canonical
+configuration is next written.
+
 ## Functional Clusters
 
 | Cluster | Main files | GTK4 concern | Status |

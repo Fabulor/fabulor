@@ -2920,6 +2920,16 @@ operational. Common core, frontend, and installer rebuilds have zero warnings
 and errors; all 79 GTK4 tooling tests and all production package validators
 pass.
 
+Stage 9 obsolete-configuration retirement pass 32 (2026-07-26): the inert
+`gui_ulist_style` compatibility key is removed from the configuration schema,
+default initialization, and preference structure. A complete source audit
+confirmed that no runtime or frontend behavior consumed the setting. Existing
+saved values are ignored and omitted on the next canonical configuration
+write. Installed testing confirms `/SET gui_ulist_style` reports no such
+variable while normal user-list appearance and behavior remain unchanged.
+Common core, frontend, and installer rebuilds have zero warnings and errors;
+all 79 GTK4 tooling tests and all production package validators pass.
+
 Deliverables:
 
 - Make GTK4 the only production frontend dependency in MSVC, Meson, and CI.
