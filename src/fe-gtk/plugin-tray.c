@@ -46,6 +46,7 @@
 #include <unistd.h>
 #else
 #include <windows.h>
+#include <shellapi.h>
 #endif
 
 typedef enum	/* current icon status */
@@ -88,6 +89,10 @@ static WinStatus tray_get_window_status (void);
 static void tray_window_state_cb (GtkWindow *window,
 	const FabulorWindowState *state, gpointer userdata);
 static void tray_window_visibility_cb (GtkWidget *widget, gpointer userdata);
+#ifdef WIN32
+static HWND tray_win32_get_hwnd (void);
+static void tray_win32_menu_cb (void);
+#endif
 
 typedef struct
 {
@@ -125,6 +130,8 @@ static gint64 tray_menu_inactivetime;
 static zoitechat_plugin *ph;
 static FabulorTrayActionModel *tray_actions;
 static GObject *tray_plugin_model_owner;
+static guint tray_visibility_source;
+static gboolean tray_visibility_force_hide;
 
 static TrayCustomIcon custom_icon1;
 static TrayCustomIcon custom_icon2;
@@ -271,7 +278,210 @@ tray_action_model_init (void)
 
 
 
+#ifdef WIN32
+#define FABULOR_TRAY_ICON_ID 1
+#define FABULOR_TRAY_CALLBACK_MESSAGE (WM_APP + 0x3a)
+
+static NOTIFYICONDATAW tray_win32_icon_data;
+static HICON tray_win32_icon;
+static UINT tray_win32_taskbar_created;
+
+static HICON
+tray_win32_icon_from_pixbuf (GdkPixbuf *pixbuf)
+{
+	BITMAPV5HEADER bitmap_header;
+	BITMAPINFO *bitmap_info = (BITMAPINFO *)&bitmap_header;
+	ICONINFO icon_info;
+	GdkPixbuf *scaled;
+	HBITMAP color_bitmap;
+	HBITMAP mask_bitmap;
+	HDC screen_dc;
+	guchar *source;
+	guchar *destination;
+	int width;
+	int height;
+	int rowstride;
+	int channels;
+	int x;
+	int y;
+	void *bits = NULL;
+	HICON icon = NULL;
+
+	if (!GDK_IS_PIXBUF (pixbuf))
+		return NULL;
+
+	width = GetSystemMetrics (SM_CXSMICON);
+	height = GetSystemMetrics (SM_CYSMICON);
+	if (width <= 0)
+		width = 16;
+	if (height <= 0)
+		height = 16;
+	scaled = gdk_pixbuf_scale_simple (pixbuf, width, height,
+		GDK_INTERP_BILINEAR);
+	if (!scaled)
+		return NULL;
+
+	ZeroMemory (&bitmap_header, sizeof (bitmap_header));
+	bitmap_header.bV5Size = sizeof (bitmap_header);
+	bitmap_header.bV5Width = width;
+	bitmap_header.bV5Height = -height;
+	bitmap_header.bV5Planes = 1;
+	bitmap_header.bV5BitCount = 32;
+	bitmap_header.bV5Compression = BI_BITFIELDS;
+	bitmap_header.bV5RedMask = 0x00ff0000;
+	bitmap_header.bV5GreenMask = 0x0000ff00;
+	bitmap_header.bV5BlueMask = 0x000000ff;
+	bitmap_header.bV5AlphaMask = 0xff000000;
+
+	screen_dc = GetDC (NULL);
+	color_bitmap = CreateDIBSection (screen_dc, bitmap_info, DIB_RGB_COLORS,
+		&bits, NULL, 0);
+	ReleaseDC (NULL, screen_dc);
+	if (!color_bitmap || !bits)
+	{
+		if (color_bitmap)
+			DeleteObject (color_bitmap);
+		g_object_unref (scaled);
+		return NULL;
+	}
+
+	source = gdk_pixbuf_get_pixels (scaled);
+	destination = bits;
+	rowstride = gdk_pixbuf_get_rowstride (scaled);
+	channels = gdk_pixbuf_get_n_channels (scaled);
+	for (y = 0; y < height; y++)
+	{
+		for (x = 0; x < width; x++)
+		{
+			const guchar *pixel = source + (y * rowstride) + (x * channels);
+			guchar *target = destination + ((y * width + x) * 4);
+			target[0] = pixel[2];
+			target[1] = pixel[1];
+			target[2] = pixel[0];
+			target[3] = channels == 4 ? pixel[3] : 0xff;
+		}
+	}
+
+	mask_bitmap = CreateBitmap (width, height, 1, 1, NULL);
+	ZeroMemory (&icon_info, sizeof (icon_info));
+	icon_info.fIcon = TRUE;
+	icon_info.hbmColor = color_bitmap;
+	icon_info.hbmMask = mask_bitmap;
+	if (mask_bitmap)
+		icon = CreateIconIndirect (&icon_info);
+	if (mask_bitmap)
+		DeleteObject (mask_bitmap);
+	DeleteObject (color_bitmap);
+	g_object_unref (scaled);
+	return icon;
+}
+
+static gboolean
+tray_win32_add_icon (void)
+{
+	if (!tray_win32_icon_data.hWnd || !tray_win32_icon_data.hIcon)
+		return FALSE;
+	if (!Shell_NotifyIconW (NIM_ADD, &tray_win32_icon_data))
+		return FALSE;
+	tray_win32_icon_data.uVersion = NOTIFYICON_VERSION_4;
+	Shell_NotifyIconW (NIM_SETVERSION, &tray_win32_icon_data);
+	return TRUE;
+}
+
+static gboolean
+tray_win32_backend_init (void)
+{
+	HWND hwnd = tray_win32_get_hwnd ();
+
+	if (!hwnd)
+		return FALSE;
+	tray_win32_icon = tray_win32_icon_from_pixbuf (ICON_NORMAL);
+	if (!tray_win32_icon)
+		return FALSE;
+
+	ZeroMemory (&tray_win32_icon_data, sizeof (tray_win32_icon_data));
+	tray_win32_icon_data.cbSize = sizeof (tray_win32_icon_data);
+	tray_win32_icon_data.hWnd = hwnd;
+	tray_win32_icon_data.uID = FABULOR_TRAY_ICON_ID;
+	tray_win32_icon_data.uFlags = NIF_MESSAGE | NIF_ICON | NIF_TIP;
+	tray_win32_icon_data.uCallbackMessage = FABULOR_TRAY_CALLBACK_MESSAGE;
+	tray_win32_icon_data.hIcon = tray_win32_icon;
+	wcsncpy_s (tray_win32_icon_data.szTip,
+		G_N_ELEMENTS (tray_win32_icon_data.szTip), L"Fabulor", _TRUNCATE);
+	tray_win32_taskbar_created = RegisterWindowMessageW (L"TaskbarCreated");
+	if (!tray_win32_add_icon ())
+	{
+		DestroyIcon (tray_win32_icon);
+		tray_win32_icon = NULL;
+		ZeroMemory (&tray_win32_icon_data, sizeof (tray_win32_icon_data));
+		return FALSE;
+	}
+	return TRUE;
+}
+
+static void
+tray_win32_backend_set_icon (TrayIcon pixbuf)
+{
+	HICON icon;
+
+	if (!tray_win32_icon_data.hWnd)
+		return;
+	icon = tray_win32_icon_from_pixbuf (pixbuf);
+	if (!icon)
+		return;
+	tray_win32_icon_data.uFlags = NIF_ICON;
+	tray_win32_icon_data.hIcon = icon;
+	if (Shell_NotifyIconW (NIM_MODIFY, &tray_win32_icon_data))
+	{
+		if (tray_win32_icon)
+			DestroyIcon (tray_win32_icon);
+		tray_win32_icon = icon;
+	}
+	else
+	{
+		DestroyIcon (icon);
+		tray_win32_icon_data.hIcon = tray_win32_icon;
+	}
+}
+
+static void
+tray_win32_backend_set_tooltip (const char *text)
+{
+	WCHAR *wide;
+
+	if (!tray_win32_icon_data.hWnd)
+		return;
+	wide = g_utf8_to_utf16 (text ? text : "", -1, NULL, NULL, NULL);
+	if (!wide)
+		return;
+	wcsncpy_s (tray_win32_icon_data.szTip,
+		G_N_ELEMENTS (tray_win32_icon_data.szTip), wide, _TRUNCATE);
+	g_free (wide);
+	tray_win32_icon_data.uFlags = NIF_TIP;
+	Shell_NotifyIconW (NIM_MODIFY, &tray_win32_icon_data);
+}
+
+static void
+tray_win32_backend_cleanup (void)
+{
+	if (tray_win32_icon_data.hWnd)
+		Shell_NotifyIconW (NIM_DELETE, &tray_win32_icon_data);
+	if (tray_win32_icon)
+		DestroyIcon (tray_win32_icon);
+	tray_win32_icon = NULL;
+	tray_win32_taskbar_created = 0;
+	ZeroMemory (&tray_win32_icon_data, sizeof (tray_win32_icon_data));
+}
+
+static const TrayBackendOps tray_backend_ops = {
+	tray_win32_backend_init,
+	tray_win32_backend_set_icon,
+	tray_win32_backend_set_tooltip,
+	tray_win32_backend_cleanup
+};
+#else
 static const TrayBackendOps tray_backend_ops = { 0 };
+#endif
 
 static gboolean
 tray_backend_init (void)
@@ -603,16 +813,33 @@ tray_toggle_visibility (gboolean force_hide)
 		if (prefs.hex_gui_tray_away)
 			zoitechat_command (ph, "ALLSERV BACK");
 		fabulor_gtk_window_placement_restore (win, &placement);
+		fabulor_window_present (win);
 		if (maximized)
 			gtk_window_maximize (win);
 		if (fullscreen)
 			gtk_window_fullscreen (win);
-		fabulor_window_present (win);
 	}
 
 	tray_action_model_refresh ();
 
 	return TRUE;
+}
+
+static gboolean
+tray_toggle_visibility_idle_cb (gpointer user_data)
+{
+	(void)user_data;
+	tray_visibility_source = 0;
+	tray_toggle_visibility (tray_visibility_force_hide);
+	return G_SOURCE_REMOVE;
+}
+
+static void
+tray_toggle_visibility_queued (gboolean force_hide)
+{
+	tray_visibility_force_hide = force_hide;
+	if (tray_visibility_source == 0)
+		tray_visibility_source = g_idle_add (tray_toggle_visibility_idle_cb, NULL);
 }
 
 static void
@@ -773,7 +1000,7 @@ tray_win32_menu_cb (void)
 	switch (command)
 	{
 	case TRAY_WIN32_HIDE:
-		tray_toggle_visibility (FALSE);
+		tray_toggle_visibility_queued (FALSE);
 		break;
 	case TRAY_WIN32_AWAY:
 		tray_foreach_server (NULL, "away");
@@ -789,6 +1016,43 @@ tray_win32_menu_cb (void)
 		break;
 	default:
 		break;
+	}
+}
+
+gboolean
+tray_win32_message_dispatch (guint message, guintptr wparam, gintptr lparam)
+{
+	UINT notification;
+	UINT icon_id;
+
+	(void)wparam;
+	if (!tray_backend_active)
+		return FALSE;
+	if (tray_win32_taskbar_created != 0 &&
+		message == tray_win32_taskbar_created)
+	{
+		tray_win32_icon_data.uFlags = NIF_MESSAGE | NIF_ICON | NIF_TIP;
+		tray_win32_add_icon ();
+		return FALSE;
+	}
+	if (message != FABULOR_TRAY_CALLBACK_MESSAGE)
+		return FALSE;
+
+	notification = LOWORD (lparam);
+	icon_id = HIWORD (lparam);
+	if (icon_id != FABULOR_TRAY_ICON_ID)
+		return FALSE;
+	switch (notification)
+	{
+	case NIN_SELECT:
+	case NIN_KEYSELECT:
+		tray_toggle_visibility_queued (FALSE);
+		return TRUE;
+	case WM_CONTEXTMENU:
+		tray_win32_menu_cb ();
+		return TRUE;
+	default:
+		return FALSE;
 	}
 }
 #endif
@@ -958,6 +1222,11 @@ tray_focus_cb (char *word[], void *userdata)
 static void
 tray_cleanup (void)
 {
+	if (tray_visibility_source)
+	{
+		g_source_remove (tray_visibility_source);
+		tray_visibility_source = 0;
+	}
 	tray_stop_flash ();
 
 	if (tray_backend_active)

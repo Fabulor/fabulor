@@ -2869,6 +2869,19 @@ Installed testing confirms the corrected interaction. The frontend and
 installer rebuild with zero warnings and errors, all 79 GTK4 tooling tests
 pass, and all production package validators pass.
 
+Stage 9 native Windows tray acceptance pass 28 (2026-07-26): the empty backend
+left after retiring GTK3 `GtkStatusIcon` and AppIndicator support is replaced by
+direct `Shell_NotifyIconW` ownership. Existing tray-state pixbufs become native
+alpha icons; tooltips, flashing states, Explorer restart registration, native
+menu actions, and activation are retained. Actions originating in GDK's Win32
+message filter are deferred to the GTK idle queue. Windows tray hiding now
+hides the existing HWND without unmapping GTK's rendered surface, and the
+cross-platform state snapshot includes that explicit native-hidden state.
+Repeated installed tests pass for minimizing, left-click restore, Restore
+Window, and Preferences. The frontend and installer rebuild with zero warnings
+and errors, all 79 GTK4 tooling tests pass, and all production package
+validators pass.
+
 Deliverables:
 
 - Make GTK4 the only production frontend dependency in MSVC, Meson, and CI.

@@ -8267,6 +8267,50 @@ Installed acceptance: pass. Mouse clicks select networks without entering
 rename mode, while explicit activation and Add Network retain their intended
 editing workflows.
 
+### GTK4 Stage 9 Native Windows Tray Acceptance, Pass 28
+
+Date: 2026-07-26
+
+Installed testing found that `gui_tray_minimize` remained configurable but
+could not hide Fabulor to the system tray.
+
+Root cause and correction:
+
+- retiring the GTK3 tray implementations intentionally left the backend
+  operations table empty and tray capability detection unavailable
+- the replacement backend uses `Shell_NotifyIconW` directly and converts the
+  existing tray-state pixbufs to native alpha icons
+- icon, tooltip, flashing-state, cleanup, activation, context-menu, and
+  Explorer restart behavior are now owned without GTK3 APIs
+- initial restore attempts exposed a second boundary defect: unmapping a
+  minimized GTK4 Win32 surface could leave a correct, visible native HWND
+  without a rendered client surface
+- native tray callbacks now queue visibility actions outside GDK's Win32
+  message filter
+- Windows tray hide/restore preserves GTK's mapped render surface and changes
+  only the existing HWND visibility; the shared state snapshot explicitly
+  reports that native hidden state
+- minimized-state handling no longer depends on the independent GTK active
+  state notification arriving first
+
+Automated evidence:
+
+- full GTK4 frontend rebuild: zero warnings and zero errors
+- complete GTK4 tooling contract suite: all 79 tests pass
+- production MSI and bootstrapper rebuild: zero warnings and zero errors
+- production MSI validation: 7,624 installed files and zero GTK3 path markers
+- runtime validation: all 1,431 manifest entries and content hashes verified
+- production bundle validation: version `1.0.4`, one embedded MSI, and exact
+  embedded/published MSI equality
+- production MSI SHA-256:
+  `99A3ED37B4CCFE162820DB51639607121962D1BAC7E0928786E381CF570AE971`
+- production bootstrapper SHA-256:
+  `01BB103CC87D4EC5669C3F0C99444C240273522C43425C1CC05307CD014BCBED`
+
+Installed acceptance: pass. Repeated cycles pass for minimizing to the Windows
+notification area, left-click restoration, the Restore Window menu command,
+and opening Preferences from the native tray menu.
+
 ## Stage Completion Rule
 
 A stage can move to complete in `migration-plan.md` only when:

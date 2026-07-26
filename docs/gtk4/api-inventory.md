@@ -1531,6 +1531,16 @@ Explicit list activation temporarily enables the editor, while newly added
 networks retain their immediate rename workflow. Ending an edit restores the
 non-targetable display state.
 
+Stage 9 native Windows tray acceptance pass 28 replaces the deliberately empty
+post-GTK3 backend with direct Windows Shell ownership. `Shell_NotifyIconW`
+owns the GTK4 tray icon, tooltip and state-icon updates, Explorer restart
+registration, activation, and native popup dispatch without `GtkStatusIcon` or
+AppIndicator. Native tray actions are queued outside GDK's Win32 message
+filter. Hiding uses the existing HWND while keeping GTK's render surface mapped;
+Fabulor's window-state model tracks that native hidden state explicitly.
+Repeated installed testing confirms left-click and menu restoration plus the
+Preferences action.
+
 ## Functional Clusters
 
 | Cluster | Main files | GTK4 concern | Status |
@@ -1542,7 +1552,7 @@ non-targetable display state.
 | Operational lists | `servlistgui.c`, `chanlist.c`, `userlistgui.c`, `dccgui.c`, `banlist.c`, `notifygui.c`, `ignoregui.c`, `plugingui.c`, `urlgrab.c` | list models, factories, editing | converted and specialized to GTK4; classic GTK3 tree/list and Channel/Ban widget-menu implementations are retired |
 | Preferences/editors | `setup.c`, `fkeys.c`, `textgui.c`, `editlist.c` | generic edit list, Print Events, key bindings, sound events, and preference navigation converted | converted; Preferences page ownership, window, and font-chooser lifecycle are specialized to GTK4 |
 | Themes | `theme/*.c`, `common/gtk4-theme-*.c`, `common/theme-archive-reader.c` | GTK4 CSS compatibility, discovery, preferences, and bounded `.hct` reading | converted and specialized to GTK4; the GTK3 service, adapter, screen/style branches, and version switches are retired |
-| Platform integration | `fe-gtk.c`, `plugin-tray.c`, notifications | displays, surfaces, icons, native tray | converted and specialized to GTK4; application lifecycle and tray sources contain no toolkit-version branches |
+| Platform integration | `fe-gtk.c`, `plugin-tray.c`, notifications | displays, surfaces, icons, native tray | converted and specialized to GTK4; native Windows Shell tray accepted, non-Windows StatusNotifier remains pending, and no toolkit-version branches remain |
 
 ## Theme Inventory
 

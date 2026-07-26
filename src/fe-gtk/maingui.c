@@ -938,13 +938,8 @@ mg_windowstate_cb (GtkWindow *wid, const FabulorWindowState *state,
         session *sess;
 
 	if ((state->changed & FABULOR_WINDOW_STATE_MINIMIZED) && state->minimized &&
-		 prefs.hex_gui_tray_minimize && prefs.hex_gui_tray &&
-		 gtkutil_tray_icon_supported (wid)
-#ifndef WIN32
-		 )
-#else
-		 && !gtk_window_is_active (wid))
-#endif
+	 prefs.hex_gui_tray_minimize && prefs.hex_gui_tray &&
+	 gtkutil_tray_icon_supported (wid))
 	{
 		tray_toggle_visibility (TRUE);
 	}
@@ -5668,6 +5663,9 @@ mg_win32_message_dispatch (MSG *msg)
 {
 	if (!msg)
 		return FALSE;
+
+	if (tray_win32_message_dispatch (msg->message, msg->wParam, msg->lParam))
+		return TRUE;
 
 	if (msg->message == WM_TIMECHANGE)
 	{
