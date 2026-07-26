@@ -27,6 +27,8 @@ void fabulor_context_menu_presenter_gtk4_free (
 gboolean fabulor_context_menu_presenter_gtk4_set_projection (
 	FabulorContextMenuPresenterGtk4 *presenter, GMenuModel *menu,
 	GActionGroup *built_in_actions, GActionGroup *plugin_actions);
+void fabulor_context_menu_presenter_gtk4_set_label_width_limit (
+	FabulorContextMenuPresenterGtk4 *presenter, gint max_width_chars);
 gboolean fabulor_context_menu_presenter_gtk4_popup_at (
 	FabulorContextMenuPresenterGtk4 *presenter, GtkWidget *origin,
 	gdouble x, gdouble y);

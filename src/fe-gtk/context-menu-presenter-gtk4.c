@@ -18,7 +18,25 @@ struct _FabulorContextMenuPresenterGtk4
 	char *plugin_namespace;
 	GActionGroup *built_in_actions;
 	GActionGroup *plugin_actions;
+	gint label_max_width_chars;
 };
+
+static void
+context_menu_apply_label_width_limit (GtkWidget *widget, gint max_width_chars)
+{
+	GtkWidget *child;
+
+	if (max_width_chars <= 0)
+		return;
+	if (GTK_IS_LABEL (widget))
+	{
+		gtk_label_set_ellipsize (GTK_LABEL (widget), PANGO_ELLIPSIZE_END);
+		gtk_label_set_max_width_chars (GTK_LABEL (widget), max_width_chars);
+	}
+	for (child = gtk_widget_get_first_child (widget); child;
+		child = gtk_widget_get_next_sibling (child))
+		context_menu_apply_label_width_limit (child, max_width_chars);
+}
 
 FabulorContextMenuPresenterGtk4 *
 fabulor_context_menu_presenter_gtk4_new (GMenuModel *menu,
@@ -104,7 +122,20 @@ fabulor_context_menu_presenter_gtk4_set_projection (
 	if (presenter->plugin_namespace)
 		gtk_widget_insert_action_group (widget, presenter->plugin_namespace,
 			presenter->plugin_actions);
+	context_menu_apply_label_width_limit (widget,
+		presenter->label_max_width_chars);
 	return TRUE;
+}
+
+void
+fabulor_context_menu_presenter_gtk4_set_label_width_limit (
+	FabulorContextMenuPresenterGtk4 *presenter, gint max_width_chars)
+{
+	g_return_if_fail (presenter != NULL);
+	g_return_if_fail (max_width_chars > 0);
+	presenter->label_max_width_chars = max_width_chars;
+	context_menu_apply_label_width_limit (GTK_WIDGET (presenter->popover),
+		max_width_chars);
 }
 
 gboolean
@@ -125,6 +156,8 @@ fabulor_context_menu_presenter_gtk4_popup_at (
 			gtk_widget_unparent (widget);
 		gtk_widget_set_parent (widget, origin);
 	}
+	context_menu_apply_label_width_limit (widget,
+		presenter->label_max_width_chars);
 	gtk_popover_set_pointing_to (GTK_POPOVER (presenter->popover), &point);
 	gtk_popover_popup (GTK_POPOVER (presenter->popover));
 	return TRUE;

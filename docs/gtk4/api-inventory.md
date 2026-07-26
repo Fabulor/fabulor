@@ -1550,6 +1550,15 @@ consumes only the duplicate release from that sequence. Installed testing
 confirms one browser tab for left-click and context-menu activation while
 selection and release-to-copy remain intact.
 
+Stage 9 nick context-menu sizing acceptance pass 30 keeps GTK4's popover-menu
+pages horizontally homogeneous so the root menu and nested identity page retain
+complete headings while navigating. The nick popup alone limits generated menu
+labels to 32 characters with end ellipsis, preventing long WHOIS host, server,
+real-name, country, or away fields from dictating an excessive root width.
+Identity values retained by menu actions remain complete for clipboard use.
+Plain-text identity and away labels no longer pass through markup escaping, so
+apostrophes and other ordinary characters display as entered.
+
 ## Functional Clusters
 
 | Cluster | Main files | GTK4 concern | Status |

@@ -8348,6 +8348,48 @@ Installed acceptance: pass. Left-click and right-click **Open Link in Browser**
 each open exactly one browser tab. Text selection and release-to-copy continue
 to work.
 
+### GTK4 Stage 9 Nick Context-Menu Sizing Acceptance, Pass 30
+
+Date: 2026-07-26
+
+Installed testing found that the user-list nick context menu inherited its
+width from hidden identity-detail pages. Long host, server, real-name, country,
+or away values could therefore make the visible root menu much wider than its
+own entries required.
+
+Root cause and correction:
+
+- `GtkPopoverMenu` uses a horizontally homogeneous stack, so every nested page
+  contributes to one natural width
+- making that stack non-homogeneous reduced the root page but exposed GTK's
+  retained allocation during navigation, clipping nick headings and details
+- stable homogeneous page sizing is retained
+- the nick presenter alone constrains generated labels to 32 characters with
+  end ellipsis; complete action values remain available for clipboard copying
+- real names and away messages are plain `GMenu` labels, but the snapshot path
+  previously requested markup escaping and displayed apostrophes as `&apos;`
+- removing that inappropriate escape restores the original plain-text display
+
+Automated evidence:
+
+- full GTK4 frontend rebuild: zero warnings and zero errors
+- complete GTK4 tooling contract suite: all 79 tests pass
+- the presenter probe verifies the generated labels receive the width and
+  ellipsis policy
+- production MSI and bootstrapper rebuild: zero warnings and zero errors
+- production MSI validation: 7,624 installed files and zero GTK3 path markers
+- runtime validation: all 1,431 manifest entries and content hashes verified
+- production bundle validation: version `1.0.4`, one embedded MSI, and exact
+  embedded/published MSI equality
+- production MSI SHA-256:
+  `747BE38243573EBDFDF162F405EA73AEE1D8A5F9EEA12B597AE35683313BBB4F`
+- production bootstrapper SHA-256:
+  `6CF3E0FA268E293182668CAD8B20A8DE890DF7ECC6D2C8720120FDCD11C296A9`
+
+Installed acceptance: pass. The root and identity pages retain practical,
+stable dimensions; nick headings display correctly; long details ellipsize
+cleanly; and away messages display ordinary apostrophes.
+
 ## Stage Completion Rule
 
 A stage can move to complete in `migration-plan.md` only when:

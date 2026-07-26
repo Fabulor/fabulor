@@ -2894,6 +2894,20 @@ right-click **Open Link in Browser**, with selection and release-to-copy still
 working. The frontend and installer rebuild with zero warnings and errors, all
 79 GTK4 tooling tests pass, and all production package validators pass.
 
+Stage 9 nick context-menu sizing acceptance pass 30 (2026-07-26): GTK4's
+homogeneous popover stack measured the user-list menu against every hidden
+identity-detail page, allowing long WHOIS values to produce an oversized root
+menu. Making pages independent reduced the root width but retained its
+allocation while navigating and clipped nick headings and detail text. The
+accepted implementation restores stable homogeneous navigation and applies a
+32-character end-ellipsis policy only to labels generated inside the nick
+popover. Full action values remain available for copying. The plain-text menu
+path also stops markup-escaping real names and away messages, correcting
+displays such as `I&apos;m busy`. Installed testing confirms compact, complete
+nick menus and correctly rendered away text. The frontend and installer rebuild
+with zero warnings and errors, all 79 GTK4 tooling tests pass, and all production
+package validators pass.
+
 Deliverables:
 
 - Make GTK4 the only production frontend dependency in MSVC, Meson, and CI.

@@ -4012,6 +4012,31 @@ check_tray_menu_presenter_gtk4 (void)
 }
 
 static gboolean
+context_menu_labels_have_width_limit (GtkWidget *widget, gint max_width_chars,
+	gboolean *found)
+{
+	GtkWidget *child;
+
+	if (GTK_IS_LABEL (widget))
+	{
+		*found = TRUE;
+		if (gtk_label_get_max_width_chars (GTK_LABEL (widget)) !=
+			max_width_chars ||
+			gtk_label_get_ellipsize (GTK_LABEL (widget)) !=
+				PANGO_ELLIPSIZE_END)
+			return FALSE;
+	}
+	for (child = gtk_widget_get_first_child (widget); child;
+		child = gtk_widget_get_next_sibling (child))
+	{
+		if (!context_menu_labels_have_width_limit (child, max_width_chars,
+			found))
+			return FALSE;
+	}
+	return TRUE;
+}
+
+static gboolean
 check_context_menu_presenter_gtk4 (void)
 {
 	GMenu *custom_menu;
@@ -4028,6 +4053,7 @@ check_context_menu_presenter_gtk4 (void)
 	guint built_in_count = 0;
 	guint plugin_count = 0;
 	guint custom_count = 0;
+	gboolean found_label = FALSE;
 	gboolean passed;
 
 	g_object_ref_sink (origin);
@@ -4051,9 +4077,12 @@ check_context_menu_presenter_gtk4 (void)
 		return FALSE;
 	}
 	popover = fabulor_context_menu_presenter_gtk4_get_popover (presenter);
+	fabulor_context_menu_presenter_gtk4_set_label_width_limit (presenter, 32);
 	passed = fabulor_context_menu_presenter_gtk4_popup_at (
 		presenter, origin, 17.0, 23.0);
 	passed = passed && gtk_widget_get_parent (GTK_WIDGET (popover)) == origin;
+	passed = passed && context_menu_labels_have_width_limit (
+		GTK_WIDGET (popover), 32, &found_label) && found_label;
 	passed = passed && gtk_popover_get_pointing_to (
 		GTK_POPOVER (popover), &point) && point.x == 17 && point.y == 23;
 	passed = passed && gtk_widget_activate_action (

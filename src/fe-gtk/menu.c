@@ -603,7 +603,7 @@ menu_nick_info_snapshot (session *sess, struct User *user,
 	if (!user)
 		return items;
 	if (user->realname)
-		real = strip_color (user->realname, -1, STRIP_ALL | STRIP_ESCMARKUP);
+		real = strip_color (user->realname, -1, STRIP_ALL);
 	menu_nick_info_append (items, _("Real Name:"),
 		real ? real : unknown, user->realname ? user->realname : unknown);
 	g_free (real);
@@ -632,7 +632,7 @@ menu_nick_info_snapshot (session *sess, struct User *user,
 		if (away)
 		{
 			char *message = strip_color (away->message ? away->message : unknown,
-				-1, STRIP_ALL | STRIP_ESCMARKUP);
+				-1, STRIP_ALL);
 			menu_nick_info_append (items, _("Away Msg:"), message,
 				away->message ? away->message : unknown);
 			g_free (message);
@@ -769,6 +769,8 @@ menu_nickmenu_gtk4 (session *sess, GtkWidget *origin, gdouble x, gdouble y,
 		menu_nick_context_popup_free (popup);
 		return;
 	}
+	fabulor_context_menu_presenter_gtk4_set_label_width_limit (
+		popup->presenter, 32);
 	g_object_set_data_full (G_OBJECT (origin), FABULOR_NICK_CONTEXT_POPUP,
 		popup, menu_nick_context_popup_free);
 	g_weak_ref_set (menu_nick_context_origin_ref (), G_OBJECT (origin));
