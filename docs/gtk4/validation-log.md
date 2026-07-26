@@ -8654,6 +8654,46 @@ Automated evidence:
 Installed acceptance: pass. `/SET text_transparent` reports no such variable
 and supported appearance behavior remains operational.
 
+### GTK4 Stage 9 Server-Time Preference Retirement, Pass 38
+
+Date: 2026-07-26
+
+`irc_cap_server_time` presented a user-facing toggle but did not control
+capability negotiation. Standard and ZNC server-time capabilities were already
+requested whenever advertised, regardless of the saved value.
+
+Removal and compatibility:
+
+- remove `irc_cap_server_time` from the persisted schema, default
+  initialization, and preference structure
+- remove the misleading Preferences toggle
+- retain unconditional negotiation of `server-time`,
+  `znc.in/server-time`, and `znc.in/server-time-iso`
+- retain existing capability state and timestamp parsing
+- ignore old saved values and omit them on the next canonical write
+
+Automated evidence:
+
+- source audit contains no production preference reference while all three
+  server-time negotiation paths and parsing remain present
+- common-core rebuild: zero warnings and zero errors
+- full GTK4 frontend rebuild: zero warnings and zero errors
+- GTK4 tooling contract suite: 79/79 passed
+- theme contract suite: 7/7 passed
+- production MSI and bootstrapper rebuild: zero warnings and zero errors
+- production MSI validation: 7,624 installed files and zero GTK3 path markers
+- runtime validation: all 1,431 manifest entries and content hashes verified
+- production bundle validation: version `1.0.4`, one embedded MSI, and exact
+  embedded/published MSI equality
+- production MSI SHA-256:
+  `09AC261BF257E4D5BCE0C36171F6BE232C73321C12B4286F6A06F1B5006A0E6D`
+- production bootstrapper SHA-256:
+  `69EACE6762F060DA8EFF52BE6B6343DDDB7533F09937B1DE85E5411229340271`
+
+Installed acceptance: pass. `/SET irc_cap_server_time` reports no such
+variable, Preferences no longer exposes the toggle, and normal IRC and ZNC
+timestamps remain operational.
+
 ## Stage Completion Rule
 
 A stage can move to complete in `migration-plan.md` only when:

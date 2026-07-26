@@ -1609,6 +1609,12 @@ the GTK4 renderer, background-image support, theme application, and all other
 frontend behavior had no reader for it. Existing saved values are ignored and
 disappear on the next canonical configuration write.
 
+Stage 9 server-time preference retirement pass 38 removes
+`irc_cap_server_time` from the persisted schema, preference storage, default
+initialization, and Preferences. The toggle never gated negotiation:
+`server-time` and both ZNC server-time variants remain unconditionally
+requested when advertised, and timestamp parsing is unchanged.
+
 ## Functional Clusters
 
 | Cluster | Main files | GTK4 concern | Status |

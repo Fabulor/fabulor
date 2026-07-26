@@ -2982,6 +2982,16 @@ GTK4 and theme tooling tests and all production package validators pass.
 Installed testing confirms `/SET text_transparent` reports no such variable
 and supported appearance behavior remains operational.
 
+Stage 9 server-time preference retirement pass 38 (2026-07-26): the inert
+`irc_cap_server_time` key and misleading Preferences toggle are removed.
+Fabulor continues to request standard and ZNC server-time capabilities whenever
+advertised and retains existing timestamp parsing. Common core, frontend, and
+installer builds complete with zero warnings and errors; all 86 GTK4 and theme
+tooling tests and all production package validators pass. Installed testing
+confirms `/SET irc_cap_server_time` reports no such variable, Preferences no
+longer exposes the toggle, and normal IRC and ZNC timestamps remain
+operational.
+
 Deliverables:
 
 - Make GTK4 the only production frontend dependency in MSVC, Meson, and CI.

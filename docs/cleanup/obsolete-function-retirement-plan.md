@@ -265,11 +265,44 @@ Publication remains pending.
 
 #### Remaining Audit Results
 
-- `irc_cap_server_time` is inert as a preference because server-time
-  capabilities are requested unconditionally. Its user-facing toggle and
-  always-enabled runtime policy require a separate contained decision.
 - `perl_warnings` remains deferred with the retained Perl source.
 - `gui_single` is already commented out and is not a live persisted key.
+
+#### `irc_cap_server_time`
+
+Status: `Accepted`
+
+The preference did not control capability negotiation. Fabulor already
+requested `server-time`, `znc.in/server-time`, and
+`znc.in/server-time-iso` whenever a server advertised them, regardless of the
+saved value or Preferences toggle.
+
+Compatibility policy:
+
+- retain unconditional server-time capability negotiation and timestamp
+  parsing
+- remove the misleading Preferences toggle
+- ignore an existing saved `irc_cap_server_time` value
+- omit the key on the next canonical configuration write
+- report no such variable for `/SET irc_cap_server_time`
+
+Automated evidence:
+
+- source audit confirms the preference has no remaining production reference
+- `server-time`, `znc.in/server-time`, and `znc.in/server-time-iso`
+  negotiation and parsing remain present
+- common core and GTK4 frontend rebuild with zero warnings and errors
+- all 86 GTK4 and theme tooling tests pass
+- production MSI and bootstrapper rebuild with zero warnings and errors
+- all production package and embedded-payload validators pass
+
+Installed acceptance:
+
+- `/SET irc_cap_server_time` reports no such variable
+- Preferences no longer exposes the server-time toggle
+- normal IRC and ZNC timestamps remain operational
+
+Publication remains pending.
 
 ## Retirement Workflow
 

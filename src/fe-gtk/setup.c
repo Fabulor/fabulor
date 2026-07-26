@@ -594,7 +594,6 @@ static const setting advanced_settings[] =
         {ST_ENTRY,  N_("Alternative fonts:"), P_OFFSETNL(hex_text_font_alternative), N_("Separate multiple entries with commas without spaces before or after."), 0, sizeof prefs.hex_text_font_alternative},
 #endif
         {ST_TOGGLE,     N_("Display lists in compact mode"), P_OFFINTNL(hex_gui_compact), N_("Use less spacing between user list/channel tree rows."), 0, 0},
-        {ST_TOGGLE,     N_("Use server time if supported"), P_OFFINTNL(hex_irc_cap_server_time), N_("Display timestamps obtained from server if it supports the time-server extension."), 0, 0},
         {ST_TOGGLE,     N_("Automatically reconnect to servers on disconnect"), P_OFFINTNL(hex_net_auto_reconnect), 0, 0, 1},
         {ST_NUMBER,     N_("Lag check interval:"), P_OFFINTNL(hex_net_lag_check), 0, (const char **)N_("seconds."), 9999},
         {ST_NUMBER,     N_("Auto reconnect delay:"), P_OFFINTNL(hex_net_reconnect_delay), 0, 0, 9999},
