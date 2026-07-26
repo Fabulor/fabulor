@@ -122,9 +122,6 @@
     <ClInclude Include="$(ZoiteChatLib)marshal.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="plugin-identd.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="sysinfo\sysinfo.h">
       <Filter>Source Files\sysinfo</Filter>
     </ClInclude>
@@ -218,9 +215,6 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="$(ZoiteChatLib)marshal.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="plugin-identd.c">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="sysinfo\win32\backend.c">

@@ -10,7 +10,6 @@ src/common/inbound.c
 src/common/notify.c
 src/common/outbound.c
 src/common/plugin.c
-src/common/plugin-identd.c
 src/common/plugin-timer.c
 src/common/server.c
 src/common/servlist.c

@@ -920,29 +920,6 @@ server_read_child (GIOChannel *source, GIOCondition condition, server *serv)
 				closesocket (serv->proxy_sok4);
 		}
 
-		{
-			struct sockaddr_storage addr;
-			int addr_len = sizeof (addr);
-			guint16 port;
-			ircnet *net = serv->network;
-
-			if (!getsockname (serv->sok, (struct sockaddr *)&addr, &addr_len))
-			{
-				if (addr.ss_family == AF_INET)
-					port = ntohs(((struct sockaddr_in *)&addr)->sin_port);
-				else
-					port = ntohs(((struct sockaddr_in6 *)&addr)->sin6_port);
-
-				g_snprintf (outbuf, sizeof (outbuf), "IDENTD %"G_GUINT16_FORMAT" ", port);
-				if (net && net->user && !(net->flags & FLAG_USE_GLOBAL))
-					g_strlcat (outbuf, net->user, sizeof (outbuf));
-				else
-					g_strlcat (outbuf, prefs.hex_irc_user_name, sizeof (outbuf));
-
-				handle_command (serv->server_session, outbuf, FALSE);
-			}
-		}
-
 		server_connect_success (serv);
 		break;
 	case '5':						  /* prefs ip discovered */

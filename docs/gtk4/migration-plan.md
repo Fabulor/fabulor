@@ -2908,6 +2908,18 @@ nick menus and correctly rendered away text. The frontend and installer rebuild
 with zero warnings and errors, all 79 GTK4 tooling tests pass, and all production
 package validators pass.
 
+Stage 9 obsolete-option retirement pass 31 (2026-07-26): the obsolete built-in
+Identd server is removed as one complete ownership boundary rather than hidden
+from Preferences. Fabulor no longer starts an Identd listener, registers
+`/IDENTD`, publishes local connection-port mappings, persists Identd settings,
+or exposes the Identd Preferences page. The internal plugin sources and
+MSVC/Meson/translation registrations are deleted, and the unrelated theme
+change dispatcher no longer carries an Identd reload reason. Installed testing
+confirms the option and loaded-plugin entry are absent and the client remains
+operational. Common core, frontend, and installer rebuilds have zero warnings
+and errors; all 79 GTK4 tooling tests and all production package validators
+pass.
+
 Deliverables:
 
 - Make GTK4 the only production frontend dependency in MSVC, Meson, and CI.

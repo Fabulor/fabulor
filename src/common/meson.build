@@ -16,7 +16,6 @@ common_sources = [
   'notify.c',
   'outbound.c',
   'plugin.c',
-  'plugin-identd.c',
   'plugin-timer.c',
   'proto-irc.c',
   'scram.c',

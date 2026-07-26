@@ -44,7 +44,6 @@
 #include "zoitechat-plugin.h"
 #include "inbound.h"
 #include "plugin.h"
-#include "plugin-identd.h"
 #include "plugin-timer.h"
 #include "notify.h"
 #include "server.h"
@@ -558,7 +557,6 @@ irc_init (session *sess)
 	done_init = TRUE;
 
 	plugin_add (sess, NULL, NULL, timer_plugin_init, NULL, NULL, FALSE);
-	plugin_add (sess, NULL, NULL, identd_plugin_init, identd_plugin_deinit, NULL, FALSE);
 
 #ifdef USE_PLUGIN
 	if (!arg_skip_plugins)

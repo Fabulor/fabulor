@@ -30,7 +30,6 @@
     <ClInclude Include="network.h" />
     <ClInclude Include="notify.h" />
     <ClInclude Include="outbound.h" />
-    <ClInclude Include="plugin-identd.h" />
     <ClInclude Include="plugin-timer.h" />
     <ClInclude Include="plugin.h" />
     <ClInclude Include="proto-irc.h" />
@@ -68,7 +67,6 @@
     <ClCompile Include="fabulor-plugin-path-policy.c" />
     <ClCompile Include="win32-gtk4-runtime.c" />
     <ClCompile Include="history.c" />
-    <ClCompile Include="plugin-identd.c" />
     <ClCompile Include="ignore.c" />
     <ClCompile Include="inbound.c" />
     <ClCompile Include="$(ZoiteChatLib)marshal.c" />

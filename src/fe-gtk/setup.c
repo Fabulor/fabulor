@@ -685,16 +685,6 @@ static const setting network_settings[] =
         {ST_END, 0, 0, 0, 0, 0}
 };
 
-static const setting identd_settings[] =
-{
-        {ST_HEADER, N_("Identd Server"), 0, 0, 0, 0},
-        {ST_TOGGLE, N_("Enabled"), P_OFFINTNL(hex_identd_server), N_("Server will respond with the networks username"), 0, 1},
-        {ST_NUMBER,     N_("Port:"), P_OFFINTNL(hex_identd_port), N_("You must have permissions to listen on this port. "
-                                                                                                   "If not 113 (0 defaults to this) then you must configure port-forwarding."), 0, 65535},
-
-        {ST_END, 0, 0, 0, 0, 0}
-};
-
 #define setup_get_str(pr,set) (((char *)pr)+set->offset)
 #define setup_get_int(pr,set) *(((int *)pr)+set->offset)
 #define setup_get_int3(pr,off) *(((int *)pr)+off) 
@@ -1977,7 +1967,6 @@ static const char *const cata_network[] =
 {
         N_("Network setup"),
         N_("File transfers"),
-        N_("Identd"),
         NULL
 };
 
@@ -2029,7 +2018,6 @@ setup_create_pages (void)
 
         setup_register_page (cata_network[0], book, setup_page_from_settings, network_settings);
         setup_register_page (cata_network[1], book, setup_page_from_settings, filexfer_settings);
-        setup_register_page (cata_network[2], book, setup_page_from_settings, identd_settings);
 
         gtk_notebook_set_show_tabs (GTK_NOTEBOOK (book), FALSE);
         gtk_notebook_set_show_border (GTK_NOTEBOOK (book), FALSE);
@@ -2174,8 +2162,6 @@ setup_apply_real (const ThemeChangedEvent *event)
         if (theme_changed_event_has_reason (event, THEME_CHANGED_REASON_LAYOUT))
                 menu_change_layout ();
 
-        if (theme_changed_event_has_reason (event, THEME_CHANGED_REASON_IDENTD))
-                handle_command (current_sess, "IDENTD reload", FALSE);
 }
 
 static void

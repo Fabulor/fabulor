@@ -166,7 +166,6 @@ struct zoitechatprefs
 	unsigned int hex_gui_win_save;
 	unsigned int hex_gui_win_swap;
 	unsigned int hex_gui_win_ucount;
-	unsigned int hex_identd_server;
 	unsigned int hex_input_balloon_chans;
 	unsigned int hex_input_balloon_hilight;
 	unsigned int hex_input_balloon_priv;
@@ -286,7 +285,6 @@ struct zoitechatprefs
 	int hex_gui_win_state;
 	int hex_gui_win_top;
 	int hex_gui_win_width;
-	int hex_identd_port;
 	int hex_irc_ban_type;
 	int hex_irc_join_delay;
 	int hex_irc_notice_pos;

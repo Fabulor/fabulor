@@ -192,7 +192,7 @@ static void
 unmatched_reason_listener (const ThemeChangedEvent *event, gpointer userdata)
 {
 	(void) userdata;
-	if (theme_changed_event_has_reason (event, THEME_CHANGED_REASON_IDENTD))
+	if (theme_changed_event_has_reason (event, THEME_CHANGED_REASON_MODE))
 		unmatched_listener_calls++;
 }
 
@@ -256,8 +256,6 @@ test_preferences_change_synthesizes_theme_reasons (void)
 	strcpy (new_prefs.hex_text_background, "new.png");
 	old_prefs.hex_gui_tab_dots = 0;
 	new_prefs.hex_gui_tab_dots = 1;
-	old_prefs.hex_identd_port = 113;
-	new_prefs.hex_identd_port = 114;
 	old_prefs.hex_gui_ulist_color = 0;
 	new_prefs.hex_gui_ulist_color = 1;
 
@@ -265,7 +263,6 @@ test_preferences_change_synthesizes_theme_reasons (void)
 
 	g_assert_true (theme_changed_event_has_reason (&event, THEME_CHANGED_REASON_PIXMAP));
 	g_assert_true (theme_changed_event_has_reason (&event, THEME_CHANGED_REASON_LAYOUT));
-	g_assert_true (theme_changed_event_has_reason (&event, THEME_CHANGED_REASON_IDENTD));
 	g_assert_true (theme_changed_event_has_reason (&event, THEME_CHANGED_REASON_USERLIST));
 	g_assert_true (theme_changed_event_has_reason (&event, THEME_CHANGED_REASON_WIDGET_STYLE));
 }
@@ -286,7 +283,6 @@ test_preferences_change_omits_reasons_without_differences (void)
 
 	g_assert_false (theme_changed_event_has_reason (&event, THEME_CHANGED_REASON_PIXMAP));
 	g_assert_false (theme_changed_event_has_reason (&event, THEME_CHANGED_REASON_LAYOUT));
-	g_assert_false (theme_changed_event_has_reason (&event, THEME_CHANGED_REASON_IDENTD));
 	g_assert_false (theme_changed_event_has_reason (&event, THEME_CHANGED_REASON_USERLIST));
 	g_assert_false (theme_changed_event_has_reason (&event, THEME_CHANGED_REASON_WIDGET_STYLE));
 }

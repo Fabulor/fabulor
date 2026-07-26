@@ -8390,6 +8390,47 @@ Installed acceptance: pass. The root and identity pages retain practical,
 stable dimensions; nick headings display correctly; long details ellipsize
 cleanly; and away messages display ordinary apostrophes.
 
+### GTK4 Stage 9 Obsolete Identd Retirement, Pass 31
+
+Date: 2026-07-26
+
+Identd was retained as an obsolete built-in service with a dedicated
+Preferences page, persisted settings, command hook, automatic per-connection
+port mapping, and network-listener lifetime.
+
+Removal:
+
+- delete the internal Identd plugin source and header
+- remove its common-core MSVC and Meson registrations and translation source
+- stop registering the built-in plugin and `/IDENTD` command
+- remove automatic local socket-port and username publication after connection
+- retire `identd_server` and `identd_port` from the preference schema and
+  preference structure
+- remove the Identd Preferences page and apply-time reload command
+- remove the Identd-specific preference-change reason and update its focused
+  theme-manager tests
+- old Identd configuration keys are ignored and omitted on the next canonical
+  configuration write
+
+Automated evidence:
+
+- production source/build audit contains no remaining Identd references
+- common-core rebuild: zero warnings and zero errors
+- full GTK4 frontend rebuild: zero warnings and zero errors
+- complete GTK4 tooling contract suite: all 79 tests pass
+- production MSI and bootstrapper rebuild: zero warnings and zero errors
+- production MSI validation: 7,624 installed files and zero GTK3 path markers
+- runtime validation: all 1,431 manifest entries and content hashes verified
+- production bundle validation: version `1.0.4`, one embedded MSI, and exact
+  embedded/published MSI equality
+- production MSI SHA-256:
+  `A01A0EA76E7CCBC7F66DD8E2970EF66FD915DE7926F0BAB56E1E5605DBD0AF59`
+- production bootstrapper SHA-256:
+  `BE2CBEB5C638744E85651788E26839BB1A9A9BCDA33081C1ADFD2703CFA13ED9`
+
+Installed acceptance: pass. Identd is absent from Preferences and the startup
+plugin report, while normal client operation remains intact.
+
 ## Stage Completion Rule
 
 A stage can move to complete in `migration-plan.md` only when:

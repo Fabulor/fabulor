@@ -145,9 +145,6 @@ theme_manager_synthesize_preference_reasons (const struct zoitechatprefs *old_pr
 	if (old_prefs->hex_gui_tab_dots != new_prefs->hex_gui_tab_dots ||
 	    old_prefs->hex_gui_tab_layout != new_prefs->hex_gui_tab_layout)
 		reasons |= THEME_CHANGED_REASON_LAYOUT;
-	if (old_prefs->hex_identd_server != new_prefs->hex_identd_server ||
-	    old_prefs->hex_identd_port != new_prefs->hex_identd_port)
-		reasons |= THEME_CHANGED_REASON_IDENTD;
 	if (color_change ||
 	    old_prefs->hex_gui_ulist_color != new_prefs->hex_gui_ulist_color ||
 	    old_prefs->hex_text_color_nicks != new_prefs->hex_text_color_nicks ||

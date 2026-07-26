@@ -1559,6 +1559,14 @@ Identity values retained by menu actions remain complete for clipboard use.
 Plain-text identity and away labels no longer pass through markup escaping, so
 apostrophes and other ordinary characters display as entered.
 
+Stage 9 obsolete-option retirement pass 31 removes the built-in Identd service.
+The internal plugin, `/IDENTD` hook, connection-port publication, listener
+lifetime, preference schema fields, Preferences page, apply-time reload path,
+translation source registration, MSVC/Meson source entries, and dedicated
+change reason are retired together. Existing saved `identd_server` and
+`identd_port` keys are ignored and disappear when the canonical configuration
+is next written.
+
 ## Functional Clusters
 
 | Cluster | Main files | GTK4 concern | Status |

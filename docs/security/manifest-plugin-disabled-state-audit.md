@@ -667,7 +667,7 @@ Fix status, 2026-07-12:
 - Script add-ons still use the existing language runtime command hooks, but `LOAD`, `UNLOAD`, and `RELOAD` GUI commands reject paths containing quotes or control characters before constructing the command.
 - The GUI file filter no longer advertises unsupported runtime `.cs` compilation. Native plugin DLLs remain selectable through the legacy loader; simple managed C# DLLs auto-load from their exact profile folder layout.
 - Startup now prints a consolidated active-plugin report. Native and Python entries come from the live legacy plugin list, while simple Tcl and C# entries come from their successful runtime registries; merely discovered or failed add-ons are not reported as loaded.
-- The report is emitted after built-in notification and tray initialization and retains the original startup session as its output destination while auto-connect creates further tabs. Identd, Notifications, and Tray now publish meaningful metadata instead of appearing unnamed or being omitted because they initialized later.
+- The report is emitted after built-in notification and tray initialization and retains the original startup session as its output destination while auto-connect creates further tabs. Notifications and Tray publish meaningful metadata instead of appearing unnamed or being omitted because they initialized later. The obsolete built-in Identd service was retired on 2026-07-26.
 - The maintained C#, Python, and Tcl manifest samples now use independent manifests with only `events.message` and `session.read`. They log locally at startup and demonstrate a one-time message callback without transmitting IRC messages during initialization.
 
 ## Finding: Log Mask Can Write Outside The Config Directory By Design

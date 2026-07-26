@@ -498,9 +498,6 @@ const struct prefs vars[] =
 	{"gui_win_ucount", P_OFFINT (hex_gui_win_ucount), TYPE_BOOL},
 	{"gui_win_width", P_OFFINT (hex_gui_win_width), TYPE_INT},
 
-	{"identd_server", P_OFFINT (hex_identd_server), TYPE_BOOL},
-	{"identd_port", P_OFFINT (hex_identd_port), TYPE_INT},
-
 	{"input_balloon_chans", P_OFFINT (hex_input_balloon_chans), TYPE_BOOL},
 	{"input_balloon_hilight", P_OFFINT (hex_input_balloon_hilight), TYPE_BOOL},
 	{"input_balloon_priv", P_OFFINT (hex_input_balloon_priv), TYPE_BOOL},
