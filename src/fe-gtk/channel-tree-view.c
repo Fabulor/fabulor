@@ -17,6 +17,7 @@ typedef struct
 	FabulorChannelModel *model;
 	FabulorChannelTreeSelectionFunc selection_callback;
 	gpointer selection_data;
+	gpointer notified_identity;
 	gulong selection_id;
 	gboolean use_icons;
 	gboolean compact;
@@ -242,6 +243,7 @@ channel_tree_selection_changed (GtkSingleSelection *selection,
 	if (!owner->selection_callback)
 		return;
 	identity = fabulor_channel_model_get_selected_identity (owner->model);
+	owner->notified_identity = identity;
 	if (identity)
 		owner->selection_callback (owner->view, identity,
 			owner->selection_data);
@@ -352,6 +354,13 @@ fabulor_channel_tree_view_focus_identity (GtkWidget *view, gpointer identity)
 		guint position;
 		if (!fabulor_channel_model_select_identity (owner->model, identity))
 			return FALSE;
+		if (owner->selection_callback &&
+			owner->notified_identity != identity)
+		{
+			owner->notified_identity = identity;
+			owner->selection_callback (owner->view, identity,
+				owner->selection_data);
+		}
 		position = gtk_single_selection_get_selected (
 			fabulor_channel_model_get_selection (owner->model));
 		if (position == GTK_INVALID_LIST_POSITION)

@@ -1,6 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">
   <Fragment>
+    <ComponentGroup Id="Enchant2CoreComponents" Directory="INSTALLFOLDER">
+      <Files Include="$(var.Gtk4EnchantRoot)\libenchant-2-2.dll" />
+    </ComponentGroup>
+
     <ComponentGroup Id="Enchant2ProviderComponents" Directory="LIBENCHANT2DIR">
       <Files Include="$(var.Gtk4EnchantRoot)\lib\enchant-2\enchant_winspell.dll" />
     </ComponentGroup>

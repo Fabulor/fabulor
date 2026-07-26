@@ -2776,6 +2776,66 @@ passes all three artifact validators. Hands-on clean-install, in-place upgrade,
 repair, uninstall, accessibility, visual, performance, and plugin workflows
 remain assigned to final acceptance.
 
+Stage 9 clean-install layout acceptance pass 22 (2026-07-25): the first
+installed-client test exposed a collapsed user-list pane and a native Cairo
+access violation when the transcript's nick/text separator was pressed. The
+retained profile contained a two-pixel right-pane width despite its configured
+80-pixel minimum. Right-pane restoration now clamps saved widths against both
+the preference minimum and available allocation. Transcript drawing now has
+one guarded context-acquisition boundary: input callbacks with no active GTK4
+snapshot queue a frame and return instead of passing a null context to Cairo.
+The same acceptance run exposed Server List checkboxes still accessed as
+retired `GtkToggleButton` instances: clicks changed appearance but not network
+flags, and password visibility could not activate. The complete Server List
+checkbox boundary now uses typed GTK4 check-button state access. The corrected
+frontend and release pair build with zero warnings and errors and pass
+automated validation. Installed-client follow-up confirmed connection and
+Server List state, then exposed two visual conversion defects: the trailing-box
+adapter expanded the nickname button and pushed the input field right, while
+the emoji picker imposed a fixed page size regardless of the containing
+window. Trailing controls now retain natural width, the visible user-list owns
+its configured minimum and rejects hidden/unallocated position writes, and the
+emoji picker uses a bounded viewport derived from the current main window.
+Installed-client confirmation of these final visual corrections remains
+required. The first same-version update exposed a release-boundary defect:
+Windows Installer replaced the relinked frontend but did not register newly
+added OpenSSL components under the existing `1.0.3` product identity, leaving
+the launcher unable to load the frontend with Win32 error 126. The corrected
+release advances the shared client/MSI/bundle version to `1.0.4` so WiX emits
+a distinct major-upgrade product identity, and regenerates production support
+from the exact OpenSSL dependency root used to link the frontend.
+
+Stage 9 installed-client visual acceptance follow-up pass 23 (2026-07-25):
+screenshots of the corrected `1.0.4` client exposed false expanders on leaf
+channels, excess topic and server-input spacing, a non-working transcript
+bottom overlay, absent spell checking, obsolete GTK3 wording in Preferences,
+and duplicate/incomplete Window context branches. Root-only child-model
+ownership removes leaf expanders without flattening the server hierarchy.
+Initial server-row focus also has a guarded single-dispatch fallback, so the
+server transcript does not wait for a later channel insertion when GTK has not
+emitted the first selection notification.
+Inline topic margins and server-only nickname visibility now follow the
+active session layout. The overlay dispatches through the transcript's own
+bottom-state operation. Context composition folds all matching add-on branches
+into the canonical Window model, whose built-in surface and transcript actions
+remain intact. The clean installer had packaged WinSpell and ordering data but
+not the Enchant 2.8.19 core loaded by the edit box; WiX now installs all three
+components and the production contract rejects an incomplete spell payload.
+The obsolete `GTK3 Theme` heading is replaced by `Fabulor Theme`. Automated
+source, probe, package, and tooling validation is green; installed visual,
+startup server-tab, scrolling, spell, and menu confirmation remains required.
+
+Stage 9 transcript interaction acceptance pass 24 (2026-07-26): installed
+testing confirmed that the inherited XText selection path mapped pointer
+coordinates through per-character widths that no longer matched Pango-shaped
+GTK4 output and could continue across wrapped-row boundaries. Selection now
+keeps stable entry/byte anchors and uses Pango insertion hit-testing constrained
+to the active visual row. The installed `1.0.4` client accepts precise partial
+selection in either direction, publishes the exact range through automatic and
+explicit clipboard operations, and once again recognizes and activates URLs.
+The strict GTK4 probe, full frontend and launcher rebuilds, all 79 GTK4 tooling
+tests, and all three production package validators pass.
+
 Deliverables:
 
 - Make GTK4 the only production frontend dependency in MSVC, Meson, and CI.

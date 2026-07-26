@@ -457,6 +457,7 @@ Detailed planning and evidence live in:
     - [x] Specialize main, context, plugin, Usermenu, and stateful menu action/model ownership to GTK4 and retire all remaining GTK3 widget-menu sources.
 - [ ] Complete clean-install, upgrade, accessibility, visual, performance, plugin, and packaging validation.
   - [x] Validate the production bootstrapper/MSI release pair, stable upgrade identities, version alignment, exact Burn application payload, single embedded chain, GTK4-only installed payload, and byte-for-byte embedded MSI equality.
+  - [ ] Validate the `1.0.4` installed-client fixes: enforce the visible user-list minimum, schedule transcript-separator redraws through GTK4 snapshots, persist Server List checkbox/password-visibility state through GTK4 check-button accessors, retain natural input-row control widths, adapt the emoji picker to the main-window allocation, complete a versioned major upgrade with its exact OpenSSL runtime, remove false leaf-channel expanders, compact the inline topic row and server input row, restore transcript scroll-to-bottom ownership, restore the complete Enchant 2/WinSpell payload, rename the obsolete GTK3 theme heading, collapse duplicate add-on Window branches into the canonical context submenu, and retain exact transcript selection, clipboard copying, and URL hit-testing.
 
 ## 7. Documentation & Developer Guides
 

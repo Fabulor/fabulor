@@ -172,6 +172,10 @@ struct _GtkXText
 	int select_start_y;
 	int select_end_x;
 	int select_end_y;
+	textentry *selection_anchor_ent;
+	textentry *selection_focus_ent;
+	int selection_anchor_offset;
+	int selection_focus_offset;
 	gdouble pointer_x;
 	gdouble pointer_y;
 	GdkModifierType pointer_state;
@@ -235,6 +239,7 @@ struct _GtkXText
 	unsigned int word_select:1;
 	unsigned int line_select:1;
 	unsigned int button_down:1;
+	unsigned int selection_drag_active:1;
 	unsigned int dont_render:1;
 	unsigned int dont_render2:1;
 	unsigned int cursor_hand:1;

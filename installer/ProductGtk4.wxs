@@ -111,6 +111,7 @@
 
     <Feature Id="MainFeature" Title="Fabulor" Level="1">
       <ComponentGroupRef Id="CoreComponents" />
+      <ComponentGroupRef Id="Enchant2CoreComponents" />
       <ComponentGroupRef Id="ConfigFolderComponents" />
       <ComponentGroupRef Id="InstalledModeCoreComponents" />
       <ComponentGroupRef Id="PluginFolderComponents" />

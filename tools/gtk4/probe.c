@@ -708,11 +708,59 @@ probe_input_controller_click (GtkWidget *widget, guint button, guint n_press,
 }
 
 static gboolean
+probe_input_controller_release (GtkWidget *widget, guint button, gdouble x,
+	gdouble y, GdkModifierType state, gpointer user_data)
+{
+	(void) widget;
+	(void) button;
+	(void) x;
+	(void) y;
+	(void) state;
+	(void) user_data;
+	return FALSE;
+}
+
+static gboolean
+probe_input_controller_drag_begin (GtkWidget *widget, gdouble x, gdouble y,
+	GdkModifierType state, gpointer user_data)
+{
+	(void) widget;
+	(void) x;
+	(void) y;
+	(void) state;
+	(void) user_data;
+	return TRUE;
+}
+
+static void
+probe_input_controller_drag_update (GtkWidget *widget, gdouble x, gdouble y,
+	GdkModifierType state, gpointer user_data)
+{
+	(void) widget;
+	(void) x;
+	(void) y;
+	(void) state;
+	(void) user_data;
+}
+
+static void
+probe_input_controller_drag_end (GtkWidget *widget, gdouble x, gdouble y,
+	GdkModifierType state, gpointer user_data)
+{
+	(void) widget;
+	(void) x;
+	(void) y;
+	(void) state;
+	(void) user_data;
+}
+
+static gboolean
 check_input_controller_phase (gboolean gtk_ready)
 {
 	GtkWidget *entry;
 	GtkEventController *key;
 	GtkEventController *click;
+	GtkEventController *drag;
 	gboolean valid;
 
 	if (!gtk_ready)
@@ -724,11 +772,23 @@ check_input_controller_phase (gboolean gtk_ready)
 		GTK_PHASE_CAPTURE, probe_input_controller_key, NULL);
 	click = fabulor_gtk_widget_on_multi_click_phase (entry,
 		GTK_PHASE_CAPTURE, probe_input_controller_click, NULL);
-	valid = key && click &&
+	fabulor_gtk_gesture_click_on_released (click,
+		probe_input_controller_release, NULL);
+	drag = fabulor_gtk_widget_on_drag (entry,
+		probe_input_controller_drag_begin,
+		probe_input_controller_drag_update,
+		probe_input_controller_drag_end, NULL);
+	valid = key && click && drag &&
 		gtk_event_controller_get_propagation_phase (key) ==
 			GTK_PHASE_CAPTURE &&
 		gtk_event_controller_get_propagation_phase (click) ==
-			GTK_PHASE_CAPTURE;
+			GTK_PHASE_CAPTURE &&
+		GTK_IS_GESTURE_DRAG (drag) &&
+		gtk_gesture_single_get_button (GTK_GESTURE_SINGLE (drag)) == 1 &&
+		gtk_gesture_single_get_exclusive (GTK_GESTURE_SINGLE (drag)) &&
+		g_signal_has_handler_pending (click,
+			g_signal_lookup ("released", GTK_TYPE_GESTURE_CLICK),
+			0, TRUE);
 	g_object_unref (entry);
 	return valid;
 }
@@ -5068,14 +5128,23 @@ check_xtext_accessible_policy (void)
 }
 
 static gboolean
-check_xtext_display_policy (void)
+check_xtext_display_policy (gboolean gtk_ready)
 {
 	FabulorXTextFontMetrics metrics;
+	PangoFontDescription *font;
+	PangoLayout *layout;
+	GtkWidget *label;
+	const gchar *formatted_run =
+		"lotuspsychje (~lotuspsyc@user/lotuspsychje";
+	const gchar *utf8_run = "A\xc3\xa9" "B";
 	gint logical_width;
 	gint logical_height;
 	gint device_width;
 	gint device_height;
 	gint logical_pixels;
+	gint direct_width;
+	gint hit_index;
+	gint measured_width;
 	gint strike_y;
 	gint underline_y;
 
@@ -5109,6 +5178,48 @@ check_xtext_display_policy (void)
 		fabulor_xtext_scale_factor (0) != 1 ||
 		fabulor_xtext_scale_factor (3) != 3)
 		return FALSE;
+	if (gtk_ready)
+	{
+		label = gtk_label_new (NULL);
+		g_object_ref_sink (label);
+		layout = gtk_widget_create_pango_layout (label, NULL);
+		font = pango_font_description_from_string ("sans 11");
+		pango_layout_set_font_description (layout, font);
+		measured_width = fabulor_xtext_layout_text_width (layout,
+			formatted_run, (gint) strlen (formatted_run));
+		pango_layout_set_text (layout, formatted_run, -1);
+		pango_layout_get_pixel_size (layout, &direct_width, NULL);
+		if (measured_width != direct_width || measured_width <= 0 ||
+			fabulor_xtext_layout_text_width (
+				NULL, formatted_run, -1) != 0 ||
+			fabulor_xtext_layout_text_width (layout, NULL, 1) != 0)
+		{
+			pango_font_description_free (font);
+			g_object_unref (layout);
+			g_object_unref (label);
+			return FALSE;
+		}
+		measured_width = fabulor_xtext_layout_text_width (layout,
+			utf8_run, (gint) strlen (utf8_run));
+		hit_index = fabulor_xtext_layout_index_at_x (layout, utf8_run,
+			(gint) strlen (utf8_run), measured_width / 2);
+		if (fabulor_xtext_layout_index_at_x (layout, utf8_run,
+				(gint) strlen (utf8_run), 0) != 0 ||
+			fabulor_xtext_layout_index_at_x (layout, utf8_run,
+				(gint) strlen (utf8_run), measured_width) !=
+				(gint) strlen (utf8_run) ||
+			hit_index < 0 || hit_index > (gint) strlen (utf8_run) ||
+			!g_utf8_validate (utf8_run, hit_index, NULL))
+		{
+			pango_font_description_free (font);
+			g_object_unref (layout);
+			g_object_unref (label);
+			return FALSE;
+		}
+		pango_font_description_free (font);
+		g_object_unref (layout);
+		g_object_unref (label);
+	}
 	fabulor_xtext_decoration_positions (20, 12, 16, &strike_y,
 		&underline_y);
 	return strike_y == 16 && underline_y == 21;
@@ -5768,7 +5879,7 @@ main (void)
 		fprintf (stderr, "GTK4 transcript accessible-text policy mismatch\n");
 		return 1;
 	}
-	if (!check_xtext_display_policy ())
+	if (!check_xtext_display_policy (gtk_ready))
 	{
 		fprintf (stderr, "GTK4 transcript display policy mismatch\n");
 		return 1;

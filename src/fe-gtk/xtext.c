@@ -159,6 +159,8 @@ static void gtk_xtext_get_hit (GtkXText *xtext, int x, int y,
 	FabulorXTextHit *hit);
 static gboolean gtk_xtext_word_select_char (const unsigned char *ch);
 static gboolean gtk_xtext_get_word_select_range (GtkXText *xtext, int x, int y, textentry **ret_ent, int *ret_off, int *ret_len);
+static void gtk_xtext_set_pointer_cursor (GtkXText *xtext,
+	const gchar *name);
 static void gtk_xtext_pointer_motion (GtkWidget *widget, gdouble x,
 	gdouble y, GdkModifierType state, gpointer user_data);
 static void gtk_xtext_pointer_leave (GtkWidget *widget, gpointer user_data);
@@ -167,6 +169,12 @@ static gboolean gtk_xtext_button_press (GtkWidget *widget, guint button,
 	gpointer user_data);
 static gboolean gtk_xtext_button_release (GtkWidget *widget, guint button,
 	gdouble x, gdouble y, GdkModifierType state, gpointer user_data);
+static gboolean gtk_xtext_drag_begin (GtkWidget *widget, gdouble x,
+	gdouble y, GdkModifierType state, gpointer user_data);
+static void gtk_xtext_drag_update (GtkWidget *widget, gdouble x, gdouble y,
+	GdkModifierType state, gpointer user_data);
+static void gtk_xtext_drag_end (GtkWidget *widget, gdouble x, gdouble y,
+	GdkModifierType state, gpointer user_data);
 static gboolean gtk_xtext_scroll (GtkWidget *widget, gdouble dx,
 	gdouble dy, gpointer user_data);
 static void gtk_xtext_focus_changed (GtkWidget *widget, gpointer user_data);
@@ -344,10 +352,17 @@ xtext_adj_set_page_increment (GtkAdjustment *adj, gdouble page_increment)
 }
 
 
-static cairo_t *
-xtext_create_context (GtkXText *xtext)
+static gboolean
+xtext_begin_draw (GtkXText *xtext, cairo_t **context)
 {
-	return fabulor_xtext_render_target_create_context (xtext->render_target);
+	g_return_val_if_fail (context != NULL, FALSE);
+	*context = fabulor_xtext_render_target_create_context (
+		xtext->render_target);
+	if (*context)
+		return TRUE;
+	if (gtk_widget_get_realized (GTK_WIDGET (xtext)))
+		gtk_widget_queue_draw (GTK_WIDGET (xtext));
+	return FALSE;
 }
 
 static inline void
@@ -384,16 +399,16 @@ xtext_draw_line (GtkXText *xtext, cairo_t *cr, const XTextColor *color, int x1, 
 static void
 xtext_draw_bg_offset (GtkXText *xtext, int x, int y, int width, int height, int tile_x, int tile_y)
 {
-	cairo_t *cr = xtext_create_context (xtext);
+	cairo_t *cr;
 	FabulorXTextGeometry geometry;
 
-	if (cr && fabulor_xtext_geometry_from_widget (GTK_WIDGET (xtext),
-		&geometry))
+	if (!xtext_begin_draw (xtext, &cr))
+		return;
+	if (fabulor_xtext_geometry_from_widget (GTK_WIDGET (xtext), &geometry))
 		fabulor_xtext_background_paint (xtext->background, cr, &xtext->bgc,
 			&geometry, x, y, width, height, tile_x, tile_y);
 
-	if (cr)
-		cairo_destroy (cr);
+	cairo_destroy (cr);
 }
 
 static inline void
@@ -701,44 +716,50 @@ static int
 backend_get_text_width_emph (GtkXText *xtext, guchar *str, int len, int emphasis)
 {
 	int width;
-	int deltaw;
-	int mbl;
+	guchar *segment;
+	int segment_len;
 
-	if (*str == 0)
+	if (len <= 0 || *str == 0)
 		return 0;
 
 	if ((emphasis & EMPH_HIDDEN))
 		return 0;
 	emphasis &= (EMPH_ITAL | EMPH_BOLD);
+	if (len == 1 && *str < 128)
+		return fontwidths[emphasis][*str];
 
 	width = 0;
+	segment = str;
+	segment_len = 0;
 	pango_layout_set_attributes (xtext->layout, attr_lists[emphasis]);
 	while (len > 0)
 	{
 		GdkPixbuf *pixbuf;
 		int flag_len;
+		int mbl;
 
 		if (xtext_emoji_flag_at (xtext, (const char *) str, len, &flag_len, &pixbuf))
 		{
+			width += fabulor_xtext_layout_text_width (xtext->layout,
+				(const gchar *) segment, segment_len);
 			width += xtext_emoji_flag_width (xtext, pixbuf);
 			str += flag_len;
 			len -= flag_len;
+			segment = str;
+			segment_len = 0;
 			continue;
 		}
 
 		mbl = charlen(str);
-		if (*str < 128)
-			deltaw = fontwidths[emphasis][*str];
-		else
-		{
-			pango_layout_set_text (xtext->layout, str, mbl);
-			pango_layout_get_pixel_size (xtext->layout, &deltaw, NULL);
-		}
-		width += deltaw;
+		if (mbl > len)
+			break;
 		str += mbl;
 		len -= mbl;
+		segment_len += mbl;
 	}
 
+	width += fabulor_xtext_layout_text_width (xtext->layout,
+		(const gchar *) segment, segment_len);
 	return width;
 }
 
@@ -771,7 +792,8 @@ backend_draw_text_emph (GtkXText *xtext, gboolean dofill, int x, int y,
 	int remaining;
 	int draw_x;
 
-	cr = xtext_create_context (xtext);
+	if (!xtext_begin_draw (xtext, &cr))
+		return;
 
 	pango_layout_set_attributes (xtext->layout, attr_lists[emphasis]);
 
@@ -884,6 +906,8 @@ gtk_xtext_sync_palette_from_theme (GtkXText *xtext)
 static void
 gtk_xtext_init (GtkXText * xtext)
 {
+	GtkEventController *click_controller;
+
 	fabulor_xtext_widget_accessibility_init (GTK_WIDGET (xtext),
 		_("Transcript"));
 	xtext->background = fabulor_xtext_background_new ();
@@ -908,6 +932,7 @@ gtk_xtext_init (GtkXText * xtext)
 	xtext->pointer_y = 0.0;
 	xtext->pointer_state = 0;
 	xtext->pointer_valid = FALSE;
+	xtext->selection_drag_active = FALSE;
 	xtext->underline = FALSE;
 	xtext->strikethrough = FALSE;
 	xtext->hidden = FALSE;
@@ -934,10 +959,12 @@ gtk_xtext_init (GtkXText * xtext)
 	gtk_xtext_scroll_adjustments (xtext, NULL, NULL);
 	fabulor_gtk_widget_on_pointer_motion_with_state (GTK_WIDGET (xtext),
 		gtk_xtext_pointer_motion, gtk_xtext_pointer_leave, NULL);
-	fabulor_gtk_widget_on_multi_click (GTK_WIDGET (xtext),
-		gtk_xtext_button_press, NULL);
-	fabulor_gtk_widget_on_click_released (GTK_WIDGET (xtext),
+	click_controller = fabulor_gtk_widget_on_multi_click_phase (
+		GTK_WIDGET (xtext), GTK_PHASE_BUBBLE, gtk_xtext_button_press, NULL);
+	fabulor_gtk_gesture_click_on_released (click_controller,
 		gtk_xtext_button_release, NULL);
+	fabulor_gtk_widget_on_drag (GTK_WIDGET (xtext), gtk_xtext_drag_begin,
+		gtk_xtext_drag_update, gtk_xtext_drag_end, NULL);
 	fabulor_gtk_widget_on_scroll (GTK_WIDGET (xtext), gtk_xtext_scroll, NULL);
 	fabulor_gtk_widget_on_focus_enter (GTK_WIDGET (xtext),
 		gtk_xtext_focus_changed, NULL);
@@ -945,6 +972,7 @@ gtk_xtext_init (GtkXText * xtext)
 		gtk_xtext_focus_changed, NULL);
 
 	fabulor_gtk_widget_add_css_class (GTK_WIDGET (xtext), "view");
+	gtk_xtext_set_pointer_cursor (xtext, "text");
 }
 
 static void
@@ -1316,89 +1344,92 @@ gtk_xtext_selection_clear (xtext_buffer *buf)
 static int
 find_x (GtkXText *xtext, textentry *ent, int x, int subline, int indent)
 {
-	int xx = indent;
-	int suboff;
+	int line_start;
+	int line_end;
+	int target_x;
+	int consumed_x = 0;
 	GSList *list;
-	GSList *hid = NULL;
-	offlen_t *meta;
-	int off, len, wid, mbl, mbw;
 
-	/* Skip to the first chunk of stuff for the subline */
-	if (subline > 0)
+	line_start = gtk_xtext_find_subline (xtext, ent, subline);
+	line_end = GPOINTER_TO_INT (
+		g_slist_nth_data (ent->sublines, subline));
+	if (line_end <= line_start || line_end > ent->str_len)
+		line_end = ent->str_len;
+	target_x = x - indent;
+	if (target_x <= 0)
+		return line_start;
+
+	for (list = ent->slp; list; list = g_slist_next (list))
 	{
-		suboff = GPOINTER_TO_INT (g_slist_nth_data (ent->sublines, subline - 1));
-		for (list = ent->slp; list; list = g_slist_next (list))
+		offlen_t *meta = list->data;
+		int segment_start;
+		int segment_end;
+		int offset;
+
+		if (!meta || meta->off >= line_end ||
+			meta->off + meta->len <= line_start)
+			continue;
+		segment_start = MAX (meta->off, line_start);
+		segment_end = MIN (meta->off + meta->len, line_end);
+		if (meta->emph & EMPH_HIDDEN)
+			continue;
+
+		pango_layout_set_attributes (xtext->layout,
+			attr_lists[meta->emph & (EMPH_ITAL | EMPH_BOLD)]);
+		offset = segment_start;
+		while (offset < segment_end)
 		{
-			meta = list->data;
-			if (meta->off + meta->len > suboff)
-				break;
+			GdkPixbuf *pixbuf;
+			int flag_len;
+			int run_end;
+			int run_width;
+
+			if (xtext_emoji_flag_at (xtext,
+				(const char *) ent->str + offset, segment_end - offset,
+				&flag_len, &pixbuf))
+			{
+				run_width = xtext_emoji_flag_width (xtext, pixbuf);
+				if (target_x < consumed_x + run_width)
+					return target_x - consumed_x < run_width / 2 ?
+						offset : offset + flag_len;
+				consumed_x += run_width;
+				offset += flag_len;
+				continue;
+			}
+
+			run_end = offset;
+			while (run_end < segment_end)
+			{
+				int char_len;
+				int next_flag_len;
+				GdkPixbuf *next_pixbuf;
+
+				if (xtext_emoji_flag_at (xtext,
+					(const char *) ent->str + run_end,
+					segment_end - run_end, &next_flag_len, &next_pixbuf))
+					break;
+				char_len = charlen (ent->str + run_end);
+				if (char_len <= 0 || char_len > segment_end - run_end)
+				{
+					run_end = segment_end;
+					break;
+				}
+				run_end += char_len;
+			}
+			run_width = fabulor_xtext_layout_text_width (xtext->layout,
+				(const gchar *) ent->str + offset, run_end - offset);
+			if (target_x < consumed_x + run_width)
+			{
+				return offset + fabulor_xtext_layout_index_at_x (
+					xtext->layout, (const gchar *) ent->str + offset,
+					run_end - offset, target_x - consumed_x);
+			}
+			consumed_x += run_width;
+			offset = run_end;
 		}
 	}
-	else
-	{
-		suboff = 0;
-		list = ent->slp;
-	} 
-	/* Step to the first character of the subline */
-	if (list == NULL)
-		return 0;
-	meta = list->data;
-	off = meta->off;
-	len = meta->len;
-	if (meta->emph & EMPH_HIDDEN)
-		hid = list;
-	while (len > 0)
-	{
-		if (off >= suboff)
-			break;
-		mbl = charlen (ent->str + off);
-		len -= mbl;
-		off += mbl;
-	}
-	if (len < 0)
-		return ent->str_len;		/* Bad char -- return max offset. */
 
-	/* Step through characters to find the one at the x position */
-	wid = x - indent;
-	len = meta->len - (off - meta->off);
-	while (wid > 0)
-	{
-		GdkPixbuf *pixbuf;
-		if (xtext_emoji_flag_at (xtext, (const char *) ent->str + off, len, &mbl, &pixbuf))
-			mbw = xtext_emoji_flag_width (xtext, pixbuf);
-		else
-		{
-			mbl = charlen (ent->str + off);
-			mbw = backend_get_text_width_emph (xtext, ent->str + off, mbl, meta->emph);
-		}
-		wid -= mbw;
-		xx += mbw;
-		if (xx >= x)
-			return off;
-		len -= mbl;
-		off += mbl;
-		if (len <= 0)
-		{
-			if (meta->emph & EMPH_HIDDEN)
-				hid = list;
-			list = g_slist_next (list);
-			if (list == NULL)
-				return ent->str_len;
-			meta = list->data;
-			off = meta->off;
-			len = meta->len;
-		}
-	}
-
-	/* If previous chunk exists and is marked hidden, regard it as unhidden */
-	if (hid && list && hid->next == list)
-	{
-		meta = hid->data;
-		off = meta->off;
-	}
-
-	/* Return offset of character at x within subline */
-	return off;
+	return line_end;
 }
 
 static int
@@ -1440,18 +1471,21 @@ gtk_xtext_find_char (GtkXText * xtext, int x, int y, int *off, int *out_of_bound
 {
 	textentry *ent;
 	int line;
+	int visible_line;
 	int subline;
 	int outofbounds = FALSE;
 
 	if (!fabulor_xtext_hit_test_line (y, xtext->pixel_offset,
 		xtext->fontsize, (gint) xtext_adj_get_value (xtext->adj), &line))
 		return NULL;
+	visible_line = line - (gint) xtext_adj_get_value (xtext->adj);
 	ent = gtk_xtext_nth (xtext, line, &subline);
 	if (!ent)
 		return NULL;
 
 	if (off)
-		*off = gtk_xtext_find_x (xtext, x, ent, subline, line, &outofbounds);
+		*off = gtk_xtext_find_x (xtext, x, ent, subline, visible_line,
+			&outofbounds);
 	if (out_of_bounds)
 		*out_of_bounds = outofbounds;
 
@@ -1480,7 +1514,8 @@ gtk_xtext_draw_sep (GtkXText * xtext, int y)
 	{
 		const XTextColor *light = &xtext->light_gc;
 		const XTextColor *dark = &xtext->dark_gc;
-		cr = xtext_create_context (xtext);
+		if (!xtext_begin_draw (xtext, &cr))
+			return;
 
 		x = xtext->buffer->indent - ((xtext->space_width + 1) / 2);
 		if (x < 1)
@@ -1528,7 +1563,8 @@ gtk_xtext_draw_marker (GtkXText * xtext, textentry * ent, int y)
 	gtk_widget_get_allocation (GTK_WIDGET (xtext), &allocation);
 	width = allocation.width;
 
-	cr = xtext_create_context (xtext);
+	if (!xtext_begin_draw (xtext, &cr))
+		return;
 	xtext_draw_line (xtext, cr, &xtext->marker_gc, x, render_y, x + width, render_y);
 	cairo_destroy (cr);
 
@@ -1690,6 +1726,17 @@ gtk_xtext_selection_render (GtkXText *xtext, textentry *start_ent, textentry *en
 	int end_offset = end_ent->mark_end;
 	int start, end;
 
+	if (!fabulor_xtext_render_target_has_active_context (
+		xtext->render_target))
+	{
+		xtext->buffer->last_ent_start = start_ent;
+		xtext->buffer->last_ent_end = end_ent;
+		xtext->buffer->last_offset_start = start_offset;
+		xtext->buffer->last_offset_end = end_offset;
+		gtk_widget_queue_draw (GTK_WIDGET (xtext));
+		return;
+	}
+
 	xtext->skip_border_fills = TRUE;
 	xtext->skip_stamp = TRUE;
 
@@ -1829,6 +1876,86 @@ lamejump:
 }
 
 static void
+gtk_xtext_selection_apply_anchors (GtkXText *xtext, gboolean render)
+{
+	textentry *low_ent;
+	textentry *high_ent;
+	textentry *ent;
+	int low_offset;
+	int high_offset;
+	gboolean focus_follows_anchor = FALSE;
+
+	if (!xtext->selection_anchor_ent || !xtext->selection_focus_ent)
+		return;
+
+	if (xtext->selection_anchor_ent == xtext->selection_focus_ent)
+	{
+		low_ent = high_ent = xtext->selection_anchor_ent;
+		low_offset = MIN (xtext->selection_anchor_offset,
+			xtext->selection_focus_offset);
+		high_offset = MAX (xtext->selection_anchor_offset,
+			xtext->selection_focus_offset);
+	}
+	else
+	{
+		for (ent = xtext->selection_anchor_ent; ent; ent = ent->next)
+		{
+			if (ent == xtext->selection_focus_ent)
+			{
+				focus_follows_anchor = TRUE;
+				break;
+			}
+		}
+		if (focus_follows_anchor)
+		{
+			low_ent = xtext->selection_anchor_ent;
+			low_offset = xtext->selection_anchor_offset;
+			high_ent = xtext->selection_focus_ent;
+			high_offset = xtext->selection_focus_offset;
+		}
+		else
+		{
+			low_ent = xtext->selection_focus_ent;
+			low_offset = xtext->selection_focus_offset;
+			high_ent = xtext->selection_anchor_ent;
+			high_offset = xtext->selection_anchor_offset;
+		}
+	}
+
+	low_offset = CLAMP (low_offset, 0, low_ent->str_len);
+	high_offset = CLAMP (high_offset, 0, high_ent->str_len);
+	gtk_xtext_selection_clear (xtext->buffer);
+	if (low_ent == high_ent && low_offset == high_offset)
+	{
+		xtext->buffer->last_ent_start = NULL;
+		xtext->buffer->last_ent_end = NULL;
+		if (render)
+			gtk_widget_queue_draw (GTK_WIDGET (xtext));
+		return;
+	}
+
+	low_ent->mark_start = low_offset;
+	low_ent->mark_end = low_ent == high_ent ?
+		high_offset : low_ent->str_len;
+	if (low_ent != high_ent)
+	{
+		for (ent = low_ent->next; ent && ent != high_ent; ent = ent->next)
+		{
+			ent->mark_start = 0;
+			ent->mark_end = ent->str_len;
+		}
+		if (high_offset > 0)
+		{
+			high_ent->mark_start = 0;
+			high_ent->mark_end = high_offset;
+		}
+	}
+
+	if (render)
+		gtk_xtext_selection_render (xtext, low_ent, high_ent);
+}
+
+static void
 gtk_xtext_selection_draw (GtkXText *xtext, gboolean render)
 {
 	textentry *ent;
@@ -1842,6 +1969,29 @@ gtk_xtext_selection_draw (GtkXText *xtext, gboolean render)
 
 	if (xtext->buffer->text_first == NULL)
 		return;
+
+	if (xtext->selection_drag_active && xtext->selection_anchor_ent)
+	{
+		xtext->selection_focus_ent = gtk_xtext_find_char (xtext,
+			xtext->select_end_x, xtext->select_end_y,
+			&xtext->selection_focus_offset, NULL);
+		if (!xtext->selection_focus_ent)
+		{
+			if (xtext->select_end_y < 0)
+			{
+				xtext->selection_focus_ent = xtext->buffer->text_first;
+				xtext->selection_focus_offset = 0;
+			}
+			else
+			{
+				xtext->selection_focus_ent = xtext->buffer->text_last;
+				xtext->selection_focus_offset =
+					xtext->selection_focus_ent->str_len;
+			}
+		}
+		gtk_xtext_selection_apply_anchors (xtext, render);
+		return;
+	}
 
 	ent_start = gtk_xtext_find_char (xtext, xtext->select_start_x, xtext->select_start_y, &offset_start, NULL);
 	ent_end = gtk_xtext_find_char (xtext, xtext->select_end_x, xtext->select_end_y, &offset_end, NULL);
@@ -2232,7 +2382,7 @@ gtk_xtext_leave (GtkWidget *widget)
 	{
 		gtk_xtext_unrender_hilight (xtext);
 		xtext->cursor_hand = FALSE;
-		gtk_xtext_set_pointer_cursor (xtext, NULL);
+		gtk_xtext_set_pointer_cursor (xtext, "text");
 		fabulor_xtext_decoration_clear_hover (xtext->decoration);
 	}
 
@@ -2240,7 +2390,7 @@ gtk_xtext_leave (GtkWidget *widget)
 	{
 		gtk_xtext_unrender_hilight (xtext);
 		xtext->cursor_resize = FALSE;
-		gtk_xtext_set_pointer_cursor (xtext, NULL);
+		gtk_xtext_set_pointer_cursor (xtext, "text");
 		fabulor_xtext_decoration_clear_hover (xtext->decoration);
 	}
 
@@ -2486,6 +2636,7 @@ tooltip_check:
 	}
 
 	gtk_xtext_leave (widget);
+	gtk_xtext_set_pointer_cursor (xtext, "text");
 
 	return FALSE;
 }
@@ -2555,6 +2706,10 @@ gtk_xtext_unselect (GtkXText *xtext)
 
 	xtext->buffer->last_ent_start = NULL;
 	xtext->buffer->last_ent_end = NULL;
+	xtext->selection_anchor_ent = NULL;
+	xtext->selection_focus_ent = NULL;
+	xtext->selection_anchor_offset = 0;
+	xtext->selection_focus_offset = 0;
 }
 
 static gboolean
@@ -2572,6 +2727,8 @@ gtk_xtext_button_release (GtkWidget *widget, guint button, gdouble x,
 	(void) user_data;
 	if (!fabulor_xtext_geometry_from_widget (widget, &geometry))
 		return FALSE;
+	if (button == 1 && xtext->selection_drag_active)
+		return FALSE;
 
 	if (xtext->moving_separator)
 	{
@@ -2587,7 +2744,7 @@ gtk_xtext_button_release (GtkWidget *widget, guint button, gdouble x,
 			gtk_xtext_render_page (xtext);
 		} else
 			gtk_xtext_draw_sep (xtext, -1);
-		return FALSE;
+		return TRUE;
 	}
 
 	if (button == 1)
@@ -2617,7 +2774,7 @@ gtk_xtext_button_release (GtkWidget *widget, guint button, gdouble x,
 		{
 			xtext->word_select = FALSE;
 			xtext->line_select = FALSE;
-			return FALSE;
+			return TRUE;
 		}
 
 		if (xtext->select_start_x == event_x &&
@@ -2626,7 +2783,7 @@ gtk_xtext_button_release (GtkWidget *widget, guint button, gdouble x,
 		{
 			gtk_xtext_unselect (xtext);
 			xtext->mark_stamp = FALSE;
-			return FALSE;
+			return TRUE;
 		}
 
 		if (!gtk_xtext_is_selecting (xtext))
@@ -2635,6 +2792,7 @@ gtk_xtext_button_release (GtkWidget *widget, guint button, gdouble x,
 			g_signal_emit (G_OBJECT (xtext), xtext_signals[WORD_CLICK], 0,
 				&hit, &click);
 		}
+		return TRUE;
 	}
 
 	return FALSE;
@@ -2648,9 +2806,6 @@ gtk_xtext_button_press (GtkWidget *widget, guint button, guint n_press,
 	GtkXText *xtext = GTK_XTEXT (widget);
 	FabulorXTextClick click = { button, n_press, event_x, event_y, state };
 	FabulorXTextHit hit;
-	FabulorXTextSelectionPress selection_press;
-	textentry *ent;
-	int offset, len;
 	int x = (int) event_x;
 	int y = (int) event_y;
 
@@ -2667,57 +2822,12 @@ gtk_xtext_button_press (GtkWidget *widget, guint button, guint n_press,
 			fabulor_xtext_hit_init (&hit, "", 0, 0, 0);
 		g_signal_emit (G_OBJECT (xtext), xtext_signals[WORD_CLICK], 0,
 			&hit, &click);
-		return FALSE;
+		return TRUE;
 	}
 
-	selection_press = fabulor_xtext_selection_press (button, n_press);
-	if (selection_press == FABULOR_XTEXT_SELECTION_PRESS_NONE)
+	if (button != 1)
 		return FALSE;
 
-	if (selection_press == FABULOR_XTEXT_SELECTION_PRESS_WORD)
-	{
-		gtk_xtext_check_mark_stamp (xtext, state);
-		if (gtk_xtext_get_word_select_range (xtext, x, y, &ent, &offset, &len) ||
-			 gtk_xtext_get_word (xtext, x, y, &ent, &offset, &len, 0))
-		{
-			if (len == 0)
-				return FALSE;
-			gtk_xtext_selection_clear (xtext->buffer);
-			ent->mark_start = offset;
-			ent->mark_end = offset + len;
-			gtk_xtext_selection_render (xtext, ent, ent);
-			xtext->word_select = TRUE;
-		}
-
-		return FALSE;
-	}
-
-	if (selection_press == FABULOR_XTEXT_SELECTION_PRESS_LINE)
-	{
-		gtk_xtext_check_mark_stamp (xtext, state);
-		if (gtk_xtext_get_word (xtext, x, y, &ent, 0, 0, 0))
-		{
-			gtk_xtext_selection_clear (xtext->buffer);
-			ent->mark_start = 0;
-			ent->mark_end = ent->str_len;
-			gtk_xtext_selection_render (xtext, ent, ent);
-			xtext->line_select = TRUE;
-		}
-
-		return FALSE;
-	}
-
-	/* check if it was a separator-bar click */
-	if (fabulor_xtext_hit_test_separator (xtext->separator,
-		xtext->buffer->indent, xtext->space_width, x))
-	{
-		xtext->moving_separator = TRUE;
-		/* draw the separator line */
-		gtk_xtext_draw_sep (xtext, -1);
-		return FALSE;
-	}
-
-	xtext->button_down = TRUE;
 	xtext->select_start_x = x;
 	xtext->select_start_y = y;
 	xtext->select_start_adj = xtext_adj_get_value (xtext->adj);
@@ -2728,6 +2838,83 @@ gtk_xtext_button_press (GtkWidget *widget, guint button, guint n_press,
 	}
 
 	return FALSE;
+}
+
+static gboolean
+gtk_xtext_drag_begin (GtkWidget *widget, gdouble event_x, gdouble event_y,
+	GdkModifierType state, gpointer user_data)
+{
+	GtkXText *xtext = GTK_XTEXT (widget);
+	textentry *anchor_ent;
+	int anchor_offset;
+	int x = (int) event_x;
+	int y = (int) event_y;
+
+	(void) user_data;
+	xtext->pointer_x = event_x;
+	xtext->pointer_y = event_y;
+	xtext->pointer_state = state;
+	xtext->pointer_valid = TRUE;
+	xtext->word_select = FALSE;
+	xtext->line_select = FALSE;
+
+	if (fabulor_xtext_hit_test_separator (xtext->separator,
+		xtext->buffer->indent, xtext->space_width, x))
+	{
+		xtext->moving_separator = TRUE;
+		/* draw the separator line */
+		gtk_xtext_draw_sep (xtext, -1);
+		return TRUE;
+	}
+
+	anchor_ent = gtk_xtext_find_char (xtext, x, y, &anchor_offset, NULL);
+	if (!anchor_ent)
+		return FALSE;
+
+	xtext->selection_drag_active = TRUE;
+	xtext->button_down = TRUE;
+	xtext->select_start_x = x;
+	xtext->select_start_y = y;
+	xtext->select_end_x = x;
+	xtext->select_end_y = y;
+	xtext->select_start_adj = xtext_adj_get_value (xtext->adj);
+	xtext->selection_anchor_ent = anchor_ent;
+	xtext->selection_focus_ent = anchor_ent;
+	xtext->selection_anchor_offset = anchor_offset;
+	xtext->selection_focus_offset = anchor_offset;
+	if (xtext->buffer->last_ent_start)
+	{
+		gtk_xtext_unselect (xtext);
+		xtext->mark_stamp = FALSE;
+	}
+
+	return TRUE;
+}
+
+static void
+gtk_xtext_drag_update (GtkWidget *widget, gdouble x, gdouble y,
+	GdkModifierType state, gpointer user_data)
+{
+	GtkXText *xtext = GTK_XTEXT (widget);
+
+	(void) user_data;
+	xtext->word_select = FALSE;
+	xtext->line_select = FALSE;
+	gtk_xtext_motion (widget, x, y, state | GDK_BUTTON1_MASK);
+}
+
+static void
+gtk_xtext_drag_end (GtkWidget *widget, gdouble x, gdouble y,
+	GdkModifierType state, gpointer user_data)
+{
+	GtkXText *xtext = GTK_XTEXT (widget);
+
+	(void) user_data;
+	xtext->word_select = FALSE;
+	xtext->line_select = FALSE;
+	gtk_xtext_motion (widget, x, y, state | GDK_BUTTON1_MASK);
+	xtext->selection_drag_active = FALSE;
+	(void) gtk_xtext_button_release (widget, 1, x, y, state, NULL);
 }
 
 static gboolean
@@ -3215,7 +3402,8 @@ gtk_xtext_render_flush (GtkXText * xtext, int x, int y, unsigned char *str,
 		fabulor_xtext_decoration_positions (y, xtext->font->ascent,
 			xtext->fontsize, &strike_y, NULL);
 
-		cr = xtext_create_context (xtext);
+		if (!xtext_begin_draw (xtext, &cr))
+			return str_width;
 		xtext_draw_line (xtext, cr, &xtext->fgc, x, strike_y, x + str_width - 1, strike_y);
 		cairo_destroy (cr);
 	}
@@ -3230,7 +3418,8 @@ dounder:
 		fabulor_xtext_decoration_positions (y, xtext->font->ascent,
 			xtext->fontsize, NULL, &underline_y);
 
-		cr = xtext_create_context (xtext);
+		if (!xtext_begin_draw (xtext, &cr))
+			return str_width;
 		xtext_draw_line (xtext, cr, &xtext->fgc, x, underline_y, x + str_width - 1, underline_y);
 		cairo_destroy (cr);
 	}

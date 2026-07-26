@@ -1471,6 +1471,9 @@ mg_populate (session *sess)
                         gtk_widget_show (gui->topic_bar);
         }
 
+	gtk_widget_set_visible (gui->nick_box,
+		prefs.hex_gui_input_nick && sess->type != SESS_SERVER);
+
         /* move to THE irc tab */
         if (gui->is_tab)
                 gtk_notebook_set_current_page (GTK_NOTEBOOK (gui->note_book), 0);
@@ -3378,8 +3381,10 @@ mg_create_topicbar (session *sess, GtkWidget *box)
 		GTK_WRAP_WORD_CHAR : GTK_WRAP_NONE);
         gtk_text_view_set_left_margin (GTK_TEXT_VIEW (topic), 4);
         gtk_text_view_set_right_margin (GTK_TEXT_VIEW (topic), 4);
-        gtk_text_view_set_top_margin (GTK_TEXT_VIEW (topic), 4);
-        gtk_text_view_set_bottom_margin (GTK_TEXT_VIEW (topic), 4);
+        gtk_text_view_set_top_margin (GTK_TEXT_VIEW (topic),
+		prefs.hex_gui_mode_buttons_inline ? 0 : 4);
+        gtk_text_view_set_bottom_margin (GTK_TEXT_VIEW (topic),
+		prefs.hex_gui_mode_buttons_inline ? 0 : 4);
         gtk_text_view_set_pixels_above_lines (GTK_TEXT_VIEW (topic), 0);
         gtk_text_view_set_pixels_below_lines (GTK_TEXT_VIEW (topic), 0);
         gtk_text_view_set_pixels_inside_wrap (GTK_TEXT_VIEW (topic), 0);
@@ -4172,6 +4177,8 @@ mg_create_center (session *sess, session_gui *gui, GtkWidget *box)
                 book, TRUE, TRUE);
 
         hbox = mg_box_new (GTK_ORIENTATION_HORIZONTAL, FALSE, 0);
+        gtk_widget_set_size_request (hbox,
+                MAX (prefs.hex_gui_pane_right_size_min, 1), -1);
         fabulor_gtk_paned_set_start_child (GTK_PANED (gui->vpane_right),
                 hbox, FALSE, TRUE);
         mg_create_userlist (gui, hbox);

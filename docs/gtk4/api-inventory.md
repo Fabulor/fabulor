@@ -1459,6 +1459,53 @@ the extracted MSI byte-for-byte with the separately uploaded `Fabulor.msi`.
 The existing decompiled-MSI and runtime-manifest checks remain authoritative
 for installed paths, required features, GTK3 absence, and GTK4 runtime content.
 
+Stage 9 clean-install layout acceptance pass 22 hardens two runtime boundaries.
+`window-geometry.c` owns right-pane saved-size normalization against minimum
+and available widths. `xtext.c` owns immediate Cairo context acquisition and
+queues a GTK4 frame whenever an input callback runs outside an active snapshot.
+Transcript separator interaction can no longer submit a null context to Cairo,
+and stale narrow pane state can no longer collapse the visible user list.
+`servlistgui.c` now reads and writes every Server List check control through
+the GTK4 `GtkCheckButton` boundary; retired `GtkToggleButton` casts can no
+longer discard SSL, proxy, global-user, keyring, password-visibility, startup,
+or favorites state. Installed-client follow-up found that the converted
+trailing-box helper expanded the nickname button itself, displacing the input
+field. The helper now right-aligns its containing box while leaving controls at
+natural width. The visible user-list container owns the configured minimum, and
+its position callback ignores hidden or unallocated state. Emoji picker pages
+now expand inside a viewport calculated from the main-window allocation, with
+compact and maximum bounds, instead of forcing every scroller to `500 x 330`.
+The installed release boundary also requires a versioned WiX major upgrade
+when the component graph changes. Fabulor `1.0.4` carries a regenerated
+OpenSSL support stage matching the frontend link root; reusing the `1.0.3`
+product identity is retired because Windows Installer can otherwise replace
+the frontend without registering newly introduced runtime components.
+
+Stage 9 installed-client visual acceptance follow-up pass 23 maps the first
+`1.0.4` screenshots back to explicit owners. The channel tree now returns a
+child model only for root rows, so leaf channels retain hierarchy without
+false expanders. Inline mode buttons use a compact one-line topic surface, and
+server sessions remove the channel-only nickname control from the input row.
+The transcript exposes a canonical scroll-to-bottom operation which owns both
+the adjustment and `scrollbar_down` state. Preferences describe the retained
+`.hct`/palette surface as `Fabulor Theme`, with no GTK3 theme wording.
+Middle-context composition merges every matching add-on branch into its
+canonical submenu, preventing duplicate `Window` headings while preserving
+Ban List, Character Chart, Direct Chat, transfers, friends, ignore, plug-ins,
+raw log, URL grabber, transcript, and search actions. The production installer
+now treats Enchant core, WinSpell provider, and ordering data as one required
+three-part payload; omitting `libenchant-2-2.dll` can no longer pass the
+production profile contract.
+
+Stage 9 transcript interaction acceptance pass 24 replaces the inherited
+screen-coordinate selection boundary. GTK4 drag input now resolves one stable
+text-entry and byte-offset anchor, while Pango maps pointer positions to the
+same shaped insertion boundaries used for display. Hit-testing is constrained
+to the current wrapped row and no longer crosses into an adjacent visual line.
+The highlighted range, automatic clipboard publication, explicit
+`Copy Selection`, URL hover, and URL activation therefore share one exact
+pointer-to-text mapping.
+
 ## Functional Clusters
 
 | Cluster | Main files | GTK4 concern | Status |

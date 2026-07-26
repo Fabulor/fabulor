@@ -1667,7 +1667,8 @@ setup_create_appearance_page (void)
         advanced_page = setup_create_page (appearance_advanced_settings);
 
         {
-                char *markup = g_markup_printf_escaped ("<b>%s</b>", _("GTK3 Theme"));
+                char *markup = g_markup_printf_escaped ("<b>%s</b>",
+                                                        _("Fabulor Theme"));
                 gtk_label_set_markup (GTK_LABEL (theme_label), markup);
                 g_free (markup);
         }

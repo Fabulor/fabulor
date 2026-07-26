@@ -7966,6 +7966,184 @@ the automated production packaging boundary. Clean-install, in-place upgrade,
 repair, uninstall, accessibility, visual, performance, and live plugin
 acceptance remain open and require controlled installed-client testing.
 
+### GTK4 Stage 9 Clean-Install Layout Acceptance, Pass 22
+
+Date: 2026-07-25
+
+Defects observed: the first clean program installation reused a retained
+profile whose right-pane width was `2`, below its configured `80` minimum, so
+the user list was effectively absent. Pressing the transcript's draggable
+nick/text separator then caused Windows Application Error 1000 with exception
+`c0000005` in the packaged `cairo-2.dll`. The next connection attempt showed
+that Server List checkboxes changed visually but did not persist, and password
+visibility never activated.
+
+Root cause and correction:
+
+- right-pane restoration trusted the captured saved width after initial GTK4
+  allocation; it now clamps the end-child size against the configured minimum,
+  available pane allocation, and handle width
+- transcript separator input called the Cairo drawing path outside a GTK4
+  snapshot, where the reviewed render target correctly returned no context;
+  all immediate transcript drawing now uses one guarded acquisition boundary
+  that queues a widget redraw and returns when no context is active
+- production source guards require the centralized transcript draw boundary
+  and the pane-size clamp to remain in the main-window restore path
+- Server List check controls were GTK4 `GtkCheckButton` objects accessed
+  through incompatible `GtkToggleButton` casts; all network flags, keyring,
+  password visibility, startup skipping, and favorites controls now use the
+  typed GTK4 check-button getter/setter, with a source guard rejecting the
+  retired accessors
+- installed-client follow-up confirmed connection and Server List state, then
+  showed that the GTK4 trailing-box adapter expanded the nickname button and
+  displaced the input field; the adapter now aligns the containing box and
+  leaves its trailing controls at natural width
+- the visible user-list container now owns its configured minimum width, and
+  its position callback ignores hidden or unallocated layout state rather than
+  persisting a transient zero
+- emoji pages now expand inside a viewport calculated from the main-window
+  allocation, bounded from `320 x 240` to `640 x 420`; the current
+  `668 x 429` window receives a `620 x 289` picker instead of a fixed
+  `500 x 330` page plus unconstrained tab chrome
+
+Automated evidence:
+
+- strict GTK4 MSVC probe rebuild and execution: pass with `/W4 /WX`; GTK
+  4.22.4 / GLib 2.88.0 / x64 confirmed
+- pane clamp probe: stale `2`-pixel state normalizes to `80`; valid `120`
+  remains `120`; oversized state clamps to available width; no available space
+  returns zero
+- emoji viewport probe: compact, current-window, and maximum allocation cases
+  resolve to `320 x 240`, `620 x 289`, and `640 x 420`
+- clean full GTK4 frontend rebuild and link: zero warnings and zero errors
+- native extension rebuild and import validation: ten modules, one data file,
+  and 15 owned import edges pass
+- complete GTK4 tooling contract suite: all 78 tests pass
+- theme retirement/import contract suite: all 7 tests pass
+- Python capability/isolation suites: all 16 tests pass
+- native manifest, path, and archive suite: all 22 tests pass
+- production WiX MSI and bootstrapper rebuild: zero warnings and zero errors
+- production MSI validation: 7,623 installed files, zero GTK3 path markers,
+  all 1,431 runtime entries and packaged manifest hashes verified
+- production bundle validation: version `1.0.3`, one embedded MSI chain, and
+  byte-for-byte embedded/published MSI equality
+- production MSI `1.0.4`: 111,524,196 bytes; SHA-256
+  `0310177CFA972B0C719E6FF0B23AA32BBC2B14071294C2D49B185FD31D40B947`
+- production bootstrapper `1.0.4`: 111,825,754 bytes; SHA-256
+  `DE6C99BEAB66E97B52A81FE28590441EADA2536CDA35EA7687E715907BA3207D`
+- repository whitespace validation: pass
+
+Installed acceptance so far: ChatLounge connects and Server List changes now
+take effect. The subsequent `1.0.3` same-version update replaced the frontend
+but omitted newly registered root-level OpenSSL components, and the launcher
+failed with Win32 error 126 because `libssl-3-x64.dll` and
+`libcrypto-3-x64.dll` were absent. The MSI contained those components, but its
+reused product identity did not provide a valid component-graph upgrade. The
+corrected release advances the shared client/MSI/bundle version to `1.0.4`,
+forcing a WiX major upgrade, and regenerates production support from the exact
+OpenSSL 3.6.3 root used to link the frontend.
+
+Acceptance pending: upgrade the installed `1.0.3` client with the corrected
+`1.0.4` bootstrapper, verify the frontend loads and both OpenSSL DLLs are
+installed, confirm the user list is visible with the retained profile, drag
+and release the transcript separator repeatedly, confirm the nickname control
+no longer displaces the edit field, inspect and use the emoji picker at normal
+and maximized sizes, then restart and confirm pane, separator, SSL,
+password-visibility, and input-row behavior remain usable. Add-ons remain
+excluded during this retest.
+
+### GTK4 Stage 9 Installed-Client Visual Acceptance Follow-up, Pass 23
+
+Date: 2026-07-25
+
+The first running `1.0.4` screenshots confirmed the earlier user-list,
+input-width, connection, and emoji viewport improvements and exposed eight
+remaining acceptance defects: leaf-channel carets, topic/server-row spacing,
+late initial server presentation, inactive scroll-to-bottom overlay, inactive
+spell checking, obsolete GTK3 theme wording, and two incorrect Window branches
+in the transcript context menu.
+
+Corrections:
+
+- channel rows below a server no longer publish empty child models, removing
+  false expanders while retaining server-root expansion and child indentation;
+  focusing the initial server row also has a single-dispatch fallback when GTK
+  has not emitted its first selection notification
+- inline topic mode uses zero vertical text padding, and server sessions hide
+  the channel-only nickname box so the edit field starts at the content edge
+- scroll-to-bottom now uses a transcript-owned operation that sets both the
+  adjustment and persistent bottom-follow state before queuing a redraw
+- Preferences labels the retained palette/archive surface `Fabulor Theme`
+- middle-context composition merges every matching add-on path into one
+  canonical submenu; the built-in Window model continues to own Ban List,
+  Character Chart, Direct Chat, transfers, friends, ignore, plug-ins, raw log,
+  URL grabber, transcript controls, and search
+- the clean MSI's spell failure was a package split: WinSpell and ordering data
+  were installed, but `libenchant-2-2.dll` was omitted. WiX now installs the
+  Enchant 2.8.19 core as a required root component, and a source contract
+  requires all three spell payload groups
+
+Automated evidence:
+
+- production profile contract suite: all 24 tests pass
+- strict GTK4 MSVC probe: clean `/W4 /WX` compile, link, and execution; duplicate
+  add-on submenu inputs collapse into one canonical branch
+- full GTK4 frontend rebuild: zero warnings and zero errors
+- complete GTK4 tooling contract suite: all 79 tests pass
+- production MSI validation: 7,624 installed files and zero GTK3 path markers
+- production bundle validation: version `1.0.4`, one embedded MSI, and exact
+  embedded/published MSI equality
+- production MSI: 111,548,871 bytes; SHA-256
+  `C44E07582D78ABD985E9AA3D35AA308E1A42BC9E8146D9D1DCAC2853FF0FCA90`
+- production bootstrapper: 111,850,450 bytes; SHA-256
+  `E41B0F4A713AEC877D834A76794B40F26AAE33953231CE6A5EEBA7EDB4479A16`
+- staged Enchant core SHA-256:
+  `F6B26865B1DB04ACC96F8BACA853D2CBDFA818EC0A363BCA95FC1677CD7E6EAC`
+- repository whitespace validation: pass
+
+Installed acceptance remains open for startup server presentation, the compact
+topic and server input rows, leaf-channel indicators, scroll-to-bottom click,
+live Enchant underlines/suggestions/personal dictionary, Preferences wording,
+and the complete single Window context submenu.
+
+### GTK4 Stage 9 Transcript Interaction Acceptance, Pass 24
+
+Date: 2026-07-26
+
+Installed testing found that transcript drag selection could not target a
+partial line, frequently highlighted an adjacent complete line, and left both
+automatic clipboard publication and `Copy Selection` without the intended
+range. URL hover and activation were also absent.
+
+Root cause and correction:
+
+- the inherited selection stored screen coordinates and repeatedly resolved
+  them through character widths that no longer matched Pango-shaped GTK4 text
+- horizontal hit-testing could continue beyond the selected wrapped row
+- selection now stores stable text-entry and byte-offset anchors
+- Pango resolves the nearest UTF-8-safe insertion boundary using the same
+  shaped run as rendering, including inline flag boundaries
+- hit-testing is constrained to the active wrapped row and uses a visible-row
+  index for bounds checks
+- highlighting, automatic copy, explicit `Copy Selection`, and URL interaction
+  now consume the same pointer-to-text mapping
+
+Automated evidence:
+
+- strict GTK4 MSVC probe: zero warnings and zero errors under `/W4 /WX`
+- full GTK4 frontend and launcher rebuilds: zero warnings and zero errors
+- complete GTK4 tooling contract suite: all 79 tests pass
+- production MSI validation: 7,624 installed files and zero GTK3 path markers
+- runtime validation: all 1,431 manifest entries and content hashes verified
+- production bundle validation: version `1.0.4`, one embedded MSI, and exact
+  embedded/published MSI equality
+- production bootstrapper SHA-256:
+  `E69C2DEE0F929F03C90CFFF6426B4C4369D8EC8FE91E277EAE69E414C6201A57`
+
+Installed acceptance: pass. Precise partial-line selection works, the selected
+range reaches the clipboard through release-to-copy and `Copy Selection`, and
+URL hover/activation works from channel text and topics.
+
 ## Stage Completion Rule
 
 A stage can move to complete in `migration-plan.md` only when:

@@ -164,9 +164,9 @@ servlist_display_password (ircnet *net)
 }
 
 static void
-servlist_toggle_show_password_cb (GtkToggleButton *toggle, gpointer userdata)
+servlist_toggle_show_password_cb (GtkWidget *toggle, gpointer userdata)
 {
-	if (gtk_toggle_button_get_active (toggle))
+	if (fabulor_gtk_check_button_get_active (toggle))
 	{
 		char *password = servlist_display_password (selected_net);
 		if (password)
@@ -193,7 +193,7 @@ servlist_toggle_show_password_cb (GtkToggleButton *toggle, gpointer userdata)
 
 
 static void
-servlist_toggle_keyring_cb (GtkToggleButton *toggle, gpointer userdata)
+servlist_toggle_keyring_cb (GtkWidget *toggle, gpointer userdata)
 {
 	servlist_update_password_tools (selected_net);
 }
@@ -280,7 +280,7 @@ servlist_import_password_cb (GtkWidget *button, gpointer userdata)
 	g_free (net->pass);
 	net->pass = NULL;
 	net->flags |= FLAG_USE_KEYRING;
-	gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (edit_check_use_keyring), TRUE);
+	fabulor_gtk_check_button_set_active (edit_check_use_keyring, TRUE);
 	servlist_entry_set_text_silent (edit_entry_pass, "***");
 	edit_pass_changed = 0;
 	servlist_save ();
@@ -1160,7 +1160,8 @@ servlist_edit_update (ircnet *net)
 	servlist_update_from_entry (&net->real, edit_entry_real);
 	if (net && net->name)
 	{
-		use_keyring = gtk_toggle_button_get_active (GTK_TOGGLE_BUTTON (edit_check_use_keyring));
+		use_keyring = fabulor_gtk_check_button_get_active (
+			edit_check_use_keyring);
 		keyring_changed = !!(net->flags & FLAG_USE_KEYRING) != !!use_keyring;
 		if (!edit_pass_changed && !keyring_changed)
 			return;
@@ -1689,13 +1690,13 @@ servlist_check_cb (GtkWidget *but, gpointer num_p)
 	if ((1 << num) == FLAG_CYCLE || (1 << num) == FLAG_USE_PROXY)
 	{
 		/* these ones are reversed, so it's compat with 2.0.x */
-		if (gtk_toggle_button_get_active (GTK_TOGGLE_BUTTON (but)))
+		if (fabulor_gtk_check_button_get_active (but))
 			selected_net->flags &= ~(1 << num);
 		else
 			selected_net->flags |= (1 << num);
 	} else
 	{
-		if (gtk_toggle_button_get_active (GTK_TOGGLE_BUTTON (but)))
+		if (fabulor_gtk_check_button_get_active (but))
 			selected_net->flags |= (1 << num);
 		else
 			selected_net->flags &= ~(1 << num);
@@ -1703,7 +1704,8 @@ servlist_check_cb (GtkWidget *but, gpointer num_p)
 
 	if ((1 << num) == FLAG_USE_GLOBAL)
 	{
-		servlist_toggle_global_user (!gtk_toggle_button_get_active (GTK_TOGGLE_BUTTON (but)));
+		servlist_toggle_global_user (
+			!fabulor_gtk_check_button_get_active (but));
 	}
 }
 
@@ -1755,7 +1757,7 @@ servlist_create_check (int num, int state, GtkWidget *table, int row, int col, c
 	GtkWidget *but;
 
 	but = gtk_check_button_new_with_label (labeltext);
-	gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (but), state);
+	fabulor_gtk_check_button_set_active (but, state);
 	g_signal_connect (G_OBJECT (but), "toggled",
 							G_CALLBACK (servlist_check_cb), GINT_TO_POINTER (num));
 	servlist_table_attach (table, but, col, col + 2, row, row + 1,
@@ -2115,7 +2117,7 @@ servlist_create_logintypecombo (GtkWidget *data)
 static void
 no_servlist (GtkWidget * igad, gpointer serv)
 {
-	if (gtk_toggle_button_get_active (GTK_TOGGLE_BUTTON (igad)))
+	if (fabulor_gtk_check_button_get_active (igad))
 		prefs.hex_gui_slist_skip = TRUE;
 	else
 		prefs.hex_gui_slist_skip = FALSE;
@@ -2124,7 +2126,7 @@ no_servlist (GtkWidget * igad, gpointer serv)
 static void
 fav_servlist (GtkWidget * igad, gpointer serv)
 {
-	if (gtk_toggle_button_get_active (GTK_TOGGLE_BUTTON (igad)))
+	if (fabulor_gtk_check_button_get_active (igad))
 		prefs.hex_gui_slist_fav = TRUE;
 	else
 		prefs.hex_gui_slist_fav = FALSE;
@@ -2302,7 +2304,8 @@ servlist_open_edit (GtkWidget *parent, ircnet *net)
 	servlist_create_check (1, net->flags & FLAG_USE_GLOBAL, table3, 5, 0, _("Use global user information"));
 
 	edit_check_use_keyring = gtk_check_button_new_with_mnemonic (_("Use system keyring"));
-	gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (edit_check_use_keyring), net->flags & FLAG_USE_KEYRING);
+	fabulor_gtk_check_button_set_active (edit_check_use_keyring,
+		net->flags & FLAG_USE_KEYRING);
 	servlist_table_attach (table3, edit_check_use_keyring, 0, 2, 6, 7,
 					   FALSE, FALSE,
 					   SERVLIST_ALIGN_START, SERVLIST_ALIGN_CENTER,
@@ -2441,7 +2444,7 @@ servlist_open_edit (GtkWidget *parent, ircnet *net)
 	{
 		servlist_toggle_global_user (FALSE);
 	}
-	servlist_toggle_keyring_cb (GTK_TOGGLE_BUTTON (edit_check_use_keyring), NULL);
+	servlist_toggle_keyring_cb (edit_check_use_keyring, NULL);
 	servlist_update_password_tools (net);
 
 	gtk_widget_grab_focus (button10);
@@ -2642,8 +2645,8 @@ servlist_open_networks (void)
 
 	checkbutton_skip =
 		gtk_check_button_new_with_mnemonic (_("Skip network list on startup"));
-	gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (checkbutton_skip),
-											prefs.hex_gui_slist_skip);
+	fabulor_gtk_check_button_set_active (checkbutton_skip,
+		prefs.hex_gui_slist_skip);
 	fabulor_gtk_box_append (GTK_BOX (hbox), checkbutton_skip, FALSE, TRUE, 0);
 	g_signal_connect (G_OBJECT (checkbutton_skip), "toggled",
 							G_CALLBACK (no_servlist), 0);
@@ -2651,8 +2654,8 @@ servlist_open_networks (void)
 
 	checkbutton_fav =
 		gtk_check_button_new_with_mnemonic (_("Show favorites only"));
-	gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (checkbutton_fav),
-											prefs.hex_gui_slist_fav);
+	fabulor_gtk_check_button_set_active (checkbutton_fav,
+		prefs.hex_gui_slist_fav);
 	fabulor_gtk_box_append (GTK_BOX (hbox), checkbutton_fav, FALSE, TRUE, 0);
 	g_signal_connect (G_OBJECT (checkbutton_fav), "toggled",
 							G_CALLBACK (fav_servlist), 0);

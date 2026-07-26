@@ -1,5 +1,6 @@
 import pathlib
 import json
+import re
 import unittest
 import xml.etree.ElementTree as ET
 
@@ -122,6 +123,30 @@ class ProductionWixProfileTests(unittest.TestCase):
         self.assertNotIn("LegacyGtkRootRuntimeComponents", source)
         self.assertNotIn("SHAREGTK3DIR", source)
         self.assertIn('ComponentGroupRef Id="GTK4Components"', source)
+
+    def test_production_product_installs_complete_enchant_payload(self):
+        product = (INSTALLER / "ProductGtk4.wxs").read_text(encoding="utf-8")
+        enchant = (
+            INSTALLER / "Components" / "EnchantGtk4.wxs"
+        ).read_text(encoding="utf-8")
+
+        for group in (
+            "Enchant2CoreComponents",
+            "Enchant2ProviderComponents",
+            "Enchant2DataComponents",
+        ):
+            self.assertIn(f'ComponentGroupRef Id="{group}"', product)
+        self.assertIn(
+            r'$(var.Gtk4EnchantRoot)\libenchant-2-2.dll', enchant
+        )
+        self.assertIn(
+            r'$(var.Gtk4EnchantRoot)\lib\enchant-2\enchant_winspell.dll',
+            enchant,
+        )
+        self.assertIn(
+            r'$(var.Gtk4EnchantRoot)\share\enchant-2\enchant.ordering',
+            enchant,
+        )
 
     def test_project_has_one_unconditional_gtk4_product_graph(self):
         root = ET.parse(INSTALLER / "Fabulor.wixproj").getroot()
@@ -334,6 +359,11 @@ class ProductionWixProfileTests(unittest.TestCase):
         self.assertNotIn("GTK_MAJOR_VERSION", source)
         for token in retired_tokens:
             self.assertNotRegex(source, rf"\b{token}")
+        self.assertIn("xtext_begin_draw", source)
+        self.assertNotIn("xtext_create_context", source)
+        self.assertEqual(
+            source.count("fabulor_xtext_render_target_create_context"), 1
+        )
 
     def test_tray_sources_are_gtk4_only(self):
         frontend = ROOT / "src" / "fe-gtk"
@@ -392,6 +422,9 @@ class ProductionWixProfileTests(unittest.TestCase):
             self.assertNotRegex(source, rf"\b{token}")
         self.assertIn('"close-request"', source)
         self.assertIn("g_object_weak_ref", source)
+        self.assertNotRegex(source, r"\bgtk_toggle_button_(?:get|set)_active\b")
+        self.assertIn("fabulor_gtk_check_button_get_active", source)
+        self.assertIn("fabulor_gtk_check_button_set_active", source)
 
     def test_channel_and_ban_dialogs_are_gtk4_only(self):
         frontend = ROOT / "src" / "fe-gtk"
@@ -527,9 +560,29 @@ class ProductionWixProfileTests(unittest.TestCase):
                     self.assertNotRegex(source, rf"\b{token}")
 
         main_source = (frontend / "maingui.c").read_text(encoding="utf-8")
+        compat_source = (frontend / "gtk-compat.h").read_text(encoding="utf-8")
         self.assertIn("mg_tabwindow_finalized_cb", main_source)
         self.assertIn("mg_win32_display_filter", main_source)
         self.assertIn("FabulorGtkInternalDragKind kind", main_source)
+        self.assertIn("fabulor_pane_clamp_end_size", main_source)
+        self.assertIn(
+            "MAX (prefs.hex_gui_pane_right_size_min, 1)", main_source
+        )
+        self.assertIn("fabulor_emoji_picker_viewport_size", main_source)
+        trailing_helper = re.search(
+            r"fabulor_gtk_horizontal_box_append_trailing\s*"
+            r"\([^)]*\)\s*\{(?P<body>.*?)\n\}",
+            compat_source,
+            re.DOTALL,
+        )
+        self.assertIsNotNone(trailing_helper)
+        self.assertIn(
+            "gtk_widget_set_halign (GTK_WIDGET (box), GTK_ALIGN_END)",
+            trailing_helper.group("body"),
+        )
+        self.assertNotIn(
+            "gtk_widget_set_hexpand (child, TRUE)", trailing_helper.group("body")
+        )
         self.assertNotRegex(
             main_source, r"\bgtk_scrolled_window_new\s*\(\s*(?:NULL|0)"
         )

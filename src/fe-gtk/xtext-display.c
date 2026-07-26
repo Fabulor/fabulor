@@ -88,6 +88,49 @@ fabulor_xtext_device_to_logical (gint device_pixels, gint scale_factor,
 	return TRUE;
 }
 
+gint
+fabulor_xtext_layout_text_width (PangoLayout *layout, const gchar *text,
+	gint length)
+{
+	gint width = 0;
+
+	if (!layout || !text || length <= 0)
+		return 0;
+	pango_layout_set_text (layout, text, length);
+	pango_layout_get_pixel_size (layout, &width, NULL);
+	return MAX (width, 0);
+}
+
+gint
+fabulor_xtext_layout_index_at_x (PangoLayout *layout, const gchar *text,
+	gint length, gint x)
+{
+	const gchar *position;
+	gint index = 0;
+	gint trailing = 0;
+	gint width;
+
+	if (!layout || !text || length <= 0 || x <= 0)
+		return 0;
+
+	pango_layout_set_text (layout, text, length);
+	pango_layout_get_pixel_size (layout, &width, NULL);
+	if (x >= width)
+		return length;
+	if (!pango_layout_xy_to_index (layout, x * PANGO_SCALE, 0,
+		&index, &trailing))
+		return x < 0 ? 0 : length;
+
+	index = CLAMP (index, 0, length);
+	position = text + index;
+	while (trailing > 0 && position < text + length)
+	{
+		position = g_utf8_next_char (position);
+		trailing--;
+	}
+	return (gint) MIN (position - text, length);
+}
+
 void
 fabulor_xtext_decoration_positions (gint baseline, gint ascent,
 	gint line_height, gint *strike_y, gint *underline_y)
