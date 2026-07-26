@@ -157,6 +157,7 @@ struct zoitechatprefs
 	unsigned int hex_gui_ulist_count;
 	unsigned int hex_gui_ulist_hide;
 	unsigned int hex_gui_ulist_icons;
+	unsigned int hex_gui_ulist_resizable;
 	unsigned int hex_gui_ulist_show_hosts;
 	unsigned int hex_gui_ulist_style;
 	unsigned int hex_gui_usermenu;

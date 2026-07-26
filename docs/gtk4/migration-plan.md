@@ -2848,6 +2848,17 @@ connections may already be complete before an intermediate state can be
 observed. Core, frontend, and launcher rebuilds have zero warnings and errors;
 all 79 GTK4 tooling tests and all production package validators pass.
 
+Stage 9 user-list resize-policy acceptance pass 26 (2026-07-26): the historical
+`gui_ulist_resizable` setting is again part of the persisted preference schema
+and User List Preferences surface. GTK4 applies it to the right pane's
+end-child resize policy, with fixed-width `OFF` behavior as Fabulor's default.
+Startup restoration remains protected until the pane is mapped, visible, and
+stable for three frames, preventing transient geometry from replacing
+`gui_pane_right_size`. Installed testing confirms `OFF` is reported and the
+configured pane width now holds without requiring a channel switch. Common and
+frontend rebuilds have zero warnings and errors, all 79 GTK4 tooling tests
+pass, and all production package validators pass.
+
 Deliverables:
 
 - Make GTK4 the only production frontend dependency in MSVC, Meson, and CI.

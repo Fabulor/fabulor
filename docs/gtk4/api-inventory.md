@@ -1516,6 +1516,14 @@ Direct ChatLounge and DALnet connections passed installed-client acceptance.
 An already-connected ZNC can complete too quickly for intermediate connection
 progress to remain visible, which is expected bouncer behavior.
 
+Stage 9 user-list resize-policy acceptance pass 26 restores the persisted
+`gui_ulist_resizable` contract removed during earlier frontend work and maps it
+to GTK4's end-child resize policy. Fixed-width behavior remains the default.
+Initial pane restoration now waits for a mapped, visible allocation and three
+stable frames before position notifications may update the saved right-pane
+width. `gui_pane_right_size` continues to own the complete pane, while
+`gui_ulist_nick_width` owns only the nickname column within it.
+
 ## Functional Clusters
 
 | Cluster | Main files | GTK4 concern | Status |

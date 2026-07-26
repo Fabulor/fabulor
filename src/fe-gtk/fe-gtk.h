@@ -176,12 +176,14 @@ typedef struct session_gui
 
 	int pane_left_size;	/*last position of the pane*/
 	int pane_right_size;
+	int pane_right_last_width;
 	guint theme_window_listener_id;
 	guint theme_userlist_listener_id;
 
 	guint16 is_tab;	/* is tab or toplevel? */
 	guint16 ul_hidden;	/* userlist hidden? */
 	guint16 pane_right_restoring; /* initial GTK4 allocation is not user input */
+	guint16 pane_right_stable_frames;
 
 } session_gui;
 

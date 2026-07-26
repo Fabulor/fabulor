@@ -4097,15 +4097,35 @@ mg_restore_rightpane_tick_cb (GtkWidget *widget, GdkFrameClock *frame_clock,
         session_gui *gui = data;
         GtkPaned *pane = GTK_PANED (widget);
         GtkWidget *end_child = fabulor_gtk_paned_get_end_child (pane);
+        int actual_size;
+        int desired_size;
+        int handle_size;
         int pane_width = fabulor_gtk_widget_get_allocated_width (widget);
 
         (void) frame_clock;
-        if (pane_width < 1 || !end_child ||
-                fabulor_gtk_widget_get_allocated_width (end_child) < 1)
+        if (!gtk_widget_get_mapped (widget) || pane_width < 1 || !end_child ||
+                !gui->user_box || !gtk_widget_get_visible (gui->user_box) ||
+                fabulor_gtk_widget_get_allocated_width (gui->user_box) < 1)
                 return G_SOURCE_CONTINUE;
 
         mg_restore_rightpane (pane, pane_width,
                 GINT_TO_POINTER (gui->pane_right_size));
+
+        handle_size = fabulor_gtk_paned_get_handle_size (pane);
+        desired_size = fabulor_pane_clamp_end_size (gui->pane_right_size,
+                prefs.hex_gui_pane_right_size_min, pane_width, handle_size);
+        actual_size = pane_width - gtk_paned_get_position (pane) - handle_size;
+        if (gui->pane_right_last_width != pane_width ||
+                ABS (actual_size - desired_size) > 1)
+        {
+                gui->pane_right_last_width = pane_width;
+                gui->pane_right_stable_frames = 0;
+                return G_SOURCE_CONTINUE;
+        }
+
+        gui->pane_right_stable_frames++;
+        if (gui->pane_right_stable_frames < 3)
+                return G_SOURCE_CONTINUE;
         gui->pane_right_restoring = 0;
         return G_SOURCE_REMOVE;
 }
@@ -4166,7 +4186,7 @@ mg_create_center (session *sess, session_gui *gui, GtkWidget *box)
                         gui->hpane_right, TRUE, TRUE);
         }
         fabulor_gtk_paned_set_end_child (GTK_PANED (gui->hpane_right),
-                gui->vpane_right, FALSE, TRUE);
+                gui->vpane_right, prefs.hex_gui_ulist_resizable, TRUE);
 
         fabulor_gtk_box_append (GTK_BOX (box), gui->hpane_left, TRUE, TRUE, 0);
 

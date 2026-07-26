@@ -8187,6 +8187,48 @@ network retains focus while later networks connect. An already-connected ZNC
 can complete before its intermediate startup state is observable; that is
 expected and does not leave the server session blank after connection.
 
+### GTK4 Stage 9 User-List Resize-Policy Acceptance, Pass 26
+
+Date: 2026-07-26
+
+Installed testing found that the configured user-list pane width could still
+take effect only after switching channels. Investigation also confirmed that
+the historical `gui_ulist_resizable` command preference had disappeared from
+Fabulor even though HexChat and older ZoiteChat exposed that policy.
+
+Root cause and correction:
+
+- initial right-pane restoration could finish after an early mapped allocation
+  but before final window geometry remained stable
+- the pane already hardcoded non-resizing behavior, but no persisted preference
+  remained to make that policy explicit or selectable
+- restoration now waits for a mapped and visible user list, reapplies the
+  clamped saved width, and requires three stable frames before position
+  notifications can persist a replacement
+- `gui_ulist_resizable` is restored to the preference schema and User List
+  Preferences page, defaults to fixed-width `OFF`, and controls GTK4's
+  `resize-end-child` policy
+- `gui_pane_right_size` owns the complete user-list pane;
+  `gui_ulist_nick_width` remains the nickname-column width within that pane
+
+Automated evidence:
+
+- common core rebuild: zero warnings and zero errors
+- full GTK4 frontend rebuild: zero warnings and zero errors
+- complete GTK4 tooling contract suite: all 79 tests pass
+- production MSI validation: 7,624 installed files and zero GTK3 path markers
+- runtime validation: all 1,431 manifest entries and content hashes verified
+- production bundle validation: version `1.0.4`, one embedded MSI, and exact
+  embedded/published MSI equality
+- production MSI SHA-256:
+  `54873DD8D7E778A9401E04F5BCC559CE43971875E5C0D15775E68973641C201B`
+- production bootstrapper SHA-256:
+  `7BAC9C51D4AFAD90F0AA7DE58B5DD83F6350D935560B451C787AC2F4209B49E0`
+
+Installed acceptance: pass. `gui_ulist_resizable` reports `OFF`, and the
+configured user-list width now applies without the previous channel-switch
+workaround.
+
 ## Stage Completion Rule
 
 A stage can move to complete in `migration-plan.md` only when:

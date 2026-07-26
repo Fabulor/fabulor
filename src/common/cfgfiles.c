@@ -478,6 +478,7 @@ const struct prefs vars[] =
 	{"gui_ulist_hide", P_OFFINT (hex_gui_ulist_hide), TYPE_BOOL},
 	{"gui_ulist_icons", P_OFFINT (hex_gui_ulist_icons), TYPE_BOOL},
 	{"gui_ulist_pos", P_OFFINT (hex_gui_ulist_pos), TYPE_INT},
+	{"gui_ulist_resizable", P_OFFINT (hex_gui_ulist_resizable), TYPE_BOOL},
 	{"gui_ulist_nick_width", P_OFFINT (hex_gui_ulist_nick_width), TYPE_INT},
 	{"gui_ulist_host_width", P_OFFINT (hex_gui_ulist_host_width), TYPE_INT},
 	{"gui_ulist_show_hosts", P_OFFINT(hex_gui_ulist_show_hosts), TYPE_BOOL},
