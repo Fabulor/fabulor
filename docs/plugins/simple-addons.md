@@ -84,6 +84,12 @@ After startup, Fabulor prints a sorted `Fabulor loaded plugins and add-ons` repo
 
 The Add-ons GUI uses the profile `addons` directory as the trust boundary. When a user selects a supported add-on file from outside that directory, Fabulor copies it into `addons` by basename and loads the copied file. Paths containing control characters or quotes are rejected by the GUI loader because they cannot be passed safely to the legacy script-runtime command hooks.
 
+Maintained simple C#, Python, and Tcl greeters live under
+`samples\plugins\simple-csharp-greeter\`,
+`samples\plugins\simple-python-greeter\`, and
+`samples\plugins\simple-tcl-greeter\`. Each sample follows the exact
+folder/entrypoint basename rule and intentionally omits `plugin.json`.
+
 ## Manifest Plugins
 
 Use `plugins\<plugin-id>\plugin.json` only for advanced packaged plugins that need dependency resolution, capability declarations, strict API versioning, or complex runtime setup.
