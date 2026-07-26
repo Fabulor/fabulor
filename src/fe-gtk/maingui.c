@@ -2426,6 +2426,13 @@ mg_add_chan (session *sess)
         GdkPixbuf *icon;
         char *name = _("<none>");
 
+        if (sess->res->buffer == NULL)
+        {
+                sess->res->buffer = gtk_xtext_buffer_new (GTK_XTEXT (sess->gui->xtext));
+                gtk_xtext_set_time_stamp (sess->res->buffer, prefs.hex_stamp_text);
+                sess->res->user_model = userlist_create_model (sess);
+        }
+
         if (sess->channel[0])
                 name = sess->channel;
 
@@ -2448,13 +2455,6 @@ mg_add_chan (session *sess)
                 mg_create_tab_colors ();
 
         chan_set_color (sess->res->tab, plain_list);
-
-        if (sess->res->buffer == NULL)
-        {
-                sess->res->buffer = gtk_xtext_buffer_new (GTK_XTEXT (sess->gui->xtext));
-                gtk_xtext_set_time_stamp (sess->res->buffer, prefs.hex_stamp_text);
-                sess->res->user_model = userlist_create_model (sess);
-        }
 }
 
 static void

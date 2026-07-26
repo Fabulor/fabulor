@@ -1506,6 +1506,16 @@ The highlighted range, automatic clipboard publication, explicit
 `Copy Selection`, URL hover, and URL activation therefore share one exact
 pointer-to-text mapping.
 
+Stage 9 startup server-session acceptance pass 25 initializes each transcript
+buffer before its channel-tree row can become GTK4's automatic first
+selection. Connection lookup and progress output therefore has a valid visible
+buffer from the start. Auto-connect gives focus only to the first configured
+network and creates later server sessions in the background, while every
+pre-connection server row immediately uses its configured network name.
+Direct ChatLounge and DALnet connections passed installed-client acceptance.
+An already-connected ZNC can complete too quickly for intermediate connection
+progress to remain visible, which is expected bouncer behavior.
+
 ## Functional Clusters
 
 | Cluster | Main files | GTK4 concern | Status |

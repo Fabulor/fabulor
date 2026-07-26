@@ -2836,6 +2836,18 @@ explicit clipboard operations, and once again recognizes and activates URLs.
 The strict GTK4 probe, full frontend and launcher rebuilds, all 79 GTK4 tooling
 tests, and all three production package validators pass.
 
+Stage 9 startup server-session acceptance pass 25 (2026-07-26): GTK4 can select
+the first channel-tree row as soon as it is inserted, so the previous tab
+creation order could present the widget's empty original buffer before the
+session transcript buffer existed. Session buffers now precede row insertion.
+Auto-connect creates named server sessions explicitly, focuses only the first
+configured network, and leaves later networks connecting in the background.
+Installed direct connections to ChatLounge and DALnet show lookup and startup
+information immediately and retain ChatLounge as the active network. ZNC
+connections may already be complete before an intermediate state can be
+observed. Core, frontend, and launcher rebuilds have zero warnings and errors;
+all 79 GTK4 tooling tests and all production package validators pass.
+
 Deliverables:
 
 - Make GTK4 the only production frontend dependency in MSVC, Meson, and CI.

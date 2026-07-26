@@ -8144,6 +8144,49 @@ Installed acceptance: pass. Precise partial-line selection works, the selected
 range reaches the clipboard through release-to-copy and `Copy Selection`, and
 URL hover/activation works from channel text and topics.
 
+### GTK4 Stage 9 Startup Server-Session Acceptance, Pass 25
+
+Date: 2026-07-26
+
+Installed startup testing with Network List skipped and three auto-connect
+entries found two related presentation defects: server transcripts remained
+blank until connection completion, and each newly created server session took
+focus so the final network replaced the first configured network.
+
+Root cause and correction:
+
+- GTK4 may automatically select the first channel-tree row during insertion,
+  before the old `mg_add_chan()` order created that session's transcript
+  buffer
+- each auto-connect previously delegated null-session creation to
+  `servlist_connect()`, which requested focus for every network
+- transcript buffers and user-list models now exist before channel-tree row
+  insertion, so initial selection presents the correct session buffer
+- auto-connect creates each server session explicitly, focuses only the first
+  configured network, and connects subsequent sessions in the background
+- server rows use their configured network names before connection completion
+
+Automated evidence:
+
+- common core rebuild: zero warnings and zero errors
+- full GTK4 frontend rebuild: zero warnings and zero errors
+- launcher rebuild: zero warnings and zero errors under `/W4 /WX`
+- complete GTK4 tooling contract suite: all 79 tests pass
+- production MSI validation: 7,624 installed files and zero GTK3 path markers
+- runtime validation: all 1,431 manifest entries and content hashes verified
+- production bundle validation: version `1.0.4`, one embedded MSI, and exact
+  embedded/published MSI equality
+- production MSI SHA-256:
+  `BFF50C83948D281C8BE616871BA269D41B080932CA09C1A91A46165A4D585ABC`
+- production bootstrapper SHA-256:
+  `8233B425306988E961FE10AD9E8913CF6F67B99D86CB6EED6E129D573564CD2D`
+
+Installed acceptance: pass. Direct ChatLounge and DALnet connections display
+server lookup and startup information immediately, and the first configured
+network retains focus while later networks connect. An already-connected ZNC
+can complete before its intermediate startup state is observable; that is
+expected and does not leave the server session blank after connection.
+
 ## Stage Completion Rule
 
 A stage can move to complete in `migration-plan.md` only when:

@@ -448,7 +448,7 @@ servlist_connect (session *sess, ircnet *net, gboolean join)
 	server *serv;
 
 	if (!sess)
-		sess = new_ircwindow (NULL, NULL, SESS_SERVER, TRUE);
+		sess = new_ircwindow (NULL, net->name, SESS_SERVER, TRUE);
 
 	serv = sess->server;
 
@@ -610,7 +610,13 @@ servlist_auto_connect (session *sess)
 
 		if (net->flags & FLAG_AUTO_CONNECT)
 		{
-			servlist_connect (sess, net, TRUE);
+			session *connect_sess = sess;
+
+			if (!connect_sess)
+				connect_sess = new_ircwindow (NULL, net->name,
+					SESS_SERVER, ret == 0);
+			servlist_connect (connect_sess, net, TRUE);
+			sess = NULL;
 			ret = 1;
 		}
 
