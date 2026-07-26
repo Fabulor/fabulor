@@ -143,6 +143,7 @@ struct _GtkXText
 	FabulorXTextSelection *selection;
 	FabulorXTextAccessible *accessible_text;
 	guint accessible_update_tag;
+	guint primary_release_suppress_source;
 	gboolean accessible_dirty;
 	GdkCursor *hand_cursor;
 	GdkCursor *resize_cursor;
@@ -240,6 +241,7 @@ struct _GtkXText
 	unsigned int line_select:1;
 	unsigned int button_down:1;
 	unsigned int selection_drag_active:1;
+	unsigned int suppress_primary_release:1;
 	unsigned int dont_render:1;
 	unsigned int dont_render2:1;
 	unsigned int cursor_hand:1;

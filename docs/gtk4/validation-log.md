@@ -8311,6 +8311,43 @@ Installed acceptance: pass. Repeated cycles pass for minimizing to the Windows
 notification area, left-click restoration, the Restore Window menu command,
 and opening Preferences from the native tray menu.
 
+### GTK4 Stage 9 URL Single-Activation Acceptance, Pass 29
+
+Date: 2026-07-26
+
+Installed testing found that left-clicking a transcript URL opened two browser
+tabs, while right-click **Open Link in Browser** correctly opened one.
+
+Root cause and correction:
+
+- XText uses one GTK4 click controller for pointer press/release and a separate
+  `GtkGestureDrag` for precise text selection
+- the drag controller can complete for a zero-distance primary-button sequence
+- drag completion synthesizes the canonical release needed for selection and
+  automatic clipboard ownership, while the click controller also reports the
+  real release
+- both releases could emit the same URL `word_click`
+- XText now owns a short-lived suppression token and idle-source reference that
+  consumes only the duplicate release from the same gesture sequence
+
+Automated evidence:
+
+- full GTK4 frontend rebuild: zero warnings and zero errors
+- complete GTK4 tooling contract suite: all 79 tests pass
+- production MSI and bootstrapper rebuild: zero warnings and zero errors
+- production MSI validation: 7,624 installed files and zero GTK3 path markers
+- runtime validation: all 1,431 manifest entries and content hashes verified
+- production bundle validation: version `1.0.4`, one embedded MSI, and exact
+  embedded/published MSI equality
+- production MSI SHA-256:
+  `973D88FE418CD3E27C84AA5D465AEC697652A4DEC0B47F0D4AA7B7FAB1948721`
+- production bootstrapper SHA-256:
+  `2C59F241681B3246F8434DD6A0ACCE98C1558B12929A6941E02FF078E13E9EFE`
+
+Installed acceptance: pass. Left-click and right-click **Open Link in Browser**
+each open exactly one browser tab. Text selection and release-to-copy continue
+to work.
+
 ## Stage Completion Rule
 
 A stage can move to complete in `migration-plan.md` only when:

@@ -920,6 +920,7 @@ gtk_xtext_init (GtkXText * xtext)
 	fabulor_xtext_accessible_attach (GTK_WIDGET (xtext),
 		xtext->accessible_text);
 	xtext->accessible_dirty = TRUE;
+	xtext->primary_release_suppress_source = 0;
 	xtext->io_tag = 0;
 	xtext->add_io_tag = 0;
 	xtext->scroll_tag = 0;
@@ -933,6 +934,7 @@ gtk_xtext_init (GtkXText * xtext)
 	xtext->pointer_state = 0;
 	xtext->pointer_valid = FALSE;
 	xtext->selection_drag_active = FALSE;
+	xtext->suppress_primary_release = FALSE;
 	xtext->underline = FALSE;
 	xtext->strikethrough = FALSE;
 	xtext->hidden = FALSE;
@@ -2725,6 +2727,16 @@ gtk_xtext_button_release (GtkWidget *widget, guint button, gdouble x,
 	FabulorXTextGeometry geometry;
 
 	(void) user_data;
+	if (button == 1 && xtext->suppress_primary_release)
+	{
+		xtext->suppress_primary_release = FALSE;
+		if (xtext->primary_release_suppress_source)
+		{
+			g_source_remove (xtext->primary_release_suppress_source);
+			xtext->primary_release_suppress_source = 0;
+		}
+		return TRUE;
+	}
 	if (!fabulor_xtext_geometry_from_widget (widget, &geometry))
 		return FALSE;
 	if (button == 1 && xtext->selection_drag_active)
@@ -2903,6 +2915,16 @@ gtk_xtext_drag_update (GtkWidget *widget, gdouble x, gdouble y,
 	gtk_xtext_motion (widget, x, y, state | GDK_BUTTON1_MASK);
 }
 
+static gboolean
+gtk_xtext_primary_release_suppression_clear (gpointer data)
+{
+	GtkXText *xtext = data;
+
+	xtext->suppress_primary_release = FALSE;
+	xtext->primary_release_suppress_source = 0;
+	return G_SOURCE_REMOVE;
+}
+
 static void
 gtk_xtext_drag_end (GtkWidget *widget, gdouble x, gdouble y,
 	GdkModifierType state, gpointer user_data)
@@ -2915,6 +2937,16 @@ gtk_xtext_drag_end (GtkWidget *widget, gdouble x, gdouble y,
 	gtk_xtext_motion (widget, x, y, state | GDK_BUTTON1_MASK);
 	xtext->selection_drag_active = FALSE;
 	(void) gtk_xtext_button_release (widget, 1, x, y, state, NULL);
+	xtext->suppress_primary_release = TRUE;
+	if (xtext->primary_release_suppress_source == 0)
+	{
+		xtext->primary_release_suppress_source = g_idle_add_full (
+			G_PRIORITY_DEFAULT_IDLE,
+			gtk_xtext_primary_release_suppression_clear,
+			g_object_ref (xtext), g_object_unref);
+		g_source_set_name_by_id (xtext->primary_release_suppress_source,
+			"[fabulor] xtext primary release suppression");
+	}
 }
 
 static gboolean

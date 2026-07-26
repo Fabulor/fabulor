@@ -2882,6 +2882,18 @@ Window, and Preferences. The frontend and installer rebuild with zero warnings
 and errors, all 79 GTK4 tooling tests pass, and all production package
 validators pass.
 
+Stage 9 URL single-activation acceptance pass 29 (2026-07-26): XText's GTK4
+selection repair introduced a `GtkGestureDrag` whose completion uses the
+canonical primary-button release path for selection finalization. GTK4 also
+delivers the click controller's real release for a zero-distance drag, allowing
+both releases to emit the same URL `word_click`. XText now owns a one-sequence
+suppression token and idle-source lifetime so the synthetic release remains
+available for selection/autocopy while the duplicate real release is consumed.
+Installed testing confirms exactly one browser tab from left-click and
+right-click **Open Link in Browser**, with selection and release-to-copy still
+working. The frontend and installer rebuild with zero warnings and errors, all
+79 GTK4 tooling tests pass, and all production package validators pass.
+
 Deliverables:
 
 - Make GTK4 the only production frontend dependency in MSVC, Meson, and CI.

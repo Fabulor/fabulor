@@ -1541,6 +1541,15 @@ Fabulor's window-state model tracks that native hidden state explicitly.
 Repeated installed testing confirms left-click and menu restoration plus the
 Preferences action.
 
+Stage 9 URL single-activation acceptance pass 29 coordinates the primary-click
+and selection-drag controllers sharing XText's release path. GTK4 can finish a
+zero-distance `GtkGestureDrag` and deliver the real click release for the same
+pointer sequence; the selection path's synthetic release and the click release
+previously emitted `word_click` twice. A short-lived, owned suppression token
+consumes only the duplicate release from that sequence. Installed testing
+confirms one browser tab for left-click and context-menu activation while
+selection and release-to-copy remain intact.
+
 ## Functional Clusters
 
 | Cluster | Main files | GTK4 concern | Status |
