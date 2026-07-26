@@ -1524,6 +1524,13 @@ stable frames before position notifications may update the saved right-pane
 width. `gui_pane_right_size` continues to own the complete pane, while
 `gui_ulist_nick_width` owns only the nickname column within it.
 
+Stage 9 Network List interaction acceptance pass 27 separates row selection
+from network-name editing. Normal `GtkEditableLabel` children do not target
+pointer input, allowing a single click to select the containing list row.
+Explicit list activation temporarily enables the editor, while newly added
+networks retain their immediate rename workflow. Ending an edit restores the
+non-targetable display state.
+
 ## Functional Clusters
 
 | Cluster | Main files | GTK4 concern | Status |

@@ -2859,6 +2859,16 @@ configured pane width now holds without requiring a channel switch. Common and
 frontend rebuilds have zero warnings and errors, all 79 GTK4 tooling tests
 pass, and all production package validators pass.
 
+Stage 9 Network List interaction acceptance pass 27 (2026-07-26): converted
+network rows used `GtkEditableLabel` directly, so its pointer handler entered
+rename mode before a normal mouse click could remain a selection gesture.
+Display labels now decline pointer targeting until explicit list activation or
+the Add Network workflow requests editing. Selection by mouse or keyboard is
+therefore independent of renaming, and edit completion restores display mode.
+Installed testing confirms the corrected interaction. The frontend and
+installer rebuild with zero warnings and errors, all 79 GTK4 tooling tests
+pass, and all production package validators pass.
+
 Deliverables:
 
 - Make GTK4 the only production frontend dependency in MSVC, Meson, and CI.

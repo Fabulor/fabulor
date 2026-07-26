@@ -165,6 +165,17 @@ typedef struct
 } ServerNetworkBinding;
 
 static void
+server_network_binding_start_editing (ServerNetworkBinding *binding)
+{
+	if (!binding || !binding->row)
+		return;
+	gtk_widget_set_can_target (GTK_WIDGET (binding->label), TRUE);
+	gtk_editable_label_start_editing (binding->label);
+	if (!gtk_editable_label_get_editing (binding->label))
+		gtk_widget_set_can_target (GTK_WIDGET (binding->label), FALSE);
+}
+
+static void
 server_network_binding_refresh (ServerNetworkBinding *binding)
 {
 	if (!binding->row)
@@ -209,6 +220,8 @@ server_network_editing_changed (GtkEditableLabel *label, GParamSpec *pspec,
 			server_network_binding_refresh (binding);
 	}
 	binding->editing = editing;
+	if (!editing)
+		gtk_widget_set_can_target (GTK_WIDGET (label), FALSE);
 }
 
 static void
@@ -239,6 +252,7 @@ server_network_factory_setup (GtkSignalListItemFactory *factory,
 	binding->label = GTK_EDITABLE_LABEL (label);
 	gtk_widget_set_hexpand (label, TRUE);
 	gtk_widget_set_halign (label, GTK_ALIGN_FILL);
+	gtk_widget_set_can_target (label, FALSE);
 	g_signal_connect (label, "notify::editing",
 		G_CALLBACK (server_network_editing_changed), binding);
 	gtk_list_item_set_child (item, label);
@@ -266,7 +280,7 @@ server_network_factory_bind (GtkSignalListItemFactory *factory,
 	if (binding->row->identity == binding->owner->pending_edit_identity)
 	{
 		binding->owner->pending_edit_identity = NULL;
-		gtk_editable_label_start_editing (binding->label);
+		server_network_binding_start_editing (binding);
 	}
 }
 
@@ -311,6 +325,21 @@ server_network_find (FabulorServerNetworkList *list, gpointer identity,
 		}
 	}
 	return FALSE;
+}
+
+static void
+server_network_activate (GtkListView *view, guint position,
+	gpointer user_data)
+{
+	FabulorServerNetworkList *list = user_data;
+	gpointer identity;
+
+	(void) view;
+	identity = fabulor_server_network_list_get_identity_at (list, position);
+	if (!identity)
+		return;
+	fabulor_server_network_list_select (list, identity);
+	fabulor_server_network_list_start_editing_selected (list);
 }
 
 FabulorServerNetworkList *
@@ -362,6 +391,10 @@ fabulor_server_network_list_create_view (FabulorServerNetworkList *list,
 			G_CALLBACK (server_network_factory_unbind), list);
 		list->view = gtk_list_view_new (GTK_SELECTION_MODEL (g_object_ref (
 			server_network_selection (list))), factory);
+		gtk_list_view_set_single_click_activate (GTK_LIST_VIEW (list->view),
+			FALSE);
+		g_signal_connect (list->view, "activate",
+			G_CALLBACK (server_network_activate), list);
 	}
 	fabulor_gtk_scrolled_window_set_child (scroller, list->view);
 	return list->view;
@@ -585,7 +618,7 @@ fabulor_server_network_list_start_editing_selected (
 		if (binding)
 		{
 			list->pending_edit_identity = NULL;
-			gtk_editable_label_start_editing (binding->label);
+			server_network_binding_start_editing (binding);
 		}
 	}
 }

@@ -8229,6 +8229,44 @@ Installed acceptance: pass. `gui_ulist_resizable` reports `OFF`, and the
 configured user-list width now applies without the previous channel-switch
 workaround.
 
+### GTK4 Stage 9 Network List Interaction Acceptance, Pass 27
+
+Date: 2026-07-26
+
+Installed testing found that clicking any Network List row immediately entered
+network-name edit mode. Keyboard Up and Down selection did not have the same
+problem.
+
+Root cause and correction:
+
+- each list row directly exposed a pointer-targetable `GtkEditableLabel`, whose
+  internal click handling started editing before the surrounding list could
+  treat the gesture as selection only
+- display labels now decline pointer targeting so a single click reaches the
+  list row and selects it
+- explicit list activation enables targeting and starts editing; edit
+  completion restores the non-targetable display state
+- Add Network still selects the new row and starts its initial rename
+  immediately
+
+Automated evidence:
+
+- full GTK4 frontend rebuild: zero warnings and zero errors
+- complete GTK4 tooling contract suite: all 79 tests pass
+- production MSI and bootstrapper rebuild: zero warnings and zero errors
+- production MSI validation: 7,624 installed files and zero GTK3 path markers
+- runtime validation: all 1,431 manifest entries and content hashes verified
+- production bundle validation: version `1.0.4`, one embedded MSI, and exact
+  embedded/published MSI equality
+- production MSI SHA-256:
+  `FB918E5CE77FE81470792EEC5160EC29104C311CDC5817D0199E45A375765E66`
+- production bootstrapper SHA-256:
+  `C5F9F10B93C8D0D2D18739BD3AAB51A098620D21C5F34E71D7002AAA457BB336`
+
+Installed acceptance: pass. Mouse clicks select networks without entering
+rename mode, while explicit activation and Add Network retain their intended
+editing workflows.
+
 ## Stage Completion Rule
 
 A stage can move to complete in `migration-plan.md` only when:
