@@ -151,6 +151,47 @@ Acceptance:
 
 Published in PR #242.
 
+## Retained Proxy Baseline
+
+### SOCKS5 Proxy Mode
+
+Status: `Accepted`
+
+SOCKS5 remains a supported proxy mode and is the validated migration target
+for any future SOCKS4 retirement decision. Its retained scope is TCP `CONNECT`
+for IRC and DCC, with either no authentication or RFC 1929
+username/password authentication. Fabulor does not claim SOCKS5 GSSAPI or UDP
+`ASSOCIATE` support.
+
+Hardening:
+
+- share bounded greeting, authentication, destination, and reply validation
+  between synchronous IRC and queued DCC traversal
+- require both username and password when authentication is enabled
+- reject a proxy-selected authentication method that Fabulor did not offer
+- reject silent downgrade from requested username/password authentication
+- handle partial socket reads and writes and interrupted system calls
+- validate protocol versions, reserved bytes, address types, field lengths,
+  destination ports, and domain-form reply lengths
+- fail queued DCC traversal cleanly when the proxy closes or returns malformed
+  data
+
+Validation:
+
+- exact-byte protocol probes cover no-authentication and RFC 1929 requests,
+  credential and hostname bounds, IPv4/domain destinations, reply address
+  forms, and malformed responses
+- strict MSVC and independent Meson/Ninja probes pass
+- common core, GTK4 frontend, and production installer build without warnings
+  or errors
+- all 86 Python contract tests and all production package validators pass
+- installed direct IRC and ZNC connections pass with both no authentication
+  and username/password authentication
+- disabling authentication against an authenticated proxy is rejected rather
+  than silently downgraded
+
+SOCKS4 remains `Proposed` and was not changed by this work.
+
 ## Review Candidates
 
 ### SOCKS4 Proxy Mode

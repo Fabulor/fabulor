@@ -184,6 +184,7 @@ typedef struct session_gui
 	guint16 ul_hidden;	/* userlist hidden? */
 	guint16 pane_right_restoring; /* initial GTK4 allocation is not user input */
 	guint16 pane_right_stable_frames;
+	guint pane_right_restore_tick_id;
 
 } session_gui;
 

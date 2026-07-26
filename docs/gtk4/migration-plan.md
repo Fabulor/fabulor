@@ -2951,6 +2951,28 @@ the retired value reports as `0` and both ZNC and direct IRC connections work
 normally. Common core, frontend, and installer rebuilds have zero warnings and
 errors; all 79 GTK4 tooling tests and all production package validators pass.
 
+Stage 9 SOCKS5 protocol hardening pass 35 (2026-07-26): synchronous IRC and
+queued DCC traversal now share bounded SOCKS5 packet construction and response
+validation. Authentication-enabled connections require non-empty username and
+password fields of at most 255 bytes and reject proxy-selected no-authentication
+instead of silently downgrading. Both paths handle partial reads/writes,
+validate protocol versions, reserved fields, address forms and reply lengths,
+and fail closed on malformed or closed proxy connections. Exact-byte tests run
+under strict MSVC and Meson/Ninja probes. Installed testing passes direct IRC
+and ZNC with both no authentication and RFC 1929 username/password
+authentication; an authentication mismatch is rejected. SOCKS4 remains
+unchanged with status `Proposed`.
+
+Stage 9 right-pane allocation acceptance pass 36 (2026-07-26): SOCKS5
+Preferences testing exposed that generic preference application temporarily
+detached the user list and allowed GTK4 to record transient pane geometry.
+Runtime reparenting now suppresses those notifications, preserves the accepted
+right-pane width, and queues restoration from the final window-surface layout
+rather than the smaller pre-maximize allocation. Oversized saved geometry
+recovers to the configured nickname or minimum width. Clean uninstall/install
+testing and switching through all channels confirm stable pane dimensions and
+no apparent channel-switch lag.
+
 Deliverables:
 
 - Make GTK4 the only production frontend dependency in MSVC, Meson, and CI.

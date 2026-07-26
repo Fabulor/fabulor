@@ -8542,6 +8542,81 @@ Installed acceptance: pass. `/SET net_proxy_type 1` reports normalized value
 operate normally. The ordinary unproxied DCC implementation is unchanged; its
 proxy eligibility boundary is covered by the focused policy probe.
 
+### GTK4 Stage 9 SOCKS5 Protocol Hardening, Pass 35
+
+Date: 2026-07-26
+
+SOCKS5 remains supported, but its inherited IRC and DCC implementations used
+separate packet construction, assumed complete socket reads/writes, and could
+accept weaker method negotiation than the configured authentication policy.
+
+Hardening and compatibility:
+
+- add one bounded SOCKS5 protocol owner shared by IRC and DCC
+- support TCP `CONNECT` with no authentication or RFC 1929
+  username/password authentication
+- require complete bounded credentials when authentication is enabled
+- reject unsupported methods and authentication downgrade
+- handle partial socket I/O and interrupted calls
+- validate versions, reserved fields, destination ports, address types, and
+  variable-length replies
+- remove unaligned port encoding and terminate closed queued DCC writes
+- leave SOCKS4 unchanged and `Proposed`
+
+Automated evidence:
+
+- exact-byte SOCKS5 protocol assertions pass under strict MSVC `/W4 /WX`
+- fresh independent Meson/Ninja probe: 1/1 passed
+- full GTK4 common/frontend/launcher build: zero warnings and zero errors
+- Python contract suites: 7/7 and 79/79 passed
+- production installer build: zero warnings and zero errors
+- production MSI validation: 7,624 installed files and zero GTK3 path markers
+- runtime validation: all 1,431 manifest entries and content hashes verified
+- production bundle validation: version `1.0.4`, one embedded MSI, and exact
+  embedded/published MSI equality
+
+Installed acceptance: pass. Direct IRC and ZNC connect through MicroSocks with
+both no authentication and username/password authentication. Disabling
+authentication against the authenticated proxy produces a controlled
+authentication-method rejection.
+
+### GTK4 Stage 9 Right-Pane Allocation Acceptance, Pass 36
+
+Date: 2026-07-26
+
+Applying SOCKS5 Preferences exposed a general GTK4 layout regression:
+temporarily detaching the user list emitted divider notifications, and an early
+pre-maximize allocation could leave the end pane consuming most of the window
+despite a valid saved width.
+
+Fix:
+
+- suppress right-pane persistence while movable layout children are detached
+  and reattached
+- preserve the accepted right-pane size across generic Preferences application
+- schedule one restoration from each final window-surface layout
+- recover an implausibly oversized restored pane to the configured nickname
+  width or pane minimum
+- retain normal user-controlled divider persistence when resizing is enabled
+
+Automated evidence:
+
+- strict native GTK4 probe covers valid, minimum, and oversized recovery
+- full GTK4 frontend and launcher rebuild: zero warnings and zero errors
+- production MSI and bootstrapper rebuild: zero warnings and zero errors
+- production MSI validation: 7,624 installed files and zero GTK3 path markers
+- runtime validation: all 1,431 manifest entries and content hashes verified
+- production bundle validation: version `1.0.4`, one embedded MSI, and exact
+  embedded/published MSI equality
+- production MSI SHA-256:
+  `7870EED4BAE51FA9BA663990CB74867D57E6E5332EE9152BBD48B9CCED0C0242`
+- production bootstrapper SHA-256:
+  `BCAE71D986610B7FA8C953F2DA2315F80C05F99564E686BAA3BD8484820D9452`
+
+Installed acceptance: pass after clean uninstall/install. The user-list pane
+remains stable while switching through all channels, and no channel-switch lag
+was observed.
+
 ## Stage Completion Rule
 
 A stage can move to complete in `migration-plan.md` only when:

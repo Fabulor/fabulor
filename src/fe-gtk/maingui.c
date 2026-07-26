@@ -106,6 +106,7 @@ enum
 static void mg_apply_emoji_fallback_widget (GtkWidget *widget);
 static void mg_inputbox_insert_emoji_cb (GtkEntry *entry, gpointer user_data);
 static void mg_inputbox_icon_release_cb (GtkEntry *entry, GtkEntryIconPosition icon_pos, gpointer user_data);
+static void mg_schedule_rightpane_restore (session_gui *gui);
 #define MG_CONFIG_SAVE_DEBOUNCE_MS 250
 
 static guint mg_config_save_source_id = 0;
@@ -1063,6 +1064,8 @@ mg_geometry_cb (GtkWindow *wid, const FabulorWindowGeometry *geometry,
         }
 
 	target_sess = mg_session_from_window (GTK_WIDGET (wid));
+        if (target_sess && target_sess->gui)
+                mg_schedule_rightpane_restore (target_sess->gui);
         if (target_sess && target_sess->gui && GTK_IS_WIDGET (target_sess->gui->window))
                 mg_queue_window_relayout (target_sess->gui->window);
         else
@@ -4072,16 +4075,20 @@ mg_rightpane_cb (GtkPaned *pane, GParamSpec *param, session_gui *gui)
 static void
 mg_restore_rightpane (GtkPaned *pane, int pane_width, gpointer data)
 {
+        int fallback_size;
         int handle_size;
         int saved_size;
         /* use the value captured at connect time, since notify::position may
          * have already overwritten prefs.hex_gui_pane_right_size during layout */
         saved_size = GPOINTER_TO_INT (data);
         handle_size = fabulor_gtk_paned_get_handle_size (pane);
-        saved_size = fabulor_pane_clamp_end_size (saved_size,
+        fallback_size = MAX (prefs.hex_gui_ulist_nick_width,
+                prefs.hex_gui_pane_right_size_min);
+        saved_size = fabulor_pane_restore_end_size (saved_size, fallback_size,
                 prefs.hex_gui_pane_right_size_min, pane_width, handle_size);
         if (saved_size < 1)
                 return;
+        prefs.hex_gui_pane_right_size = saved_size;
         gtk_paned_set_position (pane, pane_width - saved_size - handle_size);
 }
 
@@ -4107,8 +4114,11 @@ mg_restore_rightpane_tick_cb (GtkWidget *widget, GdkFrameClock *frame_clock,
                 GINT_TO_POINTER (gui->pane_right_size));
 
         handle_size = fabulor_gtk_paned_get_handle_size (pane);
-        desired_size = fabulor_pane_clamp_end_size (gui->pane_right_size,
+        desired_size = fabulor_pane_restore_end_size (gui->pane_right_size,
+                MAX (prefs.hex_gui_ulist_nick_width,
+                        prefs.hex_gui_pane_right_size_min),
                 prefs.hex_gui_pane_right_size_min, pane_width, handle_size);
+        gui->pane_right_size = desired_size;
         actual_size = pane_width - gtk_paned_get_position (pane) - handle_size;
         if (gui->pane_right_last_width != pane_width ||
                 ABS (actual_size - desired_size) > 1)
@@ -4122,7 +4132,24 @@ mg_restore_rightpane_tick_cb (GtkWidget *widget, GdkFrameClock *frame_clock,
         if (gui->pane_right_stable_frames < 3)
                 return G_SOURCE_CONTINUE;
         gui->pane_right_restoring = 0;
+        gui->pane_right_restore_tick_id = 0;
         return G_SOURCE_REMOVE;
+}
+
+static void
+mg_schedule_rightpane_restore (session_gui *gui)
+{
+        if (!gui || !GTK_IS_WIDGET (gui->hpane_right))
+                return;
+
+        gui->pane_right_size = prefs.hex_gui_pane_right_size;
+        gui->pane_right_restoring = 1;
+        gui->pane_right_last_width = 0;
+        gui->pane_right_stable_frames = 0;
+        if (!gui->pane_right_restore_tick_id)
+                gui->pane_right_restore_tick_id =
+                        gtk_widget_add_tick_callback (gui->hpane_right,
+                                mg_restore_rightpane_tick_cb, gui, NULL);
 }
 
 static gboolean
@@ -4160,11 +4187,7 @@ mg_create_center (session *sess, session_gui *gui, GtkWidget *box)
 
 	/* Restore after the first complete allocation. Capture the saved size before
 	 * notify::position can overwrite it during initial layout. */
-	gui->pane_right_size = prefs.hex_gui_pane_right_size;
-	gui->pane_right_restoring = 1;
-	gtk_widget_add_tick_callback (gui->hpane_right,
-		mg_restore_rightpane_tick_cb,
-		gui, NULL);
+        mg_schedule_rightpane_restore (gui);
 
         if (prefs.hex_gui_win_swap)
         {
@@ -4392,7 +4415,16 @@ mg_place_userlist_and_chanview (session_gui *gui)
 {
         GtkOrientation orientation;
         GtkWidget *chanviewbox = NULL;
+        gboolean restore_right_pane;
+        int saved_right_size;
         int pos;
+
+        restore_right_pane =
+                gtk_widget_get_mapped (gui->hpane_right) &&
+                fabulor_gtk_widget_get_allocated_width (gui->hpane_right) > 0;
+        saved_right_size = prefs.hex_gui_pane_right_size;
+        if (restore_right_pane)
+                gui->pane_right_restoring = 1;
 
         mg_sanitize_positions (&prefs.hex_gui_tab_pos, &prefs.hex_gui_ulist_pos);
 
@@ -4409,6 +4441,12 @@ mg_place_userlist_and_chanview (session_gui *gui)
         }
 
         mg_place_userlist_and_chanview_real (gui, gui->user_box, chanviewbox);
+
+        if (restore_right_pane)
+        {
+                prefs.hex_gui_pane_right_size = saved_right_size;
+                mg_schedule_rightpane_restore (gui);
+        }
 }
 
 void

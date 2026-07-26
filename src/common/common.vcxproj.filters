@@ -83,6 +83,9 @@
     <ClInclude Include="secretstore.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="socks5-protocol.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
     <ClInclude Include="ssl.h">
       <Filter>Header Files</Filter>
     </ClInclude>

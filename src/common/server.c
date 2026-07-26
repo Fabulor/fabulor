@@ -55,6 +55,7 @@
 #include "proxy-policy.h"
 #include "servlist.h"
 #include "server.h"
+#include "socks5-protocol.h"
 #include "sts.h"
 
 #ifdef USE_OPENSSL
@@ -1113,105 +1114,141 @@ traverse_socks (int print_fd, int sok, char *serverAddr, int port)
 	return 1;
 }
 
-struct sock5_connect1
+static int
+socks5_socket_interrupted (void)
 {
-	char version;
-	char nmethods;
-	char method;
-};
+#ifdef WIN32
+	return sock_error () == WSAEINTR;
+#else
+	return sock_error () == EINTR;
+#endif
+}
+
+static int
+socks5_send_all (int sok, const unsigned char *buffer, size_t length)
+{
+	size_t sent = 0;
+
+	while (sent < length)
+	{
+		int result = send (sok, (const char *)buffer + sent,
+						  (int)(length - sent), 0);
+
+		if (result > 0)
+		{
+			sent += (size_t)result;
+			continue;
+		}
+		if (result < 0 && socks5_socket_interrupted ())
+			continue;
+		return 0;
+	}
+
+	return 1;
+}
+
+static int
+socks5_receive_all (int sok, unsigned char *buffer, size_t length)
+{
+	size_t received = 0;
+
+	while (received < length)
+	{
+		int result = recv (sok, (char *)buffer + received,
+						  (int)(length - received), 0);
+
+		if (result > 0)
+		{
+			received += (size_t)result;
+			continue;
+		}
+		if (result < 0 && socks5_socket_interrupted ())
+			continue;
+		return 0;
+	}
+
+	return 1;
+}
 
 static int
 traverse_socks5 (int print_fd, int sok, char *serverAddr, int port)
 {
-	struct sock5_connect1 sc1;
-	unsigned char *sc2;
-	unsigned int packetlen, addrlen;
+	unsigned char request[FABULOR_SOCKS5_MAX_AUTH_REQUEST];
 	unsigned char buf[260];
-	int auth = prefs.hex_net_proxy_auth && prefs.hex_net_proxy_user[0] && prefs.hex_net_proxy_pass[0];
+	size_t request_size;
+	size_t reply_tail_size;
+	int auth_required = prefs.hex_net_proxy_auth;
 
-	sc1.version = 5;
-	sc1.nmethods = 1;
-	if (auth)
-		sc1.method = 2;  /* Username/Password Authentication (UPA) */
-	else
-		sc1.method = 0;  /* NO Authentication */
-	send (sok, (char *) &sc1, 3, 0);
-	if (recv (sok, buf, 2, 0) != 2)
-		goto read_error;
-
-	if (buf[0] != 5)
+	if (!fabulor_socks5_credentials_valid (auth_required,
+										   prefs.hex_net_proxy_user,
+										   prefs.hex_net_proxy_pass))
 	{
-		proxy_error (print_fd, "SOCKS\tServer is not socks version 5.\n");
+		proxy_error (print_fd, "SOCKS\tAuthentication requires a username "
+							 "and password of 1 to 255 bytes.\n");
 		return 1;
 	}
 
-	/* did the server say no auth required? */
-	if (buf[1] == 0)
-		auth = 0;
+	request_size = fabulor_socks5_build_method_request (
+		request, sizeof (request), auth_required);
+	if (!request_size || !socks5_send_all (sok, request, request_size) ||
+		!socks5_receive_all (sok, buf, 2))
+		goto read_error;
 
-	if (auth)
+	if (!fabulor_socks5_method_response_valid (buf, 2, auth_required))
 	{
-		int len_u=0, len_p=0;
-		unsigned char *u_p_buf;
+		if (buf[0] != FABULOR_SOCKS5_VERSION)
+			proxy_error (print_fd,
+						 "SOCKS\tServer is not SOCKS version 5.\n");
+		else if (buf[1] == FABULOR_SOCKS5_METHOD_UNACCEPTABLE)
+			proxy_error (print_fd,
+						 "SOCKS\tServer rejected all offered authentication methods.\n");
+		else if (auth_required)
+			proxy_error (print_fd,
+						 "SOCKS\tServer did not select required username/password authentication.\n");
+		else
+			proxy_error (print_fd,
+						 "SOCKS\tServer selected an authentication method that was not offered.\n");
+		return 1;
+	}
 
-		/* authentication sub-negotiation (RFC1929) */
-		if (buf[1] != 2)  /* UPA not supported by server */
-		{
-			proxy_error (print_fd, "SOCKS\tServer doesn't support UPA authentication.\n");
-			return 1;
-		}
-
-		/* form the UPA request */
-		len_u = strlen (prefs.hex_net_proxy_user);
-		len_p = strlen (prefs.hex_net_proxy_pass);
-
-        packetlen = 2 + len_u + 1 + len_p;
-		u_p_buf = g_malloc0 (packetlen);
-
-		u_p_buf[0] = 1;
-		u_p_buf[1] = len_u;
-		memcpy (u_p_buf + 2, prefs.hex_net_proxy_user, len_u);
-		u_p_buf[2 + len_u] = len_p;
-		memcpy (u_p_buf + 3 + len_u, prefs.hex_net_proxy_pass, len_p);
-
-		send (sok, u_p_buf, packetlen, 0);
-		g_free(u_p_buf);
-
-		if ( recv (sok, buf, 2, 0) != 2 )
+	if (auth_required)
+	{
+		request_size = fabulor_socks5_build_auth_request (
+			request, sizeof (request), prefs.hex_net_proxy_user,
+			prefs.hex_net_proxy_pass);
+		if (!request_size ||
+			!socks5_send_all (sok, request, request_size) ||
+			!socks5_receive_all (sok, buf, 2))
 			goto read_error;
-		if ( buf[1] != 0 )
+		if (!fabulor_socks5_auth_response_valid (buf, 2))
 		{
 			proxy_error (print_fd, "SOCKS\tAuthentication failed. "
 							 "Is username and password correct?\n");
-			return 1; /* UPA failed! */
-		}
-	}
-	else
-	{
-		if (buf[1] != 0)
-		{
-			proxy_error (print_fd, "SOCKS\tAuthentication required but disabled in settings.\n");
 			return 1;
 		}
 	}
 
-	addrlen = strlen (serverAddr);
-	packetlen = 4 + 1 + addrlen + 2;
-	sc2 = g_malloc (packetlen);
-	sc2[0] = 5;						  /* version */
-	sc2[1] = 1;						  /* command */
-	sc2[2] = 0;						  /* reserved */
-	sc2[3] = 3;						  /* address type */
-	sc2[4] = (unsigned char) addrlen;	/* hostname length */
-	memcpy (sc2 + 5, serverAddr, addrlen);
-	*((unsigned short *) (sc2 + 5 + addrlen)) = htons (port);
-	send (sok, sc2, packetlen, 0);
-	g_free (sc2);
+	request_size = fabulor_socks5_build_domain_connect_request (
+		request, sizeof (request), serverAddr, (unsigned int)port);
+	if (!request_size)
+	{
+		proxy_error (print_fd,
+					 "SOCKS\tDestination hostname or port is invalid.\n");
+		return 1;
+	}
+	if (!socks5_send_all (sok, request, request_size))
+		goto read_error;
 
 	/* consume all of the reply */
-	if (recv (sok, buf, 4, 0) != 4)
+	if (!socks5_receive_all (sok, buf, 4))
 		goto read_error;
-	if (buf[0] != 5 || buf[1] != 0)
+	if (!fabulor_socks5_reply_header_valid (buf, 4))
+	{
+		proxy_error (print_fd,
+					 "SOCKS\tServer returned a malformed connection reply.\n");
+		return 1;
+	}
+	if (buf[1] != 0)
 	{
 		if (buf[1] == 2)
 			g_snprintf (buf, sizeof (buf), "SOCKS\tProxy refused to connect to host (not allowed).\n");
@@ -1220,20 +1257,25 @@ traverse_socks5 (int print_fd, int sok, char *serverAddr, int port)
 		proxy_error (print_fd, buf);
 		return 1;
 	}
-	if (buf[3] == 1)	/* IPV4 32bit address */
+
+	reply_tail_size = fabulor_socks5_fixed_reply_tail_size (buf[3]);
+	if (reply_tail_size)
 	{
-		if (recv (sok, buf, 6, 0) != 6)
+		if (!socks5_receive_all (sok, buf, reply_tail_size))
 			goto read_error;
-	} else if (buf[3] == 4)	/* IPV6 128bit address */
+	}
+	else
 	{
-		if (recv (sok, buf, 18, 0) != 18)
+		if (!socks5_receive_all (sok, buf, 1))
 			goto read_error;
-	} else if (buf[3] == 3)	/* string, 1st byte is size */
-	{
-		if (recv (sok, buf, 1, 0) != 1)	/* read the string size */
-			goto read_error;
-		packetlen = buf[0] + 2;	/* can't exceed 260 */
-		if (recv (sok, buf, packetlen, 0) != packetlen)
+		if (!fabulor_socks5_domain_length_valid (buf[0]))
+		{
+			proxy_error (print_fd,
+						 "SOCKS\tServer returned an empty domain address.\n");
+			return 1;
+		}
+		reply_tail_size = (size_t)buf[0] + 2;
+		if (!socks5_receive_all (sok, buf, reply_tail_size))
 			goto read_error;
 	}
 

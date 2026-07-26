@@ -26,6 +26,24 @@ fabulor_pane_clamp_end_size (gint saved_size, gint minimum_size,
 	return MIN (normalized, available);
 }
 
+gint
+fabulor_pane_restore_end_size (gint saved_size, gint fallback_size,
+	gint minimum_size, gint pane_width, gint handle_size)
+{
+	gint available = pane_width - MAX (handle_size, 0);
+	gint normalized;
+
+	if (available < 1)
+		return 0;
+
+	normalized = fabulor_pane_clamp_end_size (saved_size, minimum_size,
+		pane_width, handle_size);
+	if (normalized > available / 2)
+		return fabulor_pane_clamp_end_size (fallback_size, minimum_size,
+			pane_width, handle_size);
+	return normalized;
+}
+
 void
 fabulor_window_geometry_get (GtkWindow *window,
 	FabulorWindowGeometry *geometry)

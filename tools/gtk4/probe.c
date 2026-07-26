@@ -10,6 +10,7 @@
 #include "../../src/common/gtk4-theme-discovery.h"
 #include "../../src/common/gtk4-theme-preferences.h"
 #include "../../src/common/proxy-policy.h"
+#include "../../src/common/socks5-protocol.h"
 #include "../../src/fe-gtk/emoji-picker.h"
 #include "../../src/fe-gtk/theme/theme-gtk4.h"
 #include "../../src/fe-gtk/theme/theme-gtk4-controller.h"
@@ -116,6 +117,135 @@ check_proxy_policy (void)
 		fabulor_proxy_type_uses_dcc_proxy (FABULOR_PROXY_SOCKS5) &&
 		fabulor_proxy_type_uses_dcc_proxy (FABULOR_PROXY_HTTP) &&
 		!fabulor_proxy_type_uses_dcc_proxy (FABULOR_PROXY_AUTO);
+}
+
+static gboolean
+check_socks5_protocol (void)
+{
+	unsigned char buffer[FABULOR_SOCKS5_MAX_AUTH_REQUEST];
+	unsigned char no_auth_request[] = {5, 1, 0};
+	unsigned char auth_request[] = {5, 1, 2};
+	unsigned char no_auth_response[] = {5, 0};
+	unsigned char auth_response[] = {5, 2};
+	unsigned char no_methods_response[] = {5, 255};
+	unsigned char auth_success[] = {1, 0};
+	unsigned char auth_failure[] = {1, 1};
+	unsigned char domain_request[] = {
+		5, 1, 0, 3, 11,
+		'i', 'r', 'c', '.', 'e', 'x', 'a', 'm', 'p', 'l', 'e',
+		0x1a, 0x29
+	};
+	unsigned char ipv4_request[] = {
+		5, 1, 0, 1, 192, 0, 2, 1, 0x1a, 0x29
+	};
+	unsigned char valid_reply[] = {5, 0, 0, 1};
+	unsigned char denied_reply[] = {5, 2, 0, 3};
+	unsigned char bad_version_reply[] = {4, 0, 0, 1};
+	unsigned char bad_reserved_reply[] = {5, 0, 1, 1};
+	unsigned char bad_address_reply[] = {5, 0, 0, 2};
+	char maximum_field[FABULOR_SOCKS5_MAX_FIELD_LENGTH + 1];
+	char oversized_field[FABULOR_SOCKS5_MAX_FIELD_LENGTH + 2];
+	size_t request_size;
+
+	memset (maximum_field, 'a', sizeof (maximum_field) - 1);
+	maximum_field[sizeof (maximum_field) - 1] = '\0';
+	memset (oversized_field, 'b', sizeof (oversized_field) - 1);
+	oversized_field[sizeof (oversized_field) - 1] = '\0';
+
+	request_size = fabulor_socks5_build_method_request (
+		buffer, sizeof (buffer), FALSE);
+	if (request_size != sizeof (no_auth_request) ||
+		memcmp (buffer, no_auth_request, request_size) != 0)
+		return FALSE;
+
+	request_size = fabulor_socks5_build_method_request (
+		buffer, sizeof (buffer), TRUE);
+	if (request_size != sizeof (auth_request) ||
+		memcmp (buffer, auth_request, request_size) != 0 ||
+		fabulor_socks5_build_method_request (buffer, 2, TRUE) != 0)
+		return FALSE;
+
+	if (!fabulor_socks5_method_response_valid (
+			no_auth_response, sizeof (no_auth_response), FALSE) ||
+		!fabulor_socks5_method_response_valid (
+			auth_response, sizeof (auth_response), TRUE) ||
+		fabulor_socks5_method_response_valid (
+			no_auth_response, sizeof (no_auth_response), TRUE) ||
+		fabulor_socks5_method_response_valid (
+			auth_response, sizeof (auth_response), FALSE) ||
+		fabulor_socks5_method_response_valid (
+			no_methods_response, sizeof (no_methods_response), FALSE))
+		return FALSE;
+
+	if (!fabulor_socks5_credentials_valid (FALSE, NULL, NULL) ||
+		!fabulor_socks5_credentials_valid (TRUE, "user", "pass") ||
+		fabulor_socks5_credentials_valid (TRUE, "", "pass") ||
+		fabulor_socks5_credentials_valid (TRUE, "user", "") ||
+		fabulor_socks5_credentials_valid (
+			TRUE, oversized_field, "pass"))
+		return FALSE;
+
+	request_size = fabulor_socks5_build_auth_request (
+		buffer, sizeof (buffer), "user", "pass");
+	if (request_size != 11 ||
+		buffer[0] != 1 || buffer[1] != 4 ||
+		memcmp (buffer + 2, "user", 4) != 0 ||
+		buffer[6] != 4 || memcmp (buffer + 7, "pass", 4) != 0 ||
+		fabulor_socks5_build_auth_request (
+			buffer, 10, "user", "pass") != 0 ||
+		fabulor_socks5_build_auth_request (
+			buffer, sizeof (buffer), oversized_field, "pass") != 0 ||
+		!fabulor_socks5_auth_response_valid (
+			auth_success, sizeof (auth_success)) ||
+		fabulor_socks5_auth_response_valid (
+			auth_failure, sizeof (auth_failure)))
+		return FALSE;
+
+	request_size = fabulor_socks5_build_auth_request (
+		buffer, sizeof (buffer), maximum_field, maximum_field);
+	if (request_size != FABULOR_SOCKS5_MAX_AUTH_REQUEST)
+		return FALSE;
+
+	request_size = fabulor_socks5_build_domain_connect_request (
+		buffer, sizeof (buffer), "irc.example", 6697);
+	if (request_size != sizeof (domain_request) ||
+		memcmp (buffer, domain_request, request_size) != 0 ||
+		fabulor_socks5_build_domain_connect_request (
+			buffer, sizeof (buffer), oversized_field, 6697) != 0 ||
+		fabulor_socks5_build_domain_connect_request (
+			buffer, sizeof (buffer), "irc.example", 0) != 0 ||
+		fabulor_socks5_build_domain_connect_request (
+			buffer, sizeof (buffer), "irc.example", 65536) != 0)
+		return FALSE;
+
+	request_size = fabulor_socks5_build_ipv4_connect_request (
+		buffer, sizeof (buffer), 0xc0000201U, 6697);
+	if (request_size != sizeof (ipv4_request) ||
+		memcmp (buffer, ipv4_request, request_size) != 0 ||
+		fabulor_socks5_build_ipv4_connect_request (
+			buffer, 9, 0xc0000201U, 6697) != 0)
+		return FALSE;
+
+	return
+		fabulor_socks5_reply_header_valid (
+			valid_reply, sizeof (valid_reply)) &&
+		fabulor_socks5_reply_header_valid (
+			denied_reply, sizeof (denied_reply)) &&
+		!fabulor_socks5_reply_header_valid (
+			bad_version_reply, sizeof (bad_version_reply)) &&
+		!fabulor_socks5_reply_header_valid (
+			bad_reserved_reply, sizeof (bad_reserved_reply)) &&
+		!fabulor_socks5_reply_header_valid (
+			bad_address_reply, sizeof (bad_address_reply)) &&
+		fabulor_socks5_fixed_reply_tail_size (
+			FABULOR_SOCKS5_ADDRESS_IPV4) == 6 &&
+		fabulor_socks5_fixed_reply_tail_size (
+			FABULOR_SOCKS5_ADDRESS_IPV6) == 18 &&
+		fabulor_socks5_fixed_reply_tail_size (
+			FABULOR_SOCKS5_ADDRESS_DOMAIN) == 0 &&
+		!fabulor_socks5_domain_length_valid (0) &&
+		fabulor_socks5_domain_length_valid (1) &&
+		fabulor_socks5_domain_length_valid (255);
 }
 
 typedef struct
@@ -5533,7 +5663,10 @@ check_window_geometry_boundary (gboolean gtk_ready)
 	if (fabulor_pane_clamp_end_size (2, 80, 500, 6) != 80 ||
 		fabulor_pane_clamp_end_size (120, 80, 500, 6) != 120 ||
 		fabulor_pane_clamp_end_size (600, 80, 500, 6) != 494 ||
-		fabulor_pane_clamp_end_size (2, 80, 4, 6) != 0)
+		fabulor_pane_clamp_end_size (2, 80, 4, 6) != 0 ||
+		fabulor_pane_restore_end_size (120, 145, 80, 500, 6) != 120 ||
+		fabulor_pane_restore_end_size (450, 145, 80, 500, 6) != 145 ||
+		fabulor_pane_restore_end_size (450, 20, 80, 500, 6) != 80)
 		return FALSE;
 	if (!gtk_ready)
 		return TRUE;
@@ -5608,6 +5741,11 @@ main (void)
 	if (!check_proxy_policy ())
 	{
 		fprintf (stderr, "Proxy compatibility policy mismatch\n");
+		return 1;
+	}
+	if (!check_socks5_protocol ())
+	{
+		fprintf (stderr, "SOCKS5 protocol contract mismatch\n");
 		return 1;
 	}
 	if (!check_application_main_loop ())

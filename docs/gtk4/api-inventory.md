@@ -1587,6 +1587,22 @@ Preferences display mapping, authentication sensitivity, connection dispatch,
 DCC proxy eligibility, configuration loading, canonical saving, and `/SET`
 updates now consume that policy instead of relying on contiguous menu rows.
 
+Stage 9 SOCKS5 protocol hardening pass 35 introduces a shared bounded protocol
+owner for IRC and DCC traversal. It validates method selection, RFC 1929
+credentials, destination encoding, reply headers and address lengths; handles
+partial socket I/O; rejects authentication downgrade; and terminates queued
+DCC traversal on closed or malformed proxy connections. Installed direct IRC
+and ZNC testing passes with no authentication and username/password
+authentication. SOCKS4 remains unchanged and proposed for separate review.
+
+Stage 9 right-pane allocation acceptance pass 36 preserves the saved user-list
+pane width while Preferences temporarily reparents the channel tree and user
+list. Transient divider notifications cannot overwrite the saved width, final
+restoration follows the GTK4 window-surface layout, and an invalid oversized
+restored pane falls back to the configured nickname/minimum width. Clean
+install testing confirms stable geometry across every channel with no observed
+switching lag.
+
 ## Functional Clusters
 
 | Cluster | Main files | GTK4 concern | Status |

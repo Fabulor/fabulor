@@ -55,6 +55,7 @@
 #include "plugin.h"
 #include "proxy-policy.h"
 #include "server.h"
+#include "socks5-protocol.h"
 #include "text.h"
 #include "url.h"
 #include "zoitechatc.h"
@@ -916,23 +917,20 @@ write_proxy (struct DCC *dcc)
 	{
 		int ret = send (dcc->sok, &proxy->buffer[proxy->bufferused],
 						proxy->buffersize - proxy->bufferused, 0);
-		if (ret >= 0)
+		if (ret > 0)
 			proxy->bufferused += ret;
+		else if (ret < 0 && would_block ())
+			return FALSE;
 		else
 		{
-			if (would_block ())
-				return FALSE;
-			else
+			dcc->dccstat = STAT_FAILED;
+			fe_dcc_update (dcc);
+			if (dcc->wiotag)
 			{
-				dcc->dccstat = STAT_FAILED;
-				fe_dcc_update (dcc);
-				if (dcc->wiotag)
-				{
-					fe_input_remove (dcc->wiotag);
-					dcc->wiotag = 0;
-				}
-				return FALSE;
+				fe_input_remove (dcc->wiotag);
+				dcc->wiotag = 0;
 			}
+			return FALSE;
 		}
 	}
 	return TRUE;
@@ -1016,29 +1014,47 @@ dcc_socks_proxy_traverse (GIOChannel *source, GIOCondition condition, struct DCC
 	return TRUE;
 }
 
-struct sock5_connect1
+static gboolean
+dcc_socks5_fail (struct DCC *dcc, char *message)
 {
-        char version;
-        char nmethods;
-        char method;
-};
+	if (message)
+		PrintText (dcc->serv->front_session, message);
+	if (dcc->iotag)
+	{
+		fe_input_remove (dcc->iotag);
+		dcc->iotag = 0;
+	}
+	if (dcc->wiotag)
+	{
+		fe_input_remove (dcc->wiotag);
+		dcc->wiotag = 0;
+	}
+	dcc->dccstat = STAT_FAILED;
+	fe_dcc_update (dcc);
+	return TRUE;
+}
+
 static gboolean
 dcc_socks5_proxy_traverse (GIOChannel *source, GIOCondition condition, struct DCC *dcc)
 {
 	struct proxy_state *proxy = dcc->proxy;
-	int auth = prefs.hex_net_proxy_auth && prefs.hex_net_proxy_user[0] && prefs.hex_net_proxy_pass[0];
 
 	if (proxy->phase == 0)
 	{
-		struct sock5_connect1 sc1;
+		proxy->auth_required = prefs.hex_net_proxy_auth;
+		if (!fabulor_socks5_credentials_valid (
+				proxy->auth_required, prefs.hex_net_proxy_user,
+				prefs.hex_net_proxy_pass))
+			return dcc_socks5_fail (
+				dcc, "SOCKS\tAuthentication requires a username "
+				"and password of 1 to 255 bytes.\n");
 
-		sc1.version = 5;
-		sc1.nmethods = 1;
-		sc1.method = 0;
-		if (auth)
-			sc1.method = 2;
-		memcpy (proxy->buffer, &sc1, 3);
-		proxy->buffersize = 3;
+		proxy->buffersize = (int)fabulor_socks5_build_method_request (
+			proxy->buffer, sizeof (proxy->buffer),
+			proxy->auth_required);
+		if (!proxy->buffersize)
+			return dcc_socks5_fail (
+				dcc, "SOCKS\tCould not create authentication request.\n");
 		proxy->bufferused = 0;
 		dcc->wiotag = fe_input_add (dcc->sok, FIA_WRITE|FIA_EX,
 									dcc_socks5_proxy_traverse, dcc);
@@ -1065,52 +1081,42 @@ dcc_socks5_proxy_traverse (GIOChannel *source, GIOCondition condition, struct DC
 		fe_input_remove (dcc->iotag);
 		dcc->iotag = 0;
 
-		/* did the server say no auth required? */
-		if (proxy->buffer[0] == 5 && proxy->buffer[1] == 0)
-			auth = 0;
-
-		/* Set up authentication I/O */
-		if (auth)
+		if (!fabulor_socks5_method_response_valid (
+				proxy->buffer, 2, proxy->auth_required))
 		{
-			int len_u=0, len_p=0;
+			if (proxy->buffer[0] != FABULOR_SOCKS5_VERSION)
+				return dcc_socks5_fail (
+					dcc, "SOCKS\tServer is not SOCKS version 5.\n");
+			if (proxy->buffer[1] ==
+				FABULOR_SOCKS5_METHOD_UNACCEPTABLE)
+				return dcc_socks5_fail (
+					dcc, "SOCKS\tServer rejected all offered "
+					"authentication methods.\n");
+			if (proxy->auth_required)
+				return dcc_socks5_fail (
+					dcc, "SOCKS\tServer did not select required "
+					"username/password authentication.\n");
+			return dcc_socks5_fail (
+				dcc, "SOCKS\tServer selected an authentication "
+				"method that was not offered.\n");
+		}
 
-			/* authentication sub-negotiation (RFC1929) */
-			if ( proxy->buffer[0] != 5 || proxy->buffer[1] != 2 )  /* UPA not supported by server */
-			{
-				PrintText (dcc->serv->front_session, "SOCKS\tServer doesn't support UPA authentication.\n");
-				dcc->dccstat = STAT_FAILED;
-				fe_dcc_update (dcc);
-				return TRUE;
-			}
-
-			memset (proxy->buffer, 0, MAX_PROXY_BUFFER);
-
-			/* form the UPA request */
-			len_u = strlen (prefs.hex_net_proxy_user);
-			len_p = strlen (prefs.hex_net_proxy_pass);
-			proxy->buffer[0] = 1;
-			proxy->buffer[1] = len_u;
-			memcpy (proxy->buffer + 2, prefs.hex_net_proxy_user, len_u);
-			proxy->buffer[2 + len_u] = len_p;
-			memcpy (proxy->buffer + 3 + len_u, prefs.hex_net_proxy_pass, len_p);
-
-			proxy->buffersize = 3 + len_u + len_p;
+		if (proxy->auth_required)
+		{
+			proxy->buffersize = (int)fabulor_socks5_build_auth_request (
+				proxy->buffer, sizeof (proxy->buffer),
+				prefs.hex_net_proxy_user, prefs.hex_net_proxy_pass);
+			if (!proxy->buffersize)
+				return dcc_socks5_fail (
+					dcc, "SOCKS\tCould not create username/password "
+					"authentication request.\n");
 			proxy->bufferused = 0;
 			dcc->wiotag = fe_input_add (dcc->sok, FIA_WRITE|FIA_EX,
 										dcc_socks5_proxy_traverse, dcc);
 			++proxy->phase;
 		}
 		else
-		{
-			if (proxy->buffer[0] != 5 || proxy->buffer[1] != 0)
-			{
-				PrintText (dcc->serv->front_session, "SOCKS\tAuthentication required but disabled in settings.\n");
-				dcc->dccstat = STAT_FAILED;
-				fe_dcc_update (dcc);
-				return TRUE;
-			}
 			proxy->phase += 2;
-		}
 	}
 	
 	if (proxy->phase == 3)
@@ -1135,30 +1141,21 @@ dcc_socks5_proxy_traverse (GIOChannel *source, GIOCondition condition, struct DC
 			fe_input_remove (dcc->iotag);
 			dcc->iotag = 0;
 		}
-		if (proxy->buffer[1] != 0)
-		{
-			PrintText (dcc->serv->front_session, "SOCKS\tAuthentication failed. "
-							 "Is username and password correct?\n");
-			dcc->dccstat = STAT_FAILED;
-			fe_dcc_update (dcc);
-			return TRUE;
-		}
+		if (!fabulor_socks5_auth_response_valid (proxy->buffer, 2))
+			return dcc_socks5_fail (
+				dcc, "SOCKS\tAuthentication failed. "
+				"Is username and password correct?\n");
 		++proxy->phase;
 	}
 
 	if (proxy->phase == 5)
 	{
-		proxy->buffer[0] = 5;	/* version (socks 5) */
-		proxy->buffer[1] = 1;	/* command (connect) */
-		proxy->buffer[2] = 0;	/* reserved */
-		proxy->buffer[3] = 1;	/* address type (IPv4) */
-		proxy->buffer[4] = (dcc->addr >> 24) & 0xFF;	/* IP address */
-		proxy->buffer[5] = (dcc->addr >> 16) & 0xFF;
-		proxy->buffer[6] = (dcc->addr >> 8) & 0xFF;
-		proxy->buffer[7] = (dcc->addr & 0xFF);
-		proxy->buffer[8] = (dcc->port >> 8) & 0xFF;		/* port */
-		proxy->buffer[9] = (dcc->port & 0xFF);
-		proxy->buffersize = 10;
+		proxy->buffersize = (int)fabulor_socks5_build_ipv4_connect_request (
+			proxy->buffer, sizeof (proxy->buffer), dcc->addr,
+			(unsigned int)dcc->port);
+		if (!proxy->buffersize)
+			return dcc_socks5_fail (
+				dcc, "SOCKS\tDCC destination address or port is invalid.\n");
 		proxy->bufferused = 0;
 		dcc->wiotag = fe_input_add (dcc->sok, FIA_WRITE|FIA_EX,
 									dcc_socks5_proxy_traverse, dcc);
@@ -1180,26 +1177,31 @@ dcc_socks5_proxy_traverse (GIOChannel *source, GIOCondition condition, struct DC
 
 	if (proxy->phase == 7)
 	{
+		size_t reply_tail_size;
+
 		if (!read_proxy (dcc))
 			return TRUE;
-		if (proxy->buffer[0] != 5 || proxy->buffer[1] != 0)
+		if (!fabulor_socks5_reply_header_valid (proxy->buffer, 4))
+			return dcc_socks5_fail (
+				dcc, "SOCKS\tServer returned a malformed connection reply.\n");
+		if (proxy->buffer[1] != 0)
 		{
-			fe_input_remove (dcc->iotag);
-			dcc->iotag = 0;
 			if (proxy->buffer[1] == 2)
-				PrintText (dcc->serv->front_session, "SOCKS\tProxy refused to connect to host (not allowed).\n");
-			else
-				PrintTextf (dcc->serv->front_session, "SOCKS\tProxy failed to connect to host (error %d).\n", proxy->buffer[1]);
-			dcc->dccstat = STAT_FAILED;
-			fe_dcc_update (dcc);
-			return TRUE;
+				return dcc_socks5_fail (
+					dcc, "SOCKS\tProxy refused to connect to host "
+					"(not allowed).\n");
+			PrintTextf (dcc->serv->front_session,
+						"SOCKS\tProxy failed to connect to host (error %d).\n",
+						proxy->buffer[1]);
+			return dcc_socks5_fail (dcc, NULL);
 		}
-		switch (proxy->buffer[3])
-		{
-			case 1: proxy->buffersize += 6; break;
-			case 3: proxy->buffersize += 1; break;
-			case 4: proxy->buffersize += 18; break;
-		};
+
+		reply_tail_size = fabulor_socks5_fixed_reply_tail_size (
+			proxy->buffer[3]);
+		if (reply_tail_size)
+			proxy->buffersize += (int)reply_tail_size;
+		else
+			proxy->buffersize += 1;
 		++proxy->phase;
 	}
 
@@ -1208,8 +1210,12 @@ dcc_socks5_proxy_traverse (GIOChannel *source, GIOCondition condition, struct DC
 		if (!read_proxy (dcc))
 			return TRUE;
 		/* handle domain name case */
-		if (proxy->buffer[3] == 3)
+		if (proxy->buffer[3] == FABULOR_SOCKS5_ADDRESS_DOMAIN &&
+			proxy->bufferused == 5)
 		{
+			if (!fabulor_socks5_domain_length_valid (proxy->buffer[4]))
+				return dcc_socks5_fail (
+					dcc, "SOCKS\tServer returned an empty domain address.\n");
 			proxy->buffersize = 5 + proxy->buffer[4] + 2;
 		}
 		/* everything done? */
