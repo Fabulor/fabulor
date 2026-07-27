@@ -229,7 +229,9 @@ Automated evidence:
 - production profile, plugin-host, runtime, payload, import, and theme
   contracts pass all 96 Python tests; and
 - a regression test prevents the Perl source tree, build macro, preference, or
-  obsolete `/LOAD` guidance from returning.
+  obsolete `/LOAD` guidance from returning; and
+- the version 1.0.5 MSI/bootstrapper pair rebuilds with zero warnings and errors
+  and passes production bundle validation.
 
 ### Other Inert Configuration Keys
 

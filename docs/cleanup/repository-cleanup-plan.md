@@ -102,8 +102,10 @@ Automated evidence:
   tests, for 96/96 Python tests overall; and
 - the theme contract validator passed.
 
-No installer-owned input changed, so an MSI/bootstrapper rebuild was not
-required for this source-retirement stage.
+The shared product version advanced to 1.0.5 so Burn and MSI detect the rebuilt
+client as an upgrade rather than handing maintenance to the cached 1.0.4
+bundle. The MSI and bootstrapper rebuilt with zero warnings and errors, and
+production bundle validation confirmed version 1.0.5 with one embedded MSI.
 
 ## Deliberately Retained
 
