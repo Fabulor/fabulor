@@ -120,7 +120,7 @@ sound_event_row_at (FabulorSoundEventList *list, guint position)
 typedef struct
 {
 	const gchar *property;
-	GParamSpec *pspec;
+	gboolean event_name;
 } SoundEventColumnData;
 
 typedef struct
@@ -134,8 +134,7 @@ typedef struct
 static void
 sound_event_binding_refresh (SoundEventBinding *binding)
 {
-	const gchar *text = binding->column->pspec ==
-		sound_event_row_properties[PROP_SOUND_EVENT_ROW_EVENT_NAME] ?
+	const gchar *text = binding->column->event_name ?
 		binding->row->event_name : binding->row->sound_file;
 	gtk_label_set_text (binding->label, text);
 }
@@ -145,7 +144,8 @@ sound_event_row_changed (GObject *object, GParamSpec *pspec, gpointer user_data)
 {
 	SoundEventBinding *binding = user_data;
 	(void) object;
-	if (binding->row && pspec == binding->column->pspec)
+	(void) pspec;
+	if (binding->row)
 		sound_event_binding_refresh (binding);
 }
 
@@ -210,13 +210,13 @@ sound_event_factory_unbind (GtkSignalListItemFactory *factory,
 
 static GtkColumnViewColumn *
 sound_event_column_new (const gchar *title, const gchar *property,
-	GParamSpec *pspec, gboolean expand)
+	gboolean event_name, gboolean expand)
 {
 	GtkListItemFactory *factory = gtk_signal_list_item_factory_new ();
 	SoundEventColumnData *data = g_new (SoundEventColumnData, 1);
 	GtkColumnViewColumn *column;
 	data->property = property;
-	data->pspec = pspec;
+	data->event_name = event_name;
 	g_object_set_data_full (G_OBJECT (factory), "fabulor-sound-event-column",
 		data, g_free);
 	g_signal_connect (factory, "setup", G_CALLBACK (sound_event_factory_setup), data);
@@ -276,11 +276,13 @@ fabulor_sound_event_list_create_view (FabulorSoundEventList *list,
 	list->view = gtk_column_view_new (GTK_SELECTION_MODEL (g_object_ref (list->selection)));
 	gtk_column_view_append_column (GTK_COLUMN_VIEW (list->view),
 		sound_event_column_new (event_title, "notify::event-name",
-			sound_event_row_properties[PROP_SOUND_EVENT_ROW_EVENT_NAME], FALSE));
+			TRUE, FALSE));
 	gtk_column_view_append_column (GTK_COLUMN_VIEW (list->view),
 		sound_event_column_new (file_title, "notify::sound-file",
-			sound_event_row_properties[PROP_SOUND_EVENT_ROW_SOUND_FILE], TRUE));
+			FALSE, TRUE));
 	gtk_column_view_set_show_row_separators (GTK_COLUMN_VIEW (list->view), TRUE);
+	gtk_widget_set_hexpand (scroller, TRUE);
+	gtk_widget_set_vexpand (scroller, TRUE);
 	gtk_scrolled_window_set_policy (GTK_SCROLLED_WINDOW (scroller),
 		GTK_POLICY_AUTOMATIC, GTK_POLICY_ALWAYS);
 	fabulor_gtk_scrolled_window_set_child (GTK_SCROLLED_WINDOW (scroller), list->view);

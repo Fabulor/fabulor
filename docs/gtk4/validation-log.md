@@ -8834,6 +8834,36 @@ Installed acceptance: pass. A clean uninstall/reinstall starts normally, the
 reduced installed `Runtime\Tcl` payload is present, and the configured Tcl
 scripts load and function correctly.
 
+### GTK4 Installed Sound Preferences Acceptance
+
+Date: 2026-07-28
+
+The GTK4 sound-event table previously depended on row-property class
+initialization order. On the first Preferences opening after process startup,
+the table contained rows but rendered the empty sound-file property in both
+columns. Reopening Preferences initialized the row class and made event names
+appear. The Sounds page also influenced the dialog's natural size when created
+lazily.
+
+Resolution and automated evidence:
+
+- select event-name and sound-file values by explicit column identity rather
+  than cached property metadata
+- create the GTK4 probe view before appending rows to preserve the cold-start
+  construction order
+- let the Sounds page expand within a stable `900 x 600` Preferences default
+  size instead of imposing a page-specific minimum
+- strict GTK4 MSVC probe: pass with zero warnings and zero errors
+- Release x64 GTK4 frontend build: pass with zero warnings and zero errors
+- MSI and bootstrapper build: pass with zero warnings and zero errors, with
+  external ICE validation suppressed because the Windows Installer service
+  was unavailable in the build session
+
+Installed acceptance: pass after a clean install. The complete event list
+renders on the first Sounds-page opening, Preferences retains its dimensions
+when switching pages, a Windows `notify.wav` file can be assigned to `Add
+Notify` and played, and the assignment persists after restarting Fabulor.
+
 ## Stage Completion Rule
 
 A stage can move to complete in `migration-plan.md` only when:

@@ -2367,14 +2367,29 @@ probe_sound_event_selection (gint event_index, gpointer user_data)
 }
 
 static gboolean
-check_sound_event_list_model (void)
+check_sound_event_list_model (gboolean gtk_ready)
 {
 	ProbeSoundEventSelection selection = { -1, 0 };
 	FabulorSoundEventList *list = fabulor_sound_event_list_new (
 		probe_sound_event_selection, &selection);
+	GtkWidget *view_owner = NULL;
 	gchar *file = NULL;
 	gboolean valid = list != NULL;
 
+	if (valid && gtk_ready)
+	{
+		GtkWidget *view;
+		GtkWidget *scroller;
+
+		view_owner = gtk_box_new (GTK_ORIENTATION_VERTICAL, 0);
+		g_object_ref_sink (view_owner);
+		view = fabulor_sound_event_list_create_view (list, GTK_BOX (view_owner),
+			"Event", "Sound file");
+		scroller = view ? gtk_widget_get_parent (view) : NULL;
+		valid = GTK_IS_SCROLLED_WINDOW (scroller) &&
+			gtk_widget_get_hexpand (scroller) &&
+			gtk_widget_get_vexpand (scroller);
+	}
 	if (valid)
 	{
 		fabulor_sound_event_list_append (list, "Connected", "one.wav", 7);
@@ -2399,6 +2414,7 @@ check_sound_event_list_model (void)
 		valid = fabulor_sound_event_list_get_n_rows (list) == 0 &&
 			fabulor_sound_event_list_get_selected_event (list) == -1;
 	}
+	g_clear_object (&view_owner);
 	fabulor_sound_event_list_free (list);
 	return valid;
 }
@@ -5928,7 +5944,7 @@ main (void)
 		fprintf (stderr, "GTK4 key-binding list contract mismatch\n");
 		return 1;
 	}
-	if (!check_sound_event_list_model ())
+	if (!check_sound_event_list_model (gtk_ready))
 	{
 		fprintf (stderr, "GTK4 sound-event list contract mismatch\n");
 		return 1;

@@ -1806,6 +1806,7 @@ setup_create_sound_page (void)
         GtkWidget *sound_play;
 
         vbox1 = gtkutil_box_new (GTK_ORIENTATION_VERTICAL, FALSE, 0);
+        gtk_widget_set_vexpand (vbox1, TRUE);
         fabulor_gtk_container_set_uniform_inset (vbox1, 6);
         gtk_widget_show (vbox1);
 
@@ -2391,7 +2392,7 @@ setup_window_open (void)
         char buf[128];
 
         g_snprintf(buf, sizeof(buf), _("Preferences - %s"), _(DISPLAY_NAME));
-        win = gtkutil_window_new (buf, "prefs", 0, 600, 2);
+        win = gtkutil_window_new (buf, "prefs", 900, 600, 2);
         setup_window = win;
 
         vbox = gtkutil_box_new (GTK_ORIENTATION_VERTICAL, FALSE, 5);
