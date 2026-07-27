@@ -11,6 +11,7 @@
 
 #include <gio/gio.h>
 #include <glib/gstdio.h>
+#include <stdio.h>
 #include <string.h>
 
 #ifdef G_OS_WIN32
@@ -21,6 +22,250 @@
 #define FABULOR_THEME_ARCHIVE_LIST_MAX_BYTES (1024 * 1024)
 #define FABULOR_THEME_ARCHIVE_TEXT_MAX_BYTES (1024 * 1024)
 #define FABULOR_THEME_ARCHIVE_MAX_DEPTH 8
+
+void
+fabulor_theme_archive_free (FabulorThemeArchive *archive)
+{
+	if (!archive)
+		return;
+	g_free (archive->display_name);
+	g_free (archive->path);
+	g_free (archive);
+}
+
+static gboolean
+theme_archive_path_is_regular (const char *path)
+{
+	GFile *file;
+	GFileInfo *info;
+	GError *error = NULL;
+	gboolean regular = FALSE;
+
+	file = g_file_new_for_path (path);
+	info = g_file_query_info (file,
+		G_FILE_ATTRIBUTE_STANDARD_TYPE ","
+		G_FILE_ATTRIBUTE_STANDARD_IS_SYMLINK,
+		G_FILE_QUERY_INFO_NOFOLLOW_SYMLINKS, NULL, &error);
+	if (info)
+	{
+		regular = g_file_info_get_file_type (info) == G_FILE_TYPE_REGULAR
+			&& !g_file_info_get_is_symlink (info);
+		g_object_unref (info);
+	}
+	g_clear_error (&error);
+	g_object_unref (file);
+
+#ifdef G_OS_WIN32
+	if (regular)
+	{
+		gunichar2 *wide_path = g_utf8_to_utf16 (path, -1, NULL, NULL, NULL);
+		DWORD attributes = wide_path ?
+			GetFileAttributesW ((const wchar_t *)wide_path) :
+			INVALID_FILE_ATTRIBUTES;
+
+		regular = attributes != INVALID_FILE_ATTRIBUTES
+			&& !(attributes & FILE_ATTRIBUTE_DIRECTORY)
+			&& !(attributes & FILE_ATTRIBUTE_REPARSE_POINT);
+		g_free (wide_path);
+	}
+#endif
+	return regular;
+}
+
+static gint
+theme_archive_compare (gconstpointer left, gconstpointer right)
+{
+	const FabulorThemeArchive *a =
+		*(FabulorThemeArchive * const *)left;
+	const FabulorThemeArchive *b =
+		*(FabulorThemeArchive * const *)right;
+	char *a_folded = g_utf8_casefold (a->display_name, -1);
+	char *b_folded = g_utf8_casefold (b->display_name, -1);
+	gint result = g_strcmp0 (a_folded, b_folded);
+
+	g_free (b_folded);
+	g_free (a_folded);
+	return result;
+}
+
+GPtrArray *
+fabulor_theme_archive_discover (const char *config_dir)
+{
+	GPtrArray *archives = g_ptr_array_new_with_free_func (
+		(GDestroyNotify)fabulor_theme_archive_free);
+	char *root;
+	GDir *directory;
+	const char *name;
+
+	if (!config_dir || !config_dir[0])
+		return archives;
+	root = g_build_filename (config_dir, "themes", NULL);
+	if (g_mkdir_with_parents (root, 0700) != 0)
+	{
+		g_free (root);
+		return archives;
+	}
+	directory = g_dir_open (root, 0, NULL);
+	if (!directory)
+	{
+		g_free (root);
+		return archives;
+	}
+
+	while ((name = g_dir_read_name (directory)) != NULL)
+	{
+		FabulorThemeArchive *archive;
+		char *lower_name;
+		char *path;
+		gsize name_length;
+
+		lower_name = g_ascii_strdown (name, -1);
+		if (!g_str_has_suffix (lower_name, ".hct"))
+		{
+			g_free (lower_name);
+			continue;
+		}
+		g_free (lower_name);
+		path = g_build_filename (root, name, NULL);
+		if (!theme_archive_path_is_regular (path))
+		{
+			g_free (path);
+			continue;
+		}
+
+		name_length = strlen (name);
+		archive = g_new0 (FabulorThemeArchive, 1);
+		archive->display_name = g_strndup (name, name_length - 4);
+		archive->path = path;
+		g_ptr_array_add (archives, archive);
+	}
+	g_dir_close (directory);
+	g_free (root);
+	g_ptr_array_sort (archives, theme_archive_compare);
+	return archives;
+}
+
+static FabulorThemeColorResult
+theme_colors_parse_value (const char *contents, const char *key,
+	guint16 *red, guint16 *green, guint16 *blue)
+{
+	const char *line;
+	gsize key_length;
+	gboolean found = FALSE;
+	guint16 parsed_red = 0;
+	guint16 parsed_green = 0;
+	guint16 parsed_blue = 0;
+
+	if (!contents || !key || !red || !green || !blue)
+		return FABULOR_THEME_COLOR_INVALID;
+	key_length = strlen (key);
+	line = contents;
+	while (*line)
+	{
+		const char *line_end;
+		const char *value;
+
+		while (*line == '\n' || *line == '\r')
+			line++;
+		if (!*line)
+			break;
+		line_end = strchr (line, '\n');
+		if (!line_end)
+			line_end = line + strlen (line);
+		value = line;
+		while (value < line_end && g_ascii_isspace (*value))
+			value++;
+		if ((gsize)(line_end - value) >= key_length
+			&& strncmp (value, key, key_length) == 0
+			&& (value + key_length == line_end
+				|| value[key_length] == '='
+				|| g_ascii_isspace (value[key_length])))
+		{
+			unsigned int r;
+			unsigned int g;
+			unsigned int b;
+			int consumed = 0;
+			const char *tail;
+
+			if (found)
+				return FABULOR_THEME_COLOR_INVALID;
+			found = TRUE;
+			value += key_length;
+			while (value < line_end && g_ascii_isspace (*value))
+				value++;
+			if (value >= line_end || *value != '=')
+				return FABULOR_THEME_COLOR_INVALID;
+			value++;
+			while (value < line_end && g_ascii_isspace (*value))
+				value++;
+			if (sscanf (value, "%x %x %x%n", &r, &g, &b, &consumed) != 3
+				|| r > 0xffff || g > 0xffff || b > 0xffff)
+				return FABULOR_THEME_COLOR_INVALID;
+			tail = value + consumed;
+			while (tail < line_end && g_ascii_isspace (*tail))
+				tail++;
+			if (tail != line_end)
+				return FABULOR_THEME_COLOR_INVALID;
+			parsed_red = (guint16)r;
+			parsed_green = (guint16)g;
+			parsed_blue = (guint16)b;
+		}
+		line = line_end;
+	}
+	if (!found)
+		return FABULOR_THEME_COLOR_MISSING;
+	*red = parsed_red;
+	*green = parsed_green;
+	*blue = parsed_blue;
+	return FABULOR_THEME_COLOR_VALID;
+}
+
+FabulorThemeColorResult
+fabulor_theme_colors_parse_token (const char *contents, guint token,
+	gboolean dark, guint16 *red, guint16 *green, guint16 *blue)
+{
+	static const char *token_names[] = {
+		"mirc_0", "mirc_1", "mirc_2", "mirc_3", "mirc_4", "mirc_5",
+		"mirc_6", "mirc_7", "mirc_8", "mirc_9", "mirc_10", "mirc_11",
+		"mirc_12", "mirc_13", "mirc_14", "mirc_15", "mirc_16", "mirc_17",
+		"mirc_18", "mirc_19", "mirc_20", "mirc_21", "mirc_22", "mirc_23",
+		"mirc_24", "mirc_25", "mirc_26", "mirc_27", "mirc_28", "mirc_29",
+		"mirc_30", "mirc_31", "selection_foreground",
+		"selection_background", "text_foreground", "text_background",
+		"marker", "tab_new_data", "tab_highlight", "tab_new_message",
+		"tab_away", "spell"
+	};
+	char key[256];
+	guint legacy_key;
+	FabulorThemeColorResult result;
+
+	if (token >= G_N_ELEMENTS (token_names))
+		return FABULOR_THEME_COLOR_INVALID;
+	g_snprintf (key, sizeof key, "theme.mode.%s.token.%s",
+		dark ? "dark" : "light", token_names[token]);
+	result = theme_colors_parse_value (contents, key, red, green, blue);
+	if (result != FABULOR_THEME_COLOR_MISSING)
+		return result;
+
+	legacy_key = token < 32 ? token : (token - 32) + 256;
+	if (dark)
+	{
+		g_snprintf (key, sizeof key, "dark_color_%u", legacy_key);
+		result = theme_colors_parse_value (contents, key, red, green, blue);
+		if (result != FABULOR_THEME_COLOR_MISSING)
+			return result;
+	}
+	g_snprintf (key, sizeof key, "color_%u", legacy_key);
+	return theme_colors_parse_value (contents, key, red, green, blue);
+}
+
+gboolean
+fabulor_theme_colors_read_token (const char *contents, guint token,
+	gboolean dark, guint16 *red, guint16 *green, guint16 *blue)
+{
+	return fabulor_theme_colors_parse_token (contents, token, dark,
+		red, green, blue) == FABULOR_THEME_COLOR_VALID;
+}
 
 static char *
 theme_archive_tar_program (GError **error)

@@ -25,6 +25,7 @@
 #include <gtk/gtk.h>
 
 #include "theme-palette.h"
+#include "theme-runtime.h"
 
 typedef struct _GtkWidget GtkWidget;
 struct zoitechatprefs;
@@ -67,6 +68,8 @@ gboolean theme_manager_gtk4_high_contrast (void);
 gboolean theme_manager_apply_mode (unsigned int mode, gboolean *palette_changed);
 void theme_manager_set_mode (unsigned int mode, gboolean *palette_changed);
 void theme_manager_set_token_color (unsigned int mode, ThemeSemanticToken token, const GdkRGBA *color, gboolean *palette_changed);
+gboolean theme_manager_apply_palette_candidate (unsigned int mode,
+	const ThemePaletteCandidate *candidate, gboolean *palette_changed);
 void theme_manager_reset_mode_colors (unsigned int mode, gboolean *palette_changed);
 void theme_manager_commit_preferences (unsigned int old_mode, gboolean *color_change);
 gboolean theme_manager_save_preferences (void);

@@ -3593,8 +3593,8 @@ mg_show_font_error (GtkWidget *xtext)
         gtk_widget_show (font_error_dialog);
 }
 
-void
-mg_update_xtext (GtkWidget *wid)
+static void
+mg_update_xtext_internal (GtkWidget *wid, gboolean update_font)
 {
         GtkXText *xtext = GTK_XTEXT (wid);
         const gchar *font_name;
@@ -3609,16 +3609,31 @@ mg_update_xtext (GtkWidget *wid)
         gtk_xtext_set_show_separator (xtext, prefs.hex_text_indent ? prefs.hex_text_show_sep : 0);
         gtk_xtext_set_indent (xtext, prefs.hex_text_indent);
 
-        font_name = *prefs.hex_text_font
-                ? prefs.hex_text_font
-                : "Sans 10";
-        if (!gtk_xtext_set_font (xtext, (char *)font_name))
+        if (update_font)
         {
-                mg_show_font_error (wid);
-                return;
+                font_name = *prefs.hex_text_font
+                        ? prefs.hex_text_font
+                        : "Sans 10";
+                if (!gtk_xtext_set_font (xtext, (char *)font_name))
+                {
+                        mg_show_font_error (wid);
+                        return;
+                }
         }
 
         gtk_xtext_refresh (xtext);
+}
+
+void
+mg_update_xtext (GtkWidget *wid)
+{
+        mg_update_xtext_internal (wid, TRUE);
+}
+
+void
+mg_update_xtext_for_setup (GtkWidget *wid, gboolean update_font)
+{
+        mg_update_xtext_internal (wid, update_font);
 }
 
 void
@@ -5909,7 +5924,7 @@ mg_create_tabwindow (session *sess)
 }
 
 void
-mg_apply_setup (void)
+mg_apply_setup (gboolean recalculate_transcript_metrics)
 {
         GSList *list = sess_list;
         session *sess;
@@ -5921,7 +5936,9 @@ mg_apply_setup (void)
         {
                 sess = list->data;
                 gtk_xtext_set_time_stamp (sess->res->buffer, prefs.hex_stamp_text);
-                ((xtext_buffer *)sess->res->buffer)->needs_recalc = TRUE;
+                if (recalculate_transcript_metrics &&
+                        GTK_XTEXT (sess->gui->xtext)->buffer != sess->res->buffer)
+                        ((xtext_buffer *)sess->res->buffer)->needs_recalc = TRUE;
                 if (!sess->gui->is_tab || !done_main)
                         mg_place_userlist_and_chanview (sess->gui);
                 if (sess->gui->is_tab)

@@ -428,6 +428,7 @@ typedef struct session
 
 	char *quitreason;
 	char *topic;
+	char *topic_formatted;
 	char *current_modes;					/* free() me */
 	GSList *reply_items;
 	char *reply_msgid;

@@ -114,11 +114,15 @@ def validate_import_contract(repo: pathlib.Path) -> None:
     preferences = read_text(
         repo / "src" / "fe-gtk" / "theme" / "theme-preferences.c"
     ).casefold()
-    required = ('".hct"', '"colors.conf"', '"pevents.conf"', '"*.hct"')
+    required = ('".hct"', '"colors.conf"', '"*.hct"')
     missing = [token for token in required if token not in preferences]
     if missing:
         raise ThemeContractError(
             f"Theme preferences are missing supported import tokens: {', '.join(missing)}"
+        )
+    if '"pevents.conf"' in preferences:
+        raise ThemeContractError(
+            "The active palette importer must not install legacy pevents.conf data."
         )
     if '".zct"' in preferences or '"*.zct"' in preferences:
         raise ThemeContractError("The active theme importer must not accept retired .zct files.")

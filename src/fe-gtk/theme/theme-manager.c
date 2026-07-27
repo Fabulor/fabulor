@@ -371,6 +371,29 @@ theme_manager_set_token_color (unsigned int mode, ThemeSemanticToken token, cons
 	theme_application_reload_input_style ();
 }
 
+gboolean
+theme_manager_apply_palette_candidate (unsigned int mode,
+	const ThemePaletteCandidate *candidate, gboolean *palette_changed)
+{
+	gboolean changed = FALSE;
+
+	if (!candidate || !candidate->initialized
+		|| candidate->dark_mode != theme_policy_is_dark_mode_active (mode))
+		return FALSE;
+	if (!theme_runtime_apply_palette_candidate (candidate, &changed))
+		return FALSE;
+	if (palette_changed)
+		*palette_changed = changed;
+	if (changed)
+	{
+		theme_manager_dispatch_changed (THEME_CHANGED_REASON_PALETTE |
+			THEME_CHANGED_REASON_WIDGET_STYLE |
+			THEME_CHANGED_REASON_USERLIST);
+		theme_application_reload_input_style ();
+	}
+	return TRUE;
+}
+
 void
 theme_manager_reset_mode_colors (unsigned int mode, gboolean *palette_changed)
 {

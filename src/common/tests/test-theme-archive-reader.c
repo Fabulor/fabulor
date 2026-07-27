@@ -153,6 +153,133 @@ test_theme_archive_rejects_unsupported_name (void)
 	g_clear_error (&error);
 }
 
+static void
+test_theme_archive_discovers_profile_files (void)
+{
+	char *root = g_dir_make_tmp ("fabulor-theme-discovery-test-XXXXXX", NULL);
+	char *themes = g_build_filename (root, "themes", NULL);
+	char *blue = g_build_filename (themes, "Blues.hct", NULL);
+	char *fire = g_build_filename (themes, "fire.HCT", NULL);
+	char *ignored = g_build_filename (themes, "colors.conf", NULL);
+	char *nested = g_build_filename (themes, "nested", NULL);
+	char *nested_archive = g_build_filename (nested, "hidden.hct", NULL);
+	GPtrArray *archives;
+	FabulorThemeArchive *first;
+	FabulorThemeArchive *second;
+	GError *error = NULL;
+
+	g_mkdir_with_parents (nested, 0700);
+	g_assert_true (g_file_set_contents (blue, "blue", -1, &error));
+	g_assert_no_error (error);
+	g_assert_true (g_file_set_contents (fire, "fire", -1, &error));
+	g_assert_no_error (error);
+	g_assert_true (g_file_set_contents (ignored, "ignored", -1, &error));
+	g_assert_no_error (error);
+	g_assert_true (g_file_set_contents (nested_archive, "hidden", -1, &error));
+	g_assert_no_error (error);
+
+	archives = fabulor_theme_archive_discover (root);
+	g_assert_cmpuint (archives->len, ==, 2);
+	first = g_ptr_array_index (archives, 0);
+	second = g_ptr_array_index (archives, 1);
+	g_assert_cmpstr (first->display_name, ==, "Blues");
+	g_assert_cmpstr (first->path, ==, blue);
+	g_assert_cmpstr (second->display_name, ==, "fire");
+	g_assert_cmpstr (second->path, ==, fire);
+
+	g_ptr_array_unref (archives);
+	g_free (nested_archive);
+	g_free (nested);
+	g_free (ignored);
+	g_free (fire);
+	g_free (blue);
+	g_free (themes);
+	remove_test_tree (root);
+	g_free (root);
+}
+
+static void
+test_theme_colors_reads_legacy_palette_in_dark_mode (void)
+{
+	const char *contents =
+		"color_0 = 1111 2222 3333\n"
+		"color_256 = aaaa bbbb cccc\n";
+	guint16 red = 0;
+	guint16 green = 0;
+	guint16 blue = 0;
+
+	g_assert_true (fabulor_theme_colors_read_token (contents, 0, TRUE,
+		&red, &green, &blue));
+	g_assert_cmpuint (red, ==, 0x1111);
+	g_assert_cmpuint (green, ==, 0x2222);
+	g_assert_cmpuint (blue, ==, 0x3333);
+	g_assert_true (fabulor_theme_colors_read_token (contents, 32, TRUE,
+		&red, &green, &blue));
+	g_assert_cmpuint (red, ==, 0xaaaa);
+	g_assert_cmpuint (green, ==, 0xbbbb);
+	g_assert_cmpuint (blue, ==, 0xcccc);
+}
+
+static void
+test_theme_colors_prefers_explicit_dark_palette (void)
+{
+	const char *contents =
+		"color_4 = 1111 2222 3333\n"
+		"dark_color_4 = 4444 5555 6666\n";
+	guint16 red = 0;
+	guint16 green = 0;
+	guint16 blue = 0;
+
+	g_assert_true (fabulor_theme_colors_read_token (contents, 4, TRUE,
+		&red, &green, &blue));
+	g_assert_cmpuint (red, ==, 0x4444);
+	g_assert_cmpuint (green, ==, 0x5555);
+	g_assert_cmpuint (blue, ==, 0x6666);
+	g_assert_true (fabulor_theme_colors_read_token (contents, 4, FALSE,
+		&red, &green, &blue));
+	g_assert_cmpuint (red, ==, 0x1111);
+}
+
+static void
+test_theme_colors_rejects_malformed_explicit_value (void)
+{
+	const char *contents =
+		"theme.mode.dark.token.mirc_4 = not-a-colour\n"
+		"dark_color_4 = 4444 5555 6666\n";
+	guint16 red = 0;
+	guint16 green = 0;
+	guint16 blue = 0;
+
+	g_assert_cmpint (fabulor_theme_colors_parse_token (contents, 4, TRUE,
+		&red, &green, &blue), ==, FABULOR_THEME_COLOR_INVALID);
+}
+
+static void
+test_theme_colors_rejects_duplicate_value (void)
+{
+	const char *contents =
+		"color_4 = 1111 2222 3333\n"
+		"color_4 = 4444 5555 6666\n";
+	guint16 red = 0;
+	guint16 green = 0;
+	guint16 blue = 0;
+
+	g_assert_cmpint (fabulor_theme_colors_parse_token (contents, 4, FALSE,
+		&red, &green, &blue), ==, FABULOR_THEME_COLOR_INVALID);
+}
+
+static void
+test_theme_colors_reports_missing_value (void)
+{
+	guint16 red = 0;
+	guint16 green = 0;
+	guint16 blue = 0;
+
+	g_assert_cmpint (fabulor_theme_colors_parse_token ("color_3x = 1 2 3\n",
+		3, FALSE, &red, &green, &blue), ==,
+		FABULOR_THEME_COLOR_MISSING);
+}
+
 void
 register_theme_archive_reader_tests (void)
 {
@@ -164,4 +291,16 @@ register_theme_archive_reader_tests (void)
 		test_theme_archive_rejects_oversize_text);
 	g_test_add_func ("/theme-archive/rejects-unsupported-name",
 		test_theme_archive_rejects_unsupported_name);
+	g_test_add_func ("/theme-archive/discovers-profile-files",
+		test_theme_archive_discovers_profile_files);
+	g_test_add_func ("/theme-archive/colors-read-legacy-in-dark-mode",
+		test_theme_colors_reads_legacy_palette_in_dark_mode);
+	g_test_add_func ("/theme-archive/colors-prefer-explicit-dark",
+		test_theme_colors_prefers_explicit_dark_palette);
+	g_test_add_func ("/theme-archive/colors-reject-malformed-explicit",
+		test_theme_colors_rejects_malformed_explicit_value);
+	g_test_add_func ("/theme-archive/colors-reject-duplicate",
+		test_theme_colors_rejects_duplicate_value);
+	g_test_add_func ("/theme-archive/colors-report-missing",
+		test_theme_colors_reports_missing_value);
 }

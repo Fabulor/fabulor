@@ -35,11 +35,10 @@
 #include "../../common/util.h"
 #include "../../common/theme-archive-reader.h"
 #include "theme-manager.h"
+#include "theme-palette-transaction.h"
 #include "theme-preferences.h"
 #include "theme-runtime.h"
 #include "theme-preferences-gtk4.h"
-
-extern void load_text_events (void);
 
 typedef struct
 {
@@ -96,18 +95,18 @@ typedef struct
 
 typedef struct
 {
-        gboolean active;
-        gboolean changed;
-        unsigned int mode;
-        gboolean snapshot_valid[THEME_TOKEN_COUNT];
-        gboolean staged_valid[THEME_TOKEN_COUNT];
-        GdkRGBA snapshot[THEME_TOKEN_COUNT];
-        GdkRGBA staged[THEME_TOKEN_COUNT];
+	ThemePaletteTransaction palette;
 	char gtk4_theme_snapshot[sizeof prefs.hex_gui_gtk4_theme];
 	guint gtk4_variant_snapshot;
 } theme_preferences_stage_state;
 
 static theme_preferences_stage_state theme_preferences_stage;
+
+static void
+theme_preferences_stage_reset (void)
+{
+	memset (&theme_preferences_stage, 0, sizeof (theme_preferences_stage));
+}
 
 static unsigned int
 theme_preferences_current_color_mode (void)
@@ -118,8 +117,8 @@ theme_preferences_current_color_mode (void)
 static unsigned int
 theme_preferences_stage_color_mode (void)
 {
-        if (theme_preferences_stage.active)
-                return theme_preferences_stage.mode;
+        if (theme_preferences_stage.palette.active)
+                return theme_preferences_stage.palette.mode;
 
         return theme_preferences_current_color_mode ();
 }
@@ -130,140 +129,103 @@ theme_preferences_staged_get_color (ThemeSemanticToken token, GdkRGBA *rgba)
         if (token < 0 || token >= THEME_TOKEN_COUNT || !rgba)
                 return FALSE;
 
-        if (theme_preferences_stage.active && theme_preferences_stage.staged_valid[token])
-        {
-                *rgba = theme_preferences_stage.staged[token];
-                return TRUE;
-        }
+        if (theme_palette_transaction_get_color (
+		&theme_preferences_stage.palette, token, rgba))
+		return TRUE;
 
         return theme_get_color (token, rgba);
 }
 
-static void
-theme_preferences_stage_recompute_changed (void)
+static gboolean
+theme_preferences_stage_apply_candidate (
+	const ThemePaletteCandidate *candidate)
 {
-        ThemeSemanticToken token;
-
-        theme_preferences_stage.changed = FALSE;
-        for (token = THEME_TOKEN_MIRC_0; token < THEME_TOKEN_COUNT; token++)
-        {
-                if (!theme_preferences_stage.snapshot_valid[token] || !theme_preferences_stage.staged_valid[token])
-                        continue;
-                if (!gdk_rgba_equal (&theme_preferences_stage.snapshot[token], &theme_preferences_stage.staged[token]))
-                {
-                        theme_preferences_stage.changed = TRUE;
-                        return;
-                }
-        }
-}
-
-static void
-theme_preferences_stage_sync_runtime_to_snapshot (void)
-{
-        ThemeSemanticToken token;
-
-        for (token = THEME_TOKEN_MIRC_0; token < THEME_TOKEN_COUNT; token++)
-        {
-                if (theme_preferences_stage.snapshot_valid[token])
-                        theme_manager_set_token_color (theme_preferences_stage.mode, token,
-                                                       &theme_preferences_stage.snapshot[token], NULL);
-        }
-}
-
-static void
-theme_preferences_stage_sync_runtime_to_staged (void)
-{
-        ThemeSemanticToken token;
-
-        for (token = THEME_TOKEN_MIRC_0; token < THEME_TOKEN_COUNT; token++)
-        {
-                if (theme_preferences_stage.staged_valid[token])
-                        theme_manager_set_token_color (theme_preferences_stage.mode, token,
-                                                       &theme_preferences_stage.staged[token], NULL);
-        }
+	if (!candidate)
+		return FALSE;
+	return theme_manager_apply_palette_candidate (
+		theme_preferences_stage_color_mode (), candidate, NULL);
 }
 
 static void
 theme_preferences_staged_set_color (ThemeSemanticToken token, const GdkRGBA *rgba,
                                     gboolean *color_change_flag, gboolean live_preview)
 {
-        const GdkRGBA *preview_color = rgba;
-
         if (token < 0 || token >= THEME_TOKEN_COUNT || !rgba)
                 return;
 
-        if (theme_preferences_stage.active)
+        if (theme_preferences_stage.palette.active)
         {
-                theme_preferences_stage.staged[token] = *rgba;
-                theme_preferences_stage.staged_valid[token] = TRUE;
-                theme_preferences_stage_recompute_changed ();
+		if (!theme_palette_transaction_set_color (
+			&theme_preferences_stage.palette, token, rgba))
+			return;
                 if (color_change_flag)
-                        *color_change_flag = theme_preferences_stage.changed;
-
-                preview_color = &theme_preferences_stage.staged[token];
+                        *color_change_flag =
+				theme_preferences_stage.palette.changed;
+		if (live_preview)
+			theme_preferences_stage_apply_candidate (
+				theme_palette_transaction_staged (
+					&theme_preferences_stage.palette));
+		return;
         }
 
         if (live_preview)
-                theme_manager_set_token_color (theme_preferences_stage_color_mode (), token, preview_color, NULL);
+                theme_manager_set_token_color (
+			theme_preferences_stage_color_mode (), token, rgba, NULL);
 }
 
 void
 theme_preferences_stage_begin (void)
 {
-        ThemeSemanticToken token;
+	ThemePaletteCandidate snapshot;
+	unsigned int mode;
 
-        memset (&theme_preferences_stage, 0, sizeof (theme_preferences_stage));
-        theme_preferences_stage.active = TRUE;
-        theme_preferences_stage.mode = theme_preferences_current_color_mode ();
+        theme_preferences_stage_reset ();
+	mode = theme_preferences_current_color_mode ();
+	theme_runtime_palette_snapshot (
+		mode == ZOITECHAT_DARK_MODE_DARK, &snapshot);
+	if (!theme_palette_transaction_begin (
+		&theme_preferences_stage.palette, mode, &snapshot))
+		return;
 	g_strlcpy (theme_preferences_stage.gtk4_theme_snapshot,
 		prefs.hex_gui_gtk4_theme,
 		sizeof (theme_preferences_stage.gtk4_theme_snapshot));
 	theme_preferences_stage.gtk4_variant_snapshot = prefs.hex_gui_gtk4_variant;
-
-        for (token = THEME_TOKEN_MIRC_0; token < THEME_TOKEN_COUNT; token++)
-        {
-                GdkRGBA rgba;
-
-                if (!theme_preferences_staged_get_color (token, &rgba))
-                        continue;
-
-                theme_preferences_stage.snapshot[token] = rgba;
-                theme_preferences_stage.staged[token] = rgba;
-                theme_preferences_stage.snapshot_valid[token] = TRUE;
-                theme_preferences_stage.staged_valid[token] = TRUE;
-        }
 }
 
 void
 theme_preferences_stage_apply (void)
 {
-        if (!theme_preferences_stage.active)
+        if (!theme_preferences_stage.palette.active)
                 return;
 
-        theme_preferences_stage_sync_runtime_to_staged ();
+	theme_preferences_stage_apply_candidate (
+		theme_palette_transaction_staged (
+			&theme_preferences_stage.palette));
 }
 
 void
 theme_preferences_stage_commit (void)
 {
-        if (!theme_preferences_stage.active)
+        if (!theme_preferences_stage.palette.active)
                 return;
 
         theme_preferences_stage_apply ();
-        memset (&theme_preferences_stage, 0, sizeof (theme_preferences_stage));
+        theme_preferences_stage_reset ();
 }
 
 void
 theme_preferences_stage_discard (void)
 {
-        if (!theme_preferences_stage.active)
+        if (!theme_preferences_stage.palette.active)
                 return;
 
-        theme_preferences_stage_sync_runtime_to_snapshot ();
+	theme_preferences_stage_apply_candidate (
+		theme_palette_transaction_snapshot (
+			&theme_preferences_stage.palette));
 	theme_manager_gtk4_apply_selection (
 		theme_preferences_stage.gtk4_theme_snapshot,
 		theme_preferences_stage.gtk4_variant_snapshot, NULL);
-        memset (&theme_preferences_stage, 0, sizeof (theme_preferences_stage));
+        theme_preferences_stage_reset ();
 }
 
 static void
@@ -795,8 +757,10 @@ theme_preferences_manager_dialog_response_cb (GtkDialog *dialog, gint response_i
 
         if (response_id != COLOR_MANAGER_RESPONSE_RESET)
         {
-                if (ui->color_change_flag && theme_preferences_stage.active)
-                        *ui->color_change_flag = theme_preferences_stage.changed;
+                if (ui->color_change_flag
+		    && theme_preferences_stage.palette.active)
+                        *ui->color_change_flag =
+				theme_preferences_stage.palette.changed;
                 fabulor_gtk_window_destroy (GTK_WINDOW (dialog));
                 return;
         }
@@ -805,29 +769,19 @@ theme_preferences_manager_dialog_response_cb (GtkDialog *dialog, gint response_i
                 gboolean changed = FALSE;
 
                 theme_manager_reset_mode_colors (theme_preferences_stage_color_mode (), &changed);
-                if (theme_preferences_stage.active)
+                if (theme_preferences_stage.palette.active)
                 {
-                        ThemeSemanticToken token;
-                        ThemeWidgetStyleValues style_values;
+			ThemePaletteCandidate defaults;
 
-                        for (token = THEME_TOKEN_MIRC_0; token < THEME_TOKEN_COUNT; token++)
-                        {
-                                GdkRGBA rgba;
-
-                                if (!theme_get_color (token, &rgba))
-                                        continue;
-                                theme_preferences_stage.staged[token] = rgba;
-                                theme_preferences_stage.staged_valid[token] = TRUE;
-                        }
-                        theme_get_widget_style_values_for_widget (GTK_WIDGET (dialog), &style_values);
-                        theme_preferences_stage.staged[THEME_TOKEN_TEXT_FOREGROUND] = style_values.foreground;
-                        theme_preferences_stage.staged_valid[THEME_TOKEN_TEXT_FOREGROUND] = TRUE;
-                        theme_preferences_stage.staged[THEME_TOKEN_TEXT_BACKGROUND] = style_values.background;
-                        theme_preferences_stage.staged_valid[THEME_TOKEN_TEXT_BACKGROUND] = TRUE;
-                        theme_preferences_stage_sync_runtime_to_staged ();
-                        theme_preferences_stage_recompute_changed ();
+			theme_runtime_palette_snapshot (
+				theme_preferences_stage.palette.mode
+					== ZOITECHAT_DARK_MODE_DARK,
+				&defaults);
+			theme_palette_transaction_replace (
+				&theme_preferences_stage.palette, &defaults);
                         if (ui->color_change_flag)
-                                *ui->color_change_flag = theme_preferences_stage.changed;
+                                *ui->color_change_flag =
+					theme_preferences_stage.palette.changed;
                 }
                 else if (ui->color_change_flag)
                         *ui->color_change_flag = *ui->color_change_flag || changed;
@@ -1030,122 +984,6 @@ theme_preferences_show_import_info (GtkWidget *button, const char *message)
         gtk_widget_show (dialog);
 }
 
-static gboolean
-theme_preferences_parse_cfg_color (const char *cfg,
-                                   const char *key,
-                                   guint16 *red,
-                                   guint16 *green,
-                                   guint16 *blue)
-{
-        const char *line;
-        size_t key_len;
-
-        if (!cfg || !key || !red || !green || !blue)
-                return FALSE;
-
-        key_len = strlen (key);
-        line = cfg;
-
-        while (*line)
-        {
-                const char *line_end;
-                const char *p;
-
-                while (*line == '\n' || *line == '\r')
-                        line++;
-                if (!*line)
-                        break;
-
-                line_end = strchr (line, '\n');
-                if (!line_end)
-                        line_end = line + strlen (line);
-
-                p = line;
-                while (p < line_end && g_ascii_isspace (*p))
-                        p++;
-
-                if ((size_t) (line_end - p) > key_len &&
-                    strncmp (p, key, key_len) == 0)
-                {
-                        unsigned int r;
-                        unsigned int g;
-                        unsigned int b;
-
-                        p += key_len;
-                        while (p < line_end && g_ascii_isspace (*p))
-                                p++;
-                        if (p < line_end && *p == '=')
-                                p++;
-                        while (p < line_end && g_ascii_isspace (*p))
-                                p++;
-
-                        if (sscanf (p, "%x %x %x", &r, &g, &b) == 3)
-                        {
-                                *red = (guint16) CLAMP (r, 0, 0xffff);
-                                *green = (guint16) CLAMP (g, 0, 0xffff);
-                                *blue = (guint16) CLAMP (b, 0, 0xffff);
-                                return TRUE;
-                        }
-                }
-
-                line = line_end;
-        }
-
-        return FALSE;
-}
-
-static gboolean
-theme_preferences_read_import_color (const char *cfg,
-                                     ThemeSemanticToken token,
-                                     unsigned int mode,
-                                     GdkRGBA *rgba)
-{
-        static const char *token_names[] = {
-                "mirc_0", "mirc_1", "mirc_2", "mirc_3", "mirc_4", "mirc_5", "mirc_6", "mirc_7",
-                "mirc_8", "mirc_9", "mirc_10", "mirc_11", "mirc_12", "mirc_13", "mirc_14", "mirc_15",
-                "mirc_16", "mirc_17", "mirc_18", "mirc_19", "mirc_20", "mirc_21", "mirc_22", "mirc_23",
-                "mirc_24", "mirc_25", "mirc_26", "mirc_27", "mirc_28", "mirc_29", "mirc_30", "mirc_31",
-                "selection_foreground", "selection_background", "text_foreground", "text_background", "marker",
-                "tab_new_data", "tab_highlight", "tab_new_message", "tab_away", "spell"
-        };
-        char key[256];
-        const char *mode_name;
-        const char *legacy_prefix;
-        guint16 red;
-        guint16 green;
-        guint16 blue;
-        int legacy_key;
-
-        if (token < 0 || token >= THEME_TOKEN_COUNT)
-                return FALSE;
-
-        if (mode == ZOITECHAT_DARK_MODE_DARK)
-        {
-                mode_name = "dark";
-                legacy_prefix = "dark_color";
-        }
-        else
-        {
-                mode_name = "light";
-                legacy_prefix = "color";
-        }
-
-        g_snprintf (key, sizeof key, "theme.mode.%s.token.%s", mode_name, token_names[token]);
-        if (!theme_preferences_parse_cfg_color (cfg, key, &red, &green, &blue))
-        {
-                legacy_key = token < 32 ? token : (token - 32) + 256;
-                g_snprintf (key, sizeof key, "%s_%d", legacy_prefix, legacy_key);
-                if (!theme_preferences_parse_cfg_color (cfg, key, &red, &green, &blue))
-                        return FALSE;
-        }
-
-        rgba->red = red / 65535.0;
-        rgba->green = green / 65535.0;
-        rgba->blue = blue / 65535.0;
-        rgba->alpha = 1.0;
-        return TRUE;
-}
-
 static void
 theme_preferences_import_colors_conf_path (GtkWidget *button,
                                            gboolean *color_change_flag,
@@ -1153,13 +991,10 @@ theme_preferences_import_colors_conf_path (GtkWidget *button,
 {
         char *lower_path;
         char *cfg;
-        char *pevents_cfg = NULL;
         GError *error = NULL;
-        gboolean any_imported = FALSE;
         gboolean imported_from_hct = FALSE;
-        gboolean imported_pevents = FALSE;
         unsigned int import_mode;
-        ThemeSemanticToken token;
+	ThemePaletteCandidate candidate;
 
         lower_path = g_ascii_strdown (path, -1);
         if (g_str_has_suffix (lower_path, ".hct"))
@@ -1173,19 +1008,6 @@ theme_preferences_import_colors_conf_path (GtkWidget *button,
                         g_free (path);
                         return;
                 }
-                if (fabulor_theme_archive_read_text_file (path, "pevents.conf", &pevents_cfg, &error))
-                {
-                        char *pevents_path = g_build_filename (get_xdir (), "pevents.conf", NULL);
-                        if (g_file_set_contents (pevents_path, pevents_cfg, -1, &error))
-                        {
-                                load_text_events ();
-                                imported_pevents = TRUE;
-                        }
-                        g_free (pevents_path);
-                        g_clear_error (&error);
-                }
-                else
-                        g_clear_error (&error);
         }
         else if (!g_file_get_contents (path, &cfg, NULL, &error))
         {
@@ -1198,35 +1020,55 @@ theme_preferences_import_colors_conf_path (GtkWidget *button,
         g_free (lower_path);
 
         import_mode = theme_preferences_stage_color_mode ();
-        for (token = THEME_TOKEN_MIRC_0; token < THEME_TOKEN_COUNT; token++)
+	if (!theme_runtime_palette_candidate_from_colors (cfg,
+		import_mode == ZOITECHAT_DARK_MODE_DARK, &candidate, &error))
         {
-                GdkRGBA rgba;
-
-                if (!theme_preferences_read_import_color (cfg, token, import_mode, &rgba))
-                        continue;
-
-                theme_preferences_staged_set_color (token, &rgba, color_change_flag, TRUE);
-                any_imported = TRUE;
+		theme_preferences_show_import_error (button,
+			error ? error->message :
+			_("No importable colors were found in that colors.conf file."));
+		g_clear_error (&error);
+		g_free (cfg);
+		g_free (path);
+		return;
         }
 
-        if (!any_imported)
-                theme_preferences_show_import_error (button, _("No importable colors were found in that colors.conf file."));
-        else if (imported_from_hct)
+	if (theme_preferences_stage.palette.active)
+	{
+		if (!theme_palette_transaction_replace (
+			&theme_preferences_stage.palette, &candidate)
+		    || !theme_preferences_stage_apply_candidate (
+			    theme_palette_transaction_staged (
+				    &theme_preferences_stage.palette)))
+		{
+			theme_preferences_show_import_error (button,
+				_("The imported palette could not be staged."));
+			g_free (cfg);
+			g_free (path);
+			return;
+		}
+		if (color_change_flag)
+			*color_change_flag =
+				theme_preferences_stage.palette.changed;
+	}
+	else if (!theme_manager_apply_palette_candidate (
+		import_mode, &candidate, color_change_flag))
+	{
+		theme_preferences_show_import_error (button,
+			_("The imported palette could not be applied."));
+		g_free (cfg);
+		g_free (path);
+		return;
+	}
+
+        if (imported_from_hct)
         {
-                char *message = g_strdup_printf (imported_pevents ?
-                                                 _("Imported colors.conf and pevents.conf from %s.") :
-                                                 _("Imported colors.conf from %s."),
+                char *message = g_strdup_printf (
+                                                 _("Loaded colors from %s."),
                                                  path);
                 theme_preferences_show_import_info (button, message);
                 g_free (message);
         }
-        else if (color_change_flag)
-                *color_change_flag = theme_preferences_stage.active ? theme_preferences_stage.changed : *color_change_flag;
 
-        if (any_imported && color_change_flag)
-                *color_change_flag = theme_preferences_stage.active ? theme_preferences_stage.changed : *color_change_flag;
-
-        g_free (pevents_cfg);
         g_free (cfg);
         g_free (path);
 }
@@ -1388,23 +1230,23 @@ theme_preferences_create_other_color_r (GtkWidget *tab,
 }
 
 static void
-theme_preferences_strip_toggle_cb (GtkToggleButton *toggle, gpointer user_data)
+theme_preferences_strip_toggle_cb (GtkCheckButton *toggle, gpointer user_data)
 {
-        int *field = user_data;
+        unsigned int *field = user_data;
 
-        *field = gtk_toggle_button_get_active (toggle);
+        *field = gtk_check_button_get_active (toggle);
 }
 
 static void
 theme_preferences_create_strip_toggle (GtkWidget *tab,
                                        int row,
                                        const char *text,
-                                       int *field)
+                                       unsigned int *field)
 {
         GtkWidget *toggle;
 
         toggle = gtk_check_button_new_with_label (text);
-        gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (toggle), *field);
+        gtk_check_button_set_active (GTK_CHECK_BUTTON (toggle), *field);
         g_signal_connect (G_OBJECT (toggle), "toggled",
                           G_CALLBACK (theme_preferences_strip_toggle_cb), field);
         gtk_grid_attach (GTK_GRID (tab), toggle, 2, row, 1, 1);

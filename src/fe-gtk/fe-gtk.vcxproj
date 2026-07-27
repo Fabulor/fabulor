@@ -139,6 +139,7 @@ FOR %%I IN ("$(ZoiteChatLib)fabulor.rc") DO IF %%~zI EQU 0 (
 	<ClInclude Include="xtext-widget-class.h" />
     <ClInclude Include="theme\theme-manager.h" />
     <ClInclude Include="theme\theme-palette.h" />
+    <ClInclude Include="theme\theme-palette-transaction.h" />
     <ClInclude Include="theme\theme-application.h" />
     <ClInclude Include="theme\theme-policy.h" />
     <ClInclude Include="theme\theme-css.h" />
@@ -238,6 +239,7 @@ FOR %%I IN ("$(ZoiteChatLib)fabulor.rc") DO IF %%~zI EQU 0 (
 	<ClCompile Include="xtext-widget-class.c" />
     <ClCompile Include="theme\theme-manager.c" />
     <ClCompile Include="theme\theme-palette.c" />
+    <ClCompile Include="theme\theme-palette-transaction.c" />
     <ClCompile Include="theme\theme-application.c" />
     <ClCompile Include="theme\theme-policy.c" />
     <ClCompile Include="theme\theme-css.c" />

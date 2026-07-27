@@ -242,7 +242,9 @@ set_topic (session *sess, char *topic, char *stripped_topic)
 	}
 
 	g_free (sess->topic);
+	g_free (sess->topic_formatted);
 	sess->topic = g_strdup (stripped_topic);
+	sess->topic_formatted = g_strdup (topic);
 	fe_set_topic (sess, topic, stripped_topic);
 }
 

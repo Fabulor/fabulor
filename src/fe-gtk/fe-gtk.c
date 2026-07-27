@@ -1173,6 +1173,23 @@ fe_set_topic (session *sess, char *topic, char *stripped_topic)
 	}
 }
 
+void
+fe_refresh_topic_strip_preference (void)
+{
+	GSList *list;
+
+	for (list = sess_list; list; list = list->next)
+	{
+		session *sess = list->data;
+
+		if (!sess->topic)
+			continue;
+		fe_set_topic (sess,
+			sess->topic_formatted ? sess->topic_formatted : sess->topic,
+			sess->topic);
+	}
+}
+
 static void
 fe_update_mode_entry (session *sess, GtkWidget *entry, char **text, char *new_text)
 {

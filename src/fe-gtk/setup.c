@@ -47,6 +47,7 @@
 #include "menu.h"
 #include "preferences-persistence.h"
 #include "plugin-tray.h"
+#include "window-state.h"
 #include "notifications/notification-backend.h"
 
 #ifdef WIN32
@@ -65,6 +66,9 @@ static struct zoitechatprefs setup_prefs;
 static GtkWidget *cancel_button;
 static GtkWidget *font_dialog = NULL;
 static GtkWidget *setup_topicbar_multiline_toggle = NULL;
+static gboolean setup_transcript_metrics_changed;
+
+static void setup_queue_restore_parent (GtkWidget *window);
 
 enum
 {
@@ -1881,6 +1885,14 @@ setup_page_from_appearance (const setting *settings)
 }
 
 static GtkWidget *
+setup_page_from_colors (const setting *settings)
+{
+        (void)settings;
+        return theme_preferences_create_color_page (
+                GTK_WINDOW (setup_window), &setup_prefs, &color_change);
+}
+
+static GtkWidget *
 setup_page_from_sound (const setting *settings)
 {
         (void)settings;
@@ -1957,6 +1969,7 @@ setup_ensure_page_created (int page)
 static const char *const cata_interface[] =
 {
         N_("Appearance"),
+        N_("Colors"),
         N_("Input box"),
         N_("User list"),
         N_("Channel switcher"),
@@ -1999,9 +2012,10 @@ setup_create_pages (void)
         setup_page_count = 0;
 
         setup_register_page (cata_interface[0], book, setup_page_from_appearance, NULL);
-        setup_register_page (cata_interface[1], book, setup_page_from_settings, inputbox_settings);
-        setup_register_page (cata_interface[2], book, setup_page_from_settings, userlist_settings);
-        setup_register_page (cata_interface[3], book, setup_page_from_settings, tabs_settings);
+        setup_register_page (cata_interface[1], book, setup_page_from_colors, NULL);
+        setup_register_page (cata_interface[2], book, setup_page_from_settings, inputbox_settings);
+        setup_register_page (cata_interface[3], book, setup_page_from_settings, userlist_settings);
+        setup_register_page (cata_interface[4], book, setup_page_from_settings, tabs_settings);
 
         setup_register_page (cata_chatting[0], book, setup_page_from_settings, general_settings);
 
@@ -2083,7 +2097,8 @@ setup_create_tree (GtkWidget *box, GtkWidget *book)
 static void
 setup_apply_to_sess (session_gui *gui)
 {
-        mg_update_xtext (gui->xtext);
+        mg_update_xtext_for_setup (gui->xtext,
+                setup_transcript_metrics_changed);
         mg_update_scroll_to_bottom_button (gui);
 
         mg_apply_session_font_prefs (gui);
@@ -2164,7 +2179,7 @@ setup_apply_real (const ThemeChangedEvent *event)
                 list = list->next;
         }
 
-        mg_apply_setup ();
+        mg_apply_setup (setup_transcript_metrics_changed);
         menu_update_quit_accel ();
         tray_apply_setup ();
         zoitechat_reinit_timers ();
@@ -2249,6 +2264,9 @@ setup_apply (struct zoitechatprefs *pr)
 
         memcpy (&prefs, pr, sizeof (prefs));
 
+	if (old_prefs.hex_text_stripcolor_topic != prefs.hex_text_stripcolor_topic)
+		fe_refresh_topic_strip_preference ();
+
 	event = theme_manager_on_preferences_changed (&old_prefs, &prefs, old_dark_mode, &color_change);
 
 #ifdef WIN32
@@ -2266,6 +2284,14 @@ setup_apply (struct zoitechatprefs *pr)
         g_free (new_desc);
         */
 #endif
+
+        setup_transcript_metrics_changed =
+                strcmp (old_prefs.hex_text_font, prefs.hex_text_font) != 0 ||
+                old_prefs.hex_text_indent != prefs.hex_text_indent ||
+                old_prefs.hex_text_wordwrap != prefs.hex_text_wordwrap ||
+                old_prefs.hex_stamp_text != prefs.hex_stamp_text ||
+                strcmp (old_prefs.hex_stamp_text_format,
+                        prefs.hex_stamp_text_format) != 0;
 
         if (prefs.hex_irc_real_name[0] == 0)
         {
@@ -2307,6 +2333,7 @@ setup_save_and_close (GtkWidget *win)
         if (save_result.success)
         {
                 theme_preferences_stage_commit ();
+                setup_queue_restore_parent (win);
                 fabulor_gtk_window_destroy (GTK_WINDOW (win));
                 return;
         }
@@ -2385,6 +2412,47 @@ setup_ok_cb (GtkWidget *but, GtkWidget *win)
         setup_save_and_close (win);
 }
 
+static gboolean
+setup_restore_parent_idle_cb (gpointer user_data)
+{
+        GtkWindow *parent = user_data;
+
+        if (GTK_IS_WINDOW (parent)
+            && gtk_widget_get_visible (GTK_WIDGET (parent)))
+                fabulor_window_present (parent);
+        return G_SOURCE_REMOVE;
+}
+
+static void
+setup_queue_restore_parent (GtkWidget *window)
+{
+        GtkWindow *parent;
+
+        g_return_if_fail (GTK_IS_WINDOW (window));
+        parent = gtk_window_get_transient_for (GTK_WINDOW (window));
+        if (!parent)
+                return;
+        g_idle_add_full (G_PRIORITY_DEFAULT_IDLE,
+                setup_restore_parent_idle_cb, g_object_ref (parent),
+                g_object_unref);
+}
+
+static void
+setup_cancel_cb (GtkWidget *button, GtkWidget *win)
+{
+        (void)button;
+        setup_queue_restore_parent (win);
+        fabulor_gtk_window_destroy (GTK_WINDOW (win));
+}
+
+static gboolean
+setup_close_request_cb (GtkWindow *window, gpointer user_data)
+{
+        (void)user_data;
+        setup_queue_restore_parent (GTK_WIDGET (window));
+        return FALSE;
+}
+
 static GtkWidget *
 setup_window_open (void)
 {
@@ -2394,6 +2462,8 @@ setup_window_open (void)
         g_snprintf(buf, sizeof(buf), _("Preferences - %s"), _(DISPLAY_NAME));
         win = gtkutil_window_new (buf, "prefs", 900, 600, 2);
         setup_window = win;
+        g_signal_connect (win, "close-request",
+                G_CALLBACK (setup_close_request_cb), NULL);
 
         vbox = gtkutil_box_new (GTK_ORIENTATION_VERTICAL, FALSE, 5);
         fabulor_gtk_container_set_uniform_inset (vbox, 6);
@@ -2413,7 +2483,7 @@ setup_window_open (void)
 
         cancel_button = wid = gtkutil_button_new_from_stock ("gtk-cancel", _("_Cancel"));
         g_signal_connect (G_OBJECT (wid), "clicked",
-                                                        G_CALLBACK (gtkutil_destroy), win);
+                                                        G_CALLBACK (setup_cancel_cb), win);
         fabulor_gtk_box_append (GTK_BOX (hbbox), wid, FALSE, FALSE, 0);
 
         wid = gtkutil_button_new_from_stock ("gtk-ok", _("_OK"));

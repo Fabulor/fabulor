@@ -28,7 +28,7 @@ class ThemeContractValidationTests(unittest.TestCase):
         )
         self.write(
             "src/fe-gtk/theme/theme-preferences.c",
-            '".hct" "*.hct" "colors.conf" "pevents.conf" '
+            '".hct" "*.hct" "colors.conf" '
             "fabulor_theme_archive_read_text_file\n",
         )
         self.write(
@@ -105,6 +105,15 @@ class ThemeContractValidationTests(unittest.TestCase):
         path = self.repo / "src/common/theme-archive-reader.c"
         path.write_text(
             path.read_text(encoding="utf-8") + "G_SPAWN_SEARCH_PATH\n",
+            encoding="utf-8",
+        )
+        with self.assertRaises(validate_theme_contract.ThemeContractError):
+            validate_theme_contract.validate(self.repo)
+
+    def test_legacy_event_import_is_rejected(self) -> None:
+        path = self.repo / "src/fe-gtk/theme/theme-preferences.c"
+        path.write_text(
+            path.read_text(encoding="utf-8") + '"pevents.conf"\n',
             encoding="utf-8",
         )
         with self.assertRaises(validate_theme_contract.ThemeContractError):

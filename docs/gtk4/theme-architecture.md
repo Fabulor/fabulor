@@ -21,6 +21,29 @@ only `colors.conf` and `pevents.conf` to bounded memory, rejects unsafe or
 duplicate matching entries, and does not extract the archive to a filesystem
 tree.
 
+The same owner discovers immediate regular `.hct` files beneath the profile
+`themes` directory. Discovery is case-insensitive on the extension, rejects
+symbolic links and Windows reparse points, derives the display name from the
+filename, and returns deterministic name-sorted metadata. The production
+Appearance page does not yet expose those archives. A selector must remain
+withheld until the frontend can parse, preview, commit, and cancel an entire
+palette as one transaction; applying individual colours through the live
+preference path is not an acceptable substitute. A future selector must pass
+the absolute discovered path back through the bounded reader, must not treat
+`.hct` archives as GTK CSS themes, and must not broaden archive extraction.
+It must also ignore an archive's legacy `pevents.conf`: older event definitions
+are not assumed compatible with the current event table, and palette selection
+cannot replace either the active formatter tables or the profile event file.
+
+The palette backend represents an import as a complete owned candidate:
+unspecified tokens inherit the current mode palette, supplied tokens are marked
+as user colours, and parsing cannot mutate runtime state. Supported keys have
+three outcomes. Missing keys may inherit; malformed, out-of-range, or duplicate
+keys reject the entire candidate. Applying a validated candidate copies the
+palette and custom-token mask as one runtime operation. The manager then emits
+at most one palette dispatch and performs at most one input-style reload.
+The same candidate type can own the pre-preview snapshot needed for rollback.
+
 ## Discovery Ownership
 
 `src/common/gtk4-theme-discovery.c` is a GTK-independent owner for immutable
@@ -148,6 +171,13 @@ Cancel and save failure restore the opening selection through the shared
 preference-stage owner. Releasing the page leaves application CSS installed.
 Shipping GTK3 preferences and their GTK3 theme service remain unchanged.
 
+Palette editing uses the same transaction boundary. Opening Preferences captures
+one complete mode-specific palette candidate, including custom-token ownership.
+Edits and imports replace the staged candidate and preview it through one manager
+operation. Apply commits the staged candidate once; Cancel restores the opening
+candidate once. Reset also replaces the staged candidate as a unit. No lifecycle
+path replays individual token updates or emits one refresh per colour.
+
 ## Appearance Monitor
 
 `src/fe-gtk/theme/theme-appearance-monitor-gtk4.c` replaces the GTK3 global
@@ -221,6 +251,13 @@ policy.
 - Active installers associate `.hct` and never `.zct`.
 - Repository and WiX payload rules cannot introduce an optional default theme.
 - `.hct` and `colors.conf` remain independent Fabulor formats.
+- Profile `.hct` discovery accepts only immediate regular files and rejects
+  links and reparse points.
+- Palette parsing is non-mutating and rejects malformed or duplicate supported
+  values before application.
+- Complete palette candidates apply through one manager dispatch boundary.
+- Preferences preview, reset, Apply, and Cancel operate on complete palette
+  candidates and preserve the opening snapshot for rollback.
 
 ## Planned Passes
 

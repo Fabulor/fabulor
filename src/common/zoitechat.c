@@ -811,6 +811,7 @@ session_free (session *killsess)
 	history_free (&killsess->history);
 	reply_cache_free (killsess);
 	g_free (killsess->topic);
+	g_free (killsess->topic_formatted);
 	g_free (killsess->current_modes);
 
 	fe_session_callback (killsess);

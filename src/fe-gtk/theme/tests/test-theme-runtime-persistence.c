@@ -28,9 +28,15 @@
 #include <stdlib.h>
 #include <string.h>
 #include <glib/gstdio.h>
+#ifdef WIN32
+#include <io.h>
+#define write _write
+#else
 #include <unistd.h>
+#endif
 
 #include "../theme-runtime.h"
+#include "../theme-palette-transaction.h"
 
 struct session *current_sess;
 struct session *current_tab;
@@ -471,6 +477,218 @@ test_save_writes_only_custom_token_keys (void)
 	g_free (cfg);
 }
 
+static void
+test_palette_candidate_parse_does_not_mutate_runtime (void)
+{
+	const char *contents = "color_0 = 1234 5678 9abc\n";
+	ThemePaletteCandidate candidate = { 0 };
+	GdkRGBA before;
+	GdkRGBA after;
+	GdkRGBA imported;
+	GError *error = NULL;
+
+	setup_temp_home ();
+	theme_runtime_load ();
+	g_assert_true (theme_runtime_get_color (THEME_TOKEN_MIRC_0, &before));
+	g_assert_true (theme_runtime_palette_candidate_from_colors (contents,
+		FALSE, &candidate, &error));
+	g_assert_no_error (error);
+	g_assert_cmpuint (candidate.supplied_count, ==, 1);
+	g_assert_true (theme_runtime_get_color (THEME_TOKEN_MIRC_0, &after));
+	g_assert_true (colors_equal (&before, &after));
+	g_assert_true (theme_palette_get_color (&candidate.palette,
+		THEME_TOKEN_MIRC_0, &imported));
+	g_assert_cmpfloat_with_epsilon (imported.red, 0x1234 / 65535.0, 0.00001);
+	g_assert_cmpfloat_with_epsilon (imported.green, 0x5678 / 65535.0, 0.00001);
+	g_assert_cmpfloat_with_epsilon (imported.blue, 0x9abc / 65535.0, 0.00001);
+}
+
+static void
+test_palette_candidate_rejects_malformed_without_mutation (void)
+{
+	const char *contents =
+		"theme.mode.light.token.mirc_0 = invalid\n"
+		"color_0 = 1234 5678 9abc\n";
+	ThemePaletteCandidate candidate = { 0 };
+	GdkRGBA before;
+	GdkRGBA after;
+	GError *error = NULL;
+
+	setup_temp_home ();
+	theme_runtime_load ();
+	g_assert_true (theme_runtime_get_color (THEME_TOKEN_MIRC_0, &before));
+	g_assert_false (theme_runtime_palette_candidate_from_colors (contents,
+		FALSE, &candidate, &error));
+	g_assert_error (error, G_FILE_ERROR, G_FILE_ERROR_INVAL);
+	g_clear_error (&error);
+	g_assert_false (candidate.initialized);
+	g_assert_true (theme_runtime_get_color (THEME_TOKEN_MIRC_0, &after));
+	g_assert_true (colors_equal (&before, &after));
+}
+
+static void
+test_palette_candidate_applies_and_restores_as_complete_palette (void)
+{
+	const char *contents =
+		"color_0 = 1234 5678 9abc\n"
+		"color_1 = abcd bcde cdef\n";
+	ThemePaletteCandidate snapshot = { 0 };
+	ThemePaletteCandidate candidate = { 0 };
+	GdkRGBA original_zero;
+	GdkRGBA original_one;
+	GdkRGBA current;
+	GError *error = NULL;
+	gboolean changed = FALSE;
+
+	setup_temp_home ();
+	theme_runtime_load ();
+	g_assert_true (theme_runtime_get_color (THEME_TOKEN_MIRC_0,
+		&original_zero));
+	g_assert_true (theme_runtime_get_color (THEME_TOKEN_MIRC_1,
+		&original_one));
+	theme_runtime_palette_snapshot (FALSE, &snapshot);
+	g_assert_true (theme_runtime_palette_candidate_from_colors (contents,
+		FALSE, &candidate, &error));
+	g_assert_no_error (error);
+	g_assert_true (theme_runtime_apply_palette_candidate (&candidate,
+		&changed));
+	g_assert_true (changed);
+	g_assert_true (theme_runtime_get_color (THEME_TOKEN_MIRC_0, &current));
+	g_assert_false (colors_equal (&current, &original_zero));
+	g_assert_true (theme_runtime_get_color (THEME_TOKEN_MIRC_1, &current));
+	g_assert_false (colors_equal (&current, &original_one));
+
+	changed = FALSE;
+	g_assert_true (theme_runtime_apply_palette_candidate (&snapshot,
+		&changed));
+	g_assert_true (changed);
+	g_assert_true (theme_runtime_get_color (THEME_TOKEN_MIRC_0, &current));
+	g_assert_true (colors_equal (&current, &original_zero));
+	g_assert_true (theme_runtime_get_color (THEME_TOKEN_MIRC_1, &current));
+	g_assert_true (colors_equal (&current, &original_one));
+}
+
+static void
+test_palette_candidate_rejects_empty_palette (void)
+{
+	ThemePaletteCandidate candidate = { 0 };
+	GError *error = NULL;
+
+	setup_temp_home ();
+	theme_runtime_load ();
+	g_assert_false (theme_runtime_palette_candidate_from_colors (
+		"unrelated = value\n", FALSE, &candidate, &error));
+	g_assert_error (error, G_FILE_ERROR, G_FILE_ERROR_INVAL);
+	g_clear_error (&error);
+	g_assert_false (candidate.initialized);
+}
+
+static void
+test_palette_transaction_tracks_edit_and_revert (void)
+{
+	ThemePaletteCandidate snapshot = { 0 };
+	ThemePaletteTransaction transaction = { 0 };
+	GdkRGBA original;
+	GdkRGBA edited;
+	GdkRGBA staged;
+
+	setup_temp_home ();
+	theme_runtime_load ();
+	theme_runtime_palette_snapshot (FALSE, &snapshot);
+	g_assert_true (theme_palette_get_color (&snapshot.palette,
+		THEME_TOKEN_MIRC_0, &original));
+	edited = original;
+	edited.red = original.red > 0.5 ? 0.25 : 0.75;
+
+	g_assert_true (theme_palette_transaction_begin (&transaction,
+		ZOITECHAT_DARK_MODE_LIGHT, &snapshot));
+	g_assert_false (transaction.changed);
+	g_assert_true (theme_palette_transaction_set_color (&transaction,
+		THEME_TOKEN_MIRC_0, &edited));
+	g_assert_true (transaction.changed);
+	g_assert_true (theme_palette_transaction_get_color (&transaction,
+		THEME_TOKEN_MIRC_0, &staged));
+	g_assert_true (colors_equal (&edited, &staged));
+	g_assert_true (theme_palette_transaction_set_color (&transaction,
+		THEME_TOKEN_MIRC_0, &original));
+	g_assert_false (transaction.changed);
+}
+
+static void
+test_palette_transaction_replaces_candidate_and_keeps_snapshot (void)
+{
+	const char *contents = "color_1 = 1234 5678 9abc\n";
+	ThemePaletteCandidate snapshot = { 0 };
+	ThemePaletteCandidate imported = { 0 };
+	ThemePaletteTransaction transaction = { 0 };
+	const ThemePaletteCandidate *saved_snapshot;
+	const ThemePaletteCandidate *staged;
+	GError *error = NULL;
+	GdkRGBA original;
+	GdkRGBA current;
+
+	setup_temp_home ();
+	theme_runtime_load ();
+	theme_runtime_palette_snapshot (FALSE, &snapshot);
+	g_assert_true (theme_runtime_palette_candidate_from_colors (contents,
+		FALSE, &imported, &error));
+	g_assert_no_error (error);
+	g_assert_true (theme_palette_transaction_begin (&transaction,
+		ZOITECHAT_DARK_MODE_LIGHT, &snapshot));
+	g_assert_true (theme_palette_transaction_replace (&transaction,
+		&imported));
+	g_assert_true (transaction.changed);
+
+	saved_snapshot = theme_palette_transaction_snapshot (&transaction);
+	staged = theme_palette_transaction_staged (&transaction);
+	g_assert_nonnull (saved_snapshot);
+	g_assert_nonnull (staged);
+	g_assert_true (theme_palette_get_color (&saved_snapshot->palette,
+		THEME_TOKEN_MIRC_1, &original));
+	g_assert_true (theme_palette_get_color (&staged->palette,
+		THEME_TOKEN_MIRC_1, &current));
+	g_assert_false (colors_equal (&original, &current));
+}
+
+static void
+test_palette_transaction_tracks_custom_ownership (void)
+{
+	ThemePaletteCandidate snapshot = { 0 };
+	ThemePaletteCandidate candidate;
+	ThemePaletteTransaction transaction = { 0 };
+
+	setup_temp_home ();
+	theme_runtime_load ();
+	theme_runtime_palette_snapshot (FALSE, &snapshot);
+	candidate = snapshot;
+	candidate.custom_tokens[THEME_TOKEN_MIRC_2] =
+		!snapshot.custom_tokens[THEME_TOKEN_MIRC_2];
+
+	g_assert_true (theme_palette_transaction_begin (&transaction,
+		ZOITECHAT_DARK_MODE_LIGHT, &snapshot));
+	g_assert_true (theme_palette_transaction_replace (&transaction,
+		&candidate));
+	g_assert_true (transaction.changed);
+}
+
+static void
+test_palette_transaction_rejects_mode_mismatch (void)
+{
+	ThemePaletteCandidate light = { 0 };
+	ThemePaletteCandidate dark = { 0 };
+	ThemePaletteTransaction transaction = { 0 };
+
+	setup_temp_home ();
+	theme_runtime_load ();
+	theme_runtime_palette_snapshot (FALSE, &light);
+	theme_runtime_palette_snapshot (TRUE, &dark);
+	g_assert_true (theme_palette_transaction_begin (&transaction,
+		ZOITECHAT_DARK_MODE_LIGHT, &light));
+	g_assert_false (theme_palette_transaction_replace (&transaction,
+		&dark));
+	g_assert_false (transaction.changed);
+}
+
 int
 main (int argc, char **argv)
 {
@@ -495,5 +713,21 @@ main (int argc, char **argv)
 			 test_save_discard_unlinks_temp_file);
 	g_test_add_func ("/theme/runtime/save_writes_only_custom_token_keys",
 			 test_save_writes_only_custom_token_keys);
+	g_test_add_func ("/theme/runtime/palette_candidate_parse_is_nonmutating",
+			 test_palette_candidate_parse_does_not_mutate_runtime);
+	g_test_add_func ("/theme/runtime/palette_candidate_rejects_malformed",
+			 test_palette_candidate_rejects_malformed_without_mutation);
+	g_test_add_func ("/theme/runtime/palette_candidate_apply_and_restore",
+			 test_palette_candidate_applies_and_restores_as_complete_palette);
+	g_test_add_func ("/theme/runtime/palette_candidate_rejects_empty",
+			 test_palette_candidate_rejects_empty_palette);
+	g_test_add_func ("/theme/runtime/palette_transaction_edit_and_revert",
+			 test_palette_transaction_tracks_edit_and_revert);
+	g_test_add_func ("/theme/runtime/palette_transaction_replace",
+			 test_palette_transaction_replaces_candidate_and_keeps_snapshot);
+	g_test_add_func ("/theme/runtime/palette_transaction_custom_ownership",
+			 test_palette_transaction_tracks_custom_ownership);
+	g_test_add_func ("/theme/runtime/palette_transaction_mode_mismatch",
+			 test_palette_transaction_rejects_mode_mismatch);
 	return g_test_run ();
 }
