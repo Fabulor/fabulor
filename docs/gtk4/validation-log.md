@@ -8756,6 +8756,8 @@ Removal and containment:
   theme files, and source reintroduction
 - replace GTK 4.22-deprecated pixbuf texture conversion with one
   lifetime-correct `GdkMemoryTexture` helper
+- reconcile `api-inventory.md` as a completed GTK4 inventory, separating its
+  historical migration record from authoritative final-state tables
 
 Automated evidence:
 

@@ -1,25 +1,27 @@
 # GTK4 API Inventory
 
-Status: maintained migration inventory
+Status: completed GTK4 inventory
 
 Baseline date: 2026-07-14
+Completion date: 2026-07-27
 
 ## Method
 
-This inventory combines source review with literal symbol searches under
-`src/fe-gtk`. Counts are migration indicators, not compiler diagnostics: one
-line may contain several calls, wrappers may hide additional work, and some GTK
-types remain available in GTK4 while still requiring model or lifecycle changes.
-Direct-call counts exclude `gtk-compat.h`; the helper implementations are
-tracked separately in the compatibility boundary below.
+This inventory combines source review, strict GTK4 compilation, literal symbol
+searches under `src/fe-gtk` and supported plugins, runtime/import validation,
+and installed-client acceptance. The final audit distinguishes active
+production code from comments, tests, archived documents, and the historical
+migration record retained below.
 
-Update this file in every GTK4 conversion PR. Use these status values:
+Completion means:
 
-- `not started`
-- `in progress`
-- `converted`
-- `retired`
-- `blocked`
+- the supported MSVC/WiX application graph is GTK4-only
+- active frontend and supported plugin source contains no toolkit-version gate
+  or GTK3 branch
+- retired GTK3 API families do not compile in production
+- the isolated strict MSVC and Meson/Ninja GTK4 probes pass
+- negative validators continue to reject GTK3 headers, DLLs, imports, runtime
+  roots, theme files, and source reintroduction
 
 ## Build Boundary
 
@@ -41,7 +43,7 @@ Update this file in every GTK4 conversion PR. Use these status values:
 - trailing label/control pair insertion with preserved end alignment
 - box-owned dynamic child removal
 - window, scrolled-window, frame, button, overlay, and popover child assignment
-- completed-tree reveal with distinct GTK3 recursive and GTK4 root semantics
+- completed-tree reveal with explicit GTK4 root semantics
 - window destruction
 - dialog-response destruction with an exact GTK signal callback signature
 - standard and primary text clipboard updates through the widget display
@@ -59,10 +61,34 @@ files, two horizontal trailing children, two ordered insertions before a
 permanent trailing child, three trailing label/control pairs, and five
 box-owned dynamic child removals.
 
-The shared tree-view constructor now accepts only `GtkBox` parents for its
-nine operational-list scrollers. The main user-list constructor has the same
-typed parent contract. Their tree models, renderers, selection, and drag/drop
-paths remain outside this Stage 2 ownership conversion.
+The shared operational-list and user-list constructors accept typed GTK4
+parents. Models, factories, selection, and drag/drop are specialized to GTK4
+and contain no classic tree-view implementation.
+
+## Completion Audit
+
+| Boundary | Final state | Status |
+|---|---|---|
+| Application build graph | MSVC/WiX only; inherited Makefile and application Meson fragments removed | retired |
+| Isolated compile probes | strict MSVC and `tools/gtk4` Meson/Ninja probes retained and passing | converted |
+| Toolkit-version gates | zero active `GTK_MAJOR_VERSION`/GTK3 source branches | retired |
+| Containers and layout | explicit GTK4 child ownership, box ordering, grids, and pane geometry | converted |
+| Operational lists | typed `GListModel` owners, factories, and GTK4 selection models | converted |
+| Menus and actions | `GAction`, `GMenuModel`, and owned popover presentation | converted |
+| Input and events | GTK4 controllers, gestures, clipboard, drag/drop, and focus ownership | converted |
+| Transcript | GTK4 snapshot rendering, selection, hit testing, scrolling, and accessible text | converted |
+| Themes | GTK4 CSS/runtime palette plus bounded `.hct` import; GTK3 theme service retired | converted |
+| Tray and windows | Windows Shell tray plus GTK4 surface, lifecycle, and geometry ownership | converted |
+| Supported plugins | FiSHLiM, Python, Sysinfo, Exec, Checksum, Upd, and notifications build without GTK3 branches | converted |
+| Production package | 7,624 installed files, zero GTK3 path markers, and verified runtime/import contracts | converted |
+
+## Migration Record (Historical)
+
+The following pass-by-pass record deliberately preserves then-current
+descriptions of GTK3 and mixed-toolkit boundaries. Those statements document
+the state at each migration pass; they are not descriptions of the completed
+production source. The completion audit above and final functional clusters
+below are authoritative.
 
 Stage 5 model architecture pass 1 adds GTK4-only flat and hierarchical model
 stacks in `gtk4-list-models.c`. The flat stack owns a `GListStore`,
@@ -443,66 +469,55 @@ removed. The remaining consumer-side `GtkSelectionData` reference is contained
 inside the GTK3 branch of the Stage 6 transcript selection adapter, not
 drag/drop or transcript content logic.
 
-## Quantitative API Baseline
+## Final Retired-API Audit
 
-| GTK3 family or type | Matching lines | Files | Migration direction | Stage | Status |
-|---|---:|---:|---|---:|---|
-| `gtk_container_*` | 109 | 23 | explicit widget-specific child APIs | 2 | in progress |
-| `gtk_box_pack_*` | 25 | 4 | `gtk_box_append/prepend` and reorder APIs | 2 | in progress |
-| `gtk_widget_show_all` | 17 | 8 | explicit visibility; GTK4 children visible by default | 2 | in progress |
-| `gtk_widget_destroy` | 31 | 13 | window close and object ownership appropriate to type | 2 | in progress |
-| `GtkEventBox` / `gtk_event_box_*` | 8 | 2 | ordinary widgets plus controllers/gestures | 2/4 | not started |
-| `GtkTable` / `gtk_table_*` | 2 | 1 | `GtkGrid` | 2 | not started |
-| `gtk_dialog_run` | 0 | 0 | response-driven/asynchronous dialog flow | 3 | complete |
-| `gtk_native_dialog_run` | 0 | 0 | response-driven native dialog flow | 3 | complete |
-| `gtk_message_dialog_new` | 18 | 7 | GTK4 dialog or alert abstraction | 3 | not started |
-| `gtk_file_chooser_dialog_new` | 0 | 0 | GTK4 file chooser/native dialog flow | 3 | complete |
-| `gtk_menu_*` | 109 | 7 | `GMenuModel`, popovers, and actions | 3 | not started |
-| `gtk_menu_item_*` | 45 | 7 | actions/menu models | 3 | not started |
-| `GdkEvent` | 69 | 20 | event controllers and gestures | 4 | in progress |
-| `GdkDragContext` / `GtkSelectionData` | 11 | 2 | `GtkDragSource`, `GtkDropTarget`, and typed content | 4/6 | in progress; drag/drop contained |
-| `gtk_widget_get_window` | 31 | 6 | surface/native access only where unavoidable | 4/6 | in progress |
-| `gdk_window_*` | 32 | 8 | `GdkSurface`, snapshots, controllers, or removal | 4/6 | in progress; top-level state contained |
-| `gtk_clipboard_*` | 1 | 1 | `GdkClipboard` and content providers | 4/6 | in progress |
-| `GtkTreeView` | 75 | 18 | choose GTK4 list/model widget per workflow | 5 | in progress; Notify and user model owners converted |
-| `GtkStatusIcon` | 6 | 1 | native Win32 tray or supported external backend | 7 | legacy backend isolated to GTK3; GTK4 native presentation pending |
-| screen CSS provider installation | 4 | 3 | display-scoped provider installation | 7 | not started |
+The completion scan counts active compiled production paths rather than
+comments or the historical record above.
 
-## High-Risk Files
+| Retired family or type | Active matches | Final owner | Status |
+|---|---:|---|---|
+| toolkit-version gates | 0 | GTK4-only source | retired |
+| `gtk_container_*` | 0 | typed widget child APIs | retired |
+| `gtk_box_pack_*` | 0 | GTK4 box append/prepend/reorder APIs | retired |
+| `gtk_widget_show_all` | 0 | explicit GTK4 visibility | retired |
+| `GtkEventBox` / `gtk_event_box_*` | 0 | ordinary widgets and controllers | retired |
+| `GtkTable` / `gtk_table_*` | 0 | `GtkGrid` | retired |
+| blocking dialog/native-dialog run calls | 0 | response-driven dialog flow | retired |
+| classic GTK widget menus/items | 0 | `GMenuModel`, actions, and popovers | retired |
+| raw `GdkEvent*` frontend callbacks | 0 | controllers and gestures | retired |
+| `GdkDragContext` / `GtkSelectionData` | 0 | GTK4 drag sources, drop targets, and content | retired |
+| `gtk_widget_get_window` / `gdk_window_*` | 0 | `GdkSurface`, snapshots, and typed native access | retired |
+| `gtk_clipboard_*` | 0 | `GdkClipboard` and content providers | retired |
+| `GtkTreeView` family | 0 | GTK4 list/column views and typed models | retired |
+| `GtkStatusIcon` / AppIndicator | 0 | Windows Shell notification-area backend | retired |
+| screen-scoped CSS providers | 0 | display-scoped providers | retired |
 
-The line counts below identify review size, not priority by themselves.
+GTK4-native APIs that retain historical names, including
+`gtk_message_dialog_new()` and the isolated `GtkFileChooserNative` boundary,
+are not GTK3 dependencies. They compile under the pinned GTK 4.22 headers;
+the chooser boundary remains deliberately narrow because GTK 4.10 deprecated
+that interface in favour of the asynchronous file-dialog API.
 
-| File | Approx. lines | GTK/GDK reference lines | Primary risk | Stage |
-|---|---:|---:|---|---:|
-| `src/fe-gtk/maingui.c` | 6,505 | 1,197 | window/tab ownership, input, topic bar, layout | 2-5 |
-| `src/fe-gtk/xtext.c` | 6,183 | 713 | custom rendering, selection, events, scrolling | 6 |
-| `src/fe-gtk/servlistgui.c` | 3,145 | 824 | editable tree models and response-driven dialogs | 3/5 |
-| `src/fe-gtk/menu.c` | 2,887 | 399 | legacy menus, context, sensitivity, commands | 3 |
-| `src/fe-gtk/setup.c` | 2,548 | 491 | preferences tree, generated controls, dialogs | 2/3/5 |
-| `src/fe-gtk/fkeys.c` | 2,386 | 282 | accelerators and editable cell renderers | 4/5 |
-| `src/fe-gtk/fe-gtk.c` | 1,928 | 110 | startup, runtime paths, display/icon setup | 1/7/8 |
-| `src/fe-gtk/sexy-spell-entry.c` | 1,424 | 118 | `GtkEntry` subclass, Enchant backend, menus | 6 |
-| `src/fe-gtk/spell-entry-style.c` | 330 | 43 | Pango IRC formatting and spell attributes | 6 |
-| `src/fe-gtk/spell-entry-menu.c` | 190 | 34 | dynamic spelling, formatting, and colour action model | 6 |
-| `src/fe-gtk/spell-entry-widget.c` | 40 | 11 | cross-version pointer and redraw boundary | 6 |
-| `src/fe-gtk/theme/theme-preferences.c` | 1,946 | 564 | theme UI, models, response-driven dialogs | 3/5/7 |
-| `src/fe-gtk/plugin-tray.c` | 1,620 | 147 | GTK3 status icon/AppIndicator and Win32 tray | 7 |
-| `src/fe-gtk/dccgui.c` | 1,209 | 245 | transfer models, progress, dialogs | 3/5 |
-| `src/fe-gtk/chanlist.c` | 1,182 | 234 | large sortable channel model | 5 |
-| `src/fe-gtk/userlistgui.c` | 1,129 | 252 | live user model and interaction | 5 |
-| `src/fe-gtk/gtkutil.c` | 1,087 | 289 | shared constructors and ownership helpers | 1/2 |
-| `src/fe-gtk/theme/theme-gtk3.c` | 992 | 191 | GTK3 CSS/settings adapter | 7 |
-| `src/fe-gtk/chanview-tabs.c` | 981 | 209 | tab buttons, scrolling, drag/drop | 2/4/5 |
+## Final High-Risk Boundaries
+
+| Boundary | Current implementation | Status |
+|---|---|---|
+| Main window and tabs | GTK4 child ownership, controllers, drag/drop, surface lifecycle, and persisted pane geometry | converted |
+| Transcript | GTK4 snapshot/render-target pipeline, exact selection/hit testing, accessible text, and bounded redraw scheduling | converted |
+| Server List and Preferences | typed GTK4 models, response-driven dialogs, stable category sizing, and native chooser containment | converted |
+| Menus and context actions | canonical actions, retained menu models, GTK4 popover presenters, and plugin overlay composition | converted |
+| Spell input and emoji | GTK4 editable/controller ownership, Enchant 2, action menus, and allocation-aware emoji popover | converted |
+| Themes | semantic palette, GTK4 display CSS, Windows appearance monitoring, and bounded `.hct` import | converted |
+| Tray and platform integration | direct Windows Shell ownership and GTK4 window restoration | converted |
 
 ## Custom Widget Boundaries
 
 ### Transcript: `GtkXText`
 
-Current GTK3 virtual methods include realize/unrealize, size allocation, button
-press/release, motion, selection ownership, draw, preferred-size calculation,
-scroll, and leave notification. GTK4 requires a coordinated redesign around
-measurement, allocation, snapshot rendering, event controllers, clipboard
-content, and surface-independent hit testing.
+The completed GTK4 widget uses measurement, allocation, snapshot rendering,
+event controllers, clipboard content providers, and surface-independent hit
+testing. Its former GTK3 virtual-method and selection-event implementations
+are retired.
 
 Required preserved behaviour:
 
@@ -608,7 +623,7 @@ notifications after the interface is first queried; ordinary sessions retain
 no snapshot maintenance cost. GTK3 retains its existing ATK log role/name; accessible
 selection mutation and text geometry remain unsupported for this read-only log.
 
-Status: `in progress`
+Status: `converted`
 
 ### Input: `SexySpellEntry`
 
@@ -630,7 +645,7 @@ Required preserved behaviour:
 - active-language handling and nickname exceptions
 - IRC formatting and completion integration
 
-Status: `in progress; Stage 6 spell-input pass 6 emoji-picker ownership boundary`
+Status: `converted`
 
 Stage 8 dialog icon-sizing pass 27 removes the quit dialog's direct dependency
 on the retired `GTK_ICON_SIZE_DIALOG` enum. GTK4 constructs the named warning
@@ -1615,6 +1630,20 @@ initialization, and Preferences. The toggle never gated negotiation:
 `server-time` and both ZNC server-time variants remain unconditionally
 requested when advertised, and timestamp parsing is unchanged.
 
+Stage 9 channel-switch latency acceptance pass 39 uses an opt-in production
+profiler to separate transcript, accessibility, and user-list work. Installed
+evidence identified deferred user-list model attachment as the persistent
+visual delay. Transcript and user-list replacement now complete in one
+synchronous switch transaction, redundant model assignments are skipped, and
+installed direct IRC/ZNC switching is accepted without observed regression.
+
+Stage 9 active-source retirement pass 40 removes the final FiSHLiM GTK3 dialog
+branch, stale Sysinfo GTK3 labels, obsolete GTK3-facing wording/test residue,
+and the inherited application Makefile/Meson graph. The strict `tools/gtk4`
+probe and every negative GTK3 validator remain. The source audit reports zero
+active GTK3 references; strict probes, all 86 tooling/theme contracts, the
+full native solution, runtime/import validators, MSI, and bootstrapper pass.
+
 ## Functional Clusters
 
 | Cluster | Main files | GTK4 concern | Status |
@@ -1626,7 +1655,7 @@ requested when advertised, and timestamp parsing is unchanged.
 | Operational lists | `servlistgui.c`, `chanlist.c`, `userlistgui.c`, `dccgui.c`, `banlist.c`, `notifygui.c`, `ignoregui.c`, `plugingui.c`, `urlgrab.c` | list models, factories, editing | converted and specialized to GTK4; classic GTK3 tree/list and Channel/Ban widget-menu implementations are retired |
 | Preferences/editors | `setup.c`, `fkeys.c`, `textgui.c`, `editlist.c` | generic edit list, Print Events, key bindings, sound events, and preference navigation converted | converted; Preferences page ownership, window, and font-chooser lifecycle are specialized to GTK4 |
 | Themes | `theme/*.c`, `common/gtk4-theme-*.c`, `common/theme-archive-reader.c` | GTK4 CSS compatibility, discovery, preferences, and bounded `.hct` reading | converted and specialized to GTK4; the GTK3 service, adapter, screen/style branches, and version switches are retired |
-| Platform integration | `fe-gtk.c`, `plugin-tray.c`, notifications | displays, surfaces, icons, native tray | converted and specialized to GTK4; native Windows Shell tray accepted, non-Windows StatusNotifier remains pending, and no toolkit-version branches remain |
+| Platform integration | `fe-gtk.c`, `plugin-tray.c`, notifications | displays, surfaces, icons, native tray | converted and specialized to GTK4; native Windows Shell tray accepted and no toolkit-version branches remain |
 
 ## Theme Inventory
 
@@ -1645,14 +1674,15 @@ requested when advertised, and timestamp parsing is unchanged.
   without depending on a Preferences window. Frontend shutdown removes the
   monitor before releasing display-scoped providers.
 
-## Inventory Maintenance
+## Completion Invariants
 
-For each conversion PR:
+Future frontend work must preserve these conditions:
 
-1. Change relevant rows from `not started` to `in progress`, `converted`, or
-   `retired`.
-2. Re-run the symbol counts for touched API families.
-3. Add newly discovered API families or hidden ownership dependencies.
-4. Link the PR and its validation record from `validation-log.md`.
-5. Do not mark a family converted while compatibility calls remain in active
-   production paths.
+1. Keep active frontend and supported plugin source free of toolkit-version
+   gates and GTK3-only API families.
+2. Keep `win32\zoitechat.sln` and WiX as the only application build/package
+   graph.
+3. Retain `tools\gtk4` Meson only as the isolated strict GTK4 probe.
+4. Keep GTK3 runtime, import, source, and theme rejection tests enabled.
+5. Update this inventory and `validation-log.md` if a supported GTK4 API is
+   deprecated or an ownership boundary changes.
