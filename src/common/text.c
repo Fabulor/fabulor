@@ -1022,7 +1022,7 @@ PrintTextTimeStampf (session *sess, time_t timestamp, const char *format, ...)
 /* Consider the following a NOTES file:
 
    The main upshot of this is:
-   * Plugins and Perl scripts (when I get round to signaling perl.c) can intercept text events and do what they like
+   * Plugins can intercept text events and do what they like.
    * The default text engine can be config'ed
 
    By default it should appear *exactly* the same (I'm working hard not to change the default style) but if you go into Settings->Edit Event Texts you can change the text's. The format is thus:

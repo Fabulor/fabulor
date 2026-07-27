@@ -206,20 +206,30 @@ types.
 
 ### Retained Perl Source And Residual Configuration
 
-Status: `Deferred`
+Status: `Accepted`
 
-Perl is not built, packaged, autoloaded, or documented as part of Fabulor's
-C#/Python/Tcl plugin model. Its source remains intentionally retained until the
-final repository cleanup. That later review should include:
+Perl was not built, packaged, autoloaded, or documented as part of Fabulor's
+C#/Python/Tcl plugin model. The contained repository-cleanup stage removed:
 
 - `plugins/perl`
 - `perl_warnings` configuration and preference storage
-- obsolete user-facing references suggesting that a Perl plugin can be
-  installed
+- the `OLD_PERL` build macro
+- obsolete `/LOAD` guidance suggesting that a Perl plugin can be installed
 - stale comments and build metadata
 
-Removal must not disturb the maintained C#, Python, Tcl, or native first-party
-plugin paths.
+Saved `perl_warnings` values are ignored and omitted on the next canonical
+configuration save. `/SET perl_warnings` reports no such variable. Maintained
+C#, Python, Tcl, and native first-party plugin paths are unchanged.
+
+Automated evidence:
+
+- complete active-source audit contains no Perl implementation or preference
+  storage;
+- Release x64 rebuild and 22/22 native tests pass;
+- production profile, plugin-host, runtime, payload, import, and theme
+  contracts pass all 96 Python tests; and
+- a regression test prevents the Perl source tree, build macro, preference, or
+  obsolete `/LOAD` guidance from returning.
 
 ### Other Inert Configuration Keys
 
@@ -265,7 +275,8 @@ Publication remains pending.
 
 #### Remaining Audit Results
 
-- `perl_warnings` remains deferred with the retained Perl source.
+- `perl_warnings` was retired with the Perl source in repository cleanup
+  Stage 2.
 - `gui_single` is already commented out and is not a live persisted key.
 
 #### `irc_cap_server_time`

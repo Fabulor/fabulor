@@ -39,8 +39,9 @@ Read `To-Do.md` and `docs\gtk4\` before selecting a migration boundary.
   `ZoiteChatAPI` struct/manifest/loader interfaces exist — additive,
   backward-compatible changes only, unless a breaking `requires_api_version`
   bump is explicitly requested.
-- Lua and Perl source remains historical only; do not restore either plugin to
-  the supported solution, extension graph, CI prerequisites, or installer.
+- Lua and Perl integration is retired; do not restore either plugin to the
+  source tree, supported solution, extension graph, CI prerequisites, or
+  installer.
 - Keep `win32\zoitechat.sln` building as the supported GTK4 native entry point.
   Do not restore the retired Inno Setup or GTK3 runtime-copy projects.
 - Prefer minimal, localised changes over broad refactors.

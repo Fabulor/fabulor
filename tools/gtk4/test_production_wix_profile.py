@@ -680,6 +680,27 @@ class ProductionWixProfileTests(unittest.TestCase):
         legacy_installer = ROOT / "win32" / "installer"
         self.assertFalse(legacy_installer.exists() and any(legacy_installer.iterdir()))
 
+    def test_perl_integration_is_retired(self):
+        self.assertFalse((ROOT / "plugins" / "perl").exists())
+
+        config_template = (ROOT / "win32" / "config.h.tt").read_text(
+            encoding="utf-8"
+        )
+        cfgfiles = (ROOT / "src" / "common" / "cfgfiles.c").read_text(
+            encoding="utf-8"
+        )
+        preferences = (ROOT / "src" / "common" / "zoitechat.h").read_text(
+            encoding="utf-8"
+        )
+        outbound = (ROOT / "src" / "common" / "outbound.c").read_text(
+            encoding="utf-8"
+        )
+
+        self.assertNotIn("OLD_PERL", config_template)
+        self.assertNotIn("perl_warnings", cfgfiles)
+        self.assertNotIn("hex_perl_warnings", preferences)
+        self.assertNotIn("install the Perl or Python plugin", outbound)
+
     def test_windows_support_dependencies_are_pinned(self):
         manifest = json.loads(VCPKG_MANIFEST.read_text(encoding="utf-8"))
         configuration = json.loads(VCPKG_CONFIGURATION.read_text(encoding="utf-8"))

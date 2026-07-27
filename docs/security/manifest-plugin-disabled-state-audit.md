@@ -616,8 +616,10 @@ Evidence:
 - `src/common/plugin.c:800` - bare legacy plugin names resolve under `get_xdir()/addons`.
 - `src/common/plugin.c:806` - path-bearing plugin names are passed directly to `g_module_open()`.
 - `src/fe-gtk/sexy-spell-entry.c:209` - Enchant is loaded by bare DLL names such as `libenchant-2-2.dll`.
-- `plugins/perl/perl.c:1440` - Perl is loaded with `LoadLibraryA(PERL_DLL)`.
-- `plugins/perl/perl.c:1452` - fallback probes `LoadLibraryA("perl56.dll")`.
+- Historical evidence: the former `plugins/perl/perl.c:1440` loaded Perl with
+  `LoadLibraryA(PERL_DLL)`.
+- Historical evidence: the former `plugins/perl/perl.c:1452` fallback probed
+  `LoadLibraryA("perl56.dll")`.
 
 Risk:
 
@@ -633,7 +635,11 @@ Fix status, 2026-07-12:
 
 - Enchant loading in `src/fe-gtk/sexy-spell-entry.c` is restricted to the absolute application-local `libenchant-2-2.dll` path on Windows. After installed-client validation and soak testing, the Enchant 1.6.1 core/provider fallback and the in-tree legacy Win8 provider were retired; packaging now requires the MSVC/UCRT Enchant 2.8.19 core, upstream WinSpell provider, and ordering file.
 - A later URL-paste crash was traced with CDB to cross-CRT heap corruption in the MinGW/MSVCRT Enchant 2.8.19 personal-word-list path. Enchant core and WinSpell are now rebuilt with MSVC/UCRT against Fabulor's GTK/GLib libraries. The analysis and reproducible build are documented in `docs/security/enchant-windows-crash-analysis.md`.
-- The legacy Perl plugin remains as retained source only and is not part of the documented Fabulor plugin model, which is C#, Python, and Tcl. Its project was removed from the Windows solution, the `hcperl.dll` startup probe was removed, and the WiX plugin payload does not package it.
+- The legacy Perl project and source tree are retired. Its project and
+  `hcperl.dll` startup probe were already absent from the Windows solution and
+  WiX payload; repository cleanup Stage 2 removed the remaining source,
+  `perl_warnings` configuration surface, obsolete build macro, and stale
+  user-facing guidance.
 - Modern manifest Tcl loading now uses the installed executable-relative runtime root by default, avoids process `PATH` and `TCL_LIBRARY` mutation, and loads `tcl86t.dll` with constrained `LoadLibraryExA()` flags. The installer preserves the matching `Runtime\Tcl\bin` and `Runtime\Tcl\lib` directories; an earlier flattened layout was detected during installed-package testing and corrected. Simple Tcl add-ons now load independently of the manifest gate from exact `addons\<name>\<name>.tcl` paths, receive separate interpreters, and reject reparse-point roots, directories, and scripts. Their direct command registry rejects duplicate command names and is cleaned up with interpreter state. C# now uses the installed executable-relative `Runtime\DotNet` root by default, gates developer roots explicitly, canonicalizes selected roots, and loads `hostfxr.dll` with constrained `LoadLibraryExA()` flags. The installer preserves the private runtime's `host\fxr` and `shared\Microsoft.NETCore.App` hierarchy and stages the managed bridge in `Runtime\DotNet`; installed-package inspection found and corrected an earlier flattened layout. Trusted simple C# add-ons load only from exact `addons\<name>\<name>.dll` paths after rejecting reparse-point roots, directories, and entry assemblies. They receive collectible managed load contexts, participate in callback dispatch while the manifest host is disabled, and are removed from managed/native registries when initialisation fails. Python manifest loading rejects command-unsafe entrypoint paths before invoking the authenticated runtime hook. The shared legacy/simple Python host preloads `Runtime\Python314\python314.dll` from the executable-relative trusted root with constrained Windows search flags; ambient development lookup is available only behind `FABULOR_ENABLE_DEVELOPMENT_RUNTIME_ROOTS=1`. Manifest Python code now runs in one subinterpreter per plugin without importing CFFI there. The Python installer feature includes `hcpython3.dll`, the API compatibility modules, the isolated manifest proxy, and `_cffi_backend`, with build-time payload validation.
 
 ## Finding: Theme Import And Legacy Add-On Loading Need Stronger Canonicalization
@@ -729,7 +735,9 @@ Suggested ordering:
 
 1. Add archive extraction containment and tests for GTK3 theme import. Status: closed. The legacy GTK3 theme-package importer and its external-helper fallback were deleted in Stage 9; the supported `.hct` reader does not extract an archive tree and retains bounded ZIP-fixture coverage.
 2. Fix or disable-by-default the Exec plugin command construction.
-3. Constrain bare-name DLL loading for Enchant and Perl. Status: Enchant now uses app-local absolute loading first; Perl is documented as legacy/not packaged in the Fabulor C#/Python/Tcl plugin model.
+3. Constrain bare-name DLL loading for Enchant and Perl. Status: Enchant now
+   uses app-local absolute loading first; the unbuilt Perl integration and its
+   bare-name DLL loading code were retired in repository cleanup Stage 2.
 4. Canonicalize add-on GUI containment and avoid `/LOAD` command-string interpolation. Status: addressed for Add-ons GUI load/unload/reload paths on 2026-07-12; script runtimes still receive command-hook requests after path validation.
 5. Document trusted-config behavior for absolute log masks and invalid TLS certificate acceptance. Status: documented in `docs/security/trusted-config.md` on 2026-07-12.
 

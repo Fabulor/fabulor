@@ -577,8 +577,6 @@ const struct prefs vars[] =
 	{"notify_timeout", P_OFFINT (hex_notify_timeout), TYPE_INT},
 	{"notify_whois_online", P_OFFINT (hex_notify_whois_online), TYPE_BOOL},
 
-	{"perl_warnings", P_OFFINT (hex_perl_warnings), TYPE_BOOL},
-
 	{"stamp_log", P_OFFINT (hex_stamp_log), TYPE_BOOL},
 	{"stamp_log_format", P_OFFSET (hex_stamp_log_format), TYPE_STR},
 	{"stamp_text", P_OFFINT (hex_stamp_text), TYPE_BOOL},

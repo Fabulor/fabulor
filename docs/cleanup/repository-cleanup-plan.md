@@ -27,7 +27,7 @@ main client repository must not contain or stage a second add-ons checkout.
 |---|---|---|
 | 1 | Dead repository metadata, completed prompt scaffolding, unbuilt Lua source, retired Inno spelling scripts, and superseded resource/version files | Accepted |
 | 1A | Remove bundled add-on scripts after migration to `Fabulor/add-ons` | Accepted |
-| 2 | Retained Perl source, `perl_warnings`, and obsolete Perl-facing messages/configuration | Planned |
+| 2 | Retained Perl source, `perl_warnings`, and obsolete Perl-facing messages/configuration | Accepted |
 | 3 | Move active `win32\copy` payload assets into owned `data` locations and retire the legacy copy namespace | Planned |
 | 4 | Audit the unbuilt text frontend, Windows compatibility shims, and duplicate backend implementations | Planned |
 | 5 | Review historical migration/security documents for archive policy without deleting evidence required for maintenance | Planned |
@@ -76,10 +76,37 @@ workflow. No client build, installer, or runtime staging input referenced these
 two bundled source files. Plugin-host staging passed 7/7 tests and the
 production WiX profile passed 24/24 tests after removal.
 
+## Stage 2
+
+The unbuilt and unpackaged `plugins\perl` source tree, `OLD_PERL` compatibility
+macro, `perl_warnings` preference storage, obsolete `/LOAD` guidance, and stale
+active-source comments were retired together.
+
+Compatibility policy:
+
+- an existing saved `perl_warnings` value is ignored during configuration load;
+- the key is omitted on the next canonical configuration save;
+- `/SET perl_warnings` reports no such variable; and
+- maintained native, C#, Python, and Tcl plugin paths remain unchanged.
+
+Historical changelog, translation-catalog, migration, and security-audit
+references remain as records. Current maintainer guidance and regression tests
+must not describe or permit a restorable Perl integration.
+
+Automated evidence:
+
+- the Release x64 solution rebuilt successfully with 22/22 native tests;
+- the repository Perl-retirement contract and production WiX profile passed
+  25/25 tests;
+- plugin, runtime, payload, import, and theme suites passed all 71 remaining
+  tests, for 96/96 Python tests overall; and
+- the theme contract validator passed.
+
+No installer-owned input changed, so an MSI/bootstrapper rebuild was not
+required for this source-retirement stage.
+
 ## Deliberately Retained
 
-- `plugins\perl` remains for Stage 2 so source removal, `perl_warnings`, saved
-  configuration handling, and stale messages are retired together.
 - `win32\copy` currently supplies WiX assets and ISO code data at runtime. It is
   active despite its legacy location and remains until Stage 3 moves each file
   to an explicit owner.

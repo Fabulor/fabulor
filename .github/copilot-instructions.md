@@ -23,8 +23,8 @@ strict GTK4 compile/runtime probe.
   plugin host
 - `src\fe-gtk`: GTK4-only Windows frontend
 - `src\managed`: .NET 8 C# plugin abstractions and collectible host
-- `plugins`: supported native extensions plus the Python bridge; retained Perl
-  source is pending a dedicated final-cleanup stage
+- `plugins`: supported native extensions plus the Python bridge; Lua and Perl
+  integration are retired
 - `samples\plugins`: maintained simple and manifest C#, Python, and Tcl samples
 - `Runtime\GTK4`: development/runtime source used by the allowlisted staging
   tools

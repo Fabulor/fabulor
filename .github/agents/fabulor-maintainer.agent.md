@@ -52,5 +52,5 @@ branding. Require reference and compatibility evidence before renaming them.
 3. Use explicit allowlists and structured parsers for payload/configuration
    work.
 4. Update validation evidence when a stage completes.
-5. Never stage repository `addons` changes as part of core Fabulor work; those
-   are moving to `Fabulor/add-ons`.
+5. Keep the independent `Fabulor/add-ons` checkout outside the client
+   worktree.
