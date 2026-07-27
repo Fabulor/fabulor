@@ -269,6 +269,8 @@ fabulor_user_list_view_set_model (GtkWidget *view,
 
 	if (!owner)
 		return;
+	if (owner->model == model)
+		return;
 	owner->model = model;
 	gtk_list_view_set_model (GTK_LIST_VIEW (view), model ?
 		fabulor_user_list_model_get_selection (model) : NULL);

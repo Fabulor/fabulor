@@ -68,6 +68,7 @@
 #include "pixmaps.h"
 #include "plugin-tray.h"
 #include "xtext.h"
+#include "ui-performance-profile.h"
 #include "sexy-spell-entry.h"
 #include "servlistgui.h"
 #include "gtkutil.h"
@@ -1398,11 +1399,13 @@ mg_decide_userlist (session *sess, gboolean switch_to_current)
         }
 }
 
-static int ul_tag = 0;
-
 static gboolean
 mg_populate_userlist (session *sess)
 {
+        gint64 started = fabulor_ui_profile_enabled () ?
+                g_get_monotonic_time () : 0;
+        gint64 model_attached = 0;
+
         if (!sess)
                 sess = current_tab;
 
@@ -1413,10 +1416,22 @@ mg_populate_userlist (session *sess)
                 else
                         mg_set_access_icon (sess->gui, get_user_icon (sess->server, sess->me), sess->server->is_away);
                 userlist_show (sess);
+                if (started)
+                        model_attached = g_get_monotonic_time ();
                 userlist_set_value (sess->gui->user_tree, sess->res->old_ul_value);
         }
+        if (started)
+                fabulor_ui_profile_log ("user-list",
+                                       "total_us=%" G_GINT64_FORMAT
+                                       " model_us=%" G_GINT64_FORMAT
+                                       " scroll_us=%" G_GINT64_FORMAT
+                                       " channel=\"%s\"",
+                                       g_get_monotonic_time () - started,
+                                       model_attached ? model_attached - started : 0,
+                                       model_attached ?
+                                               g_get_monotonic_time () - model_attached : 0,
+                                       sess ? sess->channel : "");
 
-        ul_tag = 0;
         return 0;
 }
 
@@ -1515,15 +1530,11 @@ mg_populate (session *sess)
         if (strcmp (sess->server->nick, gtk_button_get_label (GTK_BUTTON (gui->nick_label))) != 0)
                 gtk_button_set_label (GTK_BUTTON (gui->nick_label), sess->server->nick);
 
-        /* this is slow, so make it a timeout event */
-        if (!gui->is_tab)
-        {
-                mg_populate_userlist (sess);
-        } else
-        {
-                if (ul_tag == 0)
-                        ul_tag = g_idle_add ((GSourceFunc)mg_populate_userlist, NULL);
-        }
+        /*
+         * Keep transcript and user-list replacement in one switch transaction.
+         * Deferring this model swap makes the list visibly trail the transcript.
+         */
+        mg_populate_userlist (sess);
 
         fe_userlist_numbers (sess);
 
@@ -5464,6 +5475,8 @@ mg_switch_tab_cb (chanview *cv, chan *ch, int tag, gpointer ud)
 {
         chan *old;
         session *sess = ud;
+        gint64 started = fabulor_ui_profile_enabled () ?
+                g_get_monotonic_time () : 0;
 
         old = active_tab;
         active_tab = ch;
@@ -5483,6 +5496,12 @@ mg_switch_tab_cb (chanview *cv, chan *ch, int tag, gpointer ud)
                 if (!mg_is_userlist_and_tree_combined ())
                         mg_userlist_showhide (current_sess, FALSE);     /* hide */
         }
+        if (started)
+                fabulor_ui_profile_log ("tab-switch",
+                                       "total_us=%" G_GINT64_FORMAT
+                                       " tag=%d channel=\"%s\"",
+                                       g_get_monotonic_time () - started, tag,
+                                       tag == TAG_IRC && sess ? sess->channel : "");
 }
 
 /* compare two tabs (for tab sorting function) */

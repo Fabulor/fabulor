@@ -52,6 +52,7 @@
 #include "xtext-scroll-copy.h"
 #include "xtext-selection.h"
 #include "xtext-widget-class.h"
+#include "ui-performance-profile.h"
 #include "fkeys.h"
 #include "theme/theme-access.h"
 
@@ -234,13 +235,25 @@ gtk_xtext_accessible_refresh (FabulorXTextAccessible *accessible,
 	GtkXText *xtext = GTK_XTEXT (user_data);
 	FabulorXTextAccessibleChange change;
 	gchar *snapshot;
+	gint64 started = 0;
+	gint64 built = 0;
 
 	if (!xtext->accessible_dirty)
 		return;
+	if (fabulor_ui_profile_enabled ())
+		started = g_get_monotonic_time ();
 	xtext->accessible_dirty = FALSE;
 	snapshot = gtk_xtext_accessible_build (xtext);
+	if (started)
+		built = g_get_monotonic_time ();
 	if (fabulor_xtext_accessible_replace (accessible, snapshot, &change))
 		fabulor_xtext_accessible_notify (GTK_WIDGET (xtext), &change);
+	if (started)
+		fabulor_ui_profile_log ("accessible",
+			"total_us=%" G_GINT64_FORMAT " build_us=%" G_GINT64_FORMAT
+			" bytes=%" G_GSIZE_FORMAT,
+			g_get_monotonic_time () - started, built - started,
+			strlen (snapshot));
 	g_free (snapshot);
 }
 
@@ -5833,6 +5846,10 @@ gtk_xtext_buffer_show (GtkXText *xtext, xtext_buffer *buf, int render)
 {
 	FabulorXTextGeometry geometry;
 	int w, h;
+	int previous_width;
+	gint64 started = 0;
+	gint64 widths_us = 0;
+	gint64 wraps_us = 0;
 
 	buf->xtext = xtext;
 
@@ -5860,12 +5877,19 @@ gtk_xtext_buffer_show (GtkXText *xtext, xtext_buffer *buf, int render)
 		return;
 	h = geometry.height;
 	w = geometry.width;
+	previous_width = buf->window_width;
+	if (fabulor_ui_profile_enabled ())
+		started = g_get_monotonic_time ();
 
 	/* after a font change */
 	if (buf->needs_recalc)
 	{
+		gint64 phase_started = started ? g_get_monotonic_time () : 0;
+
 		buf->needs_recalc = FALSE;
 		gtk_xtext_recalc_widths (buf, TRUE);
+		if (phase_started)
+			widths_us = g_get_monotonic_time () - phase_started;
 	}
 
 	/* now change to the new buffer */
@@ -5901,9 +5925,13 @@ gtk_xtext_buffer_show (GtkXText *xtext, xtext_buffer *buf, int render)
 		/* did the window change size since this buffer was last shown? */
 		if (buf->window_width != w)
 		{
+			gint64 phase_started = started ? g_get_monotonic_time () : 0;
+
 			buf->window_width = w;
 			buf->window_height = h;
 			gtk_xtext_calc_lines (buf, FALSE);
+			if (phase_started)
+				wraps_us = g_get_monotonic_time () - phase_started;
 			if (buf->scrollbar_down)
 				xtext_adj_set_value (xtext->adj,
 					xtext_adj_get_upper (xtext->adj) -
@@ -5917,6 +5945,15 @@ gtk_xtext_buffer_show (GtkXText *xtext, xtext_buffer *buf, int render)
 					xtext_adj_get_upper (xtext->adj));
 			gtk_xtext_adjustment_set (buf, FALSE);
 		}
+
+		if (started)
+			fabulor_ui_profile_log ("transcript",
+				"total_us=%" G_GINT64_FORMAT
+				" widths_us=%" G_GINT64_FORMAT
+				" wraps_us=%" G_GINT64_FORMAT
+				" width=%d->%d height=%d render=%d lines=%d",
+				g_get_monotonic_time () - started, widths_us, wraps_us,
+				previous_width, w, h, render, buf->num_lines);
 
 		gtk_xtext_render_page (xtext);
 		{

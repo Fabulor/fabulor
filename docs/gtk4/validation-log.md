@@ -8694,6 +8694,44 @@ Installed acceptance: pass. `/SET irc_cap_server_time` reports no such
 variable, Preferences no longer exposes the toggle, and normal IRC and ZNC
 timestamps remain operational.
 
+### GTK4 Stage 9 Channel-Switch Latency Acceptance, Pass 39
+
+Date: 2026-07-27
+
+Installed testing found that switching networks and channels could feel
+delayed, particularly on busy channels, despite stable IRC lag measurements.
+An opt-in production profiler separated the synchronous tab switch,
+transcript rewrapping, accessibility refresh, and user-list model attachment.
+
+Diagnosis and fix:
+
+- gate profiling behind `FABULOR_PROFILE_UI`; ordinary launches perform no
+  timing calls or file I/O
+- write enabled diagnostics to `ui-performance.log` in the Fabulor
+  configuration directory
+- identify ordinary synchronous tab replacement at approximately 2 to 3 ms
+- identify isolated stale-width transcript rewraps at approximately 7 to
+  12 ms, limited to the first revisit after viewport-width changes
+- rule out accessibility snapshot work in the measured sessions
+- identify deferred user-list model replacement as the persistent visual
+  delay: attachment began 100 to 150 ms after the transcript in the initial
+  run and 50 to 65 ms after it at high idle priority
+- replace the historical deferred attachment with one synchronous switch
+  transaction so transcript and user list reach the next frame together
+- avoid redundant assignments when the requested user-list model is already
+  attached
+
+Automated evidence:
+
+- full GTK4 frontend rebuild: zero warnings and zero errors
+- GTK4 tooling contract suite: 71/71 passed
+- production MSI and bootstrapper rebuild: zero warnings and zero errors
+- source formatting validation: pass
+
+Installed acceptance: pass. Direct IRC/ZNC channel switching without a proxy
+feels more responsive. Network lag remained approximately 0.2 seconds and was
+not correlated with the local UI delay.
+
 ## Stage Completion Rule
 
 A stage can move to complete in `migration-plan.md` only when:
