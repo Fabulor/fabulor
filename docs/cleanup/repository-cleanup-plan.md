@@ -10,8 +10,8 @@ because it is old or retains a `ZoiteChat`/`XChat` name. Internal ABI names,
 configuration compatibility, copyright history, and active installer assets
 remain until a dedicated review proves otherwise.
 
-The user `addons` worktree is outside this cleanup. Those add-ons are moving to
-the separate `Fabulor/add-ons` repository and must not be staged here.
+User-maintained add-ons live in the separate `Fabulor/add-ons` repository. The
+main client repository must not contain or stage a second add-ons checkout.
 
 ## Status Terms
 
@@ -26,6 +26,7 @@ the separate `Fabulor/add-ons` repository and must not be staged here.
 | Stage | Scope | Status |
 |---|---|---|
 | 1 | Dead repository metadata, completed prompt scaffolding, unbuilt Lua source, retired Inno spelling scripts, and superseded resource/version files | Accepted |
+| 1A | Remove bundled add-on scripts after migration to `Fabulor/add-ons` | Accepted |
 | 2 | Retained Perl source, `perl_warnings`, and obsolete Perl-facing messages/configuration | Planned |
 | 3 | Move active `win32\copy` payload assets into owned `data` locations and retire the legacy copy namespace | Planned |
 | 4 | Audit the unbuilt text frontend, Windows compatibility shims, and duplicate backend implementations | Planned |
@@ -66,6 +67,15 @@ the separate `Fabulor/add-ons` repository and must not be staged here.
 - MSI/bootstrapper rebuild was not required because no installer-owned input
   changed
 
+## Stage 1A
+
+The tracked `addons` directory was retired after its maintained scripts moved
+to the independent `Fabulor/add-ons` repository. That repository now owns its
+source history, documentation, pull requests, and Python/Tcl validation
+workflow. No client build, installer, or runtime staging input referenced these
+two bundled source files. Plugin-host staging passed 7/7 tests and the
+production WiX profile passed 24/24 tests after removal.
+
 ## Deliberately Retained
 
 - `plugins\perl` remains for Stage 2 so source removal, `perl_warnings`, saved
@@ -90,5 +100,5 @@ Each stage must:
 2. preserve compatibility policy explicitly where saved state or public APIs
    are involved;
 3. run focused tests plus the appropriate native/package validation;
-4. avoid staging the separate `addons` worktree; and
+4. keep the independent add-ons checkout outside the client worktree; and
 5. be committed and reviewed independently from unrelated cleanup stages.

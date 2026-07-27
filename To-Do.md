@@ -480,6 +480,8 @@ Detailed scope and stage gates live in
 - [x] Remove unsupported, unbuilt Lua plugin source.
 - [x] Remove retired Inno spelling scripts and superseded resource/version
       inputs.
+- [x] Move maintained add-ons to `Fabulor/add-ons` and retire the bundled
+      `addons` source directory.
 - [ ] Retire retained Perl source and residual configuration as one contained
       compatibility stage.
 - [ ] Move active `win32\copy` assets into owned `data` locations.
