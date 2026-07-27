@@ -1,0 +1,94 @@
+# Repository Cleanup Plan
+
+Last updated: 2026-07-27
+
+## Purpose
+
+This plan removes repository content that no longer belongs to the supported
+Windows 11+, GTK4, MSVC/WiX Fabulor project. A file is not removable merely
+because it is old or retains a `ZoiteChat`/`XChat` name. Internal ABI names,
+configuration compatibility, copyright history, and active installer assets
+remain until a dedicated review proves otherwise.
+
+The user `addons` worktree is outside this cleanup. Those add-ons are moving to
+the separate `Fabulor/add-ons` repository and must not be staged here.
+
+## Status Terms
+
+- `Planned`: candidate inventory exists but removal has not started.
+- `Implemented`: repository changes and focused checks pass.
+- `Accepted`: required build or installed testing passes.
+- `Published`: committed, pushed, and represented by a pull request.
+- `Retained`: reviewed and intentionally kept.
+
+## Cleanup Stages
+
+| Stage | Scope | Status |
+|---|---|---|
+| 1 | Dead repository metadata, completed prompt scaffolding, unbuilt Lua source, retired Inno spelling scripts, and superseded resource/version files | Accepted |
+| 2 | Retained Perl source, `perl_warnings`, and obsolete Perl-facing messages/configuration | Planned |
+| 3 | Move active `win32\copy` payload assets into owned `data` locations and retire the legacy copy namespace | Planned |
+| 4 | Audit the unbuilt text frontend, Windows compatibility shims, and duplicate backend implementations | Planned |
+| 5 | Review historical migration/security documents for archive policy without deleting evidence required for maintenance | Planned |
+| 6 | Review internal ZoiteChat/XChat compatibility names separately from product branding | Planned |
+| 7 | Audit ignored local build/runtime output and document a safe developer cleanup command | Planned |
+
+## Stage 1
+
+### Removed
+
+- `.pc`: quilt patch-application state from the imported source tree
+- `.lgtm.yml`: configuration for the retired LGTM service
+- `foundry.json` and `prompts`: completed Foundry-era implementation prompts
+  that describe obsolete Python 3.12 and pre-implementation plans
+- `plugins\lua`: unsupported, unbuilt, unpackaged Lua plugin source
+- `win32\spelling`: retired Inno Setup dictionary builder
+- `win32\zoitechat.exe.manifest`: superseded by `fabulor.exe.manifest`
+- `src\fe-gtk\zoitechat.rc.tt`: superseded by `fabulor.rc.tt`
+- `win32\version.txt`: obsolete `2.18.3` version source; the canonical version
+  is `installer\Directory.Build.props`
+
+### Updated
+
+- repository and maintainer instructions now describe the current GTK4-only
+  build, Python 3.14 runtime, implemented plugin hosts, validation suites, and
+  supported installer artefacts
+
+### Validation
+
+- removed-file reference audit passed across the solution, WiX graph, CI, and
+  production staging contracts
+- production WiX profile: 24/24 tests passed
+- plugin-host staging: 7/7 tests passed
+- theme contract and theme tests: 7/7 tests passed
+- Release x64 solution rebuilt successfully, including 22/22 native manifest
+  and theme tests
+- MSI/bootstrapper rebuild was not required because no installer-owned input
+  changed
+
+## Deliberately Retained
+
+- `plugins\perl` remains for Stage 2 so source removal, `perl_warnings`, saved
+  configuration handling, and stale messages are retired together.
+- `win32\copy` currently supplies WiX assets and ISO code data at runtime. It is
+  active despite its legacy location and remains until Stage 3 moves each file
+  to an explicit owner.
+- `win32\zoitechat.sln`, `zoitechat.props`, generated symbol prefixes, public
+  plugin compatibility modules, and `ZoiteChat*` managed types are active
+  build/ABI surfaces. Renaming them is not file cleanup.
+- `src\fe-text` and `src\dirent` require build/reference audits before any
+  removal.
+- GTK4 migration and security records remain evidence, even where they describe
+  retired intermediate states.
+
+## Stage Gate
+
+Each stage must:
+
+1. prove every candidate is absent from active build, package, CI, runtime, and
+   documented user workflows;
+2. preserve compatibility policy explicitly where saved state or public APIs
+   are involved;
+3. run focused tests plus the appropriate native/package validation;
+4. avoid staging the separate `addons` worktree; and
+5. be committed and reviewed independently from unrelated cleanup stages.

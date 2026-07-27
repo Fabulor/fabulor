@@ -470,15 +470,19 @@ Detailed planning and evidence live in:
 - [x] Document `plugin.json` schema and compatibility rules.
 - [x] Document safe mode and plugin troubleshooting.
 
-## 8. Foundry Local Prompt Library
+## 8. Repository Cleanup
 
-- [x] Create a `prompts/` folder in the repo.
-- [x] Add prompts for:
-  - [x] C ABI + C# binding.
-  - [x] Python binding.
-  - [x] Tcl binding.
-  - [x] unified loader + Kahn resolver.
-  - [x] callback/event system.
-  - [x] WiX v4 installer skeleton.
-- [x] Keep prompts small, focused, and grounded with:
-  - [x] `Fabulor is currently located at C:\zoitechat-master and should move to C:\fabulor-master when the workspace folder is renamed.` at the top.
+Detailed scope and stage gates live in
+[`docs/cleanup/repository-cleanup-plan.md`](docs/cleanup/repository-cleanup-plan.md).
+
+- [x] Retire the completed Foundry Local prompt scaffolding.
+- [x] Remove dead repository-service and quilt metadata.
+- [x] Remove unsupported, unbuilt Lua plugin source.
+- [x] Remove retired Inno spelling scripts and superseded resource/version
+      inputs.
+- [ ] Retire retained Perl source and residual configuration as one contained
+      compatibility stage.
+- [ ] Move active `win32\copy` assets into owned `data` locations.
+- [ ] Audit unbuilt frontend/compatibility surfaces before removal.
+- [ ] Review historical documentation and internal compatibility names without
+      deleting evidence or public ABI by appearance alone.
