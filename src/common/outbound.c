@@ -52,6 +52,7 @@
 #include "zoitechatc.h"
 #include "servlist.h"
 #include "server.h"
+#include "service-message.h"
 #include "tree.h"
 #include "outbound.h"
 #include "chanopt.h"
@@ -3014,40 +3015,36 @@ cmd_msg (struct session *sess, char *tbuf, char *word[], char *word_eol[])
 				sess->server->p_message (sess->server, nick, msg + offset);
 				offset = 0;
 			}
-			newsess = find_dialog (sess->server, nick);
-			if (!newsess)
-				newsess = find_channel (sess->server, nick);
-			if (newsess && !sess->server->have_echo_message)
+			if (!sess->server->have_echo_message)
 			{
-				message_tags_data no_tags = MESSAGE_TAGS_DATA_INIT;
-
-				while ((split_text = split_up_text (sess, msg + offset, cmd_length, split_text)))
+				newsess = find_dialog (sess->server, nick);
+				if (!newsess)
+					newsess = find_channel (sess->server, nick);
+				if (newsess)
 				{
+					message_tags_data no_tags = MESSAGE_TAGS_DATA_INIT;
+
+					while ((split_text = split_up_text (sess, msg + offset, cmd_length, split_text)))
+					{
+						inbound_chanmsg (newsess->server, NULL, newsess->channel,
+											  newsess->server->nick, split_text, TRUE, FALSE,
+											  &no_tags);
+
+						if (*split_text)
+							offset += strlen(split_text);
+
+						g_free (split_text);
+					}
 					inbound_chanmsg (newsess->server, NULL, newsess->channel,
-										  newsess->server->nick, split_text, TRUE, FALSE,
+										  newsess->server->nick, msg + offset, TRUE, FALSE,
 										  &no_tags);
-
-					if (*split_text)
-						offset += strlen(split_text);
-
-					g_free (split_text);
 				}
-				inbound_chanmsg (newsess->server, NULL, newsess->channel,
-									  newsess->server->nick, msg + offset, TRUE, FALSE,
-									  &no_tags);
-			}
-			else
-			{
-				/* mask out passwords */
-				if (g_ascii_strcasecmp (nick, "nickserv") == 0)
+				else
 				{
-					if (g_ascii_strncasecmp (msg, "identify ", 9) == 0)
-						msg = "identify ****";
-					else if (g_ascii_strncasecmp (msg, "ghost ", 6) == 0)
-						msg = "ghost ****";
+					EMIT_SIGNAL (XP_TE_MSGSEND, sess, nick,
+									service_message_for_display (nick, msg),
+									NULL, NULL, 0);
 				}
-
-				EMIT_SIGNAL (XP_TE_MSGSEND, sess, nick, msg, NULL, NULL, 0);
 			}
 
 			return TRUE;

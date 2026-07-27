@@ -12,10 +12,12 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="test-fabulor-plugin-manifest-json.c" />
+    <ClCompile Include="test-service-message.c" />
     <ClCompile Include="test-theme-archive-reader.c" />
     <ClCompile Include="..\fabulor-plugin-enable-policy.c" />
     <ClCompile Include="..\fabulor-plugin-manifest-json.c" />
     <ClCompile Include="..\fabulor-plugin-path-policy.c" />
+    <ClCompile Include="..\service-message.c" />
     <ClCompile Include="..\theme-archive-reader.c" />
   </ItemGroup>
   <ItemGroup>
@@ -23,6 +25,7 @@
     <ClInclude Include="..\fabulor-plugin-manifest-json.h" />
     <ClInclude Include="..\fabulor-plugin-path-policy.h" />
     <ClInclude Include="..\fabulor-plugin-host.h" />
+    <ClInclude Include="..\service-message.h" />
     <ClInclude Include="..\theme-archive-reader.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">

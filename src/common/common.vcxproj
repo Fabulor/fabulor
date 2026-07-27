@@ -36,6 +36,7 @@
     <ClInclude Include="proxy-policy.h" />
     <ClInclude Include="public_suffix_data.h" />
     <ClInclude Include="server.h" />
+    <ClInclude Include="service-message.h" />
     <ClInclude Include="servlist.h" />
     <ClInclude Include="secretstore.h" />
     <ClInclude Include="socks5-protocol.h" />
@@ -80,6 +81,7 @@
     <ClCompile Include="plugin.c" />
     <ClCompile Include="proto-irc.c" />
     <ClCompile Include="server.c" />
+    <ClCompile Include="service-message.c" />
     <ClCompile Include="servlist.c" />
     <ClCompile Include="secretstore.c" />
     <ClCompile Include="ssl.c" />
