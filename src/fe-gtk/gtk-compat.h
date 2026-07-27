@@ -108,6 +108,28 @@ fabulor_gtk_image_new_from_icon_name (const gchar *icon_name,
 
 #define FABULOR_GTK_IMAGE_SOURCE_PIXBUF_DATA "fabulor-gtk-image-source-pixbuf"
 
+static inline GdkTexture *
+fabulor_gtk_texture_new_from_pixbuf (GdkPixbuf *pixbuf)
+{
+	GBytes *bytes;
+	GdkMemoryFormat format;
+	GdkTexture *texture;
+
+	g_return_val_if_fail (GDK_IS_PIXBUF (pixbuf), NULL);
+
+	bytes = g_bytes_new_with_free_func (
+		gdk_pixbuf_get_pixels (pixbuf), gdk_pixbuf_get_byte_length (pixbuf),
+		(GDestroyNotify) g_object_unref, g_object_ref (pixbuf));
+	format = gdk_pixbuf_get_has_alpha (pixbuf) ?
+		GDK_MEMORY_R8G8B8A8 : GDK_MEMORY_R8G8B8;
+	texture = gdk_memory_texture_new (gdk_pixbuf_get_width (pixbuf),
+		gdk_pixbuf_get_height (pixbuf), format, bytes,
+		(gsize) gdk_pixbuf_get_rowstride (pixbuf));
+	g_bytes_unref (bytes);
+
+	return texture;
+}
+
 static inline GtkWidget *
 fabulor_gtk_image_new_from_pixbuf (GdkPixbuf *pixbuf)
 {
@@ -115,7 +137,7 @@ fabulor_gtk_image_new_from_pixbuf (GdkPixbuf *pixbuf)
 
 	g_return_val_if_fail (GDK_IS_PIXBUF (pixbuf), NULL);
 
-	GdkTexture *texture = gdk_texture_new_for_pixbuf (pixbuf);
+	GdkTexture *texture = fabulor_gtk_texture_new_from_pixbuf (pixbuf);
 
 	image = gtk_image_new_from_paintable (GDK_PAINTABLE (texture));
 	g_object_unref (texture);
@@ -141,7 +163,7 @@ fabulor_gtk_about_dialog_set_logo_from_pixbuf (GtkAboutDialog *dialog,
 	g_return_if_fail (GTK_IS_ABOUT_DIALOG (dialog));
 	g_return_if_fail (GDK_IS_PIXBUF (pixbuf));
 
-	GdkTexture *texture = gdk_texture_new_for_pixbuf (pixbuf);
+	GdkTexture *texture = fabulor_gtk_texture_new_from_pixbuf (pixbuf);
 
 	gtk_about_dialog_set_logo (dialog, GDK_PAINTABLE (texture));
 	g_object_unref (texture);

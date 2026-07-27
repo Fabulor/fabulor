@@ -8732,6 +8732,58 @@ Installed acceptance: pass. Direct IRC/ZNC channel switching without a proxy
 feels more responsive. Network lag remained approximately 0.2 seconds and was
 not correlated with the local UI delay.
 
+### GTK4 Stage 9 Active Source Retirement, Pass 40
+
+Date: 2026-07-27
+
+The final audit found no GTK3 dependency in the supported application build,
+but did find dormant GTK3 code and stale build metadata: FiSHLiM retained a
+complete GTK3 dialog implementation, Sysinfo retained GTK3 labels, frontend
+comments and one theme test described obsolete GTK3 behavior, and the root
+Makefile referenced a root `meson.build` that no longer existed.
+
+Removal and containment:
+
+- specialize FiSHLiM and Sysinfo to their GTK4 production paths
+- remove obsolete GTK3-facing wording and the unbuilt GTK3 Theme Access test
+- remove the inherited application Makefile, post-install script, and 21
+  non-configurable Meson fragments
+- make `installer\Directory.Build.props` the sole version source for the
+  supported MSVC resource generator
+- retain `tools\gtk4\meson.build` and `meson_options.txt` as the isolated strict
+  GTK4 probe
+- retain negative validators for GTK3 headers, DLLs, imports, runtime roots,
+  theme files, and source reintroduction
+- replace GTK 4.22-deprecated pixbuf texture conversion with one
+  lifetime-correct `GdkMemoryTexture` helper
+
+Automated evidence:
+
+- production-source audit: zero active GTK3 references
+- strict GTK4 MSVC probe: pass
+- fresh MSVC Meson/Ninja probe: 60-step build and runtime test 1/1 pass
+- full Release x64 solution: zero warnings and zero errors
+- GTK4 tooling contracts: 79/79 passed
+- theme contracts: 7/7 passed
+- production MSI and bootstrapper rebuild: zero warnings and zero errors
+- production MSI validation: 7,624 installed files and zero GTK3 path markers
+- runtime validation: all 1,431 manifest entries and content hashes verified
+- native import validation: 35 files, 107 packaged edges, and 54 reviewed
+  system imports
+- frontend bootstrap validation: launcher 9 imports, frontend 32 imports, and
+  `fabulor_frontend_main` resolved
+- production bundle validation: version `1.0.4`, one embedded MSI, and exact
+  embedded/published MSI equality
+- production MSI SHA-256:
+  `C303C78D46A48A2844C0B5ABE4160469D6D486AFBEF04F7B467D5C69EDE186A3`
+- production bootstrapper SHA-256:
+  `FD08D77067709078A797D1E44C9DA8B18BE63FD06DF595833866E03603AB1D78`
+
+Installed acceptance is not required for deleting inactive build metadata.
+The GTK4 pixbuf path remains covered by the strict probes and complete frontend
+build; ordinary installed-client visual acceptance remains part of the
+existing Stage 9 validation workflow.
+
 ## Stage Completion Rule
 
 A stage can move to complete in `migration-plan.md` only when:

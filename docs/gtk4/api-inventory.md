@@ -25,7 +25,7 @@ Update this file in every GTK4 conversion PR. Use these status values:
 
 | Area | Current state | GTK4 target | Status |
 |---|---|---|---|
-| Meson frontend dependency | historical non-Windows fragments remain outside the supported Windows profile | keep outside the Windows production build | retired |
+| Meson frontend dependency | inherited application graph removed; isolated `tools/gtk4` probe retained | keep the probe separate from the supported MSVC/WiX production build | retired |
 | MSVC headers/libraries | GTK4 root supplies GTK/GLib and related libraries; pinned vcpkg root supplies OpenSSL | retain explicit, reproducible split roots | converted |
 | Windows CI build dependencies | one pinned GTK4 archive, vcpkg OpenSSL, and explicit non-GTK support inputs | no GTK3, Lua, Perl, gendef, or MSYS2 augmentation | converted |
 | Windows runtime payload | allowlisted GTK4 runtime staged from the compile root | same audited runtime used by the executable | converted |
@@ -33,7 +33,7 @@ Update this file in every GTK4 conversion PR. Use these status values:
 
 ## Compatibility Helper Boundary
 
-`src/fe-gtk/gtk-compat.h` provides type-specific, header-only helpers for:
+`src/fe-gtk/gtk-compat.h` is now a GTK4-only, header-only helper boundary for:
 
 - start-ordered box insertion with explicit expansion, fill, and padding
 - horizontal trailing-child insertion with preserved end alignment
@@ -48,9 +48,9 @@ Update this file in every GTK4 conversion PR. Use these status values:
 - closure-owned pointer-enter and focus interactions using GTK4 event controllers
 - smooth/discrete scroll normalization through a capture-phase GTK4 controller
 
-The production GTK3 build and isolated GTK4 MSVC/Meson probes compile the same
-helper bodies. The GTK4 probes also take each helper's address so every GTK4
-branch is linked, not merely preprocessed. Production now uses 40 typed child
+The production MSVC build and isolated GTK4 probes compile the same helper
+bodies. The probes also take each helper's address so every retained helper is
+linked, not merely preprocessed. Production now uses 40 typed child
 assignments across 14 source files: 7 windows, 18 scrolled windows, 7 frames,
 6 buttons, 1 overlay, and 1 popover.
 

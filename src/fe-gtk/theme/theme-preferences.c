@@ -855,7 +855,7 @@ theme_preferences_create_color_manager_dialog (GtkWindow *parent, gboolean *colo
         dialog = gtk_dialog_new_with_buttons (_("Manage client colors"),
                                               parent,
                                               GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT,
-                                              _("_Reset to GTK3 defaults"),
+                                              _("_Reset to defaults"),
                                               COLOR_MANAGER_RESPONSE_RESET,
                                               _("_Close"),
                                               GTK_RESPONSE_CLOSE,

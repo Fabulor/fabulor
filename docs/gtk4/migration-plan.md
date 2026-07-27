@@ -2992,9 +2992,20 @@ confirms `/SET irc_cap_server_time` reports no such variable, Preferences no
 longer exposes the toggle, and normal IRC and ZNC timestamps remain
 operational.
 
+Stage 9 active GTK3 source retirement pass 40 (2026-07-27): the final FiSHLiM
+GTK3 dialog branch, stale Sysinfo GTK3 labels, obsolete GTK3-facing wording and
+test source, and the inherited application Meson/Make graph are removed.
+`tools/gtk4` retains its isolated strict Meson probe and all negative
+anti-regression validators. The supported MSVC/WiX build is now the only
+application build graph. GTK 4.22 pixbuf conversion uses `GdkMemoryTexture`
+without deprecated API calls. Strict MSVC and Meson/Ninja probes, the complete
+native solution, tooling contracts, theme contracts, runtime/import
+validators, MSI, and bootstrapper all pass.
+
 Deliverables:
 
-- Make GTK4 the only production frontend dependency in MSVC, Meson, and CI.
+- Keep GTK4 as the only production frontend dependency in MSVC and CI; retain
+  Meson only for the isolated strict GTK4 probe.
 - Rebuild native dependencies that share GLib/CRT ownership against the final
   runtime where required.
 - Switch staging and WiX to an allowlisted GTK4 payload.

@@ -2,11 +2,11 @@
 
 > **Scope note.** ZoiteChat is being modernised from its HexChat-fork origins into a
 > ground-up rework targeting **Windows 11 and later only**. Cross-platform concerns
-> inherited from the fork — Meson and other deprecated non-Windows packaging/build surfaces,
+> inherited from the fork — deprecated non-Windows packaging/build surfaces,
 > WSL, D-Bus, libcanberra, AppIndicator, and the Lua/Perl scripting plugins — are
-> **out of scope** for new work unless a task explicitly says otherwise. That
-> tooling still exists in the tree as legacy residue from the fork; do not extend
-> it, and flag it rather than quietly working around it if it blocks a task.
+> **out of scope** for new work unless a task explicitly says otherwise. The
+> legacy application Meson/Make graph has been retired; the isolated
+> `tools\gtk4` Meson probe remains part of GTK4 validation.
 
 > **Current priority phase.** Per Barry: **finish the WiX v4 installer
 > (`installer\`) first**, before starting the deeper `ZoiteChatAPI` plugin
@@ -38,7 +38,7 @@ unless a task adds tests of its own.
 ## High-level architecture
 
 - **`src\`** — core C application code: `common\` (protocol/back-end logic shared
-  by all frontends), `fe-gtk\` (GTK front end — GTK3-based in the current source),
+  by all frontends), `fe-gtk\` (the GTK4-only Windows front end),
   `fe-text\` (text-only front end), and `dirent\` (Windows compatibility shim).
   This is the HexChat-derived C codebase that the new
   `ZoiteChatAPI` plugin ABI (see `To-Do.md`) is being layered onto.
@@ -80,10 +80,10 @@ unless a task adds tests of its own.
 - **Deprecated non-Windows packaging/build artefacts** — inherited from the
   HexChat fork and not part of the new client direction. Legacy residue; do not
   invest new effort here or use it as a model for new Windows-only work.
-- **`meson.build` / `meson_options.txt`** — the legacy cross-platform build system.
-  Out of scope for new Windows-only work; do not add options here or treat it as a
-  build target to keep in sync with Windows changes. **Assumption to verify with
-  Barry:** whether it is scheduled for outright removal or simply left unmaintained.
+- **`tools\gtk4\meson.build` / `meson_options.txt`** — the isolated strict GTK4
+  compile probe. It is validation tooling, not an application build or packaging
+  entry point. The inherited application Meson fragments and root Makefile are
+  retired and must not be restored.
 - **`po\`** and **`.tx\`** — translation strings and Transifex config, inherited
   from the fork; out of scope unless a task specifically targets localisation.
 - **`Runtime\`** — embedded language runtimes backing the (current and prospective)
@@ -159,8 +159,3 @@ Treat them as open questions, not settled scope, until Barry confirms:
 
 1. Whether historical unsupported plugin source should eventually be deleted;
    Lua and Perl must not re-enter the supported build or package meanwhile.
-2. The order in which remaining GTK3 source branches and compatibility helpers
-   should be removed from the GTK4 frontend.
-3. Whether `meson.build`/`meson_options.txt` and deprecated non-Windows
-  packaging/build artefacts are scheduled for outright removal, or simply left unmaintained
-   alongside the Windows-only rework.

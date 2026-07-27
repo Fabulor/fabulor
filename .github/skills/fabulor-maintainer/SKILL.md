@@ -10,10 +10,10 @@ argument-hint: "Describe the area and task, e.g., 'installer/: add a new Compone
 - Active for the whole current `fabulor-master` repository, **Windows 11+ only**.
 - Treat `src\`, `plugins\`, `installer\`, `win32\`, `Runtime\`, and
   `.github\workflows\windows-build.yml` as maintained surfaces.
-- Cross-platform residue from the original HexChat fork (`meson.build`,
-  `meson_options.txt`, deprecated non-Windows packaging/build artefacts, and
-  non-Windows CI workflows) is **out of scope**; do not extend it or use it as a
-  model.
+- Deprecated non-Windows packaging/build artefacts and non-Windows CI workflows
+  are **out of scope**. The inherited application Meson/Make graph is retired;
+  retain `tools\gtk4\meson.build` only as the isolated strict GTK4 validation
+  probe.
 - `prompts\` is a separate Foundry Local prompt library with real `.prompt`
   files; do not confuse it with GitHub Copilot's own `.github\prompts`
   mechanism.

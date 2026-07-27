@@ -1147,7 +1147,7 @@ gtk_xtext_new (const XTextColor *palette, int separator)
 	xtext->orig_buffer = xtext->buffer;
 	gtk_xtext_accessible_schedule (xtext);
 
-	/* GTK3 already uses the GTK render pipeline; no manual double-buffering toggle. */
+	/* Rendering is frame-driven; no manual double-buffering toggle is needed. */
 	gtk_xtext_set_palette (xtext, palette);
 	gtk_xtext_sync_palette_from_theme (xtext);
 
@@ -1669,11 +1669,7 @@ done:
 static void
 gtk_xtext_paint (GtkWidget *widget, GdkRectangle *area)
 {
-	/*
-	 * On GTK3/Wayland, drawing directly to the window (via a NULL cairo_t here)
-	 * can be buffered without ever being presented. Queue a redraw instead and
-	 * let the widget's ::draw handler do the actual painting.
-	 */
+	/* Queue work for the widget's frame-driven paint path. */
 	if (G_LIKELY (gtk_widget_get_realized (widget)))
 	{
 		if (area)
@@ -4522,11 +4518,7 @@ gtk_xtext_nth (GtkXText *xtext, int line, int *subline)
 static int
 gtk_xtext_render_ents (GtkXText * xtext, textentry * enta, textentry * entb)
 {
-	/*
-	 * On GTK3 (especially Wayland), event handlers are outside ::draw and direct
-	 * window painting may not be presented immediately. Queue a frame instead so
-	 * selections appear right away.
-	 */
+	/* Event handlers without an active render context must request a frame. */
 	if (!fabulor_xtext_render_target_has_active_context (xtext->render_target))
 	{
 		GtkWidget *w = GTK_WIDGET (xtext);
@@ -4623,14 +4615,7 @@ gtk_xtext_render_ents (GtkXText * xtext, textentry * enta, textentry * entb)
 static void
 gtk_xtext_render_page (GtkXText * xtext)
 {
-	/*
-	 * GTK3/Wayland is frame-driven. Drawing directly to a GdkWindow outside the
-	 * widget's ::draw handler can result in the compositor never presenting the
-	 * new buffer. Symptom: chat only updates after you move/resize the window.
-	 *
-	 * If no render context is active, request a redraw and let the normal GTK
-	 * paint cycle do the work.
-	 */
+	/* Without an active render context, defer work to the normal paint cycle. */
 	if (!fabulor_xtext_render_target_has_active_context (xtext->render_target))
 	{
 		GtkWidget *w = GTK_WIDGET (xtext);

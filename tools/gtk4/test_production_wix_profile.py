@@ -71,7 +71,32 @@ GTK4_TRAY_SOURCES = (
     "plugin-tray.c",
     "tray-menu-presenter-gtk4.c",
 )
-FRONTEND_MESON = ROOT / "src" / "fe-gtk" / "meson.build"
+LEGACY_BUILD_GRAPH = (
+    ROOT / "Makefile",
+    ROOT / "meson_post_install.py",
+    ROOT / "src" / "meson.build",
+    ROOT / "src" / "common" / "meson.build",
+    ROOT / "src" / "common" / "dbus" / "meson.build",
+    ROOT / "src" / "fe-gtk" / "meson.build",
+    ROOT / "src" / "fe-text" / "meson.build",
+    ROOT / "plugins" / "meson.build",
+    ROOT / "plugins" / "checksum" / "meson.build",
+    ROOT / "plugins" / "exec" / "meson.build",
+    ROOT / "plugins" / "fishlim" / "meson.build",
+    ROOT / "plugins" / "fishlim" / "tests" / "meson.build",
+    ROOT / "plugins" / "lua" / "meson.build",
+    ROOT / "plugins" / "perl" / "meson.build",
+    ROOT / "plugins" / "python" / "meson.build",
+    ROOT / "plugins" / "sysinfo" / "meson.build",
+    ROOT / "plugins" / "upd" / "meson.build",
+    ROOT / "data" / "meson.build",
+    ROOT / "data" / "icons" / "meson.build",
+    ROOT / "data" / "man" / "meson.build",
+    ROOT / "data" / "misc" / "meson.build",
+    ROOT / "data" / "pkgconfig" / "meson.build",
+    ROOT / "po" / "meson.build",
+)
+GTK4_PROBE_MESON = ROOT / "tools" / "gtk4" / "meson.build"
 GTK4_APPLICATION_SOURCE = ROOT / "src" / "fe-gtk" / "fe-gtk.c"
 GTK4_SERVER_LIST_SOURCE = ROOT / "src" / "fe-gtk" / "servlistgui.c"
 GTK4_CHANNEL_BAN_DIALOG_SOURCES = (
@@ -391,8 +416,10 @@ class ProductionWixProfileTests(unittest.TestCase):
         plugin_source = (frontend / "plugin-tray.c").read_text(encoding="utf-8")
         self.assertIn("environment.toolkit_major = 4;", plugin_source)
 
-        meson = FRONTEND_MESON.read_text(encoding="utf-8")
-        self.assertNotRegex(meson, r"\b(?:ayatana-)?appindicator")
+        for path in LEGACY_BUILD_GRAPH:
+            with self.subTest(path=path.relative_to(ROOT)):
+                self.assertFalse(path.exists())
+        self.assertTrue(GTK4_PROBE_MESON.is_file())
 
     def test_application_lifecycle_is_gtk4_only(self):
         source = GTK4_APPLICATION_SOURCE.read_text(encoding="utf-8")

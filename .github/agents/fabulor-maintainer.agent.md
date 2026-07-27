@@ -8,12 +8,10 @@ tools: [read, search, edit, execute]
 - Active for the whole current `fabulor-master` repository, **Windows 11+ only**.
 - Treat `src\`, `plugins\`, `installer\`, `win32\`, `Runtime\`, and
   `.github\workflows\windows-build.yml` as the maintained surfaces.
-- Cross-platform residue from the original HexChat fork — `meson.build`,
-  `meson_options.txt`, deprecated non-Windows packaging/build artefacts, and
-  non-Windows CI workflows —
-  is **out of scope**. Do not extend it, add options to it, or use it as a model
-  for new work. If a task genuinely requires touching it, call that out explicitly
-  as a special case rather than treating it as routine.
+- Deprecated non-Windows packaging/build artefacts and non-Windows CI workflows
+  are **out of scope**. The inherited application Meson/Make graph is retired;
+  retain `tools\gtk4\meson.build` only as the isolated strict GTK4 validation
+  probe.
 - `prompts\` is a separate Foundry Local prompt library (`manifest.json` plus
   `.prompt` files already covering the plugin rework); do not confuse it with
   GitHub Copilot's own `.github\prompts` mechanism, and do not edit one when the

@@ -8,6 +8,7 @@
  */
 
 #include "channel-tree-view.h"
+#include "gtk-compat.h"
 
 #define FABULOR_CHANNEL_TREE_VIEW_DATA "fabulor-channel-tree-view-data"
 
@@ -71,18 +72,7 @@ channel_tree_item_set_icon (FabulorChannelTreeItemBinding *binding,
 		return;
 	binding->icon_source = pixbuf;
 	if (pixbuf)
-	{
-		GBytes *bytes = g_bytes_new_with_free_func (
-			gdk_pixbuf_get_pixels (pixbuf), gdk_pixbuf_get_byte_length (pixbuf),
-			(GDestroyNotify) g_object_unref, g_object_ref (pixbuf));
-		GdkMemoryFormat format = gdk_pixbuf_get_has_alpha (pixbuf) ?
-			GDK_MEMORY_R8G8B8A8 : GDK_MEMORY_R8G8B8;
-
-		texture = gdk_memory_texture_new (gdk_pixbuf_get_width (pixbuf),
-			gdk_pixbuf_get_height (pixbuf), format, bytes,
-			(gsize) gdk_pixbuf_get_rowstride (pixbuf));
-		g_bytes_unref (bytes);
-	}
+		texture = fabulor_gtk_texture_new_from_pixbuf (pixbuf);
 	gtk_image_set_from_paintable (GTK_IMAGE (binding->icon),
 		texture ? GDK_PAINTABLE (texture) : NULL);
 	g_clear_object (&texture);

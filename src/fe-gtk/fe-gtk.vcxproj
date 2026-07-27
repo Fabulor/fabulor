@@ -260,7 +260,6 @@ FOR %%I IN ("$(ZoiteChatLib)fabulor.rc") DO IF %%~zI EQU 0 (
     <None Include="..\..\data\icons\fabulor.ico" />
     <None Include="theme\tests\test-theme-manager-policy.c" />
     <None Include="theme\tests\test-theme-runtime-persistence.c" />
-    <None Include="theme\tests\test-theme-access-routing.c" />
     <None Include="theme\tests\src/fe-gtk/theme/tests/test-theme-manager-auto-refresh.c" />
     <None Include="theme\tests\src/fe-gtk/theme/tests/test-theme-manager-dispatch-routing.c" />
     <None Include="theme\tests\src/fe-gtk/theme/tests/test-theme-application-input-style.c" />

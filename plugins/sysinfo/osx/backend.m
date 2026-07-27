@@ -278,20 +278,7 @@ sysinfo_backend_get_network(void)
 	return NULL;
 }
 
-static const char *sysinfo_detect_toolkit(void)
-{
-#if defined(USE_GTK_FRONTEND)
-	return "GTK3";
-#else
-	return NULL;
-#endif
-}
-
 char *sysinfo_backend_get_ui(void)
 {
-	const char *toolkit = sysinfo_detect_toolkit();
-	if (toolkit)
-		return g_strdup_printf("%s / Quartz", toolkit);
-
-	return g_strdup("Quartz");
+	return g_strdup("GTK4 / Quartz");
 }

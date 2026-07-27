@@ -2882,7 +2882,7 @@ menu_action_bind_item (GtkWidget *item, GSimpleActionGroup *group,
 					   (gpointer) definition->action_target);
 	if (menu_action_is_selection_stateful (definition->action_id))
 	{
-		/* GTK3 radio items keep their callback; their GtkActionable target is unreliable. */
+		/* Selection actions are dispatched by the explicit item callback. */
 		g_free (detailed_name);
 		return FALSE;
 	}

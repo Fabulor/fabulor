@@ -433,7 +433,7 @@ Detailed planning and evidence live in:
       - [x] Keep GTK3 widget-style palette sampling private while GTK4 uses the semantic runtime palette.
       - [x] Compile the legacy GTK3 theme adapter only for GTK3 and provide a tested inert GTK4 contract.
   - [x] Stage the linked full-profile GTK4 launcher/frontend with its pinned runtime and perform controlled startup smoke validation.
-- [ ] Remove GTK3 code, build inputs, runtime files, installer components, and compatibility helpers.
+- [x] Remove GTK3 code, build inputs, runtime files, installer components, and compatibility helpers.
   - [x] Promote the validated GTK4 payload to the normal Fabulor MSI and bootstrapper without changing the production upgrade identity or selectable plugin features.
   - [x] Promote GTK4 to the sole MSVC and CI frontend build profile and remove the explicit GTK3 rollback package.
   - [x] Remove GTK3 staging downloads, runtime-copy rules, WiX components, source branches, tests, and compatibility helpers.
@@ -455,6 +455,7 @@ Detailed planning and evidence live in:
     - [x] Specialize Channel View finalization, icon loading, tray-support policy, modifier aliases, and residual helper signatures to GTK4; retire unused tree-view utilities.
     - [x] Specialize main-window construction, layout, lifecycle, context menus, input, emoji, drag-and-drop, and Windows display filtering to GTK4.
     - [x] Specialize main, context, plugin, Usermenu, and stateful menu action/model ownership to GTK4 and retire all remaining GTK3 widget-menu sources.
+    - [x] Remove the final FiSHLiM GTK3 dialog branch, stale Sysinfo GTK3 labels, obsolete GTK3 UI wording/tests, and inherited application Meson/Make graph while retaining the isolated strict GTK4 probe.
 - [ ] Complete clean-install, upgrade, accessibility, visual, performance, plugin, and packaging validation.
   - [x] Validate the production bootstrapper/MSI release pair, stable upgrade identities, version alignment, exact Burn application payload, single embedded chain, GTK4-only installed payload, and byte-for-byte embedded MSI equality.
   - [x] Validate hardened SOCKS5 IRC traversal with direct IRC, ZNC, no-authentication, username/password authentication, and fail-closed authentication mismatch; preserve SOCKS4 as a separate proposed review.
