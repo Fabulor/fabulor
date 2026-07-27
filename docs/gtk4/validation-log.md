@@ -8786,6 +8786,54 @@ The GTK4 pixbuf path remains covered by the strict probes and complete frontend
 build; ordinary installed-client visual acceptance remains part of the
 existing Stage 9 validation workflow.
 
+### GTK4 Stage 9 Tcl Runtime Payload Minimization, Pass 41
+
+Date: 2026-07-27
+
+The installed Tcl feature inherited an entire general-purpose distribution:
+5,588 files and 96.34 MiB, including Tk, command shells, import libraries,
+build tools, source/tests/examples, and unrelated third-party packages.
+Fabulor directly loads only the Tcl engine and initializes an interpreter
+against the Tcl 8.6 core library.
+
+Removal and containment:
+
+- replace whole-tree `Runtime\Tcl\bin` and `lib` staging with an explicit
+  embedded-runtime allowlist
+- retain `tcl86t.dll`, Tcl 8.6 core scripts, encodings, timezone/message data,
+  and reviewed `platform`, `msgcat`, `http`, and `tcltest` modules
+- exclude Tk, Tcl command shells, import/stub libraries, Critcl, TLS, SQLite,
+  Tcllib, TWAPI, and other third-party package collections
+- document that add-ons requiring other Tcl packages must distribute and load
+  those dependencies within their trusted add-on directory
+- lock the absence of broad Tcl tree entries in the staging contract tests
+
+Automated evidence:
+
+- plugin-host staging tests: 7/7 passed
+- production WiX profile tests: 24/24 passed
+- isolated staged-root Tcl 8.6 initialization: pass
+- standard `platform`, `msgcat`, `http`, and `tcltest` package loading: pass
+- CP1252 encoding round trip and `Australia/Sydney` timezone formatting: pass
+- maintained simple and manifest Tcl sample initialization: pass
+- staged Tcl payload: 825 files, 4.95 MiB
+- staged payload contains no Tk, shell executable, development library, or
+  known third-party package tree
+- production MSI and bootstrapper rebuild: zero warnings and zero errors
+- production MSI validation: 2,861 installed files and zero GTK3 path markers
+- runtime validation: all 1,431 GTK4 manifest entries and content hashes
+  verified
+- production bundle validation: version `1.0.4`, one embedded MSI, and exact
+  embedded/published MSI equality
+- production MSI SHA-256:
+  `F5354A39D203CD4B5D79D269126A602F90A7C8E9F5D4C10B98642A2ACD2CD7C7`
+- production bootstrapper SHA-256:
+  `7C15552E3F9058959FB948D6BE81E5AB2CCCEADE8B6409DD4F2C84BDBDD95E2B`
+
+Installed acceptance: pass. A clean uninstall/reinstall starts normally, the
+reduced installed `Runtime\Tcl` payload is present, and the configured Tcl
+scripts load and function correctly.
+
 ## Stage Completion Rule
 
 A stage can move to complete in `migration-plan.md` only when:

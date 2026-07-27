@@ -126,6 +126,68 @@ class StagePluginHostsTests(unittest.TestCase):
         with self.assertRaisesRegex(hosts.PluginHostStagingError, "totals"):
             hosts.load_manifest(manifest_path)
 
+    def test_production_tcl_contract_is_an_explicit_embedded_runtime(self):
+        contract = hosts.load_contract(hosts.DEFAULT_CONTRACT)
+        tcl_entries = [
+            entry for entry in contract["entries"] if entry["source"] == "tcl"
+        ]
+        selected = {
+            (entry["path"], entry["destination"], entry["kind"])
+            for entry in tcl_entries
+        }
+
+        self.assertIn(
+            (
+                "bin/tcl86t.dll",
+                "Runtime/Tcl/bin/tcl86t.dll",
+                "file",
+            ),
+            selected,
+        )
+        self.assertIn(
+            (
+                "lib/tcl8.6/init.tcl",
+                "Runtime/Tcl/lib/tcl8.6/init.tcl",
+                "file",
+            ),
+            selected,
+        )
+        self.assertIn(
+            (
+                "lib/tcl8/8.5/msgcat-1.6.1.tm",
+                "Runtime/Tcl/lib/tcl8/8.5/msgcat-1.6.1.tm",
+                "file",
+            ),
+            selected,
+        )
+        self.assertIn(
+            (
+                "lib/tcl8/8.6/http-2.9.8.tm",
+                "Runtime/Tcl/lib/tcl8/8.6/http-2.9.8.tm",
+                "file",
+            ),
+            selected,
+        )
+        self.assertIn(
+            (
+                "lib/tcl8.6/encoding",
+                "Runtime/Tcl/lib/tcl8.6/encoding",
+                "tree",
+            ),
+            selected,
+        )
+        self.assertIn(
+            (
+                "lib/tcl8.6/tzdata",
+                "Runtime/Tcl/lib/tcl8.6/tzdata",
+                "tree",
+            ),
+            selected,
+        )
+        self.assertNotIn(("bin", "Runtime/Tcl/bin", "tree"), selected)
+        self.assertNotIn(("lib", "Runtime/Tcl/lib", "tree"), selected)
+        self.assertNotIn(("lib/tcl8", "Runtime/Tcl/lib/tcl8", "tree"), selected)
+
 
 if __name__ == "__main__":
     unittest.main()

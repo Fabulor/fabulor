@@ -60,14 +60,128 @@
     },
     {
       "source": "tcl",
-      "path": "bin",
-      "destination": "Runtime/Tcl/bin",
+      "path": "bin/tcl86t.dll",
+      "destination": "Runtime/Tcl/bin/tcl86t.dll",
+      "kind": "file"
+    },
+    {
+      "source": "tcl",
+      "path": "lib/tcl8/8.4/platform-1.0.19.tm",
+      "destination": "Runtime/Tcl/lib/tcl8/8.4/platform-1.0.19.tm",
+      "kind": "file"
+    },
+    {
+      "source": "tcl",
+      "path": "lib/tcl8/8.4/platform/shell-1.1.4.tm",
+      "destination": "Runtime/Tcl/lib/tcl8/8.4/platform/shell-1.1.4.tm",
+      "kind": "file"
+    },
+    {
+      "source": "tcl",
+      "path": "lib/tcl8/8.5/msgcat-1.6.1.tm",
+      "destination": "Runtime/Tcl/lib/tcl8/8.5/msgcat-1.6.1.tm",
+      "kind": "file"
+    },
+    {
+      "source": "tcl",
+      "path": "lib/tcl8/8.5/tcltest-2.5.9.tm",
+      "destination": "Runtime/Tcl/lib/tcl8/8.5/tcltest-2.5.9.tm",
+      "kind": "file"
+    },
+    {
+      "source": "tcl",
+      "path": "lib/tcl8/8.6/http-2.9.8.tm",
+      "destination": "Runtime/Tcl/lib/tcl8/8.6/http-2.9.8.tm",
+      "kind": "file"
+    },
+    {
+      "source": "tcl",
+      "path": "lib/tcl8.6/auto.tcl",
+      "destination": "Runtime/Tcl/lib/tcl8.6/auto.tcl",
+      "kind": "file"
+    },
+    {
+      "source": "tcl",
+      "path": "lib/tcl8.6/clock.tcl",
+      "destination": "Runtime/Tcl/lib/tcl8.6/clock.tcl",
+      "kind": "file"
+    },
+    {
+      "source": "tcl",
+      "path": "lib/tcl8.6/history.tcl",
+      "destination": "Runtime/Tcl/lib/tcl8.6/history.tcl",
+      "kind": "file"
+    },
+    {
+      "source": "tcl",
+      "path": "lib/tcl8.6/init.tcl",
+      "destination": "Runtime/Tcl/lib/tcl8.6/init.tcl",
+      "kind": "file"
+    },
+    {
+      "source": "tcl",
+      "path": "lib/tcl8.6/package.tcl",
+      "destination": "Runtime/Tcl/lib/tcl8.6/package.tcl",
+      "kind": "file"
+    },
+    {
+      "source": "tcl",
+      "path": "lib/tcl8.6/parray.tcl",
+      "destination": "Runtime/Tcl/lib/tcl8.6/parray.tcl",
+      "kind": "file"
+    },
+    {
+      "source": "tcl",
+      "path": "lib/tcl8.6/safe.tcl",
+      "destination": "Runtime/Tcl/lib/tcl8.6/safe.tcl",
+      "kind": "file"
+    },
+    {
+      "source": "tcl",
+      "path": "lib/tcl8.6/tclIndex",
+      "destination": "Runtime/Tcl/lib/tcl8.6/tclIndex",
+      "kind": "file"
+    },
+    {
+      "source": "tcl",
+      "path": "lib/tcl8.6/tm.tcl",
+      "destination": "Runtime/Tcl/lib/tcl8.6/tm.tcl",
+      "kind": "file"
+    },
+    {
+      "source": "tcl",
+      "path": "lib/tcl8.6/word.tcl",
+      "destination": "Runtime/Tcl/lib/tcl8.6/word.tcl",
+      "kind": "file"
+    },
+    {
+      "source": "tcl",
+      "path": "lib/tcl8.6/encoding",
+      "destination": "Runtime/Tcl/lib/tcl8.6/encoding",
       "kind": "tree"
     },
     {
       "source": "tcl",
-      "path": "lib",
-      "destination": "Runtime/Tcl/lib",
+      "path": "lib/tcl8.6/http1.0",
+      "destination": "Runtime/Tcl/lib/tcl8.6/http1.0",
+      "kind": "tree"
+    },
+    {
+      "source": "tcl",
+      "path": "lib/tcl8.6/msgs",
+      "destination": "Runtime/Tcl/lib/tcl8.6/msgs",
+      "kind": "tree"
+    },
+    {
+      "source": "tcl",
+      "path": "lib/tcl8.6/opt0.4",
+      "destination": "Runtime/Tcl/lib/tcl8.6/opt0.4",
+      "kind": "tree"
+    },
+    {
+      "source": "tcl",
+      "path": "lib/tcl8.6/tzdata",
+      "destination": "Runtime/Tcl/lib/tcl8.6/tzdata",
       "kind": "tree"
     }
   ]

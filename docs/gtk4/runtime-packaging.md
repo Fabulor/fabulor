@@ -165,6 +165,15 @@ runtime from the official 3.14.3 x64 embeddable archive and verifies SHA-256
 `AD4961A479DEDBEB7C7D113253F8DB1B1935586B73C27488712BEEC4F2C894E6`;
 the full hosted Python installation remains a build dependency only.
 
+Stage 9 Tcl payload minimization replaces the inherited full Tcl distribution
+with an explicit embedded-runtime allowlist. Fabulor packages `tcl86t.dll`,
+the Tcl 8.6 core scripts, encodings, timezone/message data, and reviewed
+standard Tcl modules. Tk, shells, import/stub libraries, build tools, source,
+tests/examples, and third-party package collections are excluded. The staged
+Tcl payload falls from 5,588 files and 96.34 MiB to 825 files and 4.95 MiB.
+Isolated initialization, standard-package, encoding, timezone, and maintained
+sample-add-on probes pass against only the staged root.
+
 ## Sources And Provenance
 
 Windows CI downloads the pinned GTK4 archive from the `ZoiteChat/gvsbuild`
