@@ -3,7 +3,7 @@ name: "fabulor-maintainer"
 description: "Automatically invoked for work inside fabulor-master. Handles the GTK4-only MSVC build, WiX MSI/Burn installer, Fabulor plugin APIs, and Windows CI."
 tools: [read, search, edit, execute]
 auto-invoked: true
-argument-hint: "Describe the area and task, e.g., 'installer/: add a new Components\\Plugins entry for the Python312 runtime DLLs.'"
+argument-hint: "Describe the area and task, e.g., 'installer/: update the Python314 runtime component contract.'"
 ---
 
 # Workspace Scope

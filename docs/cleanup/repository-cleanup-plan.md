@@ -28,6 +28,7 @@ main client repository must not contain or stage a second add-ons checkout.
 | 1 | Dead repository metadata, completed prompt scaffolding, unbuilt Lua source, retired Inno spelling scripts, and superseded resource/version files | Accepted |
 | 1A | Remove bundled add-on scripts after migration to `Fabulor/add-ons` | Accepted |
 | 2 | Retained Perl source, `perl_warnings`, and obsolete Perl-facing messages/configuration | Accepted |
+| 2A | Remove the superseded Python 3.12 runtime and generated investigation artefacts | Implemented |
 | 3 | Move active `win32\copy` payload assets into owned `data` locations and retire the legacy copy namespace | Planned |
 | 4 | Audit the unbuilt text frontend, Windows compatibility shims, and duplicate backend implementations | Planned |
 | 5 | Review historical migration/security documents for archive policy without deleting evidence required for maintenance | Planned |
@@ -106,6 +107,27 @@ The shared product version advanced to 1.0.5 so Burn and MSI detect the rebuilt
 client as an upgrade rather than handing maintenance to the cached 1.0.4
 bundle. The MSI and bootstrapper rebuilt with zero warnings and errors, and
 production bundle validation confirmed version 1.0.5 with one embedded MSI.
+
+## Stage 2A
+
+The Python plugin host and production installer use Python 3.14 exclusively.
+The ignored `Runtime\Python312` development payload and its obsolete
+`Python312.wxs.bak` installer fragment were removed. A tracked WiX binary log
+and two untracked file-opening investigation probes were also deleted.
+
+`Runtime\Python314`, the configured Python 3.14 build interpreter, active
+installer output, dependency caches, and the local `dos2unix.exe` maintenance
+tool remain intact.
+
+Regression coverage prevents the Python 3.12 payload, backup WiX fragment, and
+tracked WiX binary log from returning.
+
+Validation:
+
+- production WiX profile: 26/26 tests passed;
+- plugin-host staging: 7/7 tests passed; and
+- active build, installer, CI, and maintainer guidance contain no Python 3.12
+  references.
 
 ## Deliberately Retained
 

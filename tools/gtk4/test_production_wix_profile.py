@@ -701,6 +701,13 @@ class ProductionWixProfileTests(unittest.TestCase):
         self.assertNotIn("hex_perl_warnings", preferences)
         self.assertNotIn("install the Perl or Python plugin", outbound)
 
+    def test_python312_repository_residue_is_retired(self):
+        self.assertFalse((ROOT / "Runtime" / "Python312").exists())
+        self.assertFalse(
+            (INSTALLER / "Components" / "Python312.wxs.bak").exists()
+        )
+        self.assertFalse((INSTALLER / "wix-build.binlog").exists())
+
     def test_windows_support_dependencies_are_pinned(self):
         manifest = json.loads(VCPKG_MANIFEST.read_text(encoding="utf-8"))
         configuration = json.loads(VCPKG_CONFIGURATION.read_text(encoding="utf-8"))
