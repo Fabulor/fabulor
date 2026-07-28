@@ -29,7 +29,10 @@ class ThemeContractValidationTests(unittest.TestCase):
         self.write(
             "src/fe-gtk/theme/theme-preferences.c",
             '".hct" "*.hct" "colors.conf" '
-            "fabulor_theme_archive_read_text_file\n",
+            "fabulor_theme_archive_discover "
+            "fabulor_theme_archive_read_text_file "
+            "theme_palette_transaction_replace gtk_drop_down_new "
+            "g_task_run_in_thread\n",
         )
         self.write(
             "src/common/theme-archive-reader.c",
@@ -114,6 +117,26 @@ class ThemeContractValidationTests(unittest.TestCase):
         path = self.repo / "src/fe-gtk/theme/theme-preferences.c"
         path.write_text(
             path.read_text(encoding="utf-8") + '"pevents.conf"\n',
+            encoding="utf-8",
+        )
+        with self.assertRaises(validate_theme_contract.ThemeContractError):
+            validate_theme_contract.validate(self.repo)
+
+    def test_profile_theme_selector_is_required(self) -> None:
+        path = self.repo / "src/fe-gtk/theme/theme-preferences.c"
+        path.write_text(
+            path.read_text(encoding="utf-8").replace(
+                "fabulor_theme_archive_discover", "removed_theme_discovery"
+            ),
+            encoding="utf-8",
+        )
+        with self.assertRaises(validate_theme_contract.ThemeContractError):
+            validate_theme_contract.validate(self.repo)
+
+    def test_profile_theme_selector_model_double_unref_is_rejected(self) -> None:
+        path = self.repo / "src/fe-gtk/theme/theme-preferences.c"
+        path.write_text(
+            path.read_text(encoding="utf-8") + "g_object_unref (profile_model);\n",
             encoding="utf-8",
         )
         with self.assertRaises(validate_theme_contract.ThemeContractError):

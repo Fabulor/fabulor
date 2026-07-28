@@ -114,7 +114,16 @@ def validate_import_contract(repo: pathlib.Path) -> None:
     preferences = read_text(
         repo / "src" / "fe-gtk" / "theme" / "theme-preferences.c"
     ).casefold()
-    required = ('".hct"', '"colors.conf"', '"*.hct"')
+    required = (
+        '".hct"',
+        '"colors.conf"',
+        '"*.hct"',
+        "fabulor_theme_archive_discover",
+        "fabulor_theme_archive_read_text_file",
+        "theme_palette_transaction_replace",
+        "gtk_drop_down_new",
+        "g_task_run_in_thread",
+    )
     missing = [token for token in required if token not in preferences]
     if missing:
         raise ThemeContractError(
@@ -126,10 +135,12 @@ def validate_import_contract(repo: pathlib.Path) -> None:
         )
     if '".zct"' in preferences or '"*.zct"' in preferences:
         raise ThemeContractError("The active theme importer must not accept retired .zct files.")
-    if "fabulor_theme_archive_read_text_file" not in preferences:
-        raise ThemeContractError("The active .hct importer must use the bounded archive reader.")
     if "zoitechat_gtk3_theme_service_read_archive_text_file" in preferences:
         raise ThemeContractError("The active .hct importer must not depend on the GTK3 theme service.")
+    if "g_object_unref (profile_model)" in preferences:
+        raise ThemeContractError(
+            "GtkDropDown owns the profile model passed to gtk_drop_down_new."
+        )
 
     archive_reader = read_text(
         repo / "src" / "common" / "theme-archive-reader.c"

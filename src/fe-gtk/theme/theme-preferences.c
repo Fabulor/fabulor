@@ -91,6 +91,25 @@ typedef struct
         GtkWidget *preview_spell;
 } theme_color_manager_ui;
 
+typedef struct
+{
+	GPtrArray *archives;
+	GPtrArray *swatches;
+	GtkDropDown *dropdown;
+	GtkSpinner *spinner;
+	guint selected;
+	guint stage_serial;
+	gboolean blocked;
+	gboolean *color_change_flag;
+} theme_profile_palette_ui;
+
+typedef struct
+{
+	GWeakRef owner;
+	char *path;
+	guint selected;
+} theme_profile_palette_task;
+
 #define COLOR_MANAGER_RESPONSE_RESET 1
 
 typedef struct
@@ -101,11 +120,15 @@ typedef struct
 } theme_preferences_stage_state;
 
 static theme_preferences_stage_state theme_preferences_stage;
+static guint theme_preferences_stage_serial;
 
 static void
 theme_preferences_stage_reset (void)
 {
 	memset (&theme_preferences_stage, 0, sizeof (theme_preferences_stage));
+	theme_preferences_stage_serial++;
+	if (theme_preferences_stage_serial == 0)
+		theme_preferences_stage_serial++;
 }
 
 static unsigned int
@@ -502,6 +525,259 @@ theme_preferences_color_button_apply (GtkWidget *button, const GdkRGBA *color)
                 gtkutil_apply_palette (button, color, NULL, NULL);
 
         gtk_widget_queue_draw (button);
+}
+
+static void
+theme_preferences_profile_palette_ui_free (gpointer user_data)
+{
+	theme_profile_palette_ui *ui = user_data;
+
+	if (!ui)
+		return;
+	g_clear_pointer (&ui->archives, g_ptr_array_unref);
+	g_clear_pointer (&ui->swatches, g_ptr_array_unref);
+	g_free (ui);
+}
+
+static void
+theme_preferences_profile_palette_task_free (gpointer user_data)
+{
+	theme_profile_palette_task *task = user_data;
+
+	if (!task)
+		return;
+	g_weak_ref_clear (&task->owner);
+	g_free (task->path);
+	g_free (task);
+}
+
+static void
+theme_preferences_profile_palette_refresh_swatches (
+	theme_profile_palette_ui *ui)
+{
+	guint i;
+
+	if (!ui || !ui->swatches)
+		return;
+	for (i = 0; i < ui->swatches->len; i++)
+	{
+		GtkWidget *button = g_ptr_array_index (ui->swatches, i);
+		ThemeSemanticToken token = GPOINTER_TO_INT (g_object_get_data (
+			G_OBJECT (button), "zoitechat-theme-token"));
+		GdkRGBA color;
+
+		if (theme_preferences_staged_get_color (token, &color))
+			theme_preferences_color_button_apply (button, &color);
+	}
+}
+
+static gboolean
+theme_preferences_profile_palette_stage (
+	theme_profile_palette_ui *ui, const ThemePaletteCandidate *candidate,
+	GError **error)
+{
+	ThemePaletteCandidate previous;
+
+	if (!ui || !candidate || !theme_preferences_stage.palette.active)
+		return g_set_error_literal (error, G_FILE_ERROR,
+			G_FILE_ERROR_FAILED, "The palette transaction is unavailable."),
+			FALSE;
+	previous = *theme_palette_transaction_staged (
+		&theme_preferences_stage.palette);
+	if (!theme_palette_transaction_replace (
+		&theme_preferences_stage.palette, candidate)
+	    || !theme_preferences_stage_apply_candidate (
+		    theme_palette_transaction_staged (
+			    &theme_preferences_stage.palette)))
+	{
+		theme_palette_transaction_replace (
+			&theme_preferences_stage.palette, &previous);
+		theme_preferences_stage_apply_candidate (&previous);
+		return g_set_error_literal (error, G_FILE_ERROR,
+			G_FILE_ERROR_FAILED,
+			"The selected palette could not be previewed."), FALSE;
+	}
+	if (ui->color_change_flag)
+		*ui->color_change_flag = theme_preferences_stage.palette.changed;
+	theme_preferences_profile_palette_refresh_swatches (ui);
+	return TRUE;
+}
+
+static void
+theme_preferences_profile_palette_read_thread (GTask *task,
+	gpointer source_object, gpointer task_data, GCancellable *cancellable)
+{
+	theme_profile_palette_task *data = task_data;
+	char *contents = NULL;
+	GError *error = NULL;
+
+	(void)source_object;
+	(void)cancellable;
+	if (!fabulor_theme_archive_read_text_file (data->path,
+		"colors.conf", &contents, &error))
+	{
+		g_task_return_error (task, error);
+		return;
+	}
+	g_task_return_pointer (task, contents, g_free);
+}
+
+static void
+theme_preferences_profile_palette_restore_selection (
+	theme_profile_palette_ui *ui)
+{
+	ui->blocked = TRUE;
+	gtk_drop_down_set_selected (ui->dropdown, ui->selected);
+	ui->blocked = FALSE;
+}
+
+static void
+theme_preferences_profile_palette_finish_error (
+	theme_profile_palette_ui *ui, const FabulorThemeArchive *archive,
+	GError *error)
+{
+	char *message = g_strdup_printf (_("Could not load theme “%s”: %s"),
+		archive ? archive->display_name : _("Current colours"),
+		error ? error->message : _("The selected theme is unavailable."));
+
+	theme_preferences_show_import_error (
+		GTK_WIDGET (ui->dropdown), message);
+	g_free (message);
+	theme_preferences_profile_palette_restore_selection (ui);
+}
+
+static void
+theme_preferences_profile_palette_read_done (GObject *source_object,
+	GAsyncResult *result, gpointer user_data)
+{
+	GTask *task = G_TASK (result);
+	theme_profile_palette_task *data = g_task_get_task_data (task);
+	GtkWidget *owner = g_weak_ref_get (&data->owner);
+	theme_profile_palette_ui *ui;
+	const FabulorThemeArchive *archive = NULL;
+	ThemePaletteCandidate candidate;
+	char *contents;
+	GError *error = NULL;
+
+	(void)source_object;
+	(void)user_data;
+	contents = g_task_propagate_pointer (task, &error);
+	if (!owner)
+	{
+		g_free (contents);
+		g_clear_error (&error);
+		return;
+	}
+	ui = g_object_get_data (G_OBJECT (owner),
+		"fabulor-theme-profile-palette-ui");
+	if (!ui)
+	{
+		g_object_unref (owner);
+		g_free (contents);
+		g_clear_error (&error);
+		return;
+	}
+	if (ui->stage_serial != theme_preferences_stage_serial)
+	{
+		g_object_unref (owner);
+		g_free (contents);
+		g_clear_error (&error);
+		return;
+	}
+	gtk_spinner_stop (ui->spinner);
+	gtk_widget_set_visible (GTK_WIDGET (ui->spinner), FALSE);
+	gtk_widget_set_sensitive (GTK_WIDGET (ui->dropdown), TRUE);
+	if (data->selected > 0 && data->selected - 1 < ui->archives->len)
+		archive = g_ptr_array_index (ui->archives, data->selected - 1);
+	if (!contents || !archive)
+		goto failed;
+	if (!theme_runtime_palette_candidate_from_colors (contents,
+		theme_preferences_stage_color_mode () == ZOITECHAT_DARK_MODE_DARK,
+		&candidate, &error)
+	    || !theme_preferences_profile_palette_stage (ui, &candidate, &error))
+		goto failed;
+	ui->selected = data->selected;
+	g_free (contents);
+	g_object_unref (owner);
+	return;
+
+failed:
+	theme_preferences_profile_palette_finish_error (ui, archive, error);
+	g_free (contents);
+	g_clear_error (&error);
+	g_object_unref (owner);
+}
+
+static void
+theme_preferences_profile_palette_read_async (
+	theme_profile_palette_ui *ui, GtkWidget *owner,
+	const FabulorThemeArchive *archive, guint selected)
+{
+	theme_profile_palette_task *data;
+	GTask *task;
+
+	data = g_new0 (theme_profile_palette_task, 1);
+	g_weak_ref_init (&data->owner, owner);
+	data->path = g_strdup (archive->path);
+	data->selected = selected;
+	task = g_task_new (NULL, NULL,
+		theme_preferences_profile_palette_read_done, NULL);
+	g_task_set_task_data (task, data,
+		theme_preferences_profile_palette_task_free);
+	gtk_widget_set_sensitive (GTK_WIDGET (ui->dropdown), FALSE);
+	gtk_widget_set_visible (GTK_WIDGET (ui->spinner), TRUE);
+	gtk_spinner_start (ui->spinner);
+	g_task_run_in_thread (task,
+		theme_preferences_profile_palette_read_thread);
+	g_object_unref (task);
+}
+
+static void
+theme_preferences_profile_palette_changed_cb (GtkDropDown *dropdown,
+	GParamSpec *pspec, gpointer user_data)
+{
+	theme_profile_palette_ui *ui = user_data;
+	ThemePaletteCandidate candidate;
+	const FabulorThemeArchive *archive = NULL;
+	GError *error = NULL;
+	guint selected;
+	GtkWidget *owner;
+
+	(void)pspec;
+	if (!ui || ui->blocked
+	    || ui->stage_serial != theme_preferences_stage_serial)
+		return;
+	selected = gtk_drop_down_get_selected (dropdown);
+	if (selected == GTK_INVALID_LIST_POSITION || selected == ui->selected)
+		return;
+	if (selected == 0)
+		candidate = *theme_palette_transaction_snapshot (
+			&theme_preferences_stage.palette);
+	else if (selected - 1 < ui->archives->len)
+	{
+		archive = g_ptr_array_index (ui->archives, selected - 1);
+		owner = gtk_widget_get_ancestor (
+			GTK_WIDGET (dropdown), GTK_TYPE_BOX);
+		while (owner && !g_object_get_data (G_OBJECT (owner),
+			"fabulor-theme-profile-palette-ui"))
+			owner = gtk_widget_get_parent (owner);
+		if (!owner)
+			goto failed;
+		theme_preferences_profile_palette_read_async (
+			ui, owner, archive, selected);
+		return;
+	}
+	else
+		goto failed;
+
+	if (!theme_preferences_profile_palette_stage (ui, &candidate, &error))
+		goto failed;
+	ui->selected = selected;
+	return;
+
+failed:
+	theme_preferences_profile_palette_finish_error (ui, archive, error);
+	g_clear_error (&error);
 }
 
 static void
@@ -1139,7 +1415,8 @@ theme_preferences_create_color_button (GtkWidget *table,
                                        int row,
                                        int col,
                                        GtkWindow *parent,
-                                       gboolean *color_change_flag)
+                                       gboolean *color_change_flag,
+                                       theme_profile_palette_ui *profile_ui)
 {
         GtkWidget *but;
         GtkWidget *label;
@@ -1170,6 +1447,8 @@ theme_preferences_create_color_button (GtkWidget *table,
         g_object_set_data (G_OBJECT (but), "zoitechat-theme-color-change", color_change_flag);
         gtk_grid_attach (GTK_GRID (table), but, col, row, 1, 1);
         g_signal_connect (G_OBJECT (but), "clicked", G_CALLBACK (theme_preferences_color_cb), parent);
+        if (profile_ui)
+                g_ptr_array_add (profile_ui->swatches, but);
         if (theme_preferences_staged_get_color (token, &color))
                 theme_preferences_color_button_apply (but, &color);
 }
@@ -1199,7 +1478,8 @@ theme_preferences_create_other_color_l (GtkWidget *tab,
                                         ThemeSemanticToken token,
                                         int row,
                                         GtkWindow *parent,
-                                        gboolean *color_change_flag)
+                                        gboolean *color_change_flag,
+                                        theme_profile_palette_ui *profile_ui)
 {
         GtkWidget *label;
 
@@ -1208,7 +1488,8 @@ theme_preferences_create_other_color_l (GtkWidget *tab,
         gtk_widget_set_valign (label, GTK_ALIGN_CENTER);
         gtk_widget_set_margin_start (label, LABEL_INDENT);
         gtk_grid_attach (GTK_GRID (tab), label, 2, row, 1, 1);
-        theme_preferences_create_color_button (tab, token, row, 3, parent, color_change_flag);
+        theme_preferences_create_color_button (tab, token, row, 3, parent,
+                                                color_change_flag, profile_ui);
 }
 
 static void
@@ -1217,7 +1498,8 @@ theme_preferences_create_other_color_r (GtkWidget *tab,
                                         ThemeSemanticToken token,
                                         int row,
                                         GtkWindow *parent,
-                                        gboolean *color_change_flag)
+                                        gboolean *color_change_flag,
+                                        theme_profile_palette_ui *profile_ui)
 {
         GtkWidget *label;
 
@@ -1226,7 +1508,8 @@ theme_preferences_create_other_color_r (GtkWidget *tab,
         gtk_widget_set_valign (label, GTK_ALIGN_CENTER);
         gtk_widget_set_margin_start (label, LABEL_INDENT);
         gtk_grid_attach (GTK_GRID (tab), label, 5, row, 4, 1);
-        theme_preferences_create_color_button (tab, token, row, 9, parent, color_change_flag);
+        theme_preferences_create_color_button (tab, token, row, 9, parent,
+                                                color_change_flag, profile_ui);
 }
 
 static void
@@ -1261,10 +1544,51 @@ theme_preferences_create_color_page (GtkWindow *parent,
         GtkWidget *box;
         GtkWidget *label;
         GtkWidget *manage_colors_button;
+	GtkWidget *profile_row;
+	GtkStringList *profile_model;
+	theme_profile_palette_ui *profile_ui;
+	GPtrArray *archives;
+	guint archive_index;
         int i;
 
         box = gtk_box_new (GTK_ORIENTATION_VERTICAL, 0);
         fabulor_gtk_container_set_uniform_inset (box, 6);
+
+	archives = fabulor_theme_archive_discover (get_xdir ());
+	profile_ui = g_new0 (theme_profile_palette_ui, 1);
+	profile_ui->archives = archives;
+	profile_ui->swatches = g_ptr_array_new ();
+	profile_ui->color_change_flag = color_change_flag;
+	profile_ui->stage_serial = theme_preferences_stage_serial;
+	profile_model = gtk_string_list_new (NULL);
+	gtk_string_list_append (profile_model, _("Current colours"));
+	for (archive_index = 0; archive_index < archives->len; archive_index++)
+	{
+		FabulorThemeArchive *archive =
+			g_ptr_array_index (archives, archive_index);
+		gtk_string_list_append (profile_model, archive->display_name);
+	}
+	profile_ui->dropdown = GTK_DROP_DOWN (gtk_drop_down_new (
+		G_LIST_MODEL (profile_model), NULL));
+	profile_ui->spinner = GTK_SPINNER (gtk_spinner_new ());
+	profile_row = gtk_box_new (GTK_ORIENTATION_HORIZONTAL, 8);
+	label = gtk_label_new (_("Palette theme:"));
+	gtk_widget_set_halign (label, GTK_ALIGN_START);
+	gtk_widget_set_valign (label, GTK_ALIGN_CENTER);
+	gtk_widget_set_hexpand (GTK_WIDGET (profile_ui->dropdown), TRUE);
+	fabulor_gtk_box_append (GTK_BOX (profile_row), label, FALSE, FALSE, 0);
+	fabulor_gtk_box_append (GTK_BOX (profile_row),
+		GTK_WIDGET (profile_ui->dropdown), TRUE, TRUE, 0);
+	gtk_widget_set_visible (GTK_WIDGET (profile_ui->spinner), FALSE);
+	fabulor_gtk_box_append (GTK_BOX (profile_row),
+		GTK_WIDGET (profile_ui->spinner), FALSE, FALSE, 0);
+	fabulor_gtk_box_append (GTK_BOX (box), profile_row, FALSE, TRUE, 0);
+	g_object_set_data_full (G_OBJECT (box),
+		"fabulor-theme-profile-palette-ui", profile_ui,
+		theme_preferences_profile_palette_ui_free);
+	g_signal_connect (profile_ui->dropdown, "notify::selected",
+		G_CALLBACK (theme_preferences_profile_palette_changed_cb),
+		profile_ui);
 
         tab = gtk_grid_new ();
         fabulor_gtk_container_set_uniform_inset (tab, 6);
@@ -1286,7 +1610,8 @@ theme_preferences_create_color_page (GtkWindow *parent,
                                                        1,
                                                        i + 3,
                                                        parent,
-                                                       color_change_flag);
+                                                       color_change_flag,
+                                                       profile_ui);
 
         label = gtk_label_new (_("Local colors:"));
         gtk_widget_set_halign (label, GTK_ALIGN_START);
@@ -1300,32 +1625,33 @@ theme_preferences_create_color_page (GtkWindow *parent,
                                                        2,
                                                        (i + 3) - 16,
                                                        parent,
-                                                       color_change_flag);
+                                                       color_change_flag,
+                                                       profile_ui);
 
         theme_preferences_create_other_color_l (tab, _("Foreground:"), THEME_TOKEN_TEXT_FOREGROUND, 3,
-                                                parent, color_change_flag);
+                                                parent, color_change_flag, profile_ui);
         theme_preferences_create_other_color_r (tab, _("Background:"), THEME_TOKEN_TEXT_BACKGROUND, 3,
-                                                parent, color_change_flag);
+                                                parent, color_change_flag, profile_ui);
 
         theme_preferences_create_header (tab, 5, N_("Selected Text"));
         theme_preferences_create_other_color_l (tab, _("Foreground:"), THEME_TOKEN_SELECTION_FOREGROUND, 6,
-                                                parent, color_change_flag);
+                                                parent, color_change_flag, profile_ui);
         theme_preferences_create_other_color_r (tab, _("Background:"), THEME_TOKEN_SELECTION_BACKGROUND, 6,
-                                                parent, color_change_flag);
+                                                parent, color_change_flag, profile_ui);
 
         theme_preferences_create_header (tab, 8, N_("Interface Colors"));
         theme_preferences_create_other_color_l (tab, _("New data:"), THEME_TOKEN_TAB_NEW_DATA, 9,
-                                                parent, color_change_flag);
+                                                parent, color_change_flag, profile_ui);
         theme_preferences_create_other_color_r (tab, _("Marker line:"), THEME_TOKEN_MARKER, 9,
-                                                parent, color_change_flag);
+                                                parent, color_change_flag, profile_ui);
         theme_preferences_create_other_color_l (tab, _("New message:"), THEME_TOKEN_TAB_NEW_MESSAGE, 10,
-                                                parent, color_change_flag);
+                                                parent, color_change_flag, profile_ui);
         theme_preferences_create_other_color_r (tab, _("Away user:"), THEME_TOKEN_TAB_AWAY, 10,
-                                                parent, color_change_flag);
+                                                parent, color_change_flag, profile_ui);
         theme_preferences_create_other_color_l (tab, _("Highlight:"), THEME_TOKEN_TAB_HIGHLIGHT, 11,
-                                                parent, color_change_flag);
+                                                parent, color_change_flag, profile_ui);
         theme_preferences_create_other_color_r (tab, _("Spell checker:"), THEME_TOKEN_SPELL, 11,
-                                                parent, color_change_flag);
+                                                parent, color_change_flag, profile_ui);
         theme_preferences_create_header (tab, 15, N_("Color Stripping"));
         theme_preferences_create_strip_toggle (tab, 16, _("Messages"), &setup_prefs->hex_text_stripcolor_msg);
         theme_preferences_create_strip_toggle (tab, 17, _("Scrollback"), &setup_prefs->hex_text_stripcolor_replay);

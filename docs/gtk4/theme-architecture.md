@@ -25,15 +25,22 @@ The same owner discovers immediate regular `.hct` files beneath the profile
 `themes` directory. Discovery is case-insensitive on the extension, rejects
 symbolic links and Windows reparse points, derives the display name from the
 filename, and returns deterministic name-sorted metadata. The production
-Appearance page does not yet expose those archives. A selector must remain
-withheld until the frontend can parse, preview, commit, and cancel an entire
-palette as one transaction; applying individual colours through the live
-preference path is not an acceptable substitute. A future selector must pass
-the absolute discovered path back through the bounded reader, must not treat
-`.hct` archives as GTK CSS themes, and must not broaden archive extraction.
-It must also ignore an archive's legacy `pevents.conf`: older event definitions
-are not assumed compatible with the current event table, and palette selection
-cannot replace either the active formatter tables or the profile event file.
+Colors page exposes those archives through a profile-palette selector. A
+selection passes the absolute discovered path back through the bounded reader,
+which streams the archive payload on a worker task so process startup cannot
+block the GTK main thread. Palette parsing and application return to the main
+thread, parse the complete palette without mutating runtime state, and replace
+the Preferences palette transaction in one operation. The live preview and
+every visible colour swatch update together. Current colours restores the
+opening snapshot, Cancel restores that snapshot, and OK persists the staged
+result to canonical `colors.conf`. Delayed task results are generation-bound
+and cannot apply after Preferences has been cancelled or reopened.
+
+The selector does not treat `.hct` archives as GTK CSS themes and does not
+broaden archive extraction. It also ignores an archive's legacy
+`pevents.conf`: older event definitions are not assumed compatible with the
+current event table, and palette selection cannot replace either the active
+formatter tables or the profile event file.
 
 The palette backend represents an import as a complete owned candidate:
 unspecified tokens inherit the current mode palette, supplied tokens are marked
@@ -258,6 +265,8 @@ policy.
 - Complete palette candidates apply through one manager dispatch boundary.
 - Preferences preview, reset, Apply, and Cancel operate on complete palette
   candidates and preserve the opening snapshot for rollback.
+- The Colors page discovers profile `.hct` files and previews only their
+  bounded `colors.conf` palette through the complete transaction boundary.
 
 ## Planned Passes
 
