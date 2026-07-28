@@ -70,20 +70,61 @@ entries when names match. Discovery creates the profile root when a valid
 configuration directory is supplied, but it does not copy, remove, parse, or
 apply a theme.
 
+## GTK4 Archive Import
+
+OpenDesktop.org is the sole approved acquisition source for Fabulor desktop
+themes. Fabulor imports archives already downloaded by the user; it does not
+browse the site, download themes itself, execute supplied installer scripts,
+or infer trust from the source. Every archive still passes the complete local
+containment and compatibility boundary described below.
+
+The Appearance page can import `.tar`, `.tar.gz`, `.tgz`, `.tar.xz`, `.txz`,
+and `.zip` desktop-theme archives. Import uses the absolute Windows system
+`tar.exe`; it never performs PATH lookup or command-string interpolation. The
+archive operation runs on a worker task so inspection and decompression do not
+block the GTK main thread. On Windows, archive inspection and extraction use a
+direct `CreateProcessW` boundary with an exact executable path, quoted argument
+vector, redirected standard handles, and `CREATE_NO_WINDOW`; helper console
+windows therefore cannot flash over the client.
+
+Before inspection, the selected immediate regular file is copied with a strict
+byte limit into a private staging directory below
+`%APPDATA%\Fabulor\themes`. Inventory and extraction use only that private
+copy, preventing the selected file from changing between validation and use.
+Entry names must be relative UTF-8 paths with bounded length and depth and
+Windows-safe components. Duplicate names, absolute or drive-qualified paths,
+empty or dot components, control characters, alternate-data-stream syntax,
+links, special files, excessive entry counts, and excessive expanded sizes
+are rejected.
+
+A candidate is recognized only when an immediate archive root contains an
+ordinary `gtk-4.0/gtk.css`. Fabulor extracts only that root's `gtk-4.0`
+directory plus optional `index.theme` and preview images; GTK2/GTK3, GNOME
+Shell, Metacity, XFWM, Plank, and unrelated components are ignored. The
+materialized tree is checked again for ordinary directories and files, Windows
+reparse points, counts, sizes, and the required CSS file. The required
+`gtk.css` and optional `gtk-dark.css` must be UTF-8 and must not contain
+unresolved Sass `$...` source tokens or `@define-color ... var(...)`, which
+the supported GTK parser cannot consume. This is a bounded compatibility
+preflight, not a stylesheet compiler or repair pass. Valid roots are moved into
+the profile theme directory only after every candidate passes. Existing theme
+directories are never overwritten, partial installation is rolled back, and
+the original downloaded archive is retained.
+
 ## Provider Ownership
 
-`src/fe-gtk/theme/theme-gtk4.c` is the GTK4-only CSS-provider adapter. It loads
-a candidate base provider and optional dark variant before replacing the active
-providers. A missing file or parser error rejects the candidate and leaves the
-current theme installed. Parser warnings remain nonfatal but are counted and
-exposed with the most recent diagnostic.
+`src/fe-gtk/theme/theme-gtk4.c` is the GTK4-only CSS-provider adapter. It
+resolves the requested light/dark policy first and loads exactly one complete
+stylesheet. A missing file or parser error rejects the candidate and leaves
+the current theme installed. Parser warnings remain nonfatal but are counted
+and exposed with the most recent diagnostic.
 
-The base provider is installed at `GTK_STYLE_PROVIDER_PRIORITY_USER`; an
-optional dark provider is installed one priority above it so variant rules can
-override the base theme. Follow-system, prefer-light, and prefer-dark policies
-are resolved explicitly. The adapter owns its display reference, providers,
+The resolved provider is installed at `GTK_STYLE_PROVIDER_PRIORITY_USER`.
+Follow-system, prefer-light, and prefer-dark policies are explicit; a complete
+`gtk-dark.css` replaces rather than layers over `gtk.css`. The adapter owns its
+display reference, provider,
 active source identifier, variant policy, and diagnostics. Disable and final
-teardown remove installed providers from the display before releasing them and
+teardown remove the installed provider from the display before releasing it and
 reset all active identity and variant state.
 
 The provider pass does not itself own preferences. The former GTK3 adapter and
@@ -248,6 +289,11 @@ policy.
 - The system-default choice follows Windows and never loads Fabulor theme CSS.
 - Controller refresh commits preference state only after provider success.
 - Discovery metadata can be released immediately after controller refresh.
+- GTK4 archive inventory and extraction operate on one bounded private copy.
+- GTK4 archive imports reject links, reparse points, unsafe paths, special
+  entries, collisions, and excessive compressed or expanded content.
+- GTK4 archive imports materialize only GTK4 theme files and never overwrite an
+  existing profile theme.
 - Controller destruction removes active providers before releasing its state.
 - Preference callbacks run only after controller application succeeds.
 - Appearance-only refresh never writes persisted theme values.

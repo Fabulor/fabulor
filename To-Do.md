@@ -327,6 +327,7 @@ Detailed planning and evidence live in:
   - [x] Centralize tray backend selection and prohibit legacy status-icon fallback for GTK4 or unknown toolkit versions.
   - [x] Compile the legacy `GtkStatusIcon` backend only for GTK3 and fail closed through inert backend operations in GTK4.
   - [x] Discover system GTK4 desktop themes and imported themes under `%APPDATA%\Fabulor\themes`.
+  - [x] Import bounded OpenDesktop.org GTK4 theme archives into contained profile theme directories without source-based trust exemptions.
   - [x] Bind discovered GTK4 themes and variant policy to owned preference controls with transactional persistence callbacks.
   - [x] Refresh GTK4 theme appearance from queued Windows light/dark and high-contrast signals without GTK3 window filters.
   - [x] Retain `.hct` and `colors.conf` without packaging an optional default Fabulor theme.

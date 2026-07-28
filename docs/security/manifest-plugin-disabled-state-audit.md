@@ -581,6 +581,23 @@ Fix status, 2026-07-12:
 - Historical non-Windows regression coverage verified `..` traversal cleanup plus absolute-path, symlink, and hardlink rejection before the GTK3 importer and its dedicated tests were retired in Stage 9.
 - Verification: `git diff --check` passed; the focused WSL GTK3 theme-service test binary compiled with GLib/GIO/libarchive and passed all 18 tests; `src\common\common.vcxproj` built successfully with 15 pre-existing conversion warnings and 0 errors; `src\fe-gtk\fe-gtk.vcxproj` built and linked successfully with 1 pre-existing const-qualifier warning and 0 errors.
 
+GTK4 follow-up, 2026-07-28:
+
+- The supported GTK4 Appearance page now owns a separate desktop-theme archive
+  importer. The selected archive is copied with a compressed-size bound into a
+  private profile staging directory before inventory, closing replacement
+  races between validation and extraction.
+- Inventory rejects unsafe Windows paths, duplicate names, excessive depth or
+  counts, links, special entries, and excessive per-file or total expanded
+  sizes. Extraction uses the absolute system `tar.exe` and an argument vector.
+- Only immediate theme roots containing `gtk-4.0/gtk.css` are materialized.
+  Unrelated GTK2/GTK3, shell, window-manager, and dock components are ignored.
+  The staged filesystem tree is checked again for ordinary files/directories
+  and reparse points before collision-free installation.
+- Controlled archive tests cover contained extraction and overwrite refusal.
+  The six-theme `Orchis-Grey.tar.xz` package was also imported successfully
+  through the same test boundary. The UI dispatches import on a worker task.
+
 ## Finding: Exec Plugin Uses Unbounded Command Construction
 
 Severity: high if the legacy Exec plugin is installed and loaded.

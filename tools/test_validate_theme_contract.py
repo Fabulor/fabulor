@@ -3,19 +3,24 @@
 from __future__ import annotations
 
 import pathlib
+import shutil
 import subprocess
-import tempfile
 import unittest
+import uuid
 
 import validate_theme_contract
 
 
 class ThemeContractValidationTests(unittest.TestCase):
     def setUp(self) -> None:
-        fixture_root = pathlib.Path(__file__).resolve().parents[1] / "build" / "theme-contract-tests"
+        fixture_root = (
+            pathlib.Path(__file__).resolve().parents[1]
+            / "build"
+            / "theme-contract-tests-user"
+        )
         fixture_root.mkdir(parents=True, exist_ok=True)
-        self.temporary = tempfile.TemporaryDirectory(dir=fixture_root)
-        self.repo = pathlib.Path(self.temporary.name)
+        self.repo = fixture_root / uuid.uuid4().hex
+        self.repo.mkdir()
         self.write(
             "installer/Components/InstalledMode.wxs",
             """<?xml version="1.0"?>
@@ -39,7 +44,23 @@ class ThemeContractValidationTests(unittest.TestCase):
             "FABULOR_THEME_ARCHIVE_MAX_BYTES "
             "FABULOR_THEME_ARCHIVE_LIST_MAX_BYTES "
             "FABULOR_THEME_ARCHIVE_TEXT_MAX_BYTES GetSystemDirectoryW "
-            "g_subprocess_newv theme_archive_entry_is_safe\n",
+            "g_subprocess_newv theme_archive_entry_is_safe "
+            "FABULOR_GTK4_ARCHIVE_MAX_BYTES "
+            "FABULOR_GTK4_ARCHIVE_MAX_ENTRIES "
+            "FABULOR_GTK4_ARCHIVE_MAX_OUTPUT_BYTES "
+            "gtk4_archive_copy_bounded gtk4_archive_entry_name_is_safe "
+            "gtk4_archive_validate_tree theme_archive_path_is_directory\n",
+        )
+        self.write(
+            "src/fe-gtk/theme/theme-preferences-gtk4.c",
+            'fabulor_gtk4_theme_archive_import g_task_run_in_thread '
+            "theme_gtk4_controller_reload_catalog "
+            "theme_preferences_gtk4_queue_apply g_idle_add_full "
+            '"*.tar.xz" "Import theme archive..."\n',
+        )
+        self.write(
+            "src/fe-gtk/theme/theme-gtk4.c",
+            "one resolved complete provider\n",
         )
         self.write(
             "src/fe-gtk/theme/theme-runtime.c",
@@ -57,7 +78,7 @@ class ThemeContractValidationTests(unittest.TestCase):
         )
 
     def tearDown(self) -> None:
-        self.temporary.cleanup()
+        shutil.rmtree(self.repo, ignore_errors=True)
 
     def write(self, relative: str, contents: str) -> pathlib.Path:
         path = self.repo / relative
@@ -110,6 +131,23 @@ class ThemeContractValidationTests(unittest.TestCase):
             path.read_text(encoding="utf-8") + "G_SPAWN_SEARCH_PATH\n",
             encoding="utf-8",
         )
+        with self.assertRaises(validate_theme_contract.ThemeContractError):
+            validate_theme_contract.validate(self.repo)
+
+    def test_gtk4_archive_import_boundary_is_required(self) -> None:
+        path = self.repo / "src/fe-gtk/theme/theme-preferences-gtk4.c"
+        path.write_text(
+            path.read_text(encoding="utf-8").replace(
+                "fabulor_gtk4_theme_archive_import", "removed_archive_import"
+            ),
+            encoding="utf-8",
+        )
+        with self.assertRaises(validate_theme_contract.ThemeContractError):
+            validate_theme_contract.validate(self.repo)
+
+    def test_layered_gtk4_variant_provider_is_rejected(self) -> None:
+        path = self.repo / "src/fe-gtk/theme/theme-gtk4.c"
+        path.write_text("variant_provider\n", encoding="utf-8")
         with self.assertRaises(validate_theme_contract.ThemeContractError):
             validate_theme_contract.validate(self.repo)
 

@@ -152,6 +152,13 @@ def validate_import_contract(repo: pathlib.Path) -> None:
         "GetSystemDirectoryW",
         "g_subprocess_newv",
         "theme_archive_entry_is_safe",
+        "FABULOR_GTK4_ARCHIVE_MAX_BYTES",
+        "FABULOR_GTK4_ARCHIVE_MAX_ENTRIES",
+        "FABULOR_GTK4_ARCHIVE_MAX_OUTPUT_BYTES",
+        "gtk4_archive_copy_bounded",
+        "gtk4_archive_entry_name_is_safe",
+        "gtk4_archive_validate_tree",
+        "theme_archive_path_is_directory",
     )
     missing_reader = [
         token for token in required_reader_tokens if token not in archive_reader
@@ -169,6 +176,36 @@ def validate_import_contract(repo: pathlib.Path) -> None:
         raise ThemeContractError(
             "The .hct archive reader uses unsafe process discovery/invocation: "
             + ", ".join(present_forbidden)
+        )
+
+    gtk4_preferences = read_text(
+        repo / "src" / "fe-gtk" / "theme" / "theme-preferences-gtk4.c"
+    )
+    required_gtk4_import_tokens = (
+        "fabulor_gtk4_theme_archive_import",
+        "g_task_run_in_thread",
+        "theme_gtk4_controller_reload_catalog",
+        "theme_preferences_gtk4_queue_apply",
+        "g_idle_add_full",
+        '"*.tar.xz"',
+        "Import theme archive...",
+    )
+    missing_gtk4_import = [
+        token for token in required_gtk4_import_tokens
+        if token not in gtk4_preferences
+    ]
+    if missing_gtk4_import:
+        raise ThemeContractError(
+            "GTK4 preferences are missing contained archive import tokens: "
+            + ", ".join(missing_gtk4_import)
+        )
+
+    gtk4_adapter = read_text(
+        repo / "src" / "fe-gtk" / "theme" / "theme-gtk4.c"
+    )
+    if "variant_provider" in gtk4_adapter:
+        raise ThemeContractError(
+            "GTK4 themes must install one resolved light or dark provider, not layered full providers."
         )
 
     runtime = read_text(

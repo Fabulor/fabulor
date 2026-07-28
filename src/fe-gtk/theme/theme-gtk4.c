@@ -7,7 +7,6 @@ struct _ThemeGtk4Adapter
 {
 	GdkDisplay *display;
 	GtkCssProvider *base_provider;
-	GtkCssProvider *variant_provider;
 	char *active_id;
 	ThemeGtk4Variant active_variant;
 	guint error_count;
@@ -76,13 +75,9 @@ theme_gtk4_adapter_load_provider (ThemeGtk4Adapter *adapter, const char *path,
 static void
 theme_gtk4_adapter_remove_active (ThemeGtk4Adapter *adapter)
 {
-	if (adapter->display && adapter->variant_provider)
-		gtk_style_context_remove_provider_for_display (adapter->display,
-			GTK_STYLE_PROVIDER (adapter->variant_provider));
 	if (adapter->display && adapter->base_provider)
 		gtk_style_context_remove_provider_for_display (adapter->display,
 			GTK_STYLE_PROVIDER (adapter->base_provider));
-	g_clear_object (&adapter->variant_provider);
 	g_clear_object (&adapter->base_provider);
 	g_clear_pointer (&adapter->active_id, g_free);
 	adapter->active_variant = THEME_GTK4_VARIANT_FOLLOW_SYSTEM;
@@ -127,7 +122,7 @@ theme_gtk4_adapter_apply (ThemeGtk4Adapter *adapter,
 	gboolean system_prefers_dark, GError **error)
 {
 	GtkCssProvider *base_provider;
-	GtkCssProvider *variant_provider = NULL;
+	const char *css_path;
 	gboolean use_dark;
 
 	g_return_val_if_fail (adapter != NULL, FALSE);
@@ -140,25 +135,16 @@ theme_gtk4_adapter_apply (ThemeGtk4Adapter *adapter,
 		return FALSE;
 	}
 	theme_gtk4_adapter_clear_diagnostics (adapter);
+	use_dark = theme_gtk4_variant_uses_dark (variant, system_prefers_dark);
+	css_path = use_dark && theme->dark_css_path ?
+		theme->dark_css_path : theme->css_path;
 	base_provider = theme_gtk4_adapter_load_provider (adapter,
-		theme->css_path, error);
+		css_path, error);
 	if (!base_provider)
 		return FALSE;
-	use_dark = theme_gtk4_variant_uses_dark (variant, system_prefers_dark);
-	if (use_dark && theme->dark_css_path)
-	{
-		variant_provider = theme_gtk4_adapter_load_provider (adapter,
-			theme->dark_css_path, error);
-		if (!variant_provider)
-		{
-			g_object_unref (base_provider);
-			return FALSE;
-		}
-	}
 
 	theme_gtk4_adapter_remove_active (adapter);
 	adapter->base_provider = base_provider;
-	adapter->variant_provider = variant_provider;
 	adapter->active_id = g_strdup (theme->id);
 	adapter->active_variant = variant;
 	if (adapter->display)
@@ -166,10 +152,6 @@ theme_gtk4_adapter_apply (ThemeGtk4Adapter *adapter,
 		gtk_style_context_add_provider_for_display (adapter->display,
 			GTK_STYLE_PROVIDER (adapter->base_provider),
 			GTK_STYLE_PROVIDER_PRIORITY_USER);
-		if (adapter->variant_provider)
-			gtk_style_context_add_provider_for_display (adapter->display,
-				GTK_STYLE_PROVIDER (adapter->variant_provider),
-				GTK_STYLE_PROVIDER_PRIORITY_USER + 1);
 	}
 	return TRUE;
 }
@@ -226,8 +208,7 @@ theme_gtk4_adapter_active_provider_count (const ThemeGtk4Adapter *adapter)
 {
 	if (!adapter)
 		return 0;
-	return (adapter->base_provider ? 1U : 0U) +
-		(adapter->variant_provider ? 1U : 0U);
+	return adapter->base_provider ? 1U : 0U;
 }
 
 guint

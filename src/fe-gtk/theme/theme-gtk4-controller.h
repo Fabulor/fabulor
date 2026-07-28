@@ -10,6 +10,9 @@ void theme_gtk4_controller_free (ThemeGtk4Controller *controller);
 gboolean theme_gtk4_controller_refresh (ThemeGtk4Controller *controller,
 	const char *config_dir, const char *stored_id, guint stored_variant,
 	gboolean system_prefers_dark, gboolean high_contrast, GError **error);
+void theme_gtk4_controller_reload_catalog (ThemeGtk4Controller *controller,
+	const char *config_dir, const char *stored_id, guint stored_variant,
+	gboolean system_prefers_dark, gboolean high_contrast);
 gboolean theme_gtk4_controller_refresh_from_themes (
 	ThemeGtk4Controller *controller, const GPtrArray *themes,
 	const char *stored_id, guint stored_variant, gboolean system_prefers_dark,

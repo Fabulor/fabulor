@@ -3040,6 +3040,41 @@ examples include:
 Do not combine transcript rendering, list models, and installer cutover in one
 PR. Each PR must keep the shipping build usable and identify its rollback point.
 
+## GTK4 Desktop-Theme Archive Import (2026-07-28)
+
+OpenDesktop.org is the sole approved source for Fabulor desktop themes.
+Acquisition remains outside the client; locally selected archives receive no
+source-based trust exemption and must pass the complete import boundary.
+
+The Appearance page now imports third-party GTK4 desktop-theme archives rather
+than requiring users to reproduce Unix symbolic links with an external archive
+tool. The importer inventories a bounded private copy, recognizes immediate
+roots containing `gtk-4.0/gtk.css`, ignores unrelated desktop components, and
+materializes only ordinary GTK4 files. Unsafe paths, duplicate entries, links,
+special files, reparse points, excessive expansion, and existing destination
+directories fail closed. Import runs off the GTK main thread and refreshes the
+owned desktop-theme selector after successful installation.
+
+The first containment fixture, `Orchis-Grey.tar.xz`, contains six GTK4 variants
+and hundreds of links in unrelated Metacity, GNOME Shell, and XFWM trees. The
+importer correctly excludes those unrelated links, but installed acceptance
+then proved that its shipped GTK4 stylesheets contain unresolved Sass source
+tokens and an `@define-color ... var(...)` expression rejected by GTK 4.22.4.
+The importer now rejects those candidates in private staging instead of
+installing unusable selector entries. `Nordic-darker.tar.xz` is the positive
+real-world precompiled-theme fixture and passes the same contained import path.
+
+The first installed test exposed synchronous restyling inside the dropdown
+notification and an incorrect two-provider dark policy. The corrective
+candidate extracts all validated variants in one pass, performs a catalogue-
+only selector refresh after import, defers/coalesces live selection until the
+dropdown popup has settled, and installs exactly one resolved light or dark
+stylesheet. Selecting an already-installed malformed Orchis candidate now
+fails cleanly without freezing or crashing and returns to the system theme.
+Installed acceptance is complete: `Nordic-darker.tar.xz` imports without
+console flashing, applies as a GTK4 desktop theme, exposes its dark variant,
+and switching back to `System default` restores the system appearance.
+
 ## Open Decisions
 
 - Minimum supported GTK4/GLib versions after evaluating the current 4.22.4 /

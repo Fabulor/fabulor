@@ -3235,7 +3235,7 @@ check_gtk4_theme_adapter_policy (void)
 		theme_gtk4_adapter_error_count (adapter) == 0 &&
 		theme_gtk4_adapter_apply (adapter, &valid_theme,
 			THEME_GTK4_VARIANT_PREFER_DARK, FALSE, &error) &&
-		error == NULL && theme_gtk4_adapter_active_provider_count (adapter) == 2;
+		error == NULL && theme_gtk4_adapter_active_provider_count (adapter) == 1;
 
 	valid = valid && !theme_gtk4_adapter_apply (adapter, &invalid_theme,
 		THEME_GTK4_VARIANT_PREFER_LIGHT, FALSE, &error) &&
@@ -3243,20 +3243,20 @@ check_gtk4_theme_adapter_policy (void)
 		theme_gtk4_adapter_last_diagnostic (adapter) != NULL &&
 		theme_gtk4_adapter_is_active (adapter) &&
 		g_strcmp0 (theme_gtk4_adapter_active_id (adapter), "profile:valid") == 0 &&
-		theme_gtk4_adapter_active_provider_count (adapter) == 2;
+		theme_gtk4_adapter_active_provider_count (adapter) == 1;
 	g_clear_error (&error);
 	valid = valid && !theme_gtk4_adapter_apply (adapter, &missing_theme,
 		THEME_GTK4_VARIANT_PREFER_LIGHT, FALSE, &error) &&
 		g_error_matches (error, G_FILE_ERROR, G_FILE_ERROR_NOENT) &&
 		theme_gtk4_adapter_is_active (adapter) &&
-		theme_gtk4_adapter_active_provider_count (adapter) == 2;
+		theme_gtk4_adapter_active_provider_count (adapter) == 1;
 	g_clear_error (&error);
 	fabulor_gtk4_theme_preferences_resolve_appearance (
 		TRUE, FABULOR_GTK4_THEME_VARIANT_PREFER_DARK,
 		FALSE, FALSE, &appearance);
 	valid = valid && theme_gtk4_adapter_apply_decision (adapter, &valid_theme,
 		&appearance, &error) && error == NULL &&
-		theme_gtk4_adapter_active_provider_count (adapter) == 2;
+		theme_gtk4_adapter_active_provider_count (adapter) == 1;
 	fabulor_gtk4_theme_preferences_resolve_appearance (
 		TRUE, FABULOR_GTK4_THEME_VARIANT_PREFER_DARK,
 		TRUE, TRUE, &appearance);
@@ -3349,7 +3349,7 @@ check_gtk4_theme_controller_policy (void)
 		theme_gtk4_controller_theme_is_active (controller) &&
 		g_strcmp0 (theme_gtk4_controller_active_id (controller),
 			"profile:valid") == 0 &&
-		theme_gtk4_controller_active_provider_count (controller) == 2 &&
+		theme_gtk4_controller_active_provider_count (controller) == 1 &&
 		theme_gtk4_controller_stored_selection_available (controller);
 	g_ptr_array_unref (themes);
 	choice = theme_gtk4_controller_selected_choice (controller);
@@ -3520,7 +3520,7 @@ check_gtk4_theme_preferences_binding (void)
 		commit.count == 1 && commit.variant ==
 			FABULOR_GTK4_THEME_VARIANT_PREFER_DARK &&
 		g_strcmp0 (commit.theme_id, valid_id) == 0 &&
-		theme_gtk4_controller_active_provider_count (controller) == 2;
+		theme_gtk4_controller_active_provider_count (controller) == 1;
 	valid = valid && !theme_preferences_gtk4_select_theme (preferences,
 		invalid_index, &error) && error != NULL && commit.count == 1 &&
 		g_strcmp0 (theme_preferences_gtk4_stored_id (preferences), valid_id) == 0 &&
@@ -3695,7 +3695,7 @@ check_gtk4_theme_appearance_monitor (void)
 	valid = valid && query.count == 2 &&
 		theme_appearance_monitor_gtk4_refresh_count (monitor) == 2 &&
 		theme_appearance_monitor_gtk4_prefers_dark (monitor) &&
-		theme_gtk4_controller_active_provider_count (controller) == 2 &&
+		theme_gtk4_controller_active_provider_count (controller) == 1 &&
 		commit.count == 0;
 
 	valid = valid && theme_appearance_monitor_gtk4_queue_refresh (monitor);

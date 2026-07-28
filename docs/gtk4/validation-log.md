@@ -3395,7 +3395,7 @@ Automated checks:
 - [x] strict GTK4 MSVC probe compiles, links, and executes with 0 warnings and 0 errors
 - [x] fresh MSVC Meson/Ninja probe compiles 41 objects with warnings treated as errors
 - [x] independent Meson runtime test passes 1/1
-- [x] light and dark policy install one and two providers respectively
+- [x] light and dark policy each install one resolved complete provider
 - [x] invalid and missing candidates preserve the active providers and identity
 - [x] disable removes providers and clears active identity and variant state
 - [x] Linux GCC C11 syntax check passes against GTK 4.8.3 with all warnings treated as errors
@@ -8863,6 +8863,91 @@ Installed acceptance: pass after a clean install. The complete event list
 renders on the first Sounds-page opening, Preferences retains its dimensions
 when switching pages, a Windows `notify.wav` file can be assigned to `Add
 Notify` and played, and the assignment persists after restarting Fabulor.
+
+## GTK4 Desktop-Theme Archive Import (2026-07-28)
+
+Scope: contained profile-theme installation and Appearance-page integration.
+
+Automated evidence:
+
+- 33 common/security tests pass, including contained GTK4 extraction,
+  overwrite refusal, and the external six-theme `Orchis-Grey.tar.xz` fixture
+- the real fixture imports all six GTK4 variants in approximately one second
+  without extracting its unrelated symbolic links
+- common and GTK4 frontend Release x64 builds pass with zero warnings and zero
+  errors
+- the theme contract requires bounded private-copy inspection, path and tree
+  validation, background UI dispatch, and the supported archive selector
+
+Initial installed acceptance failed. Import produced visible flashing and
+selecting an Orchis theme left the UI unresponsive. The corrective candidate:
+
+- consolidates the six validated roots into one extraction process
+- refreshes only selector metadata after import instead of touching the live
+  global style provider
+- defers and coalesces dropdown application until GTK has closed its popup
+- resolves light/dark policy to one complete stylesheet instead of layering
+  `gtk-dark.css` over the complete `gtk.css`
+
+Corrective automated evidence: all 33 common/security tests pass; the real
+six-theme fixture imports in approximately 0.9 seconds; the strict GTK4 probe
+and common/frontend Release x64 builds pass with zero warnings and zero errors;
+the MSI and bootstrapper also rebuild with zero warnings and zero errors.
+Installed acceptance must be repeated before this stage is committed.
+
+The corrective installed selection test no longer froze or crashed. GTK
+rejected `Orchis-Grey/gtk-4.0/gtk-dark.css` at line 8652 because the archive
+contains uncompiled Sass `$...` tokens and an unsupported
+`@define-color ... var(...)` value. Fabulor displayed the parser error and
+returned to the system theme.
+
+The importer now checks the required `gtk.css` and optional `gtk-dark.css`
+inside private staging and rejects those two unmistakable uncompiled or
+unsupported forms before moving any theme root into the profile catalogue.
+It does not execute a theme's installer or attempt an ad hoc stylesheet
+rewrite. Automated evidence:
+
+- 36 common/security tests pass, including synthetic uncompiled-CSS and
+  unsupported-define rejection with no installed destination
+- real `Orchis-Grey.tar.xz` negative fixture: rejected in staging
+- real `Nordic-darker.tar.xz` positive fixture: contained import passes
+- 12 theme-contract tests pass
+- common Release x64 test build: zero warnings and zero errors
+- strict GTK4 probe and execution under `/W4 /WX`: zero warnings and zero
+  errors; a clean process environment avoided the calling shell's duplicate
+  `Path`/`PATH` keys
+- common, GTK4 frontend, and launcher Release x64 builds: zero warnings and
+  zero errors
+- production MSI and bootstrapper rebuild: zero warnings and zero errors
+
+Installed import acceptance remains required.
+
+The installed import test also exposed visible console flashing while the
+system archive tool performed its inventory and extraction passes. GLib's
+portable subprocess API does not expose Windows' no-console creation flag, so
+the Windows archive boundary now starts the exact validated `tar.exe` path with
+`CreateProcessW`, `CREATE_NO_WINDOW`, hidden and redirected standard handles,
+and the same argument-vector and bounded-output contract. Non-Windows builds
+retain the GLib subprocess path.
+
+Post-change automated evidence:
+
+- all 36 common/security tests pass
+- real Nordic positive and Orchis negative archive fixtures pass
+- strict GTK4 probe compiles and executes under `/W4 /WX` with zero warnings
+  and zero errors
+- common and GTK4 frontend Release x64 builds: zero warnings and zero errors
+- production MSI and bootstrapper rebuild: zero warnings and zero errors
+
+Installed acceptance: pass. `Nordic-darker.tar.xz` imported without console
+flashing, applied successfully as a GTK4 desktop theme with `Prefer dark`
+selected, and switching back to `System default` restored the system
+appearance correctly.
+
+Project policy records OpenDesktop.org as the sole approved acquisition source
+for Fabulor desktop themes. The client does not download from or assign trust
+to that source; imported archives remain subject to all containment and CSS
+compatibility checks.
 
 ## Stage Completion Rule
 

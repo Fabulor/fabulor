@@ -37,4 +37,7 @@ gboolean fabulor_theme_colors_read_token (const char *contents,
 gboolean fabulor_theme_archive_read_text_file (const char *archive_path,
 	const char *name, char **contents, GError **error);
 
+gboolean fabulor_gtk4_theme_archive_import (const char *archive_path,
+	const char *config_dir, GPtrArray **installed_names, GError **error);
+
 #endif
