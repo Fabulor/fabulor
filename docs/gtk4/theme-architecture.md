@@ -22,10 +22,12 @@ duplicate matching entries, and does not extract the archive to a filesystem
 tree.
 
 The same owner discovers immediate regular `.hct` files beneath the profile
-`themes` directory. Discovery is case-insensitive on the extension, rejects
-symbolic links and Windows reparse points, derives the display name from the
-filename, and returns deterministic name-sorted metadata. The production
-Colors page exposes those archives through a profile-palette selector. A
+`themes` directory and the installed read-only `share/palettes` directory.
+Discovery is case-insensitive on the extension, rejects symbolic links and
+Windows reparse points, derives the display name from the filename, and
+returns deterministic name-sorted metadata. A profile palette takes
+precedence over a bundled palette with the same case-insensitive name. The
+production Colors page exposes those archives through a palette selector. A
 selection passes the absolute discovered path back through the bounded reader,
 which streams the archive payload on a worker task so process startup cannot
 block the GTK main thread. Palette parsing and application return to the main
@@ -257,13 +259,14 @@ associate only `.hct`; `.zct` remains permitted solely in stale-install cleanup.
 The active preferences importer must retain `.hct`, `colors.conf`, and optional
 `pevents.conf`, while the runtime must retain atomic `colors.conf` persistence.
 
-The same validator rejects tracked `.hct`, `.zct`, `colors.conf`, or desktop
-theme directories from repository-authored payload roots. WiX component rules
-cannot harvest those files or a `share/themes` tree. Required GTK runtime data,
-icons, and Fabulor application assets remain valid dependencies and are not
-treated as an optional default theme. Positive and negative fixtures run in
-repository lint so a future packaging change cannot silently reverse this
-policy.
+The same validator permits exactly one repository-authored palette:
+`Fabulor Dark.hct`, containing only the matching tracked `colors.conf`.
+Additional `.hct`, `.zct`, `colors.conf`, or desktop-theme payloads remain
+forbidden. WiX may install that exact archive to `share/palettes` but cannot
+harvest a `share/themes` tree. Required GTK runtime data, icons, and Fabulor
+application assets remain valid dependencies. Positive and negative fixtures
+run in repository lint so a future packaging change cannot silently broaden
+this policy.
 
 ## Invariants
 
@@ -302,7 +305,8 @@ policy.
 - Appearance-monitor teardown removes its display filter and pending source.
 - Failed system queries cannot displace the last committed appearance.
 - Active installers associate `.hct` and never `.zct`.
-- Repository and WiX payload rules cannot introduce an optional default theme.
+- Repository and WiX payload rules permit only the original colours-only
+  `Fabulor Dark.hct` starter palette.
 - `.hct` and `colors.conf` remain independent Fabulor formats.
 - Profile `.hct` discovery accepts only immediate regular files and rejects
   links and reparse points.
@@ -311,8 +315,9 @@ policy.
 - Complete palette candidates apply through one manager dispatch boundary.
 - Preferences preview, reset, Apply, and Cancel operate on complete palette
   candidates and preserve the opening snapshot for rollback.
-- The Colors page discovers profile `.hct` files and previews only their
-  bounded `colors.conf` palette through the complete transaction boundary.
+- The Colors page discovers profile and bundled `.hct` files and previews only
+  their bounded `colors.conf` palette through the complete transaction
+  boundary.
 
 ## Planned Passes
 

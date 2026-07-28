@@ -26,6 +26,9 @@
 
 #include <gio/gio.h>
 #include <glib/gstdio.h>
+#ifdef G_OS_WIN32
+#include <glib/gwin32.h>
+#endif
 
 #include "../gtkutil.h"
 #include "../gtk-compat.h"
@@ -1535,6 +1538,35 @@ theme_preferences_create_strip_toggle (GtkWidget *tab,
         gtk_grid_attach (GTK_GRID (tab), toggle, 2, row, 1, 1);
 }
 
+static char *
+theme_preferences_bundled_palette_dir (void)
+{
+#ifdef G_OS_WIN32
+	char *base = g_win32_get_package_installation_directory_of_module (NULL);
+	char *path;
+
+	if (!base)
+		return NULL;
+	path = g_build_filename (base, "share", "palettes", NULL);
+	g_free (base);
+	return path;
+#else
+	const char *const *system_dirs = g_get_system_data_dirs ();
+	guint index;
+
+	for (index = 0; system_dirs && system_dirs[index]; index++)
+	{
+		char *path = g_build_filename (system_dirs[index], "fabulor",
+			"palettes", NULL);
+
+		if (g_file_test (path, G_FILE_TEST_IS_DIR))
+			return path;
+		g_free (path);
+	}
+	return NULL;
+#endif
+}
+
 GtkWidget *
 theme_preferences_create_color_page (GtkWindow *parent,
                                      struct zoitechatprefs *setup_prefs,
@@ -1549,12 +1581,16 @@ theme_preferences_create_color_page (GtkWindow *parent,
 	theme_profile_palette_ui *profile_ui;
 	GPtrArray *archives;
 	guint archive_index;
+	char *bundled_palette_dir;
         int i;
 
         box = gtk_box_new (GTK_ORIENTATION_VERTICAL, 0);
         fabulor_gtk_container_set_uniform_inset (box, 6);
 
-	archives = fabulor_theme_archive_discover (get_xdir ());
+	bundled_palette_dir = theme_preferences_bundled_palette_dir ();
+	archives = fabulor_theme_archive_discover_with_bundled (get_xdir (),
+		bundled_palette_dir);
+	g_free (bundled_palette_dir);
 	profile_ui = g_new0 (theme_profile_palette_ui, 1);
 	profile_ui->archives = archives;
 	profile_ui->swatches = g_ptr_array_new ();

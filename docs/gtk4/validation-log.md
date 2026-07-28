@@ -8949,6 +8949,30 @@ for Fabulor desktop themes. The client does not download from or assign trust
 to that source; imported archives remain subject to all containment and CSS
 compatibility checks.
 
+### Bundled Fabulor Dark palette
+
+Boundary: one original colours-only starter palette may ship independently
+from GTK4 desktop themes. `Fabulor Dark.hct` contains exactly the tracked
+`colors.conf` source and no event definitions or executable content. The
+installed archive remains read-only under `share/palettes`; profile `.hct`
+files remain under `%APPDATA%\Fabulor\themes` and take precedence on a
+case-insensitive name collision.
+
+Automated evidence:
+
+- 37 common/security tests pass, including bundled discovery and profile
+  precedence
+- 14 theme-contract tests pass
+- common, GTK4 frontend, and launcher Release x64 builds complete with zero
+  warnings and zero errors
+- production MSI and bootstrapper build with zero warnings and zero errors
+- decompiled production MSI contains `share/palettes/Fabulor Dark.hct`,
+  reports 2,862 installed files, and contains zero legacy GTK files
+
+Installed acceptance: pass. `Fabulor Dark` appears in the Colours palette
+selector from the read-only installed archive, previews and applies correctly,
+and preserves the existing Cancel and OK transaction behaviour.
+
 ## Stage Completion Rule
 
 A stage can move to complete in `migration-plan.md` only when:

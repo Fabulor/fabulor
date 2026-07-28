@@ -28,6 +28,7 @@ REQUIRED_PATHS = {
     "share/doc/NotoColorEmoji/NotoColorEmoji-LICENSE.txt",
     "share/emoji-flags/eu.png",
     "share/fonts/NotoColorEmoji.ttf",
+    "share/palettes/Fabulor Dark.hct",
 }
 REQUIRED_FEATURES = {
     "MainFeature",

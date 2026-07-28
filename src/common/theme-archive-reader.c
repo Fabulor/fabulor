@@ -319,60 +319,96 @@ theme_archive_compare (gconstpointer left, gconstpointer right)
 }
 
 GPtrArray *
-fabulor_theme_archive_discover (const char *config_dir)
+fabulor_theme_archive_discover_with_bundled (const char *config_dir,
+	const char *bundled_dir)
 {
 	GPtrArray *archives = g_ptr_array_new_with_free_func (
 		(GDestroyNotify)fabulor_theme_archive_free);
+	GHashTable *seen = g_hash_table_new_full (g_str_hash, g_str_equal,
+		g_free, NULL);
 	char *root;
-	GDir *directory;
-	const char *name;
+	const char *roots[2];
+	guint root_index;
 
 	if (!config_dir || !config_dir[0])
+	{
+		g_hash_table_unref (seen);
 		return archives;
+	}
 	root = g_build_filename (config_dir, "themes", NULL);
 	if (g_mkdir_with_parents (root, 0700) != 0)
 	{
+		g_hash_table_unref (seen);
 		g_free (root);
 		return archives;
 	}
-	directory = g_dir_open (root, 0, NULL);
-	if (!directory)
-	{
-		g_free (root);
-		return archives;
-	}
+	roots[0] = root;
+	roots[1] = bundled_dir;
 
-	while ((name = g_dir_read_name (directory)) != NULL)
+	for (root_index = 0; root_index < G_N_ELEMENTS (roots); root_index++)
 	{
-		FabulorThemeArchive *archive;
-		char *lower_name;
-		char *path;
-		gsize name_length;
+		GDir *directory;
+		const char *name;
 
-		lower_name = g_ascii_strdown (name, -1);
-		if (!g_str_has_suffix (lower_name, ".hct"))
+		if (!roots[root_index] || !roots[root_index][0])
+			continue;
+		directory = g_dir_open (roots[root_index], 0, NULL);
+		if (!directory)
+			continue;
+
+		while ((name = g_dir_read_name (directory)) != NULL)
 		{
+			FabulorThemeArchive *archive;
+			char *lower_name;
+			char *path;
+			char *display_name;
+			char *folded_name;
+			gsize name_length;
+
+			lower_name = g_ascii_strdown (name, -1);
+			if (!g_str_has_suffix (lower_name, ".hct"))
+			{
+				g_free (lower_name);
+				continue;
+			}
 			g_free (lower_name);
-			continue;
-		}
-		g_free (lower_name);
-		path = g_build_filename (root, name, NULL);
-		if (!theme_archive_path_is_regular (path))
-		{
-			g_free (path);
-			continue;
-		}
+			path = g_build_filename (roots[root_index], name, NULL);
+			if (!theme_archive_path_is_regular (path))
+			{
+				g_free (path);
+				continue;
+			}
 
-		name_length = strlen (name);
-		archive = g_new0 (FabulorThemeArchive, 1);
-		archive->display_name = g_strndup (name, name_length - 4);
-		archive->path = path;
-		g_ptr_array_add (archives, archive);
+			name_length = strlen (name);
+			display_name = g_strndup (name, name_length - 4);
+			folded_name = g_utf8_casefold (display_name, -1);
+			if (g_hash_table_contains (seen, folded_name))
+			{
+				g_free (folded_name);
+				g_free (display_name);
+				g_free (path);
+				continue;
+			}
+			g_hash_table_add (seen, folded_name);
+
+			archive = g_new0 (FabulorThemeArchive, 1);
+			archive->display_name = display_name;
+			archive->path = path;
+			g_ptr_array_add (archives, archive);
+		}
+		g_dir_close (directory);
 	}
-	g_dir_close (directory);
+
+	g_hash_table_unref (seen);
 	g_free (root);
 	g_ptr_array_sort (archives, theme_archive_compare);
 	return archives;
+}
+
+GPtrArray *
+fabulor_theme_archive_discover (const char *config_dir)
+{
+	return fabulor_theme_archive_discover_with_bundled (config_dir, NULL);
 }
 
 static FabulorThemeColorResult

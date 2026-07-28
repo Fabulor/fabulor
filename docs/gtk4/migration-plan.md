@@ -1162,9 +1162,11 @@ Deliverables:
 - Retain `.hct` and `colors.conf` palette/event imports. Retire `.zct`, GTK3
   theme import/discovery, and `%APPDATA%\Fabulor\gtk3-themes` after the adapter
   is ready; do not convert or claim direct compatibility for GTK3 CSS.
-- Do not package mock Windows GTK themes or an optional default Fabulor theme.
+- Do not package mock Windows GTK themes or a default GTK desktop theme.
   Follow Windows light/dark and high-contrast policy through the platform
   adapter, using GTK4 runtime defaults when no custom GTK4 theme is selected.
+  A colours-only, Fabulor-owned `.hct` starter palette may be packaged
+  independently from desktop CSS.
 - Preserve Fabulor palette/custom-CSS behaviour and dark-mode selection.
 - Validate native Windows tray/notification paths independently from optional
   Unix tray backends.

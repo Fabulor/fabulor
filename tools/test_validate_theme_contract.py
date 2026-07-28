@@ -35,6 +35,7 @@ class ThemeContractValidationTests(unittest.TestCase):
             "src/fe-gtk/theme/theme-preferences.c",
             '".hct" "*.hct" "colors.conf" '
             "fabulor_theme_archive_discover "
+            "fabulor_theme_archive_discover_with_bundled "
             "fabulor_theme_archive_read_text_file "
             "theme_palette_transaction_replace gtk_drop_down_new "
             "g_task_run_in_thread\n",
@@ -111,6 +112,18 @@ class ThemeContractValidationTests(unittest.TestCase):
     def test_repository_default_theme_payload_is_rejected(self) -> None:
         self.write("data/themes/fabulor/gtk-4.0/gtk.css", "window {}\n")
         self.stage("data/themes/fabulor/gtk-4.0/gtk.css")
+        with self.assertRaises(validate_theme_contract.ThemeContractError):
+            validate_theme_contract.validate(self.repo)
+
+    def test_additional_bundled_palette_is_rejected(self) -> None:
+        self.write("data/palettes/Other.hct", "not permitted\n")
+        self.stage("data/palettes/Other.hct")
+        with self.assertRaises(validate_theme_contract.ThemeContractError):
+            validate_theme_contract.validate(self.repo)
+
+    def test_bundled_palette_source_must_match_archive(self) -> None:
+        self.write("data/palettes/Fabulor Dark/colors.conf", "source\n")
+        self.write("data/palettes/Fabulor Dark.hct", "not a zip\n")
         with self.assertRaises(validate_theme_contract.ThemeContractError):
             validate_theme_contract.validate(self.repo)
 

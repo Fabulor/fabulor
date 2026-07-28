@@ -55,6 +55,7 @@
             </Directory>
           </Directory>
           <Directory Id="SHARELOCALEDIR" Name="locale" />
+          <Directory Id="SHAREPALETTEDIR" Name="palettes" />
         </Directory>
         <Directory Id="CONFIGDIR" Name="Config">
           <Directory Id="CONFIGADDONSDIR" Name="addons" />

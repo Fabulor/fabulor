@@ -26,6 +26,8 @@ typedef enum
 } FabulorThemeColorResult;
 
 GPtrArray *fabulor_theme_archive_discover (const char *config_dir);
+GPtrArray *fabulor_theme_archive_discover_with_bundled (
+	const char *config_dir, const char *bundled_dir);
 void fabulor_theme_archive_free (FabulorThemeArchive *archive);
 
 FabulorThemeColorResult fabulor_theme_colors_parse_token (

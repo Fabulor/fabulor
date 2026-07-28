@@ -8,6 +8,7 @@ import pathlib
 import subprocess
 import sys
 import xml.etree.ElementTree as ET
+import zipfile
 
 
 class ThemeContractError(RuntimeError):
@@ -119,6 +120,7 @@ def validate_import_contract(repo: pathlib.Path) -> None:
         '"colors.conf"',
         '"*.hct"',
         "fabulor_theme_archive_discover",
+        "fabulor_theme_archive_discover_with_bundled",
         "fabulor_theme_archive_read_text_file",
         "theme_palette_transaction_replace",
         "gtk_drop_down_new",
@@ -219,6 +221,10 @@ def validate_import_contract(repo: pathlib.Path) -> None:
 
 def validate_repository_payload(repo: pathlib.Path) -> None:
     forbidden: list[str] = []
+    allowed_palette_payload = {
+        pathlib.PurePosixPath("data/palettes/fabulor dark.hct"),
+        pathlib.PurePosixPath("data/palettes/fabulor dark/colors.conf"),
+    }
     payload_roots = (
         pathlib.PurePosixPath("data"),
         pathlib.PurePosixPath("win32/copy/share"),
@@ -226,6 +232,8 @@ def validate_repository_payload(repo: pathlib.Path) -> None:
     for path in tracked_files(repo):
         lower = pathlib.PurePosixPath(str(path).casefold())
         if not any(lower == root or root in lower.parents for root in payload_roots):
+            continue
+        if lower in allowed_palette_payload:
             continue
         if (
             lower.suffix in {".hct", ".zct"}
@@ -240,8 +248,37 @@ def validate_repository_payload(repo: pathlib.Path) -> None:
         )
 
 
+def validate_bundled_palette(repo: pathlib.Path) -> None:
+    archive = repo / "data" / "palettes" / "Fabulor Dark.hct"
+    source = repo / "data" / "palettes" / "Fabulor Dark" / "colors.conf"
+
+    if not archive.exists() and not source.exists():
+        return
+    if not archive.is_file() or not source.is_file():
+        raise ThemeContractError(
+            "The Fabulor Dark palette requires both its .hct archive and colors.conf source."
+        )
+    try:
+        with zipfile.ZipFile(archive) as package:
+            entries = package.infolist()
+            if [entry.filename for entry in entries] != ["colors.conf"]:
+                raise ThemeContractError(
+                    "Fabulor Dark.hct must contain exactly one colors.conf entry."
+                )
+            archived_colors = package.read(entries[0])
+    except (OSError, zipfile.BadZipFile) as exc:
+        raise ThemeContractError(f"Unable to validate Fabulor Dark.hct: {exc}") from exc
+    if archived_colors != source.read_bytes():
+        raise ThemeContractError(
+            "Fabulor Dark.hct colors.conf does not match its tracked source."
+        )
+
+
 def validate_wix_harvest(repo: pathlib.Path) -> None:
     forbidden: list[str] = []
+    bundled_palette_source = (
+        "\\data\\palettes\\fabulor dark.hct"
+    )
     components = repo / "installer" / "Components"
     for path in sorted(components.glob("*.wxs")):
         try:
@@ -254,6 +291,8 @@ def validate_wix_harvest(repo: pathlib.Path) -> None:
                 if not value:
                     continue
                 normalized = value.replace("/", "\\").casefold()
+                if normalized.endswith(bundled_palette_source):
+                    continue
                 if (
                     normalized.endswith((".hct", ".zct", "\\colors.conf"))
                     or "\\share\\themes\\" in normalized
@@ -272,6 +311,7 @@ def validate(repo: pathlib.Path) -> None:
     validate_associations(repo)
     validate_import_contract(repo)
     validate_repository_payload(repo)
+    validate_bundled_palette(repo)
     validate_wix_harvest(repo)
 
 
@@ -288,7 +328,9 @@ def main() -> int:
         print(f"Theme contract validation failed: {exc}", file=sys.stderr)
         return 1
     print(
-        "Theme contract validated: .hct and colors.conf retained; .zct and bundled default themes excluded."
+        "Theme contract validated: .hct and colors.conf retained; "
+        "Fabulor Dark is the only bundled palette; .zct and bundled "
+        "desktop themes excluded."
     )
     return 0
 

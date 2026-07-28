@@ -236,9 +236,11 @@ dependent module is loaded.
 ## Theme Payload Policy
 
 The final package does not include the legacy `MS-Windows` GTK theme, optional
-Windows 10 GTK theme downloads, or another optional default Fabulor theme.
-Fabulor follows Windows light/dark and high-contrast policy and otherwise uses
-the GTK4 runtime defaults when no custom theme is selected.
+Windows 10 GTK theme downloads, or a bundled GTK desktop theme. Fabulor
+follows Windows light/dark and high-contrast policy and otherwise uses the
+GTK4 runtime defaults when no custom desktop theme is selected. The package
+does include the original colours-only `Fabulor Dark.hct` starter palette
+under `share/palettes`; it is independent from GTK desktop CSS.
 
 Supported user-facing formats are `.hct`, `colors.conf`, system GTK4 desktop
 themes, and imported GTK4 desktop themes under `%APPDATA%\Fabulor\themes`.
@@ -249,10 +251,11 @@ data and icon assets remain allowlisted runtime dependencies, not optional
 default themes.
 
 `tools/validate_theme_contract.py` enforces this boundary in repository lint.
-It verifies the active associations and import/persistence tokens, then rejects
-repository-authored default-theme files and WiX harvest rules for `.hct`,
-`.zct`, `colors.conf`, or `share/themes`. Isolated tests prove each rejection
-path while preserving the explicit stale `.zct` upgrade cleanup.
+It verifies the active associations and import/persistence tokens, validates
+that `Fabulor Dark.hct` contains exactly its tracked `colors.conf`, and rejects
+all additional repository-authored palettes and desktop themes. WiX may
+install that exact archive but cannot harvest `share/themes`. Isolated tests
+preserve the explicit stale `.zct` upgrade cleanup.
 
 ## Required Runtime Categories
 

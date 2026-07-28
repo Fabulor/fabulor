@@ -257,6 +257,53 @@ test_theme_archive_discovers_profile_files (void)
 }
 
 static void
+test_theme_archive_discovers_bundled_files_with_profile_precedence (void)
+{
+	char *root = g_dir_make_tmp ("fabulor-theme-roots-test-XXXXXX", NULL);
+	char *profile = g_build_filename (root, "profile", NULL);
+	char *profile_themes = g_build_filename (profile, "themes", NULL);
+	char *bundled = g_build_filename (root, "bundled", NULL);
+	char *profile_dark = g_build_filename (profile_themes,
+		"Fabulor Dark.hct", NULL);
+	char *bundled_dark = g_build_filename (bundled,
+		"fabulor dark.HCT", NULL);
+	char *bundled_extra = g_build_filename (bundled, "Starter.hct", NULL);
+	GPtrArray *archives;
+	FabulorThemeArchive *first;
+	FabulorThemeArchive *second;
+	GError *error = NULL;
+
+	g_mkdir_with_parents (profile_themes, 0700);
+	g_mkdir_with_parents (bundled, 0700);
+	g_assert_true (g_file_set_contents (profile_dark, "profile", -1, &error));
+	g_assert_no_error (error);
+	g_assert_true (g_file_set_contents (bundled_dark, "bundled", -1, &error));
+	g_assert_no_error (error);
+	g_assert_true (g_file_set_contents (bundled_extra, "extra", -1, &error));
+	g_assert_no_error (error);
+
+	archives = fabulor_theme_archive_discover_with_bundled (profile,
+		bundled);
+	g_assert_cmpuint (archives->len, ==, 2);
+	first = g_ptr_array_index (archives, 0);
+	second = g_ptr_array_index (archives, 1);
+	g_assert_cmpstr (first->display_name, ==, "Fabulor Dark");
+	g_assert_cmpstr (first->path, ==, profile_dark);
+	g_assert_cmpstr (second->display_name, ==, "Starter");
+	g_assert_cmpstr (second->path, ==, bundled_extra);
+
+	g_ptr_array_unref (archives);
+	g_free (bundled_extra);
+	g_free (bundled_dark);
+	g_free (profile_dark);
+	g_free (bundled);
+	g_free (profile_themes);
+	g_free (profile);
+	remove_test_tree (root);
+	g_free (root);
+}
+
+static void
 test_gtk4_theme_archive_imports_contained_tree (void)
 {
 	char *root = g_dir_make_tmp ("fabulor-gtk4-import-test-XXXXXX", NULL);
@@ -508,6 +555,8 @@ register_theme_archive_reader_tests (void)
 		test_theme_archive_rejects_unsupported_name);
 	g_test_add_func ("/theme-archive/discovers-profile-files",
 		test_theme_archive_discovers_profile_files);
+	g_test_add_func ("/theme-archive/discovers-bundled-files",
+		test_theme_archive_discovers_bundled_files_with_profile_precedence);
 	g_test_add_func ("/theme-archive/gtk4-import-contained-tree",
 		test_gtk4_theme_archive_imports_contained_tree);
 	g_test_add_func ("/theme-archive/gtk4-refuses-overwrite",
