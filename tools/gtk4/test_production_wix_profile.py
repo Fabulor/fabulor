@@ -7,8 +7,8 @@ import xml.etree.ElementTree as ET
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
 INSTALLER = ROOT / "installer"
-PROPS = ROOT / "win32" / "zoitechat.props"
-SOLUTION = ROOT / "win32" / "zoitechat.sln"
+PROPS = ROOT / "win32" / "fabulor.props"
+SOLUTION = ROOT / "win32" / "fabulor.sln"
 NATIVE_EXTENSIONS = ROOT / "tools" / "gtk4" / "gtk4-native-extensions.proj"
 GTK_COMPAT = ROOT / "src" / "fe-gtk" / "gtk-compat.h"
 GTK4_OPERATIONAL_LIST_SOURCES = (
@@ -225,6 +225,24 @@ class ProductionWixProfileTests(unittest.TestCase):
         self.assertNotIn('= "fe-text"', solution)
         self.assertNotIn('= "lua"', solution)
         self.assertIn('= "fabulor-launcher"', solution)
+
+    def test_msvc_build_names_are_fabulor_only(self):
+        props = PROPS.read_text(encoding="utf-8")
+        solution = SOLUTION.read_text(encoding="utf-8-sig")
+
+        self.assertFalse((ROOT / "win32" / "zoitechat.props").exists())
+        self.assertFalse((ROOT / "win32" / "zoitechat.sln").exists())
+        self.assertIn('= "fabulor", "fabulor"', solution)
+        for token in (
+            "ZoiteChatBuild",
+            "ZoiteChatPlatform",
+            "ZoiteChatBin",
+            "ZoiteChatObj",
+            "ZoiteChatLib",
+            "ZoiteChatPdb",
+            "ZoiteChatRel",
+        ):
+            self.assertNotIn(token, props)
 
     def test_frontend_compatibility_header_is_gtk4_only(self):
         source = GTK_COMPAT.read_text(encoding="utf-8")

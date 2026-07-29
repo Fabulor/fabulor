@@ -139,7 +139,7 @@ jobs:
 
           rem Build the supported GTK4 solution entry point so generated files
           rem such as config.h are created in the expected solution context.
-          msbuild win32\zoitechat.sln /m /verbosity:minimal /p:Configuration=Release /p:Platform=x64 /p:FabulorGtk4Root="%GITHUB_WORKSPACE%\Runtime\GTK4" /p:FabulorSupportDepsRoot="%FABULOR_SUPPORT_DEPS_ROOT%"
+          msbuild win32\fabulor.sln /m /verbosity:minimal /p:Configuration=Release /p:Platform=x64 /p:FabulorGtk4Root="%GITHUB_WORKSPACE%\Runtime\GTK4" /p:FabulorSupportDepsRoot="%FABULOR_SUPPORT_DEPS_ROOT%"
           if errorlevel 1 exit /b 1
 
           dotnet build src\managed\Fabulor.PluginHost\Fabulor.PluginHost.csproj -c Release

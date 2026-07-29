@@ -37,7 +37,7 @@ branding. Require reference and compatibility evidence before renaming them.
 
 # Validation
 
-- Native changes: build `win32\zoitechat.sln` Release x64.
+- Native changes: build `win32\fabulor.sln` Release x64.
 - Installer/payload changes: run focused staging tests, build
   `installer\Fabulor.wixproj`, and run applicable MSI/runtime/bundle validators.
 - GTK4 contracts: run the Python suites listed in

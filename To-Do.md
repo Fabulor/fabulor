@@ -192,6 +192,7 @@ Detailed stages live in
 - [ ] Audit the unbuilt text frontend, Windows compatibility shims, and
       duplicate backend implementations.
 - [ ] Review historical migration/security documents for archive policy.
+- [x] Retire stale ZoiteChat product branding and build-only identifiers.
 - [ ] Review internal ZoiteChat/XChat compatibility names separately from
       product branding.
 - [ ] Audit ignored local build/runtime output and document a safe developer

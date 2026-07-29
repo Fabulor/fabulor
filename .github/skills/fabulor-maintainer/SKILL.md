@@ -27,7 +27,7 @@ GTK4 migration and production cutover are complete. Current work is release
 readiness, contained installed-UI maintenance, deliberate plugin API growth,
 and the staged cleanup recorded in `To-Do.md`. `installer\` is authoritative
 and publishes exactly the MSI and bootstrapper;
-`win32\zoitechat.sln` is the supported GTK4 native build.
+`win32\fabulor.sln` is the supported GTK4 native build.
 
 # Constraints
 - Windows 11+ only — no Meson options, non-Windows packaging, or non-Windows CI
@@ -38,7 +38,7 @@ and publishes exactly the MSI and bootstrapper;
 - Lua and Perl integration is retired; do not restore either plugin to the
   source tree, supported solution, extension graph, CI prerequisites, or
   installer.
-- Keep `win32\zoitechat.sln` building as the supported GTK4 native entry point.
+- Keep `win32\fabulor.sln` building as the supported GTK4 native entry point.
   Do not restore the retired Inno Setup or GTK3 runtime-copy projects.
 - Prefer minimal, localised changes over broad refactors.
 - Use Australian English spelling and metric units in new or edited docs,
@@ -55,7 +55,7 @@ and publishes exactly the MSI and bootstrapper;
   Confirm new/moved files in `Components\*.wxs` are wired into the matching
   `ComponentGroupRef` in `Product.wxs`.
 - GTK4 `win32\`: from a Visual Studio developer prompt,
-  `msbuild win32\zoitechat.sln /p:Configuration=Release /p:Platform=x64` (add
+  `msbuild win32\fabulor.sln /p:Configuration=Release /p:Platform=x64` (add
   `/t:Rebuild` for structural changes).
 - CI workflow edits: cross-check against `.github\workflows\windows-build.yml`
   only; do not update the non-Windows workflows for Windows-scoped work.
