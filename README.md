@@ -19,11 +19,7 @@
 [![Download Latest Release][download-badge]][latest-release-link]
 
 
-[Manual](docs/) •
-[Roadmap](docs/) •
-[Changelog](docs/) •
-[Developer Notes](docs/) •
-[Architecture](docs/) •
+[Manual](./docs/README.md) 
 [Plugin Authoring Guides](./docs/plugin-authoring-guides.md)
 
 </div>
