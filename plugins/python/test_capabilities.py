@@ -71,7 +71,7 @@ class FakePlugin:
             is_unload=is_unload,
             callback_key=callback_key,
             handle=object(),
-            zoitechat_hook=None,
+            fabulor_hook=None,
         )
         self.hooks.append(hook)
         if callback_key is not None:
@@ -84,15 +84,26 @@ class CapabilityTests(unittest.TestCase):
     def setUpClass(cls):
         cls.lib = FakeLib()
         embedded = types.SimpleNamespace(ffi=FakeFfi(), lib=cls.lib)
-        sys.modules['_zoitechat_embedded'] = embedded
+        sys.modules['_fabulor_embedded'] = embedded
 
-        module_path = pathlib.Path(__file__).with_name('_zoitechat.py')
-        spec = importlib.util.spec_from_file_location('_zoitechat_capability_test', module_path)
+        module_path = pathlib.Path(__file__).with_name('_fabulor.py')
+        spec = importlib.util.spec_from_file_location('_fabulor_capability_test', module_path)
         cls.api = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(cls.api)
+        sys.modules['_fabulor'] = cls.api
+
+        cls.public_modules = {}
+        for module_name in ('fabulor', 'xchat', 'hexchat'):
+            public_path = pathlib.Path(__file__).with_name(module_name + '.py')
+            public_spec = importlib.util.spec_from_file_location(
+                module_name, public_path)
+            public_module = importlib.util.module_from_spec(public_spec)
+            sys.modules[module_name] = public_module
+            public_spec.loader.exec_module(public_module)
+            cls.public_modules[module_name] = public_module
 
         plugin_host_path = pathlib.Path(__file__).with_name('python.py')
-        plugin_host_spec = importlib.util.spec_from_file_location('_zoitechat_plugin_host_test', plugin_host_path)
+        plugin_host_spec = importlib.util.spec_from_file_location('_fabulor_plugin_host_test', plugin_host_path)
         cls.plugin_host = importlib.util.module_from_spec(plugin_host_spec)
         plugin_host_spec.loader.exec_module(cls.plugin_host)
 
@@ -110,6 +121,20 @@ class CapabilityTests(unittest.TestCase):
         plugin = FakePlugin(None, ())
         self.invoke(plugin, "api.command('ECHO trusted')")
         self.assertEqual(self.lib.commands, [b'ECHO trusted'])
+
+    def test_fabulor_owns_public_api_and_compatibility_aliases(self):
+        self.assertEqual(self.api.EAT_FABULOR, 1)
+        self.assertFalse(hasattr(self.api, 'EAT_ZOITECHAT'))
+        self.assertIs(
+            self.public_modules['xchat'].get_user_info,
+            self.public_modules['fabulor'].get_user_info,
+        )
+        self.assertIs(
+            self.public_modules['hexchat'].register_callback,
+            self.public_modules['fabulor'].register_callback,
+        )
+        self.assertFalse(pathlib.Path(__file__).with_name('zoitechat.py').exists())
+        self.assertFalse(pathlib.Path(__file__).with_name('_zoitechat.py').exists())
 
     def test_manifest_message_is_denied_without_capability(self):
         plugin = FakePlugin('example.denied', ())
@@ -185,8 +210,8 @@ class CapabilityTests(unittest.TestCase):
             callbacks.append((plugin, event_name, callback, userdata))
             return len(callbacks)
 
-        self.plugin_host.zoitechat = api
-        self.plugin_host.zoitechat_internal = types.SimpleNamespace(
+        self.plugin_host.fabulor = api
+        self.plugin_host.fabulor_internal = types.SimpleNamespace(
             _register_callback_for_plugin=register_callback)
         self.plugin_host.python_manifest_runtime_path = str(
             pathlib.Path(__file__).with_name('_fabulor_manifest.py').resolve())
@@ -203,8 +228,8 @@ class CapabilityTests(unittest.TestCase):
                 'observed its first incoming message' in message for message in logs))
         finally:
             plugin.close()
-            self.plugin_host.zoitechat = None
-            self.plugin_host.zoitechat_internal = None
+            self.plugin_host.fabulor = None
+            self.plugin_host.fabulor_internal = None
             self.plugin_host.python_manifest_runtime_path = None
 
 

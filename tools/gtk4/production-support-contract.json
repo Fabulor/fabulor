@@ -10,8 +10,6 @@
     {"source": "python", "path": "Lib/site-packages/_cffi_backend.*.pyd", "destination": ".", "kind": "single_glob"},
     {"source": "repository", "path": "plugins/python/xchat.py", "destination": "python/xchat.py", "kind": "file"},
     {"source": "repository", "path": "plugins/python/hexchat.py", "destination": "python/hexchat.py", "kind": "file"},
-    {"source": "repository", "path": "plugins/python/zoitechat.py", "destination": "python/zoitechat.py", "kind": "file"},
-    {"source": "repository", "path": "plugins/python/_zoitechat.py", "destination": "python/_zoitechat.py", "kind": "file"},
     {"source": "repository", "path": "plugins/python/_fabulor_manifest.py", "destination": "python/_fabulor_manifest.py", "kind": "file"},
     {"source": "repository", "path": "plugins/python/fabulor.py", "destination": "python/fabulor.py", "kind": "file"},
     {"source": "repository", "path": "plugins/python/_fabulor.py", "destination": "python/_fabulor.py", "kind": "file"}

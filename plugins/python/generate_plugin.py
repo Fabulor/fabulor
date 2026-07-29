@@ -45,7 +45,7 @@ extern "Python" int _on_plugin_deinit(void);
 static zoitechat_plugin *ph;
 ''')
 
-builder.set_source('_zoitechat_embedded', '''
+builder.set_source('_fabulor_embedded', '''
 /* Python's header defines these.. */
 #undef HAVE_MEMRCHR
 #undef HAVE_STRINGS_H

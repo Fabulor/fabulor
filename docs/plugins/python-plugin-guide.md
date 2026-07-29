@@ -4,6 +4,10 @@
 
 This guide covers Python scripting for Fabulor and links to shared schema and troubleshooting rules.
 
+The supported Fabulor module is `fabulor`. The inherited `zoitechat` module
+name is retired and is not installed. The intentional `xchat` and `hexchat`
+compatibility modules remain available and forward to the same Fabulor API.
+
 Read shared rules first:
 
 1. [Simple Add-ons](simple-addons.md)
@@ -28,11 +32,11 @@ Optional metadata:
 Minimal script:
 
 ```python
-import zoitechat
+import fabulor
 
 
 def init():
-    zoitechat.log("Python add-on initialised")
+    fabulor.log("Python add-on initialised")
 ```
 
 ## Advanced Python plugin.json
@@ -56,7 +60,7 @@ def init():
 ## Minimal Python Plugin
 
 ```python
-import zoitechat
+import fabulor
 
 _reported_first_message = False
 
@@ -67,17 +71,17 @@ def on_message(event):
         return None
 
     _reported_first_message = True
-    user = zoitechat.get_user_info()
+    user = fabulor.get_user_info()
     location = user.get("channel") or "the active session"
-    zoitechat.log(f"Python sample observed its first incoming message event in {location}.")
+    fabulor.log(f"Python sample observed its first incoming message event in {location}.")
     return None
 
 
 def init():
-    user = zoitechat.get_user_info()
+    user = fabulor.get_user_info()
     nickname = user.get("nickname") or "unknown"
-    zoitechat.log(f"Hello, {nickname}. Python sample ready.")
-    zoitechat.register_callback("message", on_message)
+    fabulor.log(f"Hello, {nickname}. Python sample ready.")
+    fabulor.register_callback("message", on_message)
 ```
 
 ## Notes
@@ -85,11 +89,11 @@ def init():
 1. Keep callback handlers lightweight to avoid blocking the main thread.
 2. Use the simple `addons\<name>\<name>.py` layout for personal scripts and helpers. Relative Python load requests resolve under the profile `addons` directory.
 3. Declare every host operation the plugin uses. Manifest Python API calls are denied when the corresponding capability is absent; simple add-ons remain outside manifest capability policy. Manifest Python entrypoints must resolve under the bundled `Plugins\` root or the user profile `plugins\` root.
-4. `zoitechat.log(...)`, `zoitechat.send_message(...)`, `zoitechat.get_user_count()`, `zoitechat.get_user_info()`, and `zoitechat.register_callback(...)` are available in the embedded host.
-5. `zoitechat.register_callback(...)` currently supports `message`, `server`, `server:<name>`, `print:<event>`, and `command:<name>`. `message` represents an incoming IRC `PRIVMSG`; locally entered channel text uses `command:SAY` unless the server echoes it back.
+4. `fabulor.log(...)`, `fabulor.send_message(...)`, `fabulor.get_user_count()`, `fabulor.get_user_info()`, and `fabulor.register_callback(...)` are available in the embedded host.
+5. `fabulor.register_callback(...)` currently supports `message`, `server`, `server:<name>`, `print:<event>`, and `command:<name>`. `message` represents an incoming IRC `PRIVMSG`; locally entered channel text uses `command:SAY` unless the server echoes it back.
 6. Callback payloads now include richer context such as `source`, `time`, `channel`, `network`, `nick`, `server`, `word1`-`word4`, and `word_eol1`-`word_eol2` where the underlying event provides them.
 7. The host validates `plugin.json`, resolves declared dependencies, and dispatches callbacks on the main thread before language-specific execution.
-8. `zoitechat.get_user_info()` returns a dictionary with `nickname`, `channel`, `server_name`, and `network_name`.
+8. `fabulor.get_user_info()` returns a dictionary with `nickname`, `channel`, `server_name`, and `network_name`.
 9. Manifest Python entrypoints use a host-authenticated internal load path. The loader attaches the manifest id and declared capabilities to the Python plugin object; ordinary `/LOAD` and `/PY LOAD` requests remain confined to the profile `addons` directory and cannot opt themselves into manifest roots. Ordinary unload/reload commands cannot mutate manifest-host-owned Python plugins.
 10. Every Python manifest plugin runs in its own Python 3.14 subinterpreter. Its globals, imports, module cache, callback objects, and shutdown state are separate from simple add-ons and other manifest plugins. The CFFI bridge remains confined to the trusted main scripting interpreter; manifest plugins receive the smaller pure-Python API listed above.
 11. Maintained simple and manifest Python samples live under `samples\plugins\simple-python-greeter\` and `samples\plugins\example.python.greeter\`.
