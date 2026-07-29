@@ -197,7 +197,7 @@ Detailed stages live in
       product branding.
   - [x] Make `fabulor` the sole Fabulor-owned Python module while retaining
         intentional `xchat` and `hexchat` imports.
-  - [ ] Replace the Tcl `zoitechat::*` namespace.
+  - [x] Make `fabulor::*` the sole public Tcl namespace.
   - [ ] Replace the managed `ZoiteChat*` plugin types.
   - [ ] Review and rename the native plugin ABI and remaining internal names.
 - [ ] Audit ignored local build/runtime output and document a safe developer

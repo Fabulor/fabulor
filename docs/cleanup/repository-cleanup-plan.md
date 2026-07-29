@@ -164,8 +164,12 @@ removed from source and the production payload. The intentional `xchat` and
 The embedded Python bridge is now `_fabulor_embedded`, the isolated manifest
 runtime installs only the `fabulor` API, and maintained samples and authoring
 guidance use `import fabulor`. The native `zoitechat_*` entry points called by
-the bridge remain until the separate native ABI pass; Tcl and C# names remain
-for their own contained passes.
+the bridge remain until the separate native ABI pass.
+
+The Tcl pass makes `fabulor::*` the sole public namespace for simple and
+manifest Tcl add-ons. The host's twelve exposed commands, maintained samples,
+runtime diagnostics, and current authoring guidance use the Fabulor namespace.
+No aliases for the former product namespace are registered.
 
 Compatibility policy:
 
@@ -174,6 +178,14 @@ Compatibility policy:
 - `xchat` and `hexchat` imports continue to work; and
 - no silent `zoitechat` alias is packaged, so stale add-ons fail clearly
   instead of perpetuating a second Fabulor API name.
+
+Tcl compatibility policy:
+
+- existing Tcl add-ons must move calls from the former product namespace to
+  `fabulor::*`;
+- the command names and capability requirements otherwise remain unchanged;
+  and
+- no silent alias for the former product namespace is registered.
 
 Automated evidence for the Python pass:
 
@@ -185,16 +197,28 @@ Automated evidence for the Python pass:
 - the version 1.0.6 MSI and bootstrapper rebuild with zero warnings and errors,
   then pass production, runtime-content, and bundle validation.
 
-Installed-client acceptance remains required before this pass is published.
+Automated evidence for the Tcl pass:
+
+- the Tcl API contract suite passes 3/3 tests and confirms the former public
+  namespace is absent from the host, maintained samples, and current guides;
+- the complete plugin/runtime/packaging suite passes 111/111 tests plus the
+  theme contract validator;
+- the native manifest and archive suite passes 37/37 tests;
+- the common library, GTK4 frontend, and launcher rebuild with zero warnings;
+  and
+- the version 1.0.6 MSI and bootstrapper rebuild with zero warnings and errors,
+  then pass production, runtime-content, and bundle validation.
+
+Installed-client acceptance remains required before the Python and Tcl passes
+are published.
 
 ## Deliberately Retained
 
 - `win32\copy` currently supplies WiX assets and ISO code data at runtime. It is
   active despite its legacy location and remains until Stage 3 moves each file
   to an explicit owner.
-- Native generated symbol prefixes, Tcl compatibility names, and
-  `ZoiteChat*` managed types remain active API or ABI surfaces for their
-  contained Stage 6 passes.
+- Native generated symbol prefixes and `ZoiteChat*` managed types remain active
+  API or ABI surfaces for their contained Stage 6 passes.
 - `src\fe-text` and `src\dirent` require build/reference audits before any
   removal.
 - GTK4 migration and security records remain evidence, even where they describe
