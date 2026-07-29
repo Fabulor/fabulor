@@ -1175,7 +1175,7 @@ fabulor_tcl_log_cmd (ClientData client_data, Tcl_Interp *interp, int argc, const
 
 	if (argc != 2)
 	{
-		fabulor_tcl_set_result (interp, "wrong # args: should be \"zoitechat::log text\"");
+		fabulor_tcl_set_result (interp, "wrong # args: should be \"fabulor::log text\"");
 		return TCL_ERROR;
 	}
 
@@ -1190,7 +1190,7 @@ fabulor_tcl_print_cmd (ClientData client_data, Tcl_Interp *interp, int argc, con
 
 	if (argc != 2)
 	{
-		fabulor_tcl_set_result (interp, "wrong # args: should be \"zoitechat::print text\"");
+		fabulor_tcl_set_result (interp, "wrong # args: should be \"fabulor::print text\"");
 		return TCL_ERROR;
 	}
 	if (!fabulor_tcl_require_capability (state, interp, "ui.write"))
@@ -1209,7 +1209,7 @@ fabulor_tcl_command_cmd (ClientData client_data, Tcl_Interp *interp, int argc, c
 
 	if (argc < 2)
 	{
-		fabulor_tcl_set_result (interp, "wrong # args: should be \"zoitechat::command command ?arg ...?\"");
+		fabulor_tcl_set_result (interp, "wrong # args: should be \"fabulor::command command ?arg ...?\"");
 		return TCL_ERROR;
 	}
 	if (!fabulor_tcl_require_capability (state, interp, "commands.execute"))
@@ -1234,7 +1234,7 @@ fabulor_tcl_add_user_command_cmd (ClientData client_data, Tcl_Interp *interp, in
 
 	if (argc != 3)
 	{
-		fabulor_tcl_set_result (interp, "wrong # args: should be \"zoitechat::add_user_command name command\"");
+		fabulor_tcl_set_result (interp, "wrong # args: should be \"fabulor::add_user_command name command\"");
 		return TCL_ERROR;
 	}
 	if (!fabulor_tcl_require_capability (state, interp, "commands.manage"))
@@ -1258,7 +1258,7 @@ fabulor_tcl_remove_user_command_cmd (ClientData client_data, Tcl_Interp *interp,
 
 	if (argc != 2)
 	{
-		fabulor_tcl_set_result (interp, "wrong # args: should be \"zoitechat::remove_user_command name\"");
+		fabulor_tcl_set_result (interp, "wrong # args: should be \"fabulor::remove_user_command name\"");
 		return TCL_ERROR;
 	}
 	if (!fabulor_tcl_require_capability (state, interp, "commands.manage"))
@@ -1283,7 +1283,7 @@ fabulor_tcl_register_command_cmd (ClientData client_data, Tcl_Interp *interp, in
 
 	if (argc != 3)
 	{
-		fabulor_tcl_set_result (interp, "wrong # args: should be \"zoitechat::register_command name handler\"");
+		fabulor_tcl_set_result (interp, "wrong # args: should be \"fabulor::register_command name handler\"");
 		return TCL_ERROR;
 	}
 	if (!state || !state->simple_addon)
@@ -1400,7 +1400,7 @@ fabulor_tcl_getinfo_cmd (ClientData client_data, Tcl_Interp *interp, int argc, c
 
 	if (argc != 2)
 	{
-		fabulor_tcl_set_result (interp, "wrong # args: should be \"zoitechat::getinfo name\"");
+		fabulor_tcl_set_result (interp, "wrong # args: should be \"fabulor::getinfo name\"");
 		return TCL_ERROR;
 	}
 	if (!fabulor_tcl_require_capability (state, interp, "session.read"))
@@ -1421,7 +1421,7 @@ fabulor_tcl_nickcmp_cmd (ClientData client_data, Tcl_Interp *interp, int argc, c
 
 	if (argc != 3)
 	{
-		fabulor_tcl_set_result (interp, "wrong # args: should be \"zoitechat::nickcmp left right\"");
+		fabulor_tcl_set_result (interp, "wrong # args: should be \"fabulor::nickcmp left right\"");
 		return TCL_ERROR;
 	}
 	if (!fabulor_tcl_require_capability (state, interp, "session.read"))
@@ -1448,7 +1448,7 @@ fabulor_tcl_send_message_cmd (ClientData client_data, Tcl_Interp *interp, int ar
 
 	if (argc != 3)
 	{
-		fabulor_tcl_set_result (interp, "wrong # args: should be \"zoitechat::send_message target text\"");
+		fabulor_tcl_set_result (interp, "wrong # args: should be \"fabulor::send_message target text\"");
 		return TCL_ERROR;
 	}
 	if (!fabulor_tcl_require_capability (state, interp, "messages.write"))
@@ -1475,7 +1475,7 @@ fabulor_tcl_get_user_count_cmd (ClientData client_data, Tcl_Interp *interp, int 
 
 	if (argc != 1)
 	{
-		fabulor_tcl_set_result (interp, "wrong # args: should be \"zoitechat::get_user_count\"");
+		fabulor_tcl_set_result (interp, "wrong # args: should be \"fabulor::get_user_count\"");
 		return TCL_ERROR;
 	}
 	if (!fabulor_tcl_require_capability (state, interp, "session.read"))
@@ -1501,7 +1501,7 @@ fabulor_tcl_get_user_info_cmd (ClientData client_data, Tcl_Interp *interp, int a
 
 	if (argc != 1)
 	{
-		fabulor_tcl_set_result (interp, "wrong # args: should be \"zoitechat::get_user_info\"");
+		fabulor_tcl_set_result (interp, "wrong # args: should be \"fabulor::get_user_info\"");
 		return TCL_ERROR;
 	}
 	if (!fabulor_tcl_require_capability (state, interp, "session.read"))
@@ -1539,7 +1539,7 @@ fabulor_tcl_register_callback_cmd (ClientData client_data, Tcl_Interp *interp, i
 
 	if (argc != 3)
 	{
-		fabulor_tcl_set_result (interp, "wrong # args: should be \"zoitechat::register_callback event handler\"");
+		fabulor_tcl_set_result (interp, "wrong # args: should be \"fabulor::register_callback event handler\"");
 		return TCL_ERROR;
 	}
 
@@ -1594,7 +1594,7 @@ fabulor_tcl_eval_command (Tcl_Interp *interp, gint argc, const char *const *argv
 static gboolean
 fabulor_tcl_register_commands (FabulorTclPluginState *state, GError **error)
 {
-	const char *namespace_script = "namespace eval zoitechat {}";
+	const char *namespace_script = "namespace eval fabulor {}";
 
 	if (fabulor_tcl_runtime.eval_ex (state->interp, namespace_script, -1, 0) != TCL_OK)
 	{
@@ -1606,18 +1606,18 @@ fabulor_tcl_register_commands (FabulorTclPluginState *state, GError **error)
 		return FALSE;
 	}
 
-	fabulor_tcl_runtime.create_command (state->interp, "zoitechat::log", fabulor_tcl_log_cmd, state, NULL);
-	fabulor_tcl_runtime.create_command (state->interp, "zoitechat::print", fabulor_tcl_print_cmd, state, NULL);
-	fabulor_tcl_runtime.create_command (state->interp, "zoitechat::command", fabulor_tcl_command_cmd, state, NULL);
-	fabulor_tcl_runtime.create_command (state->interp, "zoitechat::add_user_command", fabulor_tcl_add_user_command_cmd, state, NULL);
-	fabulor_tcl_runtime.create_command (state->interp, "zoitechat::remove_user_command", fabulor_tcl_remove_user_command_cmd, state, NULL);
-	fabulor_tcl_runtime.create_command (state->interp, "zoitechat::register_command", fabulor_tcl_register_command_cmd, state, NULL);
-	fabulor_tcl_runtime.create_command (state->interp, "zoitechat::getinfo", fabulor_tcl_getinfo_cmd, state, NULL);
-	fabulor_tcl_runtime.create_command (state->interp, "zoitechat::nickcmp", fabulor_tcl_nickcmp_cmd, state, NULL);
-	fabulor_tcl_runtime.create_command (state->interp, "zoitechat::send_message", fabulor_tcl_send_message_cmd, state, NULL);
-	fabulor_tcl_runtime.create_command (state->interp, "zoitechat::get_user_count", fabulor_tcl_get_user_count_cmd, state, NULL);
-	fabulor_tcl_runtime.create_command (state->interp, "zoitechat::get_user_info", fabulor_tcl_get_user_info_cmd, state, NULL);
-	fabulor_tcl_runtime.create_command (state->interp, "zoitechat::register_callback", fabulor_tcl_register_callback_cmd, state, NULL);
+	fabulor_tcl_runtime.create_command (state->interp, "fabulor::log", fabulor_tcl_log_cmd, state, NULL);
+	fabulor_tcl_runtime.create_command (state->interp, "fabulor::print", fabulor_tcl_print_cmd, state, NULL);
+	fabulor_tcl_runtime.create_command (state->interp, "fabulor::command", fabulor_tcl_command_cmd, state, NULL);
+	fabulor_tcl_runtime.create_command (state->interp, "fabulor::add_user_command", fabulor_tcl_add_user_command_cmd, state, NULL);
+	fabulor_tcl_runtime.create_command (state->interp, "fabulor::remove_user_command", fabulor_tcl_remove_user_command_cmd, state, NULL);
+	fabulor_tcl_runtime.create_command (state->interp, "fabulor::register_command", fabulor_tcl_register_command_cmd, state, NULL);
+	fabulor_tcl_runtime.create_command (state->interp, "fabulor::getinfo", fabulor_tcl_getinfo_cmd, state, NULL);
+	fabulor_tcl_runtime.create_command (state->interp, "fabulor::nickcmp", fabulor_tcl_nickcmp_cmd, state, NULL);
+	fabulor_tcl_runtime.create_command (state->interp, "fabulor::send_message", fabulor_tcl_send_message_cmd, state, NULL);
+	fabulor_tcl_runtime.create_command (state->interp, "fabulor::get_user_count", fabulor_tcl_get_user_count_cmd, state, NULL);
+	fabulor_tcl_runtime.create_command (state->interp, "fabulor::get_user_info", fabulor_tcl_get_user_info_cmd, state, NULL);
+	fabulor_tcl_runtime.create_command (state->interp, "fabulor::register_callback", fabulor_tcl_register_callback_cmd, state, NULL);
 	return TRUE;
 }
 

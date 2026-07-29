@@ -232,7 +232,7 @@ The manifest host is staged in progressively:
 
 1. Simple add-ons are the intended user-facing path: `addons\<name>\<name>.tcl`, `addons\<name>\<name>.py`, or a compiled C# `addons\<name>\<name>.dll`.
 2. Python manifest plugins can be auto-loaded through the embedded Python runtime when the confirmed profile preference or developer override is enabled. The Python runtime accepts manifest entrypoints only when the resolved `.py` path is under the bundled `Plugins\` root or the user profile `plugins\` root.
-3. Tcl manifest plugins can be auto-loaded through the bundled Tcl runtime with a minimal `zoitechat::*` command surface when the confirmed profile preference or developer override is enabled. The normal Tcl runtime root is the installed `Runtime\Tcl` directory beside `fabulor.exe`; development-only runtime roots require `FABULOR_ENABLE_DEVELOPMENT_RUNTIME_ROOTS=1`.
+3. Tcl manifest plugins can be auto-loaded through the bundled Tcl runtime with a minimal `fabulor::*` command surface when the confirmed profile preference or developer override is enabled. The normal Tcl runtime root is the installed `Runtime\Tcl` directory beside `fabulor.exe`; development-only runtime roots require `FABULOR_ENABLE_DEVELOPMENT_RUNTIME_ROOTS=1`.
 4. The shared host validates manifests, resolves dependencies, applies blacklist decisions, and queues callback dispatch on the main thread.
 5. The managed C# contract assembly is scaffolded under `src\managed\Fabulor.PluginAbstractions` so plugin and host types are concrete.
 6. C# manifests load through the `src\managed\Fabulor.PluginHost` bridge, which is staged into `Runtime\DotNet` by the installer build.
