@@ -662,6 +662,18 @@ class ProductionWixProfileTests(unittest.TestCase):
             "MAX (prefs.hex_gui_pane_right_size_min, 1)", main_source
         )
         self.assertIn("fabulor_emoji_picker_viewport_size", main_source)
+        self.assertIn("gtk_drop_down_new", main_source)
+        self.assertIn("mg_emoji_category_changed_cb", main_source)
+        self.assertIn("mg_emoji_popover_close_cb", main_source)
+        self.assertIn('"window-close-symbolic"', main_source)
+        self.assertIn("gtk_flow_box_append", main_source)
+        self.assertIn(
+            "GTK_POLICY_NEVER,\n"
+            "                                        GTK_POLICY_AUTOMATIC",
+            main_source,
+        )
+        self.assertNotIn("mg_emoji_grid_scroller_new", main_source)
+        self.assertNotIn("gtk_stack_switcher_new", main_source)
         trailing_helper = re.search(
             r"fabulor_gtk_horizontal_box_append_trailing\s*"
             r"\([^)]*\)\s*\{(?P<body>.*?)\n\}",

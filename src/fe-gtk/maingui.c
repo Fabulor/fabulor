@@ -4717,30 +4717,41 @@ mg_emoji_flag_insert_cb (GtkWidget *button, gpointer user_data)
 }
 
 static GtkWidget *
-mg_emoji_grid_scroller_new (GtkWidget **grid_out)
+mg_emoji_scroller_new (GtkWidget **flow_out)
 {
         GtkWidget *scrolled;
-        GtkWidget *grid;
+        GtkWidget *flow;
 
         scrolled = gtk_scrolled_window_new ();
         gtk_scrolled_window_set_policy (GTK_SCROLLED_WINDOW (scrolled),
-                                        GTK_POLICY_AUTOMATIC,
+                                        GTK_POLICY_NEVER,
                                         GTK_POLICY_AUTOMATIC);
+        gtk_scrolled_window_set_overlay_scrolling (
+                                        GTK_SCROLLED_WINDOW (scrolled), FALSE);
         gtk_widget_set_hexpand (scrolled, TRUE);
         gtk_widget_set_vexpand (scrolled, TRUE);
 
-        grid = gtk_grid_new ();
-        gtk_grid_set_row_spacing (GTK_GRID (grid), 4);
-        gtk_grid_set_column_spacing (GTK_GRID (grid), 4);
-        fabulor_gtk_scrolled_window_set_child (GTK_SCROLLED_WINDOW (scrolled), grid);
+        flow = gtk_flow_box_new ();
+        gtk_flow_box_set_selection_mode (GTK_FLOW_BOX (flow),
+                                         GTK_SELECTION_NONE);
+        gtk_flow_box_set_homogeneous (GTK_FLOW_BOX (flow), TRUE);
+        gtk_flow_box_set_row_spacing (GTK_FLOW_BOX (flow), 4);
+        gtk_flow_box_set_column_spacing (GTK_FLOW_BOX (flow), 4);
+        gtk_flow_box_set_min_children_per_line (GTK_FLOW_BOX (flow), 1);
+        gtk_flow_box_set_max_children_per_line (GTK_FLOW_BOX (flow), 10);
+        gtk_widget_set_valign (flow, GTK_ALIGN_START);
+        fabulor_gtk_scrolled_window_set_child (GTK_SCROLLED_WINDOW (scrolled),
+                                               flow);
 
-        *grid_out = grid;
+        *flow_out = flow;
         return scrolled;
 }
 
 static void
-mg_emoji_add_button_sized (GtkWidget *grid, GtkEntry *entry, GtkWidget *popover, GtkWidget *child,
-                           const char *sequence, const char *tooltip, int index, int width, int height)
+mg_emoji_add_button_sized (GtkWidget *flow, GtkEntry *entry,
+                           GtkWidget *popover, GtkWidget *child,
+                           const char *sequence, const char *tooltip,
+                           int width, int height)
 {
         GtkWidget *button;
         EmojiFlagInsert *insert;
@@ -4763,15 +4774,16 @@ mg_emoji_add_button_sized (GtkWidget *grid, GtkEntry *entry, GtkWidget *popover,
                                (GClosureNotify) mg_emoji_flag_insert_free,
                                0);
 
-        gtk_grid_attach (GTK_GRID (grid), button, index % 10, index / 10, 1, 1);
+        gtk_flow_box_append (GTK_FLOW_BOX (flow), button);
 }
 
 static void
-mg_emoji_add_button (GtkWidget *grid, GtkEntry *entry, GtkWidget *popover, GtkWidget *child,
-                     const char *sequence, const char *tooltip, int index)
+mg_emoji_add_button (GtkWidget *flow, GtkEntry *entry, GtkWidget *popover,
+                     GtkWidget *child, const char *sequence,
+                     const char *tooltip)
 {
-        mg_emoji_add_button_sized (grid, entry, popover, child, sequence,
-                                   tooltip, index, MG_EMOJI_BUTTON_WIDTH,
+        mg_emoji_add_button_sized (flow, entry, popover, child, sequence,
+                                   tooltip, MG_EMOJI_BUTTON_WIDTH,
                                    MG_EMOJI_BUTTON_HEIGHT);
 }
 
@@ -4779,12 +4791,12 @@ static GtkWidget *
 mg_emoji_codepoint_page_new (GtkEntry *entry, GtkWidget *popover, const gunichar *items)
 {
         GtkWidget *scrolled;
-        GtkWidget *grid;
+        GtkWidget *flow;
         GtkWidget *label;
         char *sequence;
         int i;
 
-        scrolled = mg_emoji_grid_scroller_new (&grid);
+        scrolled = mg_emoji_scroller_new (&flow);
 
         for (i = 0; items[i] != 0; i++)
         {
@@ -4797,8 +4809,8 @@ mg_emoji_codepoint_page_new (GtkEntry *entry, GtkWidget *popover, const gunichar
                 gtk_label_set_attributes (GTK_LABEL (label), attrs);
                 pango_attr_list_unref (attrs);
                 mg_apply_emoji_fallback_widget (label);
-                mg_emoji_add_button (grid, entry, popover, label, sequence,
-                                     sequence, i);
+                mg_emoji_add_button (flow, entry, popover, label, sequence,
+                                     sequence);
                 g_free (sequence);
         }
 
@@ -4809,7 +4821,7 @@ static GtkWidget *
 mg_emoji_flags_page_new (GtkEntry *entry, GtkWidget *popover)
 {
         GtkWidget *scrolled;
-        GtkWidget *grid;
+        GtkWidget *flow;
         GtkWidget *box;
         GtkWidget *image;
         GtkWidget *label;
@@ -4818,7 +4830,7 @@ mg_emoji_flags_page_new (GtkEntry *entry, GtkWidget *popover)
         char *tooltip;
         int i;
 
-        scrolled = mg_emoji_grid_scroller_new (&grid);
+        scrolled = mg_emoji_scroller_new (&flow);
 
         for (i = 0; mg_emoji_flag_codes[i] != NULL; i++)
         {
@@ -4857,13 +4869,16 @@ mg_emoji_flags_page_new (GtkEntry *entry, GtkWidget *popover)
                         fabulor_gtk_box_append (GTK_BOX (box), label, FALSE, FALSE, 0);
 
                         tooltip = g_strdup_printf (_("Insert %s flag."), mg_emoji_flag_codes[i]);
-                        mg_emoji_add_button (grid, entry, popover, box, sequence, tooltip, i);
+                        mg_emoji_add_button (flow, entry, popover, box,
+                                             sequence, tooltip);
                         g_free (tooltip);
                 }
                 else
                 {
                         label = gtk_label_new (mg_emoji_flag_codes[i]);
-                        mg_emoji_add_button (grid, entry, popover, label, sequence, mg_emoji_flag_codes[i], i);
+                        mg_emoji_add_button (flow, entry, popover, label,
+                                             sequence,
+                                             mg_emoji_flag_codes[i]);
                 }
 
                 g_free (sequence);
@@ -4932,6 +4947,36 @@ mg_emoji_stack_visible_child_cb (GObject *object, GParamSpec *pspec,
 }
 
 static void
+mg_emoji_category_changed_cb (GtkDropDown *dropdown, GParamSpec *pspec,
+                              gpointer user_data)
+{
+        GtkStack *stack = GTK_STACK (user_data);
+        guint selected = gtk_drop_down_get_selected (dropdown);
+        guint category_count = G_N_ELEMENTS (mg_emoji_categories) - 1;
+        gchar *name;
+
+        (void) pspec;
+        if (selected > category_count)
+                return;
+
+        if (selected == category_count)
+                gtk_stack_set_visible_child_name (stack, "emoji-flags");
+        else
+        {
+                name = g_strdup_printf ("emoji-category-%u", selected);
+                gtk_stack_set_visible_child_name (stack, name);
+                g_free (name);
+        }
+}
+
+static void
+mg_emoji_popover_close_cb (GtkButton *button, gpointer user_data)
+{
+        (void) button;
+        gtk_popover_popdown (GTK_POPOVER (user_data));
+}
+
+static void
 mg_emoji_popover_apply_size (GtkEntry *entry, GtkPopover *popover)
 {
         GtkWidget *outer;
@@ -4956,9 +5001,12 @@ mg_show_emoji_popover (GtkEntry *entry)
         GtkWidget *popover;
         GtkWidget *outer;
         GtkWidget *stack;
-        GtkWidget *switcher;
-        GtkWidget *switcher_scroller;
+        GtkWidget *category_row;
+        GtkWidget *category_label;
+        GtkWidget *category_selector;
+        GtkWidget *close_button;
         GtkWidget *page;
+        GtkStringList *category_model;
         gchar *name;
         int i;
 
@@ -4985,20 +5033,32 @@ mg_show_emoji_popover (GtkEntry *entry)
         gtk_widget_set_hexpand (stack, TRUE);
         gtk_widget_set_vexpand (stack, TRUE);
         gtk_stack_set_transition_type (GTK_STACK (stack), GTK_STACK_TRANSITION_TYPE_NONE);
-        switcher = gtk_stack_switcher_new ();
-        gtk_stack_switcher_set_stack (GTK_STACK_SWITCHER (switcher), GTK_STACK (stack));
-        switcher_scroller = gtk_scrolled_window_new ();
-        gtk_scrolled_window_set_policy (
-                        GTK_SCROLLED_WINDOW (switcher_scroller),
-                        GTK_POLICY_AUTOMATIC, GTK_POLICY_NEVER);
-        gtk_scrolled_window_set_propagate_natural_width (
-                        GTK_SCROLLED_WINDOW (switcher_scroller), FALSE);
-        gtk_scrolled_window_set_min_content_width (
-                        GTK_SCROLLED_WINDOW (switcher_scroller), 1);
-        gtk_widget_set_hexpand (switcher_scroller, TRUE);
-        fabulor_gtk_scrolled_window_set_child (
-                        GTK_SCROLLED_WINDOW (switcher_scroller), switcher);
-        fabulor_gtk_box_append (GTK_BOX (outer), switcher_scroller,
+
+        category_model = gtk_string_list_new (NULL);
+        for (i = 0; mg_emoji_categories[i].title != NULL; i++)
+                gtk_string_list_append (category_model,
+                                        _(mg_emoji_categories[i].title));
+        gtk_string_list_append (category_model, _("Flags"));
+        category_selector = gtk_drop_down_new (G_LIST_MODEL (category_model),
+                                               NULL);
+        g_object_unref (category_model);
+        gtk_widget_set_hexpand (category_selector, TRUE);
+        category_label = gtk_label_new (_("Category"));
+        gtk_widget_set_halign (category_label, GTK_ALIGN_START);
+        close_button = gtk_button_new_from_icon_name ("window-close-symbolic");
+        fabulor_gtk_button_set_flat (GTK_BUTTON (close_button));
+        gtk_widget_set_tooltip_text (close_button, _("Close emoji picker."));
+        gtk_widget_set_can_focus (close_button, FALSE);
+        g_signal_connect (G_OBJECT (close_button), "clicked",
+                          G_CALLBACK (mg_emoji_popover_close_cb), popover);
+        category_row = gtk_box_new (GTK_ORIENTATION_HORIZONTAL, 8);
+        fabulor_gtk_box_append (GTK_BOX (category_row), category_label,
+                               FALSE, FALSE, 0);
+        fabulor_gtk_box_append (GTK_BOX (category_row), category_selector,
+                               TRUE, TRUE, 0);
+        fabulor_gtk_box_append (GTK_BOX (category_row), close_button,
+                               FALSE, FALSE, 0);
+        fabulor_gtk_box_append (GTK_BOX (outer), category_row,
                                FALSE, FALSE, 0);
         fabulor_gtk_box_append (GTK_BOX (outer), stack, TRUE, TRUE, 0);
 
@@ -5015,6 +5075,10 @@ mg_show_emoji_popover (GtkEntry *entry)
         gtk_stack_add_titled (GTK_STACK (stack), page, "emoji-flags", _("Flags"));
         g_signal_connect (G_OBJECT (stack), "notify::visible-child",
                           G_CALLBACK (mg_emoji_stack_visible_child_cb), NULL);
+        g_signal_connect_object (G_OBJECT (category_selector),
+                                 "notify::selected",
+                                 G_CALLBACK (mg_emoji_category_changed_cb),
+                                 G_OBJECT (stack), 0);
         page = gtk_stack_get_visible_child (GTK_STACK (stack));
         mg_emoji_lazy_page_load (page);
 
