@@ -120,10 +120,11 @@ def register_callback(event_name, callback, userdata=None):
 
 
 def _install_api_module():
-    for module_name in ('_zoitechat', '_zoitechat_embedded', 'hexchat', 'xchat'):
+    for module_name in ('_fabulor', '_fabulor_embedded', '_zoitechat',
+                        '_zoitechat_embedded', 'zoitechat', 'hexchat', 'xchat'):
         sys.modules[module_name] = None
 
-    module = types.ModuleType('zoitechat')
+    module = types.ModuleType('fabulor')
     module.__doc__ = 'Isolated Fabulor manifest plugin API'
     module.__all__ = [
         'get_user_count', 'get_user_info', 'log', 'register_callback', 'send_message'
@@ -133,7 +134,7 @@ def _install_api_module():
     module.log = log
     module.register_callback = register_callback
     module.send_message = send_message
-    sys.modules['zoitechat'] = module
+    sys.modules['fabulor'] = module
 
 
 def _response(ok, result=None, error=None):
@@ -224,7 +225,7 @@ def _shutdown():
             deinit()
     response = _response(True)
     _state = None
-    sys.modules.pop('zoitechat', None)
+    sys.modules.pop('fabulor', None)
     return response
 
 

@@ -28,8 +28,6 @@ class ProductionSupportTests(unittest.TestCase):
             "repository": [
                 "plugins/python/xchat.py",
                 "plugins/python/hexchat.py",
-                "plugins/python/zoitechat.py",
-                "plugins/python/_zoitechat.py",
                 "plugins/python/_fabulor_manifest.py",
                 "plugins/python/fabulor.py",
                 "plugins/python/_fabulor.py",
@@ -51,10 +49,13 @@ class ProductionSupportTests(unittest.TestCase):
         output = self.root / "output"
         manifest = support.stage(self.roots, output, self.contract)
 
-        self.assertEqual(manifest["file_count"], 12)
+        self.assertEqual(manifest["file_count"], 10)
         paths = [entry["path"] for entry in manifest["files"]]
         self.assertEqual(paths, sorted(paths, key=str.casefold))
         self.assertIn("python/fabulor.py", paths)
+        self.assertIn("python/_fabulor.py", paths)
+        self.assertNotIn("python/zoitechat.py", paths)
+        self.assertNotIn("python/_zoitechat.py", paths)
         self.assertIn("_cffi_backend.test.pyd", paths)
         manifest_path = output / support.MANIFEST_NAME
         self.assertTrue(manifest_path.is_file())

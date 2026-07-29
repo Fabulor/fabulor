@@ -16,7 +16,7 @@ try:
 except ImportError:
     interpreters = None
 
-from _zoitechat_embedded import ffi, lib
+from _fabulor_embedded import ffi, lib
 
 if sys.version_info < (3, 0):
     from io import BytesIO as HelpEater
@@ -24,17 +24,17 @@ else:
     from io import StringIO as HelpEater
 
 if not hasattr(sys, 'argv'):
-    sys.argv = ['<zoitechat>']
+    sys.argv = ['<fabulor>']
 
 VERSION = b'2.18.3'
 PLUGIN_NAME = ffi.new('char[]', b'Python')
 PLUGIN_DESC = ffi.new('char[]', b'Python %d.%d scripting interface' % (sys.version_info[0], sys.version_info[1]))
 PLUGIN_VERSION = ffi.new('char[]', VERSION)
 
-zoitechat = None
-zoitechat_internal = None
+fabulor = None
+fabulor_internal = None
 local_interp = None
-zoitechat_stdout = None
+fabulor_stdout = None
 plugins = set()
 python_plugin_libdir = None
 python_manifest_runtime_path = None
@@ -49,11 +49,11 @@ def redirected_stdout():
     sys.stdout = sys.__stdout__
     sys.stderr = sys.__stderr__
     yield
-    sys.stdout = zoitechat_stdout
-    sys.stderr = zoitechat_stdout
+    sys.stdout = fabulor_stdout
+    sys.stderr = fabulor_stdout
 
 
-if os.getenv('ZOITECHAT_LOG_PYTHON'):
+if os.getenv('FABULOR_LOG_PYTHON'):
     def log(*args):
         with redirected_stdout():
             print(*args)
@@ -100,14 +100,14 @@ class Hook:
         self.callback = callback
         self.userdata = userdata
         self.callback_key = callback_key
-        self.zoitechat_hook = None
+        self.fabulor_hook = None
         self.handle = ffi.new_handle(weakref.proxy(self))
 
     def __del__(self):
         log('Removing hook', id(self))
         if self.is_unload is False:
-            assert self.zoitechat_hook is not None
-            lib.zoitechat_unhook(lib.ph, self.zoitechat_hook)
+            assert self.fabulor_hook is not None
+            lib.zoitechat_unhook(lib.ph, self.fabulor_hook)
 
 
 if sys.version_info[0] == 2:
@@ -222,13 +222,13 @@ class ManifestPlugin(Plugin):
         self.name = manifest_id
         self.interpreter = None
         self.closed = False
-        self.globals['zoitechat'] = zoitechat
+        self.globals['fabulor'] = fabulor
         self.context_reader = eval(
-            "lambda: {'user_count': zoitechat.get_user_count(), "
-            "'user_info': zoitechat.get_user_info()}", self.globals)
-        self.host_log = eval('lambda text: zoitechat.log(text)', self.globals)
+            "lambda: {'user_count': fabulor.get_user_count(), "
+            "'user_info': fabulor.get_user_info()}", self.globals)
+        self.host_log = eval('lambda text: fabulor.log(text)', self.globals)
         self.host_send_message = eval(
-            'lambda target, text: zoitechat.send_message(target, text)', self.globals)
+            'lambda target, text: fabulor.send_message(target, text)', self.globals)
 
     def _call(self, request):
         request_json = json.dumps(request, ensure_ascii=False, separators=(',', ':'))
@@ -265,7 +265,7 @@ class ManifestPlugin(Plugin):
                 def isolated_callback(event, handler=handler_name, plugin_ref=plugin):
                     return plugin_ref.dispatch(handler, event)
 
-                zoitechat_internal._register_callback_for_plugin(
+                fabulor_internal._register_callback_for_plugin(
                     self, event_name, isolated_callback)
             else:
                 raise RuntimeError("Unsupported isolated Python host operation '{}'".format(
@@ -739,7 +739,7 @@ def exec_in_interp(python):
     if local_interp is None:
         local_interp = Plugin()
         local_interp.locals = {}
-        local_interp.globals['zoitechat'] = zoitechat
+        local_interp.globals['fabulor'] = fabulor
 
     code = compile_line(python)
     try:
@@ -748,7 +748,7 @@ def exec_in_interp(python):
             lib.zoitechat_print(lib.ph, '{}'.format(ret).encode())
 
     except Exception as e:
-        traceback.print_exc(file=zoitechat_stdout)
+        traceback.print_exc(file=fabulor_stdout)
 
 
 @ffi.def_extern()
@@ -844,9 +844,9 @@ def _on_py_command(word, word_eol, userdata):
 
 @ffi.def_extern()
 def _on_plugin_init(plugin_name, plugin_desc, plugin_version, arg, libdir):
-    global zoitechat
-    global zoitechat_internal
-    global zoitechat_stdout
+    global fabulor
+    global fabulor_internal
+    global fabulor_stdout
     global python_plugin_libdir
     global python_manifest_runtime_path
 
@@ -867,15 +867,15 @@ def _on_plugin_init(plugin_name, plugin_desc, plugin_version, arg, libdir):
         appdir = os.getenv('APPDIR')
         if appdir:
             modpaths.extend([
-                os.path.join(appdir, 'usr', 'lib', 'zoitechat', 'python'),
+                os.path.join(appdir, 'usr', 'lib', 'fabulor', 'python'),
             ])
 
         for modpath in modpaths:
             if os.path.isdir(modpath) and modpath not in sys.path:
                 sys.path.append(modpath)
 
-        zoitechat = importlib.import_module('zoitechat')
-        zoitechat_internal = importlib.import_module('_zoitechat')
+        fabulor = importlib.import_module('fabulor')
+        fabulor_internal = importlib.import_module('_fabulor')
         python_manifest_runtime_path = next((canonical_path(os.path.join(
             path, '_fabulor_manifest.py')) for path in modpaths
             if os.path.isfile(os.path.join(path, '_fabulor_manifest.py'))), None)
@@ -885,9 +885,9 @@ def _on_plugin_init(plugin_name, plugin_desc, plugin_version, arg, libdir):
 
         return 0
 
-    zoitechat_stdout = Stdout()
-    sys.stdout = zoitechat_stdout
-    sys.stderr = zoitechat_stdout
+    fabulor_stdout = Stdout()
+    sys.stdout = fabulor_stdout
+    sys.stderr = fabulor_stdout
     pydoc.help = pydoc.Helper(HelpEater(), HelpEater())
 
     lib.zoitechat_hook_command(lib.ph, b'', 0, lib._on_say_command, ffi.NULL, ffi.NULL)
@@ -910,9 +910,9 @@ def _on_plugin_init(plugin_name, plugin_desc, plugin_version, arg, libdir):
 @ffi.def_extern()
 def _on_plugin_deinit():
     global local_interp
-    global zoitechat
-    global zoitechat_internal
-    global zoitechat_stdout
+    global fabulor
+    global fabulor_internal
+    global fabulor_stdout
     global plugins
     global python_plugin_libdir
     global python_manifest_runtime_path
@@ -923,9 +923,9 @@ def _on_plugin_deinit():
             plugin.close()
     plugins = set()
     local_interp = None
-    zoitechat = None
-    zoitechat_internal = None
-    zoitechat_stdout = None
+    fabulor = None
+    fabulor_internal = None
+    fabulor_stdout = None
     python_plugin_libdir = None
     python_manifest_runtime_path = None
     manifest_load_token = None
@@ -933,7 +933,8 @@ def _on_plugin_deinit():
     sys.stderr = sys.__stderr__
     pydoc.help = pydoc.Helper()
 
-    for mod in ('_zoitechat', 'zoitechat', 'xchat', '_zoitechat_embedded'):
+    for mod in ('_fabulor', 'fabulor', 'xchat', 'hexchat',
+                '_fabulor_embedded'):
         try:
             del sys.modules[mod]
 

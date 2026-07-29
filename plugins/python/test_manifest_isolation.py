@@ -11,7 +11,7 @@ except ImportError:
 
 
 PLUGIN_SOURCE = '''
-import zoitechat
+import fabulor
 
 counter = 0
 
@@ -19,12 +19,12 @@ counter = 0
 def on_message(event):
     global counter
     counter += 1
-    zoitechat.log('{}:{}'.format(zoitechat.get_user_info()['nickname'], counter))
+    fabulor.log('{}:{}'.format(fabulor.get_user_info()['nickname'], counter))
     return counter
 
 
 def init():
-    zoitechat.register_callback('message', on_message)
+    fabulor.register_callback('message', on_message)
 '''
 
 
@@ -133,10 +133,10 @@ class ManifestIsolationTests(unittest.TestCase):
 
     def test_capability_denial_is_confined_to_failed_interpreter(self):
         denied_source = '''
-            import zoitechat
+            import fabulor
 
             def init():
-                zoitechat.send_message('#test', 'denied')
+                fabulor.send_message('#test', 'denied')
         '''
         denied, denied_entrypoint = self.create_interpreter('denied', denied_source)
         allowed, allowed_entrypoint = self.create_interpreter('allowed')
@@ -152,7 +152,9 @@ class ManifestIsolationTests(unittest.TestCase):
     def test_legacy_cffi_modules_are_not_importable(self):
         source = '''
             def init():
-                for module_name in ('_zoitechat', '_zoitechat_embedded', 'hexchat', 'xchat'):
+                for module_name in ('_fabulor', '_fabulor_embedded',
+                                    '_zoitechat', '_zoitechat_embedded',
+                                    'zoitechat', 'hexchat', 'xchat'):
                     try:
                         __import__(module_name)
                     except ModuleNotFoundError:
@@ -165,14 +167,14 @@ class ManifestIsolationTests(unittest.TestCase):
 
     def test_duplicate_and_callback_limits_are_per_interpreter(self):
         duplicate_source = '''
-            import zoitechat
+            import fabulor
 
             def callback(event):
                 return None
 
             def init():
-                zoitechat.register_callback('message', callback)
-                zoitechat.register_callback('message', callback)
+                fabulor.register_callback('message', callback)
+                fabulor.register_callback('message', callback)
         '''
         interpreter, entrypoint = self.create_interpreter('duplicate', duplicate_source)
         result = self.load(interpreter, entrypoint, 'duplicate', ['events.message'])
@@ -196,11 +198,11 @@ class ManifestIsolationTests(unittest.TestCase):
 
     def test_oversized_response_is_replaced_with_bounded_error(self):
         oversized_source = '''
-            import zoitechat
+            import fabulor
 
             def init():
                 for _ in range(17):
-                    zoitechat.log('x' * 65536)
+                    fabulor.log('x' * 65536)
         '''
         interpreter, entrypoint = self.create_interpreter(
             'oversized-response', oversized_source)

@@ -15,13 +15,13 @@
     <None Include="python.def">
       <Filter>Resource Files</Filter>
     </None>
-    <None Include="_zoitechat.py">
+    <None Include="_fabulor.py">
       <Filter>Source Files</Filter>
     </None>
     <None Include="generate_plugin.py">
       <Filter>Source Files</Filter>
     </None>
-    <None Include="zoitechat.py">
+    <None Include="fabulor.py">
       <Filter>Source Files</Filter>
     </None>
     <None Include="python.py">
@@ -31,6 +31,9 @@
       <Filter>Source Files</Filter>
     </None>
     <None Include="hexchat.py">
+      <Filter>Source Files</Filter>
+    </None>
+    <None Include="_fabulor_manifest.py">
       <Filter>Source Files</Filter>
     </None>
   </ItemGroup>

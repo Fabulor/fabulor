@@ -34,7 +34,7 @@ main client repository must not contain or stage a second add-ons checkout.
 | 3 | Move active `win32\copy` payload assets into owned `data` locations and retire the legacy copy namespace | Planned |
 | 4 | Audit the unbuilt text frontend, Windows compatibility shims, and duplicate backend implementations | Planned |
 | 5 | Review historical migration/security documents for archive policy without deleting evidence required for maintenance | Planned |
-| 6 | Review internal ZoiteChat/XChat compatibility names separately from product branding | Planned |
+| 6 | Review internal ZoiteChat/XChat compatibility names separately from product branding | In progress |
 | 7 | Audit ignored local build/runtime output and document a safe developer cleanup command | Planned |
 
 ## Stage 1
@@ -151,14 +151,50 @@ Historical security records retain the build names used when their recorded
 scans were performed. Runtime internals and public plugin compatibility names
 remain outside this build-only stage.
 
+## Stage 6
+
+The public plugin API rename is split by language and ABI boundary so each
+change can be built, packaged, and tested independently.
+
+The Python pass makes `fabulor` the sole Fabulor-owned module for simple and
+manifest plugins. The inherited `zoitechat` and `_zoitechat` Python modules are
+removed from source and the production payload. The intentional `xchat` and
+`hexchat` compatibility modules remain and forward to `fabulor`.
+
+The embedded Python bridge is now `_fabulor_embedded`, the isolated manifest
+runtime installs only the `fabulor` API, and maintained samples and authoring
+guidance use `import fabulor`. The native `zoitechat_*` entry points called by
+the bridge remain until the separate native ABI pass; Tcl and C# names remain
+for their own contained passes.
+
+Compatibility policy:
+
+- existing Python add-ons must replace `import zoitechat` with
+  `import fabulor`;
+- `xchat` and `hexchat` imports continue to work; and
+- no silent `zoitechat` alias is packaged, so stale add-ons fail clearly
+  instead of perpetuating a second Fabulor API name.
+
+Automated evidence for the Python pass:
+
+- the focused capability, isolation, and staging suites pass 22/22 tests;
+- the complete Python runtime, packaging, installer-profile, and theme suites
+  pass 108/108 tests plus the theme contract validator;
+- the Python native extension rebuilds under MSVC level-4
+  warnings-as-errors; and
+- the version 1.0.6 MSI and bootstrapper rebuild with zero warnings and errors,
+  then pass production, runtime-content, and bundle validation.
+
+Installed-client acceptance remains required before this pass is published.
+
 ## Deliberately Retained
 
 - `win32\copy` currently supplies WiX assets and ISO code data at runtime. It is
   active despite its legacy location and remains until Stage 3 moves each file
   to an explicit owner.
-- Generated symbol prefixes, public plugin compatibility modules, and
-  `ZoiteChat*` managed types are active ABI surfaces. Renaming them is not file
-  cleanup.
+- Native generated symbol prefixes, Tcl compatibility names, and
+  `ZoiteChat*` managed types remain active API or ABI surfaces for their
+  contained Stage 6 passes.
 - `src\fe-text` and `src\dirent` require build/reference audits before any
   removal.
 - GTK4 migration and security records remain evidence, even where they describe
