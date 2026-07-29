@@ -191,7 +191,8 @@ net_resolve (netstore * ns, char *hostname, int port, char **real_host)
 
 	/* find the numeric IP number */
 	ipstring[0] = 0;
-	getnameinfo (ns->ip6_hostent->ai_addr, ns->ip6_hostent->ai_addrlen,
+	getnameinfo (ns->ip6_hostent->ai_addr,
+					 (socklen_t)ns->ip6_hostent->ai_addrlen,
 					 ipstring, sizeof (ipstring), NULL, 0, NI_NUMERICHOST);
 
 	if (ns->ip6_hostent->ai_canonname)
@@ -204,37 +205,196 @@ net_resolve (netstore * ns, char *hostname, int port, char **real_host)
 
 /* the only thing making this interface unclean, this shitty sok4, sok6 business */
 
-int
-net_connect (netstore * ns, int sok4, int sok6, int *sok_return)
+#ifdef WIN32
+
+#define NET_CONNECT_ATTEMPT_TIMEOUT_MS 3000
+
+typedef struct
 {
-	struct addrinfo *res, *res0;
+	struct sockaddr_storage address;
+	int length;
+	gboolean active;
+} net_bind_address;
+
+static void
+net_capture_bind_address (int sok, int family, net_bind_address *bound)
+{
+	int length = sizeof (bound->address);
+
+	memset (bound, 0, sizeof (*bound));
+	if (sok == -1 ||
+		 getsockname ((SOCKET)sok, (struct sockaddr *)&bound->address,
+						  &length) != 0)
+		return;
+
+	if (family == AF_INET)
+	{
+		struct sockaddr_in *address =
+			(struct sockaddr_in *)&bound->address;
+
+		if (address->sin_addr.s_addr == htonl (INADDR_ANY))
+			return;
+		address->sin_port = 0;
+	}
+	else if (family == AF_INET6)
+	{
+		struct sockaddr_in6 *address =
+			(struct sockaddr_in6 *)&bound->address;
+
+		if (IN6_IS_ADDR_UNSPECIFIED (&address->sin6_addr))
+			return;
+		address->sin6_port = 0;
+	}
+	else
+		return;
+
+	bound->length = length;
+	bound->active = TRUE;
+}
+
+static int
+net_replace_socket (int *sok, const struct addrinfo *address,
+						  const net_bind_address *bound)
+{
+	if (*sok != -1)
+		closesocket ((SOCKET)*sok);
+
+	*sok = zc_socket_create (address->ai_family, address->ai_socktype,
+								  address->ai_protocol);
+	if (*sok == -1)
+		return -1;
+
+	net_set_socket_options (*sok);
+	if (bound->active &&
+		 bind ((SOCKET)*sok, (const struct sockaddr *)&bound->address,
+				 bound->length) != 0)
+	{
+		int error = WSAGetLastError ();
+
+		closesocket ((SOCKET)*sok);
+		*sok = -1;
+		WSASetLastError (error);
+		return -1;
+	}
+
+	return *sok;
+}
+
+static int
+net_connect_with_timeout (int sok, const struct addrinfo *address)
+{
+	fd_set write_set;
+	fd_set error_set;
+	struct timeval timeout;
+	int error;
+	int error_length = sizeof (error);
+	int selected;
+
+	set_nonblocking (sok);
+	if (connect ((SOCKET)sok, address->ai_addr,
+					(int)address->ai_addrlen) == 0)
+	{
+		set_blocking (sok);
+		return 0;
+	}
+
+	error = WSAGetLastError ();
+	if (error != WSAEWOULDBLOCK && error != WSAEINPROGRESS)
+		return error;
+
+	FD_ZERO (&write_set);
+	FD_ZERO (&error_set);
+	FD_SET ((SOCKET)sok, &write_set);
+	FD_SET ((SOCKET)sok, &error_set);
+	timeout.tv_sec = NET_CONNECT_ATTEMPT_TIMEOUT_MS / 1000;
+	timeout.tv_usec = (NET_CONNECT_ATTEMPT_TIMEOUT_MS % 1000) * 1000;
+
+	selected = select (0, NULL, &write_set, &error_set, &timeout);
+	if (selected == 0)
+		return WSAETIMEDOUT;
+	if (selected == SOCKET_ERROR)
+		return WSAGetLastError ();
+
+	if (getsockopt ((SOCKET)sok, SOL_SOCKET, SO_ERROR, (char *)&error,
+						&error_length) != 0)
+		return WSAGetLastError ();
+	if (error != 0)
+		return error;
+
+	set_blocking (sok);
+	return 0;
+}
+
+#endif
+
+int
+net_connect (netstore * ns, int *sok4, int *sok6, int *sok_return)
+{
+	struct addrinfo *res;
 	int error = -1;
 
-	res0 = ns->ip6_hostent;
+#ifdef WIN32
+	net_bind_address bound4;
+	net_bind_address bound6;
+	gboolean attempted4 = FALSE;
+	gboolean attempted6 = FALSE;
 
-	for (res = res0; res; res = res->ai_next)
+	net_capture_bind_address (*sok4, AF_INET, &bound4);
+	net_capture_bind_address (*sok6, AF_INET6, &bound6);
+#endif
+
+	for (res = ns->ip6_hostent; res; res = res->ai_next)
 	{
-/*		sok = socket (res->ai_family, res->ai_socktype, res->ai_protocol);
-		if (sok < 0)
-			continue;*/
+		int *family_socket;
+
 		switch (res->ai_family)
 		{
 		case AF_INET:
-			error = connect (sok4, res->ai_addr, res->ai_addrlen);
-			*sok_return = sok4;
+			family_socket = sok4;
 			break;
 		case AF_INET6:
-			error = connect (sok6, res->ai_addr, res->ai_addrlen);
-			*sok_return = sok6;
+			family_socket = sok6;
 			break;
 		default:
-			error = 1;
+			continue;
 		}
 
+#ifdef WIN32
+		{
+			gboolean *attempted =
+				res->ai_family == AF_INET ? &attempted4 : &attempted6;
+			const net_bind_address *bound =
+				res->ai_family == AF_INET ? &bound4 : &bound6;
+
+			if ((*attempted || *family_socket == -1) &&
+				net_replace_socket (family_socket, res, bound) == -1)
+			{
+				error = WSAGetLastError ();
+				continue;
+			}
+			*attempted = TRUE;
+			if (*family_socket == -1)
+			{
+				error = WSAENOTSOCK;
+				continue;
+			}
+
+			error = net_connect_with_timeout (*family_socket, res);
+			*sok_return = *family_socket;
+			if (error == 0)
+				return 0;
+		}
+#else
+		error = connect (*family_socket, res->ai_addr, res->ai_addrlen);
+		*sok_return = *family_socket;
 		if (error == 0)
-			break;
+			return 0;
+#endif
 	}
 
+#ifdef WIN32
+	WSASetLastError (error);
+#endif
 	return error;
 }
 
@@ -242,9 +402,9 @@ void
 net_bind (netstore * tobindto, int sok4, int sok6)
 {
 	bind (sok4, tobindto->ip6_hostent->ai_addr,
-			tobindto->ip6_hostent->ai_addrlen);
+			(socklen_t)tobindto->ip6_hostent->ai_addrlen);
 	bind (sok6, tobindto->ip6_hostent->ai_addr,
-			tobindto->ip6_hostent->ai_addrlen);
+			(socklen_t)tobindto->ip6_hostent->ai_addrlen);
 }
 
 void

@@ -1567,10 +1567,11 @@ server_child (server * serv)
 	write (serv->childwrite, buf, strlen (buf));
 
 	if (!serv->dont_use_proxy && (proxy_type == FABULOR_PROXY_AUTO))
-		error = net_connect (ns_server, serv->proxy_sok4, serv->proxy_sok6, &psok);
+		error = net_connect (ns_server, &serv->proxy_sok4,
+								  &serv->proxy_sok6, &psok);
 	else
 	{
-		error = net_connect (ns_server, serv->sok4, serv->sok6, &sok);
+		error = net_connect (ns_server, &serv->sok4, &serv->sok6, &sok);
 		psok = sok;
 	}
 
