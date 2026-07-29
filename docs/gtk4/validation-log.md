@@ -8973,6 +8973,24 @@ Installed acceptance: pass. `Fabulor Dark` appears in the Colours palette
 selector from the read-only installed archive, previews and applies correctly,
 and preserves the existing Cancel and OK transaction behaviour.
 
+### System-default menu indicator containment
+
+Boundary: the application-wide dark/light window stylesheet must not style
+every internal box below the GTK4 menu bar. Popover-menu indicator boxes belong
+to the selected desktop theme, including System default.
+
+Validation:
+
+- removed the legacy `menubar box` and `menubar box:backdrop` selectors from
+  the application-wide dark/light stylesheet;
+- retained the top-level menu-bar and menu-item styling;
+- left the colours-only palette stylesheet unchanged;
+- focused theme tests and the Release frontend/installer build must pass.
+
+Installed acceptance: pass after a clean uninstall/reinstall. Under System
+default, View, View > Channel Switcher > Tabs/Tree, and Server render checked
+and highlighted commands without opaque blocks in the indicator column.
+
 ## Stage Completion Rule
 
 A stage can move to complete in `migration-plan.md` only when:
