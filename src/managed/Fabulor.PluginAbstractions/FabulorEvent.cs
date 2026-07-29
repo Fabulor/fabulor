@@ -2,9 +2,9 @@ using System.Text.Json.Nodes;
 
 namespace Fabulor.Plugins;
 
-public sealed class ZoiteChatEvent
+public sealed class FabulorEvent
 {
-    public ZoiteChatEvent(string eventName, string payloadJson, JsonObject payload)
+    public FabulorEvent(string eventName, string payloadJson, JsonObject payload)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(eventName);
         ArgumentNullException.ThrowIfNull(payloadJson);
@@ -45,12 +45,12 @@ public sealed class ZoiteChatEvent
 
     public string? WordEol2 => Payload["word_eol2"]?.GetValue<string>();
 
-    public static ZoiteChatEvent FromJson(string eventName, string payloadJson)
+    public static FabulorEvent FromJson(string eventName, string payloadJson)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(eventName);
         ArgumentNullException.ThrowIfNull(payloadJson);
 
         var payloadNode = JsonNode.Parse(payloadJson) as JsonObject ?? new JsonObject();
-        return new ZoiteChatEvent(eventName, payloadJson, payloadNode);
+        return new FabulorEvent(eventName, payloadJson, payloadNode);
     }
 }

@@ -44,7 +44,7 @@ The file extension selects the language runtime:
 | --- | --- |
 | `.tcl` | Tcl |
 | `.py` | Python |
-| `.dll` | C# (.NET 8 assembly implementing `IZoiteChatPlugin`) |
+| `.dll` | C# (.NET 8 assembly implementing `IFabulorPlugin`) |
 
 Only one primary script should use the folder name. Extra files may live beside it when the runtime supports them.
 

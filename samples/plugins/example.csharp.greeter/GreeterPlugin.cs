@@ -1,11 +1,11 @@
 using Fabulor.Plugins;
 
-public sealed class GreeterPlugin : IZoiteChatPlugin
+public sealed class GreeterPlugin : IFabulorPlugin
 {
-    private ZoiteChatContext? _context;
+    private FabulorContext? _context;
     private bool _reportedFirstMessage;
 
-    public void Init(ZoiteChatContext context)
+    public void Init(FabulorContext context)
     {
         _context = context;
         var user = context.GetUserInfo();
@@ -13,7 +13,7 @@ public sealed class GreeterPlugin : IZoiteChatPlugin
         context.RegisterCallback("message", OnMessage);
     }
 
-    private void OnMessage(ZoiteChatEvent evt)
+    private void OnMessage(FabulorEvent evt)
     {
         if (_reportedFirstMessage || _context is null)
         {

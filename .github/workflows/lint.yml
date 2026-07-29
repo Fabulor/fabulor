@@ -228,6 +228,7 @@ jobs:
           python tools/gtk4/test_validate_native_extensions.py
           python tools/gtk4/test_stage_plugin_hosts.py
           python tools/gtk4/test_production_wix_profile.py
+          python tools/test_csharp_api_contract.py
           python tools/test_tcl_api_contract.py
           python tools/validate_theme_contract.py
           python tools/test_validate_theme_contract.py

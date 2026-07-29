@@ -1,21 +1,21 @@
 namespace Fabulor.Plugins;
 
-public delegate void ZoiteChatEventHandler(ZoiteChatEvent evt);
+public delegate void FabulorEventHandler(FabulorEvent evt);
 
-public sealed class ZoiteChatContext
+public sealed class FabulorContext
 {
     private readonly Action<string> _log;
     private readonly Func<string, string, bool> _sendMessage;
     private readonly Func<int> _getUserCount;
-    private readonly Func<ZoiteChatUserInfo> _getUserInfo;
-    private readonly Action<string, ZoiteChatEventHandler> _registerCallback;
+    private readonly Func<FabulorUserInfo> _getUserInfo;
+    private readonly Action<string, FabulorEventHandler> _registerCallback;
 
-    public ZoiteChatContext(
+    public FabulorContext(
         Action<string> log,
         Func<string, string, bool> sendMessage,
         Func<int> getUserCount,
-        Func<ZoiteChatUserInfo> getUserInfo,
-        Action<string, ZoiteChatEventHandler> registerCallback)
+        Func<FabulorUserInfo> getUserInfo,
+        Action<string, FabulorEventHandler> registerCallback)
     {
         _log = log ?? throw new ArgumentNullException(nameof(log));
         _sendMessage = sendMessage ?? throw new ArgumentNullException(nameof(sendMessage));
@@ -42,12 +42,12 @@ public sealed class ZoiteChatContext
         return _getUserCount();
     }
 
-    public ZoiteChatUserInfo GetUserInfo()
+    public FabulorUserInfo GetUserInfo()
     {
         return _getUserInfo();
     }
 
-    public void RegisterCallback(string eventName, ZoiteChatEventHandler handler)
+    public void RegisterCallback(string eventName, FabulorEventHandler handler)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(eventName);
         ArgumentNullException.ThrowIfNull(handler);
