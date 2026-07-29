@@ -100,6 +100,10 @@ GTK4_PROBE_MESON = ROOT / "tools" / "gtk4" / "meson.build"
 GTK4_APPLICATION_SOURCE = ROOT / "src" / "fe-gtk" / "fe-gtk.c"
 GTK4_SERVER_LIST_SOURCE = ROOT / "src" / "fe-gtk" / "servlistgui.c"
 COMMON_SERVER_LIST_SOURCE = ROOT / "src" / "common" / "servlist.c"
+COMMON_HISTORY_SOURCE = ROOT / "src" / "common" / "history.c"
+COMMON_HISTORY_HEADER = ROOT / "src" / "common" / "history.h"
+COMMON_OUTBOUND_SOURCE = ROOT / "src" / "common" / "outbound.c"
+COMMON_APPLICATION_SOURCE = ROOT / "src" / "common" / "zoitechat.c"
 GTK4_CHANNEL_BAN_DIALOG_SOURCES = (
     "banlist.c",
     "chanlist.c",
@@ -485,6 +489,34 @@ class ProductionWixProfileTests(unittest.TestCase):
         self.assertIn(
             "encrypted = servlist_password_encrypt_for_storage (net->pass);",
             common,
+        )
+
+    def test_saved_input_history_is_network_and_channel_scoped(self):
+        history = COMMON_HISTORY_SOURCE.read_text(encoding="utf-8")
+        header = COMMON_HISTORY_HEADER.read_text(encoding="utf-8")
+        outbound = COMMON_OUTBOUND_SOURCE.read_text(encoding="utf-8")
+        application = COMMON_APPLICATION_SOURCE.read_text(encoding="utf-8")
+
+        self.assertNotIn("input-history.conf", history)
+        self.assertNotIn("shared_history", history)
+        self.assertIn('#define HISTORY_DIRECTORY "history"', history)
+        self.assertIn('#define HISTORY_EXTENSION ".log"', history)
+        self.assertIn('target = "server";', history)
+        self.assertIn("server_get_network (sess->server, FALSE)", history)
+        self.assertIn("history_filename_component (network)", history)
+        self.assertIn("history_filename_component (target)", history)
+        self.assertIn("g_mkdir_with_parents", history)
+
+        self.assertIn("struct session *owner;", header)
+        self.assertIn("char *storage_path;", header)
+        self.assertIn("history_restore (&sess->history, sess);", application)
+        self.assertIn("for (list = sess_list; list; list = list->next)", history)
+        self.assertIn("history_erase (&sess->history);", outbound)
+        self.assertIn('g_ascii_strcasecmp (reason, "LOG")', outbound)
+        self.assertIn("log_clear (sess)", outbound)
+        self.assertIn(
+            "CLEAR [ALL|HISTORY|LOG|[-]<amount>]",
+            outbound,
         )
 
     def test_channel_and_ban_dialogs_are_gtk4_only(self):

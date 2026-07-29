@@ -199,6 +199,9 @@ Detailed stages live in
 
 ## Optional Product Follow-Up
 
+- [x] Store saved input history per network and channel under the profile
+      `history` directory, and provide scoped `/CLEAR HISTORY` and `/CLEAR LOG`
+      maintenance commands.
 - [ ] Decide whether editbox flag sequences should remain Windows regional
       indicator text or receive custom inline-image rendering.
 - [ ] Consider country-name or search/filter support in the flag picker.

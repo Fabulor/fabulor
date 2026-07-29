@@ -628,7 +628,7 @@ session_new (server *serv, char *from, int type, int focus)
 		safe_strcpy(sess->session_name, from, CHANLEN);
 	}
 
-	history_restore (&sess->history);
+	history_restore (&sess->history, sess);
 
 	sess_list = g_slist_prepend (sess_list, sess);
 

@@ -623,7 +623,14 @@ cmd_clear (struct session *sess, char *tbuf, char *word[], char *word_eol[])
 
 	if (g_ascii_strcasecmp (reason, "HISTORY") == 0)
 	{
-		history_free (&sess->history);
+		history_erase (&sess->history);
+		return TRUE;
+	}
+
+	if (g_ascii_strcasecmp (reason, "LOG") == 0)
+	{
+		if (!log_clear (sess))
+			PrintText (sess, _("* Could not clear the current log file.\n"));
 		return TRUE;
 	}
 
@@ -4138,7 +4145,7 @@ const struct commands xc_cmds[] = {
 	 N_("BAN <mask> [<bantype>], bans everyone matching the mask from the current channel. If they are already on the channel this doesn't kick them (needs chanop)")},
 	{"CHANOPT", cmd_chanopt, 0, 0, 1, N_("CHANOPT [-quiet] <variable> [<value>]")},
 	{"CHARSET", cmd_charset, 0, 0, 1, N_("CHARSET [<encoding>], get or set the encoding used for the current connection")},
-	{"CLEAR", cmd_clear, 0, 0, 1, N_("CLEAR [ALL|HISTORY|[-]<amount>], Clears the current text window or command history")},
+	{"CLEAR", cmd_clear, 0, 0, 1, N_("CLEAR [ALL|HISTORY|LOG|[-]<amount>], Clears the current text window, command history, or current log file")},
 	{"CLOSE", cmd_close, 0, 0, 1, N_("CLOSE [-m], Closes the current tab, closing the window if this is the only open tab, or with the \"-m\" flag, closes all queries.")},
 
 	{"COUNTRY", cmd_country, 0, 0, 1,

@@ -26,6 +26,8 @@
 #include <fcntl.h>
 #include <sys/stat.h>
 
+#include <glib/gstdio.h>
+
 #ifdef WIN32
 #include <io.h>
 #else
@@ -719,6 +721,34 @@ log_open (session *sess)
 
 		log_error = TRUE;
 	}
+}
+
+gboolean
+log_clear (session *sess)
+{
+	char *netname;
+	char *filename;
+	gboolean removed;
+
+	if (!sess)
+		return FALSE;
+
+	netname = log_get_network_name (sess);
+	if (log_session_has_network_placeholder (sess, netname))
+		return FALSE;
+
+	filename = log_create_pathname (sess->server->servername, sess->channel,
+											 netname);
+	if (!filename)
+		return FALSE;
+
+	log_close (sess);
+	removed = g_remove (filename) == 0 ||
+		!g_file_test (filename, G_FILE_TEST_EXISTS);
+	g_free (filename);
+
+	log_open_or_close (sess);
+	return removed;
 }
 
 void

@@ -17,17 +17,18 @@
  */
 
 #include <glib.h>
+#include <glib/gstdio.h>
 #include <string.h>
+#include "zoitechat.h"
 #include "history.h"
 #include "cfgfiles.h"
+#include "server.h"
+#include "util.h"
 #include "zoitechatc.h"
 
-#define HISTORY_FILE "input-history.conf"
+#define HISTORY_DIRECTORY "history"
+#define HISTORY_EXTENSION ".log"
 #define HISTORY_MAX_LIMIT 10000
-
-static struct history shared_history;
-static gboolean shared_loaded = FALSE;
-static gboolean shared_dirty = FALSE;
 
 static int
 history_get_limit (void)
@@ -43,7 +44,7 @@ history_get_limit (void)
 }
 
 static void
-history_clear (struct history *his)
+history_clear_lines (struct history *his)
 {
 	int i;
 
@@ -57,6 +58,80 @@ history_clear (struct history *his)
 	his->len = 0;
 	his->max = 0;
 	his->pos = 0;
+}
+
+static char *
+history_filename_component (const char *name)
+{
+	char *cursor;
+	char *component;
+	int length;
+
+	component = g_strdup (name ? name : "");
+	cursor = component;
+	while (*cursor)
+	{
+		length = g_utf8_skip[((unsigned char *)cursor)[0]];
+		if (length == 1)
+		{
+#ifndef WIN32
+			*cursor = rfc_tolower (*cursor);
+			if (*cursor == '/')
+#else
+			if (*cursor == '\\' || *cursor == '|' || *cursor == '/' ||
+				 *cursor == '>' || *cursor == '<' || *cursor == ':' ||
+				 *cursor == '"' || *cursor == '*' || *cursor == '?')
+#endif
+				*cursor = '_';
+		}
+		cursor += length;
+	}
+
+	return component;
+}
+
+static char *
+history_resolve_path (struct history *his)
+{
+	session *sess;
+	char *network;
+	const char *target;
+	char *network_file;
+	char *target_file;
+	char *target_filename;
+	char *filename;
+
+	if (!his || !his->owner)
+		return NULL;
+
+	sess = his->owner;
+	network = server_get_network (sess->server, FALSE);
+	if (!network || !network[0] || !rfc_casecmp (network, "NETWORK"))
+		return NULL;
+
+	if (sess->type == SESS_SERVER)
+		target = "server";
+	else
+		target = sess->channel;
+	if (!target || !target[0])
+		return NULL;
+
+	network_file = history_filename_component (network);
+	target_file = history_filename_component (target);
+	if (!network_file[0] || !target_file[0])
+	{
+		g_free (network_file);
+		g_free (target_file);
+		return NULL;
+	}
+
+	target_filename = g_strconcat (target_file, HISTORY_EXTENSION, NULL);
+	filename = g_build_filename (get_xdir (), HISTORY_DIRECTORY, network_file,
+										 target_filename, NULL);
+	g_free (network_file);
+	g_free (target_file);
+	g_free (target_filename);
+	return filename;
 }
 
 static gboolean
@@ -74,7 +149,7 @@ history_ensure_limit (struct history *his)
 	max = history_get_limit ();
 	if (max <= 0)
 	{
-		history_clear (his);
+		history_clear_lines (his);
 		return FALSE;
 	}
 
@@ -99,10 +174,8 @@ history_ensure_limit (struct history *his)
 	return TRUE;
 }
 
-static void history_load_shared (void);
-
 static void
-history_add_internal (struct history *his, const char *text, gboolean update_shared)
+history_append (struct history *his, const char *text)
 {
 	if (!his || !text)
 		return;
@@ -119,49 +192,64 @@ history_add_internal (struct history *his, const char *text, gboolean update_sha
 
 	his->lines[his->len++] = g_strdup (text);
 	his->pos = his->len;
+}
 
-	if (update_shared && prefs.hex_input_history_save)
+static gboolean
+history_write (struct history *his)
+{
+	GString *out;
+	char *directory;
+	int i;
+	gboolean success;
+
+	if (!his || !prefs.hex_input_history_save || !his->dirty ||
+		 !his->storage_path)
+		return TRUE;
+
+	history_ensure_limit (his);
+	if (his->len == 0)
 	{
-		history_load_shared ();
-		history_add_internal (&shared_history, text, FALSE);
-		shared_dirty = TRUE;
+		if (g_remove (his->storage_path) == 0 ||
+			 !g_file_test (his->storage_path, G_FILE_TEST_EXISTS))
+		{
+			his->dirty = FALSE;
+			return TRUE;
+		}
+		return FALSE;
 	}
-}
 
-void
-history_add (struct history *his, char *text)
-{
-	history_add_internal (his, text, TRUE);
-}
+	out = g_string_new ("");
+	for (i = 0; i < his->len; i++)
+	{
+		char *escaped = g_strescape (his->lines[i], NULL);
 
-void
-history_free (struct history *his)
-{
-	history_clear (his);
+		g_string_append (out, escaped);
+		g_string_append_c (out, '\n');
+		g_free (escaped);
+	}
+
+	directory = g_path_get_dirname (his->storage_path);
+	success = g_mkdir_with_parents (directory, 0700) == 0 &&
+		g_file_set_contents (his->storage_path, out->str, out->len, NULL);
+	g_free (directory);
+	g_string_free (out, TRUE);
+	if (success)
+		his->dirty = FALSE;
+	else
+		g_warning ("Could not save input history to %s", his->storage_path);
+	return success;
 }
 
 static void
-history_load_shared (void)
+history_load (struct history *his)
 {
-	char *path;
 	char *contents = NULL;
 	char **lines;
 	int i;
 
-	if (shared_loaded)
+	his->loaded = TRUE;
+	if (!g_file_get_contents (his->storage_path, &contents, NULL, NULL))
 		return;
-
-	shared_loaded = TRUE;
-	if (!prefs.hex_input_history_save)
-		return;
-
-	path = g_build_filename (get_xdir (), HISTORY_FILE, NULL);
-	if (!g_file_get_contents (path, &contents, NULL, NULL))
-	{
-		g_free (path);
-		return;
-	}
-	g_free (path);
 
 	lines = g_strsplit (contents, "\n", -1);
 	for (i = 0; lines[i]; i++)
@@ -174,60 +262,160 @@ history_load_shared (void)
 			continue;
 
 		restored = g_strcompress (compressed);
-		history_add_internal (&shared_history, restored, FALSE);
+		history_append (his, restored);
 		g_free (restored);
 	}
 
 	g_strfreev (lines);
 	g_free (contents);
-	shared_dirty = FALSE;
+	his->dirty = FALSE;
 }
 
-void
-history_restore (struct history *his)
+static gboolean
+history_sync_context (struct history *his)
 {
+	char *path;
+	char **pending_lines = NULL;
+	int pending_len = 0;
+	gboolean pending_dirty = FALSE;
 	int i;
 
 	if (!his || !prefs.hex_input_history_save)
+		return FALSE;
+
+	path = history_resolve_path (his);
+	if (!path)
+		return FALSE;
+	if (his->storage_path && !strcmp (his->storage_path, path))
+	{
+		g_free (path);
+		if (!his->loaded)
+			history_load (his);
+		return TRUE;
+	}
+
+	if (his->storage_path)
+	{
+		if (!history_write (his))
+		{
+			g_free (path);
+			return FALSE;
+		}
+		history_clear_lines (his);
+		g_free (his->storage_path);
+		his->storage_path = NULL;
+		his->loaded = FALSE;
+		his->dirty = FALSE;
+	}
+	else if (his->len > 0)
+	{
+		pending_lines = his->lines;
+		pending_len = his->len;
+		pending_dirty = his->dirty;
+		his->lines = NULL;
+		his->len = 0;
+		his->max = 0;
+		his->pos = 0;
+	}
+
+	his->storage_path = path;
+	history_load (his);
+	for (i = 0; i < pending_len; i++)
+	{
+		history_append (his, pending_lines[i]);
+		g_free (pending_lines[i]);
+	}
+	g_free (pending_lines);
+	if (pending_len > 0)
+		his->dirty = pending_dirty || prefs.hex_input_history_save;
+	return TRUE;
+}
+
+void
+history_add (struct history *his, char *text)
+{
+	if (!his || !text)
 		return;
 
-	history_load_shared ();
-	for (i = 0; i < shared_history.len; i++)
-		history_add_internal (his, shared_history.lines[i], FALSE);
+	history_sync_context (his);
+	history_append (his, text);
+	if (prefs.hex_input_history_save)
+		his->dirty = TRUE;
+}
+
+void
+history_erase (struct history *his)
+{
+	char *path;
+
+	if (!his)
+		return;
+
+	history_sync_context (his);
+	history_clear_lines (his);
+	path = his->storage_path ? g_strdup (his->storage_path) :
+		history_resolve_path (his);
+	if (path)
+	{
+		if (g_remove (path) == 0 || !g_file_test (path, G_FILE_TEST_EXISTS))
+			his->dirty = FALSE;
+		else
+		{
+			his->dirty = TRUE;
+			g_warning ("Could not clear input history at %s", path);
+		}
+		his->loaded = TRUE;
+		g_free (path);
+	}
+}
+
+void
+history_free (struct history *his)
+{
+	if (!his)
+		return;
+
+	history_sync_context (his);
+	history_write (his);
+	history_clear_lines (his);
+	g_free (his->storage_path);
+	his->storage_path = NULL;
+	his->owner = NULL;
+	his->loaded = FALSE;
+	his->dirty = FALSE;
+}
+
+void
+history_restore (struct history *his, struct session *owner)
+{
+	if (!his)
+		return;
+
+	his->owner = owner;
+	history_sync_context (his);
 }
 
 void
 history_save (void)
 {
-	GString *out;
-	char *path;
-	int i;
+	GSList *list;
 
-	if (!prefs.hex_input_history_save || !shared_loaded || !shared_dirty)
+	if (!prefs.hex_input_history_save)
 		return;
 
-	history_ensure_limit (&shared_history);
-
-	out = g_string_new ("");
-	for (i = 0; i < shared_history.len; i++)
+	for (list = sess_list; list; list = list->next)
 	{
-		char *escaped = g_strescape (shared_history.lines[i], NULL);
+		session *sess = list->data;
 
-		g_string_append (out, escaped);
-		g_string_append_c (out, '\n');
-		g_free (escaped);
+		history_sync_context (&sess->history);
+		history_write (&sess->history);
 	}
-
-	path = g_build_filename (get_xdir (), HISTORY_FILE, NULL);
-	g_file_set_contents (path, out->str, out->len, NULL);
-	g_free (path);
-	g_string_free (out, TRUE);
-	shared_dirty = FALSE;
 }
 
 char *
 history_down (struct history *his)
 {
+	history_sync_context (his);
 	if (!history_ensure_limit (his))
 		return NULL;
 
@@ -247,6 +435,7 @@ history_down (struct history *his)
 char *
 history_up (struct history *his, char *current_text)
 {
+	history_sync_context (his);
 	if (!history_ensure_limit (his) || his->len == 0)
 		return NULL;
 
@@ -258,7 +447,9 @@ history_up (struct history *his, char *current_text)
 		if (his->max > 1 && current_text && current_text[0] &&
 		    strcmp (current_text, his->lines[his->len - 1]) != 0)
 		{
-			history_add_internal (his, current_text, TRUE);
+			history_append (his, current_text);
+			if (prefs.hex_input_history_save)
+				his->dirty = TRUE;
 			if (his->len < 2)
 				return NULL;
 			his->pos = his->len - 2;
