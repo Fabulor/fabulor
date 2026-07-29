@@ -38,7 +38,7 @@
     <ClInclude Include="keystore.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="plugin_zoitechat.h">
+    <ClInclude Include="plugin_fabulor.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -58,7 +58,7 @@
     <ClCompile Include="keystore.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="plugin_zoitechat.c">
+    <ClCompile Include="plugin_fabulor.c">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

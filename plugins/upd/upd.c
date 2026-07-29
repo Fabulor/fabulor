@@ -22,11 +22,11 @@
 
 #include <winsparkle.h>
 
-#include "zoitechat-plugin.h"
+#include "fabulor-plugin.h"
 
 #define APPCAST_URL "https://zoitechat.org/appcast.xml"
 
-static zoitechat_plugin *ph;
+static fabulor_plugin *ph;
 static char name[] = "Update Checker";
 static char desc[] = "Check for Fabulor updates automatically";
 static char version[] = "5.0";
@@ -37,11 +37,11 @@ check_cmd (char *word[], char *word_eol[], void *userdata)
 {
 	win_sparkle_check_update_with_ui ();
 
-	return ZOITECHAT_EAT_ALL;
+	return FABULOR_EAT_ALL;
 }
 
 int
-zoitechat_plugin_init (zoitechat_plugin *plugin_handle, char **plugin_name, char **plugin_desc, char **plugin_version, char *arg)
+fabulor_plugin_init (fabulor_plugin *plugin_handle, char **plugin_name, char **plugin_desc, char **plugin_version, char *arg)
 {
 	ph = plugin_handle;
 
@@ -52,19 +52,19 @@ zoitechat_plugin_init (zoitechat_plugin *plugin_handle, char **plugin_name, char
 	win_sparkle_set_appcast_url (APPCAST_URL);
 	win_sparkle_init ();
 
-	zoitechat_hook_command (ph, "UPDCHK", ZOITECHAT_PRI_NORM, check_cmd, upd_help, NULL);
-	zoitechat_command (ph, "MENU -ishare\\download.png ADD \"Help/Check for Updates\" \"UPDCHK\"");
-	zoitechat_printf (ph, "%s plugin loaded\n", name);
+	fabulor_hook_command (ph, "UPDCHK", FABULOR_PRI_NORM, check_cmd, upd_help, NULL);
+	fabulor_command (ph, "MENU -ishare\\download.png ADD \"Help/Check for Updates\" \"UPDCHK\"");
+	fabulor_printf (ph, "%s plugin loaded\n", name);
 
 	return 1;
 }
 
 int
-zoitechat_plugin_deinit (void)
+fabulor_plugin_deinit (void)
 {
 	win_sparkle_cleanup ();
 
-	zoitechat_command (ph, "MENU DEL \"Help/Check for updates\"");
-	zoitechat_printf (ph, "%s plugin unloaded\n", name);
+	fabulor_command (ph, "MENU DEL \"Help/Check for updates\"");
+	fabulor_printf (ph, "%s plugin unloaded\n", name);
 	return 1;
 }

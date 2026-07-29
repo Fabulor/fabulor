@@ -22,7 +22,7 @@
 #include <config.h>
 #include <gio/gio.h>
 #include <glib/gi18n.h>
-#include "zoitechat-plugin.h"
+#include "fabulor-plugin.h"
 #include "dbus-plugin.h"
 
 #define PNAME _("remote access")
@@ -78,7 +78,7 @@ static const char introspection_xml[] =
 "  </interface>"
 "</node>";
 
-static zoitechat_plugin *ph;
+static fabulor_plugin *ph;
 static guint last_context_id;
 static GList *contexts;
 static GHashTable *clients;
@@ -91,14 +91,14 @@ typedef struct
 {
 	guint id;
 	int return_value;
-	zoitechat_hook *hook;
+	fabulor_hook *hook;
 	struct _RemoteObject *obj;
 } HookInfo;
 
 typedef struct
 {
 	guint id;
-	zoitechat_context *context;
+	fabulor_context *context;
 } ContextInfo;
 
 typedef struct _RemoteObject
@@ -106,7 +106,7 @@ typedef struct _RemoteObject
 	guint registration_id;
 	guint last_hook_id;
 	guint last_list_id;
-	zoitechat_context *context;
+	fabulor_context *context;
 	char *dbus_path;
 	char *filename;
 	void *handle;
@@ -115,8 +115,8 @@ typedef struct _RemoteObject
 } RemoteObject;
 
 static char **build_list (char *word[]);
-static guint context_list_find_id (zoitechat_context *context);
-static zoitechat_context *context_list_find_context (guint id);
+static guint context_list_find_id (fabulor_context *context);
+static fabulor_context *context_list_find_context (guint id);
 static gboolean emit_signal (RemoteObject *obj, const char *name, GVariant *params);
 static const GDBusInterfaceVTable connection_vtable;
 
@@ -128,14 +128,14 @@ hook_info_destroy (gpointer data)
 	if (!info)
 		return;
 
-	zoitechat_unhook (ph, info->hook);
+	fabulor_unhook (ph, info->hook);
 	g_free (info);
 }
 
 static void
 list_info_destroy (gpointer data)
 {
-	zoitechat_list_free (ph, (zoitechat_list *)data);
+	fabulor_list_free (ph, (fabulor_list *)data);
 }
 
 static RemoteObject *
@@ -146,7 +146,7 @@ remote_object_new (const char *path)
 	obj->hooks = g_hash_table_new_full (g_int_hash, g_int_equal, NULL, hook_info_destroy);
 	obj->lists = g_hash_table_new_full (g_int_hash, g_int_equal, g_free, list_info_destroy);
 	obj->dbus_path = g_strdup (path);
-	obj->context = zoitechat_get_context (ph);
+	obj->context = fabulor_get_context (ph);
 
 	return obj;
 }
@@ -164,7 +164,7 @@ remote_object_free (RemoteObject *obj)
 	g_free (obj->dbus_path);
 	g_free (obj->filename);
 	if (obj->handle)
-		zoitechat_plugingui_remove (ph, obj->handle);
+		fabulor_plugingui_remove (ph, obj->handle);
 	g_free (obj);
 }
 
@@ -172,8 +172,8 @@ static gboolean
 remote_object_command (RemoteObject *obj,
 			      const char *command)
 {
-	if (zoitechat_set_context (ph, obj->context))
-		zoitechat_command (ph, command);
+	if (fabulor_set_context (ph, obj->context))
+		fabulor_command (ph, command);
 	return TRUE;
 }
 
@@ -181,8 +181,8 @@ static gboolean
 remote_object_print (RemoteObject *obj,
 		    const char *text)
 {
-	if (zoitechat_set_context (ph, obj->context))
-		zoitechat_print (ph, text);
+	if (fabulor_set_context (ph, obj->context))
+		fabulor_print (ph, text);
 	return TRUE;
 }
 
@@ -192,13 +192,13 @@ remote_object_find_context (RemoteObject *obj,
 			   const char *channel,
 			   guint *ret_id)
 {
-	zoitechat_context *context;
+	fabulor_context *context;
 
 	if (*server == '\0')
 		server = NULL;
 	if (*channel == '\0')
 		channel = NULL;
-	context = zoitechat_find_context (ph, server, channel);
+	context = fabulor_find_context (ph, server, channel);
 	*ret_id = context_list_find_id (context);
 
 	return TRUE;
@@ -217,7 +217,7 @@ remote_object_set_context (RemoteObject *obj,
 			  guint id,
 			  gboolean *ret)
 {
-	zoitechat_context *context = context_list_find_context (id);
+	fabulor_context *context = context_list_find_context (id);
 
 	if (!context)
 	{
@@ -235,13 +235,13 @@ remote_object_get_info (RemoteObject *obj,
 		       const char *id,
 		       char **ret_info)
 {
-	if (!zoitechat_set_context (ph, obj->context) || g_str_equal (id, "win_ptr"))
+	if (!fabulor_set_context (ph, obj->context) || g_str_equal (id, "win_ptr"))
 	{
 		*ret_info = NULL;
 		return TRUE;
 	}
 
-	*ret_info = g_strdup (zoitechat_get_info (ph, id));
+	*ret_info = g_strdup (fabulor_get_info (ph, id));
 	return TRUE;
 }
 
@@ -254,7 +254,7 @@ remote_object_get_prefs (RemoteObject *obj,
 {
 	const char *str;
 
-	if (!zoitechat_set_context (ph, obj->context))
+	if (!fabulor_set_context (ph, obj->context))
 	{
 		*ret_type = 0;
 		*ret_str = NULL;
@@ -262,7 +262,7 @@ remote_object_get_prefs (RemoteObject *obj,
 		return TRUE;
 	}
 
-	*ret_type = zoitechat_get_prefs (ph, name, &str, ret_int);
+	*ret_type = fabulor_get_prefs (ph, name, &str, ret_int);
 	*ret_str = g_strdup (str);
 	return TRUE;
 }
@@ -278,7 +278,7 @@ server_hook_cb (char *word[],
 	guint context_id;
 	GVariant *params;
 
-	info->obj->context = zoitechat_get_context (ph);
+	info->obj->context = fabulor_get_context (ph);
 	context_id = context_list_find_id (info->obj->context);
 	params = g_variant_new ("(^as^asuu)", arg1 ? arg1 : (char *[]){ NULL }, arg2 ? arg2 : (char *[]){ NULL }, info->id, context_id);
 	emit_signal (info->obj, "ServerSignal", params);
@@ -298,7 +298,7 @@ command_hook_cb (char *word[],
 	guint context_id;
 	GVariant *params;
 
-	info->obj->context = zoitechat_get_context (ph);
+	info->obj->context = fabulor_get_context (ph);
 	context_id = context_list_find_id (info->obj->context);
 	params = g_variant_new ("(^as^asuu)", arg1 ? arg1 : (char *[]){ NULL }, arg2 ? arg2 : (char *[]){ NULL }, info->id, context_id);
 	emit_signal (info->obj, "CommandSignal", params);
@@ -316,7 +316,7 @@ print_hook_cb (char *word[],
 	guint context_id;
 	GVariant *params;
 
-	info->obj->context = zoitechat_get_context (ph);
+	info->obj->context = fabulor_get_context (ph);
 	context_id = context_list_find_id (info->obj->context);
 	params = g_variant_new ("(^asuu)", arg1 ? arg1 : (char *[]){ NULL }, info->id, context_id);
 	emit_signal (info->obj, "PrintSignal", params);
@@ -337,7 +337,7 @@ remote_object_hook_command (RemoteObject *obj,
 	info->obj = obj;
 	info->return_value = return_value;
 	info->id = ++obj->last_hook_id;
-	info->hook = zoitechat_hook_command (ph, name, priority, command_hook_cb, help_text, info);
+	info->hook = fabulor_hook_command (ph, name, priority, command_hook_cb, help_text, info);
 	g_hash_table_insert (obj->hooks, &info->id, info);
 	*ret_id = info->id;
 	return TRUE;
@@ -355,7 +355,7 @@ remote_object_hook_server (RemoteObject *obj,
 	info->obj = obj;
 	info->return_value = return_value;
 	info->id = ++obj->last_hook_id;
-	info->hook = zoitechat_hook_server (ph, name, priority, server_hook_cb, info);
+	info->hook = fabulor_hook_server (ph, name, priority, server_hook_cb, info);
 	g_hash_table_insert (obj->hooks, &info->id, info);
 	*ret_id = info->id;
 	return TRUE;
@@ -373,7 +373,7 @@ remote_object_hook_print (RemoteObject *obj,
 	info->obj = obj;
 	info->return_value = return_value;
 	info->id = ++obj->last_hook_id;
-	info->hook = zoitechat_hook_print (ph, name, priority, print_hook_cb, info);
+	info->hook = fabulor_hook_print (ph, name, priority, print_hook_cb, info);
 	g_hash_table_insert (obj->hooks, &info->id, info);
 	*ret_id = info->id;
 	return TRUE;
@@ -392,16 +392,16 @@ remote_object_list_get (RemoteObject *obj,
 		       const char *name,
 		       guint *ret_id)
 {
-	zoitechat_list *xlist;
+	fabulor_list *xlist;
 	guint *id;
 
-	if (!zoitechat_set_context (ph, obj->context))
+	if (!fabulor_set_context (ph, obj->context))
 	{
 		*ret_id = 0;
 		return TRUE;
 	}
 
-	xlist = zoitechat_list_get (ph, name);
+	xlist = fabulor_list_get (ph, name);
 	if (!xlist)
 	{
 		*ret_id = 0;
@@ -420,7 +420,7 @@ remote_object_list_next (RemoteObject *obj,
 			guint id,
 			gboolean *ret)
 {
-	zoitechat_list *xlist = g_hash_table_lookup (obj->lists, &id);
+	fabulor_list *xlist = g_hash_table_lookup (obj->lists, &id);
 
 	if (!xlist)
 	{
@@ -428,7 +428,7 @@ remote_object_list_next (RemoteObject *obj,
 		return TRUE;
 	}
 
-	*ret = zoitechat_list_next (ph, xlist);
+	*ret = fabulor_list_next (ph, xlist);
 	return TRUE;
 }
 
@@ -438,9 +438,9 @@ remote_object_list_str (RemoteObject *obj,
 		       const char *name,
 		       char **ret_str)
 {
-	zoitechat_list *xlist = g_hash_table_lookup (obj->lists, &id);
+	fabulor_list *xlist = g_hash_table_lookup (obj->lists, &id);
 
-	if (xlist == NULL && !zoitechat_set_context (ph, obj->context))
+	if (xlist == NULL && !fabulor_set_context (ph, obj->context))
 	{
 		*ret_str = NULL;
 		return TRUE;
@@ -452,7 +452,7 @@ remote_object_list_str (RemoteObject *obj,
 		return TRUE;
 	}
 
-	*ret_str = g_strdup (zoitechat_list_str (ph, xlist, name));
+	*ret_str = g_strdup (fabulor_list_str (ph, xlist, name));
 	return TRUE;
 }
 
@@ -462,9 +462,9 @@ remote_object_list_int (RemoteObject *obj,
 		       const char *name,
 		       int *ret_int)
 {
-	zoitechat_list *xlist = g_hash_table_lookup (obj->lists, &id);
+	fabulor_list *xlist = g_hash_table_lookup (obj->lists, &id);
 
-	if (xlist == NULL && !zoitechat_set_context (ph, obj->context))
+	if (xlist == NULL && !fabulor_set_context (ph, obj->context))
 	{
 		*ret_int = -1;
 		return TRUE;
@@ -472,11 +472,11 @@ remote_object_list_int (RemoteObject *obj,
 
 	if (g_str_equal (name, "context"))
 	{
-		zoitechat_context *context = (zoitechat_context *)zoitechat_list_str (ph, xlist, name);
+		fabulor_context *context = (fabulor_context *)fabulor_list_str (ph, xlist, name);
 		*ret_int = context_list_find_id (context);
 	}
 	else
-		*ret_int = zoitechat_list_int (ph, xlist, name);
+		*ret_int = fabulor_list_int (ph, xlist, name);
 
 	return TRUE;
 }
@@ -487,7 +487,7 @@ remote_object_list_time (RemoteObject *obj,
 			const char *name,
 			guint64 *ret_time)
 {
-	zoitechat_list *xlist = g_hash_table_lookup (obj->lists, &id);
+	fabulor_list *xlist = g_hash_table_lookup (obj->lists, &id);
 
 	if (!xlist)
 	{
@@ -495,7 +495,7 @@ remote_object_list_time (RemoteObject *obj,
 		return TRUE;
 	}
 
-	*ret_time = zoitechat_list_time (ph, xlist, name);
+	*ret_time = fabulor_list_time (ph, xlist, name);
 	return TRUE;
 }
 
@@ -503,7 +503,7 @@ static gboolean
 remote_object_list_fields (const char *name,
 			  char ***ret)
 {
-	*ret = g_strdupv ((char **)zoitechat_list_fields (ph, name));
+	*ret = g_strdupv ((char **)fabulor_list_fields (ph, name));
 	if (*ret == NULL)
 		*ret = g_new0 (char *, 1);
 	return TRUE;
@@ -529,9 +529,9 @@ remote_object_emit_print (RemoteObject *obj,
 	for (i = 0; i < 4 && args[i] != NULL; i++)
 		argv[i] = args[i];
 
-	*ret = zoitechat_set_context (ph, obj->context);
+	*ret = fabulor_set_context (ph, obj->context);
 	if (*ret)
-		*ret = zoitechat_emit_print (ph, event_name, argv[0], argv[1], argv[2], argv[3]);
+		*ret = fabulor_emit_print (ph, event_name, argv[0], argv[1], argv[2], argv[3]);
 
 	return TRUE;
 }
@@ -542,8 +542,8 @@ remote_object_nickcmp (RemoteObject *obj,
 		      const char *nick2,
 		      int *ret)
 {
-	zoitechat_set_context (ph, obj->context);
-	*ret = zoitechat_nickcmp (ph, nick1, nick2);
+	fabulor_set_context (ph, obj->context);
+	*ret = fabulor_nickcmp (ph, nick1, nick2);
 	return TRUE;
 }
 
@@ -553,7 +553,7 @@ remote_object_strip (const char *str,
 		    int flag,
 		    char **ret_str)
 {
-	*ret_str = zoitechat_strip (ph, str, len, flag);
+	*ret_str = fabulor_strip (ph, str, len, flag);
 	return TRUE;
 }
 
@@ -564,9 +564,9 @@ remote_object_send_modes (RemoteObject *obj,
 			 char sign,
 			 char mode)
 {
-	if (zoitechat_set_context (ph, obj->context))
+	if (fabulor_set_context (ph, obj->context))
 	{
-		zoitechat_send_modes (ph, targets,
+		fabulor_send_modes (ph, targets,
 				     g_strv_length ((char **)targets),
 				     modes_per_line,
 				     sign,
@@ -645,7 +645,7 @@ method_call_cb (GDBusConnection *conn,
 			path = g_build_filename (DBUS_OBJECT_PATH, count_buffer, NULL);
 			obj = remote_object_new (path);
 			obj->filename = g_path_get_basename (filename);
-			obj->handle = zoitechat_plugingui_add (ph, obj->filename, name, desc, version, NULL);
+			obj->handle = fabulor_plugingui_add (ph, obj->filename, name, desc, version, NULL);
 			obj->registration_id = g_dbus_connection_register_object (
 				conn,
 				obj->dbus_path,
@@ -923,7 +923,7 @@ init_dbus (void)
 	connection = g_bus_get_sync (G_BUS_TYPE_SESSION, NULL, &error);
 	if (!connection)
 	{
-		zoitechat_printf (ph, _("Couldn't connect to session bus: %s\n"), error->message);
+		fabulor_printf (ph, _("Couldn't connect to session bus: %s\n"), error->message);
 		g_error_free (error);
 		return FALSE;
 	}
@@ -931,7 +931,7 @@ init_dbus (void)
 	introspection_data = g_dbus_node_info_new_for_xml (introspection_xml, &error);
 	if (!introspection_data)
 	{
-		zoitechat_printf (ph, _("Couldn't parse DBus introspection data: %s\n"), error->message);
+		fabulor_printf (ph, _("Couldn't parse DBus introspection data: %s\n"), error->message);
 		g_error_free (error);
 		return FALSE;
 	}
@@ -950,7 +950,7 @@ init_dbus (void)
 		&error);
 	if (!request_name_result)
 	{
-		zoitechat_printf (ph, _("Failed to acquire %s: %s\n"), DBUS_SERVICE, error->message);
+		fabulor_printf (ph, _("Failed to acquire %s: %s\n"), DBUS_SERVICE, error->message);
 		g_error_free (error);
 		return FALSE;
 	}
@@ -966,7 +966,7 @@ init_dbus (void)
 		&error);
 	if (!registration_id)
 	{
-		zoitechat_printf (ph, _("Failed to register %s: %s\n"), DBUS_OBJECT_PATH, error->message);
+		fabulor_printf (ph, _("Failed to register %s: %s\n"), DBUS_OBJECT_PATH, error->message);
 		g_error_free (error);
 		return FALSE;
 	}
@@ -982,7 +982,7 @@ init_dbus (void)
 		&error);
 	if (!root_remote->registration_id)
 	{
-		zoitechat_printf (ph, _("Failed to register %s: %s\n"), root_remote->dbus_path, error->message);
+		fabulor_printf (ph, _("Failed to register %s: %s\n"), root_remote->dbus_path, error->message);
 		g_error_free (error);
 		remote_object_free (root_remote);
 		return FALSE;
@@ -1025,7 +1025,7 @@ build_list (char *word[])
 }
 
 static guint
-context_list_find_id (zoitechat_context *context)
+context_list_find_id (fabulor_context *context)
 {
 	GList *l;
 
@@ -1038,7 +1038,7 @@ context_list_find_id (zoitechat_context *context)
 	return 0;
 }
 
-static zoitechat_context *
+static fabulor_context *
 context_list_find_context (guint id)
 {
 	GList *l;
@@ -1059,9 +1059,9 @@ open_context_cb (char *word[],
 	ContextInfo *info = g_new0 (ContextInfo, 1);
 
 	info->id = ++last_context_id;
-	info->context = zoitechat_get_context (ph);
+	info->context = fabulor_get_context (ph);
 	contexts = g_list_prepend (contexts, info);
-	return ZOITECHAT_EAT_NONE;
+	return FABULOR_EAT_NONE;
 }
 
 static int
@@ -1069,7 +1069,7 @@ close_context_cb (char *word[],
 		  void *userdata)
 {
 	GList *l;
-	zoitechat_context *context = zoitechat_get_context (ph);
+	fabulor_context *context = fabulor_get_context (ph);
 
 	for (l = contexts; l != NULL; l = l->next)
 	{
@@ -1081,7 +1081,7 @@ close_context_cb (char *word[],
 		}
 	}
 
-	return ZOITECHAT_EAT_NONE;
+	return FABULOR_EAT_NONE;
 }
 
 static gboolean
@@ -1100,21 +1100,21 @@ unload_plugin_cb (char *word[], char *word_eol[], void *userdata)
 	RemoteObject *obj;
 
 	if (word[2][0] == 0)
-		return ZOITECHAT_EAT_NONE;
+		return FABULOR_EAT_NONE;
 
 	obj = g_hash_table_find (clients, clients_find_filename_foreach, word[2]);
 
 	if (obj != NULL)
 	{
 		emit_signal (obj, "UnloadSignal", g_variant_new ("()"));
-		return ZOITECHAT_EAT_ALL;
+		return FABULOR_EAT_ALL;
 	}
 
-	return ZOITECHAT_EAT_NONE;
+	return FABULOR_EAT_NONE;
 }
 
 int
-dbus_plugin_init (zoitechat_plugin *plugin_handle,
+dbus_plugin_init (fabulor_plugin *plugin_handle,
 		  char **plugin_name,
 		  char **plugin_desc,
 		  char **plugin_version,
@@ -1129,9 +1129,9 @@ dbus_plugin_init (zoitechat_plugin *plugin_handle,
 
 	if (init_dbus ())
 	{
-		zoitechat_hook_print (ph, "Open Context", ZOITECHAT_PRI_NORM, open_context_cb, NULL);
-		zoitechat_hook_print (ph, "Close Context", ZOITECHAT_PRI_NORM, close_context_cb, NULL);
-		zoitechat_hook_command (ph, "unload", ZOITECHAT_PRI_HIGHEST, unload_plugin_cb, NULL, NULL);
+		fabulor_hook_print (ph, "Open Context", FABULOR_PRI_NORM, open_context_cb, NULL);
+		fabulor_hook_print (ph, "Close Context", FABULOR_PRI_NORM, close_context_cb, NULL);
+		fabulor_hook_command (ph, "unload", FABULOR_PRI_HIGHEST, unload_plugin_cb, NULL, NULL);
 	}
 
 	return TRUE;

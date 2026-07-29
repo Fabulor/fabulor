@@ -24,9 +24,9 @@
 
 #include <gio/gio.h>
 
-#include "zoitechat-plugin.h"
+#include "fabulor-plugin.h"
 
-static zoitechat_plugin *ph;
+static fabulor_plugin *ph;
 static char name[] = "Checksum";
 static char desc[] = "Calculate checksum for DCC file transfers";
 static char version[] = "4.0";
@@ -42,26 +42,26 @@ typedef struct {
 static void
 print_sha256_result (ChecksumCallbackInfo *info, const char *checksum, const char *filename, GError *error)
 {
-	zoitechat_context *ctx = zoitechat_find_context(ph, info->servername, info->channel);
+	fabulor_context *ctx = fabulor_find_context(ph, info->servername, info->channel);
 	if (!ctx) {
 		if (info->send_message) {
 			return;
 		}
 
-		ctx = zoitechat_find_context(ph, info->servername, NULL);
+		ctx = fabulor_find_context(ph, info->servername, NULL);
 		if (!ctx) {
 			return;
 		}
 	}
 
-	zoitechat_set_context(ph, ctx);
+	fabulor_set_context(ph, ctx);
 
 	if (error) {
-		zoitechat_printf (ph, "Failed to create checksum for %s: %s\n", filename, error->message);
+		fabulor_printf (ph, "Failed to create checksum for %s: %s\n", filename, error->message);
 	} else if (info->send_message) {
-		zoitechat_commandf (ph, "quote PRIVMSG %s :SHA-256 checksum for %s (remote): %s", zoitechat_get_info (ph, "channel"), filename, checksum);
+		fabulor_commandf (ph, "quote PRIVMSG %s :SHA-256 checksum for %s (remote): %s", fabulor_get_info (ph, "channel"), filename, checksum);
 	} else {
-		zoitechat_printf (ph, "SHA-256 checksum for %s (local): %s\n", filename, checksum);
+		fabulor_printf (ph, "SHA-256 checksum for %s (local): %s\n", filename, checksum);
 	}
 }
 
@@ -124,21 +124,21 @@ dccrecv_cb (char *word[], void *userdata)
 	const char *dcc_completed_dir;
 	char *filename;
 
-	if (zoitechat_get_prefs (ph, "dcc_completed_dir", &dcc_completed_dir, NULL) == 1 && dcc_completed_dir[0] != '\0')
+	if (fabulor_get_prefs (ph, "dcc_completed_dir", &dcc_completed_dir, NULL) == 1 && dcc_completed_dir[0] != '\0')
 		filename = g_build_filename (dcc_completed_dir, word[1], NULL);
 	else
 		filename = g_strdup (word[2]);
 
 	filename_fs = g_filename_from_utf8 (filename, -1, NULL, NULL, NULL);
 	if (!filename_fs) {
-		zoitechat_printf (ph, "Checksum: Invalid filename (%s)\n", filename);
+		fabulor_printf (ph, "Checksum: Invalid filename (%s)\n", filename);
 		g_free (filename);
-		return ZOITECHAT_EAT_NONE;
+		return FABULOR_EAT_NONE;
 	}
 
 	ChecksumCallbackInfo *callback_data = g_new (ChecksumCallbackInfo, 1);
-	callback_data->servername = g_strdup(zoitechat_get_info(ph, "server"));
-	callback_data->channel = g_strdup(zoitechat_get_info(ph, "channel"));
+	callback_data->servername = g_strdup(fabulor_get_info(ph, "server"));
+	callback_data->channel = g_strdup(fabulor_get_info(ph, "channel"));
 	callback_data->send_message = FALSE;
 
 
@@ -151,7 +151,7 @@ dccrecv_cb (char *word[], void *userdata)
 	g_object_unref (file);
 	g_object_unref (task);
 
-	return ZOITECHAT_EAT_NONE;
+	return FABULOR_EAT_NONE;
 }
 
 static int
@@ -162,8 +162,8 @@ dccoffer_cb (char *word[], void *userdata)
 	char *filename;
 
 	ChecksumCallbackInfo *callback_data = g_new (ChecksumCallbackInfo, 1);
-	callback_data->servername = g_strdup(zoitechat_get_info(ph, "server"));
-	callback_data->channel = g_strdup(zoitechat_get_info(ph, "channel"));
+	callback_data->servername = g_strdup(fabulor_get_info(ph, "server"));
+	callback_data->channel = g_strdup(fabulor_get_info(ph, "channel"));
 	callback_data->send_message = TRUE;
 
 	filename = g_strdup (word[3]);
@@ -175,11 +175,11 @@ dccoffer_cb (char *word[], void *userdata)
 	g_object_unref (file);
 	g_object_unref (task);
 
-	return ZOITECHAT_EAT_NONE;
+	return FABULOR_EAT_NONE;
 }
 
 int
-zoitechat_plugin_init (zoitechat_plugin *plugin_handle, char **plugin_name, char **plugin_desc, char **plugin_version, char *arg)
+fabulor_plugin_init (fabulor_plugin *plugin_handle, char **plugin_name, char **plugin_desc, char **plugin_version, char *arg)
 {
 	ph = plugin_handle;
 
@@ -187,16 +187,16 @@ zoitechat_plugin_init (zoitechat_plugin *plugin_handle, char **plugin_name, char
 	*plugin_desc = desc;
 	*plugin_version = version;
 
-	zoitechat_hook_print (ph, "DCC RECV Complete", ZOITECHAT_PRI_NORM, dccrecv_cb, NULL);
-	zoitechat_hook_print (ph, "DCC Offer", ZOITECHAT_PRI_NORM, dccoffer_cb, NULL);
+	fabulor_hook_print (ph, "DCC RECV Complete", FABULOR_PRI_NORM, dccrecv_cb, NULL);
+	fabulor_hook_print (ph, "DCC Offer", FABULOR_PRI_NORM, dccoffer_cb, NULL);
 
-	zoitechat_printf (ph, "%s plugin loaded\n", name);
+	fabulor_printf (ph, "%s plugin loaded\n", name);
 	return 1;
 }
 
 int
-zoitechat_plugin_deinit (void)
+fabulor_plugin_deinit (void)
 {
-	zoitechat_printf (ph, "%s plugin unloaded\n", name);
+	fabulor_printf (ph, "%s plugin unloaded\n", name);
 	return 1;
 }

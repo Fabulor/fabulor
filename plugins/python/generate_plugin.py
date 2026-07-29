@@ -11,7 +11,7 @@ with open(sys.argv[1]) as f:
     for line in f:
         if line.startswith('#define'):
             continue
-        elif line.endswith('ZOITECHAT_PLUGIN_H\n'):
+        elif line.endswith('FABULOR_PLUGIN_H\n'):
             continue
         elif 'time.h' in line:
             output.append('typedef int... time_t;')
@@ -19,7 +19,7 @@ with open(sys.argv[1]) as f:
             eat_until_endif += 1
         elif line.startswith('#endif'):
             eat_until_endif -= 1
-        elif eat_until_endif and '_zoitechat_context' not in line:
+        elif eat_until_endif and '_fabulor_context' not in line:
             continue
         else:
             output.append(line)
@@ -34,15 +34,15 @@ extern "Python" int _on_say_command(char **, char **, void *);
 
 extern "Python" int _on_command_hook(char **, char **, void *);
 extern "Python" int _on_print_hook(char **, void *);
-extern "Python" int _on_print_attrs_hook(char **, zoitechat_event_attrs *, void *);
+extern "Python" int _on_print_attrs_hook(char **, fabulor_event_attrs *, void *);
 extern "Python" int _on_server_hook(char **, char **, void *);
-extern "Python" int _on_server_attrs_hook(char **, char **, zoitechat_event_attrs *, void *);
+extern "Python" int _on_server_attrs_hook(char **, char **, fabulor_event_attrs *, void *);
 extern "Python" int _on_timer_hook(void *);
 
 extern "Python" int _on_plugin_init(char **, char **, char **, char *, char *);
 extern "Python" int _on_plugin_deinit(void);
 
-static zoitechat_plugin *ph;
+static fabulor_plugin *ph;
 ''')
 
 builder.set_source('_fabulor_embedded', '''
@@ -51,13 +51,13 @@ builder.set_source('_fabulor_embedded', '''
 #undef HAVE_STRINGS_H
 
 #include "config.h"
-#include "zoitechat-plugin.h"
+#include "fabulor-plugin.h"
 
-static zoitechat_plugin *ph;
+static fabulor_plugin *ph;
 CFFI_DLLEXPORT int _on_plugin_init(char **, char **, char **, char *, char *);
 CFFI_DLLEXPORT int _on_plugin_deinit(void);
 
-int zoitechat_plugin_init(zoitechat_plugin *plugin_handle,
+int fabulor_plugin_init(fabulor_plugin *plugin_handle,
                         char **name_out, char **description_out,
                         char **version_out, char *arg)
 {
@@ -71,7 +71,7 @@ int zoitechat_plugin_init(zoitechat_plugin *plugin_handle,
     return _on_plugin_init(name_out, description_out, version_out, arg, ZOITECHATLIBDIR);
 }
 
-int zoitechat_plugin_deinit(void)
+int fabulor_plugin_deinit(void)
 {
     int ret = _on_plugin_deinit();
     ph = NULL;

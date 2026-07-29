@@ -92,7 +92,7 @@ Detailed evidence lives in:
 - [ ] Decide whether the shared plugin API should expose additional helpers
       before manifest plugins can be enabled by default.
 - [ ] Complete the deliberate API-boundary review for restricting plugin access
-      to the supported `ZoiteChatAPI`/`FabulorAPI` surface.
+      to the supported `FabulorAPI` surface.
 
 ## Plugins And Add-Ons
 
@@ -200,7 +200,8 @@ Detailed stages live in
   - [x] Make `fabulor::*` the sole public Tcl namespace.
   - [x] Make `IFabulorPlugin`, `FabulorContext`, `FabulorEvent`, and
         `FabulorUserInfo` the sole managed C# plugin contract.
-  - [ ] Review and rename the native plugin ABI and remaining internal names.
+  - [x] Make `fabulor_*` the sole native plugin ABI.
+  - [ ] Review and rename the remaining internal compatibility names.
 - [ ] Audit ignored local build/runtime output and document a safe developer
       cleanup command.
 

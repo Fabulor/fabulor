@@ -41,7 +41,7 @@
 #include "cfgfiles.h"
 #include "chanopt.h"
 #include "ignore.h"
-#include "zoitechat-plugin.h"
+#include "fabulor-plugin.h"
 #include "inbound.h"
 #include "plugin.h"
 #include "plugin-timer.h"

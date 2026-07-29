@@ -41,7 +41,7 @@
       <AdditionalLibraryDirectories>$(GtkDepsRoot)\lib;$(DepsRoot)\lib;$(Python3Path)\libs;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
     <PreBuildEvent>
-      <Command>"$(Python3Path)\python.exe" generate_plugin.py ..\..\src\common\zoitechat-plugin.h python.py "$(IntDir)python.c"</Command>
+      <Command>"$(Python3Path)\python.exe" generate_plugin.py ..\..\src\common\fabulor-plugin.h python.py "$(IntDir)python.c"</Command>
     </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>

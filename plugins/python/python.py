@@ -72,13 +72,13 @@ class Stdout:
         idx = string.rfind(b'\n')
         if idx != -1:
             self.buffer += string[:idx]
-            lib.zoitechat_print(lib.ph, bytes(self.buffer))
+            lib.fabulor_print(lib.ph, bytes(self.buffer))
             self.buffer = bytearray(string[idx + 1:])
         else:
             self.buffer += string
 
     def flush(self):
-        lib.zoitechat_print(lib.ph, bytes(self.buffer))
+        lib.fabulor_print(lib.ph, bytes(self.buffer))
         self.buffer = bytearray()
 
     def isatty(self):
@@ -107,7 +107,7 @@ class Hook:
         log('Removing hook', id(self))
         if self.is_unload is False:
             assert self.fabulor_hook is not None
-            lib.zoitechat_unhook(lib.ph, self.fabulor_hook)
+            lib.fabulor_unhook(lib.ph, self.fabulor_hook)
 
 
 if sys.version_info[0] == 2:
@@ -184,17 +184,17 @@ class Plugin:
                 self.name = self.globals['__module_name__']
 
             except KeyError:
-                lib.zoitechat_print(lib.ph, b'Failed to load module: __module_name__ must be set')
+                lib.fabulor_print(lib.ph, b'Failed to load module: __module_name__ must be set')
 
                 return False
 
             self.version = self.globals.get('__module_version__', '')
             self.description = self.globals.get('__module_description__', '')
-            self.ph = lib.zoitechat_plugingui_add(lib.ph, self.filename.encode(), self.name.encode(),
+            self.ph = lib.fabulor_plugingui_add(lib.ph, self.filename.encode(), self.name.encode(),
                                                 self.description.encode(), self.version.encode(), ffi.NULL)
 
         except Exception as e:
-            lib.zoitechat_print(lib.ph, 'Failed to load module: {}'.format(e).encode())
+            lib.fabulor_print(lib.ph, 'Failed to load module: {}'.format(e).encode())
             traceback.print_exc()
             return False
 
@@ -213,7 +213,7 @@ class Plugin:
 
         del self.hooks
         if self.ph is not None:
-            lib.zoitechat_plugingui_remove(lib.ph, self.ph)
+            lib.fabulor_plugingui_remove(lib.ph, self.ph)
 
 
 class ManifestPlugin(Plugin):
@@ -313,7 +313,7 @@ class ManifestPlugin(Plugin):
             if not response.get('ok'):
                 raise RuntimeError(response.get('error') or 'isolated plugin initialisation failed')
             self._apply_operations(response['operations'])
-            self.ph = lib.zoitechat_plugingui_add(
+            self.ph = lib.fabulor_plugingui_add(
                 lib.ph, self.filename.encode(), self.name.encode(),
                 b'Isolated Python manifest plugin', b'', ffi.NULL)
             return True
@@ -358,7 +358,7 @@ class ManifestPlugin(Plugin):
         self.hooks.clear()
         self.callback_registrations.clear()
         if self.ph is not None:
-            lib.zoitechat_plugingui_remove(lib.ph, self.ph)
+            lib.fabulor_plugingui_remove(lib.ph, self.ph)
             self.ph = None
         if self.interpreter is not None:
             try:
@@ -499,7 +499,7 @@ def _on_say_command(word, word_eol, userdata):
     of internal commands. It must never throw, and must default to EAT_NONE.
     """
     try:
-        channel = _cstr(lib.zoitechat_get_info(lib.ph, b'channel'))
+        channel = _cstr(lib.fabulor_get_info(lib.ph, b'channel'))
     except Exception:
         return 0
 
@@ -518,16 +518,16 @@ def _on_say_command(word, word_eol, userdata):
         exec_in_interp(python)
     except Exception:
         exc = traceback.format_exc().encode('utf-8', errors='replace')
-        lib.zoitechat_print(lib.ph, exc)
+        lib.fabulor_print(lib.ph, exc)
     return 1
 
 
 def print_error(message):
-    lib.zoitechat_print(lib.ph, message.encode('utf-8', 'replace'))
+    lib.fabulor_print(lib.ph, message.encode('utf-8', 'replace'))
 
 
 def config_dir():
-    return __decode(_cstr(lib.zoitechat_get_info(lib.ph, b'configdir')))
+    return __decode(_cstr(lib.fabulor_get_info(lib.ph, b'configdir')))
 
 
 def addons_dir():
@@ -703,7 +703,7 @@ def autoload():
 
 def list_plugins():
     if not plugins:
-        lib.zoitechat_print(lib.ph, b'No python modules loaded')
+        lib.fabulor_print(lib.ph, b'No python modules loaded')
         return
 
     tbl_headers = [b'Name', b'Version', b'Filename', b'Description']
@@ -725,9 +725,9 @@ def list_plugins():
     ]
 
     for row in tbl:
-        lib.zoitechat_print(lib.ph, b' '.join(item.ljust(column_sizes[i])
+        lib.fabulor_print(lib.ph, b' '.join(item.ljust(column_sizes[i])
                                             for i, item in enumerate(row)))
-    lib.zoitechat_print(lib.ph, b'')
+    lib.fabulor_print(lib.ph, b'')
 
 
 def exec_in_interp(python):
@@ -745,7 +745,7 @@ def exec_in_interp(python):
     try:
         ret = eval(code, local_interp.globals, local_interp.locals)
         if ret is not None:
-            lib.zoitechat_print(lib.ph, '{}'.format(ret).encode())
+            lib.fabulor_print(lib.ph, '{}'.format(ret).encode())
 
     except Exception as e:
         traceback.print_exc(file=fabulor_stdout)
@@ -820,24 +820,24 @@ def _on_py_command(word, word_eol, userdata):
     elif subcmd == 'unload':
         name = __decode(ffi.string(word[3]))
         if not unload_name(name):
-            lib.zoitechat_print(lib.ph, b'Can\'t find a python plugin with that name')
+            lib.fabulor_print(lib.ph, b'Can\'t find a python plugin with that name')
 
     elif subcmd == 'reload':
         name = __decode(ffi.string(word[3]))
         if not reload_name(name):
-            lib.zoitechat_print(lib.ph, b'Can\'t find a python plugin with that name')
+            lib.fabulor_print(lib.ph, b'Can\'t find a python plugin with that name')
 
     elif subcmd == 'console':
-        lib.zoitechat_command(lib.ph, b'QUERY >>python<<')
+        lib.fabulor_command(lib.ph, b'QUERY >>python<<')
 
     elif subcmd == 'list':
         list_plugins()
 
     elif subcmd == 'about':
-        lib.zoitechat_print(lib.ph, b'Fabulor Python interface version ' + VERSION)
+        lib.fabulor_print(lib.ph, b'Fabulor Python interface version ' + VERSION)
 
     else:
-        lib.zoitechat_command(lib.ph, b'HELP PY')
+        lib.fabulor_command(lib.ph, b'HELP PY')
 
     return 3
 
@@ -881,7 +881,7 @@ def _on_plugin_init(plugin_name, plugin_desc, plugin_version, arg, libdir):
             if os.path.isfile(os.path.join(path, '_fabulor_manifest.py'))), None)
 
     except (UnicodeDecodeError, ImportError) as e:
-        lib.zoitechat_print(lib.ph, b'Failed to import module: ' + repr(e).encode())
+        lib.fabulor_print(lib.ph, b'Failed to import module: ' + repr(e).encode())
 
         return 0
 
@@ -890,11 +890,11 @@ def _on_plugin_init(plugin_name, plugin_desc, plugin_version, arg, libdir):
     sys.stderr = fabulor_stdout
     pydoc.help = pydoc.Helper(HelpEater(), HelpEater())
 
-    lib.zoitechat_hook_command(lib.ph, b'', 0, lib._on_say_command, ffi.NULL, ffi.NULL)
-    lib.zoitechat_hook_command(lib.ph, b'LOAD', 0, lib._on_load_command, ffi.NULL, ffi.NULL)
-    lib.zoitechat_hook_command(lib.ph, b'UNLOAD', 0, lib._on_unload_command, ffi.NULL, ffi.NULL)
-    lib.zoitechat_hook_command(lib.ph, b'RELOAD', 0, lib._on_reload_command, ffi.NULL, ffi.NULL)
-    lib.zoitechat_hook_command(lib.ph, b'PY', 0, lib._on_py_command, b'''Usage: /PY LOAD   <filename>
+    lib.fabulor_hook_command(lib.ph, b'', 0, lib._on_say_command, ffi.NULL, ffi.NULL)
+    lib.fabulor_hook_command(lib.ph, b'LOAD', 0, lib._on_load_command, ffi.NULL, ffi.NULL)
+    lib.fabulor_hook_command(lib.ph, b'UNLOAD', 0, lib._on_unload_command, ffi.NULL, ffi.NULL)
+    lib.fabulor_hook_command(lib.ph, b'RELOAD', 0, lib._on_reload_command, ffi.NULL, ffi.NULL)
+    lib.fabulor_hook_command(lib.ph, b'PY', 0, lib._on_py_command, b'''Usage: /PY LOAD   <filename>
            UNLOAD <filename|name>
            RELOAD <filename|name>
            LIST
@@ -902,7 +902,7 @@ def _on_plugin_init(plugin_name, plugin_desc, plugin_version, arg, libdir):
            CONSOLE
            ABOUT''', ffi.NULL)
 
-    lib.zoitechat_print(lib.ph, b'Python interface loaded')
+    lib.fabulor_print(lib.ph, b'Python interface loaded')
     autoload()
     return 1
 

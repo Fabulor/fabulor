@@ -30,7 +30,7 @@
 #include <gtk/gtk.h>
 #include <stdlib.h>
 #include <string.h>
-#include "zoitechat-plugin.h"
+#include "fabulor-plugin.h"
 
 #include "fish.h"
 #include "dh1080.h"
@@ -51,7 +51,7 @@ static const char usage_notice[] = "Usage: NOTICE+ <nick or #channel> <notice>";
 static const char usage_msg[] = "Usage: MSG+ <nick or #channel> <message>";
 
 
-static zoitechat_plugin *ph;
+static fabulor_plugin *ph;
 static GHashTable *pending_exchanges;
 static GtkWidget *fishlim_dialog;
 static GtkWidget *fishlim_target_entry;
@@ -65,7 +65,7 @@ static GtkWidget *fishlim_view;
  * Compare two nicks using the current plugin
  */
 int irc_nick_cmp(const char *a, const char *b) {
-    return zoitechat_nickcmp (ph, a, b);
+    return fabulor_nickcmp (ph, a, b);
 }
 
 /**
@@ -74,7 +74,7 @@ int irc_nick_cmp(const char *a, const char *b) {
 gchar *get_config_filename(void) {
     char *filename_fs, *filename_utf8;
 
-    filename_utf8 = g_build_filename(zoitechat_get_info(ph, "configdir"), "addon_fishlim.conf", NULL);
+    filename_utf8 = g_build_filename(fabulor_get_info(ph, "configdir"), "addon_fishlim.conf", NULL);
     filename_fs = g_filename_from_utf8 (filename_utf8, -1, NULL, NULL, NULL);
 
     g_free (filename_utf8);
@@ -82,34 +82,34 @@ gchar *get_config_filename(void) {
 }
 
 static inline gboolean irc_is_query (const char *name) {
-    const char *chantypes = zoitechat_list_str (ph, NULL, "chantypes");
+    const char *chantypes = fabulor_list_str (ph, NULL, "chantypes");
 
     return strchr (chantypes, name[0]) == NULL;
 }
 
-static zoitechat_context *find_context_on_network (const char *name) {
-    zoitechat_list *channels;
-    zoitechat_context *ret = NULL;
+static fabulor_context *find_context_on_network (const char *name) {
+    fabulor_list *channels;
+    fabulor_context *ret = NULL;
     int id;
 
-    if (zoitechat_get_prefs(ph, "id", NULL, &id) != 2)
+    if (fabulor_get_prefs(ph, "id", NULL, &id) != 2)
         return NULL;
 
-    channels = zoitechat_list_get(ph, "channels");
+    channels = fabulor_list_get(ph, "channels");
     if (!channels)
         return NULL;
 
-    while (zoitechat_list_next(ph, channels)) {
-        int chan_id = zoitechat_list_int(ph, channels, "id");
-        const char *chan_name = zoitechat_list_str(ph, channels, "channel");
+    while (fabulor_list_next(ph, channels)) {
+        int chan_id = fabulor_list_int(ph, channels, "id");
+        const char *chan_name = fabulor_list_str(ph, channels, "channel");
 
         if (chan_id == id && chan_name && irc_nick_cmp (chan_name, name) == 0) {
-            ret = (zoitechat_context*)zoitechat_list_str(ph, channels, "context");
+            ret = (fabulor_context*)fabulor_list_str(ph, channels, "context");
             break;
         }
     };
 
-    zoitechat_list_free(ph, channels);
+    fabulor_list_free(ph, channels);
     return ret;
 }
 
@@ -120,23 +120,23 @@ static zoitechat_context *find_context_on_network (const char *name) {
 char *get_my_info(const char *field, gboolean find_in_other_context) {
     char *result = NULL;
     const char *own_nick;
-    zoitechat_list *list;
-    zoitechat_context *ctx_current, *ctx_channel;
+    fabulor_list *list;
+    fabulor_context *ctx_current, *ctx_channel;
 
     /* Display message */
-    own_nick = zoitechat_get_info(ph, "nick");
+    own_nick = fabulor_get_info(ph, "nick");
 
     if (!own_nick)
         return NULL;
 
     /* Get field for own nick if any */
-    list = zoitechat_list_get(ph, "users");
+    list = fabulor_list_get(ph, "users");
     if (list) {
-        while (zoitechat_list_next(ph, list)) {
-            if (irc_nick_cmp(own_nick, zoitechat_list_str(ph, list, "nick")) == 0)
-                result = g_strdup(zoitechat_list_str(ph, list, field));
+        while (fabulor_list_next(ph, list)) {
+            if (irc_nick_cmp(own_nick, fabulor_list_str(ph, list, "nick")) == 0)
+                result = g_strdup(fabulor_list_str(ph, list, field));
         }
-        zoitechat_list_free(ph, list);
+        fabulor_list_free(ph, list);
     }
 
     if (result) {
@@ -148,21 +148,21 @@ char *get_my_info(const char *field, gboolean find_in_other_context) {
         return NULL;
     }
 
-    list = zoitechat_list_get(ph, "channels");
+    list = fabulor_list_get(ph, "channels");
     if (list) {
-        ctx_current = zoitechat_get_context(ph);
-        while (zoitechat_list_next(ph, list)) {
-            ctx_channel = (zoitechat_context *) zoitechat_list_str(ph, list, "context");
+        ctx_current = fabulor_get_context(ph);
+        while (fabulor_list_next(ph, list)) {
+            ctx_channel = (fabulor_context *) fabulor_list_str(ph, list, "context");
 
-            zoitechat_set_context(ph, ctx_channel);
+            fabulor_set_context(ph, ctx_channel);
             result = get_my_info(field, FALSE);
-            zoitechat_set_context(ph, ctx_current);
+            fabulor_set_context(ph, ctx_current);
 
             if (result) {
                 break;
             }
         }
-        zoitechat_list_free(ph, list);
+        fabulor_list_free(ph, list);
     }
 
     return result;
@@ -195,7 +195,7 @@ size_t get_prefix_length(void) {
     size_t prefix_len;
 
     /* ':! ' + 'nick' + 'ident@host', e.g. ':user!~name@mynet.com ' */
-    nick = zoitechat_get_info(ph, "nick");
+    nick = fabulor_get_info(ph, "nick");
     prefix_len = 3 + (nick != NULL ? strlen(nick) : 0);
     own_host = get_my_own_host();
     if (own_host) {
@@ -296,10 +296,10 @@ static int handle_outgoing(char *word[], char *word_eol[], void *userdata) {
     GString *command;
     GSList *encrypted_list, *encrypted_item;
 
-    const char *channel = zoitechat_get_info(ph, "channel");
+    const char *channel = fabulor_get_info(ph, "channel");
 
     /* Check if we can encrypt */
-    if (!fish_nick_has_key(channel)) return ZOITECHAT_EAT_NONE;
+    if (!fish_nick_has_key(channel)) return FABULOR_EAT_NONE;
 
     command = g_string_new("");
     g_string_printf(command, "PRIVMSG %s :+OK ", channel);
@@ -307,7 +307,7 @@ static int handle_outgoing(char *word[], char *word_eol[], void *userdata) {
     encrypted_list = fish_encrypt_for_nick(channel, word_eol[1], &mode, get_prefix_length() + command->len);
     if (!encrypted_list) {
         g_string_free(command, TRUE);
-        return ZOITECHAT_EAT_NONE;
+        return FABULOR_EAT_NONE;
     }
 
     /* Get prefix for own nick if any */
@@ -317,14 +317,14 @@ static int handle_outgoing(char *word[], char *word_eol[], void *userdata) {
     message = g_strconcat("[", fish_modes[mode], "] ", word_eol[1], NULL);
 
     /* Display message */
-    zoitechat_emit_print(ph, "Your Message", zoitechat_get_info(ph, "nick"), message, prefix, NULL);
+    fabulor_emit_print(ph, "Your Message", fabulor_get_info(ph, "nick"), message, prefix, NULL);
     g_free(message);
 
     /* Send encrypted messages */
     encrypted_item = encrypted_list;
     while (encrypted_item)
     {
-        zoitechat_commandf(ph, "%s%s", command->str, (char *)encrypted_item->data);
+        fabulor_commandf(ph, "%s%s", command->str, (char *)encrypted_item->data);
 
         encrypted_item = encrypted_item->next;
     }
@@ -333,13 +333,13 @@ static int handle_outgoing(char *word[], char *word_eol[], void *userdata) {
     g_string_free(command, TRUE);
     g_slist_free_full(encrypted_list, g_free);
 
-    return ZOITECHAT_EAT_ZOITECHAT;
+    return FABULOR_EAT_FABULOR;
 }
 
 /**
  * Called when a channel message or private message is received.
  */
-static int handle_incoming(char *word[], char *word_eol[], zoitechat_event_attrs *attrs, void *userdata) {
+static int handle_incoming(char *word[], char *word_eol[], fabulor_event_attrs *attrs, void *userdata) {
     const char *prefix;
     const char *command;
     const char *recipient;
@@ -350,7 +350,7 @@ static int handle_incoming(char *word[], char *word_eol[], zoitechat_event_attrs
     GString *message;
 
     if (!irc_parse_message((const char **)word, &prefix, &command, &parameters_offset))
-        return ZOITECHAT_EAT_NONE;
+        return FABULOR_EAT_NONE;
 
     /* Topic (command 332) has an extra parameter */
     if (!strcmp(command, "332"))
@@ -367,7 +367,7 @@ static int handle_incoming(char *word[], char *word_eol[], zoitechat_event_attrs
 
     /* Nothing to decrypt */
     if (decrypted == NULL)
-        return ZOITECHAT_EAT_NONE;
+        return FABULOR_EAT_NONE;
 
     /* Build decrypted message */
 
@@ -392,30 +392,30 @@ static int handle_incoming(char *word[], char *word_eol[], zoitechat_event_attrs
     /* Fake server message
      * RECV command will throw this function again, if message have multiple
      * encrypted data, we will decrypt all */
-    zoitechat_command(ph, message->str);
+    fabulor_command(ph, message->str);
     g_string_free (message, TRUE);
 
-    return ZOITECHAT_EAT_ZOITECHAT;
+    return FABULOR_EAT_FABULOR;
 }
 
 static int handle_keyx_notice(char *word[], char *word_eol[], void *userdata) {
     const char *dh_message = word[4];
     const char *dh_pubkey = word[5];
-    zoitechat_context *query_ctx;
+    fabulor_context *query_ctx;
     const char *prefix;
     char *sender, *secret_key, *priv_key = NULL;
     enum fish_mode mode = FISH_ECB_MODE;
 
     if (!*dh_message || !*dh_pubkey || strlen(dh_pubkey) != 181)
-        return ZOITECHAT_EAT_NONE;
+        return FABULOR_EAT_NONE;
 
     if (!irc_parse_message((const char**)word, &prefix, NULL, NULL) || !prefix)
-        return ZOITECHAT_EAT_NONE;
+        return FABULOR_EAT_NONE;
 
     sender = irc_prefix_get_nick(prefix);
     query_ctx = find_context_on_network(sender);
     if (query_ctx)
-        g_assert(zoitechat_set_context(ph, query_ctx) == 1);
+        g_assert(fabulor_set_context(ph, query_ctx) == 1);
 
     dh_message++; /* : prefix */
 
@@ -425,12 +425,12 @@ static int handle_keyx_notice(char *word[], char *word_eol[], void *userdata) {
     if (!strcmp(dh_message, "DH1080_INIT")) {
         char *pub_key;
 
-        zoitechat_printf(ph, "Received public key from %s (%s), sending mine...", sender, fish_modes[mode]);
+        fabulor_printf(ph, "Received public key from %s (%s), sending mine...", sender, fish_modes[mode]);
         if (dh1080_generate_key(&priv_key, &pub_key)) {
-            zoitechat_commandf(ph, "quote NOTICE %s :DH1080_FINISH %s%s", sender, pub_key, (mode == FISH_CBC_MODE) ? " CBC" : "");
+            fabulor_commandf(ph, "quote NOTICE %s :DH1080_FINISH %s%s", sender, pub_key, (mode == FISH_CBC_MODE) ? " CBC" : "");
             g_free(pub_key);
         } else {
-            zoitechat_printf(ph, "Failed to generate keys");
+            fabulor_printf(ph, "Failed to generate keys");
             goto cleanup;
         }
     } else if (!strcmp (dh_message, "DH1080_FINISH")) {
@@ -441,27 +441,27 @@ static int handle_keyx_notice(char *word[], char *word_eol[], void *userdata) {
         g_free(sender_lower);
 
         if (!priv_key) {
-            zoitechat_printf(ph, "Received a key exchange response for unknown user: %s", sender);
+            fabulor_printf(ph, "Received a key exchange response for unknown user: %s", sender);
             goto cleanup;
         }
     } else {
         /* Regular notice */
         g_free(sender);
-        return ZOITECHAT_EAT_NONE;
+        return FABULOR_EAT_NONE;
     }
 
     if (dh1080_compute_key(priv_key, dh_pubkey, &secret_key)) {
         keystore_store_key(sender, secret_key, mode);
-        zoitechat_printf(ph, "Stored new key for %s (%s)", sender, fish_modes[mode]);
+        fabulor_printf(ph, "Stored new key for %s (%s)", sender, fish_modes[mode]);
         g_free(secret_key);
     } else {
-        zoitechat_printf(ph, "Failed to create secret key!");
+        fabulor_printf(ph, "Failed to create secret key!");
     }
 
 cleanup:
     g_free(sender);
     g_free(priv_key);
-    return ZOITECHAT_EAT_ALL;
+    return FABULOR_EAT_ALL;
 }
 
 
@@ -488,7 +488,7 @@ static const char *fishlim_gui_target(void) {
     if (target && *target)
         return target;
 
-    return zoitechat_get_info(ph, "channel");
+    return fabulor_get_info(ph, "channel");
 }
 
 static const char *fishlim_gui_mode(void) {
@@ -573,7 +573,7 @@ static void fishlim_gui_share_send(GtkButton *button, gpointer window) {
     for (i = 0; users && users[i]; i++) {
         char *user = g_strstrip(users[i]);
         if (*user)
-            zoitechat_commandf(ph,
+            fabulor_commandf(ph,
                 "msg %s Encrypted chat invite: join %s, open FiSHLiM Key Manager, add channel %s with %s key: %s. Key exchange is for private messages only.",
                 user, prompt->channel, prompt->channel, prompt->mode,
                 prompt->key);
@@ -636,11 +636,11 @@ static void fishlim_gui_set(GtkWidget *widget, gpointer data) {
     const char *mode = fishlim_gui_mode();
 
     if (!target || !*target || !key || !*key) {
-        zoitechat_printf(ph, "%s\n", usage_setkey);
+        fabulor_printf(ph, "%s\n", usage_setkey);
         return;
     }
 
-    zoitechat_commandf(ph, "SETKEY %s %s:%s", target, mode, key);
+    fabulor_commandf(ph, "SETKEY %s %s:%s", target, mode, key);
     fishlim_gui_send_channel_key(target, mode, key);
     gtk_editable_set_text(GTK_EDITABLE(fishlim_key_entry), "");
     fishlim_gui_refresh();
@@ -663,7 +663,7 @@ static void fishlim_gui_confirm_delete_apply(GtkButton *button,
         "fishlim-delete-target");
 
     if (target && *target) {
-        zoitechat_commandf(ph, "DELKEY %s", target);
+        fabulor_commandf(ph, "DELKEY %s", target);
         fishlim_gui_refresh();
     }
     gtk_window_destroy(GTK_WINDOW(window));
@@ -676,7 +676,7 @@ static void fishlim_gui_delete(GtkWidget *widget, gpointer data) {
     char *message;
 
     if (!target || !*target) {
-        zoitechat_printf(ph, "%s\n", usage_delkey);
+        fabulor_printf(ph, "%s\n", usage_delkey);
         g_free(selected);
         return;
     }
@@ -718,10 +718,10 @@ static void fishlim_gui_keyx(GtkWidget *widget, gpointer data) {
     const char *target = fishlim_gui_target();
 
     if (!target || !*target || !irc_is_query(target)) {
-        zoitechat_printf(ph, "%s\n", usage_keyx);
+        fabulor_printf(ph, "%s\n", usage_keyx);
         return;
     }
-    zoitechat_commandf(ph, "KEYX %s %s", target, fishlim_gui_mode());
+    fabulor_commandf(ph, "KEYX %s %s", target, fishlim_gui_mode());
 }
 
 static void fishlim_gui_row_activated(GtkListBox *box, GtkListBoxRow *row,
@@ -747,12 +747,12 @@ static int handle_fishlim(char *word[], char *word_eol[], void *userdata) {
     const char *target;
     const char *modes[] = {"ECB", "CBC", NULL};
 
-    target = *word_eol[2] ? word_eol[2] : zoitechat_get_info(ph, "channel");
+    target = *word_eol[2] ? word_eol[2] : fabulor_get_info(ph, "channel");
     if (fishlim_dialog) {
         if (target)
             gtk_editable_set_text(GTK_EDITABLE(fishlim_target_entry), target);
         gtk_window_present(GTK_WINDOW(fishlim_dialog));
-        return ZOITECHAT_EAT_ZOITECHAT;
+        return FABULOR_EAT_FABULOR;
     }
 
     fishlim_dialog = gtk_window_new();
@@ -821,7 +821,7 @@ static int handle_fishlim(char *word[], char *word_eol[], void *userdata) {
     gtk_window_set_child(GTK_WINDOW(fishlim_dialog), content);
     fishlim_gui_refresh();
     gtk_window_present(GTK_WINDOW(fishlim_dialog));
-    return ZOITECHAT_EAT_ZOITECHAT;
+    return FABULOR_EAT_FABULOR;
 }
 
 /**
@@ -834,13 +834,13 @@ static int handle_setkey(char *word[], char *word_eol[], void *userdata) {
 
     /* Check syntax */
     if (*word[2] == '\0') {
-        zoitechat_printf(ph, "%s\n", usage_setkey);
-        return ZOITECHAT_EAT_ZOITECHAT;
+        fabulor_printf(ph, "%s\n", usage_setkey);
+        return FABULOR_EAT_FABULOR;
     }
 
     if (*word[3] == '\0') {
         /* /setkey password */
-        nick = zoitechat_get_info(ph, "channel");
+        nick = fabulor_get_info(ph, "channel");
         key = word_eol[2];
     } else {
         /* /setkey #channel password */
@@ -858,14 +858,14 @@ static int handle_setkey(char *word[], char *word_eol[], void *userdata) {
 
     /* Set password */
     if (keystore_store_key(nick, key, mode)) {
-        zoitechat_printf(ph, "Stored key for %s (%s)\n", nick, fish_modes[mode]);
+        fabulor_printf(ph, "Stored key for %s (%s)\n", nick, fish_modes[mode]);
         if (mode == FISH_CBC_MODE)
-            zoitechat_printf(ph, "Warning: CBC may not work with older clients.\n");
+            fabulor_printf(ph, "Warning: CBC may not work with older clients.\n");
     } else {
-        zoitechat_printf(ph, "\00305Failed to store key in addon_fishlim.conf\n");
+        fabulor_printf(ph, "\00305Failed to store key in addon_fishlim.conf\n");
     }
 
-    return ZOITECHAT_EAT_ZOITECHAT;
+    return FABULOR_EAT_FABULOR;
 }
 
 /**
@@ -879,30 +879,30 @@ static int handle_delkey(char *word[], char *word_eol[], void *userdata) {
     if (*word[2] != '\0') {
         nick = g_strstrip(g_strdup(word_eol[2]));
     } else { /* Delete key from current context */
-        nick = g_strdup(zoitechat_get_info(ph, "channel"));
-        ctx_type = zoitechat_list_int(ph, NULL, "type");
+        nick = g_strdup(fabulor_get_info(ph, "channel"));
+        ctx_type = fabulor_list_int(ph, NULL, "type");
 
         /* Only allow channel or dialog */
         if (ctx_type < 2 || ctx_type > 3) {
-            zoitechat_printf(ph, "%s\n", usage_delkey);
-            return ZOITECHAT_EAT_ZOITECHAT;
+            fabulor_printf(ph, "%s\n", usage_delkey);
+            return FABULOR_EAT_FABULOR;
         }
     }
 
     /* Delete the given nick from the key store */
     if (keystore_delete_nick(nick)) {
-        zoitechat_printf(ph, "Deleted key for %s\n", nick);
+        fabulor_printf(ph, "Deleted key for %s\n", nick);
     } else {
-        zoitechat_printf(ph, "\00305Failed to delete key in addon_fishlim.conf!\n");
+        fabulor_printf(ph, "\00305Failed to delete key in addon_fishlim.conf!\n");
     }
     g_free(nick);
 
-    return ZOITECHAT_EAT_ZOITECHAT;
+    return FABULOR_EAT_FABULOR;
 }
 
 static int handle_keyx(char *word[], char *word_eol[], void *userdata) {
     const char *target = word[2];
-    zoitechat_context *query_ctx = NULL;
+    fabulor_context *query_ctx = NULL;
     char *pub_key, *priv_key;
     enum fish_mode mode = FISH_CBC_MODE;
     int ctx_type;
@@ -911,42 +911,42 @@ static int handle_keyx(char *word[], char *word_eol[], void *userdata) {
         if (g_ascii_strcasecmp(word[3], "ECB") == 0)
             mode = FISH_ECB_MODE;
         else if (g_ascii_strcasecmp(word[3], "CBC") != 0) {
-            zoitechat_printf(ph, "%s", usage_keyx);
-            return ZOITECHAT_EAT_ALL;
+            fabulor_printf(ph, "%s", usage_keyx);
+            return FABULOR_EAT_ALL;
         }
     }
 
     if (*target)
         query_ctx = find_context_on_network(target);
     else {
-        target = zoitechat_get_info(ph, "channel");
-        query_ctx = zoitechat_get_context (ph);
+        target = fabulor_get_info(ph, "channel");
+        query_ctx = fabulor_get_context (ph);
     }
 
     if (query_ctx) {
-        g_assert(zoitechat_set_context(ph, query_ctx) == 1);
-        ctx_type = zoitechat_list_int(ph, NULL, "type");
+        g_assert(fabulor_set_context(ph, query_ctx) == 1);
+        ctx_type = fabulor_list_int(ph, NULL, "type");
     }
 
     if ((query_ctx && ctx_type != 3) || (!query_ctx && !irc_is_query(target))) {
-        zoitechat_printf(ph, "You can only exchange keys with individuals");
-        return ZOITECHAT_EAT_ALL;
+        fabulor_printf(ph, "You can only exchange keys with individuals");
+        return FABULOR_EAT_ALL;
     }
 
     if (dh1080_generate_key(&priv_key, &pub_key)) {
         g_hash_table_replace (pending_exchanges, g_ascii_strdown(target, -1), priv_key);
 
-        zoitechat_commandf(ph, "quote NOTICE %s :DH1080_INIT %s%s", target, pub_key, (mode == FISH_CBC_MODE) ? " CBC" : "");
-        zoitechat_printf(ph, "Sent public key to %s (%s), waiting for reply...", target, fish_modes[mode]);
+        fabulor_commandf(ph, "quote NOTICE %s :DH1080_INIT %s%s", target, pub_key, (mode == FISH_CBC_MODE) ? " CBC" : "");
+        fabulor_printf(ph, "Sent public key to %s (%s), waiting for reply...", target, fish_modes[mode]);
         if (mode == FISH_CBC_MODE)
-            zoitechat_printf(ph, "Warning: CBC may not work with older clients.");
+            fabulor_printf(ph, "Warning: CBC may not work with older clients.");
 
         g_free(pub_key);
     } else {
-        zoitechat_printf(ph, "Failed to generate keys");
+        fabulor_printf(ph, "Failed to generate keys");
     }
 
-    return ZOITECHAT_EAT_ALL;
+    return FABULOR_EAT_ALL;
 }
 
 /**
@@ -960,21 +960,21 @@ static int handle_crypt_topic(char *word[], char *word_eol[], void *userdata) {
     GSList *encrypted_list;
 
     if (!*topic) {
-        zoitechat_printf(ph, "%s", usage_topic);
-        return ZOITECHAT_EAT_ALL;
+        fabulor_printf(ph, "%s", usage_topic);
+        return FABULOR_EAT_ALL;
     }
 
-    if (zoitechat_list_int(ph, NULL, "type") != 2) {
-        zoitechat_printf(ph, "Please change to the channel window where you want to set the topic!");
-        return ZOITECHAT_EAT_ALL;
+    if (fabulor_list_int(ph, NULL, "type") != 2) {
+        fabulor_printf(ph, "Please change to the channel window where you want to set the topic!");
+        return FABULOR_EAT_ALL;
     }
 
-    target = zoitechat_get_info(ph, "channel");
+    target = fabulor_get_info(ph, "channel");
 
     /* Check if we can encrypt */
     if (!fish_nick_has_key(target)) {
-        zoitechat_printf(ph, "/topic+ error, no key found for %s", target);
-        return ZOITECHAT_EAT_ALL;
+        fabulor_printf(ph, "/topic+ error, no key found for %s", target);
+        return FABULOR_EAT_ALL;
     }
 
     command = g_string_new("");
@@ -983,16 +983,16 @@ static int handle_crypt_topic(char *word[], char *word_eol[], void *userdata) {
     encrypted_list = fish_encrypt_for_nick(target, topic, &mode, get_prefix_length() + command->len);
     if (!encrypted_list) {
         g_string_free(command, TRUE);
-        zoitechat_printf(ph, "/topic+ error, can't encrypt %s", target);
-        return ZOITECHAT_EAT_ALL;
+        fabulor_printf(ph, "/topic+ error, can't encrypt %s", target);
+        return FABULOR_EAT_ALL;
     }
 
-    zoitechat_commandf(ph, "%s%s", command->str, (char *) encrypted_list->data);
+    fabulor_commandf(ph, "%s%s", command->str, (char *) encrypted_list->data);
 
     g_string_free(command, TRUE);
     g_slist_free_full(encrypted_list, g_free);
 
-    return ZOITECHAT_EAT_ALL;
+    return FABULOR_EAT_ALL;
 }
 
 /**
@@ -1007,14 +1007,14 @@ static int handle_crypt_notice(char *word[], char *word_eol[], void *userdata) {
     GSList *encrypted_list, *encrypted_item;
 
     if (!*target || !*notice) {
-        zoitechat_printf(ph, "%s", usage_notice);
-        return ZOITECHAT_EAT_ALL;
+        fabulor_printf(ph, "%s", usage_notice);
+        return FABULOR_EAT_ALL;
     }
 
     /* Check if we can encrypt */
     if (!fish_nick_has_key(target)) {
-        zoitechat_printf(ph, "/notice+ error, no key found for %s.", target);
-        return ZOITECHAT_EAT_ALL;
+        fabulor_printf(ph, "/notice+ error, no key found for %s.", target);
+        return FABULOR_EAT_ALL;
     }
 
     command = g_string_new("");
@@ -1023,17 +1023,17 @@ static int handle_crypt_notice(char *word[], char *word_eol[], void *userdata) {
     encrypted_list = fish_encrypt_for_nick(target, notice, &mode, get_prefix_length() + command->len);
     if (!encrypted_list) {
         g_string_free(command, TRUE);
-        zoitechat_printf(ph, "/notice+ error, can't encrypt %s", target);
-        return ZOITECHAT_EAT_ALL;
+        fabulor_printf(ph, "/notice+ error, can't encrypt %s", target);
+        return FABULOR_EAT_ALL;
     }
 
     notice_flag = g_strconcat("[", fish_modes[mode], "] ", notice, NULL);
-    zoitechat_emit_print(ph, "Notice Send", target, notice_flag);
+    fabulor_emit_print(ph, "Notice Send", target, notice_flag);
 
     /* Send encrypted messages */
     encrypted_item = encrypted_list;
     while (encrypted_item) {
-        zoitechat_commandf(ph, "%s%s", command->str, (char *) encrypted_item->data);
+        fabulor_commandf(ph, "%s%s", command->str, (char *) encrypted_item->data);
 
         encrypted_item = encrypted_item->next;
     }
@@ -1042,7 +1042,7 @@ static int handle_crypt_notice(char *word[], char *word_eol[], void *userdata) {
     g_string_free(command, TRUE);
     g_slist_free_full(encrypted_list, g_free);
 
-    return ZOITECHAT_EAT_ALL;
+    return FABULOR_EAT_ALL;
 }
 
 /**
@@ -1053,20 +1053,20 @@ static int handle_crypt_msg(char *word[], char *word_eol[], void *userdata) {
     const char *message = word_eol[3];
     char *message_flag;
     char *prefix;
-    zoitechat_context *query_ctx;
+    fabulor_context *query_ctx;
     enum fish_mode mode;
     GString *command;
     GSList *encrypted_list, *encrypted_item;
 
     if (!*target || !*message) {
-        zoitechat_printf(ph, "%s", usage_msg);
-        return ZOITECHAT_EAT_ALL;
+        fabulor_printf(ph, "%s", usage_msg);
+        return FABULOR_EAT_ALL;
     }
 
     /* Check if we can encrypt */
     if (!fish_nick_has_key(target)) {
-        zoitechat_printf(ph, "/msg+ error, no key found for %s", target);
-        return ZOITECHAT_EAT_ALL;
+        fabulor_printf(ph, "/msg+ error, no key found for %s", target);
+        return FABULOR_EAT_ALL;
     }
 
     command = g_string_new("");
@@ -1075,14 +1075,14 @@ static int handle_crypt_msg(char *word[], char *word_eol[], void *userdata) {
     encrypted_list = fish_encrypt_for_nick(target, message, &mode, get_prefix_length() + command->len);
     if (!encrypted_list) {
         g_string_free(command, TRUE);
-        zoitechat_printf(ph, "/msg+ error, can't encrypt %s", target);
-        return ZOITECHAT_EAT_ALL;
+        fabulor_printf(ph, "/msg+ error, can't encrypt %s", target);
+        return FABULOR_EAT_ALL;
     }
 
     /* Send encrypted messages */
     encrypted_item = encrypted_list;
     while (encrypted_item) {
-        zoitechat_commandf(ph, "%s%s", command->str, (char *) encrypted_item->data);
+        fabulor_commandf(ph, "%s%s", command->str, (char *) encrypted_item->data);
 
         encrypted_item = encrypted_item->next;
     }
@@ -1092,31 +1092,31 @@ static int handle_crypt_msg(char *word[], char *word_eol[], void *userdata) {
 
     query_ctx = find_context_on_network(target);
     if (query_ctx) {
-        g_assert(zoitechat_set_context(ph, query_ctx) == 1);
+        g_assert(fabulor_set_context(ph, query_ctx) == 1);
 
         prefix = get_my_own_prefix();
 
         /* Add encrypted flag */
         message_flag = g_strconcat("[", fish_modes[mode], "] ", message, NULL);
-        zoitechat_emit_print(ph, "Your Message", zoitechat_get_info(ph, "nick"), message_flag, prefix, NULL);
+        fabulor_emit_print(ph, "Your Message", fabulor_get_info(ph, "nick"), message_flag, prefix, NULL);
         g_free(prefix);
         g_free(message_flag);
     } else {
-        zoitechat_emit_print(ph, "Message Send", target, message);
+        fabulor_emit_print(ph, "Message Send", target, message);
     }
 
-    return ZOITECHAT_EAT_ALL;
+    return FABULOR_EAT_ALL;
 }
 
 static int handle_crypt_me(char *word[], char *word_eol[], void *userdata) {
-    const char *channel = zoitechat_get_info(ph, "channel");
+    const char *channel = fabulor_get_info(ph, "channel");
     enum fish_mode mode;
     GString *command;
     GSList *encrypted_list, *encrypted_item;
 
     /* Check if we can encrypt */
     if (!fish_nick_has_key(channel)) {
-        return ZOITECHAT_EAT_NONE;
+        return FABULOR_EAT_NONE;
     }
 
     command = g_string_new("");
@@ -1126,16 +1126,16 @@ static int handle_crypt_me(char *word[], char *word_eol[], void *userdata) {
     encrypted_list = fish_encrypt_for_nick(channel, word_eol[2], &mode, get_prefix_length() + command->len + 2);
     if (!encrypted_list) {
         g_string_free(command, TRUE);
-        zoitechat_printf(ph, "/me error, can't encrypt %s", channel);
-        return ZOITECHAT_EAT_ALL;
+        fabulor_printf(ph, "/me error, can't encrypt %s", channel);
+        return FABULOR_EAT_ALL;
     }
 
-    zoitechat_emit_print(ph, "Your Action", zoitechat_get_info(ph, "nick"), word_eol[2], NULL);
+    fabulor_emit_print(ph, "Your Action", fabulor_get_info(ph, "nick"), word_eol[2], NULL);
 
     /* Send encrypted messages */
     encrypted_item = encrypted_list;
     while (encrypted_item) {
-        zoitechat_commandf(ph, "%s%s \001", command->str, (char *) encrypted_item->data);
+        fabulor_commandf(ph, "%s%s \001", command->str, (char *) encrypted_item->data);
 
         encrypted_item = encrypted_item->next;
     }
@@ -1143,13 +1143,13 @@ static int handle_crypt_me(char *word[], char *word_eol[], void *userdata) {
     g_string_free(command, TRUE);
     g_slist_free_full(encrypted_list, g_free);
 
-    return ZOITECHAT_EAT_ALL;
+    return FABULOR_EAT_ALL;
 }
 
 /**
  * Returns the plugin name version information.
  */
-void zoitechat_plugin_get_info(const char **name, const char **desc,
+void fabulor_plugin_get_info(const char **name, const char **desc,
                            const char **version, void **reserved) {
     *name = plugin_name;
     *desc = plugin_desc;
@@ -1159,7 +1159,7 @@ void zoitechat_plugin_get_info(const char **name, const char **desc,
 /**
  * Plugin entry point.
  */
-int zoitechat_plugin_init(zoitechat_plugin *plugin_handle,
+int fabulor_plugin_init(fabulor_plugin *plugin_handle,
                       const char **name,
                       const char **desc,
                       const char **version,
@@ -1172,52 +1172,52 @@ int zoitechat_plugin_init(zoitechat_plugin *plugin_handle,
     *version = plugin_version;
 
     /* Register commands */
-    zoitechat_hook_command(ph, "FISHLIM", ZOITECHAT_PRI_NORM, handle_fishlim, "Usage: FISHLIM, opens the FiSHLiM key manager", NULL);
-    zoitechat_hook_command(ph, "SETKEY", ZOITECHAT_PRI_NORM, handle_setkey, usage_setkey, NULL);
-    zoitechat_hook_command(ph, "DELKEY", ZOITECHAT_PRI_NORM, handle_delkey, usage_delkey, NULL);
-    zoitechat_hook_command(ph, "KEYX", ZOITECHAT_PRI_NORM, handle_keyx, usage_keyx, NULL);
-    zoitechat_hook_command(ph, "TOPIC+", ZOITECHAT_PRI_NORM, handle_crypt_topic, usage_topic, NULL);
-    zoitechat_hook_command(ph, "NOTICE+", ZOITECHAT_PRI_NORM, handle_crypt_notice, usage_notice, NULL);
-    zoitechat_hook_command(ph, "MSG+", ZOITECHAT_PRI_NORM, handle_crypt_msg, usage_msg, NULL);
-    zoitechat_hook_command(ph, "ME", ZOITECHAT_PRI_NORM, handle_crypt_me, NULL, NULL);
+    fabulor_hook_command(ph, "FISHLIM", FABULOR_PRI_NORM, handle_fishlim, "Usage: FISHLIM, opens the FiSHLiM key manager", NULL);
+    fabulor_hook_command(ph, "SETKEY", FABULOR_PRI_NORM, handle_setkey, usage_setkey, NULL);
+    fabulor_hook_command(ph, "DELKEY", FABULOR_PRI_NORM, handle_delkey, usage_delkey, NULL);
+    fabulor_hook_command(ph, "KEYX", FABULOR_PRI_NORM, handle_keyx, usage_keyx, NULL);
+    fabulor_hook_command(ph, "TOPIC+", FABULOR_PRI_NORM, handle_crypt_topic, usage_topic, NULL);
+    fabulor_hook_command(ph, "NOTICE+", FABULOR_PRI_NORM, handle_crypt_notice, usage_notice, NULL);
+    fabulor_hook_command(ph, "MSG+", FABULOR_PRI_NORM, handle_crypt_msg, usage_msg, NULL);
+    fabulor_hook_command(ph, "ME", FABULOR_PRI_NORM, handle_crypt_me, NULL, NULL);
 
     /* Add handlers */
-    zoitechat_hook_command(ph, "", ZOITECHAT_PRI_NORM, handle_outgoing, NULL, NULL);
-    zoitechat_hook_server(ph, "NOTICE", ZOITECHAT_PRI_HIGHEST, handle_keyx_notice, NULL);
-    zoitechat_hook_server_attrs(ph, "NOTICE", ZOITECHAT_PRI_NORM, handle_incoming, NULL);
-    zoitechat_hook_server_attrs(ph, "PRIVMSG", ZOITECHAT_PRI_NORM, handle_incoming, NULL);
-    zoitechat_hook_server_attrs(ph, "TOPIC", ZOITECHAT_PRI_NORM, handle_incoming, NULL);
-    zoitechat_hook_server_attrs(ph, "332", ZOITECHAT_PRI_NORM, handle_incoming, NULL);
+    fabulor_hook_command(ph, "", FABULOR_PRI_NORM, handle_outgoing, NULL, NULL);
+    fabulor_hook_server(ph, "NOTICE", FABULOR_PRI_HIGHEST, handle_keyx_notice, NULL);
+    fabulor_hook_server_attrs(ph, "NOTICE", FABULOR_PRI_NORM, handle_incoming, NULL);
+    fabulor_hook_server_attrs(ph, "PRIVMSG", FABULOR_PRI_NORM, handle_incoming, NULL);
+    fabulor_hook_server_attrs(ph, "TOPIC", FABULOR_PRI_NORM, handle_incoming, NULL);
+    fabulor_hook_server_attrs(ph, "332", FABULOR_PRI_NORM, handle_incoming, NULL);
 
     if (!fish_init()) {
-        zoitechat_printf(ph, "FiSHLiM failed to initialize crypto backend");
+        fabulor_printf(ph, "FiSHLiM failed to initialize crypto backend");
         return 0;
     }
 
     if (!dh1080_init()) {
-        zoitechat_printf(ph, "FiSHLiM failed to initialize DH1080");
+        fabulor_printf(ph, "FiSHLiM failed to initialize DH1080");
         return 0;
     }
 
     pending_exchanges = g_hash_table_new_full(g_str_hash, g_str_equal, g_free, g_free);
 
-    zoitechat_command(ph, "MENU ADD \"Window/FiSHLiM Key Manager\" \"FISHLIM\"");
-    zoitechat_command(ph, "MENU ADD \"$NICK/FiSHLiM Key Manager\" \"FISHLIM %s\"");
+    fabulor_command(ph, "MENU ADD \"Window/FiSHLiM Key Manager\" \"FISHLIM\"");
+    fabulor_command(ph, "MENU ADD \"$NICK/FiSHLiM Key Manager\" \"FISHLIM %s\"");
 
-    zoitechat_printf(ph, "%s plugin loaded\n", plugin_name);
+    fabulor_printf(ph, "%s plugin loaded\n", plugin_name);
     /* Return success */
     return 1;
 }
 
-int zoitechat_plugin_deinit(void) {
-    zoitechat_command(ph, "MENU DEL \"Window/FiSHLiM Key Manager\"");
-    zoitechat_command(ph, "MENU DEL \"$NICK/FiSHLiM Key Manager\"");
+int fabulor_plugin_deinit(void) {
+    fabulor_command(ph, "MENU DEL \"Window/FiSHLiM Key Manager\"");
+    fabulor_command(ph, "MENU DEL \"$NICK/FiSHLiM Key Manager\"");
     if (fishlim_dialog)
         gtk_window_destroy(GTK_WINDOW(fishlim_dialog));
     g_clear_pointer(&pending_exchanges, g_hash_table_destroy);
     dh1080_deinit();
     fish_deinit();
 
-    zoitechat_printf(ph, "%s plugin unloaded\n", plugin_name);
+    fabulor_printf(ph, "%s plugin unloaded\n", plugin_name);
     return 1;
 }

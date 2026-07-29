@@ -17,7 +17,7 @@
  */
 
 #include <string.h>
-#include "../common/zoitechat-plugin.h"
+#include "../common/fabulor-plugin.h"
 #include "../common/zoitechat.h"
 #include "../common/zoitechatc.h"
 #include "../common/inbound.h"
@@ -127,7 +127,7 @@ static TrayIconState tray_flash_state;
 static guint tray_menu_timer;
 static gint64 tray_menu_inactivetime;
 #endif
-static zoitechat_plugin *ph;
+static fabulor_plugin *ph;
 static FabulorTrayActionModel *tray_actions;
 static GObject *tray_plugin_model_owner;
 static guint tray_visibility_source;
@@ -523,7 +523,7 @@ tray_get_window_status (void)
 	GtkWindow *win;
 	const char *st;
 
-	win = GTK_WINDOW (zoitechat_get_info (ph, "gtkwin_ptr"));
+	win = GTK_WINDOW (fabulor_get_info (ph, "gtkwin_ptr"));
 	if (win)
 	{
 		fabulor_window_state_get (win, &window_state);
@@ -531,7 +531,7 @@ tray_get_window_status (void)
 			return WS_HIDDEN;
 	}
 
-	st = zoitechat_get_info (ph, "win_status");
+	st = fabulor_get_info (ph, "win_status");
 
 	if (!st)
 		return WS_HIDDEN;
@@ -787,9 +787,9 @@ tray_toggle_visibility (gboolean force_hide)
 		return FALSE;
 
 	/* ph may have an invalid context now */
-	zoitechat_set_context (ph, zoitechat_find_context (ph, NULL, NULL));
+	fabulor_set_context (ph, fabulor_find_context (ph, NULL, NULL));
 
-	win = GTK_WINDOW (zoitechat_get_info (ph, "gtkwin_ptr"));
+	win = GTK_WINDOW (fabulor_get_info (ph, "gtkwin_ptr"));
 
 	tray_stop_flash ();
 	tray_reset_counts ();
@@ -802,7 +802,7 @@ tray_toggle_visibility (gboolean force_hide)
 	if (force_hide || status != WS_HIDDEN)
 	{
 		if (prefs.hex_gui_tray_away)
-			zoitechat_command (ph, "ALLSERV AWAY");
+			fabulor_command (ph, "ALLSERV AWAY");
 		fabulor_gtk_window_placement_capture (win, &placement);
 		maximized = prefs.hex_gui_win_state;
 		fullscreen = prefs.hex_gui_win_fullscreen;
@@ -811,7 +811,7 @@ tray_toggle_visibility (gboolean force_hide)
 	else
 	{
 		if (prefs.hex_gui_tray_away)
-			zoitechat_command (ph, "ALLSERV BACK");
+			fabulor_command (ph, "ALLSERV BACK");
 		fabulor_gtk_window_placement_restore (win, &placement);
 		fabulor_window_present (win);
 		if (maximized)
@@ -952,7 +952,7 @@ tray_win32_get_hwnd (void)
 	HWND hwnd;
 	GtkWindow *win;
 
-	win = GTK_WINDOW (zoitechat_get_info (ph, "gtkwin_ptr"));
+	win = GTK_WINDOW (fabulor_get_info (ph, "gtkwin_ptr"));
 	if (!win)
 		return GetActiveWindow ();
 
@@ -970,7 +970,7 @@ tray_win32_menu_cb (void)
 	int away_status;
 	GMenuModel *projection = NULL;
 
-	zoitechat_set_context (ph, zoitechat_find_context (ph, NULL, NULL));
+	fabulor_set_context (ph, fabulor_find_context (ph, NULL, NULL));
 
 	menu = CreatePopupMenu ();
 	if (!menu)
@@ -1099,7 +1099,7 @@ static int
 tray_hilight_cb (char *word[], void *userdata)
 {
 	/*if (tray_icon_state == TRAY_ICON_HIGHLIGHT)
-		return ZOITECHAT_EAT_NONE;*/
+		return FABULOR_EAT_NONE;*/
 
 	if (prefs.hex_input_tray_hilight)
 	{
@@ -1109,21 +1109,21 @@ tray_hilight_cb (char *word[], void *userdata)
 		tray_hilight_count++;
 		if (tray_hilight_count == 1)
 			tray_set_tipf (_("Highlighted message from: %s (%s) - %s"),
-								word[1], zoitechat_get_info (ph, "channel"), _(DISPLAY_NAME));
+								word[1], fabulor_get_info (ph, "channel"), _(DISPLAY_NAME));
 		else
 			tray_set_tipf (_("%u highlighted messages, latest from: %s (%s) - %s"),
-								tray_hilight_count, word[1], zoitechat_get_info (ph, "channel"),
+								tray_hilight_count, word[1], fabulor_get_info (ph, "channel"),
 								_(DISPLAY_NAME));
 	}
 
-	return ZOITECHAT_EAT_NONE;
+	return FABULOR_EAT_NONE;
 }
 
 static int
 tray_message_cb (char *word[], void *userdata)
 {
 	if (/*tray_icon_state == TRAY_ICON_MESSAGE ||*/ tray_icon_state == TRAY_ICON_HIGHLIGHT)
-		return ZOITECHAT_EAT_NONE;
+		return FABULOR_EAT_NONE;
 		
 	if (prefs.hex_input_tray_chans)
 	{
@@ -1132,12 +1132,12 @@ tray_message_cb (char *word[], void *userdata)
 		tray_pub_count++;
 		if (tray_pub_count == 1)
 			tray_set_tipf (_("Channel message from: %s (%s) - %s"),
-								word[1], zoitechat_get_info (ph, "channel"), _(DISPLAY_NAME));
+								word[1], fabulor_get_info (ph, "channel"), _(DISPLAY_NAME));
 		else
 			tray_set_tipf (_("%u channel messages. - %s"), tray_pub_count, _(DISPLAY_NAME));
 	}
 
-	return ZOITECHAT_EAT_NONE;
+	return FABULOR_EAT_NONE;
 }
 
 static void
@@ -1148,9 +1148,9 @@ tray_priv (char *from, char *text)
 	if (alert_match_word (from, prefs.hex_irc_no_hilight))
 		return;
 
-	network = zoitechat_get_info (ph, "network");
+	network = fabulor_get_info (ph, "network");
 	if (!network)
-		network = zoitechat_get_info (ph, "server");
+		network = fabulor_get_info (ph, "server");
 
 	if (prefs.hex_input_tray_priv)
 	{
@@ -1171,7 +1171,7 @@ tray_priv_cb (char *word[], void *userdata)
 {
 	tray_priv (word[1], word[2]);
 
-	return ZOITECHAT_EAT_NONE;
+	return FABULOR_EAT_NONE;
 }
 
 static int
@@ -1180,7 +1180,7 @@ tray_invited_cb (char *word[], void *userdata)
 	if (!prefs.hex_away_omit_alerts || tray_find_away_status () != 1)
 		tray_priv (word[2], "Invited");
 
-	return ZOITECHAT_EAT_NONE;
+	return FABULOR_EAT_NONE;
 }
 
 static int
@@ -1189,11 +1189,11 @@ tray_dcc_cb (char *word[], void *userdata)
 	const char *network;
 
 /*	if (tray_icon_state == TRAY_ICON_FILEOFFER)
-		return ZOITECHAT_EAT_NONE;*/
+		return FABULOR_EAT_NONE;*/
 
-	network = zoitechat_get_info (ph, "network");
+	network = fabulor_get_info (ph, "network");
 	if (!network)
-		network = zoitechat_get_info (ph, "server");
+		network = fabulor_get_info (ph, "server");
 
 	if (prefs.hex_input_tray_priv && (!prefs.hex_away_omit_alerts || tray_find_away_status () != 1))
 	{
@@ -1208,7 +1208,7 @@ tray_dcc_cb (char *word[], void *userdata)
 								tray_file_count, word[1], network, _(DISPLAY_NAME));
 	}
 
-	return ZOITECHAT_EAT_NONE;
+	return FABULOR_EAT_NONE;
 }
 
 static int
@@ -1216,7 +1216,7 @@ tray_focus_cb (char *word[], void *userdata)
 {
 	tray_stop_flash ();
 	tray_reset_counts ();
-	return ZOITECHAT_EAT_NONE;
+	return FABULOR_EAT_NONE;
 }
 
 static void
@@ -1246,7 +1246,7 @@ tray_apply_setup (void)
 	}
 	else
 	{
-		window = GTK_WINDOW (zoitechat_get_info (ph, "gtkwin_ptr"));
+		window = GTK_WINDOW (fabulor_get_info (ph, "gtkwin_ptr"));
 		if (fabulor_tray_backend_is_usable (
 			tray_backend_select_for_window (window)))
 			tray_init ();
@@ -1254,7 +1254,7 @@ tray_apply_setup (void)
 }
 
 int
-tray_plugin_init (zoitechat_plugin *plugin_handle, char **plugin_name,
+tray_plugin_init (fabulor_plugin *plugin_handle, char **plugin_name,
 				char **plugin_desc, char **plugin_version, char *arg)
 {
 	/* we need to save this for use with any zoitechat_* functions */
@@ -1265,25 +1265,25 @@ tray_plugin_init (zoitechat_plugin *plugin_handle, char **plugin_name,
 	*plugin_version = "";
 	tray_action_model_init ();
 
-	zoitechat_hook_print (ph, "Channel Msg Hilight", -1, tray_hilight_cb, NULL);
-	zoitechat_hook_print (ph, "Channel Action Hilight", -1, tray_hilight_cb, NULL);
+	fabulor_hook_print (ph, "Channel Msg Hilight", -1, tray_hilight_cb, NULL);
+	fabulor_hook_print (ph, "Channel Action Hilight", -1, tray_hilight_cb, NULL);
 
-	zoitechat_hook_print (ph, "Channel Message", -1, tray_message_cb, NULL);
-	zoitechat_hook_print (ph, "Channel Action", -1, tray_message_cb, NULL);
-	zoitechat_hook_print (ph, "Channel Notice", -1, tray_message_cb, NULL);
+	fabulor_hook_print (ph, "Channel Message", -1, tray_message_cb, NULL);
+	fabulor_hook_print (ph, "Channel Action", -1, tray_message_cb, NULL);
+	fabulor_hook_print (ph, "Channel Notice", -1, tray_message_cb, NULL);
 
-	zoitechat_hook_print (ph, "Private Message", -1, tray_priv_cb, NULL);
-	zoitechat_hook_print (ph, "Private Message to Dialog", -1, tray_priv_cb, NULL);
-	zoitechat_hook_print (ph, "Private Action", -1, tray_priv_cb, NULL);
-	zoitechat_hook_print (ph, "Private Action to Dialog", -1, tray_priv_cb, NULL);
-	zoitechat_hook_print (ph, "Notice", -1, tray_priv_cb, NULL);
-	zoitechat_hook_print (ph, "Invited", -1, tray_invited_cb, NULL);
+	fabulor_hook_print (ph, "Private Message", -1, tray_priv_cb, NULL);
+	fabulor_hook_print (ph, "Private Message to Dialog", -1, tray_priv_cb, NULL);
+	fabulor_hook_print (ph, "Private Action", -1, tray_priv_cb, NULL);
+	fabulor_hook_print (ph, "Private Action to Dialog", -1, tray_priv_cb, NULL);
+	fabulor_hook_print (ph, "Notice", -1, tray_priv_cb, NULL);
+	fabulor_hook_print (ph, "Invited", -1, tray_invited_cb, NULL);
 
-	zoitechat_hook_print (ph, "DCC Offer", -1, tray_dcc_cb, NULL);
+	fabulor_hook_print (ph, "DCC Offer", -1, tray_dcc_cb, NULL);
 
-	zoitechat_hook_print (ph, "Focus Window", -1, tray_focus_cb, NULL);
+	fabulor_hook_print (ph, "Focus Window", -1, tray_focus_cb, NULL);
 
-	GtkWindow *window = GTK_WINDOW(zoitechat_get_info (ph, "gtkwin_ptr"));
+	GtkWindow *window = GTK_WINDOW(fabulor_get_info (ph, "gtkwin_ptr"));
 	GtkWidget *window_widget;
 
 	if (window)
@@ -1304,7 +1304,7 @@ tray_plugin_init (zoitechat_plugin *plugin_handle, char **plugin_name,
 }
 
 int
-tray_plugin_deinit (zoitechat_plugin *plugin_handle)
+tray_plugin_deinit (fabulor_plugin *plugin_handle)
 {
 	(void)plugin_handle;
 #ifdef WIN32

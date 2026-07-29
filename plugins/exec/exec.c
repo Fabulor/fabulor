@@ -25,11 +25,11 @@
 #include <string.h>
 #include <time.h>
 
-#include "zoitechat-plugin.h"
+#include "fabulor-plugin.h"
 
 #define EXEC_COMMAND_MAX 8192
 
-static zoitechat_plugin *ph;
+static fabulor_plugin *ph;
 static char name[] = "Exec";
 static char desc[] = "Execute commands inside Fabulor";
 static char version[] = "1.2";
@@ -80,39 +80,39 @@ run_command (char *word[], char *word_eol[], void *userdata)
 
 		if (!command || !*command)
 		{
-			zoitechat_command (ph, "help exec");
-			return ZOITECHAT_EAT_ZOITECHAT;
+			fabulor_command (ph, "help exec");
+			return FABULOR_EAT_FABULOR;
 		}
 
 		commandLen = strlen (command);
 		if (commandLen > EXEC_COMMAND_MAX)
 		{
-			zoitechat_printf (ph, "Command is too long. Maximum length is %u characters.\n", EXEC_COMMAND_MAX);
-			return ZOITECHAT_EAT_ZOITECHAT;
+			fabulor_printf (ph, "Command is too long. Maximum length is %u characters.\n", EXEC_COMMAND_MAX);
+			return FABULOR_EAT_FABULOR;
 		}
 
 		commandLineLen = sizeof (commandPrefix) + commandLen;
 		commandLine = malloc (commandLineLen);
 		if (!commandLine)
 		{
-			zoitechat_printf (ph, "Unable to allocate command buffer.\n");
-			return ZOITECHAT_EAT_ZOITECHAT;
+			fabulor_printf (ph, "Unable to allocate command buffer.\n");
+			return FABULOR_EAT_FABULOR;
 		}
 
 		if (strcpy_s (commandLine, commandLineLen, commandPrefix) != 0 ||
 			strcat_s (commandLine, commandLineLen, command) != 0)
 		{
-			zoitechat_printf (ph, "Unable to prepare command line.\n");
+			fabulor_printf (ph, "Unable to prepare command line.\n");
 			free (commandLine);
-			return ZOITECHAT_EAT_ZOITECHAT;
+			return FABULOR_EAT_FABULOR;
 		}
 
 		if (!CreatePipe (&readPipe, &writePipe, &secattr, 0))
 		{
 			error = GetLastError ();
-			zoitechat_printf (ph, "Unable to create command output pipe: %lu\n", error);
+			fabulor_printf (ph, "Unable to create command output pipe: %lu\n", error);
 			free (commandLine);
-			return ZOITECHAT_EAT_ZOITECHAT;
+			return FABULOR_EAT_FABULOR;
 		}
 
 		SetHandleInformation (readPipe, HANDLE_FLAG_INHERIT, 0);
@@ -128,11 +128,11 @@ run_command (char *word[], char *word_eol[], void *userdata)
 		if (!CreateProcess (0, commandLine, 0, 0, TRUE, NORMAL_PRIORITY_CLASS | CREATE_NO_WINDOW, 0, 0, &sInfo, &pInfo))
 		{
 			error = GetLastError ();
-			zoitechat_printf (ph, "Unable to execute command: %lu\n", error);
+			fabulor_printf (ph, "Unable to execute command: %lu\n", error);
 			CloseHandle (writePipe);
 			CloseHandle (readPipe);
 			free (commandLine);
-			return ZOITECHAT_EAT_ZOITECHAT;
+			return FABULOR_EAT_FABULOR;
 		}
 
 		free (commandLine);
@@ -152,12 +152,12 @@ run_command (char *word[], char *word_eol[], void *userdata)
 						token = strtok_s (buffer, "\n", &context);
 						while (token != NULL)
 						{
-							zoitechat_commandf (ph, "SAY %s", token);
+							fabulor_commandf (ph, "SAY %s", token);
 							token = strtok_s (NULL, "\n", &context);
 						}
 					}
 					else
-						zoitechat_printf (ph, "%s", buffer);
+						fabulor_printf (ph, "%s", buffer);
 				}
 			}
 			else
@@ -168,11 +168,11 @@ run_command (char *word[], char *word_eol[], void *userdata)
 		}
 
 		if (!announce)
-			zoitechat_printf (ph, "\n");
+			fabulor_printf (ph, "\n");
 
 		if (timeElapsed >= 10)
 		{
-			zoitechat_printf (ph, "Command took too much time to run, execution aborted.\n");
+			fabulor_printf (ph, "Command took too much time to run, execution aborted.\n");
 		}
 
 		CloseHandle (readPipe);
@@ -181,14 +181,14 @@ run_command (char *word[], char *word_eol[], void *userdata)
 	}
 	else
 	{
-		zoitechat_command (ph, "help exec");
+		fabulor_command (ph, "help exec");
 	}
 
-	return ZOITECHAT_EAT_ZOITECHAT;
+	return FABULOR_EAT_FABULOR;
 }
 
 int
-zoitechat_plugin_init (zoitechat_plugin *plugin_handle, char **plugin_name, char **plugin_desc, char **plugin_version, char *arg)
+fabulor_plugin_init (fabulor_plugin *plugin_handle, char **plugin_name, char **plugin_desc, char **plugin_version, char *arg)
 {
 	ph = plugin_handle;
 
@@ -196,15 +196,15 @@ zoitechat_plugin_init (zoitechat_plugin *plugin_handle, char **plugin_name, char
 	*plugin_desc = desc;
 	*plugin_version = version;
 
-	zoitechat_hook_command (ph, "EXEC", ZOITECHAT_PRI_NORM, run_command, "Usage: /EXEC [-O] - execute commands inside Fabulor", 0);
-	zoitechat_printf (ph, "%s plugin loaded\n", name);
+	fabulor_hook_command (ph, "EXEC", FABULOR_PRI_NORM, run_command, "Usage: /EXEC [-O] - execute commands inside Fabulor", 0);
+	fabulor_printf (ph, "%s plugin loaded\n", name);
 
 	return 1;
 }
 
 int
-zoitechat_plugin_deinit (void)
+fabulor_plugin_deinit (void)
 {
-	zoitechat_printf (ph, "%s plugin unloaded\n", name);
+	fabulor_printf (ph, "%s plugin unloaded\n", name);
 	return 1;
 }
