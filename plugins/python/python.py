@@ -834,7 +834,7 @@ def _on_py_command(word, word_eol, userdata):
         list_plugins()
 
     elif subcmd == 'about':
-        lib.zoitechat_print(lib.ph, b'ZoiteChat Python interface version ' + VERSION)
+        lib.zoitechat_print(lib.ph, b'Fabulor Python interface version ' + VERSION)
 
     else:
         lib.zoitechat_command(lib.ph, b'HELP PY')

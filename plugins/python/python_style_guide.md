@@ -1,4 +1,4 @@
-# ZoiteChat Python Module Style Guide
+# Fabulor Python Module Style Guide
 
 (This is a work in progress).
 

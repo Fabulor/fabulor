@@ -1711,7 +1711,7 @@ pevent_make_pntevts (void)
 
 			if (pevt_build_string (pntevts_text[i], &(pntevts[i]), &m) != 0 && !translate)
 			{
-				g_error ("ZoiteChat CRITICAL *** default event text failed to build!");
+				g_error ("Fabulor CRITICAL *** default event text failed to build!");
 			}
 			else
 			{
@@ -1722,7 +1722,7 @@ pevent_make_pntevts (void)
 
 				if (pevt_build_string (pntevts_text[i], &(pntevts[i]), &m) != 0)
 				{
-					g_error ("ZoiteChat CRITICAL *** default event text failed to build!");
+					g_error ("Fabulor CRITICAL *** default event text failed to build!");
 				}
 			}
 		}
@@ -1851,7 +1851,7 @@ pevent_check_all_loaded (void)
 		if (pntevts_text[i] == NULL)
 		{
 			/*printf ("%s\n", te[i].name);
-			g_snprintf(out, sizeof(out), "The data for event %s failed to load. Reverting to defaults.\nThis may be because a new version of ZoiteChat is loading an old config file.\n\nCheck all print event texts are correct", evtnames[i]);
+			g_snprintf(out, sizeof(out), "The data for event %s failed to load. Reverting to defaults.\nThis may be because a new version of Fabulor is loading an old config file.\n\nCheck all print event texts are correct", evtnames[i]);
 			   gtkutil_simpledialog(out); */
 			/* make-te.c sets this 128 flag (DON'T call gettext() flag) */
 			if (te[i].num_args & 128)
@@ -1920,7 +1920,7 @@ format_event (session *sess, int index, char **args, char *o, gsize sizeofo, uns
 			if (a > numargs)
 			{
 				fprintf (stderr,
-							"ZoiteChat DEBUG: display_event: arg > numargs (%d %d %s)\n",
+							"Fabulor DEBUG: display_event: arg > numargs (%d %d %s)\n",
 							a, numargs, i);
 				break;
 			}
@@ -2488,7 +2488,7 @@ sound_play (const char *file, gboolean quiet)
 		{
 			ca_context_create (&ca_con);
 			ca_context_change_props (ca_con,
-											CA_PROP_APPLICATION_ID, "zoitechat",
+											CA_PROP_APPLICATION_ID, "net.fabulor.Fabulor",
 											CA_PROP_APPLICATION_NAME, "Fabulor",
 											CA_PROP_APPLICATION_ICON_NAME, "net.fabulor.Fabulor", NULL);
 		}

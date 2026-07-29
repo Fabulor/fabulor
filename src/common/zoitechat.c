@@ -153,12 +153,6 @@ zoitechat_find_running_window (void)
 		hwnd = FindWindowA ("fabulor", NULL);
 	if (!hwnd)
 		hwnd = FindWindowA (NULL, "Fabulor");
-	if (!hwnd)
-		hwnd = FindWindowA ("ZoiteChat", NULL);
-	if (!hwnd)
-		hwnd = FindWindowA ("zoitechat", NULL);
-	if (!hwnd)
-		hwnd = FindWindowA (NULL, "ZoiteChat");
 
 	return hwnd;
 }

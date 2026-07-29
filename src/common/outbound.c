@@ -3800,7 +3800,7 @@ cmd_tray (struct session *sess, char *tbuf, char *word[], char *word_eol[])
 
 	if (!word[3][0])
 	{
-		fe_tray_set_file (NULL);	/* default ZoiteChat icon */
+		fe_tray_set_file (NULL);	/* default Fabulor icon */
 		return TRUE;
 	}
 

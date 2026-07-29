@@ -622,7 +622,7 @@ static const char *pages[]=
  * network list without breaking config compatibility.
  *
  * Also make sure inbound_nickserv_login() won't break, i.e. if you add a new
- * type that is NickServ-based, add it there as well so that ZoiteChat knows to
+ * type that is NickServ-based, add it there as well so that Fabulor knows to
  * treat it as such.
  */
 static int login_types_conf[] =
