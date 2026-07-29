@@ -798,6 +798,9 @@ inbound_ujoin (server *serv, char *chan, char *nick, char *ip,
 {
 	session *sess;
 	int found_unused = FALSE;
+	gboolean requested_join;
+
+	requested_join = server_join_request_take (serv, chan);
 
 	/* already joined? probably a bnc */
 	sess = find_channel (serv, chan);
@@ -812,7 +815,7 @@ inbound_ujoin (server *serv, char *chan, char *nick, char *ip,
 			found_unused = sess != NULL;
 			if (!sess)
 				/* last resort, open a new tab/window */
-				sess = new_ircwindow (serv, chan, SESS_CHANNEL, 1);
+				sess = new_ircwindow (serv, chan, SESS_CHANNEL, requested_join);
 		}
 	}
 

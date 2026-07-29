@@ -102,6 +102,7 @@ joind_ok_cb (GtkWidget *ok, server *serv)
 			fe_message (_("Channel name too short, try again."), FE_MSG_ERROR);
 			return;
 		}
+		server_join_request_add (serv, text);
 		serv->p_join (serv, text, "");
 		goto xit;
 	}

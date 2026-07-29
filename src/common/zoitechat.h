@@ -591,6 +591,7 @@ typedef struct server
 	GIConv write_converter; /* iconv converter for converting from UTF-8 to server encoding. */
 
 	GSList *favlist;			/* list of channels & keys to join */
+	GSList *requested_joins;	/* channel names explicitly joined by the user */
 
 	unsigned int motd_skipped:1;
 	unsigned int connected:1;

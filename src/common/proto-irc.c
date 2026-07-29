@@ -901,21 +901,25 @@ process_numeric (session * sess, int n,
 		break;
 
 	case 471:
+		server_join_request_take (serv, word[4]);
 		EMIT_SIGNAL_TIMESTAMP (XP_TE_USERLIMIT, sess, word[4], NULL, NULL, NULL, 0,
 									  tags_data->timestamp);
 		break;
 
 	case 473:
+		server_join_request_take (serv, word[4]);
 		EMIT_SIGNAL_TIMESTAMP (XP_TE_INVITE, sess, word[4], NULL, NULL, NULL, 0,
 									  tags_data->timestamp);
 		break;
 
 	case 474:
+		server_join_request_take (serv, word[4]);
 		EMIT_SIGNAL_TIMESTAMP (XP_TE_BANNED, sess, word[4], NULL, NULL, NULL, 0,
 									  tags_data->timestamp);
 		break;
 
 	case 475:
+		server_join_request_take (serv, word[4]);
 		EMIT_SIGNAL_TIMESTAMP (XP_TE_KEYWORD, sess, word[4], NULL, NULL, NULL, 0,
 									  tags_data->timestamp);
 		break;

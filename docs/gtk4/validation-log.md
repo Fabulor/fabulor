@@ -8991,6 +8991,30 @@ Installed acceptance: pass after a clean uninstall/reinstall. Under System
 default, View, View > Channel Switcher > Tabs/Tree, and Server render checked
 and highlighted commands without opaque blocks in the indicator column.
 
+### Initial server transcript attachment
+
+Boundary: selecting the first auto-connect server row may occur before GTK4
+assigns the transcript widget a usable size. Connection output must still
+target the selected server buffer immediately, particularly when an
+already-connected ZNC completes startup before the first allocation.
+
+Validation:
+
+- `gtk_xtext_buffer_show()` now attaches the requested buffer when initial
+  geometry is unavailable;
+- the first normal allocation remains responsible for final wrapping,
+  adjustment, and rendering;
+- incoming self-JOINs take foreground only when they match an explicit
+  `/JOIN`, Join dialog, or IRC URL request; ZNC/autojoin channel creation
+  cannot replace the retained startup server tab;
+- no connection delay or synthetic channel selection is introduced;
+- the strict GTK4 probe and Release frontend/installer build must pass.
+
+Installed acceptance: pass. With multiple ZNC auto-connect entries, the first
+connected network remained selected with its complete MOTD and server status
+visible after autojoins finished. A direct non-ZNC connection behaved the same
+way, while an explicitly requested channel continued to take foreground.
+
 ## Stage Completion Rule
 
 A stage can move to complete in `migration-plan.md` only when:

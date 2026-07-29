@@ -5859,7 +5859,19 @@ gtk_xtext_buffer_show (GtkXText *xtext, xtext_buffer *buf, int render)
 		gtk_widget_realize (GTK_WIDGET (xtext));
 
 	if (!fabulor_xtext_geometry_from_widget (GTK_WIDGET (xtext), &geometry))
+	{
+		/*
+		 * The first channel-tree selection can precede the widget's initial
+		 * allocation. Attach its buffer now so startup output is not written
+		 * behind the empty construction buffer; allocation will calculate the
+		 * final wrapping and adjustment once the widget has a usable size.
+		 */
+		xtext->buffer = buf;
+		xtext->force_render = TRUE;
+		gtk_xtext_accessible_schedule (xtext);
+		gtk_widget_queue_draw (GTK_WIDGET (xtext));
 		return;
+	}
 	h = geometry.height;
 	w = geometry.width;
 	previous_width = buf->window_width;

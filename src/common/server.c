@@ -954,6 +954,8 @@ static int
 server_cleanup (server * serv)
 {
 	fe_set_lag (serv, 0);
+	g_slist_free_full (serv->requested_joins, g_free);
+	serv->requested_joins = NULL;
 
 	if (serv->iotag)
 	{
@@ -1999,6 +2001,49 @@ server_away_save_message (server *serv, char *nick, char *msg)
 }
 
 void
+server_join_request_add (server *serv, const char *channels)
+{
+	char **channel_list;
+	int i;
+
+	if (!serv || !channels || !*channels)
+		return;
+
+	channel_list = g_strsplit (channels, ",", -1);
+	for (i = 0; channel_list[i]; i++)
+	{
+		if (*channel_list[i])
+			serv->requested_joins = g_slist_append (
+				serv->requested_joins, g_strdup (channel_list[i]));
+	}
+	g_strfreev (channel_list);
+}
+
+gboolean
+server_join_request_take (server *serv, const char *channel)
+{
+	GSList *list;
+
+	if (!serv || !channel)
+		return FALSE;
+
+	for (list = serv->requested_joins; list; list = list->next)
+	{
+		char *requested_channel = list->data;
+
+		if (!serv->p_cmp (requested_channel, channel))
+		{
+			g_free (requested_channel);
+			serv->requested_joins = g_slist_delete_link (
+				serv->requested_joins, list);
+			return TRUE;
+		}
+	}
+
+	return FALSE;
+}
+
+void
 server_free (server *serv)
 {
 	serv->cleanup (serv);
@@ -2023,6 +2068,7 @@ server_free (server *serv)
 
 	if (serv->favlist)
 		g_slist_free_full (serv->favlist, (GDestroyNotify) servlist_favchan_free);
+	g_slist_free_full (serv->requested_joins, g_free);
 #ifdef USE_OPENSSL
 	if (serv->ctx)
 		_SSL_context_free (serv->ctx);
