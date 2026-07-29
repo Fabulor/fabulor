@@ -19,17 +19,13 @@
 [![Download Latest Release][download-badge]][latest-release-link]
 
 
-[Manual](docs/) •
-[Roadmap](docs/) •
-[Changelog](docs/) •
-[Developer Notes](docs/) •
-[Architecture](docs/) •
+[Manual](./docs/README.md) 
 [Plugin Authoring Guides](./docs/plugin-authoring-guides.md)
 
 </div>
 
 Fabulor — from Latin fabulor, “to chat, talk, converse.”\
-A modernised GTK4 IRC client for Windows 11+, inspired by [ZoiteChat](https://zoitechat.org/): fast, simple, and highly scriptable with C#, Python, and Tcl.
+A modernised GTK4 IRC client for Windows 11+, inspired by [HexChat](https://hexchat.github.io/) | [ZoiteChat](https://zoitechat.org/): fast, simple, and highly scriptable with C#, Python, and Tcl.
 
 ---
 X-Chat ("xchat") Copyright (c) 1998-2010 by Peter Zelezny.\

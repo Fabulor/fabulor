@@ -411,6 +411,34 @@ fabulor_theme_archive_discover (const char *config_dir)
 	return fabulor_theme_archive_discover_with_bundled (config_dir, NULL);
 }
 
+static gboolean
+theme_colors_parse_component (const char **cursor, const char *line_end,
+	guint16 *component)
+{
+	const char *value = *cursor;
+	guint parsed = 0;
+	gboolean has_digit = FALSE;
+
+	while (value < line_end && g_ascii_isspace (*value))
+		value++;
+	while (value < line_end && g_ascii_isxdigit (*value))
+	{
+		gint digit = g_ascii_xdigit_value (*value);
+
+		if (parsed > (0xffffU - (guint)digit) / 16U)
+			return FALSE;
+		parsed = parsed * 16U + (guint)digit;
+		has_digit = TRUE;
+		value++;
+	}
+	if (!has_digit || (value < line_end && !g_ascii_isspace (*value)))
+		return FALSE;
+
+	*cursor = value;
+	*component = (guint16)parsed;
+	return TRUE;
+}
+
 static FabulorThemeColorResult
 theme_colors_parse_value (const char *contents, const char *key,
 	guint16 *red, guint16 *green, guint16 *blue)
@@ -447,11 +475,9 @@ theme_colors_parse_value (const char *contents, const char *key,
 				|| value[key_length] == '='
 				|| g_ascii_isspace (value[key_length])))
 		{
-			unsigned int r;
-			unsigned int g;
-			unsigned int b;
-			int consumed = 0;
-			const char *tail;
+			guint16 r;
+			guint16 g;
+			guint16 b;
 
 			if (found)
 				return FABULOR_THEME_COLOR_INVALID;
@@ -462,19 +488,17 @@ theme_colors_parse_value (const char *contents, const char *key,
 			if (value >= line_end || *value != '=')
 				return FABULOR_THEME_COLOR_INVALID;
 			value++;
+			if (!theme_colors_parse_component (&value, line_end, &r)
+				|| !theme_colors_parse_component (&value, line_end, &g)
+				|| !theme_colors_parse_component (&value, line_end, &b))
+				return FABULOR_THEME_COLOR_INVALID;
 			while (value < line_end && g_ascii_isspace (*value))
 				value++;
-			if (sscanf (value, "%x %x %x%n", &r, &g, &b, &consumed) != 3
-				|| r > 0xffff || g > 0xffff || b > 0xffff)
+			if (value != line_end)
 				return FABULOR_THEME_COLOR_INVALID;
-			tail = value + consumed;
-			while (tail < line_end && g_ascii_isspace (*tail))
-				tail++;
-			if (tail != line_end)
-				return FABULOR_THEME_COLOR_INVALID;
-			parsed_red = (guint16)r;
-			parsed_green = (guint16)g;
-			parsed_blue = (guint16)b;
+			parsed_red = r;
+			parsed_green = g;
+			parsed_blue = b;
 		}
 		line = line_end;
 	}

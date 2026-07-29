@@ -98,9 +98,9 @@ create_test_gtk4_archive_with_css (const char *root, const char *css_contents,
 	char *dark_css = g_build_filename (gtk4, "gtk-dark.css", NULL);
 	char *asset = g_build_filename (assets, "button.png", NULL);
 	char *index = g_build_filename (theme, "index.theme", NULL);
-	char *archive = g_build_filename (root, "gtk4-theme.tar.xz", NULL);
+	char *archive = g_build_filename (root, "gtk4-theme.tar", NULL);
 	char *program = test_tar_program ();
-	char *argv[] = {program, "-cJf", archive, "-C", input, "Orchis-Test",
+	char *argv[] = {program, "-cf", archive, "-C", input, "Orchis-Test",
 		NULL};
 	GError *error = NULL;
 	int status = 0;
@@ -514,6 +514,12 @@ test_theme_colors_rejects_malformed_explicit_value (void)
 
 	g_assert_cmpint (fabulor_theme_colors_parse_token (contents, 4, TRUE,
 		&red, &green, &blue), ==, FABULOR_THEME_COLOR_INVALID);
+	g_assert_cmpint (fabulor_theme_colors_parse_token (
+		"color_4 = 10000 2222 3333\n", 4, FALSE, &red, &green, &blue),
+		==, FABULOR_THEME_COLOR_INVALID);
+	g_assert_cmpint (fabulor_theme_colors_parse_token (
+		"color_4 = 1111,2222 3333\n", 4, FALSE, &red, &green, &blue),
+		==, FABULOR_THEME_COLOR_INVALID);
 }
 
 static void
