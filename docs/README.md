@@ -2,15 +2,17 @@
 
 This directory is the home for Fabulor technical and user documentation.
 
-## Planned Sections
+## User Guide
 
-1. User manual
-2. Installation and upgrade notes
-3. Configuration and theme reference
-4. Plugin authoring guides
-5. Troubleshooting
+- [Input history and conversation logs](user-guide/history-and-logs.md)
 
-Existing plugin authoring notes are available in [plugin-authoring-guides.md](plugin-authoring-guides.md).
+## Plugin Authoring
+
+- [Plugin authoring overview](plugin-authoring-guides.md)
+- [Simple add-ons](plugins/simple-addons.md)
+- [C# plugin guide](plugins/csharp-plugin-guide.md)
+- [Python plugin guide](plugins/python-plugin-guide.md)
+- [Tcl plugin guide](plugins/tcl-plugin-guide.md)
 
 ## GTK4 Migration
 
