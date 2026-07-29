@@ -10,7 +10,7 @@
 		<!-- YOU SHOULDN'T TOUCH ANYTHING BELOW -->
 
 		<!-- Force x64 only -->
-		<ZoiteChatPlatform>x64</ZoiteChatPlatform>
+		<FabulorPlatform>x64</FabulorPlatform>
 		<FabulorGtkMajor>4</FabulorGtkMajor>
 
 		<!-- G_DISABLE_DEPRECATED is unfeasible due to g_completion_* -->
@@ -24,12 +24,12 @@
 		<FabulorSupportDepsRoot Condition="'$(FabulorSupportDepsRoot)'==''">$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\build\vcpkg-installed\x64-windows'))</FabulorSupportDepsRoot>
 		<DepsRoot>$(FabulorGtk4Root)</DepsRoot>
 		<GtkDepsRoot>$(FabulorGtk4Root)</GtkDepsRoot>
-		<WinSparklePath Condition="Exists('$(YourWinSparklePath)\$(ZoiteChatPlatform)\WinSparkle.dll') or Exists('$(YourWinSparklePath)\$(ZoiteChatPlatform)\WinSparkle.lib') or Exists('$(YourWinSparklePath)\$(ZoiteChatPlatform)\winsparkle.h')">$(YourWinSparklePath)\$(ZoiteChatPlatform)</WinSparklePath>
+		<WinSparklePath Condition="Exists('$(YourWinSparklePath)\$(FabulorPlatform)\WinSparkle.dll') or Exists('$(YourWinSparklePath)\$(FabulorPlatform)\WinSparkle.lib') or Exists('$(YourWinSparklePath)\$(FabulorPlatform)\winsparkle.h')">$(YourWinSparklePath)\$(FabulorPlatform)</WinSparklePath>
 		<WinSparklePath Condition="'$(WinSparklePath)'=='' and (Exists('$(YourWinSparklePath)\WinSparkle.dll') or Exists('$(YourWinSparklePath)\WinSparkle.lib') or Exists('$(YourWinSparklePath)\winsparkle.h'))">$(YourWinSparklePath)</WinSparklePath>
 		<WinSparkleIncludePath Condition="Exists('$(WinSparklePath)\include\winsparkle.h')">$(WinSparklePath)\include</WinSparkleIncludePath>
 		<WinSparkleIncludePath Condition="'$(WinSparkleIncludePath)'=='' and Exists('$(WinSparklePath)\winsparkle.h')">$(WinSparklePath)</WinSparkleIncludePath>
 		<WinSparkleIncludePath Condition="'$(WinSparkleIncludePath)'=='' and Exists('$(YourWinSparklePath)\include\winsparkle.h')">$(YourWinSparklePath)\include</WinSparkleIncludePath>
-		<Python3Path>$(YourPython3Path)\$(ZoiteChatPlatform)</Python3Path>
+		<Python3Path>$(YourPython3Path)\$(FabulorPlatform)</Python3Path>
 		<Python3Lib>python314</Python3Lib>
 		<Python3Output>hcpython3</Python3Output>
 		<Python3Enabled Condition="Exists('$(Python3Path)\\python.exe') and Exists('$(Python3Path)\\libs\\$(Python3Lib).lib') and Exists('$(Python3Path)\\Lib\\site-packages\\cffi')">true</Python3Enabled>
@@ -74,21 +74,21 @@
 		<DepLibs>gtk-4.lib;wininet.lib;winmm.lib;ws2_32.lib;advapi32.lib;gio-2.0.lib;gdk_pixbuf-2.0.lib;pangowin32-1.0.lib;pangocairo-1.0.lib;pango-1.0.lib;cairo.lib;graphene-1.0.lib;gobject-2.0.lib;gmodule-2.0.lib;glib-2.0.lib;intl.lib;$(IconvLib);$(ZlibLib);$(Xml2Lib);$(JpegLib);$(PngLib);$(OpenSslLibs)</DepLibs>
 
 		<DataDir>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\data\'))</DataDir>
-		<ZoiteChatBuild Condition="'$(ZoiteChatBuild)'==''">$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\build\gtk4-full'))</ZoiteChatBuild>
-		<ZoiteChatBin>$(ZoiteChatBuild)\$(ZoiteChatPlatform)\bin\</ZoiteChatBin>
-		<ZoiteChatObj>$(ZoiteChatBuild)\$(ZoiteChatPlatform)\obj\</ZoiteChatObj>
-		<ZoiteChatLib>$(ZoiteChatBuild)\$(ZoiteChatPlatform)\lib\</ZoiteChatLib>
-		<ZoiteChatPdb>$(ZoiteChatBuild)\$(ZoiteChatPlatform)\pdb\</ZoiteChatPdb>
-		<ZoiteChatRel>$(ZoiteChatBuild)\$(ZoiteChatPlatform)\rel\</ZoiteChatRel>
+		<FabulorBuild Condition="'$(FabulorBuild)'==''">$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\build\gtk4-full'))</FabulorBuild>
+		<FabulorBin>$(FabulorBuild)\$(FabulorPlatform)\bin\</FabulorBin>
+		<FabulorObj>$(FabulorBuild)\$(FabulorPlatform)\obj\</FabulorObj>
+		<FabulorLib>$(FabulorBuild)\$(FabulorPlatform)\lib\</FabulorLib>
+		<FabulorPdb>$(FabulorBuild)\$(FabulorPlatform)\pdb\</FabulorPdb>
+		<FabulorRel>$(FabulorBuild)\$(FabulorPlatform)\rel\</FabulorRel>
 
 	</PropertyGroup>
 
 	<!-- If someone tries Win32, stop immediately. -->
 	<PropertyGroup>
-		<_ZoiteChatPlatformMismatch Condition="'$(Platform)'!='x64' and '$(PlatformName)'!='x64'">true</_ZoiteChatPlatformMismatch>
+		<_FabulorPlatformMismatch Condition="'$(Platform)'!='x64' and '$(PlatformName)'!='x64'">true</_FabulorPlatformMismatch>
 	</PropertyGroup>
-	<Target Name="ZoiteChatPropsEnforceX64" BeforeTargets="PrepareForBuild" Condition="'$(_ZoiteChatPlatformMismatch)'=='true'">
-		<Error Text="zoitechat.props is configured for x64 only. Set the Solution/Project Platform to x64." />
+	<Target Name="FabulorPropsEnforceX64" BeforeTargets="PrepareForBuild" Condition="'$(_FabulorPlatformMismatch)'=='true'">
+		<Error Text="fabulor.props is configured for x64 only. Set the Solution/Project Platform to x64." />
 	</Target>
 	<Target Name="FabulorValidateGtkProfile" BeforeTargets="PrepareForBuild">
 		<Error Condition="'$(FabulorGtkMajor)'!='4'" Text="Fabulor supports only the GTK4 frontend build profile." />
@@ -100,7 +100,7 @@
 
 	<PropertyGroup>
 		<LinkIncremental>false</LinkIncremental>
-		<IntDir>$(ZoiteChatObj)$(ProjectName)\</IntDir>
+		<IntDir>$(FabulorObj)$(ProjectName)\</IntDir>
 		<UseDebugLibraries>false</UseDebugLibraries>
 		<WholeProgramOptimization>true</WholeProgramOptimization>
 		<CharacterSet>MultiByte</CharacterSet>
@@ -130,8 +130,8 @@
 		</Lib>
 		<Link>
 			<AdditionalLibraryDirectories>$(FabulorSupportDepsRoot)\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-			<ImportLibrary>$(ZoiteChatLib)$(TargetName).lib</ImportLibrary>
-			<ProgramDatabaseFile>$(ZoiteChatPdb)$(TargetName).pdb</ProgramDatabaseFile>
+			<ImportLibrary>$(FabulorLib)$(TargetName).lib</ImportLibrary>
+			<ProgramDatabaseFile>$(FabulorPdb)$(TargetName).pdb</ProgramDatabaseFile>
 			<SubSystem>Windows</SubSystem>
 			<GenerateDebugInformation>Debug</GenerateDebugInformation>
 			<EnableCOMDATFolding>true</EnableCOMDATFolding>

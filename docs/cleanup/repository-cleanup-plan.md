@@ -29,6 +29,8 @@ main client repository must not contain or stage a second add-ons checkout.
 | 1A | Remove bundled add-on scripts after migration to `Fabulor/add-ons` | Published |
 | 2 | Retained Perl source, `perl_warnings`, and obsolete Perl-facing messages/configuration | Published |
 | 2A | Remove the superseded Python 3.12 runtime and generated investigation artefacts | Published |
+| 2B | Remove stale ZoiteChat product branding and dead packaged metadata | Published |
+| 2C | Rename active Visual Studio solution, properties, and build-only identifiers for Fabulor | Published |
 | 3 | Move active `win32\copy` payload assets into owned `data` locations and retire the legacy copy namespace | Planned |
 | 4 | Audit the unbuilt text frontend, Windows compatibility shims, and duplicate backend implementations | Planned |
 | 5 | Review historical migration/security documents for archive policy without deleting evidence required for maintenance | Planned |
@@ -129,14 +131,34 @@ Validation:
 - active build, installer, CI, and maintainer guidance contain no Python 3.12
   references.
 
+## Stage 2B
+
+Current diagnostics, Python interface descriptions, spell-check setup, source
+comments, and troubleshooting guidance now identify the product as Fabulor.
+The installer no longer packages the dead ZoiteChat changelog shortcut, and
+single-instance forwarding no longer targets a separately running retired
+ZoiteChat client.
+
+Native and installer builds completed with zero warnings and errors.
+
+## Stage 2C
+
+The supported Visual Studio entry points are `win32\fabulor.sln` and
+`win32\fabulor.props`. Active projects, CI, tests, tools, and maintainer
+documentation use Fabulor-named build properties and output paths.
+
+Historical security records retain the build names used when their recorded
+scans were performed. Runtime internals and public plugin compatibility names
+remain outside this build-only stage.
+
 ## Deliberately Retained
 
 - `win32\copy` currently supplies WiX assets and ISO code data at runtime. It is
   active despite its legacy location and remains until Stage 3 moves each file
   to an explicit owner.
-- `win32\zoitechat.sln`, `zoitechat.props`, generated symbol prefixes, public
-  plugin compatibility modules, and `ZoiteChat*` managed types are active
-  build/ABI surfaces. Renaming them is not file cleanup.
+- Generated symbol prefixes, public plugin compatibility modules, and
+  `ZoiteChat*` managed types are active ABI surfaces. Renaming them is not file
+  cleanup.
 - `src\fe-text` and `src\dirent` require build/reference audits before any
   removal.
 - GTK4 migration and security records remain evidence, even where they describe

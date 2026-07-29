@@ -22,10 +22,10 @@
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
-  <Import Project="..\..\win32\zoitechat.props" />
+  <Import Project="..\..\win32\fabulor.props" />
   <PropertyGroup>
     <TargetName>$(Python3Output)</TargetName>
-    <OutDir>$(ZoiteChatRel)plugins\</OutDir>
+    <OutDir>$(FabulorRel)plugins\</OutDir>
   </PropertyGroup>
    <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
@@ -33,7 +33,7 @@
       <UndefinePreprocessorDefinitions>_DEBUG;Py_DEBUG;Py_REF_DEBUG;Py_TRACE_REFS;%(UndefinePreprocessorDefinitions)</UndefinePreprocessorDefinitions>
       <AdditionalOptions>/U_DEBUG /UPy_DEBUG /UPy_REF_DEBUG /UPy_TRACE_REFS %(AdditionalOptions)</AdditionalOptions>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
-      <AdditionalIncludeDirectories>$(Glib);$(Python3Path)\include;..\..\src\common;$(ZoiteChatLib);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(Glib);$(Python3Path)\include;..\..\src\common;$(FabulorLib);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <ModuleDefinitionFile>python.def</ModuleDefinitionFile>

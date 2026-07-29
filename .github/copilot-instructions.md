@@ -3,7 +3,7 @@
 ## Supported Product
 
 Fabulor is a Windows 11+, GTK4 IRC client. The supported application build is
-the Release x64 MSVC solution at `win32\zoitechat.sln`. The supported package
+the Release x64 MSVC solution at `win32\fabulor.sln`. The supported package
 is the WiX MSI and Burn bootstrapper produced from `installer\`.
 
 Do not restore:
@@ -47,7 +47,7 @@ Run commands from a Visual Studio x64 developer environment where required.
 
 | Task | Command |
 | --- | --- |
-| Build native solution | `msbuild win32\zoitechat.sln /m /p:Configuration=Release /p:Platform=x64` |
+| Build native solution | `msbuild win32\fabulor.sln /m /p:Configuration=Release /p:Platform=x64` |
 | Build MSI/bootstrapper | `dotnet build installer\Fabulor.wixproj -c Release -p:Platform=x64 --disable-build-servers` |
 | Plugin-host staging tests | `python tools\gtk4\test_stage_plugin_hosts.py` |
 | Production WiX profile tests | `python tools\gtk4\test_production_wix_profile.py` |

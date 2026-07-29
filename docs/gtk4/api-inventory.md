@@ -1680,7 +1680,7 @@ Future frontend work must preserve these conditions:
 
 1. Keep active frontend and supported plugin source free of toolkit-version
    gates and GTK3-only API families.
-2. Keep `win32\zoitechat.sln` and WiX as the only application build/package
+2. Keep `win32\fabulor.sln` and WiX as the only application build/package
    graph.
 3. Retain `tools\gtk4` Meson only as the isolated strict GTK4 probe.
 4. Keep GTK3 runtime, import, source, and theme rejection tests enabled.

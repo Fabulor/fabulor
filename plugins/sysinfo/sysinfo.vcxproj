@@ -23,20 +23,20 @@
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
-  <Import Project="..\..\win32\zoitechat.props" />
+  <Import Project="..\..\win32\fabulor.props" />
   <PropertyGroup>
     <TargetName>hcsysinfo</TargetName>
-    <OutDir>$(ZoiteChatRel)plugins\</OutDir>
+    <OutDir>$(FabulorRel)plugins\</OutDir>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
       <PreprocessorDefinitions>WIN32;_WIN64;_AMD64_;NDEBUG;_WINDOWS;_USRDLL;SYSINFO_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>..\..\src\common;$(DepsRoot)\include;$(OpenSslInclude);$(Glib);$(ZoiteChatLib);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\..\src\common;$(DepsRoot)\include;$(OpenSslInclude);$(Glib);$(FabulorLib);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <TreatWChar_tAsBuiltInType>false</TreatWChar_tAsBuiltInType>
     </ClCompile>
     <Link>
       <AdditionalLibraryDirectories>$(GtkDepsRoot)\lib;$(DepsRoot)\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>$(ZoiteChatLib)common.lib;wbemuuid.lib;$(DepLibs);%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>$(FabulorLib)common.lib;wbemuuid.lib;$(DepLibs);%(AdditionalDependencies)</AdditionalDependencies>
       <ModuleDefinitionFile>sysinfo.def</ModuleDefinitionFile>
     </Link>
   </ItemDefinitionGroup>

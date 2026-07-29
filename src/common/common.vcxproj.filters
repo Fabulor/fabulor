@@ -92,10 +92,10 @@
     <ClInclude Include="text.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="$(ZoiteChatLib)textenums.h">
+    <ClInclude Include="$(FabulorLib)textenums.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="$(ZoiteChatLib)textevents.h">
+    <ClInclude Include="$(FabulorLib)textevents.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="tree.h">
@@ -119,13 +119,13 @@
     <ClInclude Include="zoitechat-plugin.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="$(ZoiteChatLib)config.h">
+    <ClInclude Include="$(FabulorLib)config.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="typedef.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="$(ZoiteChatLib)marshal.h">
+    <ClInclude Include="$(FabulorLib)marshal.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="sysinfo\sysinfo.h">
@@ -220,7 +220,7 @@
     <ClCompile Include="zoitechat.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="$(ZoiteChatLib)marshal.c">
+    <ClCompile Include="$(FabulorLib)marshal.c">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="sysinfo\win32\backend.c">
