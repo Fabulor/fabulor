@@ -67,7 +67,7 @@ staging, native-build, WiX-build, and package-validation sequence.
   changes.
 - Treat C#, Python, and Tcl plugin manifests/capabilities as public contracts.
 - Keep simple user add-ons under `%APPDATA%\Fabulor\addons`; repository add-on
-  work is moving to the separate `Fabulor/add-ons` repository.
+  work belongs to the separate `Fabulor/add-ons` repository.
 - Runtime and installer payloads must be explicit, contained, hashed, and
   validated. Do not restore whole-tree harvesting for convenience.
 - Update the applicable validation or cleanup document after each completed

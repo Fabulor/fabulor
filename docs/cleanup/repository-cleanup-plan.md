@@ -1,6 +1,6 @@
 # Repository Cleanup Plan
 
-Last updated: 2026-07-27
+Last updated: 2026-07-29
 
 ## Purpose
 
@@ -25,10 +25,10 @@ main client repository must not contain or stage a second add-ons checkout.
 
 | Stage | Scope | Status |
 |---|---|---|
-| 1 | Dead repository metadata, completed prompt scaffolding, unbuilt Lua source, retired Inno spelling scripts, and superseded resource/version files | Accepted |
-| 1A | Remove bundled add-on scripts after migration to `Fabulor/add-ons` | Accepted |
-| 2 | Retained Perl source, `perl_warnings`, and obsolete Perl-facing messages/configuration | Accepted |
-| 2A | Remove the superseded Python 3.12 runtime and generated investigation artefacts | Implemented |
+| 1 | Dead repository metadata, completed prompt scaffolding, unbuilt Lua source, retired Inno spelling scripts, and superseded resource/version files | Published |
+| 1A | Remove bundled add-on scripts after migration to `Fabulor/add-ons` | Published |
+| 2 | Retained Perl source, `perl_warnings`, and obsolete Perl-facing messages/configuration | Published |
+| 2A | Remove the superseded Python 3.12 runtime and generated investigation artefacts | Published |
 | 3 | Move active `win32\copy` payload assets into owned `data` locations and retire the legacy copy namespace | Planned |
 | 4 | Audit the unbuilt text frontend, Windows compatibility shims, and duplicate backend implementations | Planned |
 | 5 | Review historical migration/security documents for archive policy without deleting evidence required for maintenance | Planned |

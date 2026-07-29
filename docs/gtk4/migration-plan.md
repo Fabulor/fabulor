@@ -1,6 +1,6 @@
 # GTK4 Migration Plan
 
-Status: Stage 9 legacy-removal cleanup
+Status: complete; GTK4 is the accepted production frontend
 
 Baseline date: 2026-07-14
 
@@ -25,15 +25,17 @@ the validation matrix in [validation-log.md](validation-log.md) passes.
   Perl, gendef, broad runtime-copy project, and Inno installer are absent from
   the active Windows build graph.
 - The GTK3 theme service, adapter, preference branch, tests, probe contract,
-  `%APPDATA%\Fabulor\gtk3-themes` workflow, and saved configuration keys are
-  removed. The active frontend compatibility header now contains only GTK4
-  implementations; GTK3 branches in individual source files remain the next
-  cleanup boundary. Historical plugin source trees remain retained but
-  unsupported.
+  `%APPDATA%\Fabulor\gtk3-themes` workflow, saved configuration keys, source
+  branches, compatibility helpers, runtime files, and installer components are
+  removed.
 - Retained `.hct` imports no longer depend on the GTK3 theme service. The
   format-specific reader invokes only the absolute system archive tool, reads
   selected text without extracting a filesystem tree, and enforces archive,
   listing, output, path-depth, and duplicate-entry limits.
+- Installed acceptance covers clean installation, versioned upgrades, the
+  complete GTK4 application surface, plugin runtimes, spell checking, themes,
+  tray behavior, transcript interaction, multi-network startup, and production
+  installer payload validation.
 
 ## Migration Rules
 
@@ -55,7 +57,7 @@ the validation matrix in [validation-log.md](validation-log.md) passes.
 
 ## Stages
 
-### Stage 0: Documentation And Baseline
+### Stage 0: Documentation And Baseline (Complete)
 
 Deliverables:
 
@@ -70,7 +72,7 @@ Exit criteria:
 - The four documents under `docs/gtk4` exist and are linked from `To-Do.md`.
 - High-risk API families and ownership boundaries have named migration stages.
 
-### Stage 1: Build And Compatibility Foundation
+### Stage 1: Build And Compatibility Foundation (Complete)
 
 Progress (2026-07-14): the Windows x64 GTK4 archive is pinned by URL, size, and
 SHA-256 in `tools/gtk4/dependency-contract.json`. The isolated MSVC and Meson
@@ -97,7 +99,7 @@ Exit criteria:
 - The GTK4 dependency root is deterministic and version-reportable.
 - Converted modules cannot accidentally link a mixed GTK3/GTK4 process.
 
-### Stage 2: Widget Ownership And Layout
+### Stage 2: Widget Ownership And Layout (Complete)
 
 Progress (2026-07-14): 39 statically typed single-child assignments now use
 the shared GTK3/GTK4 compatibility boundary across 14 source files. This covers
@@ -430,7 +432,7 @@ Exit criteria:
 - No GTK4 path depends on removed menu widgets or nested dialog event loops.
 - File/add-on/theme selection retains the existing containment checks.
 
-### Stage 4: Input, Events, Clipboard, Drag/Drop, And Shortcuts (In Progress)
+### Stage 4: Input, Events, Clipboard, Drag/Drop, And Shortcuts (Complete)
 
 Shared explicit-copy pass 1 (2026-07-15): ban-list masks, channel-list names
 and topics, URL context actions, and URL-history rows now use one typed
@@ -569,7 +571,7 @@ Exit criteria:
   emoji insertion, scrolling, selection, and drag/drop pass the interaction
   matrix.
 
-### Stage 5: Lists, Trees, Models, And Channel Navigation
+### Stage 5: Lists, Trees, Models, And Channel Navigation (Complete)
 
 Model architecture pass 1 (2026-07-15): reusable GTK4-only model stacks now
 define the first conversion boundary. Flat operational lists use an app-owned
@@ -931,7 +933,7 @@ Exit criteria:
 - All operational lists pass keyboard, mouse, sorting, editing, and scale tests.
 - Channel switching and user-list updates remain responsive under IRC load.
 
-### Stage 6: Custom Text And Input Widgets
+### Stage 6: Custom Text And Input Widgets (Complete)
 
 Transcript render-target pass 1 (2026-07-17): `GtkXText` now owns one contained
 render destination instead of raw draw-window, draw-surface, and draw-context
@@ -1146,7 +1148,7 @@ Exit criteria:
 - No GTK3 windowing or draw virtual method remains in either widget.
 - Input and sent-message display latency meet the baseline thresholds.
 
-### Stage 7: Themes, Tray, Notifications, And Platform Integration
+### Stage 7: Themes, Tray, Notifications, And Platform Integration (Complete)
 
 Primary surfaces:
 
@@ -1318,7 +1320,7 @@ Exit criteria:
 - Theme switching, restart persistence, tray state, notifications, icons,
   fonts, spell-check UI, and emoji rendering pass on the packaged GTK4 runtime.
 
-### Stage 8: Production Cutover And Runtime Cleanup
+### Stage 8: Production Cutover And Runtime Cleanup (Complete)
 
 Runtime staging-contract pass 1 (2026-07-18):
 `tools/gtk4/runtime-payload-contract.json` now defines a deterministic Windows
@@ -3077,13 +3079,15 @@ Installed acceptance is complete: `Nordic-darker.tar.xz` imports without
 console flashing, applies as a GTK4 desktop theme, exposes its dark variant,
 and switching back to `System default` restores the system appearance.
 
-## Open Decisions
+## Post-Migration Decisions
 
-- Minimum supported GTK4/GLib versions after evaluating the current 4.22.4 /
-  2.88.0 Windows bundle against supported non-Windows distributions.
-- GTK4 list widget choices for each large editable model.
-- Whether the spell-check entry remains a custom widget or becomes a composed
-  input control.
-- Which GTK4-native Unix StatusNotifier implementation should replace the
-  retired GTK3 AppIndicator backend.
-- The final allowlisted Windows runtime payload and provenance mechanism.
+These are product-maintenance decisions, not unfinished GTK4 conversion work:
+
+- Reassess the minimum supported GTK4/GLib versions if Fabulor adds a supported
+  non-Windows distribution.
+- Revisit the custom spell-input composition only if a concrete accessibility
+  or maintenance requirement justifies replacing the accepted widget.
+- Select a GTK4-native Unix StatusNotifier implementation only if Unix desktop
+  support becomes a production target.
+- Continue trimming optional Windows runtime categories only after feature
+  validation, while retaining the locked allowlist and provenance checks.

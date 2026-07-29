@@ -1,6 +1,6 @@
 # GTK4 Theme Architecture
 
-Status: Stage 9 GTK3 theme service and adapter retired
+Status: complete; GTK4 theme service accepted in production
 
 ## Scope
 

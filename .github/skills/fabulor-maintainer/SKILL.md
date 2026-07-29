@@ -14,31 +14,27 @@ argument-hint: "Describe the area and task, e.g., 'installer/: update the Python
   are **out of scope**. The inherited application Meson/Make graph is retired;
   retain `tools\gtk4\meson.build` only as the isolated strict GTK4 validation
   probe.
-- `prompts\` is a separate Foundry Local prompt library with real `.prompt`
-  files; do not confuse it with GitHub Copilot's own `.github\prompts`
-  mechanism.
 - `docs\plugin-authoring-guides.md` and `docs\plugins\*.md` are the current,
   already-written plugin authoring guides (C#, Python, Tcl,
-  schema/compatibility/safe-mode/troubleshooting) — treat them as the spec to
-  implement against, and keep them updated alongside any loader/binding/ABI
-  code, since the actual `ZoiteChatAPI` implementation doesn't exist in `src\`
-  yet.
+  schema/compatibility/safe-mode/troubleshooting). Treat them as the public
+  contract and keep them updated alongside loader, binding, manifest, or ABI
+  changes.
 - Read `To-Do.md` before touching plugin loading, the plugin ABI, or the WiX v4
   installer.
 
 # Priority Focus
-The current priority is finishing the GTK4 conversion and removing legacy GTK3
-build/source residue. `installer\` is authoritative and publishes exactly the
-MSI and bootstrapper; `win32\zoitechat.sln` is the supported GTK4 native build.
-Read `To-Do.md` and `docs\gtk4\` before selecting a migration boundary.
+GTK4 migration and production cutover are complete. Current work is release
+readiness, contained installed-UI maintenance, deliberate plugin API growth,
+and the staged cleanup recorded in `To-Do.md`. `installer\` is authoritative
+and publishes exactly the MSI and bootstrapper;
+`win32\zoitechat.sln` is the supported GTK4 native build.
 
 # Constraints
 - Windows 11+ only — no Meson options, non-Windows packaging, or non-Windows CI
   matrix entries for new work.
-- Preserve plugin ABI compatibility described in `To-Do.md` once the
-  `ZoiteChatAPI` struct/manifest/loader interfaces exist — additive,
-  backward-compatible changes only, unless a breaking `requires_api_version`
-  bump is explicitly requested.
+- Preserve the implemented plugin ABI and manifest/loader contracts described
+  in `docs\plugins`. Make additive, backward-compatible changes unless a
+  breaking `requires_api_version` bump is explicitly approved.
 - Lua and Perl integration is retired; do not restore either plugin to the
   source tree, supported solution, extension graph, CI prerequisites, or
   installer.
@@ -63,8 +59,10 @@ Read `To-Do.md` and `docs\gtk4\` before selecting a migration boundary.
   `/t:Rebuild` for structural changes).
 - CI workflow edits: cross-check against `.github\workflows\windows-build.yml`
   only; do not update the non-Windows workflows for Windows-scoped work.
-- No automated test suite exists; treat a successful build plus manual
-  smoke-testing as the validation bar.
+- Run the focused Python/native contract tests for the owning boundary and the
+  applicable suites listed in `.github\workflows\lint.yml`.
+- Installed UI/runtime changes require installed-client acceptance before
+  publication.
 - Never assume permission to run arbitrary or destructive commands. If the
   required toolchain is unavailable, report the command that would have been
   run and fall back to reasoning-based validation.
@@ -74,9 +72,8 @@ Read `To-Do.md` and `docs\gtk4\` before selecting a migration boundary.
    `win32\`, the `ZoiteChatAPI`/plugin-loader rework, plugin sources, or CI).
 2. Read only the minimal code needed to form a concrete, falsifiable
    hypothesis, including `To-Do.md` when relevant.
-3. Surface any open assumption the task rests on (historical source deletion,
-   GTK3 cleanup order, or Meson removal) rather than silently
-   picking an interpretation.
+3. Surface any open assumption the task rests on, especially public ABI,
+   compatibility, packaging ownership, or retirement policy.
 4. Make the smallest safe change that addresses the root cause, matching the
    existing style of the surface being touched.
 5. Validate using the commands above, or fall back to reasoning-based

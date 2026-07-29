@@ -1,6 +1,6 @@
 # Obsolete Function Retirement Plan
 
-Last updated: 2026-07-26
+Last updated: 2026-07-29
 
 ## Purpose
 
@@ -31,8 +31,8 @@ obsolete, unsafe, inert, or outside Fabulor's product scope.
 | 2 | `gui_ulist_style` | Published | Ignore the inert saved key and omit it on the next canonical configuration write. |
 | 3 | Wingate proxy mode | Published | Preserve all other proxy numeric values; treat saved Wingate selection value `1` as disabled. |
 | 4 | SOCKS4 proxy mode | Proposed | Review usage, security, DNS, IPv6, and migration impact before deciding. |
-| 5 | Retained Perl source and residual configuration | Deferred | Keep source until the final repository cleanup; it remains outside the packaged C#/Python/Tcl plugin model. |
-| 6 | Other inert configuration keys | Accepted | `text_transparent` is retired and accepted; audit remaining keys individually. |
+| 5 | Retained Perl source and residual configuration | Published | Perl source and residual configuration are retired from the supported C#/Python/Tcl plugin model. |
+| 6 | Other inert configuration keys | Published | `text_transparent` and `irc_cap_server_time` are retired; audit any further keys individually. |
 
 ## Published Retirements
 
@@ -155,7 +155,7 @@ Published in PR #242.
 
 ### SOCKS5 Proxy Mode
 
-Status: `Accepted`
+Status: `Published`
 
 SOCKS5 remains a supported proxy mode and is the validated migration target
 for any future SOCKS4 retirement decision. Its retained scope is TCP `CONNECT`
@@ -206,7 +206,7 @@ types.
 
 ### Retained Perl Source And Residual Configuration
 
-Status: `Accepted`
+Status: `Published`
 
 Perl was not built, packaged, autoloaded, or documented as part of Fabulor's
 C#/Python/Tcl plugin model. The contained repository-cleanup stage removed:
@@ -233,9 +233,11 @@ Automated evidence:
 - the version 1.0.5 MSI/bootstrapper pair rebuilds with zero warnings and errors
   and passes production bundle validation.
 
+Published in commit `4e1f97c2`.
+
 ### Other Inert Configuration Keys
 
-Status: `Accepted`
+Status: `Published`
 
 Perform a mechanical reference audit over every persisted preference. A key is
 a retirement candidate when it has no behavioral reader beyond schema,
@@ -247,7 +249,7 @@ compatibility must be recorded before implementation.
 
 #### `text_transparent`
 
-Status: `Accepted`
+Status: `Published`
 
 The mechanical reference audit found that `text_transparent` survived only in
 the persisted preference schema and `zoitechatprefs` structure. No core,
@@ -273,7 +275,7 @@ Installed acceptance:
 - `/SET text_transparent` reports no such variable
 - supported appearance behavior remains operational
 
-Publication remains pending.
+Published in commit `b4c0a54c`.
 
 #### Remaining Audit Results
 
@@ -283,7 +285,7 @@ Publication remains pending.
 
 #### `irc_cap_server_time`
 
-Status: `Accepted`
+Status: `Published`
 
 The preference did not control capability negotiation. Fabulor already
 requested `server-time`, `znc.in/server-time`, and
@@ -315,7 +317,7 @@ Installed acceptance:
 - Preferences no longer exposes the server-time toggle
 - normal IRC and ZNC timestamps remain operational
 
-Publication remains pending.
+Published in commit `0a06582c`.
 
 ## Retirement Workflow
 
