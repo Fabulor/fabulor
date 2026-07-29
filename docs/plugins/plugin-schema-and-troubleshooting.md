@@ -216,7 +216,7 @@ Blacklisted plugin ids can be listed one per line in `plugin-blacklist.txt` unde
 Use this sequence when a plugin does not load or behaves incorrectly:
 
 1. For simple add-ons, confirm the folder and file names match: `addons\<name>\<name>.<ext>`.
-2. Confirm the extension is supported: `.tcl`, `.py`, or a compiled C# `.dll` implementing `IZoiteChatPlugin`.
+2. Confirm the extension is supported: `.tcl`, `.py`, or a compiled C# `.dll` implementing `IFabulorPlugin`.
 3. For manifest plugins, confirm folder layout under `plugins/<plugin-id>/`.
 4. Validate `plugin.json` and check `language` and `entrypoint`.
 5. Confirm the entrypoint file exists and is readable.

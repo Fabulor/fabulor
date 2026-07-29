@@ -198,7 +198,8 @@ Detailed stages live in
   - [x] Make `fabulor` the sole Fabulor-owned Python module while retaining
         intentional `xchat` and `hexchat` imports.
   - [x] Make `fabulor::*` the sole public Tcl namespace.
-  - [ ] Replace the managed `ZoiteChat*` plugin types.
+  - [x] Make `IFabulorPlugin`, `FabulorContext`, `FabulorEvent`, and
+        `FabulorUserInfo` the sole managed C# plugin contract.
   - [ ] Review and rename the native plugin ABI and remaining internal names.
 - [ ] Audit ignored local build/runtime output and document a safe developer
       cleanup command.

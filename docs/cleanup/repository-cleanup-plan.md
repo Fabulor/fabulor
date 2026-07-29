@@ -171,6 +171,12 @@ manifest Tcl add-ons. The host's twelve exposed commands, maintained samples,
 runtime diagnostics, and current authoring guidance use the Fabulor namespace.
 No aliases for the former product namespace are registered.
 
+The managed C# pass makes `IFabulorPlugin`, `FabulorContext`, `FabulorEvent`,
+`FabulorEventHandler`, and `FabulorUserInfo` the sole public types in the
+Fabulor plugin abstractions. The managed host, maintained samples, diagnostics,
+and current authoring guidance use only these names. No managed compatibility
+types for the former product name are retained.
+
 Compatibility policy:
 
 - existing Python add-ons must replace `import zoitechat` with
@@ -186,6 +192,14 @@ Tcl compatibility policy:
 - the command names and capability requirements otherwise remain unchanged;
   and
 - no silent alias for the former product namespace is registered.
+
+Managed C# compatibility policy:
+
+- existing C# add-ons must rename the public contract types and rebuild against
+  the current `Fabulor.PluginAbstractions.dll`;
+- method behavior, manifest format, and capability requirements remain
+  unchanged; and
+- no managed compatibility types for the former product name are provided.
 
 Automated evidence for the Python pass:
 
@@ -209,16 +223,38 @@ Automated evidence for the Tcl pass:
 - the version 1.0.6 MSI and bootstrapper rebuild with zero warnings and errors,
   then pass production, runtime-content, and bundle validation.
 
-Installed-client acceptance remains required before the Python and Tcl passes
-are published.
+Installed-client acceptance for the Python and Tcl passes completed on
+2026-07-29. Updated simple add-ons load, execute, persist their state where
+applicable, and continue working after a client restart.
+
+Automated evidence for the managed C# pass:
+
+- the managed API contract suite passes 3/3 tests and confirms the former
+  public types and source filenames are absent;
+- `Fabulor.PluginAbstractions.dll` exports exactly `IFabulorPlugin`,
+  `FabulorContext`, `FabulorEvent`, `FabulorEventHandler`, and
+  `FabulorUserInfo`;
+- the abstractions, managed host, and both maintained C# samples build with
+  warnings treated as errors and report zero warnings and errors;
+- the complete plugin/runtime/packaging suite passes 114/114 tests plus the
+  theme contract validator, and the native suite remains 37/37;
+- the regenerated production plugin-host payload matches the fresh managed
+  assembly byte-for-byte;
+- the version 1.0.6 MSI and bootstrapper rebuild with zero warnings and errors,
+  then pass production, runtime-content, and bundle validation; and
+- the managed abstraction extracted from the MSI has the same SHA-256 hash as
+  the validated staged assembly.
+
+Installed-client acceptance remains required before the managed C# pass is
+published.
 
 ## Deliberately Retained
 
 - `win32\copy` currently supplies WiX assets and ISO code data at runtime. It is
   active despite its legacy location and remains until Stage 3 moves each file
   to an explicit owner.
-- Native generated symbol prefixes and `ZoiteChat*` managed types remain active
-  API or ABI surfaces for their contained Stage 6 passes.
+- Native generated symbol prefixes remain active ABI surfaces for their
+  contained Stage 6 pass.
 - `src\fe-text` and `src\dirent` require build/reference audits before any
   removal.
 - GTK4 migration and security records remain evidence, even where they describe

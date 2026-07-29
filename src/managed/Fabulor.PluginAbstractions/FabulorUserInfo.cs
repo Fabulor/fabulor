@@ -1,8 +1,8 @@
 namespace Fabulor.Plugins;
 
-public sealed class ZoiteChatUserInfo
+public sealed class FabulorUserInfo
 {
-    public ZoiteChatUserInfo(string? nickname, string? channel, string? serverName, string? networkName)
+    public FabulorUserInfo(string? nickname, string? channel, string? serverName, string? networkName)
     {
         Nickname = nickname;
         Channel = channel;

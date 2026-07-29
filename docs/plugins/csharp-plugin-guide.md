@@ -4,6 +4,11 @@
 
 This guide covers C# add-ons for Fabulor and links to shared schema and troubleshooting rules.
 
+Fabulor exposes only the current managed contract types documented below.
+Add-ons compiled against former product-named types must update their source
+and rebuild against the installed `Fabulor.PluginAbstractions.dll`; no silent
+managed compatibility types are provided.
+
 Read shared rules first:
 
 1. [Simple Add-ons](simple-addons.md)
@@ -41,14 +46,14 @@ Fabulor does not compile C# source. Create a .NET 8 class-library project whose 
 
 Build the project and copy `helper.dll` plus any private dependencies into the `helper` add-on folder. Do not copy `Fabulor.PluginAbstractions.dll`; Fabulor supplies its installed contract assembly. Restart Fabulor to load a new build.
 
-The entry assembly must contain one concrete, constructible implementation of `IZoiteChatPlugin`:
+The entry assembly must contain one concrete, constructible implementation of `IFabulorPlugin`:
 
 ```csharp
 using Fabulor.Plugins;
 
-public sealed class HelperPlugin : IZoiteChatPlugin
+public sealed class HelperPlugin : IFabulorPlugin
 {
-    public void Init(ZoiteChatContext context)
+    public void Init(FabulorContext context)
     {
         context.Log("Helper initialised");
     }
@@ -78,12 +83,12 @@ public sealed class HelperPlugin : IZoiteChatPlugin
 ```csharp
 using Fabulor.Plugins;
 
-public sealed class GreeterPlugin : IZoiteChatPlugin
+public sealed class GreeterPlugin : IFabulorPlugin
 {
-    private ZoiteChatContext? _context;
+    private FabulorContext? _context;
     private bool _reportedFirstMessage;
 
-    public void Init(ZoiteChatContext context)
+    public void Init(FabulorContext context)
     {
         _context = context;
         var user = context.GetUserInfo();
@@ -91,7 +96,7 @@ public sealed class GreeterPlugin : IZoiteChatPlugin
         context.RegisterCallback("message", OnMessage);
     }
 
-    private void OnMessage(ZoiteChatEvent evt)
+    private void OnMessage(FabulorEvent evt)
     {
         if (_reportedFirstMessage || _context is null)
             return;
@@ -110,13 +115,12 @@ public sealed class GreeterPlugin : IZoiteChatPlugin
 1. Keep callback handlers lightweight to avoid blocking the main thread.
 2. Use the compiled simple `addons\<name>\<name>.dll` layout for personal C# add-ons. The folder and assembly basenames must match.
 3. Simple profile add-ons are trusted local code and do not declare capabilities. Advanced manifest plug-ins must declare every host operation they use; undeclared message, session-read, and callback operations are denied.
-4. The managed contract assembly lives in `src\managed\Fabulor.PluginAbstractions` and currently defines `IZoiteChatPlugin`, `ZoiteChatContext`, `ZoiteChatEvent`, and `ZoiteChatUserInfo`.
-5. The current host scaffold keeps `ZoiteChatAPI` as a compatibility alias for `FabulorAPI` while the repo finishes the broader rebrand.
-6. C# manifests now load through the `src\managed\Fabulor.PluginHost` bridge, which calls `IZoiteChatPlugin.Init(...)` and routes callbacks back through the shared native registry.
-7. The installer stages the managed bridge assemblies together with a bundled private `.NET` runtime under `Runtime\DotNet`, preserving `host\fxr` and `shared\Microsoft.NETCore.App`.
-8. Normal manifest loading accepts only that installed executable-relative runtime and bridge root. Development overrides such as `FABULOR_DOTNET_ROOT`, `DOTNET_ROOT`, `FABULOR_CSHARP_BRIDGE_ROOT`, current-directory runtime roots, source-tree bridge outputs, and the machine-wide .NET installation require `FABULOR_ENABLE_DEVELOPMENT_RUNTIME_ROOTS=1`.
-9. `ZoiteChatContext.RegisterCallback(...)` can subscribe to generic events such as `message`, `server`, `print`, and `command`, as well as specific forms like `server:NOTICE`, `print:Channel Message`, or `command:SAY`. `message` represents an incoming IRC `PRIVMSG`; locally entered channel text uses the outgoing `command:SAY` event unless the server echoes it back.
-10. `ZoiteChatEvent` now exposes richer payload accessors including `Channel`, `Network`, `Nick`, `Server`, `Time`, `Word1`-`Word4`, and `WordEol1`-`WordEol2`.
-11. `ZoiteChatContext.GetUserInfo()` returns the active session identity as a `ZoiteChatUserInfo` with `Nickname`, `Channel`, `ServerName`, and `NetworkName`.
-12. Maintained simple and manifest C# samples live under `samples\plugins\simple-csharp-greeter\` and `samples\plugins\example.csharp.greeter\`. The simple project's assembly name matches its folder and produces the exact profile entrypoint `simple-csharp-greeter.dll`. For the manifest sample, deploy `plugin.json`, `GreeterPlugin.dll`, and any plugin-owned dependencies together as direct children of one enabled manifest plugin folder. Build-tree paths such as `bin\Release\net8.0\GreeterPlugin.dll` are not valid manifest entrypoints.
-13. Callback event names are limited to 128 UTF-8 bytes, generated handler names to 256 bytes, each plugin to 64 callbacks, and each event to 256 callbacks. Registering the same event/handler pair twice is rejected.
+4. The managed contract assembly lives in `src\managed\Fabulor.PluginAbstractions` and currently defines `IFabulorPlugin`, `FabulorContext`, `FabulorEvent`, and `FabulorUserInfo`.
+5. C# manifests load through the `src\managed\Fabulor.PluginHost` bridge, which calls `IFabulorPlugin.Init(...)` and routes callbacks back through the shared native registry.
+6. The installer stages the managed bridge assemblies together with a bundled private `.NET` runtime under `Runtime\DotNet`, preserving `host\fxr` and `shared\Microsoft.NETCore.App`.
+7. Normal manifest loading accepts only that installed executable-relative runtime and bridge root. Development overrides such as `FABULOR_DOTNET_ROOT`, `DOTNET_ROOT`, `FABULOR_CSHARP_BRIDGE_ROOT`, current-directory runtime roots, source-tree bridge outputs, and the machine-wide .NET installation require `FABULOR_ENABLE_DEVELOPMENT_RUNTIME_ROOTS=1`.
+8. `FabulorContext.RegisterCallback(...)` can subscribe to generic events such as `message`, `server`, `print`, and `command`, as well as specific forms like `server:NOTICE`, `print:Channel Message`, or `command:SAY`. `message` represents an incoming IRC `PRIVMSG`; locally entered channel text uses the outgoing `command:SAY` event unless the server echoes it back.
+9. `FabulorEvent` exposes richer payload accessors including `Channel`, `Network`, `Nick`, `Server`, `Time`, `Word1`-`Word4`, and `WordEol1`-`WordEol2`.
+10. `FabulorContext.GetUserInfo()` returns the active session identity as a `FabulorUserInfo` with `Nickname`, `Channel`, `ServerName`, and `NetworkName`.
+11. Maintained simple and manifest C# samples live under `samples\plugins\simple-csharp-greeter\` and `samples\plugins\example.csharp.greeter\`. The simple project's assembly name matches its folder and produces the exact profile entrypoint `simple-csharp-greeter.dll`. For the manifest sample, deploy `plugin.json`, `GreeterPlugin.dll`, and any plugin-owned dependencies together as direct children of one enabled manifest plugin folder. Build-tree paths such as `bin\Release\net8.0\GreeterPlugin.dll` are not valid manifest entrypoints.
+12. Callback event names are limited to 128 UTF-8 bytes, generated handler names to 256 bytes, each plugin to 64 callbacks, and each event to 256 callbacks. Registering the same event/handler pair twice is rejected.

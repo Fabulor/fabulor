@@ -7,7 +7,7 @@ namespace Fabulor.PluginHost;
 
 internal sealed class ManagedPluginState
 {
-    public ManagedPluginState(string pluginId, PluginLoadContext loadContext, IZoiteChatPlugin plugin)
+    public ManagedPluginState(string pluginId, PluginLoadContext loadContext, IFabulorPlugin plugin)
     {
         PluginId = pluginId;
         LoadContext = loadContext;
@@ -18,9 +18,9 @@ internal sealed class ManagedPluginState
 
     public PluginLoadContext LoadContext { get; }
 
-    public IZoiteChatPlugin Plugin { get; }
+    public IFabulorPlugin Plugin { get; }
 
-    public Dictionary<string, ZoiteChatEventHandler> Callbacks { get; } = new(StringComparer.Ordinal);
+    public Dictionary<string, FabulorEventHandler> Callbacks { get; } = new(StringComparer.Ordinal);
 }
 
 internal sealed class PluginLoadContext : AssemblyLoadContext
@@ -35,9 +35,9 @@ internal sealed class PluginLoadContext : AssemblyLoadContext
 
     protected override Assembly? Load(AssemblyName assemblyName)
     {
-        if (assemblyName.Name == typeof(IZoiteChatPlugin).Assembly.GetName().Name)
+        if (assemblyName.Name == typeof(IFabulorPlugin).Assembly.GetName().Name)
         {
-            return typeof(IZoiteChatPlugin).Assembly;
+            return typeof(IFabulorPlugin).Assembly;
         }
 
         var assemblyPath = _resolver.ResolveAssemblyToPath(assemblyName);
@@ -157,16 +157,16 @@ public static class NativeExports
             var assembly = loadContext.LoadFromAssemblyPath(assemblyPath);
             var pluginType = assembly
                 .GetTypes()
-                .FirstOrDefault(type => typeof(IZoiteChatPlugin).IsAssignableFrom(type) && !type.IsAbstract && !type.IsInterface);
+                .FirstOrDefault(type => typeof(IFabulorPlugin).IsAssignableFrom(type) && !type.IsAbstract && !type.IsInterface);
 
             if (pluginType is null)
             {
-                Log($"[C#:{pluginId}] no IZoiteChatPlugin implementation found in {assemblyPath}.");
+                Log($"[C#:{pluginId}] no IFabulorPlugin implementation found in {assemblyPath}.");
                 loadContext.Unload();
                 return 1;
             }
 
-            var plugin = (IZoiteChatPlugin?)Activator.CreateInstance(pluginType);
+            var plugin = (IFabulorPlugin?)Activator.CreateInstance(pluginType);
             if (plugin is null)
             {
                 Log($"[C#:{pluginId}] failed to create plugin instance for {pluginType.FullName}.");
@@ -177,7 +177,7 @@ public static class NativeExports
             var state = new ManagedPluginState(pluginId, loadContext, plugin);
             Plugins[pluginId] = state;
 
-            var context = new ZoiteChatContext(
+            var context = new FabulorContext(
                 text => Log($"[C#:{pluginId}] {text}"),
                 (target, text) => SendMessage(state, target, text),
                 () => GetUserCount(state),
@@ -228,7 +228,7 @@ public static class NativeExports
                 return 1;
             }
 
-            handler(ZoiteChatEvent.FromJson(eventName, payloadJson));
+            handler(FabulorEvent.FromJson(eventName, payloadJson));
             return 0;
         }
         catch (Exception ex)
@@ -260,7 +260,7 @@ public static class NativeExports
         return 0;
     }
 
-    private static void RegisterCallback(ManagedPluginState state, string eventName, ZoiteChatEventHandler handler)
+    private static void RegisterCallback(ManagedPluginState state, string eventName, FabulorEventHandler handler)
     {
         if (_registerCallback is null)
         {
@@ -305,7 +305,7 @@ public static class NativeExports
         return checked((int)_getUserCount(pluginIdHandle.Pointer));
     }
 
-    private static ZoiteChatUserInfo GetUserInfo(ManagedPluginState state)
+    private static FabulorUserInfo GetUserInfo(ManagedPluginState state)
     {
         if (_getUserInfo is null)
         {
@@ -315,10 +315,10 @@ public static class NativeExports
         using var pluginIdHandle = new Utf8StringHandle(state.PluginId);
         if (_getUserInfo(pluginIdHandle.Pointer, out var userInfo) == 0)
         {
-            return new ZoiteChatUserInfo(null, null, null, null);
+            return new FabulorUserInfo(null, null, null, null);
         }
 
-        return new ZoiteChatUserInfo(
+        return new FabulorUserInfo(
             Marshal.PtrToStringUTF8(userInfo.Nickname),
             Marshal.PtrToStringUTF8(userInfo.Channel),
             Marshal.PtrToStringUTF8(userInfo.ServerName),
