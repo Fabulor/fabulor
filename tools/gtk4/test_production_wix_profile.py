@@ -99,6 +99,7 @@ LEGACY_BUILD_GRAPH = (
 GTK4_PROBE_MESON = ROOT / "tools" / "gtk4" / "meson.build"
 GTK4_APPLICATION_SOURCE = ROOT / "src" / "fe-gtk" / "fe-gtk.c"
 GTK4_SERVER_LIST_SOURCE = ROOT / "src" / "fe-gtk" / "servlistgui.c"
+COMMON_SERVER_LIST_SOURCE = ROOT / "src" / "common" / "servlist.c"
 GTK4_CHANNEL_BAN_DIALOG_SOURCES = (
     "banlist.c",
     "chanlist.c",
@@ -452,6 +453,39 @@ class ProductionWixProfileTests(unittest.TestCase):
         self.assertNotRegex(source, r"\bgtk_toggle_button_(?:get|set)_active\b")
         self.assertIn("fabulor_gtk_check_button_get_active", source)
         self.assertIn("fabulor_gtk_check_button_set_active", source)
+
+    def test_server_credentials_and_client_certificates_are_self_contained(self):
+        frontend = GTK4_SERVER_LIST_SOURCE.read_text(encoding="utf-8")
+        common = COMMON_SERVER_LIST_SOURCE.read_text(encoding="utf-8")
+
+        for retired_label in (
+            "Encrypt saved password",
+            "Move password to keyring",
+            "Generate client SSL cert",
+        ):
+            self.assertNotIn(retired_label, frontend)
+        self.assertNotIn("G_SPAWN_SEARCH_PATH", frontend)
+        self.assertNotRegex(frontend, r'argv\[\d+\]\s*=\s*"openssl"')
+
+        for retained_label in (
+            "Store password in Windows Credential Manager",
+            "Import client certificate...",
+            "Certificate details",
+            "Remove certificate",
+        ):
+            self.assertIn(retained_label, frontend)
+        self.assertIn("servlist_open_client_cert_context", frontend)
+        self.assertIn("SSL_CTX_check_private_key", frontend)
+
+        self.assertIn(
+            "!portable_mode () && secretstore_is_keyring_available ()",
+            common,
+        )
+        self.assertIn("servlist_password_is_encrypted (net->pass)", common)
+        self.assertIn(
+            "encrypted = servlist_password_encrypt_for_storage (net->pass);",
+            common,
+        )
 
     def test_channel_and_ban_dialogs_are_gtk4_only(self):
         frontend = ROOT / "src" / "fe-gtk"

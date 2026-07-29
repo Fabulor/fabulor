@@ -33,6 +33,7 @@ obsolete, unsafe, inert, or outside Fabulor's product scope.
 | 4 | SOCKS4 proxy mode | Proposed | Review usage, security, DNS, IPv6, and migration impact before deciding. |
 | 5 | Retained Perl source and residual configuration | Published | Perl source and residual configuration are retired from the supported C#/Python/Tcl plugin model. |
 | 6 | Other inert configuration keys | Published | `text_transparent` and `irc_cap_server_time` are retired; audit any further keys individually. |
+| 7 | Manual password and client-certificate helper actions | Implemented | Use Credential Manager by default in installed mode, migrate legacy plaintext automatically, and retain import/details/removal for externally issued client certificates. |
 
 ## Published Retirements
 
@@ -191,6 +192,51 @@ Validation:
   than silently downgraded
 
 SOCKS4 remains `Proposed` and was not changed by this work.
+
+## Implemented Consolidation
+
+### Network Credentials And Client Certificates
+
+Status: `Implemented`
+
+Reason:
+
+- Newly created installed-mode networks should use Windows Credential Manager
+  without requiring a separate migration button.
+- Legacy plaintext profile passwords can be encrypted automatically during the
+  next canonical server-list save.
+- The manual password encryption and keyring migration buttons duplicated
+  normal save behavior and exposed implementation details.
+- Fabulor does not package the `openssl` command-line program, so an external
+  certificate-generation button could not be relied upon.
+
+Retained behavior:
+
+- existing network passwords remain readable
+- portable mode and users who disable Credential Manager use encrypted profile
+  storage
+- imported PEM client certificates and matching private keys remain supported
+- certificate details and certificate removal remain available
+- TLS and SASL EXTERNAL behavior are unchanged
+
+Removed or replaced surface:
+
+- remove `Encrypt saved password`
+- remove `Move password to keyring`
+- remove `Generate client SSL cert`
+- rename the retained credential option to
+  `Store password in Windows Credential Manager`
+- use the bundled OpenSSL library to validate imported PEM material and display
+  certificate details without launching an external program
+
+Validation:
+
+- focused source contracts prevent the retired controls and external command
+  dependency from returning
+- imported certificate validation requires a matching certificate and private
+  key
+- common core, GTK4 frontend, installer, and production package validation must
+  pass before publication
 
 ## Review Candidates
 

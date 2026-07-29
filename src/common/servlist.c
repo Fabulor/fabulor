@@ -1005,6 +1005,8 @@ servlist_net_add (char *name, char *comment, int prepend)
 #ifdef USE_OPENSSL
 	net->flags |= FLAG_USE_SSL;
 #endif
+	if (!portable_mode () && secretstore_is_keyring_available ())
+		net->flags |= FLAG_USE_KEYRING;
 
 	if (prepend)
 		network_list = g_slist_prepend (network_list, net);
@@ -1213,6 +1215,29 @@ servlist_save (void)
 	if (g_access (buf, F_OK) != 0)
 		first = TRUE;
 #endif
+
+	for (list = network_list; list; list = list->next)
+	{
+		char *encrypted;
+
+		net = list->data;
+		if (!net->pass || !*net->pass ||
+			 (net->flags & FLAG_USE_KEYRING) ||
+			 servlist_password_is_encrypted (net->pass))
+			continue;
+
+		encrypted = servlist_password_encrypt_for_storage (net->pass);
+		if (!encrypted)
+		{
+			fe_message (_("Could not encrypt a legacy saved network password."),
+						  FE_MSG_WARN);
+			return FALSE;
+		}
+
+		memset (net->pass, 0, strlen (net->pass));
+		g_free (net->pass);
+		net->pass = encrypted;
+	}
 
 	fp = zoitechat_fopen_file ("servlist.conf", "w", 0);
 	if (!fp)
