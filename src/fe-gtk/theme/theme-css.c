@@ -385,7 +385,7 @@ theme_css_build_toplevel_classes (void)
 		"color: #f0f0f0;"
 		"border-color: #202020;"
 		"}"
-		"window.%s menubar, window.%s menubar:backdrop, window.%s menubar box, window.%s menubar box:backdrop, window.%s menuitem, window.%s menuitem:backdrop {"
+		"window.%s menubar, window.%s menubar:backdrop, window.%s menuitem, window.%s menuitem:backdrop {"
 		"background-color: @theme_bg_color;"
 		"background-image: none;"
 		"color: @theme_fg_color;"
@@ -402,7 +402,7 @@ theme_css_build_toplevel_classes (void)
 		"color: #101010;"
 		"border-color: #f6f6f6;"
 		"}"
-		"window.%s menubar, window.%s menubar:backdrop, window.%s menubar box, window.%s menubar box:backdrop, window.%s menuitem, window.%s menuitem:backdrop {"
+		"window.%s menubar, window.%s menubar:backdrop, window.%s menuitem, window.%s menuitem:backdrop {"
 		"background-color: @theme_bg_color;"
 		"background-image: none;"
 		"color: @theme_fg_color;"
@@ -423,10 +423,6 @@ theme_css_build_toplevel_classes (void)
 		theme_css_selector_dark_class,
 		theme_css_selector_dark_class,
 		theme_css_selector_dark_class,
-		theme_css_selector_dark_class,
-		theme_css_selector_dark_class,
-		theme_css_selector_light_class,
-		theme_css_selector_light_class,
 		theme_css_selector_light_class,
 		theme_css_selector_light_class,
 		theme_css_selector_light_class,

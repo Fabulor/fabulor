@@ -1,5 +1,20 @@
 #include "theme-preferences-gtk4.h"
 
+#include "../../common/theme-archive-reader.h"
+#include "../file-chooser-path.h"
+
+#define GTK4_THEME_PREFERENCES_DATA "fabulor-gtk4-theme-preferences"
+
+typedef struct
+{
+	char *archive_path;
+	char *config_dir;
+} ThemePreferencesGtk4ImportTask;
+
+typedef struct
+{
+	GWeakRef root;
+} ThemePreferencesGtk4WeakRoot;
 
 struct _ThemePreferencesGtk4
 {
@@ -8,13 +23,17 @@ struct _ThemePreferencesGtk4
 	GtkWidget *root;
 	GtkDropDown *theme_dropdown;
 	GtkDropDown *variant_dropdown;
+	GtkWidget *import_button;
 	GtkLabel *status_label;
 	gulong theme_changed_id;
 	gulong variant_changed_id;
+	guint apply_source_id;
 	char *config_dir;
 	char *stored_id;
+	char *pending_id;
 	char *status;
 	guint stored_variant;
+	guint pending_variant;
 	gboolean system_prefers_dark;
 	gboolean high_contrast;
 	gboolean blocked;
@@ -24,6 +43,70 @@ struct _ThemePreferencesGtk4
 };
 
 static void theme_preferences_gtk4_sync (ThemePreferencesGtk4 *preferences);
+static gboolean theme_preferences_gtk4_apply (
+	ThemePreferencesGtk4 *preferences, const char *theme_id, guint variant,
+	gboolean notify, GError **error);
+
+static gboolean
+theme_preferences_gtk4_apply_pending (gpointer user_data)
+{
+	ThemePreferencesGtk4 *preferences = user_data;
+	GError *error = NULL;
+	char *id;
+	guint variant;
+
+	preferences->apply_source_id = 0;
+	id = g_steal_pointer (&preferences->pending_id);
+	variant = preferences->pending_variant;
+	theme_preferences_gtk4_apply (preferences, id, variant, TRUE, &error);
+	g_free (id);
+	g_clear_error (&error);
+	return G_SOURCE_REMOVE;
+}
+
+static void
+theme_preferences_gtk4_queue_apply (ThemePreferencesGtk4 *preferences,
+	const char *theme_id, guint variant)
+{
+	g_free (preferences->pending_id);
+	preferences->pending_id = g_strdup (theme_id);
+	preferences->pending_variant = variant;
+	if (preferences->apply_source_id)
+		g_source_remove (preferences->apply_source_id);
+	preferences->apply_source_id = g_idle_add_full (
+		G_PRIORITY_DEFAULT_IDLE, theme_preferences_gtk4_apply_pending,
+		preferences, NULL);
+}
+
+static void
+theme_preferences_gtk4_import_task_free (
+	ThemePreferencesGtk4ImportTask *data)
+{
+	if (!data)
+		return;
+	g_free (data->archive_path);
+	g_free (data->config_dir);
+	g_free (data);
+}
+
+static ThemePreferencesGtk4WeakRoot *
+theme_preferences_gtk4_weak_root_new (GtkWidget *root)
+{
+	ThemePreferencesGtk4WeakRoot *weak = g_new0 (
+		ThemePreferencesGtk4WeakRoot, 1);
+
+	g_weak_ref_init (&weak->root, root);
+	return weak;
+}
+
+static void
+theme_preferences_gtk4_weak_root_free (ThemePreferencesGtk4WeakRoot *weak)
+{
+	if (!weak)
+		return;
+	g_weak_ref_clear (&weak->root);
+	g_free (weak);
+}
 
 static GtkStringList *
 theme_preferences_gtk4_theme_model (const ThemePreferencesGtk4 *preferences)
@@ -54,6 +137,17 @@ theme_preferences_gtk4_update_status (ThemePreferencesGtk4 *preferences,
 		message = "The saved GTK4 theme is unavailable; system default is active.";
 	else if (!message && preferences->high_contrast)
 		message = "High contrast is using the system GTK4 appearance.";
+	g_free (preferences->status);
+	preferences->status = g_strdup (message);
+	gtk_label_set_text (preferences->status_label, message ? message : "");
+	gtk_widget_set_visible (GTK_WIDGET (preferences->status_label),
+		message != NULL);
+}
+
+static void
+theme_preferences_gtk4_set_status (ThemePreferencesGtk4 *preferences,
+	const char *message)
+{
 	g_free (preferences->status);
 	preferences->status = g_strdup (message);
 	gtk_label_set_text (preferences->status_label, message ? message : "");
@@ -148,14 +242,22 @@ theme_preferences_gtk4_theme_changed (GtkDropDown *dropdown,
 	GParamSpec *pspec, gpointer user_data)
 {
 	ThemePreferencesGtk4 *preferences = user_data;
-	GError *error = NULL;
 	(void) pspec;
 
 	if (preferences->blocked)
 		return;
-	theme_preferences_gtk4_select_theme (preferences,
-		gtk_drop_down_get_selected (dropdown), &error);
-	g_clear_error (&error);
+	{
+		const GPtrArray *choices = theme_gtk4_controller_choices (
+			preferences->controller);
+		guint selected = gtk_drop_down_get_selected (dropdown);
+		const FabulorGtk4ThemeChoice *choice;
+
+		if (!choices || selected >= choices->len)
+			return;
+		choice = g_ptr_array_index (choices, selected);
+		theme_preferences_gtk4_queue_apply (preferences, choice->id,
+			preferences->stored_variant);
+	}
 }
 
 static void
@@ -163,15 +265,159 @@ theme_preferences_gtk4_variant_changed (GtkDropDown *dropdown,
 	GParamSpec *pspec, gpointer user_data)
 {
 	ThemePreferencesGtk4 *preferences = user_data;
-	GError *error = NULL;
 	(void) pspec;
 
 	if (preferences->blocked)
 		return;
-	theme_preferences_gtk4_select_variant (preferences,
-		gtk_drop_down_get_selected (dropdown), &error);
-	g_clear_error (&error);
+	theme_preferences_gtk4_queue_apply (preferences, preferences->stored_id,
+		gtk_drop_down_get_selected (dropdown));
 }
+
+static void
+theme_preferences_gtk4_import_thread (GTask *task, gpointer source_object,
+	gpointer task_data, GCancellable *cancellable)
+{
+	ThemePreferencesGtk4ImportTask *data = task_data;
+	GPtrArray *installed = NULL;
+	GError *error = NULL;
+	(void) source_object;
+	(void) cancellable;
+
+	if (!fabulor_gtk4_theme_archive_import (data->archive_path,
+		data->config_dir, &installed, &error))
+	{
+		g_task_return_error (task, error);
+		return;
+	}
+	g_task_return_pointer (task, installed,
+		(GDestroyNotify)g_ptr_array_unref);
+}
+
+static void
+theme_preferences_gtk4_import_complete (GObject *source_object,
+	GAsyncResult *result, gpointer user_data)
+{
+	ThemePreferencesGtk4WeakRoot *weak = user_data;
+	GtkWidget *root = g_weak_ref_get (&weak->root);
+	ThemePreferencesGtk4 *preferences = root ? g_object_get_data (
+		G_OBJECT (root), GTK4_THEME_PREFERENCES_DATA) : NULL;
+	GPtrArray *installed;
+	GError *error = NULL;
+	(void) source_object;
+
+	installed = g_task_propagate_pointer (G_TASK (result), &error);
+	if (preferences)
+	{
+		gtk_widget_set_sensitive (preferences->import_button, TRUE);
+		if (!installed)
+			theme_preferences_gtk4_set_status (preferences,
+				error ? error->message : "GTK4 theme import failed.");
+		else
+		{
+			char *message = g_strdup_printf (
+				"Imported %u GTK4 theme%s. Select one from Desktop theme.",
+				installed->len, installed->len == 1 ? "" : "s");
+
+			theme_gtk4_controller_reload_catalog (preferences->controller,
+				preferences->config_dir, preferences->stored_id,
+				preferences->stored_variant,
+				preferences->system_prefers_dark,
+				preferences->high_contrast);
+			theme_preferences_gtk4_sync (preferences);
+			theme_preferences_gtk4_set_status (preferences, message);
+			g_free (message);
+		}
+	}
+	g_clear_pointer (&installed, g_ptr_array_unref);
+	g_clear_error (&error);
+	g_clear_object (&root);
+	theme_preferences_gtk4_weak_root_free (weak);
+}
+
+static void
+theme_preferences_gtk4_start_import (ThemePreferencesGtk4 *preferences,
+	const char *archive_path)
+{
+	ThemePreferencesGtk4ImportTask *data;
+	GTask *task;
+
+	data = g_new0 (ThemePreferencesGtk4ImportTask, 1);
+	data->archive_path = g_strdup (archive_path);
+	data->config_dir = g_strdup (preferences->config_dir);
+	gtk_widget_set_sensitive (preferences->import_button, FALSE);
+	theme_preferences_gtk4_set_status (preferences,
+		"Inspecting and importing the GTK4 theme archive...");
+	task = g_task_new (NULL, NULL, theme_preferences_gtk4_import_complete,
+		theme_preferences_gtk4_weak_root_new (preferences->root));
+	g_task_set_task_data (task, data,
+		(GDestroyNotify)theme_preferences_gtk4_import_task_free);
+	g_task_run_in_thread (task, theme_preferences_gtk4_import_thread);
+	g_object_unref (task);
+}
+
+/* GtkFileChooser is retained behind this boundary pending GtkFileDialog. */
+G_GNUC_BEGIN_IGNORE_DEPRECATIONS
+
+static void
+theme_preferences_gtk4_import_response (GtkNativeDialog *dialog,
+	int response_id, gpointer user_data)
+{
+	ThemePreferencesGtk4WeakRoot *weak = user_data;
+	GtkWidget *root = g_weak_ref_get (&weak->root);
+	ThemePreferencesGtk4 *preferences = root ? g_object_get_data (
+		G_OBJECT (root), GTK4_THEME_PREFERENCES_DATA) : NULL;
+
+	if (preferences && response_id == GTK_RESPONSE_ACCEPT)
+	{
+		char *path = fabulor_gtk_file_chooser_dup_filename (
+			GTK_FILE_CHOOSER (dialog));
+
+		if (path)
+			theme_preferences_gtk4_start_import (preferences, path);
+		g_free (path);
+	}
+	g_clear_object (&root);
+	g_object_unref (dialog);
+	theme_preferences_gtk4_weak_root_free (weak);
+}
+
+static void
+theme_preferences_gtk4_import_clicked (GtkButton *button,
+	gpointer user_data)
+{
+	ThemePreferencesGtk4 *preferences = user_data;
+	GtkRoot *root = gtk_widget_get_root (GTK_WIDGET (button));
+	GtkWindow *parent = GTK_IS_WINDOW (root) ? GTK_WINDOW (root) : NULL;
+	GtkFileChooserNative *dialog;
+	GtkFileFilter *filter;
+	char *themes_dir;
+
+	dialog = gtk_file_chooser_native_new ("Import GTK4 theme archive",
+		parent, GTK_FILE_CHOOSER_ACTION_OPEN, "_Import", "_Cancel");
+	gtk_native_dialog_set_modal (GTK_NATIVE_DIALOG (dialog), TRUE);
+	fabulor_gtk_file_chooser_set_local_only (GTK_FILE_CHOOSER (dialog), TRUE);
+	gtk_file_chooser_set_select_multiple (GTK_FILE_CHOOSER (dialog), FALSE);
+	themes_dir = g_build_filename (preferences->config_dir, "themes", NULL);
+	fabulor_gtk_file_chooser_set_current_folder_path (
+		GTK_FILE_CHOOSER (dialog), themes_dir);
+	g_free (themes_dir);
+
+	filter = gtk_file_filter_new ();
+	gtk_file_filter_set_name (filter, "GTK4 theme archives");
+	gtk_file_filter_add_pattern (filter, "*.tar");
+	gtk_file_filter_add_pattern (filter, "*.tar.gz");
+	gtk_file_filter_add_pattern (filter, "*.tgz");
+	gtk_file_filter_add_pattern (filter, "*.tar.xz");
+	gtk_file_filter_add_pattern (filter, "*.txz");
+	gtk_file_filter_add_pattern (filter, "*.zip");
+	gtk_file_chooser_add_filter (GTK_FILE_CHOOSER (dialog), filter);
+	g_signal_connect (dialog, "response",
+		G_CALLBACK (theme_preferences_gtk4_import_response),
+		theme_preferences_gtk4_weak_root_new (preferences->root));
+	gtk_native_dialog_show (GTK_NATIVE_DIALOG (dialog));
+}
+
+G_GNUC_END_IGNORE_DEPRECATIONS
 
 static GtkWidget *
 theme_preferences_gtk4_row (const char *title, GtkWidget *control)
@@ -228,20 +474,28 @@ theme_preferences_gtk4_new_internal (ThemeGtk4Controller *controller,
 	preferences->variant_dropdown = GTK_DROP_DOWN (gtk_drop_down_new (
 		G_LIST_MODEL (variant_model), NULL));
 	preferences->status_label = GTK_LABEL (gtk_label_new (NULL));
+	preferences->import_button = gtk_button_new_with_label (
+		"Import theme archive...");
+	gtk_widget_set_halign (preferences->import_button, GTK_ALIGN_START);
 	gtk_label_set_wrap (preferences->status_label, TRUE);
 	gtk_label_set_xalign (preferences->status_label, 0.0f);
 	gtk_box_append (GTK_BOX (preferences->root), theme_preferences_gtk4_row (
 		"Desktop theme", GTK_WIDGET (preferences->theme_dropdown)));
 	gtk_box_append (GTK_BOX (preferences->root), theme_preferences_gtk4_row (
 		"Variant", GTK_WIDGET (preferences->variant_dropdown)));
+	gtk_box_append (GTK_BOX (preferences->root), preferences->import_button);
 	gtk_box_append (GTK_BOX (preferences->root),
 		GTK_WIDGET (preferences->status_label));
+	g_object_set_data (G_OBJECT (preferences->root),
+		GTK4_THEME_PREFERENCES_DATA, preferences);
 	preferences->theme_changed_id = g_signal_connect (
 		preferences->theme_dropdown, "notify::selected",
 		G_CALLBACK (theme_preferences_gtk4_theme_changed), preferences);
 	preferences->variant_changed_id = g_signal_connect (
 		preferences->variant_dropdown, "notify::selected",
 		G_CALLBACK (theme_preferences_gtk4_variant_changed), preferences);
+	g_signal_connect (preferences->import_button, "clicked",
+		G_CALLBACK (theme_preferences_gtk4_import_clicked), preferences);
 	theme_preferences_gtk4_sync (preferences);
 	theme_preferences_gtk4_update_status (preferences, NULL);
 	return preferences;
@@ -285,8 +539,12 @@ theme_preferences_gtk4_free (ThemePreferencesGtk4 *preferences)
 	if (preferences->variant_changed_id && preferences->variant_dropdown)
 		g_signal_handler_disconnect (preferences->variant_dropdown,
 			preferences->variant_changed_id);
+	if (preferences->apply_source_id)
+		g_source_remove (preferences->apply_source_id);
 	if (preferences->root)
 	{
+		g_object_set_data (G_OBJECT (preferences->root),
+			GTK4_THEME_PREFERENCES_DATA, NULL);
 		parent = gtk_widget_get_parent (preferences->root);
 		if (parent)
 			gtk_widget_unparent (preferences->root);
@@ -296,6 +554,7 @@ theme_preferences_gtk4_free (ThemePreferencesGtk4 *preferences)
 		theme_gtk4_controller_free (preferences->controller);
 	if (preferences->user_data_destroy)
 		preferences->user_data_destroy (preferences->user_data);
+	g_free (preferences->pending_id);
 	g_free (preferences->status);
 	g_free (preferences->stored_id);
 	g_free (preferences->config_dir);

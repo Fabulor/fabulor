@@ -3,6 +3,12 @@
 #include <string.h>
 
 #define FABULOR_EMOJI_POPOVER_DATA "fabulor-emoji-popover"
+#define FABULOR_EMOJI_VIEWPORT_COMPACT_WIDTH 320
+#define FABULOR_EMOJI_VIEWPORT_COMPACT_HEIGHT 240
+#define FABULOR_EMOJI_VIEWPORT_MAX_WIDTH 520
+#define FABULOR_EMOJI_VIEWPORT_MAX_HEIGHT 320
+#define FABULOR_EMOJI_VIEWPORT_HORIZONTAL_INSET 48
+#define FABULOR_EMOJI_VIEWPORT_VERTICAL_INSET 140
 
 struct _FabulorEmojiPickerPage
 {
@@ -80,6 +86,23 @@ fabulor_emoji_picker_codepoint_sequence (gunichar codepoint)
 		return NULL;
 	length = g_unichar_to_utf8 (codepoint, utf8);
 	return g_strndup (utf8, length);
+}
+
+void
+fabulor_emoji_picker_viewport_size (gint root_width, gint root_height,
+	gint *width, gint *height)
+{
+	gint available_width = root_width - FABULOR_EMOJI_VIEWPORT_HORIZONTAL_INSET;
+	gint available_height = root_height - FABULOR_EMOJI_VIEWPORT_VERTICAL_INSET;
+
+	if (width)
+		*width = CLAMP (available_width,
+			FABULOR_EMOJI_VIEWPORT_COMPACT_WIDTH,
+			FABULOR_EMOJI_VIEWPORT_MAX_WIDTH);
+	if (height)
+		*height = CLAMP (available_height,
+			FABULOR_EMOJI_VIEWPORT_COMPACT_HEIGHT,
+			FABULOR_EMOJI_VIEWPORT_MAX_HEIGHT);
 }
 
 static void

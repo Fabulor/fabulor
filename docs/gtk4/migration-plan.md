@@ -1,6 +1,6 @@
 # GTK4 Migration Plan
 
-Status: Stage 9 legacy-removal cleanup
+Status: complete; GTK4 is the accepted production frontend
 
 Baseline date: 2026-07-14
 
@@ -25,15 +25,17 @@ the validation matrix in [validation-log.md](validation-log.md) passes.
   Perl, gendef, broad runtime-copy project, and Inno installer are absent from
   the active Windows build graph.
 - The GTK3 theme service, adapter, preference branch, tests, probe contract,
-  `%APPDATA%\Fabulor\gtk3-themes` workflow, and saved configuration keys are
-  removed. The active frontend compatibility header now contains only GTK4
-  implementations; GTK3 branches in individual source files remain the next
-  cleanup boundary. Historical plugin source trees remain retained but
-  unsupported.
+  `%APPDATA%\Fabulor\gtk3-themes` workflow, saved configuration keys, source
+  branches, compatibility helpers, runtime files, and installer components are
+  removed.
 - Retained `.hct` imports no longer depend on the GTK3 theme service. The
   format-specific reader invokes only the absolute system archive tool, reads
   selected text without extracting a filesystem tree, and enforces archive,
   listing, output, path-depth, and duplicate-entry limits.
+- Installed acceptance covers clean installation, versioned upgrades, the
+  complete GTK4 application surface, plugin runtimes, spell checking, themes,
+  tray behavior, transcript interaction, multi-network startup, and production
+  installer payload validation.
 
 ## Migration Rules
 
@@ -55,7 +57,7 @@ the validation matrix in [validation-log.md](validation-log.md) passes.
 
 ## Stages
 
-### Stage 0: Documentation And Baseline
+### Stage 0: Documentation And Baseline (Complete)
 
 Deliverables:
 
@@ -70,7 +72,7 @@ Exit criteria:
 - The four documents under `docs/gtk4` exist and are linked from `To-Do.md`.
 - High-risk API families and ownership boundaries have named migration stages.
 
-### Stage 1: Build And Compatibility Foundation
+### Stage 1: Build And Compatibility Foundation (Complete)
 
 Progress (2026-07-14): the Windows x64 GTK4 archive is pinned by URL, size, and
 SHA-256 in `tools/gtk4/dependency-contract.json`. The isolated MSVC and Meson
@@ -97,7 +99,7 @@ Exit criteria:
 - The GTK4 dependency root is deterministic and version-reportable.
 - Converted modules cannot accidentally link a mixed GTK3/GTK4 process.
 
-### Stage 2: Widget Ownership And Layout
+### Stage 2: Widget Ownership And Layout (Complete)
 
 Progress (2026-07-14): 39 statically typed single-child assignments now use
 the shared GTK3/GTK4 compatibility boundary across 14 source files. This covers
@@ -430,7 +432,7 @@ Exit criteria:
 - No GTK4 path depends on removed menu widgets or nested dialog event loops.
 - File/add-on/theme selection retains the existing containment checks.
 
-### Stage 4: Input, Events, Clipboard, Drag/Drop, And Shortcuts (In Progress)
+### Stage 4: Input, Events, Clipboard, Drag/Drop, And Shortcuts (Complete)
 
 Shared explicit-copy pass 1 (2026-07-15): ban-list masks, channel-list names
 and topics, URL context actions, and URL-history rows now use one typed
@@ -569,7 +571,7 @@ Exit criteria:
   emoji insertion, scrolling, selection, and drag/drop pass the interaction
   matrix.
 
-### Stage 5: Lists, Trees, Models, And Channel Navigation
+### Stage 5: Lists, Trees, Models, And Channel Navigation (Complete)
 
 Model architecture pass 1 (2026-07-15): reusable GTK4-only model stacks now
 define the first conversion boundary. Flat operational lists use an app-owned
@@ -931,7 +933,7 @@ Exit criteria:
 - All operational lists pass keyboard, mouse, sorting, editing, and scale tests.
 - Channel switching and user-list updates remain responsive under IRC load.
 
-### Stage 6: Custom Text And Input Widgets
+### Stage 6: Custom Text And Input Widgets (Complete)
 
 Transcript render-target pass 1 (2026-07-17): `GtkXText` now owns one contained
 render destination instead of raw draw-window, draw-surface, and draw-context
@@ -1146,7 +1148,7 @@ Exit criteria:
 - No GTK3 windowing or draw virtual method remains in either widget.
 - Input and sent-message display latency meet the baseline thresholds.
 
-### Stage 7: Themes, Tray, Notifications, And Platform Integration
+### Stage 7: Themes, Tray, Notifications, And Platform Integration (Complete)
 
 Primary surfaces:
 
@@ -1162,9 +1164,11 @@ Deliverables:
 - Retain `.hct` and `colors.conf` palette/event imports. Retire `.zct`, GTK3
   theme import/discovery, and `%APPDATA%\Fabulor\gtk3-themes` after the adapter
   is ready; do not convert or claim direct compatibility for GTK3 CSS.
-- Do not package mock Windows GTK themes or an optional default Fabulor theme.
+- Do not package mock Windows GTK themes or a default GTK desktop theme.
   Follow Windows light/dark and high-contrast policy through the platform
   adapter, using GTK4 runtime defaults when no custom GTK4 theme is selected.
+  A colours-only, Fabulor-owned `.hct` starter palette may be packaged
+  independently from desktop CSS.
 - Preserve Fabulor palette/custom-CSS behaviour and dark-mode selection.
 - Validate native Windows tray/notification paths independently from optional
   Unix tray backends.
@@ -1316,7 +1320,7 @@ Exit criteria:
 - Theme switching, restart persistence, tray state, notifications, icons,
   fonts, spell-check UI, and emoji rendering pass on the packaged GTK4 runtime.
 
-### Stage 8: Production Cutover And Runtime Cleanup
+### Stage 8: Production Cutover And Runtime Cleanup (Complete)
 
 Runtime staging-contract pass 1 (2026-07-18):
 `tools/gtk4/runtime-payload-contract.json` now defines a deterministic Windows
@@ -2776,9 +2780,236 @@ passes all three artifact validators. Hands-on clean-install, in-place upgrade,
 repair, uninstall, accessibility, visual, performance, and plugin workflows
 remain assigned to final acceptance.
 
+Stage 9 clean-install layout acceptance pass 22 (2026-07-25): the first
+installed-client test exposed a collapsed user-list pane and a native Cairo
+access violation when the transcript's nick/text separator was pressed. The
+retained profile contained a two-pixel right-pane width despite its configured
+80-pixel minimum. Right-pane restoration now clamps saved widths against both
+the preference minimum and available allocation. Transcript drawing now has
+one guarded context-acquisition boundary: input callbacks with no active GTK4
+snapshot queue a frame and return instead of passing a null context to Cairo.
+The same acceptance run exposed Server List checkboxes still accessed as
+retired `GtkToggleButton` instances: clicks changed appearance but not network
+flags, and password visibility could not activate. The complete Server List
+checkbox boundary now uses typed GTK4 check-button state access. The corrected
+frontend and release pair build with zero warnings and errors and pass
+automated validation. Installed-client follow-up confirmed connection and
+Server List state, then exposed two visual conversion defects: the trailing-box
+adapter expanded the nickname button and pushed the input field right, while
+the emoji picker imposed a fixed page size regardless of the containing
+window. Trailing controls now retain natural width, the visible user-list owns
+its configured minimum and rejects hidden/unallocated position writes, and the
+emoji picker uses a bounded viewport derived from the current main window.
+Installed-client confirmation of these final visual corrections remains
+required. The first same-version update exposed a release-boundary defect:
+Windows Installer replaced the relinked frontend but did not register newly
+added OpenSSL components under the existing `1.0.3` product identity, leaving
+the launcher unable to load the frontend with Win32 error 126. The corrected
+release advances the shared client/MSI/bundle version to `1.0.4` so WiX emits
+a distinct major-upgrade product identity, and regenerates production support
+from the exact OpenSSL dependency root used to link the frontend.
+
+Stage 9 installed-client visual acceptance follow-up pass 23 (2026-07-25):
+screenshots of the corrected `1.0.4` client exposed false expanders on leaf
+channels, excess topic and server-input spacing, a non-working transcript
+bottom overlay, absent spell checking, obsolete GTK3 wording in Preferences,
+and duplicate/incomplete Window context branches. Root-only child-model
+ownership removes leaf expanders without flattening the server hierarchy.
+Initial server-row focus also has a guarded single-dispatch fallback, so the
+server transcript does not wait for a later channel insertion when GTK has not
+emitted the first selection notification.
+Inline topic margins and server-only nickname visibility now follow the
+active session layout. The overlay dispatches through the transcript's own
+bottom-state operation. Context composition folds all matching add-on branches
+into the canonical Window model, whose built-in surface and transcript actions
+remain intact. The clean installer had packaged WinSpell and ordering data but
+not the Enchant 2.8.19 core loaded by the edit box; WiX now installs all three
+components and the production contract rejects an incomplete spell payload.
+The obsolete `GTK3 Theme` heading is replaced by `Fabulor Theme`. Automated
+source, probe, package, and tooling validation is green; installed visual,
+startup server-tab, scrolling, spell, and menu confirmation remains required.
+
+Stage 9 transcript interaction acceptance pass 24 (2026-07-26): installed
+testing confirmed that the inherited XText selection path mapped pointer
+coordinates through per-character widths that no longer matched Pango-shaped
+GTK4 output and could continue across wrapped-row boundaries. Selection now
+keeps stable entry/byte anchors and uses Pango insertion hit-testing constrained
+to the active visual row. The installed `1.0.4` client accepts precise partial
+selection in either direction, publishes the exact range through automatic and
+explicit clipboard operations, and once again recognizes and activates URLs.
+The strict GTK4 probe, full frontend and launcher rebuilds, all 79 GTK4 tooling
+tests, and all three production package validators pass.
+
+Stage 9 startup server-session acceptance pass 25 (2026-07-26): GTK4 can select
+the first channel-tree row as soon as it is inserted, so the previous tab
+creation order could present the widget's empty original buffer before the
+session transcript buffer existed. Session buffers now precede row insertion.
+Auto-connect creates named server sessions explicitly, focuses only the first
+configured network, and leaves later networks connecting in the background.
+Installed direct connections to ChatLounge and DALnet show lookup and startup
+information immediately and retain ChatLounge as the active network. ZNC
+connections may already be complete before an intermediate state can be
+observed. Core, frontend, and launcher rebuilds have zero warnings and errors;
+all 79 GTK4 tooling tests and all production package validators pass.
+
+Stage 9 user-list resize-policy acceptance pass 26 (2026-07-26): the historical
+`gui_ulist_resizable` setting is again part of the persisted preference schema
+and User List Preferences surface. GTK4 applies it to the right pane's
+end-child resize policy, with fixed-width `OFF` behavior as Fabulor's default.
+Startup restoration remains protected until the pane is mapped, visible, and
+stable for three frames, preventing transient geometry from replacing
+`gui_pane_right_size`. Installed testing confirms `OFF` is reported and the
+configured pane width now holds without requiring a channel switch. Common and
+frontend rebuilds have zero warnings and errors, all 79 GTK4 tooling tests
+pass, and all production package validators pass.
+
+Stage 9 Network List interaction acceptance pass 27 (2026-07-26): converted
+network rows used `GtkEditableLabel` directly, so its pointer handler entered
+rename mode before a normal mouse click could remain a selection gesture.
+Display labels now decline pointer targeting until explicit list activation or
+the Add Network workflow requests editing. Selection by mouse or keyboard is
+therefore independent of renaming, and edit completion restores display mode.
+Installed testing confirms the corrected interaction. The frontend and
+installer rebuild with zero warnings and errors, all 79 GTK4 tooling tests
+pass, and all production package validators pass.
+
+Stage 9 native Windows tray acceptance pass 28 (2026-07-26): the empty backend
+left after retiring GTK3 `GtkStatusIcon` and AppIndicator support is replaced by
+direct `Shell_NotifyIconW` ownership. Existing tray-state pixbufs become native
+alpha icons; tooltips, flashing states, Explorer restart registration, native
+menu actions, and activation are retained. Actions originating in GDK's Win32
+message filter are deferred to the GTK idle queue. Windows tray hiding now
+hides the existing HWND without unmapping GTK's rendered surface, and the
+cross-platform state snapshot includes that explicit native-hidden state.
+Repeated installed tests pass for minimizing, left-click restore, Restore
+Window, and Preferences. The frontend and installer rebuild with zero warnings
+and errors, all 79 GTK4 tooling tests pass, and all production package
+validators pass.
+
+Stage 9 URL single-activation acceptance pass 29 (2026-07-26): XText's GTK4
+selection repair introduced a `GtkGestureDrag` whose completion uses the
+canonical primary-button release path for selection finalization. GTK4 also
+delivers the click controller's real release for a zero-distance drag, allowing
+both releases to emit the same URL `word_click`. XText now owns a one-sequence
+suppression token and idle-source lifetime so the synthetic release remains
+available for selection/autocopy while the duplicate real release is consumed.
+Installed testing confirms exactly one browser tab from left-click and
+right-click **Open Link in Browser**, with selection and release-to-copy still
+working. The frontend and installer rebuild with zero warnings and errors, all
+79 GTK4 tooling tests pass, and all production package validators pass.
+
+Stage 9 nick context-menu sizing acceptance pass 30 (2026-07-26): GTK4's
+homogeneous popover stack measured the user-list menu against every hidden
+identity-detail page, allowing long WHOIS values to produce an oversized root
+menu. Making pages independent reduced the root width but retained its
+allocation while navigating and clipped nick headings and detail text. The
+accepted implementation restores stable homogeneous navigation and applies a
+32-character end-ellipsis policy only to labels generated inside the nick
+popover. Full action values remain available for copying. The plain-text menu
+path also stops markup-escaping real names and away messages, correcting
+displays such as `I&apos;m busy`. Installed testing confirms compact, complete
+nick menus and correctly rendered away text. The frontend and installer rebuild
+with zero warnings and errors, all 79 GTK4 tooling tests pass, and all production
+package validators pass.
+
+Stage 9 obsolete-option retirement pass 31 (2026-07-26): the obsolete built-in
+Identd server is removed as one complete ownership boundary rather than hidden
+from Preferences. Fabulor no longer starts an Identd listener, registers
+`/IDENTD`, publishes local connection-port mappings, persists Identd settings,
+or exposes the Identd Preferences page. The internal plugin sources and
+MSVC/Meson/translation registrations are deleted, and the unrelated theme
+change dispatcher no longer carries an Identd reload reason. Installed testing
+confirms the option and loaded-plugin entry are absent and the client remains
+operational. Common core, frontend, and installer rebuilds have zero warnings
+and errors; all 79 GTK4 tooling tests and all production package validators
+pass.
+
+Stage 9 obsolete-configuration retirement pass 32 (2026-07-26): the inert
+`gui_ulist_style` compatibility key is removed from the configuration schema,
+default initialization, and preference structure. A complete source audit
+confirmed that no runtime or frontend behavior consumed the setting. Existing
+saved values are ignored and omitted on the next canonical configuration
+write. Installed testing confirms `/SET gui_ulist_style` reports no such
+variable while normal user-list appearance and behavior remain unchanged.
+Common core, frontend, and installer rebuilds have zero warnings and errors;
+all 79 GTK4 tooling tests and all production package validators pass.
+
+Stage 9 Preferences navigation sizing pass 33 (2026-07-26): the category frame
+now retains a 220-logical-pixel minimum width. GTK4 label ellipsizing had
+reduced the frame's minimum request enough that creating a wider Preferences
+page could reclaim the navigation column and truncate every category. The
+focused native probe now verifies the width contract when a display is
+available. Installed testing confirms the pane and labels remain stable while
+switching repeatedly across all Preferences pages. The strict probe and
+frontend rebuild with zero warnings and errors; all 79 GTK4 tooling tests and
+all production package validators pass.
+
+Stage 9 obsolete Wingate proxy retirement pass 34 (2026-07-26): Wingate is
+removed from Preferences and from the IRC and DCC proxy dispatch paths. A
+shared proxy policy preserves the established numeric values for SOCKS4,
+SOCKS5, HTTP, and Auto, maps the retired saved value `1` to disabled, and
+normalizes invalid values before use or canonical save. Focused probe coverage
+checks values `0` through `5`, invalid values, sparse Preferences row mapping,
+authentication support, and DCC proxy eligibility. Installed testing confirms
+the retired value reports as `0` and both ZNC and direct IRC connections work
+normally. Common core, frontend, and installer rebuilds have zero warnings and
+errors; all 79 GTK4 tooling tests and all production package validators pass.
+
+Stage 9 SOCKS5 protocol hardening pass 35 (2026-07-26): synchronous IRC and
+queued DCC traversal now share bounded SOCKS5 packet construction and response
+validation. Authentication-enabled connections require non-empty username and
+password fields of at most 255 bytes and reject proxy-selected no-authentication
+instead of silently downgrading. Both paths handle partial reads/writes,
+validate protocol versions, reserved fields, address forms and reply lengths,
+and fail closed on malformed or closed proxy connections. Exact-byte tests run
+under strict MSVC and Meson/Ninja probes. Installed testing passes direct IRC
+and ZNC with both no authentication and RFC 1929 username/password
+authentication; an authentication mismatch is rejected. SOCKS4 remains
+unchanged with status `Proposed`.
+
+Stage 9 right-pane allocation acceptance pass 36 (2026-07-26): SOCKS5
+Preferences testing exposed that generic preference application temporarily
+detached the user list and allowed GTK4 to record transient pane geometry.
+Runtime reparenting now suppresses those notifications, preserves the accepted
+right-pane width, and queues restoration from the final window-surface layout
+rather than the smaller pre-maximize allocation. Oversized saved geometry
+recovers to the configured nickname or minimum width. Clean uninstall/install
+testing and switching through all channels confirm stable pane dimensions and
+no apparent channel-switch lag.
+
+Stage 9 inert-configuration retirement pass 37 (2026-07-26):
+`text_transparent` is removed from the persisted schema and preference
+structure after a mechanical audit found no behavioral reader. Existing saved
+values are ignored and omitted on the next canonical write. Common core,
+frontend, and installer builds complete with zero warnings and errors; all 86
+GTK4 and theme tooling tests and all production package validators pass.
+Installed testing confirms `/SET text_transparent` reports no such variable
+and supported appearance behavior remains operational.
+
+Stage 9 server-time preference retirement pass 38 (2026-07-26): the inert
+`irc_cap_server_time` key and misleading Preferences toggle are removed.
+Fabulor continues to request standard and ZNC server-time capabilities whenever
+advertised and retains existing timestamp parsing. Common core, frontend, and
+installer builds complete with zero warnings and errors; all 86 GTK4 and theme
+tooling tests and all production package validators pass. Installed testing
+confirms `/SET irc_cap_server_time` reports no such variable, Preferences no
+longer exposes the toggle, and normal IRC and ZNC timestamps remain
+operational.
+
+Stage 9 active GTK3 source retirement pass 40 (2026-07-27): the final FiSHLiM
+GTK3 dialog branch, stale Sysinfo GTK3 labels, obsolete GTK3-facing wording and
+test source, and the inherited application Meson/Make graph are removed.
+`tools/gtk4` retains its isolated strict Meson probe and all negative
+anti-regression validators. The supported MSVC/WiX build is now the only
+application build graph. GTK 4.22 pixbuf conversion uses `GdkMemoryTexture`
+without deprecated API calls. Strict MSVC and Meson/Ninja probes, the complete
+native solution, tooling contracts, theme contracts, runtime/import
+validators, MSI, and bootstrapper all pass.
+
 Deliverables:
 
-- Make GTK4 the only production frontend dependency in MSVC, Meson, and CI.
+- Keep GTK4 as the only production frontend dependency in MSVC and CI; retain
+  Meson only for the isolated strict GTK4 probe.
 - Rebuild native dependencies that share GLib/CRT ownership against the final
   runtime where required.
 - Switch staging and WiX to an allowlisted GTK4 payload.
@@ -2813,13 +3044,50 @@ examples include:
 Do not combine transcript rendering, list models, and installer cutover in one
 PR. Each PR must keep the shipping build usable and identify its rollback point.
 
-## Open Decisions
+## GTK4 Desktop-Theme Archive Import (2026-07-28)
 
-- Minimum supported GTK4/GLib versions after evaluating the current 4.22.4 /
-  2.88.0 Windows bundle against supported non-Windows distributions.
-- GTK4 list widget choices for each large editable model.
-- Whether the spell-check entry remains a custom widget or becomes a composed
-  input control.
-- Which GTK4-native Unix StatusNotifier implementation should replace the
-  retired GTK3 AppIndicator backend.
-- The final allowlisted Windows runtime payload and provenance mechanism.
+OpenDesktop.org is the sole approved source for Fabulor desktop themes.
+Acquisition remains outside the client; locally selected archives receive no
+source-based trust exemption and must pass the complete import boundary.
+
+The Appearance page now imports third-party GTK4 desktop-theme archives rather
+than requiring users to reproduce Unix symbolic links with an external archive
+tool. The importer inventories a bounded private copy, recognizes immediate
+roots containing `gtk-4.0/gtk.css`, ignores unrelated desktop components, and
+materializes only ordinary GTK4 files. Unsafe paths, duplicate entries, links,
+special files, reparse points, excessive expansion, and existing destination
+directories fail closed. Import runs off the GTK main thread and refreshes the
+owned desktop-theme selector after successful installation.
+
+The first containment fixture, `Orchis-Grey.tar.xz`, contains six GTK4 variants
+and hundreds of links in unrelated Metacity, GNOME Shell, and XFWM trees. The
+importer correctly excludes those unrelated links, but installed acceptance
+then proved that its shipped GTK4 stylesheets contain unresolved Sass source
+tokens and an `@define-color ... var(...)` expression rejected by GTK 4.22.4.
+The importer now rejects those candidates in private staging instead of
+installing unusable selector entries. `Nordic-darker.tar.xz` is the positive
+real-world precompiled-theme fixture and passes the same contained import path.
+
+The first installed test exposed synchronous restyling inside the dropdown
+notification and an incorrect two-provider dark policy. The corrective
+candidate extracts all validated variants in one pass, performs a catalogue-
+only selector refresh after import, defers/coalesces live selection until the
+dropdown popup has settled, and installs exactly one resolved light or dark
+stylesheet. Selecting an already-installed malformed Orchis candidate now
+fails cleanly without freezing or crashing and returns to the system theme.
+Installed acceptance is complete: `Nordic-darker.tar.xz` imports without
+console flashing, applies as a GTK4 desktop theme, exposes its dark variant,
+and switching back to `System default` restores the system appearance.
+
+## Post-Migration Decisions
+
+These are product-maintenance decisions, not unfinished GTK4 conversion work:
+
+- Reassess the minimum supported GTK4/GLib versions if Fabulor adds a supported
+  non-Windows distribution.
+- Revisit the custom spell-input composition only if a concrete accessibility
+  or maintenance requirement justifies replacing the accepted widget.
+- Select a GTK4-native Unix StatusNotifier implementation only if Unix desktop
+  support becomes a production target.
+- Continue trimming optional Windows runtime categories only after feature
+  validation, while retaining the locked allowlist and provenance checks.

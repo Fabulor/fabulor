@@ -108,6 +108,28 @@ fabulor_gtk_image_new_from_icon_name (const gchar *icon_name,
 
 #define FABULOR_GTK_IMAGE_SOURCE_PIXBUF_DATA "fabulor-gtk-image-source-pixbuf"
 
+static inline GdkTexture *
+fabulor_gtk_texture_new_from_pixbuf (GdkPixbuf *pixbuf)
+{
+	GBytes *bytes;
+	GdkMemoryFormat format;
+	GdkTexture *texture;
+
+	g_return_val_if_fail (GDK_IS_PIXBUF (pixbuf), NULL);
+
+	bytes = g_bytes_new_with_free_func (
+		gdk_pixbuf_get_pixels (pixbuf), gdk_pixbuf_get_byte_length (pixbuf),
+		(GDestroyNotify) g_object_unref, g_object_ref (pixbuf));
+	format = gdk_pixbuf_get_has_alpha (pixbuf) ?
+		GDK_MEMORY_R8G8B8A8 : GDK_MEMORY_R8G8B8;
+	texture = gdk_memory_texture_new (gdk_pixbuf_get_width (pixbuf),
+		gdk_pixbuf_get_height (pixbuf), format, bytes,
+		(gsize) gdk_pixbuf_get_rowstride (pixbuf));
+	g_bytes_unref (bytes);
+
+	return texture;
+}
+
 static inline GtkWidget *
 fabulor_gtk_image_new_from_pixbuf (GdkPixbuf *pixbuf)
 {
@@ -115,7 +137,7 @@ fabulor_gtk_image_new_from_pixbuf (GdkPixbuf *pixbuf)
 
 	g_return_val_if_fail (GDK_IS_PIXBUF (pixbuf), NULL);
 
-	GdkTexture *texture = gdk_texture_new_for_pixbuf (pixbuf);
+	GdkTexture *texture = fabulor_gtk_texture_new_from_pixbuf (pixbuf);
 
 	image = gtk_image_new_from_paintable (GDK_PAINTABLE (texture));
 	g_object_unref (texture);
@@ -141,7 +163,7 @@ fabulor_gtk_about_dialog_set_logo_from_pixbuf (GtkAboutDialog *dialog,
 	g_return_if_fail (GTK_IS_ABOUT_DIALOG (dialog));
 	g_return_if_fail (GDK_IS_PIXBUF (pixbuf));
 
-	GdkTexture *texture = gdk_texture_new_for_pixbuf (pixbuf);
+	GdkTexture *texture = fabulor_gtk_texture_new_from_pixbuf (pixbuf);
 
 	gtk_about_dialog_set_logo (dialog, GDK_PAINTABLE (texture));
 	g_object_unref (texture);
@@ -361,8 +383,8 @@ fabulor_gtk_horizontal_box_append_trailing (GtkBox *box, GtkWidget *child)
 	g_return_if_fail (gtk_orientable_get_orientation (GTK_ORIENTABLE (box)) ==
 					  GTK_ORIENTATION_HORIZONTAL);
 
-	gtk_widget_set_hexpand (child, TRUE);
-	gtk_widget_set_halign (child, GTK_ALIGN_END);
+	gtk_widget_set_halign (GTK_WIDGET (box), GTK_ALIGN_END);
+	gtk_widget_set_hexpand (child, FALSE);
 	gtk_box_append (box, child);
 }
 
@@ -925,25 +947,37 @@ fabulor_gtk_click_released_cb (GtkGestureClick *gesture, gint n_press,
 }
 
 static inline void
-fabulor_gtk_widget_on_click_released (GtkWidget *widget,
-								  FabulorGtkClickFunc callback,
-								  gpointer user_data)
+fabulor_gtk_gesture_click_on_released (GtkEventController *controller,
+	FabulorGtkClickFunc callback, gpointer user_data)
 {
 	FabulorGtkClickInteraction *interaction;
 
-	g_return_if_fail (GTK_IS_WIDGET (widget));
+	g_return_if_fail (GTK_IS_GESTURE_CLICK (controller));
 	g_return_if_fail (callback != NULL);
 
 	interaction = g_new (FabulorGtkClickInteraction, 1);
 	interaction->callback = callback;
 	interaction->user_data = user_data;
 
-	GtkGesture *gesture = gtk_gesture_click_new ();
-
-	gtk_gesture_single_set_button (GTK_GESTURE_SINGLE (gesture), 0);
-	g_signal_connect_data (gesture, "released",
+	g_signal_connect_data (controller, "released",
 		G_CALLBACK (fabulor_gtk_click_released_cb), interaction,
 		fabulor_gtk_click_interaction_free, 0);
+}
+
+static inline void
+fabulor_gtk_widget_on_click_released (GtkWidget *widget,
+								  FabulorGtkClickFunc callback,
+								  gpointer user_data)
+{
+	GtkGesture *gesture;
+
+	g_return_if_fail (GTK_IS_WIDGET (widget));
+	g_return_if_fail (callback != NULL);
+
+	gesture = gtk_gesture_click_new ();
+	gtk_gesture_single_set_button (GTK_GESTURE_SINGLE (gesture), 0);
+	fabulor_gtk_gesture_click_on_released (
+		GTK_EVENT_CONTROLLER (gesture), callback, user_data);
 	gtk_widget_add_controller (widget, GTK_EVENT_CONTROLLER (gesture));
 }
 
@@ -984,25 +1018,135 @@ fabulor_gtk_multi_click_pressed_cb (GtkGestureClick *gesture, gint n_press,
 	}
 }
 
+static inline GtkEventController *
+fabulor_gtk_widget_on_multi_click_phase (GtkWidget *widget,
+	GtkPropagationPhase phase, FabulorGtkMultiClickFunc callback,
+	gpointer user_data)
+{
+	FabulorGtkMultiClickInteraction *interaction;
+	GtkGesture *gesture;
+
+	g_return_val_if_fail (GTK_IS_WIDGET (widget), NULL);
+	g_return_val_if_fail (callback != NULL, NULL);
+	interaction = g_new (FabulorGtkMultiClickInteraction, 1);
+	interaction->callback = callback;
+	interaction->user_data = user_data;
+
+	gesture = gtk_gesture_click_new ();
+	gtk_gesture_single_set_button (GTK_GESTURE_SINGLE (gesture), 0);
+	gtk_event_controller_set_propagation_phase (
+		GTK_EVENT_CONTROLLER (gesture), phase);
+	g_signal_connect_data (gesture, "pressed",
+		G_CALLBACK (fabulor_gtk_multi_click_pressed_cb), interaction,
+		fabulor_gtk_multi_click_interaction_free, 0);
+	gtk_widget_add_controller (widget, GTK_EVENT_CONTROLLER (gesture));
+	return GTK_EVENT_CONTROLLER (gesture);
+}
+
 static inline void
 fabulor_gtk_widget_on_multi_click (GtkWidget *widget,
 	FabulorGtkMultiClickFunc callback, gpointer user_data)
 {
-	FabulorGtkMultiClickInteraction *interaction;
+	(void) fabulor_gtk_widget_on_multi_click_phase (widget,
+		GTK_PHASE_BUBBLE, callback, user_data);
+}
 
-	g_return_if_fail (GTK_IS_WIDGET (widget));
-	g_return_if_fail (callback != NULL);
-	interaction = g_new (FabulorGtkMultiClickInteraction, 1);
-	interaction->callback = callback;
-	interaction->user_data = user_data;
+typedef gboolean (*FabulorGtkDragBeginFunc) (GtkWidget *widget, gdouble x,
+	gdouble y, GdkModifierType state, gpointer user_data);
+typedef void (*FabulorGtkDragUpdateFunc) (GtkWidget *widget, gdouble x,
+	gdouble y, GdkModifierType state, gpointer user_data);
+typedef void (*FabulorGtkDragEndFunc) (GtkWidget *widget, gdouble x,
+	gdouble y, GdkModifierType state, gpointer user_data);
+
+typedef struct
+{
+	FabulorGtkDragBeginFunc begin_callback;
+	FabulorGtkDragUpdateFunc update_callback;
+	FabulorGtkDragEndFunc end_callback;
+	gpointer user_data;
+	gdouble start_x;
+	gdouble start_y;
+} FabulorGtkDragInteraction;
+
+static inline void
+fabulor_gtk_drag_begin_cb (GtkGestureDrag *gesture, gdouble x, gdouble y,
+	gpointer user_data)
+{
+	FabulorGtkDragInteraction *interaction = user_data;
+	GtkEventController *controller = GTK_EVENT_CONTROLLER (gesture);
+
+	interaction->start_x = x;
+	interaction->start_y = y;
+	if (interaction->begin_callback (
+		gtk_event_controller_get_widget (controller), x, y,
+		gtk_event_controller_get_current_event_state (controller),
+		interaction->user_data))
 	{
-		GtkGesture *gesture = gtk_gesture_click_new ();
-		gtk_gesture_single_set_button (GTK_GESTURE_SINGLE (gesture), 0);
-		g_signal_connect_data (gesture, "pressed",
-			G_CALLBACK (fabulor_gtk_multi_click_pressed_cb), interaction,
-			fabulor_gtk_multi_click_interaction_free, 0);
-		gtk_widget_add_controller (widget, GTK_EVENT_CONTROLLER (gesture));
+		gtk_gesture_set_state (GTK_GESTURE (gesture),
+			GTK_EVENT_SEQUENCE_CLAIMED);
 	}
+}
+
+static inline void
+fabulor_gtk_drag_update_cb (GtkGestureDrag *gesture, gdouble offset_x,
+	gdouble offset_y, gpointer user_data)
+{
+	FabulorGtkDragInteraction *interaction = user_data;
+	GtkEventController *controller = GTK_EVENT_CONTROLLER (gesture);
+
+	interaction->update_callback (
+		gtk_event_controller_get_widget (controller),
+		interaction->start_x + offset_x, interaction->start_y + offset_y,
+		gtk_event_controller_get_current_event_state (controller),
+		interaction->user_data);
+}
+
+static inline void
+fabulor_gtk_drag_end_cb (GtkGestureDrag *gesture, gdouble offset_x,
+	gdouble offset_y, gpointer user_data)
+{
+	FabulorGtkDragInteraction *interaction = user_data;
+	GtkEventController *controller = GTK_EVENT_CONTROLLER (gesture);
+
+	interaction->end_callback (
+		gtk_event_controller_get_widget (controller),
+		interaction->start_x + offset_x, interaction->start_y + offset_y,
+		gtk_event_controller_get_current_event_state (controller),
+		interaction->user_data);
+}
+
+static inline GtkEventController *
+fabulor_gtk_widget_on_drag (GtkWidget *widget,
+	FabulorGtkDragBeginFunc begin_callback,
+	FabulorGtkDragUpdateFunc update_callback,
+	FabulorGtkDragEndFunc end_callback, gpointer user_data)
+{
+	FabulorGtkDragInteraction *interaction;
+	GtkGesture *gesture;
+
+	g_return_val_if_fail (GTK_IS_WIDGET (widget), NULL);
+	g_return_val_if_fail (begin_callback != NULL, NULL);
+	g_return_val_if_fail (update_callback != NULL, NULL);
+	g_return_val_if_fail (end_callback != NULL, NULL);
+
+	interaction = g_new0 (FabulorGtkDragInteraction, 1);
+	interaction->begin_callback = begin_callback;
+	interaction->update_callback = update_callback;
+	interaction->end_callback = end_callback;
+	interaction->user_data = user_data;
+
+	gesture = gtk_gesture_drag_new ();
+	gtk_gesture_single_set_button (GTK_GESTURE_SINGLE (gesture), 1);
+	gtk_gesture_single_set_exclusive (GTK_GESTURE_SINGLE (gesture), TRUE);
+	g_signal_connect (gesture, "drag-begin",
+		G_CALLBACK (fabulor_gtk_drag_begin_cb), interaction);
+	g_signal_connect (gesture, "drag-update",
+		G_CALLBACK (fabulor_gtk_drag_update_cb), interaction);
+	g_signal_connect_data (gesture, "drag-end",
+		G_CALLBACK (fabulor_gtk_drag_end_cb), interaction,
+		fabulor_gtk_click_interaction_free, 0);
+	gtk_widget_add_controller (widget, GTK_EVENT_CONTROLLER (gesture));
+	return GTK_EVENT_CONTROLLER (gesture);
 }
 
 typedef gboolean (*FabulorGtkFileDropFunc) (GtkWidget *widget, gdouble x,
@@ -1419,15 +1563,15 @@ fabulor_gtk_key_pressed_cb (GtkEventControllerKey *controller, guint keyval,
 		keyval, state, interaction->user_data);
 }
 
-static inline void
-fabulor_gtk_widget_on_key_pressed (GtkWidget *widget,
-								FabulorGtkKeyFunc callback,
-								gpointer user_data)
+static inline GtkEventController *
+fabulor_gtk_widget_on_key_pressed_phase (GtkWidget *widget,
+	GtkPropagationPhase phase, FabulorGtkKeyFunc callback,
+	gpointer user_data)
 {
 	FabulorGtkKeyInteraction *interaction;
 
-	g_return_if_fail (GTK_IS_WIDGET (widget));
-	g_return_if_fail (callback != NULL);
+	g_return_val_if_fail (GTK_IS_WIDGET (widget), NULL);
+	g_return_val_if_fail (callback != NULL, NULL);
 
 	interaction = g_new (FabulorGtkKeyInteraction, 1);
 	interaction->callback = callback;
@@ -1435,11 +1579,21 @@ fabulor_gtk_widget_on_key_pressed (GtkWidget *widget,
 
 	GtkEventController *controller = gtk_event_controller_key_new ();
 
-	gtk_event_controller_set_propagation_phase (controller, GTK_PHASE_BUBBLE);
+	gtk_event_controller_set_propagation_phase (controller, phase);
 	g_signal_connect_data (controller, "key-pressed",
 		G_CALLBACK (fabulor_gtk_key_pressed_cb), interaction,
 		fabulor_gtk_key_interaction_free, 0);
 	gtk_widget_add_controller (widget, controller);
+	return controller;
+}
+
+static inline void
+fabulor_gtk_widget_on_key_pressed (GtkWidget *widget,
+								FabulorGtkKeyFunc callback,
+								gpointer user_data)
+{
+	(void) fabulor_gtk_widget_on_key_pressed_phase (widget,
+		GTK_PHASE_BUBBLE, callback, user_data);
 }
 
 typedef gboolean (*FabulorGtkScrollFunc) (GtkWidget *widget, gdouble dx,
@@ -1690,9 +1844,9 @@ fabulor_gtk_paned_set_start_child (GtkPaned *paned, GtkWidget *child,
 {
 	g_return_if_fail (GTK_IS_PANED (paned));
 
-	(void) resize;
-	(void) shrink;
 	gtk_paned_set_start_child (paned, child);
+	gtk_paned_set_resize_start_child (paned, resize);
+	gtk_paned_set_shrink_start_child (paned, shrink);
 }
 
 static inline void
@@ -1701,9 +1855,9 @@ fabulor_gtk_paned_set_end_child (GtkPaned *paned, GtkWidget *child,
 {
 	g_return_if_fail (GTK_IS_PANED (paned));
 
-	(void) resize;
-	(void) shrink;
 	gtk_paned_set_end_child (paned, child);
+	gtk_paned_set_resize_end_child (paned, resize);
+	gtk_paned_set_shrink_end_child (paned, shrink);
 }
 
 static inline GtkWidget *
@@ -1836,6 +1990,73 @@ fabulor_gtk_overlay_set_child (GtkOverlay *overlay, GtkWidget *child)
 	g_return_if_fail (GTK_IS_WIDGET (child));
 
 	gtk_overlay_set_child (overlay, child);
+}
+
+static inline gboolean
+fabulor_gtk_adjustment_is_at_end (GtkAdjustment *adjustment,
+	gdouble tolerance)
+{
+	gdouble lower;
+	gdouble target;
+
+	g_return_val_if_fail (GTK_IS_ADJUSTMENT (adjustment), TRUE);
+	lower = gtk_adjustment_get_lower (adjustment);
+	target = MAX (lower, gtk_adjustment_get_upper (adjustment) -
+		gtk_adjustment_get_page_size (adjustment));
+	return gtk_adjustment_get_value (adjustment) >=
+		target - MAX (tolerance, 0.0);
+}
+
+static inline void
+fabulor_gtk_adjustment_scroll_to_end (GtkAdjustment *adjustment)
+{
+	gdouble lower;
+	gdouble target;
+
+	g_return_if_fail (GTK_IS_ADJUSTMENT (adjustment));
+	lower = gtk_adjustment_get_lower (adjustment);
+	target = MAX (lower, gtk_adjustment_get_upper (adjustment) -
+		gtk_adjustment_get_page_size (adjustment));
+	gtk_adjustment_set_value (adjustment, target);
+}
+
+static inline void
+fabulor_gtk_chevron_down_draw (GtkDrawingArea *area, cairo_t *cr,
+	gint width, gint height, gpointer user_data)
+{
+	GdkRGBA color;
+	gdouble inset;
+	gdouble top;
+	gdouble bottom;
+
+	(void) user_data;
+	gtk_widget_get_color (GTK_WIDGET (area), &color);
+	inset = MAX (2.0, width * 0.12);
+	top = MAX (2.0, height * 0.22);
+	bottom = MIN (height - 2.0, height * 0.78);
+	gdk_cairo_set_source_rgba (cr, &color);
+	cairo_set_line_width (cr, MAX (2.0, MIN (width, height) * 0.18));
+	cairo_set_line_cap (cr, CAIRO_LINE_CAP_ROUND);
+	cairo_set_line_join (cr, CAIRO_LINE_JOIN_ROUND);
+	cairo_move_to (cr, inset, top);
+	cairo_line_to (cr, width / 2.0, bottom);
+	cairo_line_to (cr, width - inset, top);
+	cairo_stroke (cr);
+}
+
+static inline GtkWidget *
+fabulor_gtk_chevron_down_new (gint width, gint height)
+{
+	GtkWidget *area;
+
+	g_return_val_if_fail (width > 0, NULL);
+	g_return_val_if_fail (height > 0, NULL);
+	area = gtk_drawing_area_new ();
+	gtk_drawing_area_set_content_width (GTK_DRAWING_AREA (area), width);
+	gtk_drawing_area_set_content_height (GTK_DRAWING_AREA (area), height);
+	gtk_drawing_area_set_draw_func (GTK_DRAWING_AREA (area),
+		fabulor_gtk_chevron_down_draw, NULL, NULL);
+	return area;
 }
 
 static inline void

@@ -9,6 +9,8 @@
 #include <gdk/win32/gdkwin32.h>
 #endif
 
+#define FABULOR_WINDOW_NATIVE_HIDDEN_DATA "fabulor-window-native-hidden"
+
 typedef struct
 {
 	GtkWindow *window;
@@ -46,7 +48,9 @@ fabulor_window_state_get (GtkWindow *window, FabulorWindowState *state)
 	g_return_if_fail (state != NULL);
 
 	memset (state, 0, sizeof (*state));
-	state->visible = gtk_widget_get_visible (GTK_WIDGET (window));
+	state->visible = gtk_widget_get_visible (GTK_WIDGET (window)) &&
+		g_object_get_data (G_OBJECT (window),
+			FABULOR_WINDOW_NATIVE_HIDDEN_DATA) == NULL;
 	{
 		GdkSurface *surface = gtk_native_get_surface (GTK_NATIVE (window));
 		if (GDK_IS_TOPLEVEL (surface))
@@ -165,10 +169,37 @@ fabulor_window_state_watch (GtkWindow *window,
 		window_state_attach_surface (watch);
 }
 
+static void
+window_state_emit_all (GtkWindow *window)
+{
+	GPtrArray *watches;
+	guint index;
+
+	watches = g_object_get_data (G_OBJECT (window),
+		"fabulor-window-state-watches");
+	if (!watches)
+		return;
+	for (index = 0; index < watches->len; index++)
+		window_state_emit (g_ptr_array_index (watches, index));
+}
+
 void
 fabulor_window_hide (GtkWindow *window)
 {
 	g_return_if_fail (GTK_IS_WINDOW (window));
+#ifdef G_OS_WIN32
+	{
+		HWND hwnd = (HWND) fabulor_window_native_handle (window);
+		if (hwnd)
+		{
+			g_object_set_data (G_OBJECT (window),
+				FABULOR_WINDOW_NATIVE_HIDDEN_DATA, GINT_TO_POINTER (1));
+			ShowWindow (hwnd, SW_HIDE);
+			window_state_emit_all (window);
+			return;
+		}
+	}
+#endif
 	gtk_widget_set_visible (GTK_WIDGET (window), FALSE);
 }
 
@@ -176,6 +207,22 @@ void
 fabulor_window_present (GtkWindow *window)
 {
 	g_return_if_fail (GTK_IS_WINDOW (window));
+#ifdef G_OS_WIN32
+	if (g_object_get_data (G_OBJECT (window),
+		FABULOR_WINDOW_NATIVE_HIDDEN_DATA) != NULL)
+	{
+		HWND hwnd = (HWND) fabulor_window_native_handle (window);
+		g_object_set_data (G_OBJECT (window),
+			FABULOR_WINDOW_NATIVE_HIDDEN_DATA, NULL);
+		if (hwnd)
+			ShowWindow (hwnd, SW_RESTORE);
+		gtk_window_present (window);
+		if (hwnd)
+			SetForegroundWindow (hwnd);
+		window_state_emit_all (window);
+		return;
+	}
+#endif
 	gtk_widget_set_visible (GTK_WIDGET (window), TRUE);
 	gtk_window_present (window);
 }

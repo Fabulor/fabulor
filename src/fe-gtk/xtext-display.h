@@ -11,6 +11,7 @@
 #define FABULOR_XTEXT_DISPLAY_H
 
 #include <glib.h>
+#include <pango/pango.h>
 
 G_BEGIN_DECLS
 
@@ -30,6 +31,10 @@ gboolean fabulor_xtext_inline_image_size (gint line_height,
 gboolean fabulor_xtext_device_to_logical (gint device_pixels,
 	gint scale_factor, gint *logical_pixels);
 gint fabulor_xtext_scale_factor (gint scale_factor);
+gint fabulor_xtext_layout_text_width (PangoLayout *layout,
+	const gchar *text, gint length);
+gint fabulor_xtext_layout_index_at_x (PangoLayout *layout,
+	const gchar *text, gint length, gint x);
 void fabulor_xtext_decoration_positions (gint baseline, gint ascent,
 	gint line_height, gint *strike_y, gint *underline_y);
 

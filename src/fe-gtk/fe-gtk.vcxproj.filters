@@ -356,9 +356,6 @@
     <None Include="theme\tests\test-theme-runtime-persistence.c">
       <Filter>Source Files</Filter>
     </None>
-    <None Include="\theme\tests\test-theme-access-routing.c">
-      <Filter>Source Files</Filter>
-    </None>
     <None Include="\theme\tests\test-theme-manager-dispatch-routing.c">
       <Filter>Source Files</Filter>
     </None>

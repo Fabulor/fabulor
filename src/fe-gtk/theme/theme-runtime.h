@@ -37,6 +37,15 @@ typedef struct
 	GdkRGBA accent;
 } ThemeGtkPaletteMap;
 
+typedef struct
+{
+	ThemePalette palette;
+	gboolean custom_tokens[THEME_TOKEN_COUNT];
+	gboolean dark_mode;
+	gboolean initialized;
+	guint supplied_count;
+} ThemePaletteCandidate;
+
 void theme_runtime_load (void);
 gboolean theme_runtime_save (void);
 gboolean theme_runtime_save_prepare (char **temp_path);
@@ -46,6 +55,12 @@ gboolean theme_runtime_apply_mode (unsigned int mode, gboolean *palette_changed)
 gboolean theme_runtime_apply_dark_mode (gboolean enable);
 void theme_runtime_user_set_color (ThemeSemanticToken token, const GdkRGBA *col);
 void theme_runtime_dark_set_color (ThemeSemanticToken token, const GdkRGBA *col);
+void theme_runtime_palette_snapshot (gboolean dark_mode,
+	ThemePaletteCandidate *candidate);
+gboolean theme_runtime_palette_candidate_from_colors (const char *contents,
+	gboolean dark_mode, ThemePaletteCandidate *candidate, GError **error);
+gboolean theme_runtime_apply_palette_candidate (
+	const ThemePaletteCandidate *candidate, gboolean *palette_changed);
 void theme_runtime_reset_mode_colors (gboolean dark_mode);
 void theme_runtime_clear_gtk_mapped_custom_tokens (void);
 gboolean theme_runtime_get_color (ThemeSemanticToken token, GdkRGBA *out_rgba);

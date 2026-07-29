@@ -30,5 +30,9 @@ void tray_action_model_refresh (void);
 /* Each non-NULL result is a new reference owned by the caller. */
 gboolean tray_action_projection_create (GMenuModel **menu,
 	GActionGroup **built_in_actions, GActionGroup **plugin_actions);
+#ifdef G_OS_WIN32
+gboolean tray_win32_message_dispatch (guint message, guintptr wparam,
+	gintptr lparam);
+#endif
 
 #endif

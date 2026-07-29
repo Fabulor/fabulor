@@ -176,11 +176,15 @@ typedef struct session_gui
 
 	int pane_left_size;	/*last position of the pane*/
 	int pane_right_size;
+	int pane_right_last_width;
 	guint theme_window_listener_id;
 	guint theme_userlist_listener_id;
 
 	guint16 is_tab;	/* is tab or toplevel? */
 	guint16 ul_hidden;	/* userlist hidden? */
+	guint16 pane_right_restoring; /* initial GTK4 allocation is not user input */
+	guint16 pane_right_stable_frames;
+	guint pane_right_restore_tick_id;
 
 } session_gui;
 
@@ -190,6 +194,7 @@ extern cairo_surface_t *dialogwin_pix;
 gboolean fe_dark_mode_is_enabled (void);
 gboolean fe_dark_mode_is_enabled_for (unsigned int mode);
 void fe_set_auto_dark_mode_state (gboolean enabled);
+void fe_refresh_topic_strip_preference (void);
 
 #ifdef G_OS_WIN32
 gboolean fe_win32_high_contrast_is_enabled (void);

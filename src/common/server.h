@@ -34,6 +34,8 @@ void server_set_encoding (server *serv, char *new_encoding);
 void server_set_defaults (server *serv);
 char *server_get_network (server *serv, gboolean fallback);
 void server_set_name (server *serv, char *name);
+void server_join_request_add (server *serv, const char *channels);
+gboolean server_join_request_take (server *serv, const char *channel);
 void server_free (server *serv);
 
 void server_away_save_message (server *serv, char *nick, char *msg);

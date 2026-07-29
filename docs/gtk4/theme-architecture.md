@@ -1,6 +1,6 @@
 # GTK4 Theme Architecture
 
-Status: Stage 9 GTK3 theme service and adapter retired
+Status: complete; GTK4 theme service accepted in production
 
 ## Scope
 
@@ -21,6 +21,38 @@ only `colors.conf` and `pevents.conf` to bounded memory, rejects unsafe or
 duplicate matching entries, and does not extract the archive to a filesystem
 tree.
 
+The same owner discovers immediate regular `.hct` files beneath the profile
+`themes` directory and the installed read-only `share/palettes` directory.
+Discovery is case-insensitive on the extension, rejects symbolic links and
+Windows reparse points, derives the display name from the filename, and
+returns deterministic name-sorted metadata. A profile palette takes
+precedence over a bundled palette with the same case-insensitive name. The
+production Colors page exposes those archives through a palette selector. A
+selection passes the absolute discovered path back through the bounded reader,
+which streams the archive payload on a worker task so process startup cannot
+block the GTK main thread. Palette parsing and application return to the main
+thread, parse the complete palette without mutating runtime state, and replace
+the Preferences palette transaction in one operation. The live preview and
+every visible colour swatch update together. Current colours restores the
+opening snapshot, Cancel restores that snapshot, and OK persists the staged
+result to canonical `colors.conf`. Delayed task results are generation-bound
+and cannot apply after Preferences has been cancelled or reopened.
+
+The selector does not treat `.hct` archives as GTK CSS themes and does not
+broaden archive extraction. It also ignores an archive's legacy
+`pevents.conf`: older event definitions are not assumed compatible with the
+current event table, and palette selection cannot replace either the active
+formatter tables or the profile event file.
+
+The palette backend represents an import as a complete owned candidate:
+unspecified tokens inherit the current mode palette, supplied tokens are marked
+as user colours, and parsing cannot mutate runtime state. Supported keys have
+three outcomes. Missing keys may inherit; malformed, out-of-range, or duplicate
+keys reject the entire candidate. Applying a validated candidate copies the
+palette and custom-token mask as one runtime operation. The manager then emits
+at most one palette dispatch and performs at most one input-style reload.
+The same candidate type can own the pre-preview snapshot needed for rollback.
+
 ## Discovery Ownership
 
 `src/common/gtk4-theme-discovery.c` is a GTK-independent owner for immutable
@@ -40,20 +72,61 @@ entries when names match. Discovery creates the profile root when a valid
 configuration directory is supplied, but it does not copy, remove, parse, or
 apply a theme.
 
+## GTK4 Archive Import
+
+OpenDesktop.org is the sole approved acquisition source for Fabulor desktop
+themes. Fabulor imports archives already downloaded by the user; it does not
+browse the site, download themes itself, execute supplied installer scripts,
+or infer trust from the source. Every archive still passes the complete local
+containment and compatibility boundary described below.
+
+The Appearance page can import `.tar`, `.tar.gz`, `.tgz`, `.tar.xz`, `.txz`,
+and `.zip` desktop-theme archives. Import uses the absolute Windows system
+`tar.exe`; it never performs PATH lookup or command-string interpolation. The
+archive operation runs on a worker task so inspection and decompression do not
+block the GTK main thread. On Windows, archive inspection and extraction use a
+direct `CreateProcessW` boundary with an exact executable path, quoted argument
+vector, redirected standard handles, and `CREATE_NO_WINDOW`; helper console
+windows therefore cannot flash over the client.
+
+Before inspection, the selected immediate regular file is copied with a strict
+byte limit into a private staging directory below
+`%APPDATA%\Fabulor\themes`. Inventory and extraction use only that private
+copy, preventing the selected file from changing between validation and use.
+Entry names must be relative UTF-8 paths with bounded length and depth and
+Windows-safe components. Duplicate names, absolute or drive-qualified paths,
+empty or dot components, control characters, alternate-data-stream syntax,
+links, special files, excessive entry counts, and excessive expanded sizes
+are rejected.
+
+A candidate is recognized only when an immediate archive root contains an
+ordinary `gtk-4.0/gtk.css`. Fabulor extracts only that root's `gtk-4.0`
+directory plus optional `index.theme` and preview images; GTK2/GTK3, GNOME
+Shell, Metacity, XFWM, Plank, and unrelated components are ignored. The
+materialized tree is checked again for ordinary directories and files, Windows
+reparse points, counts, sizes, and the required CSS file. The required
+`gtk.css` and optional `gtk-dark.css` must be UTF-8 and must not contain
+unresolved Sass `$...` source tokens or `@define-color ... var(...)`, which
+the supported GTK parser cannot consume. This is a bounded compatibility
+preflight, not a stylesheet compiler or repair pass. Valid roots are moved into
+the profile theme directory only after every candidate passes. Existing theme
+directories are never overwritten, partial installation is rolled back, and
+the original downloaded archive is retained.
+
 ## Provider Ownership
 
-`src/fe-gtk/theme/theme-gtk4.c` is the GTK4-only CSS-provider adapter. It loads
-a candidate base provider and optional dark variant before replacing the active
-providers. A missing file or parser error rejects the candidate and leaves the
-current theme installed. Parser warnings remain nonfatal but are counted and
-exposed with the most recent diagnostic.
+`src/fe-gtk/theme/theme-gtk4.c` is the GTK4-only CSS-provider adapter. It
+resolves the requested light/dark policy first and loads exactly one complete
+stylesheet. A missing file or parser error rejects the candidate and leaves
+the current theme installed. Parser warnings remain nonfatal but are counted
+and exposed with the most recent diagnostic.
 
-The base provider is installed at `GTK_STYLE_PROVIDER_PRIORITY_USER`; an
-optional dark provider is installed one priority above it so variant rules can
-override the base theme. Follow-system, prefer-light, and prefer-dark policies
-are resolved explicitly. The adapter owns its display reference, providers,
+The resolved provider is installed at `GTK_STYLE_PROVIDER_PRIORITY_USER`.
+Follow-system, prefer-light, and prefer-dark policies are explicit; a complete
+`gtk-dark.css` replaces rather than layers over `gtk.css`. The adapter owns its
+display reference, provider,
 active source identifier, variant policy, and diagnostics. Disable and final
-teardown remove installed providers from the display before releasing them and
+teardown remove the installed provider from the display before releasing it and
 reset all active identity and variant state.
 
 The provider pass does not itself own preferences. The former GTK3 adapter and
@@ -148,6 +221,13 @@ Cancel and save failure restore the opening selection through the shared
 preference-stage owner. Releasing the page leaves application CSS installed.
 Shipping GTK3 preferences and their GTK3 theme service remain unchanged.
 
+Palette editing uses the same transaction boundary. Opening Preferences captures
+one complete mode-specific palette candidate, including custom-token ownership.
+Edits and imports replace the staged candidate and preview it through one manager
+operation. Apply commits the staged candidate once; Cancel restores the opening
+candidate once. Reset also replaces the staged candidate as a unit. No lifecycle
+path replays individual token updates or emits one refresh per colour.
+
 ## Appearance Monitor
 
 `src/fe-gtk/theme/theme-appearance-monitor-gtk4.c` replaces the GTK3 global
@@ -179,13 +259,14 @@ associate only `.hct`; `.zct` remains permitted solely in stale-install cleanup.
 The active preferences importer must retain `.hct`, `colors.conf`, and optional
 `pevents.conf`, while the runtime must retain atomic `colors.conf` persistence.
 
-The same validator rejects tracked `.hct`, `.zct`, `colors.conf`, or desktop
-theme directories from repository-authored payload roots. WiX component rules
-cannot harvest those files or a `share/themes` tree. Required GTK runtime data,
-icons, and Fabulor application assets remain valid dependencies and are not
-treated as an optional default theme. Positive and negative fixtures run in
-repository lint so a future packaging change cannot silently reverse this
-policy.
+The same validator permits exactly one repository-authored palette:
+`Fabulor Dark.hct`, containing only the matching tracked `colors.conf`.
+Additional `.hct`, `.zct`, `colors.conf`, or desktop-theme payloads remain
+forbidden. WiX may install that exact archive to `share/palettes` but cannot
+harvest a `share/themes` tree. Required GTK runtime data, icons, and Fabulor
+application assets remain valid dependencies. Positive and negative fixtures
+run in repository lint so a future packaging change cannot silently broaden
+this policy.
 
 ## Invariants
 
@@ -211,6 +292,11 @@ policy.
 - The system-default choice follows Windows and never loads Fabulor theme CSS.
 - Controller refresh commits preference state only after provider success.
 - Discovery metadata can be released immediately after controller refresh.
+- GTK4 archive inventory and extraction operate on one bounded private copy.
+- GTK4 archive imports reject links, reparse points, unsafe paths, special
+  entries, collisions, and excessive compressed or expanded content.
+- GTK4 archive imports materialize only GTK4 theme files and never overwrite an
+  existing profile theme.
 - Controller destruction removes active providers before releasing its state.
 - Preference callbacks run only after controller application succeeds.
 - Appearance-only refresh never writes persisted theme values.
@@ -219,8 +305,19 @@ policy.
 - Appearance-monitor teardown removes its display filter and pending source.
 - Failed system queries cannot displace the last committed appearance.
 - Active installers associate `.hct` and never `.zct`.
-- Repository and WiX payload rules cannot introduce an optional default theme.
+- Repository and WiX payload rules permit only the original colours-only
+  `Fabulor Dark.hct` starter palette.
 - `.hct` and `colors.conf` remain independent Fabulor formats.
+- Profile `.hct` discovery accepts only immediate regular files and rejects
+  links and reparse points.
+- Palette parsing is non-mutating and rejects malformed or duplicate supported
+  values before application.
+- Complete palette candidates apply through one manager dispatch boundary.
+- Preferences preview, reset, Apply, and Cancel operate on complete palette
+  candidates and preserve the opening snapshot for rollback.
+- The Colors page discovers profile and bundled `.hct` files and previews only
+  their bounded `colors.conf` palette through the complete transaction
+  boundary.
 
 ## Planned Passes
 

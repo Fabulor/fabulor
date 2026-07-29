@@ -27,6 +27,7 @@ extern GtkWidget *parent_window;
 
 void mg_changui_new (session *sess, restore_gui *res, int tab, int focus);
 void mg_update_xtext (GtkWidget *wid);
+void mg_update_xtext_for_setup (GtkWidget *wid, gboolean update_font);
 void mg_update_scroll_to_bottom_button (session_gui *gui);
 void mg_open_quit_dialog (gboolean minimize_button);
 void mg_switch_page (int relative, int num);
@@ -39,7 +40,7 @@ void mg_set_topic_tip (session *sess);
 GtkWidget *mg_create_generic_tab (char *name, char *title, int force_toplevel, int link_buttons, GDestroyNotify close_callback, gpointer userdata, int width, int height, GtkWidget **vbox_ret, void *family);
 void mg_set_title (GtkWidget *button, char *title);
 void mg_set_access_icon (session_gui *gui, GdkPixbuf *pix, gboolean away);
-void mg_apply_setup (void);
+void mg_apply_setup (gboolean recalculate_transcript_metrics);
 void mg_apply_session_font_prefs (session_gui *gui);
 void mg_win32_message_filter_init (void);
 void mg_win32_message_filter_shutdown (void);

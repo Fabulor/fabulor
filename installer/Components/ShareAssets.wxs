@@ -14,6 +14,12 @@
               Name="gtkpref.png"
               KeyPath="yes" />
       </Component>
+      <Component Id="FabulorDarkPaletteAsset" Guid="476CD7A0-8C01-41FA-8485-161CA4015289" Directory="SHAREPALETTEDIR">
+        <File Id="FabulorDarkPaletteAssetFile"
+              Source="$(sys.SOURCEFILEDIR)..\..\data\palettes\Fabulor Dark.hct"
+              Name="Fabulor Dark.hct"
+              KeyPath="yes" />
+      </Component>
       <Component Id="Hicolor48AppIconAsset" Guid="8A7D631A-D735-4A93-9A7A-85A1D9DB0FD4" Directory="HICOLOR48APPDIR">
         <File Id="Hicolor48AppIconAssetFile"
               Source="$(sys.SOURCEFILEDIR)..\..\data\icons\fabulor.png"

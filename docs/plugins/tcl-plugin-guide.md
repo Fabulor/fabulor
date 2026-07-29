@@ -98,7 +98,13 @@ proc init {} {
 8. Callback payload JSON now includes richer context such as `source`, `time`, `channel`, `network`, `nick`, `server`, `word1`-`word4`, and `word_eol1`-`word_eol2` where the underlying event provides them.
 9. Use safe mode when diagnosing Tcl startup faults so third-party plugins stay disabled while core startup is verified.
 10. `zoitechat::get_user_info` returns a Tcl key/value list covering `nick`, `channel`, `server`, and `network`.
-11. A maintained sample manifest Tcl plugin lives under `samples\plugins\example.tcl.greeter\`.
+11. Maintained simple and manifest Tcl samples live under `samples\plugins\simple-tcl-greeter\` and `samples\plugins\example.tcl.greeter\`.
 12. `zoitechat::add_user_command name command` registers a runtime User Command alias for the current session. It does not write `commands.conf`; use the built-in User Commands editor for persistent aliases.
 13. Manifest Tcl uses the installed `Runtime\Tcl` root by default. `FABULOR_TCL_RUNTIME_ROOT` and current-working-directory runtime roots are development-only and require `FABULOR_ENABLE_DEVELOPMENT_RUNTIME_ROOTS=1`.
 14. Callback event names are limited to 128 UTF-8 bytes, Tcl handler names to 256 bytes, each plugin to 64 callbacks, and each event to 256 callbacks. Registering the same event/handler pair twice is rejected.
+15. The bundled runtime contains the Tcl 8.6 engine, core library, encodings,
+    timezone/message data, and the standard `platform`, `msgcat`, `http`, and
+    `tcltest` modules. It does not include Tk, Tcl command shells, development
+    libraries, or third-party package collections. Add-ons that need another
+    Tcl package must distribute and load that dependency within their own
+    trusted add-on directory.

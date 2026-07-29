@@ -185,9 +185,9 @@ void fe_menu_sync (void);
 #define FE_SE_RECONDELAY 3
 #define FE_SE_CONNECTING 4
 void fe_server_event (server *serv, int type, int arg);
-/* pass NULL filename2 for default ZoiteChat icon */
+/* pass NULL filename2 for the default Fabulor icon */
 void fe_tray_set_flash (const char *filename1, const char *filename2, int timeout);
-/* pass NULL filename for default ZoiteChat icon */
+/* pass NULL filename for the default Fabulor icon */
 void fe_tray_set_file (const char *filename);
 typedef enum
 {

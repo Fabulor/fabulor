@@ -3395,7 +3395,7 @@ Automated checks:
 - [x] strict GTK4 MSVC probe compiles, links, and executes with 0 warnings and 0 errors
 - [x] fresh MSVC Meson/Ninja probe compiles 41 objects with warnings treated as errors
 - [x] independent Meson runtime test passes 1/1
-- [x] light and dark policy install one and two providers respectively
+- [x] light and dark policy each install one resolved complete provider
 - [x] invalid and missing candidates preserve the active providers and identity
 - [x] disable removes providers and clears active identity and variant state
 - [x] Linux GCC C11 syntax check passes against GTK 4.8.3 with all warnings treated as errors
@@ -7965,6 +7965,1055 @@ reviewed production contract or the accompanying MSI artifact. This closes
 the automated production packaging boundary. Clean-install, in-place upgrade,
 repair, uninstall, accessibility, visual, performance, and live plugin
 acceptance remain open and require controlled installed-client testing.
+
+### GTK4 Stage 9 Clean-Install Layout Acceptance, Pass 22
+
+Date: 2026-07-25
+
+Defects observed: the first clean program installation reused a retained
+profile whose right-pane width was `2`, below its configured `80` minimum, so
+the user list was effectively absent. Pressing the transcript's draggable
+nick/text separator then caused Windows Application Error 1000 with exception
+`c0000005` in the packaged `cairo-2.dll`. The next connection attempt showed
+that Server List checkboxes changed visually but did not persist, and password
+visibility never activated.
+
+Root cause and correction:
+
+- right-pane restoration trusted the captured saved width after initial GTK4
+  allocation; it now clamps the end-child size against the configured minimum,
+  available pane allocation, and handle width
+- transcript separator input called the Cairo drawing path outside a GTK4
+  snapshot, where the reviewed render target correctly returned no context;
+  all immediate transcript drawing now uses one guarded acquisition boundary
+  that queues a widget redraw and returns when no context is active
+- production source guards require the centralized transcript draw boundary
+  and the pane-size clamp to remain in the main-window restore path
+- Server List check controls were GTK4 `GtkCheckButton` objects accessed
+  through incompatible `GtkToggleButton` casts; all network flags, keyring,
+  password visibility, startup skipping, and favorites controls now use the
+  typed GTK4 check-button getter/setter, with a source guard rejecting the
+  retired accessors
+- installed-client follow-up confirmed connection and Server List state, then
+  showed that the GTK4 trailing-box adapter expanded the nickname button and
+  displaced the input field; the adapter now aligns the containing box and
+  leaves its trailing controls at natural width
+- the visible user-list container now owns its configured minimum width, and
+  its position callback ignores hidden or unallocated layout state rather than
+  persisting a transient zero
+- emoji pages now expand inside a viewport calculated from the main-window
+  allocation, bounded from `320 x 240` to `640 x 420`; the current
+  `668 x 429` window receives a `620 x 289` picker instead of a fixed
+  `500 x 330` page plus unconstrained tab chrome
+
+Automated evidence:
+
+- strict GTK4 MSVC probe rebuild and execution: pass with `/W4 /WX`; GTK
+  4.22.4 / GLib 2.88.0 / x64 confirmed
+- pane clamp probe: stale `2`-pixel state normalizes to `80`; valid `120`
+  remains `120`; oversized state clamps to available width; no available space
+  returns zero
+- emoji viewport probe: compact, current-window, and maximum allocation cases
+  resolve to `320 x 240`, `620 x 289`, and `640 x 420`
+- clean full GTK4 frontend rebuild and link: zero warnings and zero errors
+- native extension rebuild and import validation: ten modules, one data file,
+  and 15 owned import edges pass
+- complete GTK4 tooling contract suite: all 78 tests pass
+- theme retirement/import contract suite: all 7 tests pass
+- Python capability/isolation suites: all 16 tests pass
+- native manifest, path, and archive suite: all 22 tests pass
+- production WiX MSI and bootstrapper rebuild: zero warnings and zero errors
+- production MSI validation: 7,623 installed files, zero GTK3 path markers,
+  all 1,431 runtime entries and packaged manifest hashes verified
+- production bundle validation: version `1.0.3`, one embedded MSI chain, and
+  byte-for-byte embedded/published MSI equality
+- production MSI `1.0.4`: 111,524,196 bytes; SHA-256
+  `0310177CFA972B0C719E6FF0B23AA32BBC2B14071294C2D49B185FD31D40B947`
+- production bootstrapper `1.0.4`: 111,825,754 bytes; SHA-256
+  `DE6C99BEAB66E97B52A81FE28590441EADA2536CDA35EA7687E715907BA3207D`
+- repository whitespace validation: pass
+
+Installed acceptance so far: ChatLounge connects and Server List changes now
+take effect. The subsequent `1.0.3` same-version update replaced the frontend
+but omitted newly registered root-level OpenSSL components, and the launcher
+failed with Win32 error 126 because `libssl-3-x64.dll` and
+`libcrypto-3-x64.dll` were absent. The MSI contained those components, but its
+reused product identity did not provide a valid component-graph upgrade. The
+corrected release advances the shared client/MSI/bundle version to `1.0.4`,
+forcing a WiX major upgrade, and regenerates production support from the exact
+OpenSSL 3.6.3 root used to link the frontend.
+
+Acceptance pending: upgrade the installed `1.0.3` client with the corrected
+`1.0.4` bootstrapper, verify the frontend loads and both OpenSSL DLLs are
+installed, confirm the user list is visible with the retained profile, drag
+and release the transcript separator repeatedly, confirm the nickname control
+no longer displaces the edit field, inspect and use the emoji picker at normal
+and maximized sizes, then restart and confirm pane, separator, SSL,
+password-visibility, and input-row behavior remain usable. Add-ons remain
+excluded during this retest.
+
+### GTK4 Stage 9 Installed-Client Visual Acceptance Follow-up, Pass 23
+
+Date: 2026-07-25
+
+The first running `1.0.4` screenshots confirmed the earlier user-list,
+input-width, connection, and emoji viewport improvements and exposed eight
+remaining acceptance defects: leaf-channel carets, topic/server-row spacing,
+late initial server presentation, inactive scroll-to-bottom overlay, inactive
+spell checking, obsolete GTK3 theme wording, and two incorrect Window branches
+in the transcript context menu.
+
+Corrections:
+
+- channel rows below a server no longer publish empty child models, removing
+  false expanders while retaining server-root expansion and child indentation;
+  focusing the initial server row also has a single-dispatch fallback when GTK
+  has not emitted its first selection notification
+- inline topic mode uses zero vertical text padding, and server sessions hide
+  the channel-only nickname box so the edit field starts at the content edge
+- scroll-to-bottom now uses a transcript-owned operation that sets both the
+  adjustment and persistent bottom-follow state before queuing a redraw
+- Preferences labels the retained palette/archive surface `Fabulor Theme`
+- middle-context composition merges every matching add-on path into one
+  canonical submenu; the built-in Window model continues to own Ban List,
+  Character Chart, Direct Chat, transfers, friends, ignore, plug-ins, raw log,
+  URL grabber, transcript controls, and search
+- the clean MSI's spell failure was a package split: WinSpell and ordering data
+  were installed, but `libenchant-2-2.dll` was omitted. WiX now installs the
+  Enchant 2.8.19 core as a required root component, and a source contract
+  requires all three spell payload groups
+
+Automated evidence:
+
+- production profile contract suite: all 24 tests pass
+- strict GTK4 MSVC probe: clean `/W4 /WX` compile, link, and execution; duplicate
+  add-on submenu inputs collapse into one canonical branch
+- full GTK4 frontend rebuild: zero warnings and zero errors
+- complete GTK4 tooling contract suite: all 79 tests pass
+- production MSI validation: 7,624 installed files and zero GTK3 path markers
+- production bundle validation: version `1.0.4`, one embedded MSI, and exact
+  embedded/published MSI equality
+- production MSI: 111,548,871 bytes; SHA-256
+  `C44E07582D78ABD985E9AA3D35AA308E1A42BC9E8146D9D1DCAC2853FF0FCA90`
+- production bootstrapper: 111,850,450 bytes; SHA-256
+  `E41B0F4A713AEC877D834A76794B40F26AAE33953231CE6A5EEBA7EDB4479A16`
+- staged Enchant core SHA-256:
+  `F6B26865B1DB04ACC96F8BACA853D2CBDFA818EC0A363BCA95FC1677CD7E6EAC`
+- repository whitespace validation: pass
+
+Installed acceptance remains open for startup server presentation, the compact
+topic and server input rows, leaf-channel indicators, scroll-to-bottom click,
+live Enchant underlines/suggestions/personal dictionary, Preferences wording,
+and the complete single Window context submenu.
+
+### GTK4 Stage 9 Transcript Interaction Acceptance, Pass 24
+
+Date: 2026-07-26
+
+Installed testing found that transcript drag selection could not target a
+partial line, frequently highlighted an adjacent complete line, and left both
+automatic clipboard publication and `Copy Selection` without the intended
+range. URL hover and activation were also absent.
+
+Root cause and correction:
+
+- the inherited selection stored screen coordinates and repeatedly resolved
+  them through character widths that no longer matched Pango-shaped GTK4 text
+- horizontal hit-testing could continue beyond the selected wrapped row
+- selection now stores stable text-entry and byte-offset anchors
+- Pango resolves the nearest UTF-8-safe insertion boundary using the same
+  shaped run as rendering, including inline flag boundaries
+- hit-testing is constrained to the active wrapped row and uses a visible-row
+  index for bounds checks
+- highlighting, automatic copy, explicit `Copy Selection`, and URL interaction
+  now consume the same pointer-to-text mapping
+
+Automated evidence:
+
+- strict GTK4 MSVC probe: zero warnings and zero errors under `/W4 /WX`
+- full GTK4 frontend and launcher rebuilds: zero warnings and zero errors
+- complete GTK4 tooling contract suite: all 79 tests pass
+- production MSI validation: 7,624 installed files and zero GTK3 path markers
+- runtime validation: all 1,431 manifest entries and content hashes verified
+- production bundle validation: version `1.0.4`, one embedded MSI, and exact
+  embedded/published MSI equality
+- production bootstrapper SHA-256:
+  `E69C2DEE0F929F03C90CFFF6426B4C4369D8EC8FE91E277EAE69E414C6201A57`
+
+Installed acceptance: pass. Precise partial-line selection works, the selected
+range reaches the clipboard through release-to-copy and `Copy Selection`, and
+URL hover/activation works from channel text and topics.
+
+### GTK4 Stage 9 Startup Server-Session Acceptance, Pass 25
+
+Date: 2026-07-26
+
+Installed startup testing with Network List skipped and three auto-connect
+entries found two related presentation defects: server transcripts remained
+blank until connection completion, and each newly created server session took
+focus so the final network replaced the first configured network.
+
+Root cause and correction:
+
+- GTK4 may automatically select the first channel-tree row during insertion,
+  before the old `mg_add_chan()` order created that session's transcript
+  buffer
+- each auto-connect previously delegated null-session creation to
+  `servlist_connect()`, which requested focus for every network
+- transcript buffers and user-list models now exist before channel-tree row
+  insertion, so initial selection presents the correct session buffer
+- auto-connect creates each server session explicitly, focuses only the first
+  configured network, and connects subsequent sessions in the background
+- server rows use their configured network names before connection completion
+
+Automated evidence:
+
+- common core rebuild: zero warnings and zero errors
+- full GTK4 frontend rebuild: zero warnings and zero errors
+- launcher rebuild: zero warnings and zero errors under `/W4 /WX`
+- complete GTK4 tooling contract suite: all 79 tests pass
+- production MSI validation: 7,624 installed files and zero GTK3 path markers
+- runtime validation: all 1,431 manifest entries and content hashes verified
+- production bundle validation: version `1.0.4`, one embedded MSI, and exact
+  embedded/published MSI equality
+- production MSI SHA-256:
+  `BFF50C83948D281C8BE616871BA269D41B080932CA09C1A91A46165A4D585ABC`
+- production bootstrapper SHA-256:
+  `8233B425306988E961FE10AD9E8913CF6F67B99D86CB6EED6E129D573564CD2D`
+
+Installed acceptance: pass. Direct ChatLounge and DALnet connections display
+server lookup and startup information immediately, and the first configured
+network retains focus while later networks connect. An already-connected ZNC
+can complete before its intermediate startup state is observable; that is
+expected and does not leave the server session blank after connection.
+
+### GTK4 Stage 9 User-List Resize-Policy Acceptance, Pass 26
+
+Date: 2026-07-26
+
+Installed testing found that the configured user-list pane width could still
+take effect only after switching channels. Investigation also confirmed that
+the historical `gui_ulist_resizable` command preference had disappeared from
+Fabulor even though HexChat and older ZoiteChat exposed that policy.
+
+Root cause and correction:
+
+- initial right-pane restoration could finish after an early mapped allocation
+  but before final window geometry remained stable
+- the pane already hardcoded non-resizing behavior, but no persisted preference
+  remained to make that policy explicit or selectable
+- restoration now waits for a mapped and visible user list, reapplies the
+  clamped saved width, and requires three stable frames before position
+  notifications can persist a replacement
+- `gui_ulist_resizable` is restored to the preference schema and User List
+  Preferences page, defaults to fixed-width `OFF`, and controls GTK4's
+  `resize-end-child` policy
+- `gui_pane_right_size` owns the complete user-list pane;
+  `gui_ulist_nick_width` remains the nickname-column width within that pane
+
+Automated evidence:
+
+- common core rebuild: zero warnings and zero errors
+- full GTK4 frontend rebuild: zero warnings and zero errors
+- complete GTK4 tooling contract suite: all 79 tests pass
+- production MSI validation: 7,624 installed files and zero GTK3 path markers
+- runtime validation: all 1,431 manifest entries and content hashes verified
+- production bundle validation: version `1.0.4`, one embedded MSI, and exact
+  embedded/published MSI equality
+- production MSI SHA-256:
+  `54873DD8D7E778A9401E04F5BCC559CE43971875E5C0D15775E68973641C201B`
+- production bootstrapper SHA-256:
+  `7BAC9C51D4AFAD90F0AA7DE58B5DD83F6350D935560B451C787AC2F4209B49E0`
+
+Installed acceptance: pass. `gui_ulist_resizable` reports `OFF`, and the
+configured user-list width now applies without the previous channel-switch
+workaround.
+
+### GTK4 Stage 9 Network List Interaction Acceptance, Pass 27
+
+Date: 2026-07-26
+
+Installed testing found that clicking any Network List row immediately entered
+network-name edit mode. Keyboard Up and Down selection did not have the same
+problem.
+
+Root cause and correction:
+
+- each list row directly exposed a pointer-targetable `GtkEditableLabel`, whose
+  internal click handling started editing before the surrounding list could
+  treat the gesture as selection only
+- display labels now decline pointer targeting so a single click reaches the
+  list row and selects it
+- explicit list activation enables targeting and starts editing; edit
+  completion restores the non-targetable display state
+- Add Network still selects the new row and starts its initial rename
+  immediately
+
+Automated evidence:
+
+- full GTK4 frontend rebuild: zero warnings and zero errors
+- complete GTK4 tooling contract suite: all 79 tests pass
+- production MSI and bootstrapper rebuild: zero warnings and zero errors
+- production MSI validation: 7,624 installed files and zero GTK3 path markers
+- runtime validation: all 1,431 manifest entries and content hashes verified
+- production bundle validation: version `1.0.4`, one embedded MSI, and exact
+  embedded/published MSI equality
+- production MSI SHA-256:
+  `FB918E5CE77FE81470792EEC5160EC29104C311CDC5817D0199E45A375765E66`
+- production bootstrapper SHA-256:
+  `C5F9F10B93C8D0D2D18739BD3AAB51A098620D21C5F34E71D7002AAA457BB336`
+
+Installed acceptance: pass. Mouse clicks select networks without entering
+rename mode, while explicit activation and Add Network retain their intended
+editing workflows.
+
+### GTK4 Stage 9 Native Windows Tray Acceptance, Pass 28
+
+Date: 2026-07-26
+
+Installed testing found that `gui_tray_minimize` remained configurable but
+could not hide Fabulor to the system tray.
+
+Root cause and correction:
+
+- retiring the GTK3 tray implementations intentionally left the backend
+  operations table empty and tray capability detection unavailable
+- the replacement backend uses `Shell_NotifyIconW` directly and converts the
+  existing tray-state pixbufs to native alpha icons
+- icon, tooltip, flashing-state, cleanup, activation, context-menu, and
+  Explorer restart behavior are now owned without GTK3 APIs
+- initial restore attempts exposed a second boundary defect: unmapping a
+  minimized GTK4 Win32 surface could leave a correct, visible native HWND
+  without a rendered client surface
+- native tray callbacks now queue visibility actions outside GDK's Win32
+  message filter
+- Windows tray hide/restore preserves GTK's mapped render surface and changes
+  only the existing HWND visibility; the shared state snapshot explicitly
+  reports that native hidden state
+- minimized-state handling no longer depends on the independent GTK active
+  state notification arriving first
+
+Automated evidence:
+
+- full GTK4 frontend rebuild: zero warnings and zero errors
+- complete GTK4 tooling contract suite: all 79 tests pass
+- production MSI and bootstrapper rebuild: zero warnings and zero errors
+- production MSI validation: 7,624 installed files and zero GTK3 path markers
+- runtime validation: all 1,431 manifest entries and content hashes verified
+- production bundle validation: version `1.0.4`, one embedded MSI, and exact
+  embedded/published MSI equality
+- production MSI SHA-256:
+  `99A3ED37B4CCFE162820DB51639607121962D1BAC7E0928786E381CF570AE971`
+- production bootstrapper SHA-256:
+  `01BB103CC87D4EC5669C3F0C99444C240273522C43425C1CC05307CD014BCBED`
+
+Installed acceptance: pass. Repeated cycles pass for minimizing to the Windows
+notification area, left-click restoration, the Restore Window menu command,
+and opening Preferences from the native tray menu.
+
+### GTK4 Stage 9 URL Single-Activation Acceptance, Pass 29
+
+Date: 2026-07-26
+
+Installed testing found that left-clicking a transcript URL opened two browser
+tabs, while right-click **Open Link in Browser** correctly opened one.
+
+Root cause and correction:
+
+- XText uses one GTK4 click controller for pointer press/release and a separate
+  `GtkGestureDrag` for precise text selection
+- the drag controller can complete for a zero-distance primary-button sequence
+- drag completion synthesizes the canonical release needed for selection and
+  automatic clipboard ownership, while the click controller also reports the
+  real release
+- both releases could emit the same URL `word_click`
+- XText now owns a short-lived suppression token and idle-source reference that
+  consumes only the duplicate release from the same gesture sequence
+
+Automated evidence:
+
+- full GTK4 frontend rebuild: zero warnings and zero errors
+- complete GTK4 tooling contract suite: all 79 tests pass
+- production MSI and bootstrapper rebuild: zero warnings and zero errors
+- production MSI validation: 7,624 installed files and zero GTK3 path markers
+- runtime validation: all 1,431 manifest entries and content hashes verified
+- production bundle validation: version `1.0.4`, one embedded MSI, and exact
+  embedded/published MSI equality
+- production MSI SHA-256:
+  `973D88FE418CD3E27C84AA5D465AEC697652A4DEC0B47F0D4AA7B7FAB1948721`
+- production bootstrapper SHA-256:
+  `2C59F241681B3246F8434DD6A0ACCE98C1558B12929A6941E02FF078E13E9EFE`
+
+Installed acceptance: pass. Left-click and right-click **Open Link in Browser**
+each open exactly one browser tab. Text selection and release-to-copy continue
+to work.
+
+### GTK4 Stage 9 Nick Context-Menu Sizing Acceptance, Pass 30
+
+Date: 2026-07-26
+
+Installed testing found that the user-list nick context menu inherited its
+width from hidden identity-detail pages. Long host, server, real-name, country,
+or away values could therefore make the visible root menu much wider than its
+own entries required.
+
+Root cause and correction:
+
+- `GtkPopoverMenu` uses a horizontally homogeneous stack, so every nested page
+  contributes to one natural width
+- making that stack non-homogeneous reduced the root page but exposed GTK's
+  retained allocation during navigation, clipping nick headings and details
+- stable homogeneous page sizing is retained
+- the nick presenter alone constrains generated labels to 32 characters with
+  end ellipsis; complete action values remain available for clipboard copying
+- real names and away messages are plain `GMenu` labels, but the snapshot path
+  previously requested markup escaping and displayed apostrophes as `&apos;`
+- removing that inappropriate escape restores the original plain-text display
+
+Automated evidence:
+
+- full GTK4 frontend rebuild: zero warnings and zero errors
+- complete GTK4 tooling contract suite: all 79 tests pass
+- the presenter probe verifies the generated labels receive the width and
+  ellipsis policy
+- production MSI and bootstrapper rebuild: zero warnings and zero errors
+- production MSI validation: 7,624 installed files and zero GTK3 path markers
+- runtime validation: all 1,431 manifest entries and content hashes verified
+- production bundle validation: version `1.0.4`, one embedded MSI, and exact
+  embedded/published MSI equality
+- production MSI SHA-256:
+  `747BE38243573EBDFDF162F405EA73AEE1D8A5F9EEA12B597AE35683313BBB4F`
+- production bootstrapper SHA-256:
+  `6CF3E0FA268E293182668CAD8B20A8DE890DF7ECC6D2C8720120FDCD11C296A9`
+
+Installed acceptance: pass. The root and identity pages retain practical,
+stable dimensions; nick headings display correctly; long details ellipsize
+cleanly; and away messages display ordinary apostrophes.
+
+### GTK4 Stage 9 Obsolete Identd Retirement, Pass 31
+
+Date: 2026-07-26
+
+Identd was retained as an obsolete built-in service with a dedicated
+Preferences page, persisted settings, command hook, automatic per-connection
+port mapping, and network-listener lifetime.
+
+Removal:
+
+- delete the internal Identd plugin source and header
+- remove its common-core MSVC and Meson registrations and translation source
+- stop registering the built-in plugin and `/IDENTD` command
+- remove automatic local socket-port and username publication after connection
+- retire `identd_server` and `identd_port` from the preference schema and
+  preference structure
+- remove the Identd Preferences page and apply-time reload command
+- remove the Identd-specific preference-change reason and update its focused
+  theme-manager tests
+- old Identd configuration keys are ignored and omitted on the next canonical
+  configuration write
+
+Automated evidence:
+
+- production source/build audit contains no remaining Identd references
+- common-core rebuild: zero warnings and zero errors
+- full GTK4 frontend rebuild: zero warnings and zero errors
+- complete GTK4 tooling contract suite: all 79 tests pass
+- production MSI and bootstrapper rebuild: zero warnings and zero errors
+- production MSI validation: 7,624 installed files and zero GTK3 path markers
+- runtime validation: all 1,431 manifest entries and content hashes verified
+- production bundle validation: version `1.0.4`, one embedded MSI, and exact
+  embedded/published MSI equality
+- production MSI SHA-256:
+  `A01A0EA76E7CCBC7F66DD8E2970EF66FD915DE7926F0BAB56E1E5605DBD0AF59`
+- production bootstrapper SHA-256:
+  `BE2CBEB5C638744E85651788E26839BB1A9A9BCDA33081C1ADFD2703CFA13ED9`
+
+Installed acceptance: pass. Identd is absent from Preferences and the startup
+plugin report, while normal client operation remains intact.
+
+### GTK4 Stage 9 Obsolete User-List Configuration Retirement, Pass 32
+
+Date: 2026-07-26
+
+`gui_ulist_style` survived as an inert compatibility setting. Its only
+remaining references were the configuration schema, default initialization,
+and preference structure; no runtime or frontend behavior read it.
+
+Removal:
+
+- remove `gui_ulist_style` from the persisted preference schema
+- remove its unused default initialization
+- remove `hex_gui_ulist_style` from the preference structure
+- allow old saved values to be ignored and omitted on the next canonical
+  configuration write
+
+Automated evidence:
+
+- complete source audit contains no remaining `gui_ulist_style` references
+- common-core rebuild: zero warnings and zero errors
+- full GTK4 frontend rebuild: zero warnings and zero errors
+- complete GTK4 tooling contract suite: all 79 tests pass
+- production MSI and bootstrapper rebuild: zero warnings and zero errors
+- production MSI validation: 7,624 installed files and zero GTK3 path markers
+- runtime validation: all 1,431 manifest entries and content hashes verified
+- production bundle validation: version `1.0.4`, one embedded MSI, and exact
+  embedded/published MSI equality
+- production MSI SHA-256:
+  `74564D62FC6BA6615B74868FAC1D4B782E711B7652375E4F63D56C15C6AA25BD`
+- production bootstrapper SHA-256:
+  `E8418A0FF644AF06BBF964B0097CFA763C5A091097108A31269ADB0C25450396`
+
+Installed acceptance: pass. `/SET gui_ulist_style` reports no such variable,
+and normal user-list appearance and behavior remain unchanged.
+
+### GTK4 Stage 9 Preferences Navigation Sizing, Pass 33
+
+Date: 2026-07-26
+
+The ellipsized labels in the Preferences category list supplied a very small
+minimum width. Lazy creation of a page with wider content could therefore
+reallocate most of the category frame's width to the notebook and truncate all
+navigation labels.
+
+Fix:
+
+- give the category frame a stable 220-logical-pixel minimum width
+- retain end ellipsis for translated labels that exceed the navigation column
+- extend the focused native GTK4 probe to verify the frame's minimum-width
+  contract when a display is available
+
+Automated evidence:
+
+- strict native GTK4 probe builds and executes with zero warnings and errors
+- full GTK4 frontend rebuild: zero warnings and zero errors
+- complete GTK4 tooling contract suite: all 79 tests pass
+- production MSI and bootstrapper rebuild: zero warnings and zero errors
+- production MSI validation: 7,624 installed files and zero GTK3 path markers
+- runtime validation: all 1,431 manifest entries and content hashes verified
+- production bundle validation: version `1.0.4`, one embedded MSI, and exact
+  embedded/published MSI equality
+- production MSI SHA-256:
+  `A94CB706940AD5D8C12B590D7B48BD9E5745A21032F73E4D62EA4FCB24F24645`
+- production bootstrapper SHA-256:
+  `3D828886ED611C9707C56A7024B202130D430C4363BF4987AC30F854D489228F`
+
+Installed acceptance: pass. Repeated selection across Appearance, General,
+Alerts, Logging, Advanced, Network setup, and File transfers leaves the
+category pane stable and its labels readable.
+
+### GTK4 Stage 9 Obsolete Wingate Proxy Retirement, Pass 34
+
+Date: 2026-07-26
+
+Wingate occupied persisted proxy value `1` and retained separate IRC and DCC
+traversal implementations. Removing the obsolete protocol must not renumber or
+change the behavior of the retained proxy modes.
+
+Removal and compatibility:
+
+- remove Wingate from the Preferences proxy list
+- remove Wingate IRC and DCC traversal and dispatch
+- reserve persisted value `1` as the retired Wingate slot
+- normalize value `1` and invalid values to disabled
+- retain SOCKS4 `2`, SOCKS5 `3`, HTTP `4`, and Auto `5`
+- centralize stored/display mapping, authentication support, DCC eligibility,
+  configuration normalization, and canonical-save behavior
+
+Automated evidence:
+
+- focused proxy-policy probe covers values `0` through `5`, invalid values,
+  sparse menu mapping, authentication support, and DCC proxy eligibility
+- common-core rebuild: zero warnings and zero errors
+- strict native GTK4 probe builds and executes with zero warnings and errors
+- full GTK4 frontend rebuild: zero warnings and zero errors
+- complete GTK4 tooling contract suite: all 79 tests pass
+- production MSI and bootstrapper rebuild: zero warnings and zero errors
+- production MSI validation: 7,624 installed files and zero GTK3 path markers
+- runtime validation: all 1,431 manifest entries and content hashes verified
+- production bundle validation: version `1.0.4`, one embedded MSI, and exact
+  embedded/published MSI equality
+- production MSI SHA-256:
+  `3F2DBBD4D06D4092CC860372464595E2F9F3C4FBA754AEDBC9E2EDB450138EFE`
+- production bootstrapper SHA-256:
+  `8483270883F7EDCE69868A77E7D8702A825E6FB93DE92609BC45683096CEFADA`
+
+Installed acceptance: pass. `/SET net_proxy_type 1` reports normalized value
+`0`, a subsequent query remains `0`, and both ZNC and direct IRC connections
+operate normally. The ordinary unproxied DCC implementation is unchanged; its
+proxy eligibility boundary is covered by the focused policy probe.
+
+### GTK4 Stage 9 SOCKS5 Protocol Hardening, Pass 35
+
+Date: 2026-07-26
+
+SOCKS5 remains supported, but its inherited IRC and DCC implementations used
+separate packet construction, assumed complete socket reads/writes, and could
+accept weaker method negotiation than the configured authentication policy.
+
+Hardening and compatibility:
+
+- add one bounded SOCKS5 protocol owner shared by IRC and DCC
+- support TCP `CONNECT` with no authentication or RFC 1929
+  username/password authentication
+- require complete bounded credentials when authentication is enabled
+- reject unsupported methods and authentication downgrade
+- handle partial socket I/O and interrupted calls
+- validate versions, reserved fields, destination ports, address types, and
+  variable-length replies
+- remove unaligned port encoding and terminate closed queued DCC writes
+- leave SOCKS4 unchanged and `Proposed`
+
+Automated evidence:
+
+- exact-byte SOCKS5 protocol assertions pass under strict MSVC `/W4 /WX`
+- fresh independent Meson/Ninja probe: 1/1 passed
+- full GTK4 common/frontend/launcher build: zero warnings and zero errors
+- Python contract suites: 7/7 and 79/79 passed
+- production installer build: zero warnings and zero errors
+- production MSI validation: 7,624 installed files and zero GTK3 path markers
+- runtime validation: all 1,431 manifest entries and content hashes verified
+- production bundle validation: version `1.0.4`, one embedded MSI, and exact
+  embedded/published MSI equality
+
+Installed acceptance: pass. Direct IRC and ZNC connect through MicroSocks with
+both no authentication and username/password authentication. Disabling
+authentication against the authenticated proxy produces a controlled
+authentication-method rejection.
+
+### GTK4 Stage 9 Right-Pane Allocation Acceptance, Pass 36
+
+Date: 2026-07-26
+
+Applying SOCKS5 Preferences exposed a general GTK4 layout regression:
+temporarily detaching the user list emitted divider notifications, and an early
+pre-maximize allocation could leave the end pane consuming most of the window
+despite a valid saved width.
+
+Fix:
+
+- suppress right-pane persistence while movable layout children are detached
+  and reattached
+- preserve the accepted right-pane size across generic Preferences application
+- schedule one restoration from each final window-surface layout
+- recover an implausibly oversized restored pane to the configured nickname
+  width or pane minimum
+- retain normal user-controlled divider persistence when resizing is enabled
+
+Automated evidence:
+
+- strict native GTK4 probe covers valid, minimum, and oversized recovery
+- full GTK4 frontend and launcher rebuild: zero warnings and zero errors
+- production MSI and bootstrapper rebuild: zero warnings and zero errors
+- production MSI validation: 7,624 installed files and zero GTK3 path markers
+- runtime validation: all 1,431 manifest entries and content hashes verified
+- production bundle validation: version `1.0.4`, one embedded MSI, and exact
+  embedded/published MSI equality
+- production MSI SHA-256:
+  `7870EED4BAE51FA9BA663990CB74867D57E6E5332EE9152BBD48B9CCED0C0242`
+- production bootstrapper SHA-256:
+  `BCAE71D986610B7FA8C953F2DA2315F80C05F99564E686BAA3BD8484820D9452`
+
+Installed acceptance: pass after clean uninstall/install. The user-list pane
+remains stable while switching through all channels, and no channel-switch lag
+was observed.
+
+### GTK4 Stage 9 Inert Configuration Retirement, Pass 37
+
+Date: 2026-07-26
+
+`text_transparent` survived as a persisted compatibility setting despite
+having no behavioral reader in the common core, GTK4 frontend, plugin bridge,
+tests, build, or packaging paths.
+
+Removal and compatibility:
+
+- remove `text_transparent` from the persisted preference schema
+- remove `hex_text_transparent` from `zoitechatprefs`
+- ignore old saved values and omit them on the next canonical configuration
+  write
+- retain background-image and GTK4 theme behavior unchanged
+
+Automated evidence:
+
+- complete production-source audit contains no remaining
+  `text_transparent` references
+- common-core rebuild: zero warnings and zero errors
+- full GTK4 frontend rebuild: zero warnings and zero errors
+- GTK4 tooling contract suite: 79/79 passed
+- theme contract suite: 7/7 passed
+- production MSI and bootstrapper rebuild: zero warnings and zero errors
+- production MSI validation: 7,624 installed files and zero GTK3 path markers
+- runtime validation: all 1,431 manifest entries and content hashes verified
+- production bundle validation: version `1.0.4`, one embedded MSI, and exact
+  embedded/published MSI equality
+- production MSI SHA-256:
+  `35B41BEFCFE0B5E67A61505CBF72909976F29EB8585F5C746542EDE2058DF35B`
+- production bootstrapper SHA-256:
+  `A3E234D5E61F18A71D1218FC27C09B439A15C2C9E8976F7CF104682F318BE904`
+
+Installed acceptance: pass. `/SET text_transparent` reports no such variable
+and supported appearance behavior remains operational.
+
+### GTK4 Stage 9 Server-Time Preference Retirement, Pass 38
+
+Date: 2026-07-26
+
+`irc_cap_server_time` presented a user-facing toggle but did not control
+capability negotiation. Standard and ZNC server-time capabilities were already
+requested whenever advertised, regardless of the saved value.
+
+Removal and compatibility:
+
+- remove `irc_cap_server_time` from the persisted schema, default
+  initialization, and preference structure
+- remove the misleading Preferences toggle
+- retain unconditional negotiation of `server-time`,
+  `znc.in/server-time`, and `znc.in/server-time-iso`
+- retain existing capability state and timestamp parsing
+- ignore old saved values and omit them on the next canonical write
+
+Automated evidence:
+
+- source audit contains no production preference reference while all three
+  server-time negotiation paths and parsing remain present
+- common-core rebuild: zero warnings and zero errors
+- full GTK4 frontend rebuild: zero warnings and zero errors
+- GTK4 tooling contract suite: 79/79 passed
+- theme contract suite: 7/7 passed
+- production MSI and bootstrapper rebuild: zero warnings and zero errors
+- production MSI validation: 7,624 installed files and zero GTK3 path markers
+- runtime validation: all 1,431 manifest entries and content hashes verified
+- production bundle validation: version `1.0.4`, one embedded MSI, and exact
+  embedded/published MSI equality
+- production MSI SHA-256:
+  `09AC261BF257E4D5BCE0C36171F6BE232C73321C12B4286F6A06F1B5006A0E6D`
+- production bootstrapper SHA-256:
+  `69EACE6762F060DA8EFF52BE6B6343DDDB7533F09937B1DE85E5411229340271`
+
+Installed acceptance: pass. `/SET irc_cap_server_time` reports no such
+variable, Preferences no longer exposes the toggle, and normal IRC and ZNC
+timestamps remain operational.
+
+### GTK4 Stage 9 Channel-Switch Latency Acceptance, Pass 39
+
+Date: 2026-07-27
+
+Installed testing found that switching networks and channels could feel
+delayed, particularly on busy channels, despite stable IRC lag measurements.
+An opt-in production profiler separated the synchronous tab switch,
+transcript rewrapping, accessibility refresh, and user-list model attachment.
+
+Diagnosis and fix:
+
+- gate profiling behind `FABULOR_PROFILE_UI`; ordinary launches perform no
+  timing calls or file I/O
+- write enabled diagnostics to `ui-performance.log` in the Fabulor
+  configuration directory
+- identify ordinary synchronous tab replacement at approximately 2 to 3 ms
+- identify isolated stale-width transcript rewraps at approximately 7 to
+  12 ms, limited to the first revisit after viewport-width changes
+- rule out accessibility snapshot work in the measured sessions
+- identify deferred user-list model replacement as the persistent visual
+  delay: attachment began 100 to 150 ms after the transcript in the initial
+  run and 50 to 65 ms after it at high idle priority
+- replace the historical deferred attachment with one synchronous switch
+  transaction so transcript and user list reach the next frame together
+- avoid redundant assignments when the requested user-list model is already
+  attached
+
+Automated evidence:
+
+- full GTK4 frontend rebuild: zero warnings and zero errors
+- GTK4 tooling contract suite: 71/71 passed
+- production MSI and bootstrapper rebuild: zero warnings and zero errors
+- source formatting validation: pass
+
+Installed acceptance: pass. Direct IRC/ZNC channel switching without a proxy
+feels more responsive. Network lag remained approximately 0.2 seconds and was
+not correlated with the local UI delay.
+
+### GTK4 Stage 9 Active Source Retirement, Pass 40
+
+Date: 2026-07-27
+
+The final audit found no GTK3 dependency in the supported application build,
+but did find dormant GTK3 code and stale build metadata: FiSHLiM retained a
+complete GTK3 dialog implementation, Sysinfo retained GTK3 labels, frontend
+comments and one theme test described obsolete GTK3 behavior, and the root
+Makefile referenced a root `meson.build` that no longer existed.
+
+Removal and containment:
+
+- specialize FiSHLiM and Sysinfo to their GTK4 production paths
+- remove obsolete GTK3-facing wording and the unbuilt GTK3 Theme Access test
+- remove the inherited application Makefile, post-install script, and 21
+  non-configurable Meson fragments
+- make `installer\Directory.Build.props` the sole version source for the
+  supported MSVC resource generator
+- retain `tools\gtk4\meson.build` and `meson_options.txt` as the isolated strict
+  GTK4 probe
+- retain negative validators for GTK3 headers, DLLs, imports, runtime roots,
+  theme files, and source reintroduction
+- replace GTK 4.22-deprecated pixbuf texture conversion with one
+  lifetime-correct `GdkMemoryTexture` helper
+- reconcile `api-inventory.md` as a completed GTK4 inventory, separating its
+  historical migration record from authoritative final-state tables
+
+Automated evidence:
+
+- production-source audit: zero active GTK3 references
+- strict GTK4 MSVC probe: pass
+- fresh MSVC Meson/Ninja probe: 60-step build and runtime test 1/1 pass
+- full Release x64 solution: zero warnings and zero errors
+- GTK4 tooling contracts: 79/79 passed
+- theme contracts: 7/7 passed
+- production MSI and bootstrapper rebuild: zero warnings and zero errors
+- production MSI validation: 7,624 installed files and zero GTK3 path markers
+- runtime validation: all 1,431 manifest entries and content hashes verified
+- native import validation: 35 files, 107 packaged edges, and 54 reviewed
+  system imports
+- frontend bootstrap validation: launcher 9 imports, frontend 32 imports, and
+  `fabulor_frontend_main` resolved
+- production bundle validation: version `1.0.4`, one embedded MSI, and exact
+  embedded/published MSI equality
+- production MSI SHA-256:
+  `C303C78D46A48A2844C0B5ABE4160469D6D486AFBEF04F7B467D5C69EDE186A3`
+- production bootstrapper SHA-256:
+  `FD08D77067709078A797D1E44C9DA8B18BE63FD06DF595833866E03603AB1D78`
+
+Installed acceptance is not required for deleting inactive build metadata.
+The GTK4 pixbuf path remains covered by the strict probes and complete frontend
+build; ordinary installed-client visual acceptance remains part of the
+existing Stage 9 validation workflow.
+
+### GTK4 Stage 9 Tcl Runtime Payload Minimization, Pass 41
+
+Date: 2026-07-27
+
+The installed Tcl feature inherited an entire general-purpose distribution:
+5,588 files and 96.34 MiB, including Tk, command shells, import libraries,
+build tools, source/tests/examples, and unrelated third-party packages.
+Fabulor directly loads only the Tcl engine and initializes an interpreter
+against the Tcl 8.6 core library.
+
+Removal and containment:
+
+- replace whole-tree `Runtime\Tcl\bin` and `lib` staging with an explicit
+  embedded-runtime allowlist
+- retain `tcl86t.dll`, Tcl 8.6 core scripts, encodings, timezone/message data,
+  and reviewed `platform`, `msgcat`, `http`, and `tcltest` modules
+- exclude Tk, Tcl command shells, import/stub libraries, Critcl, TLS, SQLite,
+  Tcllib, TWAPI, and other third-party package collections
+- document that add-ons requiring other Tcl packages must distribute and load
+  those dependencies within their trusted add-on directory
+- lock the absence of broad Tcl tree entries in the staging contract tests
+
+Automated evidence:
+
+- plugin-host staging tests: 7/7 passed
+- production WiX profile tests: 24/24 passed
+- isolated staged-root Tcl 8.6 initialization: pass
+- standard `platform`, `msgcat`, `http`, and `tcltest` package loading: pass
+- CP1252 encoding round trip and `Australia/Sydney` timezone formatting: pass
+- maintained simple and manifest Tcl sample initialization: pass
+- staged Tcl payload: 825 files, 4.95 MiB
+- staged payload contains no Tk, shell executable, development library, or
+  known third-party package tree
+- production MSI and bootstrapper rebuild: zero warnings and zero errors
+- production MSI validation: 2,861 installed files and zero GTK3 path markers
+- runtime validation: all 1,431 GTK4 manifest entries and content hashes
+  verified
+- production bundle validation: version `1.0.4`, one embedded MSI, and exact
+  embedded/published MSI equality
+- production MSI SHA-256:
+  `F5354A39D203CD4B5D79D269126A602F90A7C8E9F5D4C10B98642A2ACD2CD7C7`
+- production bootstrapper SHA-256:
+  `7C15552E3F9058959FB948D6BE81E5AB2CCCEADE8B6409DD4F2C84BDBDD95E2B`
+
+Installed acceptance: pass. A clean uninstall/reinstall starts normally, the
+reduced installed `Runtime\Tcl` payload is present, and the configured Tcl
+scripts load and function correctly.
+
+### GTK4 Installed Sound Preferences Acceptance
+
+Date: 2026-07-28
+
+The GTK4 sound-event table previously depended on row-property class
+initialization order. On the first Preferences opening after process startup,
+the table contained rows but rendered the empty sound-file property in both
+columns. Reopening Preferences initialized the row class and made event names
+appear. The Sounds page also influenced the dialog's natural size when created
+lazily.
+
+Resolution and automated evidence:
+
+- select event-name and sound-file values by explicit column identity rather
+  than cached property metadata
+- create the GTK4 probe view before appending rows to preserve the cold-start
+  construction order
+- let the Sounds page expand within a stable `900 x 600` Preferences default
+  size instead of imposing a page-specific minimum
+- strict GTK4 MSVC probe: pass with zero warnings and zero errors
+- Release x64 GTK4 frontend build: pass with zero warnings and zero errors
+- MSI and bootstrapper build: pass with zero warnings and zero errors, with
+  external ICE validation suppressed because the Windows Installer service
+  was unavailable in the build session
+
+Installed acceptance: pass after a clean install. The complete event list
+renders on the first Sounds-page opening, Preferences retains its dimensions
+when switching pages, a Windows `notify.wav` file can be assigned to `Add
+Notify` and played, and the assignment persists after restarting Fabulor.
+
+## GTK4 Desktop-Theme Archive Import (2026-07-28)
+
+Scope: contained profile-theme installation and Appearance-page integration.
+
+Automated evidence:
+
+- 33 common/security tests pass, including contained GTK4 extraction,
+  overwrite refusal, and the external six-theme `Orchis-Grey.tar.xz` fixture
+- the real fixture imports all six GTK4 variants in approximately one second
+  without extracting its unrelated symbolic links
+- common and GTK4 frontend Release x64 builds pass with zero warnings and zero
+  errors
+- the theme contract requires bounded private-copy inspection, path and tree
+  validation, background UI dispatch, and the supported archive selector
+
+Initial installed acceptance failed. Import produced visible flashing and
+selecting an Orchis theme left the UI unresponsive. The corrective candidate:
+
+- consolidates the six validated roots into one extraction process
+- refreshes only selector metadata after import instead of touching the live
+  global style provider
+- defers and coalesces dropdown application until GTK has closed its popup
+- resolves light/dark policy to one complete stylesheet instead of layering
+  `gtk-dark.css` over the complete `gtk.css`
+
+Corrective automated evidence: all 33 common/security tests pass; the real
+six-theme fixture imports in approximately 0.9 seconds; the strict GTK4 probe
+and common/frontend Release x64 builds pass with zero warnings and zero errors;
+the MSI and bootstrapper also rebuild with zero warnings and zero errors.
+Installed acceptance must be repeated before this stage is committed.
+
+The corrective installed selection test no longer froze or crashed. GTK
+rejected `Orchis-Grey/gtk-4.0/gtk-dark.css` at line 8652 because the archive
+contains uncompiled Sass `$...` tokens and an unsupported
+`@define-color ... var(...)` value. Fabulor displayed the parser error and
+returned to the system theme.
+
+The importer now checks the required `gtk.css` and optional `gtk-dark.css`
+inside private staging and rejects those two unmistakable uncompiled or
+unsupported forms before moving any theme root into the profile catalogue.
+It does not execute a theme's installer or attempt an ad hoc stylesheet
+rewrite. Automated evidence:
+
+- 36 common/security tests pass, including synthetic uncompiled-CSS and
+  unsupported-define rejection with no installed destination
+- real `Orchis-Grey.tar.xz` negative fixture: rejected in staging
+- real `Nordic-darker.tar.xz` positive fixture: contained import passes
+- 12 theme-contract tests pass
+- common Release x64 test build: zero warnings and zero errors
+- strict GTK4 probe and execution under `/W4 /WX`: zero warnings and zero
+  errors; a clean process environment avoided the calling shell's duplicate
+  `Path`/`PATH` keys
+- common, GTK4 frontend, and launcher Release x64 builds: zero warnings and
+  zero errors
+- production MSI and bootstrapper rebuild: zero warnings and zero errors
+
+Installed import acceptance remains required.
+
+The installed import test also exposed visible console flashing while the
+system archive tool performed its inventory and extraction passes. GLib's
+portable subprocess API does not expose Windows' no-console creation flag, so
+the Windows archive boundary now starts the exact validated `tar.exe` path with
+`CreateProcessW`, `CREATE_NO_WINDOW`, hidden and redirected standard handles,
+and the same argument-vector and bounded-output contract. Non-Windows builds
+retain the GLib subprocess path.
+
+Post-change automated evidence:
+
+- all 36 common/security tests pass
+- real Nordic positive and Orchis negative archive fixtures pass
+- strict GTK4 probe compiles and executes under `/W4 /WX` with zero warnings
+  and zero errors
+- common and GTK4 frontend Release x64 builds: zero warnings and zero errors
+- production MSI and bootstrapper rebuild: zero warnings and zero errors
+
+Installed acceptance: pass. `Nordic-darker.tar.xz` imported without console
+flashing, applied successfully as a GTK4 desktop theme with `Prefer dark`
+selected, and switching back to `System default` restored the system
+appearance correctly.
+
+Project policy records OpenDesktop.org as the sole approved acquisition source
+for Fabulor desktop themes. The client does not download from or assign trust
+to that source; imported archives remain subject to all containment and CSS
+compatibility checks.
+
+### Bundled Fabulor Dark palette
+
+Boundary: one original colours-only starter palette may ship independently
+from GTK4 desktop themes. `Fabulor Dark.hct` contains exactly the tracked
+`colors.conf` source and no event definitions or executable content. The
+installed archive remains read-only under `share/palettes`; profile `.hct`
+files remain under `%APPDATA%\Fabulor\themes` and take precedence on a
+case-insensitive name collision.
+
+Automated evidence:
+
+- 37 common/security tests pass, including bundled discovery and profile
+  precedence
+- 14 theme-contract tests pass
+- common, GTK4 frontend, and launcher Release x64 builds complete with zero
+  warnings and zero errors
+- production MSI and bootstrapper build with zero warnings and zero errors
+- decompiled production MSI contains `share/palettes/Fabulor Dark.hct`,
+  reports 2,862 installed files, and contains zero legacy GTK files
+
+Installed acceptance: pass. `Fabulor Dark` appears in the Colours palette
+selector from the read-only installed archive, previews and applies correctly,
+and preserves the existing Cancel and OK transaction behaviour.
+
+### System-default menu indicator containment
+
+Boundary: the application-wide dark/light window stylesheet must not style
+every internal box below the GTK4 menu bar. Popover-menu indicator boxes belong
+to the selected desktop theme, including System default.
+
+Validation:
+
+- removed the legacy `menubar box` and `menubar box:backdrop` selectors from
+  the application-wide dark/light stylesheet;
+- retained the top-level menu-bar and menu-item styling;
+- left the colours-only palette stylesheet unchanged;
+- focused theme tests and the Release frontend/installer build must pass.
+
+Installed acceptance: pass after a clean uninstall/reinstall. Under System
+default, View, View > Channel Switcher > Tabs/Tree, and Server render checked
+and highlighted commands without opaque blocks in the indicator column.
+
+### Initial server transcript attachment
+
+Boundary: selecting the first auto-connect server row may occur before GTK4
+assigns the transcript widget a usable size. Connection output must still
+target the selected server buffer immediately, particularly when an
+already-connected ZNC completes startup before the first allocation.
+
+Validation:
+
+- `gtk_xtext_buffer_show()` now attaches the requested buffer when initial
+  geometry is unavailable;
+- the first normal allocation remains responsible for final wrapping,
+  adjustment, and rendering;
+- incoming self-JOINs take foreground only when they match an explicit
+  `/JOIN`, Join dialog, or IRC URL request; ZNC/autojoin channel creation
+  cannot replace the retained startup server tab;
+- no connection delay or synthetic channel selection is introduced;
+- the strict GTK4 probe and Release frontend/installer build must pass.
+
+Installed acceptance: pass. With multiple ZNC auto-connect entries, the first
+connected network remained selected with its complete MOTD and server status
+visible after autojoins finished. A direct non-ZNC connection behaved the same
+way, while an explicitly requested channel continued to take foreground.
 
 ## Stage Completion Rule
 

@@ -25,6 +25,11 @@
 #include <gdk/gdkkeysyms.h>
 
 #include "../common/zoitechat.h"
+#ifdef USE_OPENSSL
+#include <openssl/err.h>
+#include <openssl/ssl.h>
+#include <openssl/x509.h>
+#endif
 #include "../common/zoitechatc.h"
 #include "../common/servlist.h"
 #include "../common/cfgfiles.h"
@@ -94,8 +99,6 @@ static GtkWidget *edit_entry_real;
 static GtkWidget *edit_entry_pass;
 static GtkWidget *edit_check_show_pass;
 static GtkWidget *edit_check_use_keyring;
-static GtkWidget *edit_button_encrypt_pass;
-static GtkWidget *edit_button_import_pass;
 static int edit_pass_changed;
 static char *edit_loaded_password;
 static GtkWidget *edit_label_nick;
@@ -104,7 +107,6 @@ static GtkWidget *edit_label_real;
 static GtkWidget *edit_label_user;
 static GtkWidget *edit_trees[N_TREES];
 static FabulorServerEntryList *edit_lists[N_TREES];
-static GtkWidget *edit_button_cert_generate;
 static GtkWidget *edit_button_cert_import;
 static GtkWidget *edit_button_cert_info;
 static GtkWidget *edit_button_cert_delete;
@@ -125,21 +127,6 @@ static void servlist_network_row_cb (gpointer identity, gpointer user_data);
 static GtkWidget *servlist_open_edit (GtkWidget *parent, ircnet *net);
 static void servlist_password_changed_cb (GtkEditable *editable, gpointer userdata);
 static void servlist_network_list_release (void);
-
-static void
-servlist_update_password_tools (ircnet *net)
-{
-	gboolean has_local;
-	gboolean use_keyring;
-
-	if (!edit_button_encrypt_pass || !edit_button_import_pass)
-		return;
-
-	use_keyring = net && (net->flags & FLAG_USE_KEYRING);
-	has_local = net && net->pass && *net->pass && !use_keyring && !edit_pass_changed;
-	gtk_widget_set_sensitive (edit_button_encrypt_pass, has_local && !servlist_password_is_encrypted (net->pass));
-	gtk_widget_set_sensitive (edit_button_import_pass, has_local);
-}
 
 static void
 servlist_entry_set_text_silent (GtkWidget *entry, const char *text)
@@ -164,9 +151,9 @@ servlist_display_password (ircnet *net)
 }
 
 static void
-servlist_toggle_show_password_cb (GtkToggleButton *toggle, gpointer userdata)
+servlist_toggle_show_password_cb (GtkWidget *toggle, gpointer userdata)
 {
-	if (gtk_toggle_button_get_active (toggle))
+	if (fabulor_gtk_check_button_get_active (toggle))
 	{
 		char *password = servlist_display_password (selected_net);
 		if (password)
@@ -193,12 +180,6 @@ servlist_toggle_show_password_cb (GtkToggleButton *toggle, gpointer userdata)
 
 
 static void
-servlist_toggle_keyring_cb (GtkToggleButton *toggle, gpointer userdata)
-{
-	servlist_update_password_tools (selected_net);
-}
-
-static void
 servlist_password_changed_cb (GtkEditable *editable, gpointer userdata)
 {
 	edit_pass_changed = 1;
@@ -208,83 +189,6 @@ servlist_password_changed_cb (GtkEditable *editable, gpointer userdata)
 		g_free (edit_loaded_password);
 		edit_loaded_password = NULL;
 	}
-	servlist_update_password_tools (selected_net);
-}
-
-static void
-servlist_encrypt_password_cb (GtkWidget *button, gpointer userdata)
-{
-	ircnet *net = userdata;
-	char *plain;
-	char *enc;
-
-	if (!net || (net->flags & FLAG_USE_KEYRING) || !net->pass || servlist_password_is_encrypted (net->pass))
-		return;
-
-	plain = servlist_password_decrypt_for_storage (net->pass);
-	if (!plain || !*plain)
-	{
-		if (plain)
-		{
-			memset (plain, 0, strlen (plain));
-			g_free (plain);
-		}
-		return;
-	}
-
-	enc = servlist_password_encrypt_for_storage (plain);
-	memset (plain, 0, strlen (plain));
-	g_free (plain);
-	if (!enc)
-	{
-		fe_message (_("Could not encrypt this password."), FE_MSG_WARN);
-		return;
-	}
-
-	g_free (net->pass);
-	net->pass = enc;
-	servlist_save ();
-	servlist_update_password_tools (net);
-}
-
-static void
-servlist_import_password_cb (GtkWidget *button, gpointer userdata)
-{
-	ircnet *net = userdata;
-	char *plain;
-
-	if (!net || !net->name || (net->flags & FLAG_USE_KEYRING) || !net->pass || !*net->pass)
-		return;
-
-	plain = servlist_password_decrypt_for_storage (net->pass);
-	if (!plain || !*plain)
-	{
-		if (plain)
-		{
-			memset (plain, 0, strlen (plain));
-			g_free (plain);
-		}
-		return;
-	}
-
-	if (!secretstore_set_network_password (net->name, plain))
-	{
-		memset (plain, 0, strlen (plain));
-		g_free (plain);
-		fe_message (_("Could not move this password into the system keyring."), FE_MSG_WARN);
-		return;
-	}
-
-	memset (plain, 0, strlen (plain));
-	g_free (plain);
-	g_free (net->pass);
-	net->pass = NULL;
-	net->flags |= FLAG_USE_KEYRING;
-	gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (edit_check_use_keyring), TRUE);
-	servlist_entry_set_text_silent (edit_entry_pass, "***");
-	edit_pass_changed = 0;
-	servlist_save ();
-	servlist_update_password_tools (net);
 }
 
 static char *
@@ -317,8 +221,6 @@ servlist_update_cert_buttons (ircnet *net)
 {
 	gboolean has_cert = servlist_network_cert_exists (net);
 
-	if (edit_button_cert_generate)
-		gtk_widget_set_visible (edit_button_cert_generate, !has_cert);
 	if (edit_button_cert_import)
 		gtk_widget_set_visible (edit_button_cert_import, !has_cert);
 	if (edit_button_cert_info)
@@ -361,6 +263,66 @@ servlist_cert_import_parent_finalized_cb (gpointer user_data, GObject *parent)
 	servlist_cert_import_parent_gone (GTK_NATIVE_DIALOG (user_data));
 }
 
+#ifdef USE_OPENSSL
+static SSL_CTX *
+servlist_open_client_cert_context (const char *cert_file, char **error_text)
+{
+	SSL_CTX *ctx;
+	unsigned long error_code;
+	char error_buffer[256];
+
+	if (error_text)
+		*error_text = NULL;
+
+	ERR_clear_error ();
+	ctx = SSL_CTX_new (TLS_client_method ());
+	if (ctx &&
+		 SSL_CTX_use_certificate_chain_file (ctx, cert_file) == 1 &&
+		 SSL_CTX_use_PrivateKey_file (ctx, cert_file, SSL_FILETYPE_PEM) == 1 &&
+		 SSL_CTX_check_private_key (ctx) == 1)
+		return ctx;
+
+	error_code = ERR_get_error ();
+	if (error_text)
+	{
+		if (error_code)
+		{
+			ERR_error_string_n (error_code, error_buffer, sizeof (error_buffer));
+			*error_text = g_strdup (error_buffer);
+		}
+		else
+			*error_text = g_strdup (_("The file must contain a matching PEM client certificate and private key."));
+	}
+
+	if (ctx)
+		SSL_CTX_free (ctx);
+	return NULL;
+}
+
+static char *
+servlist_format_certificate_time (const ASN1_TIME *time)
+{
+	BIO *bio;
+	char *data;
+	long length;
+	char *formatted;
+
+	bio = BIO_new (BIO_s_mem ());
+	if (!bio)
+		return g_strdup (_("Unknown"));
+	if (ASN1_TIME_print (bio, time) != 1)
+	{
+		BIO_free (bio);
+		return g_strdup (_("Unknown"));
+	}
+
+	length = BIO_get_mem_data (bio, &data);
+	formatted = g_strndup (data, length > 0 ? (gsize)length : 0);
+	BIO_free (bio);
+	return formatted;
+}
+#endif
+
 static void
 servlist_cert_import_response_cb (GtkNativeDialog *dialog, gint response_id,
 								 gpointer user_data)
@@ -370,8 +332,13 @@ servlist_cert_import_response_cb (GtkNativeDialog *dialog, gint response_id,
 	GtkWidget *message;
 	char *source_file = NULL;
 	char *contents = NULL;
+	char *validation_error = NULL;
 	gsize length = 0;
 	gboolean imported = FALSE;
+#ifdef USE_OPENSSL
+	SSL_CTX *validation_ctx = NULL;
+	gboolean valid_certificate = FALSE;
+#endif
 
 	parent = g_weak_ref_get (&data->parent);
 	if (parent)
@@ -390,7 +357,15 @@ servlist_cert_import_response_cb (GtkNativeDialog *dialog, gint response_id,
 			GTK_FILE_CHOOSER (dialog));
 		if (source_file)
 		{
-			if (g_mkdir_with_parents (data->cert_dir, 0700) == 0 &&
+#ifdef USE_OPENSSL
+			validation_ctx = servlist_open_client_cert_context (source_file,
+																		  &validation_error);
+			valid_certificate = validation_ctx != NULL;
+			if (validation_ctx)
+				SSL_CTX_free (validation_ctx);
+
+			if (valid_certificate &&
+				g_mkdir_with_parents (data->cert_dir, 0700) == 0 &&
 				g_file_get_contents (source_file, &contents, &length, NULL) &&
 				g_file_set_contents (data->cert_file, contents, length, NULL))
 			{
@@ -400,6 +375,9 @@ servlist_cert_import_response_cb (GtkNativeDialog *dialog, gint response_id,
 					selected_net->name && !strcmp (selected_net->name, data->network_name))
 					servlist_update_cert_buttons (selected_net);
 			}
+#else
+			validation_error = g_strdup (_("TLS support is unavailable in this build."));
+#endif
 
 			message = gtk_message_dialog_new (parent,
 											 GTK_DIALOG_DESTROY_WITH_PARENT | GTK_DIALOG_MODAL,
@@ -409,6 +387,9 @@ servlist_cert_import_response_cb (GtkNativeDialog *dialog, gint response_id,
 											 _("Client certificate imported for \"%s\".") :
 											 _("Failed to import client certificate for \"%s\"."),
 											 data->network_name);
+			if (!imported && validation_error)
+				gtk_message_dialog_format_secondary_text (
+					GTK_MESSAGE_DIALOG (message), "%s", validation_error);
 			theme_manager_attach_window (message);
 			g_signal_connect (message, "response",
 				G_CALLBACK (fabulor_gtk_dialog_destroy_on_response), NULL);
@@ -416,6 +397,7 @@ servlist_cert_import_response_cb (GtkNativeDialog *dialog, gint response_id,
 		}
 	}
 
+	g_free (validation_error);
 	g_free (contents);
 	g_free (source_file);
 	g_clear_object (&parent);
@@ -458,10 +440,8 @@ servlist_import_client_cert_cb (GtkWidget *button, gpointer userdata)
 	fabulor_gtk_file_chooser_set_local_only (GTK_FILE_CHOOSER (dialog), TRUE);
 	gtk_file_chooser_set_select_multiple (GTK_FILE_CHOOSER (dialog), FALSE);
 	filter = gtk_file_filter_new ();
-	gtk_file_filter_set_name (filter, _("Certificate files"));
+	gtk_file_filter_set_name (filter, _("PEM client certificate and private key"));
 	gtk_file_filter_add_pattern (filter, "*.pem");
-	gtk_file_filter_add_pattern (filter, "*.crt");
-	gtk_file_filter_add_pattern (filter, "*.cer");
 	gtk_file_chooser_add_filter (GTK_FILE_CHOOSER (dialog), filter);
 	filter = gtk_file_filter_new ();
 	gtk_file_filter_set_name (filter, _("All files"));
@@ -479,187 +459,59 @@ servlist_import_client_cert_cb (GtkWidget *button, gpointer userdata)
 }
 
 static void
-servlist_generate_client_cert_cb (GtkWidget *button, gpointer userdata)
-{
-#ifdef USE_OPENSSL
-	ircnet *net = (ircnet *)userdata;
-	GtkWidget *dialog;
-	char *cert_dir;
-	char *cert_file;
-	char *key_file;
-	char *crt_file;
-	char *subject;
-	char *openssl_conf;
-	const char *conf_data;
-	char *key_data;
-	char *crt_data;
-	char *pem_data;
-	char *stderr_data;
-	char *stdout_data;
-	gsize key_len;
-	gsize crt_len;
-	gboolean spawned;
-	gboolean success;
-	gint status;
-	char *argv[20];
-	char **envp;
-
-	if (!net || !net->name || !net->name[0])
-		return;
-
-	cert_dir = g_build_filename (get_xdir (), "certs", NULL);
-	cert_file = servlist_get_cert_file (net);
-	key_file = g_strdup_printf ("%s" G_DIR_SEPARATOR_S "%s.key", cert_dir, net->name);
-	crt_file = g_strdup_printf ("%s" G_DIR_SEPARATOR_S "%s.crt", cert_dir, net->name);
-	subject = g_strdup_printf ("/CN=%s", net->name);
-	openssl_conf = g_build_filename (cert_dir, "openssl.cnf", NULL);
-	conf_data = "[req]\n"
-					"distinguished_name=req_distinguished_name\n"
-					"[req_distinguished_name]\n";
-	key_data = NULL;
-	crt_data = NULL;
-	pem_data = NULL;
-	stderr_data = NULL;
-	stdout_data = NULL;
-	key_len = 0;
-	crt_len = 0;
-	success = FALSE;
-	status = 0;
-	envp = g_environ_unsetenv (g_get_environ (), "LD_LIBRARY_PATH");
-
-	if (g_mkdir_with_parents (cert_dir, 0700) == 0 &&
-		 g_file_set_contents (openssl_conf, conf_data, -1, NULL))
-	{
-		argv[0] = "openssl";
-		argv[1] = "req";
-		argv[2] = "-x509";
-		argv[3] = "-newkey";
-		argv[4] = "ec";
-		argv[5] = "-pkeyopt";
-		argv[6] = "ec_paramgen_curve:P-256";
-		argv[7] = "-sha256";
-		argv[8] = "-days";
-		argv[9] = "3650";
-		argv[10] = "-nodes";
-		argv[11] = "-keyout";
-		argv[12] = key_file;
-		argv[13] = "-out";
-		argv[14] = crt_file;
-		argv[15] = "-config";
-		argv[16] = openssl_conf;
-		argv[17] = "-subj";
-		argv[18] = subject;
-		argv[19] = NULL;
-
-		spawned = g_spawn_sync (NULL, argv, envp, G_SPAWN_SEARCH_PATH, NULL, NULL,
-									 &stdout_data, &stderr_data, &status, NULL);
-		if (spawned && g_spawn_check_exit_status (status, NULL) &&
-			 g_file_get_contents (key_file, &key_data, &key_len, NULL) &&
-			 g_file_get_contents (crt_file, &crt_data, &crt_len, NULL))
-		{
-			pem_data = g_strconcat (key_data, crt_data, NULL);
-			if (pem_data && g_file_set_contents (cert_file, pem_data, -1, NULL))
-			{
-				g_chmod (cert_file, 0600);
-				success = TRUE;
-			}
-		}
-	}
-
-	g_remove (key_file);
-	g_remove (crt_file);
-	g_remove (openssl_conf);
-
-	if (success)
-	{
-		servlist_update_cert_buttons (net);
-		dialog = gtk_message_dialog_new (GTK_WINDOW (edit_win),
-												 GTK_DIALOG_DESTROY_WITH_PARENT | GTK_DIALOG_MODAL,
-												 GTK_MESSAGE_INFO,
-												 GTK_BUTTONS_CLOSE,
-												 _("Client certificate generated for \"%s\"."),
-												 net->name);
-	}
-	else
-	{
-		dialog = gtk_message_dialog_new (GTK_WINDOW (edit_win),
-												 GTK_DIALOG_DESTROY_WITH_PARENT | GTK_DIALOG_MODAL,
-												 GTK_MESSAGE_ERROR,
-												 GTK_BUTTONS_CLOSE,
-												 _("Failed to generate the client certificate for \"%s\"."),
-												 net->name);
-		if (stderr_data && stderr_data[0])
-			gtk_message_dialog_format_secondary_text (GTK_MESSAGE_DIALOG (dialog), "%s", stderr_data);
-	}
-	theme_manager_attach_window (dialog);
-	g_signal_connect (dialog, "response",
-		G_CALLBACK (fabulor_gtk_dialog_destroy_on_response), NULL);
-	gtk_widget_show (dialog);
-
-	g_free (stdout_data);
-	g_free (stderr_data);
-	g_free (pem_data);
-	g_free (key_data);
-	g_free (crt_data);
-	g_free (subject);
-	g_free (crt_file);
-	g_free (key_file);
-	g_free (openssl_conf);
-	g_free (cert_file);
-	g_free (cert_dir);
-	g_strfreev (envp);
-#else
-	return;
-#endif
-}
-
-static void
 servlist_cert_info_cb (GtkWidget *button, gpointer userdata)
 {
 #ifdef USE_OPENSSL
 	ircnet *net = (ircnet *)userdata;
 	GtkWidget *dialog;
 	char *cert_file;
-	char *stdout_data;
-	char *stderr_data;
-	gboolean spawned;
-	gint status;
-	char *argv[12];
-	char **envp;
+	char *error_text = NULL;
+	char *subject = NULL;
+	char *issuer = NULL;
+	char *not_before = NULL;
+	char *not_after = NULL;
+	char *details = NULL;
+	SSL_CTX *ctx;
+	X509 *cert;
+	unsigned char digest[EVP_MAX_MD_SIZE];
+	unsigned int digest_length = 0;
+	GString *fingerprint;
+	unsigned int i;
 
 	cert_file = servlist_get_cert_file (net);
 	if (!cert_file)
 		return;
 
-	stdout_data = NULL;
-	stderr_data = NULL;
-	status = 0;
-	envp = g_environ_unsetenv (g_get_environ (), "LD_LIBRARY_PATH");
-	argv[0] = "openssl";
-	argv[1] = "x509";
-	argv[2] = "-in";
-	argv[3] = cert_file;
-	argv[4] = "-noout";
-	argv[5] = "-subject";
-	argv[6] = "-issuer";
-	argv[7] = "-startdate";
-	argv[8] = "-enddate";
-	argv[9] = "-fingerprint";
-	argv[10] = "-sha256";
-	argv[11] = NULL;
-
-	spawned = g_spawn_sync (NULL, argv, envp, G_SPAWN_SEARCH_PATH, NULL, NULL,
-								 &stdout_data, &stderr_data, &status, NULL);
-
-	if (spawned && g_spawn_check_exit_status (status, NULL) && stdout_data && stdout_data[0])
+	ctx = servlist_open_client_cert_context (cert_file, &error_text);
+	cert = ctx ? SSL_CTX_get0_certificate (ctx) : NULL;
+	if (cert)
 	{
+		subject = X509_NAME_oneline (X509_get_subject_name (cert), NULL, 0);
+		issuer = X509_NAME_oneline (X509_get_issuer_name (cert), NULL, 0);
+		not_before = servlist_format_certificate_time (X509_get0_notBefore (cert));
+		not_after = servlist_format_certificate_time (X509_get0_notAfter (cert));
+		fingerprint = g_string_new (NULL);
+		if (X509_digest (cert, EVP_sha256 (), digest, &digest_length) == 1)
+		{
+			for (i = 0; i < digest_length; i++)
+				g_string_append_printf (fingerprint, "%s%02X",
+											 i ? ":" : "", digest[i]);
+		}
+		details = g_strdup_printf (
+			_("Subject: %s\nIssuer: %s\nValid from: %s\nValid until: %s\nSHA-256 fingerprint: %s"),
+			subject ? subject : _("Unknown"),
+			issuer ? issuer : _("Unknown"),
+			not_before, not_after,
+			fingerprint->len ? fingerprint->str : _("Unknown"));
+		g_string_free (fingerprint, TRUE);
+
 		dialog = gtk_message_dialog_new (GTK_WINDOW (edit_win),
 												 GTK_DIALOG_DESTROY_WITH_PARENT | GTK_DIALOG_MODAL,
 												 GTK_MESSAGE_INFO,
 												 GTK_BUTTONS_CLOSE,
 												 _("Client certificate information for \"%s\"."),
 												 net->name);
-		gtk_message_dialog_format_secondary_text (GTK_MESSAGE_DIALOG (dialog), "%s", stdout_data);
+		gtk_message_dialog_format_secondary_text (GTK_MESSAGE_DIALOG (dialog), "%s", details);
 	}
 	else
 	{
@@ -669,18 +521,26 @@ servlist_cert_info_cb (GtkWidget *button, gpointer userdata)
 												 GTK_BUTTONS_CLOSE,
 												 _("Failed to read client certificate information for \"%s\"."),
 												 net->name);
-		if (stderr_data && stderr_data[0])
-			gtk_message_dialog_format_secondary_text (GTK_MESSAGE_DIALOG (dialog), "%s", stderr_data);
+		if (error_text)
+			gtk_message_dialog_format_secondary_text (
+				GTK_MESSAGE_DIALOG (dialog), "%s", error_text);
 	}
 
 	theme_manager_attach_window (dialog);
 	g_signal_connect (dialog, "response",
 		G_CALLBACK (fabulor_gtk_dialog_destroy_on_response), NULL);
 	gtk_widget_show (dialog);
-	g_free (stdout_data);
-	g_free (stderr_data);
+	if (ctx)
+		SSL_CTX_free (ctx);
+	if (subject)
+		OPENSSL_free (subject);
+	if (issuer)
+		OPENSSL_free (issuer);
+	g_free (not_before);
+	g_free (not_after);
+	g_free (details);
+	g_free (error_text);
 	g_free (cert_file);
-	g_strfreev (envp);
 #else
 	return;
 #endif
@@ -762,7 +622,7 @@ static const char *pages[]=
  * network list without breaking config compatibility.
  *
  * Also make sure inbound_nickserv_login() won't break, i.e. if you add a new
- * type that is NickServ-based, add it there as well so that ZoiteChat knows to
+ * type that is NickServ-based, add it there as well so that Fabulor knows to
  * treat it as such.
  */
 static int login_types_conf[] =
@@ -1160,7 +1020,8 @@ servlist_edit_update (ircnet *net)
 	servlist_update_from_entry (&net->real, edit_entry_real);
 	if (net && net->name)
 	{
-		use_keyring = gtk_toggle_button_get_active (GTK_TOGGLE_BUTTON (edit_check_use_keyring));
+		use_keyring = fabulor_gtk_check_button_get_active (
+			edit_check_use_keyring);
 		keyring_changed = !!(net->flags & FLAG_USE_KEYRING) != !!use_keyring;
 		if (!edit_pass_changed && !keyring_changed)
 			return;
@@ -1174,7 +1035,7 @@ servlist_edit_update (ircnet *net)
 			{
 				if (!secretstore_set_network_password (net->name, password))
 				{
-					fe_message (_("No system keyring is available. Fabulor can save this password using local encrypted fallback storage, but it is less protected than your desktop keyring."), FE_MSG_WARN);
+					fe_message (_("Windows Credential Manager is unavailable. Fabulor can save this password using encrypted profile storage instead."), FE_MSG_WARN);
 					memset (password, 0, strlen (password));
 					g_free (password);
 					return;
@@ -1235,13 +1096,10 @@ servlist_edit_release (GtkWidget *window)
 	edit_entry_pass = NULL;
 	edit_check_show_pass = NULL;
 	edit_check_use_keyring = NULL;
-	edit_button_encrypt_pass = NULL;
-	edit_button_import_pass = NULL;
 	edit_label_nick = NULL;
 	edit_label_nick2 = NULL;
 	edit_label_real = NULL;
 	edit_label_user = NULL;
-	edit_button_cert_generate = NULL;
 	edit_button_cert_import = NULL;
 	edit_button_cert_info = NULL;
 	edit_button_cert_delete = NULL;
@@ -1689,13 +1547,13 @@ servlist_check_cb (GtkWidget *but, gpointer num_p)
 	if ((1 << num) == FLAG_CYCLE || (1 << num) == FLAG_USE_PROXY)
 	{
 		/* these ones are reversed, so it's compat with 2.0.x */
-		if (gtk_toggle_button_get_active (GTK_TOGGLE_BUTTON (but)))
+		if (fabulor_gtk_check_button_get_active (but))
 			selected_net->flags &= ~(1 << num);
 		else
 			selected_net->flags |= (1 << num);
 	} else
 	{
-		if (gtk_toggle_button_get_active (GTK_TOGGLE_BUTTON (but)))
+		if (fabulor_gtk_check_button_get_active (but))
 			selected_net->flags |= (1 << num);
 		else
 			selected_net->flags &= ~(1 << num);
@@ -1703,7 +1561,8 @@ servlist_check_cb (GtkWidget *but, gpointer num_p)
 
 	if ((1 << num) == FLAG_USE_GLOBAL)
 	{
-		servlist_toggle_global_user (!gtk_toggle_button_get_active (GTK_TOGGLE_BUTTON (but)));
+		servlist_toggle_global_user (
+			!fabulor_gtk_check_button_get_active (but));
 	}
 }
 
@@ -1755,7 +1614,7 @@ servlist_create_check (int num, int state, GtkWidget *table, int row, int col, c
 	GtkWidget *but;
 
 	but = gtk_check_button_new_with_label (labeltext);
-	gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (but), state);
+	fabulor_gtk_check_button_set_active (but, state);
 	g_signal_connect (G_OBJECT (but), "toggled",
 							G_CALLBACK (servlist_check_cb), GINT_TO_POINTER (num));
 	servlist_table_attach (table, but, col, col + 2, row, row + 1,
@@ -2115,7 +1974,7 @@ servlist_create_logintypecombo (GtkWidget *data)
 static void
 no_servlist (GtkWidget * igad, gpointer serv)
 {
-	if (gtk_toggle_button_get_active (GTK_TOGGLE_BUTTON (igad)))
+	if (fabulor_gtk_check_button_get_active (igad))
 		prefs.hex_gui_slist_skip = TRUE;
 	else
 		prefs.hex_gui_slist_skip = FALSE;
@@ -2124,7 +1983,7 @@ no_servlist (GtkWidget * igad, gpointer serv)
 static void
 fav_servlist (GtkWidget * igad, gpointer serv)
 {
-	if (gtk_toggle_button_get_active (GTK_TOGGLE_BUTTON (igad)))
+	if (fabulor_gtk_check_button_get_active (igad))
 		prefs.hex_gui_slist_fav = TRUE;
 	else
 		prefs.hex_gui_slist_fav = FALSE;
@@ -2282,7 +2141,7 @@ servlist_open_edit (GtkWidget *parent, ircnet *net)
 
 
 	/* Checkboxes and entries */
-	table3 = gtkutil_grid_new (17, 2, FALSE);
+	table3 = gtkutil_grid_new (16, 2, FALSE);
 	fabulor_gtk_box_append (GTK_BOX (vbox5), table3, FALSE, FALSE, 0);
 	gtk_grid_set_row_spacing (GTK_GRID (table3), 2);
 	gtk_grid_set_column_spacing (GTK_GRID (table3), 8);
@@ -2291,24 +2150,26 @@ servlist_open_edit (GtkWidget *parent, ircnet *net)
 	gtk_widget_set_tooltip_text (check, _("Don't cycle through all the servers when the connection fails."));
 	servlist_create_check (3, net->flags & FLAG_AUTO_CONNECT, table3, 1, 0, _("Connect to this network automatically"));
 	servlist_create_check (4, !(net->flags & FLAG_USE_PROXY), table3, 2, 0, _("Bypass proxy server"));
-	check = servlist_create_check (2, net->flags & FLAG_USE_SSL, table3, 3, 0, _("Use SSL for all the servers on this network"));
+	check = servlist_create_check (2, net->flags & FLAG_USE_SSL, table3, 3, 0, _("Use TLS for all the servers on this network"));
 #ifndef USE_OPENSSL
 	gtk_widget_set_sensitive (check, FALSE);
 #endif
-	check = servlist_create_check (5, net->flags & FLAG_ALLOW_INVALID, table3, 4, 0, _("Accept invalid SSL certificates"));
+	check = servlist_create_check (5, net->flags & FLAG_ALLOW_INVALID, table3, 4, 0, _("Accept invalid TLS certificates"));
 #ifndef USE_OPENSSL
 	gtk_widget_set_sensitive (check, FALSE);
 #endif
 	servlist_create_check (1, net->flags & FLAG_USE_GLOBAL, table3, 5, 0, _("Use global user information"));
 
-	edit_check_use_keyring = gtk_check_button_new_with_mnemonic (_("Use system keyring"));
-	gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (edit_check_use_keyring), net->flags & FLAG_USE_KEYRING);
+	edit_check_use_keyring = gtk_check_button_new_with_mnemonic (
+		_("Store password in Windows Credential Manager"));
+	fabulor_gtk_check_button_set_active (edit_check_use_keyring,
+		net->flags & FLAG_USE_KEYRING);
+	gtk_widget_set_tooltip_text (edit_check_use_keyring,
+		_("Recommended for installed mode. When disabled, Fabulor stores the password in encrypted profile storage."));
 	servlist_table_attach (table3, edit_check_use_keyring, 0, 2, 6, 7,
 					   FALSE, FALSE,
 					   SERVLIST_ALIGN_START, SERVLIST_ALIGN_CENTER,
 					   SERVLIST_X_PADDING, SERVLIST_Y_PADDING);
-	g_signal_connect (G_OBJECT (edit_check_use_keyring), "toggled",
-				  G_CALLBACK (servlist_toggle_keyring_cb), NULL);
 
 	edit_entry_nick = servlist_create_entry (table3, _("_Nick name:"), 7, net->nick, &edit_label_nick, 0);
 	edit_entry_nick2 = servlist_create_entry (table3, _("Second choice:"), 8, net->nick2, &edit_label_nick2, 0);
@@ -2368,56 +2229,36 @@ servlist_open_edit (GtkWidget *parent, ircnet *net)
 	g_signal_connect (G_OBJECT (edit_check_show_pass), "toggled",
 					  G_CALLBACK (servlist_toggle_show_password_cb), edit_entry_pass);
 
-	edit_button_encrypt_pass = gtk_button_new_with_mnemonic (_("Encrypt saved password"));
-	servlist_table_attach (table3, edit_button_encrypt_pass, 0, 1, 14, 15,
-						   FALSE, FALSE,
-						   SERVLIST_ALIGN_START, SERVLIST_ALIGN_CENTER,
-						   SERVLIST_X_PADDING, SERVLIST_Y_PADDING);
-	g_signal_connect (G_OBJECT (edit_button_encrypt_pass), "clicked",
-					  G_CALLBACK (servlist_encrypt_password_cb), net);
-	edit_button_import_pass = gtk_button_new_with_mnemonic (_("Move password to keyring"));
-	servlist_table_attach (table3, edit_button_import_pass, 1, 2, 14, 15,
-						   FALSE, FALSE,
-						   SERVLIST_ALIGN_START, SERVLIST_ALIGN_CENTER,
-						   4, 2);
-	g_signal_connect (G_OBJECT (edit_button_import_pass), "clicked",
-					  G_CALLBACK (servlist_import_password_cb), net);
-
 	label34 = gtk_label_new (_("Character set:"));
-	servlist_table_attach (table3, label34, 0, 1, 15, 16,
+	servlist_table_attach (table3, label34, 0, 1, 14, 15,
 						   FALSE, FALSE,
 						   SERVLIST_ALIGN_START, SERVLIST_ALIGN_CENTER,
 						   SERVLIST_X_PADDING, SERVLIST_Y_PADDING);
 	gtk_widget_set_halign (label34, GTK_ALIGN_START);
 	gtk_widget_set_valign (label34, GTK_ALIGN_CENTER);
 	comboboxentry_charset = servlist_create_charsetcombo ();
-	servlist_table_attach (table3, comboboxentry_charset, 1, 2, 15, 16,
+	servlist_table_attach (table3, comboboxentry_charset, 1, 2, 14, 15,
 						   FALSE, FALSE,
 						   SERVLIST_ALIGN_FILL, SERVLIST_ALIGN_FILL,
 						   4, 2);
 
 	hbox_cert_buttons = gtkutil_box_new (GTK_ORIENTATION_HORIZONTAL, FALSE, 6);
-	edit_button_cert_generate = gtk_button_new_with_mnemonic (_("Generate client SSL cert"));
-	g_signal_connect (G_OBJECT (edit_button_cert_generate), "clicked",
-							G_CALLBACK (servlist_generate_client_cert_cb), net);
-	fabulor_gtk_box_append (GTK_BOX (hbox_cert_buttons), edit_button_cert_generate, FALSE, FALSE, 0);
-
-	edit_button_cert_import = gtk_button_new_with_mnemonic (_("Import client SSL cert"));
+	edit_button_cert_import = gtk_button_new_with_mnemonic (_("Import client certificate..."));
 	g_signal_connect (G_OBJECT (edit_button_cert_import), "clicked",
 							G_CALLBACK (servlist_import_client_cert_cb), net);
 	fabulor_gtk_box_append (GTK_BOX (hbox_cert_buttons), edit_button_cert_import, FALSE, FALSE, 0);
 
-	edit_button_cert_info = gtk_button_new_with_mnemonic (_("Client SSL cert info"));
+	edit_button_cert_info = gtk_button_new_with_mnemonic (_("Certificate details"));
 	g_signal_connect (G_OBJECT (edit_button_cert_info), "clicked",
 							G_CALLBACK (servlist_cert_info_cb), net);
 	fabulor_gtk_box_append (GTK_BOX (hbox_cert_buttons), edit_button_cert_info, FALSE, FALSE, 0);
 
-	edit_button_cert_delete = gtk_button_new_with_mnemonic (_("Delete cert"));
+	edit_button_cert_delete = gtk_button_new_with_mnemonic (_("Remove certificate"));
 	g_signal_connect (G_OBJECT (edit_button_cert_delete), "clicked",
 							G_CALLBACK (servlist_delete_client_cert_cb), net);
 	fabulor_gtk_box_append (GTK_BOX (hbox_cert_buttons), edit_button_cert_delete, FALSE, FALSE, 0);
 
-	servlist_table_attach (table3, hbox_cert_buttons, 0, 2, 16, 17,
+	servlist_table_attach (table3, hbox_cert_buttons, 0, 2, 15, 16,
 						   FALSE, FALSE,
 						   SERVLIST_ALIGN_START, SERVLIST_ALIGN_CENTER,
 						   SERVLIST_X_PADDING, SERVLIST_Y_PADDING);
@@ -2441,9 +2282,6 @@ servlist_open_edit (GtkWidget *parent, ircnet *net)
 	{
 		servlist_toggle_global_user (FALSE);
 	}
-	servlist_toggle_keyring_cb (GTK_TOGGLE_BUTTON (edit_check_use_keyring), NULL);
-	servlist_update_password_tools (net);
-
 	gtk_widget_grab_focus (button10);
 	fabulor_gtk_window_set_default_widget (GTK_WINDOW (editwindow), button10);
 
@@ -2642,8 +2480,8 @@ servlist_open_networks (void)
 
 	checkbutton_skip =
 		gtk_check_button_new_with_mnemonic (_("Skip network list on startup"));
-	gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (checkbutton_skip),
-											prefs.hex_gui_slist_skip);
+	fabulor_gtk_check_button_set_active (checkbutton_skip,
+		prefs.hex_gui_slist_skip);
 	fabulor_gtk_box_append (GTK_BOX (hbox), checkbutton_skip, FALSE, TRUE, 0);
 	g_signal_connect (G_OBJECT (checkbutton_skip), "toggled",
 							G_CALLBACK (no_servlist), 0);
@@ -2651,8 +2489,8 @@ servlist_open_networks (void)
 
 	checkbutton_fav =
 		gtk_check_button_new_with_mnemonic (_("Show favorites only"));
-	gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (checkbutton_fav),
-											prefs.hex_gui_slist_fav);
+	fabulor_gtk_check_button_set_active (checkbutton_fav,
+		prefs.hex_gui_slist_fav);
 	fabulor_gtk_box_append (GTK_BOX (hbox), checkbutton_fav, FALSE, TRUE, 0);
 	g_signal_connect (G_OBJECT (checkbutton_fav), "toggled",
 							G_CALLBACK (fav_servlist), 0);

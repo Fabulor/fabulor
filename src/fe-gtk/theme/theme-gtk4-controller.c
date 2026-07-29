@@ -101,6 +101,37 @@ theme_gtk4_controller_refresh (ThemeGtk4Controller *controller,
 	return result;
 }
 
+void
+theme_gtk4_controller_reload_catalog (ThemeGtk4Controller *controller,
+	const char *config_dir, const char *stored_id, guint stored_variant,
+	gboolean system_prefers_dark, gboolean high_contrast)
+{
+	GPtrArray *themes;
+	GPtrArray *choices;
+	guint selected_index;
+	gboolean stored_selection_available;
+	FabulorGtk4ThemeAppearanceDecision appearance;
+	const FabulorGtk4ThemeChoice *choice;
+
+	g_return_if_fail (controller != NULL);
+	themes = fabulor_gtk4_theme_discover (config_dir);
+	choices = fabulor_gtk4_theme_preferences_project (themes);
+	selected_index = fabulor_gtk4_theme_preferences_resolve_index (choices,
+		stored_id, &stored_selection_available);
+	choice = g_ptr_array_index (choices, selected_index);
+	fabulor_gtk4_theme_preferences_resolve_appearance (
+		!choice->system_default, stored_variant, system_prefers_dark,
+		high_contrast, &appearance);
+
+	g_ptr_array_unref (controller->choices);
+	controller->choices = choices;
+	controller->selected_index = selected_index;
+	controller->selected_variant = appearance.variant;
+	controller->stored_selection_available = stored_selection_available;
+	controller->appearance = appearance;
+	g_ptr_array_unref (themes);
+}
+
 const GPtrArray *
 theme_gtk4_controller_choices (const ThemeGtk4Controller *controller)
 {

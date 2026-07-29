@@ -836,7 +836,11 @@ gboolean
 gtkutil_tray_icon_supported (GtkWindow *window)
 {
 	(void) window;
+#ifdef WIN32
+	return TRUE;
+#else
 	return FALSE;
+#endif
 }
 
 #if defined (WIN32)

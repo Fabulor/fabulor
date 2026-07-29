@@ -1676,7 +1676,7 @@ plugin_find_context (const char *servname, const char *channel, server *current_
 void *
 zoitechat_unhook (zoitechat_plugin *ph, zoitechat_hook *hook)
 {
-	/* perl.c trips this */
+	/* A callback may attempt to unhook an already deleted hook. */
 	if (!g_slist_find (hook_list, hook) || hook->type == HOOK_DELETED)
 		return NULL;
 

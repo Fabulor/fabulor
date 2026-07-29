@@ -16,6 +16,8 @@ const gunichar *fabulor_emoji_picker_page_items (
 
 gchar *fabulor_emoji_picker_flag_sequence (const gchar *code);
 gchar *fabulor_emoji_picker_codepoint_sequence (gunichar codepoint);
+void fabulor_emoji_picker_viewport_size (gint root_width, gint root_height,
+	gint *width, gint *height);
 
 GtkPopover *fabulor_emoji_picker_popover_get (GtkEntry *entry);
 GtkPopover *fabulor_emoji_picker_popover_ensure (GtkEntry *entry);

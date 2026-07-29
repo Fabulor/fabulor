@@ -319,13 +319,12 @@ test_manager_listener_registration_dispatch_and_unregister (void)
 	g_assert_cmpuint (id_a, >, 0);
 	g_assert_cmpuint (id_b, >, 0);
 
-	theme_manager_dispatch_changed (THEME_CHANGED_REASON_PIXMAP | THEME_CHANGED_REASON_USERLIST | THEME_CHANGED_REASON_IDENTD | THEME_CHANGED_REASON_WIDGET_STYLE);
+	theme_manager_dispatch_changed (THEME_CHANGED_REASON_PIXMAP | THEME_CHANGED_REASON_USERLIST | THEME_CHANGED_REASON_WIDGET_STYLE);
 	g_assert_cmpint (listener_a_calls, ==, 1);
 	g_assert_cmpint (listener_b_calls, ==, 1);
 	g_assert_true (theme_changed_event_has_reason (&listener_last_event, THEME_CHANGED_REASON_PIXMAP));
 	g_assert_true (theme_changed_event_has_reason (&listener_last_event, THEME_CHANGED_REASON_USERLIST));
 	g_assert_false (theme_changed_event_has_reason (&listener_last_event, THEME_CHANGED_REASON_LAYOUT));
-	g_assert_true (theme_changed_event_has_reason (&listener_last_event, THEME_CHANGED_REASON_IDENTD));
 	g_assert_true (theme_changed_event_has_reason (&listener_last_event, THEME_CHANGED_REASON_WIDGET_STYLE));
 
 	theme_listener_unregister (id_a);

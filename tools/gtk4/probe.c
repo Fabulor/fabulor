@@ -9,6 +9,8 @@
 #include "../../src/fe-gtk/gtk4-list-models.h"
 #include "../../src/common/gtk4-theme-discovery.h"
 #include "../../src/common/gtk4-theme-preferences.h"
+#include "../../src/common/proxy-policy.h"
+#include "../../src/common/socks5-protocol.h"
 #include "../../src/fe-gtk/emoji-picker.h"
 #include "../../src/fe-gtk/theme/theme-gtk4.h"
 #include "../../src/fe-gtk/theme/theme-gtk4-controller.h"
@@ -71,6 +73,180 @@
 #if GLIB_SIZEOF_VOID_P != 8
 #error The initial GTK4 probe requires a 64-bit GLib build.
 #endif
+
+static gboolean
+check_proxy_policy (void)
+{
+	return
+		fabulor_proxy_type_normalize (FABULOR_PROXY_DISABLED) ==
+			FABULOR_PROXY_DISABLED &&
+		fabulor_proxy_type_normalize (FABULOR_PROXY_RETIRED_WINGATE) ==
+			FABULOR_PROXY_DISABLED &&
+		fabulor_proxy_type_normalize (FABULOR_PROXY_SOCKS4) ==
+			FABULOR_PROXY_SOCKS4 &&
+		fabulor_proxy_type_normalize (FABULOR_PROXY_SOCKS5) ==
+			FABULOR_PROXY_SOCKS5 &&
+		fabulor_proxy_type_normalize (FABULOR_PROXY_HTTP) ==
+			FABULOR_PROXY_HTTP &&
+		fabulor_proxy_type_normalize (FABULOR_PROXY_AUTO) ==
+			FABULOR_PROXY_AUTO &&
+		fabulor_proxy_type_normalize (-1) == FABULOR_PROXY_DISABLED &&
+		fabulor_proxy_type_normalize (6) == FABULOR_PROXY_DISABLED &&
+		fabulor_proxy_type_from_menu_index (0) == FABULOR_PROXY_DISABLED &&
+		fabulor_proxy_type_from_menu_index (1) == FABULOR_PROXY_SOCKS4 &&
+		fabulor_proxy_type_from_menu_index (2) == FABULOR_PROXY_SOCKS5 &&
+		fabulor_proxy_type_from_menu_index (3) == FABULOR_PROXY_HTTP &&
+		fabulor_proxy_type_from_menu_index (4) == FABULOR_PROXY_AUTO &&
+		fabulor_proxy_type_from_menu_index (5) == FABULOR_PROXY_DISABLED &&
+		fabulor_proxy_type_to_menu_index (FABULOR_PROXY_DISABLED) == 0 &&
+		fabulor_proxy_type_to_menu_index (
+			FABULOR_PROXY_RETIRED_WINGATE) == 0 &&
+		fabulor_proxy_type_to_menu_index (FABULOR_PROXY_SOCKS4) == 1 &&
+		fabulor_proxy_type_to_menu_index (FABULOR_PROXY_SOCKS5) == 2 &&
+		fabulor_proxy_type_to_menu_index (FABULOR_PROXY_HTTP) == 3 &&
+		fabulor_proxy_type_to_menu_index (FABULOR_PROXY_AUTO) == 4 &&
+		!fabulor_proxy_type_supports_auth (FABULOR_PROXY_DISABLED) &&
+		!fabulor_proxy_type_supports_auth (FABULOR_PROXY_SOCKS4) &&
+		fabulor_proxy_type_supports_auth (FABULOR_PROXY_SOCKS5) &&
+		fabulor_proxy_type_supports_auth (FABULOR_PROXY_HTTP) &&
+		fabulor_proxy_type_supports_auth (FABULOR_PROXY_AUTO) &&
+		!fabulor_proxy_type_uses_dcc_proxy (FABULOR_PROXY_DISABLED) &&
+		!fabulor_proxy_type_uses_dcc_proxy (
+			FABULOR_PROXY_RETIRED_WINGATE) &&
+		fabulor_proxy_type_uses_dcc_proxy (FABULOR_PROXY_SOCKS4) &&
+		fabulor_proxy_type_uses_dcc_proxy (FABULOR_PROXY_SOCKS5) &&
+		fabulor_proxy_type_uses_dcc_proxy (FABULOR_PROXY_HTTP) &&
+		!fabulor_proxy_type_uses_dcc_proxy (FABULOR_PROXY_AUTO);
+}
+
+static gboolean
+check_socks5_protocol (void)
+{
+	unsigned char buffer[FABULOR_SOCKS5_MAX_AUTH_REQUEST];
+	unsigned char no_auth_request[] = {5, 1, 0};
+	unsigned char auth_request[] = {5, 1, 2};
+	unsigned char no_auth_response[] = {5, 0};
+	unsigned char auth_response[] = {5, 2};
+	unsigned char no_methods_response[] = {5, 255};
+	unsigned char auth_success[] = {1, 0};
+	unsigned char auth_failure[] = {1, 1};
+	unsigned char domain_request[] = {
+		5, 1, 0, 3, 11,
+		'i', 'r', 'c', '.', 'e', 'x', 'a', 'm', 'p', 'l', 'e',
+		0x1a, 0x29
+	};
+	unsigned char ipv4_request[] = {
+		5, 1, 0, 1, 192, 0, 2, 1, 0x1a, 0x29
+	};
+	unsigned char valid_reply[] = {5, 0, 0, 1};
+	unsigned char denied_reply[] = {5, 2, 0, 3};
+	unsigned char bad_version_reply[] = {4, 0, 0, 1};
+	unsigned char bad_reserved_reply[] = {5, 0, 1, 1};
+	unsigned char bad_address_reply[] = {5, 0, 0, 2};
+	char maximum_field[FABULOR_SOCKS5_MAX_FIELD_LENGTH + 1];
+	char oversized_field[FABULOR_SOCKS5_MAX_FIELD_LENGTH + 2];
+	size_t request_size;
+
+	memset (maximum_field, 'a', sizeof (maximum_field) - 1);
+	maximum_field[sizeof (maximum_field) - 1] = '\0';
+	memset (oversized_field, 'b', sizeof (oversized_field) - 1);
+	oversized_field[sizeof (oversized_field) - 1] = '\0';
+
+	request_size = fabulor_socks5_build_method_request (
+		buffer, sizeof (buffer), FALSE);
+	if (request_size != sizeof (no_auth_request) ||
+		memcmp (buffer, no_auth_request, request_size) != 0)
+		return FALSE;
+
+	request_size = fabulor_socks5_build_method_request (
+		buffer, sizeof (buffer), TRUE);
+	if (request_size != sizeof (auth_request) ||
+		memcmp (buffer, auth_request, request_size) != 0 ||
+		fabulor_socks5_build_method_request (buffer, 2, TRUE) != 0)
+		return FALSE;
+
+	if (!fabulor_socks5_method_response_valid (
+			no_auth_response, sizeof (no_auth_response), FALSE) ||
+		!fabulor_socks5_method_response_valid (
+			auth_response, sizeof (auth_response), TRUE) ||
+		fabulor_socks5_method_response_valid (
+			no_auth_response, sizeof (no_auth_response), TRUE) ||
+		fabulor_socks5_method_response_valid (
+			auth_response, sizeof (auth_response), FALSE) ||
+		fabulor_socks5_method_response_valid (
+			no_methods_response, sizeof (no_methods_response), FALSE))
+		return FALSE;
+
+	if (!fabulor_socks5_credentials_valid (FALSE, NULL, NULL) ||
+		!fabulor_socks5_credentials_valid (TRUE, "user", "pass") ||
+		fabulor_socks5_credentials_valid (TRUE, "", "pass") ||
+		fabulor_socks5_credentials_valid (TRUE, "user", "") ||
+		fabulor_socks5_credentials_valid (
+			TRUE, oversized_field, "pass"))
+		return FALSE;
+
+	request_size = fabulor_socks5_build_auth_request (
+		buffer, sizeof (buffer), "user", "pass");
+	if (request_size != 11 ||
+		buffer[0] != 1 || buffer[1] != 4 ||
+		memcmp (buffer + 2, "user", 4) != 0 ||
+		buffer[6] != 4 || memcmp (buffer + 7, "pass", 4) != 0 ||
+		fabulor_socks5_build_auth_request (
+			buffer, 10, "user", "pass") != 0 ||
+		fabulor_socks5_build_auth_request (
+			buffer, sizeof (buffer), oversized_field, "pass") != 0 ||
+		!fabulor_socks5_auth_response_valid (
+			auth_success, sizeof (auth_success)) ||
+		fabulor_socks5_auth_response_valid (
+			auth_failure, sizeof (auth_failure)))
+		return FALSE;
+
+	request_size = fabulor_socks5_build_auth_request (
+		buffer, sizeof (buffer), maximum_field, maximum_field);
+	if (request_size != FABULOR_SOCKS5_MAX_AUTH_REQUEST)
+		return FALSE;
+
+	request_size = fabulor_socks5_build_domain_connect_request (
+		buffer, sizeof (buffer), "irc.example", 6697);
+	if (request_size != sizeof (domain_request) ||
+		memcmp (buffer, domain_request, request_size) != 0 ||
+		fabulor_socks5_build_domain_connect_request (
+			buffer, sizeof (buffer), oversized_field, 6697) != 0 ||
+		fabulor_socks5_build_domain_connect_request (
+			buffer, sizeof (buffer), "irc.example", 0) != 0 ||
+		fabulor_socks5_build_domain_connect_request (
+			buffer, sizeof (buffer), "irc.example", 65536) != 0)
+		return FALSE;
+
+	request_size = fabulor_socks5_build_ipv4_connect_request (
+		buffer, sizeof (buffer), 0xc0000201U, 6697);
+	if (request_size != sizeof (ipv4_request) ||
+		memcmp (buffer, ipv4_request, request_size) != 0 ||
+		fabulor_socks5_build_ipv4_connect_request (
+			buffer, 9, 0xc0000201U, 6697) != 0)
+		return FALSE;
+
+	return
+		fabulor_socks5_reply_header_valid (
+			valid_reply, sizeof (valid_reply)) &&
+		fabulor_socks5_reply_header_valid (
+			denied_reply, sizeof (denied_reply)) &&
+		!fabulor_socks5_reply_header_valid (
+			bad_version_reply, sizeof (bad_version_reply)) &&
+		!fabulor_socks5_reply_header_valid (
+			bad_reserved_reply, sizeof (bad_reserved_reply)) &&
+		!fabulor_socks5_reply_header_valid (
+			bad_address_reply, sizeof (bad_address_reply)) &&
+		fabulor_socks5_fixed_reply_tail_size (
+			FABULOR_SOCKS5_ADDRESS_IPV4) == 6 &&
+		fabulor_socks5_fixed_reply_tail_size (
+			FABULOR_SOCKS5_ADDRESS_IPV6) == 18 &&
+		fabulor_socks5_fixed_reply_tail_size (
+			FABULOR_SOCKS5_ADDRESS_DOMAIN) == 0 &&
+		!fabulor_socks5_domain_length_valid (0) &&
+		fabulor_socks5_domain_length_valid (1) &&
+		fabulor_socks5_domain_length_valid (255);
+}
 
 typedef struct
 {
@@ -683,6 +859,117 @@ check_box_reorder_ownership (gboolean gtk_ready)
 }
 
 static gboolean
+probe_input_controller_key (GtkWidget *widget, guint keyval,
+	GdkModifierType state, gpointer user_data)
+{
+	(void) widget;
+	(void) keyval;
+	(void) state;
+	(void) user_data;
+	return FALSE;
+}
+
+static gboolean
+probe_input_controller_click (GtkWidget *widget, guint button, guint n_press,
+	gdouble x, gdouble y, GdkModifierType state, gpointer user_data)
+{
+	(void) widget;
+	(void) button;
+	(void) n_press;
+	(void) x;
+	(void) y;
+	(void) state;
+	(void) user_data;
+	return FALSE;
+}
+
+static gboolean
+probe_input_controller_release (GtkWidget *widget, guint button, gdouble x,
+	gdouble y, GdkModifierType state, gpointer user_data)
+{
+	(void) widget;
+	(void) button;
+	(void) x;
+	(void) y;
+	(void) state;
+	(void) user_data;
+	return FALSE;
+}
+
+static gboolean
+probe_input_controller_drag_begin (GtkWidget *widget, gdouble x, gdouble y,
+	GdkModifierType state, gpointer user_data)
+{
+	(void) widget;
+	(void) x;
+	(void) y;
+	(void) state;
+	(void) user_data;
+	return TRUE;
+}
+
+static void
+probe_input_controller_drag_update (GtkWidget *widget, gdouble x, gdouble y,
+	GdkModifierType state, gpointer user_data)
+{
+	(void) widget;
+	(void) x;
+	(void) y;
+	(void) state;
+	(void) user_data;
+}
+
+static void
+probe_input_controller_drag_end (GtkWidget *widget, gdouble x, gdouble y,
+	GdkModifierType state, gpointer user_data)
+{
+	(void) widget;
+	(void) x;
+	(void) y;
+	(void) state;
+	(void) user_data;
+}
+
+static gboolean
+check_input_controller_phase (gboolean gtk_ready)
+{
+	GtkWidget *entry;
+	GtkEventController *key;
+	GtkEventController *click;
+	GtkEventController *drag;
+	gboolean valid;
+
+	if (!gtk_ready)
+		return TRUE;
+
+	entry = gtk_entry_new ();
+	g_object_ref_sink (entry);
+	key = fabulor_gtk_widget_on_key_pressed_phase (entry,
+		GTK_PHASE_CAPTURE, probe_input_controller_key, NULL);
+	click = fabulor_gtk_widget_on_multi_click_phase (entry,
+		GTK_PHASE_CAPTURE, probe_input_controller_click, NULL);
+	fabulor_gtk_gesture_click_on_released (click,
+		probe_input_controller_release, NULL);
+	drag = fabulor_gtk_widget_on_drag (entry,
+		probe_input_controller_drag_begin,
+		probe_input_controller_drag_update,
+		probe_input_controller_drag_end, NULL);
+	valid = key && click && drag &&
+		gtk_event_controller_get_propagation_phase (key) ==
+			GTK_PHASE_CAPTURE &&
+		gtk_event_controller_get_propagation_phase (click) ==
+			GTK_PHASE_CAPTURE &&
+		GTK_IS_GESTURE_DRAG (drag) &&
+		gtk_gesture_single_get_button (GTK_GESTURE_SINGLE (drag)) == 1 &&
+		gtk_gesture_single_get_exclusive (GTK_GESTURE_SINGLE (drag)) &&
+		g_signal_has_handler_pending (click,
+			g_signal_lookup ("released", GTK_TYPE_GESTURE_CLICK),
+			0, TRUE);
+	g_object_unref (entry);
+	return valid;
+}
+
+static gboolean
 check_layout_reparent_ownership (gboolean gtk_ready)
 {
 	GtkWidget *paned;
@@ -700,11 +987,16 @@ check_layout_reparent_ownership (gboolean gtk_ready)
 	g_object_ref_sink (paned);
 	fabulor_gtk_paned_set_start_child (GTK_PANED (paned), paned_child,
 		FALSE, TRUE);
-	valid = fabulor_gtk_layout_retain_and_detach_child (paned_child) &&
+	valid = !gtk_paned_get_resize_start_child (GTK_PANED (paned)) &&
+		gtk_paned_get_shrink_start_child (GTK_PANED (paned)) &&
+		fabulor_gtk_layout_retain_and_detach_child (paned_child) &&
 		gtk_widget_get_parent (paned_child) == NULL;
 	fabulor_gtk_paned_set_end_child (GTK_PANED (paned), paned_child,
-		FALSE, TRUE);
-	valid = valid && gtk_widget_get_parent (paned_child) == paned;
+		TRUE, FALSE);
+	valid = valid &&
+		gtk_paned_get_resize_end_child (GTK_PANED (paned)) &&
+		!gtk_paned_get_shrink_end_child (GTK_PANED (paned)) &&
+		gtk_widget_get_parent (paned_child) == paned;
 	g_object_unref (paned_child);
 	g_object_unref (paned);
 
@@ -763,6 +1055,54 @@ check_icon_button (gboolean gtk_ready)
 		g_strcmp0 (gtk_image_get_icon_name (GTK_IMAGE (child)),
 			"go-bottom-symbolic") == 0;
 	g_object_unref (button);
+	return valid;
+}
+
+static gboolean
+check_scroll_to_bottom_contract (gboolean gtk_ready)
+{
+	GtkAdjustment *adjustment;
+	GtkWidget *overlay;
+	GtkWidget *content;
+	GtkWidget *button;
+	GtkWidget *icon;
+	gboolean valid;
+
+	adjustment = gtk_adjustment_new (0.0, 0.0, 100.0, 1.0, 10.0, 20.0);
+	valid = !fabulor_gtk_adjustment_is_at_end (adjustment, 0.5);
+	gtk_adjustment_set_value (adjustment, 79.6);
+	valid = valid && fabulor_gtk_adjustment_is_at_end (adjustment, 0.5);
+	gtk_adjustment_set_value (adjustment, 0.0);
+	fabulor_gtk_adjustment_scroll_to_end (adjustment);
+	valid = valid && gtk_adjustment_get_value (adjustment) == 80.0;
+	g_object_unref (adjustment);
+
+	if (!gtk_ready)
+		return valid;
+
+	overlay = gtk_overlay_new ();
+	content = gtk_label_new ("transcript");
+	button = gtk_button_new ();
+	icon = fabulor_gtk_chevron_down_new (24, 18);
+	gtk_button_set_child (GTK_BUTTON (button), icon);
+	g_object_ref_sink (overlay);
+	fabulor_gtk_overlay_set_child (GTK_OVERLAY (overlay), content);
+	gtk_widget_set_halign (button, GTK_ALIGN_END);
+	gtk_widget_set_valign (button, GTK_ALIGN_END);
+	gtk_widget_set_margin_end (button, 22);
+	gtk_widget_set_margin_bottom (button, 12);
+	gtk_overlay_add_overlay (GTK_OVERLAY (overlay), button);
+	gtk_overlay_set_clip_overlay (GTK_OVERLAY (overlay), button, FALSE);
+	valid = valid && gtk_widget_get_parent (button) == overlay &&
+		GTK_IS_DRAWING_AREA (icon) &&
+		gtk_drawing_area_get_content_width (GTK_DRAWING_AREA (icon)) == 24 &&
+		gtk_drawing_area_get_content_height (GTK_DRAWING_AREA (icon)) == 18 &&
+		gtk_widget_get_halign (button) == GTK_ALIGN_END &&
+		gtk_widget_get_valign (button) == GTK_ALIGN_END &&
+		gtk_widget_get_margin_end (button) == 22 &&
+		gtk_widget_get_margin_bottom (button) == 12 &&
+		!gtk_overlay_get_clip_overlay (GTK_OVERLAY (overlay), button);
+	g_object_unref (overlay);
 	return valid;
 }
 
@@ -2027,14 +2367,29 @@ probe_sound_event_selection (gint event_index, gpointer user_data)
 }
 
 static gboolean
-check_sound_event_list_model (void)
+check_sound_event_list_model (gboolean gtk_ready)
 {
 	ProbeSoundEventSelection selection = { -1, 0 };
 	FabulorSoundEventList *list = fabulor_sound_event_list_new (
 		probe_sound_event_selection, &selection);
+	GtkWidget *view_owner = NULL;
 	gchar *file = NULL;
 	gboolean valid = list != NULL;
 
+	if (valid && gtk_ready)
+	{
+		GtkWidget *view;
+		GtkWidget *scroller;
+
+		view_owner = gtk_box_new (GTK_ORIENTATION_VERTICAL, 0);
+		g_object_ref_sink (view_owner);
+		view = fabulor_sound_event_list_create_view (list, GTK_BOX (view_owner),
+			"Event", "Sound file");
+		scroller = view ? gtk_widget_get_parent (view) : NULL;
+		valid = GTK_IS_SCROLLED_WINDOW (scroller) &&
+			gtk_widget_get_hexpand (scroller) &&
+			gtk_widget_get_vexpand (scroller);
+	}
 	if (valid)
 	{
 		fabulor_sound_event_list_append (list, "Connected", "one.wav", 7);
@@ -2059,6 +2414,7 @@ check_sound_event_list_model (void)
 		valid = fabulor_sound_event_list_get_n_rows (list) == 0 &&
 			fabulor_sound_event_list_get_selected_event (list) == -1;
 	}
+	g_clear_object (&view_owner);
 	fabulor_sound_event_list_free (list);
 	return valid;
 }
@@ -2078,7 +2434,7 @@ probe_preferences_category_selection (gint page_index, gpointer user_data)
 }
 
 static gboolean
-check_preferences_category_list_model (void)
+check_preferences_category_list_model (gboolean gtk_ready)
 {
 	ProbePreferencesCategorySelection selection = { -1, 0 };
 	FabulorPreferencesCategoryList *list =
@@ -2118,6 +2474,22 @@ check_preferences_category_list_model (void)
 		valid = fabulor_preferences_category_list_select_page (list, 0) &&
 			fabulor_preferences_category_list_get_selected_page (list) == 0 &&
 			selection.calls == 2 && selection.page_index == 0;
+	}
+	if (valid && gtk_ready)
+	{
+		GtkWidget *parent = gtk_box_new (GTK_ORIENTATION_HORIZONTAL, 0);
+		GtkWidget *view;
+		GtkWidget *frame;
+		gint minimum_width = -1;
+
+		g_object_ref_sink (parent);
+		view = fabulor_preferences_category_list_create_view (list,
+			GTK_BOX (parent), "Categories");
+		frame = view ? gtk_widget_get_parent (view) : NULL;
+		if (frame)
+			gtk_widget_get_size_request (frame, &minimum_width, NULL);
+		valid = frame != NULL && minimum_width >= 220;
+		g_object_unref (parent);
 	}
 	fabulor_preferences_category_list_free (list);
 	return valid;
@@ -2549,6 +2921,8 @@ check_emoji_picker_policy (void)
 	gchar *eu;
 	gchar *lowercase_eu;
 	gchar *grinning;
+	gint viewport_width;
+	gint viewport_height;
 	gboolean valid;
 
 	page = fabulor_emoji_picker_page_new (items, FALSE);
@@ -2556,6 +2930,8 @@ check_emoji_picker_policy (void)
 	eu = fabulor_emoji_picker_flag_sequence ("EU");
 	lowercase_eu = fabulor_emoji_picker_flag_sequence ("eu");
 	grinning = fabulor_emoji_picker_codepoint_sequence (0x1F600);
+	fabulor_emoji_picker_viewport_size (668, 429,
+		&viewport_width, &viewport_height);
 	valid = popover_get != NULL && popover_ensure != NULL &&
 		page != NULL && flags_page != NULL &&
 		fabulor_emoji_picker_page_items (page) == items &&
@@ -2572,7 +2948,14 @@ check_emoji_picker_policy (void)
 		fabulor_emoji_picker_flag_sequence ("EUU") == NULL &&
 		fabulor_emoji_picker_flag_sequence ("E1") == NULL &&
 		fabulor_emoji_picker_codepoint_sequence (0) == NULL &&
-		fabulor_emoji_picker_codepoint_sequence (0xD800) == NULL;
+		fabulor_emoji_picker_codepoint_sequence (0xD800) == NULL &&
+		viewport_width == 520 && viewport_height == 289;
+	fabulor_emoji_picker_viewport_size (1920, 1080,
+		&viewport_width, &viewport_height);
+	valid = valid && viewport_width == 520 && viewport_height == 320;
+	fabulor_emoji_picker_viewport_size (300, 200,
+		&viewport_width, &viewport_height);
+	valid = valid && viewport_width == 320 && viewport_height == 240;
 
 	g_free (eu);
 	g_free (lowercase_eu);
@@ -2852,7 +3235,7 @@ check_gtk4_theme_adapter_policy (void)
 		theme_gtk4_adapter_error_count (adapter) == 0 &&
 		theme_gtk4_adapter_apply (adapter, &valid_theme,
 			THEME_GTK4_VARIANT_PREFER_DARK, FALSE, &error) &&
-		error == NULL && theme_gtk4_adapter_active_provider_count (adapter) == 2;
+		error == NULL && theme_gtk4_adapter_active_provider_count (adapter) == 1;
 
 	valid = valid && !theme_gtk4_adapter_apply (adapter, &invalid_theme,
 		THEME_GTK4_VARIANT_PREFER_LIGHT, FALSE, &error) &&
@@ -2860,20 +3243,20 @@ check_gtk4_theme_adapter_policy (void)
 		theme_gtk4_adapter_last_diagnostic (adapter) != NULL &&
 		theme_gtk4_adapter_is_active (adapter) &&
 		g_strcmp0 (theme_gtk4_adapter_active_id (adapter), "profile:valid") == 0 &&
-		theme_gtk4_adapter_active_provider_count (adapter) == 2;
+		theme_gtk4_adapter_active_provider_count (adapter) == 1;
 	g_clear_error (&error);
 	valid = valid && !theme_gtk4_adapter_apply (adapter, &missing_theme,
 		THEME_GTK4_VARIANT_PREFER_LIGHT, FALSE, &error) &&
 		g_error_matches (error, G_FILE_ERROR, G_FILE_ERROR_NOENT) &&
 		theme_gtk4_adapter_is_active (adapter) &&
-		theme_gtk4_adapter_active_provider_count (adapter) == 2;
+		theme_gtk4_adapter_active_provider_count (adapter) == 1;
 	g_clear_error (&error);
 	fabulor_gtk4_theme_preferences_resolve_appearance (
 		TRUE, FABULOR_GTK4_THEME_VARIANT_PREFER_DARK,
 		FALSE, FALSE, &appearance);
 	valid = valid && theme_gtk4_adapter_apply_decision (adapter, &valid_theme,
 		&appearance, &error) && error == NULL &&
-		theme_gtk4_adapter_active_provider_count (adapter) == 2;
+		theme_gtk4_adapter_active_provider_count (adapter) == 1;
 	fabulor_gtk4_theme_preferences_resolve_appearance (
 		TRUE, FABULOR_GTK4_THEME_VARIANT_PREFER_DARK,
 		TRUE, TRUE, &appearance);
@@ -2966,7 +3349,7 @@ check_gtk4_theme_controller_policy (void)
 		theme_gtk4_controller_theme_is_active (controller) &&
 		g_strcmp0 (theme_gtk4_controller_active_id (controller),
 			"profile:valid") == 0 &&
-		theme_gtk4_controller_active_provider_count (controller) == 2 &&
+		theme_gtk4_controller_active_provider_count (controller) == 1 &&
 		theme_gtk4_controller_stored_selection_available (controller);
 	g_ptr_array_unref (themes);
 	choice = theme_gtk4_controller_selected_choice (controller);
@@ -3137,7 +3520,7 @@ check_gtk4_theme_preferences_binding (void)
 		commit.count == 1 && commit.variant ==
 			FABULOR_GTK4_THEME_VARIANT_PREFER_DARK &&
 		g_strcmp0 (commit.theme_id, valid_id) == 0 &&
-		theme_gtk4_controller_active_provider_count (controller) == 2;
+		theme_gtk4_controller_active_provider_count (controller) == 1;
 	valid = valid && !theme_preferences_gtk4_select_theme (preferences,
 		invalid_index, &error) && error != NULL && commit.count == 1 &&
 		g_strcmp0 (theme_preferences_gtk4_stored_id (preferences), valid_id) == 0 &&
@@ -3312,7 +3695,7 @@ check_gtk4_theme_appearance_monitor (void)
 	valid = valid && query.count == 2 &&
 		theme_appearance_monitor_gtk4_refresh_count (monitor) == 2 &&
 		theme_appearance_monitor_gtk4_prefers_dark (monitor) &&
-		theme_gtk4_controller_active_provider_count (controller) == 2 &&
+		theme_gtk4_controller_active_provider_count (controller) == 1 &&
 		commit.count == 0;
 
 	valid = valid && theme_appearance_monitor_gtk4_queue_refresh (monitor);
@@ -3837,6 +4220,31 @@ check_tray_menu_presenter_gtk4 (void)
 }
 
 static gboolean
+context_menu_labels_have_width_limit (GtkWidget *widget, gint max_width_chars,
+	gboolean *found)
+{
+	GtkWidget *child;
+
+	if (GTK_IS_LABEL (widget))
+	{
+		*found = TRUE;
+		if (gtk_label_get_max_width_chars (GTK_LABEL (widget)) !=
+			max_width_chars ||
+			gtk_label_get_ellipsize (GTK_LABEL (widget)) !=
+				PANGO_ELLIPSIZE_END)
+			return FALSE;
+	}
+	for (child = gtk_widget_get_first_child (widget); child;
+		child = gtk_widget_get_next_sibling (child))
+	{
+		if (!context_menu_labels_have_width_limit (child, max_width_chars,
+			found))
+			return FALSE;
+	}
+	return TRUE;
+}
+
+static gboolean
 check_context_menu_presenter_gtk4 (void)
 {
 	GMenu *custom_menu;
@@ -3853,6 +4261,7 @@ check_context_menu_presenter_gtk4 (void)
 	guint built_in_count = 0;
 	guint plugin_count = 0;
 	guint custom_count = 0;
+	gboolean found_label = FALSE;
 	gboolean passed;
 
 	g_object_ref_sink (origin);
@@ -3876,9 +4285,12 @@ check_context_menu_presenter_gtk4 (void)
 		return FALSE;
 	}
 	popover = fabulor_context_menu_presenter_gtk4_get_popover (presenter);
+	fabulor_context_menu_presenter_gtk4_set_label_width_limit (presenter, 32);
 	passed = fabulor_context_menu_presenter_gtk4_popup_at (
 		presenter, origin, 17.0, 23.0);
 	passed = passed && gtk_widget_get_parent (GTK_WIDGET (popover)) == origin;
+	passed = passed && context_menu_labels_have_width_limit (
+		GTK_WIDGET (popover), 32, &found_label) && found_label;
 	passed = passed && gtk_popover_get_pointing_to (
 		GTK_POPOVER (popover), &point) && point.x == 17 && point.y == 23;
 	passed = passed && gtk_widget_activate_action (
@@ -4461,41 +4873,80 @@ check_middle_context_menu_model (void)
 {
 	GMenu *fabulor = g_menu_new ();
 	GMenu *view = g_menu_new ();
+	GMenu *settings = g_menu_new ();
+	GMenu *window = g_menu_new ();
 	GMenu *plugin_root = g_menu_new ();
+	GMenu *plugin_root_section = g_menu_new ();
 	GMenu *plugin_fabulor = g_menu_new ();
+	GMenu *plugin_fabulor_extra = g_menu_new ();
+	GMenu *plugin_settings = g_menu_new ();
+	GMenu *plugin_window = g_menu_new ();
 	GMenu *plugin_tools = g_menu_new ();
 	FabulorMiddleContextMenuModel *model;
-	FabulorMiddleContextSection sections[2];
+	FabulorMiddleContextSection sections[4];
 	GMenuModel *menu;
 	GMenuModel *fabulor_submenu;
 	GMenuModel *plugin_section;
+	GMenuModel *settings_submenu;
+	GMenuModel *window_submenu;
 	char *fabulor_label = g_strdup ("Fabulor");
 	char *view_label = g_strdup ("View");
+	char *settings_label = g_strdup ("Settings");
+	char *window_label = g_strdup ("Window");
 	char *label = NULL;
 	gboolean passed;
 
 	g_menu_append (fabulor, "Networks", "fabulor.networks");
 	g_menu_append (view, "Menu Bar", "fabulor.menu-bar");
+	g_menu_append (settings, "Preferences", "fabulor.preferences");
+	g_menu_append (window, "Ban List", "fabulor.ban-list");
 	g_menu_append (plugin_fabulor, "Plugin Command", "fabulor.plugin-0");
+	g_menu_append (plugin_fabulor_extra, "Second Plugin Command",
+		"fabulor.plugin-2");
+	g_menu_append (plugin_settings, "Ignore Queries", "fabulor.plugin-3");
+	g_menu_append (plugin_window, "Display System Info",
+		"fabulor.plugin-4");
 	g_menu_append (plugin_tools, "Tool Command", "fabulor.plugin-1");
 	g_menu_append_submenu (plugin_root, "_Fabulor",
 		G_MENU_MODEL (plugin_fabulor));
+	g_menu_append_submenu (plugin_root, "Fabulor",
+		G_MENU_MODEL (plugin_fabulor_extra));
+	g_menu_append_submenu (plugin_root, "_Settings",
+		G_MENU_MODEL (plugin_settings));
+	g_menu_append_submenu (plugin_root, "Window",
+		G_MENU_MODEL (plugin_window));
 	g_menu_append_submenu (plugin_root, "Tools", G_MENU_MODEL (plugin_tools));
+	g_menu_append_section (plugin_root_section, NULL,
+		G_MENU_MODEL (plugin_root));
 	sections[0].label = fabulor_label;
 	sections[0].plugin_path = "Fabulor";
 	sections[0].model = G_MENU_MODEL (fabulor);
 	sections[1].label = view_label;
 	sections[1].plugin_path = "View";
 	sections[1].model = G_MENU_MODEL (view);
+	sections[2].label = settings_label;
+	sections[2].plugin_path = "Settings";
+	sections[2].model = G_MENU_MODEL (settings);
+	sections[3].label = window_label;
+	sections[3].plugin_path = "_Window";
+	sections[3].model = G_MENU_MODEL (window);
 	model = fabulor_middle_context_menu_model_new (sections,
-		G_N_ELEMENTS (sections), G_MENU_MODEL (plugin_root));
+		G_N_ELEMENTS (sections), G_MENU_MODEL (plugin_root_section));
 	g_free (fabulor_label);
 	g_free (view_label);
+	g_free (settings_label);
+	g_free (window_label);
 	g_object_unref (fabulor);
 	g_object_unref (view);
+	g_object_unref (settings);
+	g_object_unref (window);
 	g_object_unref (plugin_fabulor);
+	g_object_unref (plugin_fabulor_extra);
+	g_object_unref (plugin_settings);
+	g_object_unref (plugin_window);
 	g_object_unref (plugin_tools);
 	g_object_unref (plugin_root);
+	g_object_unref (plugin_root_section);
 	if (!model)
 		return FALSE;
 	menu = fabulor_middle_context_menu_model_get_menu (model);
@@ -4503,18 +4954,28 @@ check_middle_context_menu_model (void)
 		G_MENU_LINK_SUBMENU);
 	plugin_section = fabulor_submenu ? g_menu_model_get_item_link (
 		fabulor_submenu, 1, G_MENU_LINK_SECTION) : NULL;
-	passed = g_menu_model_get_n_items (menu) == 3 && fabulor_submenu &&
+	settings_submenu = g_menu_model_get_item_link (menu, 2,
+		G_MENU_LINK_SUBMENU);
+	window_submenu = g_menu_model_get_item_link (menu, 3,
+		G_MENU_LINK_SUBMENU);
+	passed = g_menu_model_get_n_items (menu) == 5 && fabulor_submenu &&
 		g_menu_model_get_n_items (fabulor_submenu) == 2 && plugin_section &&
-		g_menu_model_get_n_items (plugin_section) == 1 &&
+		g_menu_model_get_n_items (plugin_section) == 2 &&
 		g_menu_model_get_item_attribute (plugin_section, 0,
 			G_MENU_ATTRIBUTE_LABEL, "s", &label) &&
-		g_strcmp0 (label, "Plugin Command") == 0;
+		g_strcmp0 (label, "Plugin Command") == 0 &&
+		settings_submenu &&
+		g_menu_model_get_n_items (settings_submenu) == 2 &&
+		window_submenu &&
+		g_menu_model_get_n_items (window_submenu) == 2;
 	g_free (label);
 	label = NULL;
-	passed = passed && g_menu_model_get_item_attribute (menu, 2,
+	passed = passed && g_menu_model_get_item_attribute (menu, 4,
 		G_MENU_ATTRIBUTE_LABEL, "s", &label) &&
 		g_strcmp0 (label, "Tools") == 0;
 	g_free (label);
+	g_clear_object (&window_submenu);
+	g_clear_object (&settings_submenu);
 	g_clear_object (&plugin_section);
 	g_clear_object (&fabulor_submenu);
 	fabulor_middle_context_menu_model_free (model);
@@ -4904,14 +5365,23 @@ check_xtext_accessible_policy (void)
 }
 
 static gboolean
-check_xtext_display_policy (void)
+check_xtext_display_policy (gboolean gtk_ready)
 {
 	FabulorXTextFontMetrics metrics;
+	PangoFontDescription *font;
+	PangoLayout *layout;
+	GtkWidget *label;
+	const gchar *formatted_run =
+		"lotuspsychje (~lotuspsyc@user/lotuspsychje";
+	const gchar *utf8_run = "A\xc3\xa9" "B";
 	gint logical_width;
 	gint logical_height;
 	gint device_width;
 	gint device_height;
 	gint logical_pixels;
+	gint direct_width;
+	gint hit_index;
+	gint measured_width;
 	gint strike_y;
 	gint underline_y;
 
@@ -4945,6 +5415,48 @@ check_xtext_display_policy (void)
 		fabulor_xtext_scale_factor (0) != 1 ||
 		fabulor_xtext_scale_factor (3) != 3)
 		return FALSE;
+	if (gtk_ready)
+	{
+		label = gtk_label_new (NULL);
+		g_object_ref_sink (label);
+		layout = gtk_widget_create_pango_layout (label, NULL);
+		font = pango_font_description_from_string ("sans 11");
+		pango_layout_set_font_description (layout, font);
+		measured_width = fabulor_xtext_layout_text_width (layout,
+			formatted_run, (gint) strlen (formatted_run));
+		pango_layout_set_text (layout, formatted_run, -1);
+		pango_layout_get_pixel_size (layout, &direct_width, NULL);
+		if (measured_width != direct_width || measured_width <= 0 ||
+			fabulor_xtext_layout_text_width (
+				NULL, formatted_run, -1) != 0 ||
+			fabulor_xtext_layout_text_width (layout, NULL, 1) != 0)
+		{
+			pango_font_description_free (font);
+			g_object_unref (layout);
+			g_object_unref (label);
+			return FALSE;
+		}
+		measured_width = fabulor_xtext_layout_text_width (layout,
+			utf8_run, (gint) strlen (utf8_run));
+		hit_index = fabulor_xtext_layout_index_at_x (layout, utf8_run,
+			(gint) strlen (utf8_run), measured_width / 2);
+		if (fabulor_xtext_layout_index_at_x (layout, utf8_run,
+				(gint) strlen (utf8_run), 0) != 0 ||
+			fabulor_xtext_layout_index_at_x (layout, utf8_run,
+				(gint) strlen (utf8_run), measured_width) !=
+				(gint) strlen (utf8_run) ||
+			hit_index < 0 || hit_index > (gint) strlen (utf8_run) ||
+			!g_utf8_validate (utf8_run, hit_index, NULL))
+		{
+			pango_font_description_free (font);
+			g_object_unref (layout);
+			g_object_unref (label);
+			return FALSE;
+		}
+		pango_font_description_free (font);
+		g_object_unref (layout);
+		g_object_unref (label);
+	}
 	fabulor_xtext_decoration_positions (20, 12, 16, &strike_y,
 		&underline_y);
 	return strike_y == 16 && underline_y == 21;
@@ -5164,6 +5676,14 @@ check_window_geometry_boundary (gboolean gtk_ready)
 	FabulorWindowGeometry geometry;
 	ProbeWindowGeometry probe = { 0 };
 
+	if (fabulor_pane_clamp_end_size (2, 80, 500, 6) != 80 ||
+		fabulor_pane_clamp_end_size (120, 80, 500, 6) != 120 ||
+		fabulor_pane_clamp_end_size (600, 80, 500, 6) != 494 ||
+		fabulor_pane_clamp_end_size (2, 80, 4, 6) != 0 ||
+		fabulor_pane_restore_end_size (120, 145, 80, 500, 6) != 120 ||
+		fabulor_pane_restore_end_size (450, 145, 80, 500, 6) != 145 ||
+		fabulor_pane_restore_end_size (450, 20, 80, 500, 6) != 80)
+		return FALSE;
 	if (!gtk_ready)
 		return TRUE;
 	window = GTK_WINDOW (fabulor_gtk_window_new ());
@@ -5234,6 +5754,16 @@ main (void)
 	check_compatibility_helper_signatures ();
 	check_user_list_view_signatures ();
 	check_channel_tree_view_signatures ();
+	if (!check_proxy_policy ())
+	{
+		fprintf (stderr, "Proxy compatibility policy mismatch\n");
+		return 1;
+	}
+	if (!check_socks5_protocol ())
+	{
+		fprintf (stderr, "SOCKS5 protocol contract mismatch\n");
+		return 1;
+	}
 	if (!check_application_main_loop ())
 	{
 		fprintf (stderr, "GTK4 application main-loop contract mismatch\n");
@@ -5279,6 +5809,11 @@ main (void)
 		fprintf (stderr, "GTK4 layout reparent ownership mismatch\n");
 		return 1;
 	}
+	if (!check_input_controller_phase (gtk_ready))
+	{
+		fprintf (stderr, "GTK4 input controller phase mismatch\n");
+		return 1;
+	}
 	if (!check_entry_text (gtk_ready))
 	{
 		fprintf (stderr, "GTK4 entry text contract mismatch\n");
@@ -5292,6 +5827,11 @@ main (void)
 	if (!check_icon_button (gtk_ready))
 	{
 		fprintf (stderr, "GTK4 icon button contract mismatch\n");
+		return 1;
+	}
+	if (!check_scroll_to_bottom_contract (gtk_ready))
+	{
+		fprintf (stderr, "GTK4 scroll-to-bottom contract mismatch\n");
 		return 1;
 	}
 	if (!check_icon_mnemonic_button (gtk_ready))
@@ -5404,12 +5944,12 @@ main (void)
 		fprintf (stderr, "GTK4 key-binding list contract mismatch\n");
 		return 1;
 	}
-	if (!check_sound_event_list_model ())
+	if (!check_sound_event_list_model (gtk_ready))
 	{
 		fprintf (stderr, "GTK4 sound-event list contract mismatch\n");
 		return 1;
 	}
-	if (!check_preferences_category_list_model ())
+	if (!check_preferences_category_list_model (gtk_ready))
 	{
 		fprintf (stderr, "GTK4 Preferences category list contract mismatch\n");
 		return 1;
@@ -5589,7 +6129,7 @@ main (void)
 		fprintf (stderr, "GTK4 transcript accessible-text policy mismatch\n");
 		return 1;
 	}
-	if (!check_xtext_display_policy ())
+	if (!check_xtext_display_policy (gtk_ready))
 	{
 		fprintf (stderr, "GTK4 transcript display policy mismatch\n");
 		return 1;

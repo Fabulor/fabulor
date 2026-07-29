@@ -146,4 +146,7 @@ jobs:
           if errorlevel 1 exit /b 1
 
           dotnet build samples\plugins\example.csharp.greeter\GreeterPlugin.csproj -c Release
+          if errorlevel 1 exit /b 1
+
+          dotnet build samples\plugins\simple-csharp-greeter\simple-csharp-greeter.csproj -c Release
         shell: cmd

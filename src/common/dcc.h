@@ -92,6 +92,7 @@ struct DCC
 struct proxy_state
 {
 	int phase;
+	int auth_required;
 	unsigned char buffer[MAX_PROXY_BUFFER];
 	int buffersize;
 	int bufferused;

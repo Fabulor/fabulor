@@ -68,6 +68,7 @@
 #include "pixmaps.h"
 #include "plugin-tray.h"
 #include "xtext.h"
+#include "ui-performance-profile.h"
 #include "sexy-spell-entry.h"
 #include "servlistgui.h"
 #include "gtkutil.h"
@@ -106,6 +107,7 @@ enum
 static void mg_apply_emoji_fallback_widget (GtkWidget *widget);
 static void mg_inputbox_insert_emoji_cb (GtkEntry *entry, gpointer user_data);
 static void mg_inputbox_icon_release_cb (GtkEntry *entry, GtkEntryIconPosition icon_pos, gpointer user_data);
+static void mg_schedule_rightpane_restore (session_gui *gui);
 #define MG_CONFIG_SAVE_DEBOUNCE_MS 250
 
 static guint mg_config_save_source_id = 0;
@@ -938,13 +940,8 @@ mg_windowstate_cb (GtkWindow *wid, const FabulorWindowState *state,
         session *sess;
 
 	if ((state->changed & FABULOR_WINDOW_STATE_MINIMIZED) && state->minimized &&
-		 prefs.hex_gui_tray_minimize && prefs.hex_gui_tray &&
-		 gtkutil_tray_icon_supported (wid)
-#ifndef WIN32
-		 )
-#else
-		 && !gtk_window_is_active (wid))
-#endif
+	 prefs.hex_gui_tray_minimize && prefs.hex_gui_tray &&
+	 gtkutil_tray_icon_supported (wid))
 	{
 		tray_toggle_visibility (TRUE);
 	}
@@ -1068,6 +1065,8 @@ mg_geometry_cb (GtkWindow *wid, const FabulorWindowGeometry *geometry,
         }
 
 	target_sess = mg_session_from_window (GTK_WIDGET (wid));
+        if (target_sess && target_sess->gui)
+                mg_schedule_rightpane_restore (target_sess->gui);
         if (target_sess && target_sess->gui && GTK_IS_WIDGET (target_sess->gui->window))
                 mg_queue_window_relayout (target_sess->gui->window);
         else
@@ -1400,11 +1399,13 @@ mg_decide_userlist (session *sess, gboolean switch_to_current)
         }
 }
 
-static int ul_tag = 0;
-
 static gboolean
 mg_populate_userlist (session *sess)
 {
+        gint64 started = fabulor_ui_profile_enabled () ?
+                g_get_monotonic_time () : 0;
+        gint64 model_attached = 0;
+
         if (!sess)
                 sess = current_tab;
 
@@ -1415,10 +1416,22 @@ mg_populate_userlist (session *sess)
                 else
                         mg_set_access_icon (sess->gui, get_user_icon (sess->server, sess->me), sess->server->is_away);
                 userlist_show (sess);
+                if (started)
+                        model_attached = g_get_monotonic_time ();
                 userlist_set_value (sess->gui->user_tree, sess->res->old_ul_value);
         }
+        if (started)
+                fabulor_ui_profile_log ("user-list",
+                                       "total_us=%" G_GINT64_FORMAT
+                                       " model_us=%" G_GINT64_FORMAT
+                                       " scroll_us=%" G_GINT64_FORMAT
+                                       " channel=\"%s\"",
+                                       g_get_monotonic_time () - started,
+                                       model_attached ? model_attached - started : 0,
+                                       model_attached ?
+                                               g_get_monotonic_time () - model_attached : 0,
+                                       sess ? sess->channel : "");
 
-        ul_tag = 0;
         return 0;
 }
 
@@ -1471,6 +1484,9 @@ mg_populate (session *sess)
                         gtk_widget_show (gui->topic_bar);
         }
 
+	gtk_widget_set_visible (gui->nick_box,
+		prefs.hex_gui_input_nick && sess->type != SESS_SERVER);
+
         /* move to THE irc tab */
         if (gui->is_tab)
                 gtk_notebook_set_current_page (GTK_NOTEBOOK (gui->note_book), 0);
@@ -1514,15 +1530,11 @@ mg_populate (session *sess)
         if (strcmp (sess->server->nick, gtk_button_get_label (GTK_BUTTON (gui->nick_label))) != 0)
                 gtk_button_set_label (GTK_BUTTON (gui->nick_label), sess->server->nick);
 
-        /* this is slow, so make it a timeout event */
-        if (!gui->is_tab)
-        {
-                mg_populate_userlist (sess);
-        } else
-        {
-                if (ul_tag == 0)
-                        ul_tag = g_idle_add ((GSourceFunc)mg_populate_userlist, NULL);
-        }
+        /*
+         * Keep transcript and user-list replacement in one switch transaction.
+         * Deferring this model swap makes the list visibly trail the transcript.
+         */
+        mg_populate_userlist (sess);
 
         fe_userlist_numbers (sess);
 
@@ -2423,6 +2435,13 @@ mg_add_chan (session *sess)
         GdkPixbuf *icon;
         char *name = _("<none>");
 
+        if (sess->res->buffer == NULL)
+        {
+                sess->res->buffer = gtk_xtext_buffer_new (GTK_XTEXT (sess->gui->xtext));
+                gtk_xtext_set_time_stamp (sess->res->buffer, prefs.hex_stamp_text);
+                sess->res->user_model = userlist_create_model (sess);
+        }
+
         if (sess->channel[0])
                 name = sess->channel;
 
@@ -2445,13 +2464,6 @@ mg_add_chan (session *sess)
                 mg_create_tab_colors ();
 
         chan_set_color (sess->res->tab, plain_list);
-
-        if (sess->res->buffer == NULL)
-        {
-                sess->res->buffer = gtk_xtext_buffer_new (GTK_XTEXT (sess->gui->xtext));
-                gtk_xtext_set_time_stamp (sess->res->buffer, prefs.hex_stamp_text);
-                sess->res->user_model = userlist_create_model (sess);
-        }
 }
 
 static void
@@ -3378,8 +3390,10 @@ mg_create_topicbar (session *sess, GtkWidget *box)
 		GTK_WRAP_WORD_CHAR : GTK_WRAP_NONE);
         gtk_text_view_set_left_margin (GTK_TEXT_VIEW (topic), 4);
         gtk_text_view_set_right_margin (GTK_TEXT_VIEW (topic), 4);
-        gtk_text_view_set_top_margin (GTK_TEXT_VIEW (topic), 4);
-        gtk_text_view_set_bottom_margin (GTK_TEXT_VIEW (topic), 4);
+        gtk_text_view_set_top_margin (GTK_TEXT_VIEW (topic),
+		prefs.hex_gui_mode_buttons_inline ? 0 : 4);
+        gtk_text_view_set_bottom_margin (GTK_TEXT_VIEW (topic),
+		prefs.hex_gui_mode_buttons_inline ? 0 : 4);
         gtk_text_view_set_pixels_above_lines (GTK_TEXT_VIEW (topic), 0);
         gtk_text_view_set_pixels_below_lines (GTK_TEXT_VIEW (topic), 0);
         gtk_text_view_set_pixels_inside_wrap (GTK_TEXT_VIEW (topic), 0);
@@ -3579,8 +3593,8 @@ mg_show_font_error (GtkWidget *xtext)
         gtk_widget_show (font_error_dialog);
 }
 
-void
-mg_update_xtext (GtkWidget *wid)
+static void
+mg_update_xtext_internal (GtkWidget *wid, gboolean update_font)
 {
         GtkXText *xtext = GTK_XTEXT (wid);
         const gchar *font_name;
@@ -3595,33 +3609,31 @@ mg_update_xtext (GtkWidget *wid)
         gtk_xtext_set_show_separator (xtext, prefs.hex_text_indent ? prefs.hex_text_show_sep : 0);
         gtk_xtext_set_indent (xtext, prefs.hex_text_indent);
 
-        font_name = *prefs.hex_text_font
-                ? prefs.hex_text_font
-                : "Sans 10";
-        if (!gtk_xtext_set_font (xtext, (char *)font_name))
+        if (update_font)
         {
-                mg_show_font_error (wid);
-                return;
+                font_name = *prefs.hex_text_font
+                        ? prefs.hex_text_font
+                        : "Sans 10";
+                if (!gtk_xtext_set_font (xtext, (char *)font_name))
+                {
+                        mg_show_font_error (wid);
+                        return;
+                }
         }
 
         gtk_xtext_refresh (xtext);
 }
 
-static gboolean
-mg_scroll_to_bottom_is_at_bottom (GtkAdjustment *adj)
+void
+mg_update_xtext (GtkWidget *wid)
 {
-        gdouble value;
-        gdouble upper;
-        gdouble page_size;
+        mg_update_xtext_internal (wid, TRUE);
+}
 
-        if (!adj)
-                return TRUE;
-
-        value = gtk_adjustment_get_value (adj);
-        upper = gtk_adjustment_get_upper (adj);
-        page_size = gtk_adjustment_get_page_size (adj);
-
-        return upper <= page_size || value >= upper - page_size - 0.5;
+void
+mg_update_xtext_for_setup (GtkWidget *wid, gboolean update_font)
+{
+        mg_update_xtext_internal (wid, update_font);
 }
 
 void
@@ -3629,11 +3641,14 @@ mg_update_scroll_to_bottom_button (session_gui *gui)
 {
         GtkAdjustment *adj;
 
-        if (!gui || !GTK_IS_WIDGET (gui->scroll_bottom_button) || !GTK_IS_RANGE (gui->vscrollbar))
+        if (!gui || !GTK_IS_WIDGET (gui->scroll_bottom_button) ||
+                !GTK_IS_SCROLLABLE (gui->xtext))
                 return;
 
-        adj = gtk_range_get_adjustment (GTK_RANGE (gui->vscrollbar));
-        if (!prefs.hex_gui_scroll_bottom_button || mg_scroll_to_bottom_is_at_bottom (adj))
+        adj = gtk_scrollable_get_vadjustment (GTK_SCROLLABLE (gui->xtext));
+        if (!prefs.hex_gui_scroll_bottom_button ||
+                gtk_xtext_is_at_bottom (GTK_XTEXT (gui->xtext)) ||
+                fabulor_gtk_adjustment_is_at_end (adj, 0.5))
                 gtk_widget_hide (gui->scroll_bottom_button);
         else
                 gtk_widget_show (gui->scroll_bottom_button);
@@ -3656,20 +3671,9 @@ mg_scroll_to_bottom_adjustment_changed (GtkAdjustment *adj, gpointer userdata)
 static void
 mg_scroll_to_bottom_activate (session_gui *gui)
 {
-        GtkAdjustment *adj;
-        gdouble lower;
-        gdouble target;
-
-        if (!gui || !GTK_IS_RANGE (gui->vscrollbar))
+        if (!gui || !GTK_IS_XTEXT (gui->xtext))
                 return;
-
-        adj = gtk_range_get_adjustment (GTK_RANGE (gui->vscrollbar));
-        lower = gtk_adjustment_get_lower (adj);
-        target = gtk_adjustment_get_upper (adj) - gtk_adjustment_get_page_size (adj);
-        if (target < lower)
-                target = lower;
-
-        gtk_adjustment_set_value (adj, target);
+	gtk_xtext_scroll_to_bottom (GTK_XTEXT (gui->xtext));
 	mg_update_scroll_to_bottom_button (gui);
 }
 
@@ -3684,15 +3688,17 @@ static void
 mg_create_scroll_to_bottom_button (session_gui *gui, GtkOverlay *overlay)
 {
 	GtkAdjustment *adj;
+	GtkWidget *icon;
 	const char *label = _("Scroll to bottom");
 
-	if (!gui || !overlay || !GTK_IS_RANGE (gui->vscrollbar))
+	if (!gui || !overlay || !GTK_IS_SCROLLABLE (gui->xtext))
 		return;
 
-	gui->scroll_bottom_button = fabulor_gtk_icon_button_new (
-		"go-bottom-symbolic");
+	gui->scroll_bottom_button = gtk_button_new ();
+	icon = fabulor_gtk_chevron_down_new (24, 18);
+	gtk_button_set_child (GTK_BUTTON (gui->scroll_bottom_button), icon);
 	g_object_set_data (G_OBJECT (gui->scroll_bottom_button), "mg-session-gui", gui);
-	gtk_widget_set_size_request (gui->scroll_bottom_button, 28, 28);
+	gtk_widget_set_size_request (gui->scroll_bottom_button, 34, 30);
 	fabulor_gtk_button_set_flat (GTK_BUTTON (gui->scroll_bottom_button));
 	gtk_widget_set_tooltip_text (gui->scroll_bottom_button, label);
 	fabulor_gtk_widget_set_accessible_label (gui->scroll_bottom_button, label);
@@ -3703,11 +3709,12 @@ mg_create_scroll_to_bottom_button (session_gui *gui, GtkOverlay *overlay)
         fabulor_gtk_widget_add_css_class (gui->scroll_bottom_button,
                                           "zoitechat-scroll-bottom-button");
         gtk_overlay_add_overlay (overlay, gui->scroll_bottom_button);
+        gtk_overlay_set_clip_overlay (overlay, gui->scroll_bottom_button, FALSE);
 
 	g_signal_connect (G_OBJECT (gui->scroll_bottom_button), "clicked",
 	                  G_CALLBACK (mg_scroll_to_bottom_clicked), gui);
 
-        adj = gtk_range_get_adjustment (GTK_RANGE (gui->vscrollbar));
+        adj = gtk_scrollable_get_vadjustment (GTK_SCROLLABLE (gui->xtext));
         g_signal_connect_object (G_OBJECT (adj), "value-changed",
                                  G_CALLBACK (mg_scroll_to_bottom_adjustment_changed), gui->scroll_bottom_button, 0);
         g_signal_connect_object (G_OBJECT (adj), "changed",
@@ -4076,25 +4083,38 @@ mg_rightpane_cb (GtkPaned *pane, GParamSpec *param, session_gui *gui)
 {
         int handle_size;
         int pane_width;
+        int right_size;
 
+        (void) param;
+        if (gui->pane_right_restoring || !gui->user_box ||
+                !gtk_widget_get_visible (gui->user_box) ||
+                fabulor_gtk_widget_get_allocated_width (gui->user_box) < 1)
+                return;
         handle_size = fabulor_gtk_paned_get_handle_size (pane);
         /* record the position from the RIGHT side */
         pane_width = fabulor_gtk_widget_get_allocated_width (GTK_WIDGET (pane));
-        prefs.hex_gui_pane_right_size = pane_width -
-                gtk_paned_get_position (pane) - handle_size;
+        right_size = pane_width - gtk_paned_get_position (pane) - handle_size;
+        prefs.hex_gui_pane_right_size = fabulor_pane_clamp_end_size (right_size,
+                prefs.hex_gui_pane_right_size_min, pane_width, handle_size);
 }
 
 static void
 mg_restore_rightpane (GtkPaned *pane, int pane_width, gpointer data)
 {
+        int fallback_size;
         int handle_size;
         int saved_size;
         /* use the value captured at connect time, since notify::position may
          * have already overwritten prefs.hex_gui_pane_right_size during layout */
         saved_size = GPOINTER_TO_INT (data);
+        handle_size = fabulor_gtk_paned_get_handle_size (pane);
+        fallback_size = MAX (prefs.hex_gui_ulist_nick_width,
+                prefs.hex_gui_pane_right_size_min);
+        saved_size = fabulor_pane_restore_end_size (saved_size, fallback_size,
+                prefs.hex_gui_pane_right_size_min, pane_width, handle_size);
         if (saved_size < 1)
                 return;
-        handle_size = fabulor_gtk_paned_get_handle_size (pane);
+        prefs.hex_gui_pane_right_size = saved_size;
         gtk_paned_set_position (pane, pane_width - saved_size - handle_size);
 }
 
@@ -4102,17 +4122,60 @@ static gboolean
 mg_restore_rightpane_tick_cb (GtkWidget *widget, GdkFrameClock *frame_clock,
                               gpointer data)
 {
+        session_gui *gui = data;
         GtkPaned *pane = GTK_PANED (widget);
         GtkWidget *end_child = fabulor_gtk_paned_get_end_child (pane);
+        int actual_size;
+        int desired_size;
+        int handle_size;
         int pane_width = fabulor_gtk_widget_get_allocated_width (widget);
 
         (void) frame_clock;
-        if (pane_width < 1 || !end_child ||
-                fabulor_gtk_widget_get_allocated_width (end_child) < 1)
+        if (!gtk_widget_get_mapped (widget) || pane_width < 1 || !end_child ||
+                !gui->user_box || !gtk_widget_get_visible (gui->user_box) ||
+                fabulor_gtk_widget_get_allocated_width (gui->user_box) < 1)
                 return G_SOURCE_CONTINUE;
 
-        mg_restore_rightpane (pane, pane_width, data);
+        mg_restore_rightpane (pane, pane_width,
+                GINT_TO_POINTER (gui->pane_right_size));
+
+        handle_size = fabulor_gtk_paned_get_handle_size (pane);
+        desired_size = fabulor_pane_restore_end_size (gui->pane_right_size,
+                MAX (prefs.hex_gui_ulist_nick_width,
+                        prefs.hex_gui_pane_right_size_min),
+                prefs.hex_gui_pane_right_size_min, pane_width, handle_size);
+        gui->pane_right_size = desired_size;
+        actual_size = pane_width - gtk_paned_get_position (pane) - handle_size;
+        if (gui->pane_right_last_width != pane_width ||
+                ABS (actual_size - desired_size) > 1)
+        {
+                gui->pane_right_last_width = pane_width;
+                gui->pane_right_stable_frames = 0;
+                return G_SOURCE_CONTINUE;
+        }
+
+        gui->pane_right_stable_frames++;
+        if (gui->pane_right_stable_frames < 3)
+                return G_SOURCE_CONTINUE;
+        gui->pane_right_restoring = 0;
+        gui->pane_right_restore_tick_id = 0;
         return G_SOURCE_REMOVE;
+}
+
+static void
+mg_schedule_rightpane_restore (session_gui *gui)
+{
+        if (!gui || !GTK_IS_WIDGET (gui->hpane_right))
+                return;
+
+        gui->pane_right_size = prefs.hex_gui_pane_right_size;
+        gui->pane_right_restoring = 1;
+        gui->pane_right_last_width = 0;
+        gui->pane_right_stable_frames = 0;
+        if (!gui->pane_right_restore_tick_id)
+                gui->pane_right_restore_tick_id =
+                        gtk_widget_add_tick_callback (gui->hpane_right,
+                                mg_restore_rightpane_tick_cb, gui, NULL);
 }
 
 static gboolean
@@ -4150,9 +4213,7 @@ mg_create_center (session *sess, session_gui *gui, GtkWidget *box)
 
 	/* Restore after the first complete allocation. Capture the saved size before
 	 * notify::position can overwrite it during initial layout. */
-	gtk_widget_add_tick_callback (gui->hpane_right,
-		mg_restore_rightpane_tick_cb,
-		GINT_TO_POINTER (prefs.hex_gui_pane_right_size), NULL);
+        mg_schedule_rightpane_restore (gui);
 
         if (prefs.hex_gui_win_swap)
         {
@@ -4169,7 +4230,7 @@ mg_create_center (session *sess, session_gui *gui, GtkWidget *box)
                         gui->hpane_right, TRUE, TRUE);
         }
         fabulor_gtk_paned_set_end_child (GTK_PANED (gui->hpane_right),
-                gui->vpane_right, FALSE, TRUE);
+                gui->vpane_right, prefs.hex_gui_ulist_resizable, TRUE);
 
         fabulor_gtk_box_append (GTK_BOX (box), gui->hpane_left, TRUE, TRUE, 0);
 
@@ -4180,6 +4241,8 @@ mg_create_center (session *sess, session_gui *gui, GtkWidget *box)
                 book, TRUE, TRUE);
 
         hbox = mg_box_new (GTK_ORIENTATION_HORIZONTAL, FALSE, 0);
+        gtk_widget_set_size_request (hbox,
+                MAX (prefs.hex_gui_pane_right_size_min, 1), -1);
         fabulor_gtk_paned_set_start_child (GTK_PANED (gui->vpane_right),
                 hbox, FALSE, TRUE);
         mg_create_userlist (gui, hbox);
@@ -4378,7 +4441,16 @@ mg_place_userlist_and_chanview (session_gui *gui)
 {
         GtkOrientation orientation;
         GtkWidget *chanviewbox = NULL;
+        gboolean restore_right_pane;
+        int saved_right_size;
         int pos;
+
+        restore_right_pane =
+                gtk_widget_get_mapped (gui->hpane_right) &&
+                fabulor_gtk_widget_get_allocated_width (gui->hpane_right) > 0;
+        saved_right_size = prefs.hex_gui_pane_right_size;
+        if (restore_right_pane)
+                gui->pane_right_restoring = 1;
 
         mg_sanitize_positions (&prefs.hex_gui_tab_pos, &prefs.hex_gui_ulist_pos);
 
@@ -4395,6 +4467,12 @@ mg_place_userlist_and_chanview (session_gui *gui)
         }
 
         mg_place_userlist_and_chanview_real (gui, gui->user_box, chanviewbox);
+
+        if (restore_right_pane)
+        {
+                prefs.hex_gui_pane_right_size = saved_right_size;
+                mg_schedule_rightpane_restore (gui);
+        }
 }
 
 void
@@ -4427,6 +4505,12 @@ typedef struct
 } EmojiPickerPage;
 
 #define MG_EMOJI_PAGE_DATA "fabulor-emoji-page"
+#define MG_EMOJI_BUTTON_WIDTH 52
+#define MG_EMOJI_BUTTON_HEIGHT 48
+#define MG_EMOJI_FLAG_WIDTH 42
+#define MG_EMOJI_FLAG_HEIGHT 28
+#define MG_EMOJI_FLAG_SOURCE_WIDTH (MG_EMOJI_FLAG_WIDTH * 2)
+#define MG_EMOJI_FLAG_SOURCE_HEIGHT (MG_EMOJI_FLAG_HEIGHT * 2)
 
 static const char *mg_emoji_flag_codes[] = {
         "AC", "AD", "AE", "AF", "AG", "AI", "AL", "AM", "AO", "AQ", "AR", "AS",
@@ -4576,7 +4660,9 @@ mg_emoji_flag_load_pixbuf (const char *code)
         if (base_path)
         {
                 path = g_build_filename (base_path, "share", "emoji-flags", name, NULL);
-                pixbuf = gdk_pixbuf_new_from_file_at_scale (path, 34, 28, TRUE, &error);
+                pixbuf = gdk_pixbuf_new_from_file_at_scale (
+                                path, MG_EMOJI_FLAG_SOURCE_WIDTH,
+                                MG_EMOJI_FLAG_SOURCE_HEIGHT, TRUE, &error);
                 g_free (path);
                 if (pixbuf)
                         goto cleanup;
@@ -4585,7 +4671,9 @@ mg_emoji_flag_load_pixbuf (const char *code)
 #endif
 
         path = g_build_filename ("share", "emoji-flags", name, NULL);
-        pixbuf = gdk_pixbuf_new_from_file_at_scale (path, 34, 28, TRUE, &error);
+        pixbuf = gdk_pixbuf_new_from_file_at_scale (
+                        path, MG_EMOJI_FLAG_SOURCE_WIDTH,
+                        MG_EMOJI_FLAG_SOURCE_HEIGHT, TRUE, &error);
 
         if (!pixbuf)
         {
@@ -4629,27 +4717,41 @@ mg_emoji_flag_insert_cb (GtkWidget *button, gpointer user_data)
 }
 
 static GtkWidget *
-mg_emoji_grid_scroller_new (GtkWidget **grid_out)
+mg_emoji_scroller_new (GtkWidget **flow_out)
 {
         GtkWidget *scrolled;
-        GtkWidget *grid;
+        GtkWidget *flow;
 
         scrolled = gtk_scrolled_window_new ();
-        gtk_scrolled_window_set_policy (GTK_SCROLLED_WINDOW (scrolled), GTK_POLICY_NEVER, GTK_POLICY_AUTOMATIC);
-        gtk_widget_set_size_request (scrolled, 500, 330);
+        gtk_scrolled_window_set_policy (GTK_SCROLLED_WINDOW (scrolled),
+                                        GTK_POLICY_NEVER,
+                                        GTK_POLICY_AUTOMATIC);
+        gtk_scrolled_window_set_overlay_scrolling (
+                                        GTK_SCROLLED_WINDOW (scrolled), FALSE);
+        gtk_widget_set_hexpand (scrolled, TRUE);
+        gtk_widget_set_vexpand (scrolled, TRUE);
 
-        grid = gtk_grid_new ();
-        gtk_grid_set_row_spacing (GTK_GRID (grid), 4);
-        gtk_grid_set_column_spacing (GTK_GRID (grid), 4);
-        fabulor_gtk_scrolled_window_set_child (GTK_SCROLLED_WINDOW (scrolled), grid);
+        flow = gtk_flow_box_new ();
+        gtk_flow_box_set_selection_mode (GTK_FLOW_BOX (flow),
+                                         GTK_SELECTION_NONE);
+        gtk_flow_box_set_homogeneous (GTK_FLOW_BOX (flow), TRUE);
+        gtk_flow_box_set_row_spacing (GTK_FLOW_BOX (flow), 4);
+        gtk_flow_box_set_column_spacing (GTK_FLOW_BOX (flow), 4);
+        gtk_flow_box_set_min_children_per_line (GTK_FLOW_BOX (flow), 1);
+        gtk_flow_box_set_max_children_per_line (GTK_FLOW_BOX (flow), 10);
+        gtk_widget_set_valign (flow, GTK_ALIGN_START);
+        fabulor_gtk_scrolled_window_set_child (GTK_SCROLLED_WINDOW (scrolled),
+                                               flow);
 
-        *grid_out = grid;
+        *flow_out = flow;
         return scrolled;
 }
 
 static void
-mg_emoji_add_button_sized (GtkWidget *grid, GtkEntry *entry, GtkWidget *popover, GtkWidget *child,
-                           const char *sequence, const char *tooltip, int index, int width, int height)
+mg_emoji_add_button_sized (GtkWidget *flow, GtkEntry *entry,
+                           GtkWidget *popover, GtkWidget *child,
+                           const char *sequence, const char *tooltip,
+                           int width, int height)
 {
         GtkWidget *button;
         EmojiFlagInsert *insert;
@@ -4672,26 +4774,29 @@ mg_emoji_add_button_sized (GtkWidget *grid, GtkEntry *entry, GtkWidget *popover,
                                (GClosureNotify) mg_emoji_flag_insert_free,
                                0);
 
-        gtk_grid_attach (GTK_GRID (grid), button, index % 10, index / 10, 1, 1);
+        gtk_flow_box_append (GTK_FLOW_BOX (flow), button);
 }
 
 static void
-mg_emoji_add_button (GtkWidget *grid, GtkEntry *entry, GtkWidget *popover, GtkWidget *child,
-                     const char *sequence, const char *tooltip, int index)
+mg_emoji_add_button (GtkWidget *flow, GtkEntry *entry, GtkWidget *popover,
+                     GtkWidget *child, const char *sequence,
+                     const char *tooltip)
 {
-        mg_emoji_add_button_sized (grid, entry, popover, child, sequence, tooltip, index, 46, 46);
+        mg_emoji_add_button_sized (flow, entry, popover, child, sequence,
+                                   tooltip, MG_EMOJI_BUTTON_WIDTH,
+                                   MG_EMOJI_BUTTON_HEIGHT);
 }
 
 static GtkWidget *
 mg_emoji_codepoint_page_new (GtkEntry *entry, GtkWidget *popover, const gunichar *items)
 {
         GtkWidget *scrolled;
-        GtkWidget *grid;
+        GtkWidget *flow;
         GtkWidget *label;
         char *sequence;
         int i;
 
-        scrolled = mg_emoji_grid_scroller_new (&grid);
+        scrolled = mg_emoji_scroller_new (&flow);
 
         for (i = 0; items[i] != 0; i++)
         {
@@ -4704,7 +4809,8 @@ mg_emoji_codepoint_page_new (GtkEntry *entry, GtkWidget *popover, const gunichar
                 gtk_label_set_attributes (GTK_LABEL (label), attrs);
                 pango_attr_list_unref (attrs);
                 mg_apply_emoji_fallback_widget (label);
-                mg_emoji_add_button_sized (grid, entry, popover, label, sequence, sequence, i, 52, 48);
+                mg_emoji_add_button (flow, entry, popover, label, sequence,
+                                     sequence);
                 g_free (sequence);
         }
 
@@ -4715,7 +4821,7 @@ static GtkWidget *
 mg_emoji_flags_page_new (GtkEntry *entry, GtkWidget *popover)
 {
         GtkWidget *scrolled;
-        GtkWidget *grid;
+        GtkWidget *flow;
         GtkWidget *box;
         GtkWidget *image;
         GtkWidget *label;
@@ -4724,7 +4830,7 @@ mg_emoji_flags_page_new (GtkEntry *entry, GtkWidget *popover)
         char *tooltip;
         int i;
 
-        scrolled = mg_emoji_grid_scroller_new (&grid);
+        scrolled = mg_emoji_scroller_new (&flow);
 
         for (i = 0; mg_emoji_flag_codes[i] != NULL; i++)
         {
@@ -4740,7 +4846,15 @@ mg_emoji_flags_page_new (GtkEntry *entry, GtkWidget *popover)
                         box = gtk_box_new (GTK_ORIENTATION_VERTICAL, 1);
                         {
                                 GdkTexture *texture = gdk_texture_new_for_pixbuf (pixbuf);
-                                image = gtk_image_new_from_paintable (GDK_PAINTABLE (texture));
+                                image = gtk_picture_new_for_paintable (
+                                                GDK_PAINTABLE (texture));
+                                gtk_picture_set_content_fit (GTK_PICTURE (image),
+                                                GTK_CONTENT_FIT_CONTAIN);
+                                gtk_picture_set_can_shrink (GTK_PICTURE (image),
+                                                FALSE);
+                                gtk_widget_set_size_request (image,
+                                                MG_EMOJI_FLAG_WIDTH,
+                                                MG_EMOJI_FLAG_HEIGHT);
                                 g_object_unref (texture);
                         }
                         g_object_unref (pixbuf);
@@ -4755,13 +4869,16 @@ mg_emoji_flags_page_new (GtkEntry *entry, GtkWidget *popover)
                         fabulor_gtk_box_append (GTK_BOX (box), label, FALSE, FALSE, 0);
 
                         tooltip = g_strdup_printf (_("Insert %s flag."), mg_emoji_flag_codes[i]);
-                        mg_emoji_add_button (grid, entry, popover, box, sequence, tooltip, i);
+                        mg_emoji_add_button (flow, entry, popover, box,
+                                             sequence, tooltip);
                         g_free (tooltip);
                 }
                 else
                 {
                         label = gtk_label_new (mg_emoji_flag_codes[i]);
-                        mg_emoji_add_button (grid, entry, popover, label, sequence, mg_emoji_flag_codes[i], i);
+                        mg_emoji_add_button (flow, entry, popover, label,
+                                             sequence,
+                                             mg_emoji_flag_codes[i]);
                 }
 
                 g_free (sequence);
@@ -4830,19 +4947,73 @@ mg_emoji_stack_visible_child_cb (GObject *object, GParamSpec *pspec,
 }
 
 static void
+mg_emoji_category_changed_cb (GtkDropDown *dropdown, GParamSpec *pspec,
+                              gpointer user_data)
+{
+        GtkStack *stack = GTK_STACK (user_data);
+        guint selected = gtk_drop_down_get_selected (dropdown);
+        guint category_count = G_N_ELEMENTS (mg_emoji_categories) - 1;
+        gchar *name;
+
+        (void) pspec;
+        if (selected > category_count)
+                return;
+
+        if (selected == category_count)
+                gtk_stack_set_visible_child_name (stack, "emoji-flags");
+        else
+        {
+                name = g_strdup_printf ("emoji-category-%u", selected);
+                gtk_stack_set_visible_child_name (stack, name);
+                g_free (name);
+        }
+}
+
+static void
+mg_emoji_popover_close_cb (GtkButton *button, gpointer user_data)
+{
+        (void) button;
+        gtk_popover_popdown (GTK_POPOVER (user_data));
+}
+
+static void
+mg_emoji_popover_apply_size (GtkEntry *entry, GtkPopover *popover)
+{
+        GtkWidget *outer;
+        GtkWidget *root;
+        int viewport_width;
+        int viewport_height;
+
+        outer = gtk_popover_get_child (popover);
+        if (!outer)
+                return;
+        root = GTK_WIDGET (gtk_widget_get_root (GTK_WIDGET (entry)));
+        fabulor_emoji_picker_viewport_size (
+                root ? fabulor_gtk_widget_get_allocated_width (root) : 0,
+                root ? gtk_widget_get_height (root) : 0,
+                &viewport_width, &viewport_height);
+        gtk_widget_set_size_request (outer, viewport_width, viewport_height);
+}
+
+static void
 mg_show_emoji_popover (GtkEntry *entry)
 {
         GtkWidget *popover;
         GtkWidget *outer;
         GtkWidget *stack;
-        GtkWidget *switcher;
+        GtkWidget *category_row;
+        GtkWidget *category_label;
+        GtkWidget *category_selector;
+        GtkWidget *close_button;
         GtkWidget *page;
+        GtkStringList *category_model;
         gchar *name;
         int i;
 
         popover = GTK_WIDGET (fabulor_emoji_picker_popover_get (entry));
         if (popover)
         {
+                mg_emoji_popover_apply_size (entry, GTK_POPOVER (popover));
                 gtk_popover_popup (GTK_POPOVER (popover));
                 return;
         }
@@ -4859,10 +5030,36 @@ mg_show_emoji_popover (GtkEntry *entry)
         fabulor_gtk_popover_set_child (GTK_POPOVER (popover), outer);
 
         stack = gtk_stack_new ();
+        gtk_widget_set_hexpand (stack, TRUE);
+        gtk_widget_set_vexpand (stack, TRUE);
         gtk_stack_set_transition_type (GTK_STACK (stack), GTK_STACK_TRANSITION_TYPE_NONE);
-        switcher = gtk_stack_switcher_new ();
-        gtk_stack_switcher_set_stack (GTK_STACK_SWITCHER (switcher), GTK_STACK (stack));
-        fabulor_gtk_box_append (GTK_BOX (outer), switcher, FALSE, FALSE, 0);
+
+        category_model = gtk_string_list_new (NULL);
+        for (i = 0; mg_emoji_categories[i].title != NULL; i++)
+                gtk_string_list_append (category_model,
+                                        _(mg_emoji_categories[i].title));
+        gtk_string_list_append (category_model, _("Flags"));
+        category_selector = gtk_drop_down_new (G_LIST_MODEL (category_model),
+                                               NULL);
+        g_object_unref (category_model);
+        gtk_widget_set_hexpand (category_selector, TRUE);
+        category_label = gtk_label_new (_("Category"));
+        gtk_widget_set_halign (category_label, GTK_ALIGN_START);
+        close_button = gtk_button_new_from_icon_name ("window-close-symbolic");
+        fabulor_gtk_button_set_flat (GTK_BUTTON (close_button));
+        gtk_widget_set_tooltip_text (close_button, _("Close emoji picker."));
+        gtk_widget_set_can_focus (close_button, FALSE);
+        g_signal_connect (G_OBJECT (close_button), "clicked",
+                          G_CALLBACK (mg_emoji_popover_close_cb), popover);
+        category_row = gtk_box_new (GTK_ORIENTATION_HORIZONTAL, 8);
+        fabulor_gtk_box_append (GTK_BOX (category_row), category_label,
+                               FALSE, FALSE, 0);
+        fabulor_gtk_box_append (GTK_BOX (category_row), category_selector,
+                               TRUE, TRUE, 0);
+        fabulor_gtk_box_append (GTK_BOX (category_row), close_button,
+                               FALSE, FALSE, 0);
+        fabulor_gtk_box_append (GTK_BOX (outer), category_row,
+                               FALSE, FALSE, 0);
         fabulor_gtk_box_append (GTK_BOX (outer), stack, TRUE, TRUE, 0);
 
         for (i = 0; mg_emoji_categories[i].title != NULL; i++)
@@ -4878,9 +5075,14 @@ mg_show_emoji_popover (GtkEntry *entry)
         gtk_stack_add_titled (GTK_STACK (stack), page, "emoji-flags", _("Flags"));
         g_signal_connect (G_OBJECT (stack), "notify::visible-child",
                           G_CALLBACK (mg_emoji_stack_visible_child_cb), NULL);
+        g_signal_connect_object (G_OBJECT (category_selector),
+                                 "notify::selected",
+                                 G_CALLBACK (mg_emoji_category_changed_cb),
+                                 G_OBJECT (stack), 0);
         page = gtk_stack_get_visible_child (GTK_STACK (stack));
         mg_emoji_lazy_page_load (page);
 
+        mg_emoji_popover_apply_size (entry, GTK_POPOVER (popover));
         fabulor_gtk_widget_reveal_tree (popover);
         gtk_popover_popup (GTK_POPOVER (popover));
 }
@@ -5352,6 +5554,8 @@ mg_switch_tab_cb (chanview *cv, chan *ch, int tag, gpointer ud)
 {
         chan *old;
         session *sess = ud;
+        gint64 started = fabulor_ui_profile_enabled () ?
+                g_get_monotonic_time () : 0;
 
         old = active_tab;
         active_tab = ch;
@@ -5371,6 +5575,12 @@ mg_switch_tab_cb (chanview *cv, chan *ch, int tag, gpointer ud)
                 if (!mg_is_userlist_and_tree_combined ())
                         mg_userlist_showhide (current_sess, FALSE);     /* hide */
         }
+        if (started)
+                fabulor_ui_profile_log ("tab-switch",
+                                       "total_us=%" G_GINT64_FORMAT
+                                       " tag=%d channel=\"%s\"",
+                                       g_get_monotonic_time () - started, tag,
+                                       tag == TAG_IRC && sess ? sess->channel : "");
 }
 
 /* compare two tabs (for tab sorting function) */
@@ -5590,6 +5800,9 @@ mg_win32_message_dispatch (MSG *msg)
 	if (!msg)
 		return FALSE;
 
+	if (tray_win32_message_dispatch (msg->message, msg->wParam, msg->lParam))
+		return TRUE;
+
 	if (msg->message == WM_TIMECHANGE)
 	{
 		_tzset();
@@ -5775,7 +5988,7 @@ mg_create_tabwindow (session *sess)
 }
 
 void
-mg_apply_setup (void)
+mg_apply_setup (gboolean recalculate_transcript_metrics)
 {
         GSList *list = sess_list;
         session *sess;
@@ -5787,7 +6000,9 @@ mg_apply_setup (void)
         {
                 sess = list->data;
                 gtk_xtext_set_time_stamp (sess->res->buffer, prefs.hex_stamp_text);
-                ((xtext_buffer *)sess->res->buffer)->needs_recalc = TRUE;
+                if (recalculate_transcript_metrics &&
+                        GTK_XTEXT (sess->gui->xtext)->buffer != sess->res->buffer)
+                        ((xtext_buffer *)sess->res->buffer)->needs_recalc = TRUE;
                 if (!sess->gui->is_tab || !done_main)
                         mg_place_userlist_and_chanview (sess->gui);
                 if (sess->gui->is_tab)

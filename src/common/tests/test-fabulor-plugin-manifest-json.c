@@ -696,6 +696,7 @@ test_path_policy_rejects_links (void)
 }
 
 void register_theme_archive_reader_tests (void);
+void service_message_register_tests (void);
 
 int
 main (int argc, char **argv)
@@ -720,5 +721,6 @@ main (int argc, char **argv)
 	g_test_add_func ("/manifest-paths/resolves-entrypoints", test_path_policy_resolves_entrypoints);
 	g_test_add_func ("/manifest-paths/rejects-links", test_path_policy_rejects_links);
 	register_theme_archive_reader_tests ();
+	service_message_register_tests ();
 	return g_test_run ();
 }

@@ -8,6 +8,7 @@ import pathlib
 import subprocess
 import sys
 import xml.etree.ElementTree as ET
+import zipfile
 
 
 class ThemeContractError(RuntimeError):
@@ -114,18 +115,34 @@ def validate_import_contract(repo: pathlib.Path) -> None:
     preferences = read_text(
         repo / "src" / "fe-gtk" / "theme" / "theme-preferences.c"
     ).casefold()
-    required = ('".hct"', '"colors.conf"', '"pevents.conf"', '"*.hct"')
+    required = (
+        '".hct"',
+        '"colors.conf"',
+        '"*.hct"',
+        "fabulor_theme_archive_discover",
+        "fabulor_theme_archive_discover_with_bundled",
+        "fabulor_theme_archive_read_text_file",
+        "theme_palette_transaction_replace",
+        "gtk_drop_down_new",
+        "g_task_run_in_thread",
+    )
     missing = [token for token in required if token not in preferences]
     if missing:
         raise ThemeContractError(
             f"Theme preferences are missing supported import tokens: {', '.join(missing)}"
         )
+    if '"pevents.conf"' in preferences:
+        raise ThemeContractError(
+            "The active palette importer must not install legacy pevents.conf data."
+        )
     if '".zct"' in preferences or '"*.zct"' in preferences:
         raise ThemeContractError("The active theme importer must not accept retired .zct files.")
-    if "fabulor_theme_archive_read_text_file" not in preferences:
-        raise ThemeContractError("The active .hct importer must use the bounded archive reader.")
     if "zoitechat_gtk3_theme_service_read_archive_text_file" in preferences:
         raise ThemeContractError("The active .hct importer must not depend on the GTK3 theme service.")
+    if "g_object_unref (profile_model)" in preferences:
+        raise ThemeContractError(
+            "GtkDropDown owns the profile model passed to gtk_drop_down_new."
+        )
 
     archive_reader = read_text(
         repo / "src" / "common" / "theme-archive-reader.c"
@@ -137,6 +154,13 @@ def validate_import_contract(repo: pathlib.Path) -> None:
         "GetSystemDirectoryW",
         "g_subprocess_newv",
         "theme_archive_entry_is_safe",
+        "FABULOR_GTK4_ARCHIVE_MAX_BYTES",
+        "FABULOR_GTK4_ARCHIVE_MAX_ENTRIES",
+        "FABULOR_GTK4_ARCHIVE_MAX_OUTPUT_BYTES",
+        "gtk4_archive_copy_bounded",
+        "gtk4_archive_entry_name_is_safe",
+        "gtk4_archive_validate_tree",
+        "theme_archive_path_is_directory",
     )
     missing_reader = [
         token for token in required_reader_tokens if token not in archive_reader
@@ -156,6 +180,36 @@ def validate_import_contract(repo: pathlib.Path) -> None:
             + ", ".join(present_forbidden)
         )
 
+    gtk4_preferences = read_text(
+        repo / "src" / "fe-gtk" / "theme" / "theme-preferences-gtk4.c"
+    )
+    required_gtk4_import_tokens = (
+        "fabulor_gtk4_theme_archive_import",
+        "g_task_run_in_thread",
+        "theme_gtk4_controller_reload_catalog",
+        "theme_preferences_gtk4_queue_apply",
+        "g_idle_add_full",
+        '"*.tar.xz"',
+        "Import theme archive...",
+    )
+    missing_gtk4_import = [
+        token for token in required_gtk4_import_tokens
+        if token not in gtk4_preferences
+    ]
+    if missing_gtk4_import:
+        raise ThemeContractError(
+            "GTK4 preferences are missing contained archive import tokens: "
+            + ", ".join(missing_gtk4_import)
+        )
+
+    gtk4_adapter = read_text(
+        repo / "src" / "fe-gtk" / "theme" / "theme-gtk4.c"
+    )
+    if "variant_provider" in gtk4_adapter:
+        raise ThemeContractError(
+            "GTK4 themes must install one resolved light or dark provider, not layered full providers."
+        )
+
     runtime = read_text(
         repo / "src" / "fe-gtk" / "theme" / "theme-runtime.c"
     ).casefold()
@@ -167,6 +221,10 @@ def validate_import_contract(repo: pathlib.Path) -> None:
 
 def validate_repository_payload(repo: pathlib.Path) -> None:
     forbidden: list[str] = []
+    allowed_palette_payload = {
+        pathlib.PurePosixPath("data/palettes/fabulor dark.hct"),
+        pathlib.PurePosixPath("data/palettes/fabulor dark/colors.conf"),
+    }
     payload_roots = (
         pathlib.PurePosixPath("data"),
         pathlib.PurePosixPath("win32/copy/share"),
@@ -174,6 +232,8 @@ def validate_repository_payload(repo: pathlib.Path) -> None:
     for path in tracked_files(repo):
         lower = pathlib.PurePosixPath(str(path).casefold())
         if not any(lower == root or root in lower.parents for root in payload_roots):
+            continue
+        if lower in allowed_palette_payload:
             continue
         if (
             lower.suffix in {".hct", ".zct"}
@@ -188,8 +248,37 @@ def validate_repository_payload(repo: pathlib.Path) -> None:
         )
 
 
+def validate_bundled_palette(repo: pathlib.Path) -> None:
+    archive = repo / "data" / "palettes" / "Fabulor Dark.hct"
+    source = repo / "data" / "palettes" / "Fabulor Dark" / "colors.conf"
+
+    if not archive.exists() and not source.exists():
+        return
+    if not archive.is_file() or not source.is_file():
+        raise ThemeContractError(
+            "The Fabulor Dark palette requires both its .hct archive and colors.conf source."
+        )
+    try:
+        with zipfile.ZipFile(archive) as package:
+            entries = package.infolist()
+            if [entry.filename for entry in entries] != ["colors.conf"]:
+                raise ThemeContractError(
+                    "Fabulor Dark.hct must contain exactly one colors.conf entry."
+                )
+            archived_colors = package.read(entries[0])
+    except (OSError, zipfile.BadZipFile) as exc:
+        raise ThemeContractError(f"Unable to validate Fabulor Dark.hct: {exc}") from exc
+    if archived_colors != source.read_bytes():
+        raise ThemeContractError(
+            "Fabulor Dark.hct colors.conf does not match its tracked source."
+        )
+
+
 def validate_wix_harvest(repo: pathlib.Path) -> None:
     forbidden: list[str] = []
+    bundled_palette_source = (
+        "\\data\\palettes\\fabulor dark.hct"
+    )
     components = repo / "installer" / "Components"
     for path in sorted(components.glob("*.wxs")):
         try:
@@ -202,6 +291,8 @@ def validate_wix_harvest(repo: pathlib.Path) -> None:
                 if not value:
                     continue
                 normalized = value.replace("/", "\\").casefold()
+                if normalized.endswith(bundled_palette_source):
+                    continue
                 if (
                     normalized.endswith((".hct", ".zct", "\\colors.conf"))
                     or "\\share\\themes\\" in normalized
@@ -220,6 +311,7 @@ def validate(repo: pathlib.Path) -> None:
     validate_associations(repo)
     validate_import_contract(repo)
     validate_repository_payload(repo)
+    validate_bundled_palette(repo)
     validate_wix_harvest(repo)
 
 
@@ -236,7 +328,9 @@ def main() -> int:
         print(f"Theme contract validation failed: {exc}", file=sys.stderr)
         return 1
     print(
-        "Theme contract validated: .hct and colors.conf retained; .zct and bundled default themes excluded."
+        "Theme contract validated: .hct and colors.conf retained; "
+        "Fabulor Dark is the only bundled palette; .zct and bundled "
+        "desktop themes excluded."
     )
     return 0
 

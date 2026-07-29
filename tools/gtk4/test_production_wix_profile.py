@@ -1,5 +1,6 @@
 import pathlib
 import json
+import re
 import unittest
 import xml.etree.ElementTree as ET
 
@@ -70,9 +71,39 @@ GTK4_TRAY_SOURCES = (
     "plugin-tray.c",
     "tray-menu-presenter-gtk4.c",
 )
-FRONTEND_MESON = ROOT / "src" / "fe-gtk" / "meson.build"
+LEGACY_BUILD_GRAPH = (
+    ROOT / "Makefile",
+    ROOT / "meson_post_install.py",
+    ROOT / "src" / "meson.build",
+    ROOT / "src" / "common" / "meson.build",
+    ROOT / "src" / "common" / "dbus" / "meson.build",
+    ROOT / "src" / "fe-gtk" / "meson.build",
+    ROOT / "src" / "fe-text" / "meson.build",
+    ROOT / "plugins" / "meson.build",
+    ROOT / "plugins" / "checksum" / "meson.build",
+    ROOT / "plugins" / "exec" / "meson.build",
+    ROOT / "plugins" / "fishlim" / "meson.build",
+    ROOT / "plugins" / "fishlim" / "tests" / "meson.build",
+    ROOT / "plugins" / "lua" / "meson.build",
+    ROOT / "plugins" / "perl" / "meson.build",
+    ROOT / "plugins" / "python" / "meson.build",
+    ROOT / "plugins" / "sysinfo" / "meson.build",
+    ROOT / "plugins" / "upd" / "meson.build",
+    ROOT / "data" / "meson.build",
+    ROOT / "data" / "icons" / "meson.build",
+    ROOT / "data" / "man" / "meson.build",
+    ROOT / "data" / "misc" / "meson.build",
+    ROOT / "data" / "pkgconfig" / "meson.build",
+    ROOT / "po" / "meson.build",
+)
+GTK4_PROBE_MESON = ROOT / "tools" / "gtk4" / "meson.build"
 GTK4_APPLICATION_SOURCE = ROOT / "src" / "fe-gtk" / "fe-gtk.c"
 GTK4_SERVER_LIST_SOURCE = ROOT / "src" / "fe-gtk" / "servlistgui.c"
+COMMON_SERVER_LIST_SOURCE = ROOT / "src" / "common" / "servlist.c"
+COMMON_HISTORY_SOURCE = ROOT / "src" / "common" / "history.c"
+COMMON_HISTORY_HEADER = ROOT / "src" / "common" / "history.h"
+COMMON_OUTBOUND_SOURCE = ROOT / "src" / "common" / "outbound.c"
+COMMON_APPLICATION_SOURCE = ROOT / "src" / "common" / "zoitechat.c"
 GTK4_CHANNEL_BAN_DIALOG_SOURCES = (
     "banlist.c",
     "chanlist.c",
@@ -122,6 +153,30 @@ class ProductionWixProfileTests(unittest.TestCase):
         self.assertNotIn("LegacyGtkRootRuntimeComponents", source)
         self.assertNotIn("SHAREGTK3DIR", source)
         self.assertIn('ComponentGroupRef Id="GTK4Components"', source)
+
+    def test_production_product_installs_complete_enchant_payload(self):
+        product = (INSTALLER / "ProductGtk4.wxs").read_text(encoding="utf-8")
+        enchant = (
+            INSTALLER / "Components" / "EnchantGtk4.wxs"
+        ).read_text(encoding="utf-8")
+
+        for group in (
+            "Enchant2CoreComponents",
+            "Enchant2ProviderComponents",
+            "Enchant2DataComponents",
+        ):
+            self.assertIn(f'ComponentGroupRef Id="{group}"', product)
+        self.assertIn(
+            r'$(var.Gtk4EnchantRoot)\libenchant-2-2.dll', enchant
+        )
+        self.assertIn(
+            r'$(var.Gtk4EnchantRoot)\lib\enchant-2\enchant_winspell.dll',
+            enchant,
+        )
+        self.assertIn(
+            r'$(var.Gtk4EnchantRoot)\share\enchant-2\enchant.ordering',
+            enchant,
+        )
 
     def test_project_has_one_unconditional_gtk4_product_graph(self):
         root = ET.parse(INSTALLER / "Fabulor.wixproj").getroot()
@@ -334,6 +389,11 @@ class ProductionWixProfileTests(unittest.TestCase):
         self.assertNotIn("GTK_MAJOR_VERSION", source)
         for token in retired_tokens:
             self.assertNotRegex(source, rf"\b{token}")
+        self.assertIn("xtext_begin_draw", source)
+        self.assertNotIn("xtext_create_context", source)
+        self.assertEqual(
+            source.count("fabulor_xtext_render_target_create_context"), 1
+        )
 
     def test_tray_sources_are_gtk4_only(self):
         frontend = ROOT / "src" / "fe-gtk"
@@ -361,8 +421,10 @@ class ProductionWixProfileTests(unittest.TestCase):
         plugin_source = (frontend / "plugin-tray.c").read_text(encoding="utf-8")
         self.assertIn("environment.toolkit_major = 4;", plugin_source)
 
-        meson = FRONTEND_MESON.read_text(encoding="utf-8")
-        self.assertNotRegex(meson, r"\b(?:ayatana-)?appindicator")
+        for path in LEGACY_BUILD_GRAPH:
+            with self.subTest(path=path.relative_to(ROOT)):
+                self.assertFalse(path.exists())
+        self.assertTrue(GTK4_PROBE_MESON.is_file())
 
     def test_application_lifecycle_is_gtk4_only(self):
         source = GTK4_APPLICATION_SOURCE.read_text(encoding="utf-8")
@@ -392,6 +454,70 @@ class ProductionWixProfileTests(unittest.TestCase):
             self.assertNotRegex(source, rf"\b{token}")
         self.assertIn('"close-request"', source)
         self.assertIn("g_object_weak_ref", source)
+        self.assertNotRegex(source, r"\bgtk_toggle_button_(?:get|set)_active\b")
+        self.assertIn("fabulor_gtk_check_button_get_active", source)
+        self.assertIn("fabulor_gtk_check_button_set_active", source)
+
+    def test_server_credentials_and_client_certificates_are_self_contained(self):
+        frontend = GTK4_SERVER_LIST_SOURCE.read_text(encoding="utf-8")
+        common = COMMON_SERVER_LIST_SOURCE.read_text(encoding="utf-8")
+
+        for retired_label in (
+            "Encrypt saved password",
+            "Move password to keyring",
+            "Generate client SSL cert",
+        ):
+            self.assertNotIn(retired_label, frontend)
+        self.assertNotIn("G_SPAWN_SEARCH_PATH", frontend)
+        self.assertNotRegex(frontend, r'argv\[\d+\]\s*=\s*"openssl"')
+
+        for retained_label in (
+            "Store password in Windows Credential Manager",
+            "Import client certificate...",
+            "Certificate details",
+            "Remove certificate",
+        ):
+            self.assertIn(retained_label, frontend)
+        self.assertIn("servlist_open_client_cert_context", frontend)
+        self.assertIn("SSL_CTX_check_private_key", frontend)
+
+        self.assertIn(
+            "!portable_mode () && secretstore_is_keyring_available ()",
+            common,
+        )
+        self.assertIn("servlist_password_is_encrypted (net->pass)", common)
+        self.assertIn(
+            "encrypted = servlist_password_encrypt_for_storage (net->pass);",
+            common,
+        )
+
+    def test_saved_input_history_is_network_and_channel_scoped(self):
+        history = COMMON_HISTORY_SOURCE.read_text(encoding="utf-8")
+        header = COMMON_HISTORY_HEADER.read_text(encoding="utf-8")
+        outbound = COMMON_OUTBOUND_SOURCE.read_text(encoding="utf-8")
+        application = COMMON_APPLICATION_SOURCE.read_text(encoding="utf-8")
+
+        self.assertNotIn("input-history.conf", history)
+        self.assertNotIn("shared_history", history)
+        self.assertIn('#define HISTORY_DIRECTORY "history"', history)
+        self.assertIn('#define HISTORY_EXTENSION ".log"', history)
+        self.assertIn('target = "server";', history)
+        self.assertIn("server_get_network (sess->server, FALSE)", history)
+        self.assertIn("history_filename_component (network)", history)
+        self.assertIn("history_filename_component (target)", history)
+        self.assertIn("g_mkdir_with_parents", history)
+
+        self.assertIn("struct session *owner;", header)
+        self.assertIn("char *storage_path;", header)
+        self.assertIn("history_restore (&sess->history, sess);", application)
+        self.assertIn("for (list = sess_list; list; list = list->next)", history)
+        self.assertIn("history_erase (&sess->history);", outbound)
+        self.assertIn('g_ascii_strcasecmp (reason, "LOG")', outbound)
+        self.assertIn("log_clear (sess)", outbound)
+        self.assertIn(
+            "CLEAR [ALL|HISTORY|LOG|[-]<amount>]",
+            outbound,
+        )
 
     def test_channel_and_ban_dialogs_are_gtk4_only(self):
         frontend = ROOT / "src" / "fe-gtk"
@@ -527,9 +653,41 @@ class ProductionWixProfileTests(unittest.TestCase):
                     self.assertNotRegex(source, rf"\b{token}")
 
         main_source = (frontend / "maingui.c").read_text(encoding="utf-8")
+        compat_source = (frontend / "gtk-compat.h").read_text(encoding="utf-8")
         self.assertIn("mg_tabwindow_finalized_cb", main_source)
         self.assertIn("mg_win32_display_filter", main_source)
         self.assertIn("FabulorGtkInternalDragKind kind", main_source)
+        self.assertIn("fabulor_pane_clamp_end_size", main_source)
+        self.assertIn(
+            "MAX (prefs.hex_gui_pane_right_size_min, 1)", main_source
+        )
+        self.assertIn("fabulor_emoji_picker_viewport_size", main_source)
+        self.assertIn("gtk_drop_down_new", main_source)
+        self.assertIn("mg_emoji_category_changed_cb", main_source)
+        self.assertIn("mg_emoji_popover_close_cb", main_source)
+        self.assertIn('"window-close-symbolic"', main_source)
+        self.assertIn("gtk_flow_box_append", main_source)
+        self.assertIn(
+            "GTK_POLICY_NEVER,\n"
+            "                                        GTK_POLICY_AUTOMATIC",
+            main_source,
+        )
+        self.assertNotIn("mg_emoji_grid_scroller_new", main_source)
+        self.assertNotIn("gtk_stack_switcher_new", main_source)
+        trailing_helper = re.search(
+            r"fabulor_gtk_horizontal_box_append_trailing\s*"
+            r"\([^)]*\)\s*\{(?P<body>.*?)\n\}",
+            compat_source,
+            re.DOTALL,
+        )
+        self.assertIsNotNone(trailing_helper)
+        self.assertIn(
+            "gtk_widget_set_halign (GTK_WIDGET (box), GTK_ALIGN_END)",
+            trailing_helper.group("body"),
+        )
+        self.assertNotIn(
+            "gtk_widget_set_hexpand (child, TRUE)", trailing_helper.group("body")
+        )
         self.assertNotRegex(
             main_source, r"\bgtk_scrolled_window_new\s*\(\s*(?:NULL|0)"
         )
@@ -599,6 +757,34 @@ class ProductionWixProfileTests(unittest.TestCase):
         self.assertFalse((ROOT / "win32" / "copy" / "copy.vcxproj").exists())
         legacy_installer = ROOT / "win32" / "installer"
         self.assertFalse(legacy_installer.exists() and any(legacy_installer.iterdir()))
+
+    def test_perl_integration_is_retired(self):
+        self.assertFalse((ROOT / "plugins" / "perl").exists())
+
+        config_template = (ROOT / "win32" / "config.h.tt").read_text(
+            encoding="utf-8"
+        )
+        cfgfiles = (ROOT / "src" / "common" / "cfgfiles.c").read_text(
+            encoding="utf-8"
+        )
+        preferences = (ROOT / "src" / "common" / "zoitechat.h").read_text(
+            encoding="utf-8"
+        )
+        outbound = (ROOT / "src" / "common" / "outbound.c").read_text(
+            encoding="utf-8"
+        )
+
+        self.assertNotIn("OLD_PERL", config_template)
+        self.assertNotIn("perl_warnings", cfgfiles)
+        self.assertNotIn("hex_perl_warnings", preferences)
+        self.assertNotIn("install the Perl or Python plugin", outbound)
+
+    def test_python312_repository_residue_is_retired(self):
+        self.assertFalse((ROOT / "Runtime" / "Python312").exists())
+        self.assertFalse(
+            (INSTALLER / "Components" / "Python312.wxs.bak").exists()
+        )
+        self.assertFalse((INSTALLER / "wix-build.binlog").exists())
 
     def test_windows_support_dependencies_are_pinned(self):
         manifest = json.loads(VCPKG_MANIFEST.read_text(encoding="utf-8"))

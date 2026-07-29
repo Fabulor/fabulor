@@ -219,6 +219,10 @@ channel_record_create_children (gpointer item, gpointer user_data)
 	FabulorChannelRecord *record = FABULOR_CHANNEL_RECORD (item);
 
 	(void) user_data;
+	/* The model permits only one child level. An empty model on a leaf row
+	 * makes GTK render a misleading expander. */
+	if (record->parent)
+		return NULL;
 	return G_LIST_MODEL (g_object_ref (record->child_store));
 }
 

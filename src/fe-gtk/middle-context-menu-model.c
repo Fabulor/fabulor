@@ -39,30 +39,62 @@ middle_context_append_items (GMenu *destination, GMenuModel *source)
 	}
 }
 
-static gint
-middle_context_plugin_find (GMenuModel *plugin_model, const char *path)
+static void
+middle_context_flatten_sections (GMenu *destination, GMenuModel *source)
 {
 	gint i;
+
+	for (i = 0; source && i < g_menu_model_get_n_items (source); i++)
+	{
+		GMenuModel *section = g_menu_model_get_item_link (source, i,
+			G_MENU_LINK_SECTION);
+
+		if (section)
+		{
+			middle_context_flatten_sections (destination, section);
+			g_object_unref (section);
+		}
+		else
+		{
+			GMenuItem *item = g_menu_item_new_from_model (source, i);
+			g_menu_append_item (destination, item);
+			g_object_unref (item);
+		}
+	}
+}
+
+static void
+middle_context_append_plugin_matches (GMenu *destination,
+	GMenuModel *plugin_model, const char *path, gboolean *used)
+{
+	GMenu *combined = g_menu_new ();
+	gint i;
+
 	for (i = 0; plugin_model && i < g_menu_model_get_n_items (plugin_model); i++)
 	{
 		char *label = NULL;
-		gboolean matches;
+		GMenuModel *submenu;
+
 		g_menu_model_get_item_attribute (plugin_model, i,
 			G_MENU_ATTRIBUTE_LABEL, "s", &label);
-		matches = middle_context_path_equal (label, path);
-		g_free (label);
-		if (matches)
+		if (!middle_context_path_equal (label, path))
 		{
-			GMenuModel *submenu = g_menu_model_get_item_link (plugin_model, i,
-				G_MENU_LINK_SUBMENU);
-			if (submenu)
-			{
-				g_object_unref (submenu);
-				return i;
-			}
+			g_free (label);
+			continue;
+		}
+		g_free (label);
+		submenu = g_menu_model_get_item_link (plugin_model, i,
+			G_MENU_LINK_SUBMENU);
+		if (submenu)
+		{
+			middle_context_append_items (combined, submenu);
+			used[i] = TRUE;
+			g_object_unref (submenu);
 		}
 	}
-	return -1;
+	if (g_menu_model_get_n_items (G_MENU_MODEL (combined)) > 0)
+		g_menu_append_section (destination, NULL, G_MENU_MODEL (combined));
+	g_object_unref (combined);
 }
 
 FabulorMiddleContextMenuModel *
@@ -72,6 +104,8 @@ fabulor_middle_context_menu_model_new (
 {
 	FabulorMiddleContextMenuModel *result;
 	GMenu *menu;
+	GMenu *flat_plugins;
+	GMenuModel *plugins;
 	gboolean *used;
 	gsize i;
 
@@ -79,47 +113,38 @@ fabulor_middle_context_menu_model_new (
 	g_return_val_if_fail (!plugin_model || G_IS_MENU_MODEL (plugin_model), NULL);
 	result = g_new0 (FabulorMiddleContextMenuModel, 1);
 	menu = g_menu_new ();
-	used = g_new0 (gboolean, plugin_model ?
-		g_menu_model_get_n_items (plugin_model) : 0);
+	flat_plugins = g_menu_new ();
+	middle_context_flatten_sections (flat_plugins, plugin_model);
+	plugins = G_MENU_MODEL (flat_plugins);
+	used = g_new0 (gboolean, g_menu_model_get_n_items (plugins));
 	for (i = 0; i < section_count; i++)
 	{
 		GMenu *submenu;
-		GMenuModel *plugin_submenu = NULL;
-		gint plugin_index;
 
 		if (!sections[i].label || !*sections[i].label ||
 			(sections[i].model && !G_IS_MENU_MODEL (sections[i].model)))
 			continue;
-		plugin_index = middle_context_plugin_find (plugin_model,
-			sections[i].plugin_path);
-		if (plugin_index >= 0)
-		{
-			plugin_submenu = g_menu_model_get_item_link (plugin_model,
-				plugin_index, G_MENU_LINK_SUBMENU);
-			if (plugin_submenu)
-				used[plugin_index] = TRUE;
-		}
 		submenu = g_menu_new ();
 		middle_context_append_items (submenu, sections[i].model);
-		if (plugin_submenu && g_menu_model_get_n_items (plugin_submenu) > 0)
-			g_menu_append_section (submenu, NULL, plugin_submenu);
+		middle_context_append_plugin_matches (submenu, plugins,
+			sections[i].plugin_path, used);
 		if (g_menu_model_get_n_items (G_MENU_MODEL (submenu)) > 0)
 			g_menu_append_submenu (menu, sections[i].label,
 				G_MENU_MODEL (submenu));
-		g_clear_object (&plugin_submenu);
 		g_object_unref (submenu);
 	}
-	for (i = 0; plugin_model && i < (gsize)g_menu_model_get_n_items (plugin_model);
+	for (i = 0; i < (gsize)g_menu_model_get_n_items (plugins);
 		i++)
 	{
 		if (!used[i])
 		{
-			GMenuItem *item = g_menu_item_new_from_model (plugin_model, (gint)i);
+			GMenuItem *item = g_menu_item_new_from_model (plugins, (gint)i);
 			g_menu_append_item (menu, item);
 			g_object_unref (item);
 		}
 	}
 	g_free (used);
+	g_object_unref (flat_plugins);
 	g_menu_freeze (menu);
 	result->menu = G_MENU_MODEL (menu);
 	return result;

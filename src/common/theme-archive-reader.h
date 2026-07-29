@@ -12,7 +12,34 @@
 
 #include <glib.h>
 
+typedef struct
+{
+	char *display_name;
+	char *path;
+} FabulorThemeArchive;
+
+typedef enum
+{
+	FABULOR_THEME_COLOR_MISSING,
+	FABULOR_THEME_COLOR_VALID,
+	FABULOR_THEME_COLOR_INVALID
+} FabulorThemeColorResult;
+
+GPtrArray *fabulor_theme_archive_discover (const char *config_dir);
+GPtrArray *fabulor_theme_archive_discover_with_bundled (
+	const char *config_dir, const char *bundled_dir);
+void fabulor_theme_archive_free (FabulorThemeArchive *archive);
+
+FabulorThemeColorResult fabulor_theme_colors_parse_token (
+	const char *contents, guint token, gboolean dark,
+	guint16 *red, guint16 *green, guint16 *blue);
+gboolean fabulor_theme_colors_read_token (const char *contents,
+	guint token, gboolean dark, guint16 *red, guint16 *green, guint16 *blue);
+
 gboolean fabulor_theme_archive_read_text_file (const char *archive_path,
 	const char *name, char **contents, GError **error);
+
+gboolean fabulor_gtk4_theme_archive_import (const char *archive_path,
+	const char *config_dir, GPtrArray **installed_names, GError **error);
 
 #endif

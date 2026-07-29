@@ -143,6 +143,7 @@ struct _GtkXText
 	FabulorXTextSelection *selection;
 	FabulorXTextAccessible *accessible_text;
 	guint accessible_update_tag;
+	guint primary_release_suppress_source;
 	gboolean accessible_dirty;
 	GdkCursor *hand_cursor;
 	GdkCursor *resize_cursor;
@@ -172,6 +173,10 @@ struct _GtkXText
 	int select_start_y;
 	int select_end_x;
 	int select_end_y;
+	textentry *selection_anchor_ent;
+	textentry *selection_focus_ent;
+	int selection_anchor_offset;
+	int selection_focus_offset;
 	gdouble pointer_x;
 	gdouble pointer_y;
 	GdkModifierType pointer_state;
@@ -235,6 +240,8 @@ struct _GtkXText
 	unsigned int word_select:1;
 	unsigned int line_select:1;
 	unsigned int button_down:1;
+	unsigned int selection_drag_active:1;
+	unsigned int suppress_primary_release:1;
 	unsigned int dont_render:1;
 	unsigned int dont_render2:1;
 	unsigned int cursor_hand:1;
@@ -291,6 +298,8 @@ void gtk_xtext_foreach (xtext_buffer *buf, GtkXTextForeach func, void *data);
 void gtk_xtext_set_error_function (GtkXText *xtext, void (*error_function) (int));
 void gtk_xtext_set_indent (GtkXText *xtext, gboolean indent);
 void gtk_xtext_set_max_indent (GtkXText *xtext, int max_auto_indent);
+void gtk_xtext_scroll_to_bottom (GtkXText *xtext);
+gboolean gtk_xtext_is_at_bottom (GtkXText *xtext);
 void gtk_xtext_set_max_lines (GtkXText *xtext, int max_lines);
 void gtk_xtext_set_show_marker (GtkXText *xtext, gboolean show_marker);
 void gtk_xtext_set_show_separator (GtkXText *xtext, gboolean show_separator);

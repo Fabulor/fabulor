@@ -114,25 +114,8 @@ static char *get_memory_info (void)
 	return sysinfo_format_memory (meminfo.ullTotalPhys, meminfo.ullAvailPhys);
 }
 
-static const char *sysinfo_detect_toolkit(void)
-{
-#if defined(USE_GTK_FRONTEND)
-	return "GTK3";
-#else
-	return NULL;
-#endif
-}
-
 char *
 sysinfo_backend_get_ui (void)
 {
-	const char *toolkit = sysinfo_detect_toolkit();
-
-	/* On Windows we don't have X11/Wayland. Keep it simple. */
-	if (toolkit)
-	{
-		return g_strdup_printf ("Windows / %s", toolkit);
-	}
-
-	return g_strdup ("Windows");
+	return g_strdup ("Windows / GTK4");
 }

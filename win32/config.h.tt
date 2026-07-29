@@ -9,6 +9,5 @@
 #define PACKAGE_VERSION "<#= [string]::Join('.', $versionParts) #>"
 #define ZOITECHATLIBDIR ".\\plugins"
 #define ZOITECHATSHAREDIR "."
-#define OLD_PERL
 #define GETTEXT_PACKAGE "fabulor"
 #define PACKAGE_TARNAME "fabulor-<#= [string]::Join('.', $versionParts) #>"

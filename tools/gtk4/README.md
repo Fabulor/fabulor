@@ -153,6 +153,9 @@ allowlists the certificate, OpenSSL, WinSparkle, CFFI, and Python API support
 files that previously came from the broad legacy staging tree.
 `plugin-host-payload-contract.json` defines the exact private runtime inputs;
 `stage_plugin_hosts.py` emits their installed-layout root and content manifest.
+The Tcl entries intentionally select only the embedded Tcl 8.6 engine, core
+library/data, and reviewed standard modules; they do not package Tk, command
+shells, development libraries, or third-party Tcl package collections.
 Build the extensions after the full frontend, stage production support, rebuild
 Enchant against the final GTK4 root, and stage the plugin hosts before WiX:
 

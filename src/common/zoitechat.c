@@ -44,7 +44,6 @@
 #include "zoitechat-plugin.h"
 #include "inbound.h"
 #include "plugin.h"
-#include "plugin-identd.h"
 #include "plugin-timer.h"
 #include "notify.h"
 #include "server.h"
@@ -154,12 +153,6 @@ zoitechat_find_running_window (void)
 		hwnd = FindWindowA ("fabulor", NULL);
 	if (!hwnd)
 		hwnd = FindWindowA (NULL, "Fabulor");
-	if (!hwnd)
-		hwnd = FindWindowA ("ZoiteChat", NULL);
-	if (!hwnd)
-		hwnd = FindWindowA ("zoitechat", NULL);
-	if (!hwnd)
-		hwnd = FindWindowA (NULL, "ZoiteChat");
 
 	return hwnd;
 }
@@ -558,7 +551,6 @@ irc_init (session *sess)
 	done_init = TRUE;
 
 	plugin_add (sess, NULL, NULL, timer_plugin_init, NULL, NULL, FALSE);
-	plugin_add (sess, NULL, NULL, identd_plugin_init, identd_plugin_deinit, NULL, FALSE);
 
 #ifdef USE_PLUGIN
 	if (!arg_skip_plugins)
@@ -630,7 +622,7 @@ session_new (server *serv, char *from, int type, int focus)
 		safe_strcpy(sess->session_name, from, CHANLEN);
 	}
 
-	history_restore (&sess->history);
+	history_restore (&sess->history, sess);
 
 	sess_list = g_slist_prepend (sess_list, sess);
 
@@ -813,6 +805,7 @@ session_free (session *killsess)
 	history_free (&killsess->history);
 	reply_cache_free (killsess);
 	g_free (killsess->topic);
+	g_free (killsess->topic_formatted);
 	g_free (killsess->current_modes);
 
 	fe_session_callback (killsess);

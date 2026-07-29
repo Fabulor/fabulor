@@ -33,6 +33,7 @@
 #include "../common/util.h"
 #include "../common/zoitechatc.h"
 #include "../common/outbound.h"
+#include "../common/proxy-policy.h"
 #include "fe-gtk.h"
 #include "theme/theme-manager.h"
 #include "theme/theme-preferences.h"
@@ -46,6 +47,7 @@
 #include "menu.h"
 #include "preferences-persistence.h"
 #include "plugin-tray.h"
+#include "window-state.h"
 #include "notifications/notification-backend.h"
 
 #ifdef WIN32
@@ -64,6 +66,9 @@ static struct zoitechatprefs setup_prefs;
 static GtkWidget *cancel_button;
 static GtkWidget *font_dialog = NULL;
 static GtkWidget *setup_topicbar_multiline_toggle = NULL;
+static gboolean setup_transcript_metrics_changed;
+
+static void setup_queue_restore_parent (GtkWidget *window);
 
 enum
 {
@@ -290,6 +295,7 @@ static const setting userlist_settings[] =
         {ST_TOGGLE, N_("Show icons for user modes"), P_OFFINTNL(hex_gui_ulist_icons), N_("Use graphical icons instead of text symbols in the user list."), 0, 0},
         {ST_TOGGLE, N_("Color nicknames in userlist"), P_OFFINTNL(hex_gui_ulist_color), N_("Will color nicknames the same as in chat."), 0, 0},
         {ST_TOGGLE, N_("Show user count in channels"), P_OFFINTNL(hex_gui_ulist_count), 0, 0, 0},
+        {ST_TOGGLE, N_("Allow user list to resize with the window"), P_OFFINTNL(hex_gui_ulist_resizable), 0, 0, 0},
         {ST_MENU,       N_("User list sorted by:"), P_OFFINTNL(hex_gui_ulist_sort), 0, ulmenutext, 0},
         {ST_MENU,       N_("Show user list at:"), P_OFFINTNL(hex_gui_ulist_pos), 0, ulpos, 1},
 
@@ -592,7 +598,6 @@ static const setting advanced_settings[] =
         {ST_ENTRY,  N_("Alternative fonts:"), P_OFFSETNL(hex_text_font_alternative), N_("Separate multiple entries with commas without spaces before or after."), 0, sizeof prefs.hex_text_font_alternative},
 #endif
         {ST_TOGGLE,     N_("Display lists in compact mode"), P_OFFINTNL(hex_gui_compact), N_("Use less spacing between user list/channel tree rows."), 0, 0},
-        {ST_TOGGLE,     N_("Use server time if supported"), P_OFFINTNL(hex_irc_cap_server_time), N_("Display timestamps obtained from server if it supports the time-server extension."), 0, 0},
         {ST_TOGGLE,     N_("Automatically reconnect to servers on disconnect"), P_OFFINTNL(hex_net_auto_reconnect), 0, 0, 1},
         {ST_NUMBER,     N_("Lag check interval:"), P_OFFINTNL(hex_net_lag_check), 0, (const char **)N_("seconds."), 9999},
         {ST_NUMBER,     N_("Auto reconnect delay:"), P_OFFINTNL(hex_net_reconnect_delay), 0, 0, 9999},
@@ -634,7 +639,6 @@ static const setting logging_settings[] =
 static const char *const proxytypes[] =
 {
         N_("(Disabled)"),
-        N_("Wingate"),
         N_("SOCKS4"),
         N_("SOCKS5"),
         N_("HTTP"),
@@ -680,16 +684,6 @@ static const setting network_settings[] =
         {ST_TOGGLE,     N_("Use authentication (HTTP or SOCKS5 only)"), P_OFFINTNL(hex_net_proxy_auth), 0, 0, 0},
         {ST_ENTRY,      N_("Username:"), P_OFFSETNL(hex_net_proxy_user), 0, 0, sizeof prefs.hex_net_proxy_user},
         {ST_ENTRY,      N_("Password:"), P_OFFSETNL(hex_net_proxy_pass), 0, GINT_TO_POINTER(1), sizeof prefs.hex_net_proxy_pass},
-
-        {ST_END, 0, 0, 0, 0, 0}
-};
-
-static const setting identd_settings[] =
-{
-        {ST_HEADER, N_("Identd Server"), 0, 0, 0, 0},
-        {ST_TOGGLE, N_("Enabled"), P_OFFINTNL(hex_identd_server), N_("Server will respond with the networks username"), 0, 1},
-        {ST_NUMBER,     N_("Port:"), P_OFFINTNL(hex_identd_port), N_("You must have permissions to listen on this port. "
-                                                                                                   "If not 113 (0 defaults to this) then you must configure port-forwarding."), 0, 65535},
 
         {ST_END, 0, 0, 0, 0, 0}
 };
@@ -1115,15 +1109,21 @@ static void
 setup_menu_cb (GtkWidget *cbox, const setting *set)
 {
         int n = gtk_combo_box_get_active (GTK_COMBO_BOX (cbox));
+        int value = n + set->extra;
+
+        if (set->list == proxytypes)
+                value = fabulor_proxy_type_from_menu_index (n);
 
         /* set the prefs.<field> */
-        setup_set_int (&setup_prefs, set, n + set->extra);
+        setup_set_int (&setup_prefs, set, value);
 
         if (set->list == proxytypes)
         {
                 /* only HTTP and SOCKS5 can use a username/pass */
-                gtk_widget_set_sensitive (proxy_user, (n == 3 || n == 4 || n == 5));
-                gtk_widget_set_sensitive (proxy_pass, (n == 3 || n == 4 || n == 5));
+                gtk_widget_set_sensitive (proxy_user,
+                        fabulor_proxy_type_supports_auth (value));
+                gtk_widget_set_sensitive (proxy_pass,
+                        fabulor_proxy_type_supports_auth (value));
         }
 }
 
@@ -1273,8 +1273,11 @@ setup_create_menu (GtkWidget *table, int row, const setting *set)
         for (i = 0; text[i]; i++)
                 gtk_combo_box_text_append_text (GTK_COMBO_BOX_TEXT (cbox), _(text[i]));
 
-        gtk_combo_box_set_active (GTK_COMBO_BOX (cbox),
-                                                                          setup_get_int (&setup_prefs, set) - set->extra);
+        i = setup_get_int (&setup_prefs, set) - set->extra;
+        if (set->list == proxytypes)
+                i = fabulor_proxy_type_to_menu_index (
+                        setup_get_int (&setup_prefs, set));
+        gtk_combo_box_set_active (GTK_COMBO_BOX (cbox), i);
         g_signal_connect (G_OBJECT (cbox), "changed",
                                                         G_CALLBACK (setup_menu_cb), (gpointer)set);
 
@@ -1487,7 +1490,8 @@ setup_create_entry (GtkWidget *table, int row, const setting *set)
         /* only http and Socks5 can auth */
         if ( (set->offset == P_OFFSETNL(hex_net_proxy_pass) ||
                         set->offset == P_OFFSETNL(hex_net_proxy_user)) &&
-             (setup_prefs.hex_net_proxy_type != 4 && setup_prefs.hex_net_proxy_type != 3 && setup_prefs.hex_net_proxy_type != 5) )
+             !fabulor_proxy_type_supports_auth (
+                     setup_prefs.hex_net_proxy_type) )
                 gtk_widget_set_sensitive (wid, FALSE);
 
         if (set->type == ST_ENTRY)
@@ -1667,7 +1671,8 @@ setup_create_appearance_page (void)
         advanced_page = setup_create_page (appearance_advanced_settings);
 
         {
-                char *markup = g_markup_printf_escaped ("<b>%s</b>", _("GTK3 Theme"));
+                char *markup = g_markup_printf_escaped ("<b>%s</b>",
+                                                        _("Fabulor Theme"));
                 gtk_label_set_markup (GTK_LABEL (theme_label), markup);
                 g_free (markup);
         }
@@ -1805,6 +1810,7 @@ setup_create_sound_page (void)
         GtkWidget *sound_play;
 
         vbox1 = gtkutil_box_new (GTK_ORIENTATION_VERTICAL, FALSE, 0);
+        gtk_widget_set_vexpand (vbox1, TRUE);
         fabulor_gtk_container_set_uniform_inset (vbox1, 6);
         gtk_widget_show (vbox1);
 
@@ -1876,6 +1882,14 @@ setup_page_from_appearance (const setting *settings)
 {
         (void)settings;
         return setup_create_appearance_page ();
+}
+
+static GtkWidget *
+setup_page_from_colors (const setting *settings)
+{
+        (void)settings;
+        return theme_preferences_create_color_page (
+                GTK_WINDOW (setup_window), &setup_prefs, &color_change);
 }
 
 static GtkWidget *
@@ -1955,6 +1969,7 @@ setup_ensure_page_created (int page)
 static const char *const cata_interface[] =
 {
         N_("Appearance"),
+        N_("Colors"),
         N_("Input box"),
         N_("User list"),
         N_("Channel switcher"),
@@ -1975,7 +1990,6 @@ static const char *const cata_network[] =
 {
         N_("Network setup"),
         N_("File transfers"),
-        N_("Identd"),
         NULL
 };
 
@@ -1998,9 +2012,10 @@ setup_create_pages (void)
         setup_page_count = 0;
 
         setup_register_page (cata_interface[0], book, setup_page_from_appearance, NULL);
-        setup_register_page (cata_interface[1], book, setup_page_from_settings, inputbox_settings);
-        setup_register_page (cata_interface[2], book, setup_page_from_settings, userlist_settings);
-        setup_register_page (cata_interface[3], book, setup_page_from_settings, tabs_settings);
+        setup_register_page (cata_interface[1], book, setup_page_from_colors, NULL);
+        setup_register_page (cata_interface[2], book, setup_page_from_settings, inputbox_settings);
+        setup_register_page (cata_interface[3], book, setup_page_from_settings, userlist_settings);
+        setup_register_page (cata_interface[4], book, setup_page_from_settings, tabs_settings);
 
         setup_register_page (cata_chatting[0], book, setup_page_from_settings, general_settings);
 
@@ -2027,7 +2042,6 @@ setup_create_pages (void)
 
         setup_register_page (cata_network[0], book, setup_page_from_settings, network_settings);
         setup_register_page (cata_network[1], book, setup_page_from_settings, filexfer_settings);
-        setup_register_page (cata_network[2], book, setup_page_from_settings, identd_settings);
 
         gtk_notebook_set_show_tabs (GTK_NOTEBOOK (book), FALSE);
         gtk_notebook_set_show_border (GTK_NOTEBOOK (book), FALSE);
@@ -2083,7 +2097,8 @@ setup_create_tree (GtkWidget *box, GtkWidget *book)
 static void
 setup_apply_to_sess (session_gui *gui)
 {
-        mg_update_xtext (gui->xtext);
+        mg_update_xtext_for_setup (gui->xtext,
+                setup_transcript_metrics_changed);
         mg_update_scroll_to_bottom_button (gui);
 
         mg_apply_session_font_prefs (gui);
@@ -2164,7 +2179,7 @@ setup_apply_real (const ThemeChangedEvent *event)
                 list = list->next;
         }
 
-        mg_apply_setup ();
+        mg_apply_setup (setup_transcript_metrics_changed);
         menu_update_quit_accel ();
         tray_apply_setup ();
         zoitechat_reinit_timers ();
@@ -2172,8 +2187,6 @@ setup_apply_real (const ThemeChangedEvent *event)
         if (theme_changed_event_has_reason (event, THEME_CHANGED_REASON_LAYOUT))
                 menu_change_layout ();
 
-        if (theme_changed_event_has_reason (event, THEME_CHANGED_REASON_IDENTD))
-                handle_command (current_sess, "IDENTD reload", FALSE);
 }
 
 static void
@@ -2228,6 +2241,8 @@ setup_apply (struct zoitechatprefs *pr)
                 noapply = TRUE;
         if (DIFF (hex_gui_ulist_icons))
                 noapply = TRUE;
+        if (DIFF (hex_gui_ulist_resizable))
+                noapply = TRUE;
         if (DIFF (hex_gui_ulist_show_hosts))
                 noapply = TRUE;
         if (DIFF (hex_gui_ulist_sort))
@@ -2249,6 +2264,9 @@ setup_apply (struct zoitechatprefs *pr)
 
         memcpy (&prefs, pr, sizeof (prefs));
 
+	if (old_prefs.hex_text_stripcolor_topic != prefs.hex_text_stripcolor_topic)
+		fe_refresh_topic_strip_preference ();
+
 	event = theme_manager_on_preferences_changed (&old_prefs, &prefs, old_dark_mode, &color_change);
 
 #ifdef WIN32
@@ -2266,6 +2284,14 @@ setup_apply (struct zoitechatprefs *pr)
         g_free (new_desc);
         */
 #endif
+
+        setup_transcript_metrics_changed =
+                strcmp (old_prefs.hex_text_font, prefs.hex_text_font) != 0 ||
+                old_prefs.hex_text_indent != prefs.hex_text_indent ||
+                old_prefs.hex_text_wordwrap != prefs.hex_text_wordwrap ||
+                old_prefs.hex_stamp_text != prefs.hex_stamp_text ||
+                strcmp (old_prefs.hex_stamp_text_format,
+                        prefs.hex_stamp_text_format) != 0;
 
         if (prefs.hex_irc_real_name[0] == 0)
         {
@@ -2307,6 +2333,7 @@ setup_save_and_close (GtkWidget *win)
         if (save_result.success)
         {
                 theme_preferences_stage_commit ();
+                setup_queue_restore_parent (win);
                 fabulor_gtk_window_destroy (GTK_WINDOW (win));
                 return;
         }
@@ -2385,6 +2412,47 @@ setup_ok_cb (GtkWidget *but, GtkWidget *win)
         setup_save_and_close (win);
 }
 
+static gboolean
+setup_restore_parent_idle_cb (gpointer user_data)
+{
+        GtkWindow *parent = user_data;
+
+        if (GTK_IS_WINDOW (parent)
+            && gtk_widget_get_visible (GTK_WIDGET (parent)))
+                fabulor_window_present (parent);
+        return G_SOURCE_REMOVE;
+}
+
+static void
+setup_queue_restore_parent (GtkWidget *window)
+{
+        GtkWindow *parent;
+
+        g_return_if_fail (GTK_IS_WINDOW (window));
+        parent = gtk_window_get_transient_for (GTK_WINDOW (window));
+        if (!parent)
+                return;
+        g_idle_add_full (G_PRIORITY_DEFAULT_IDLE,
+                setup_restore_parent_idle_cb, g_object_ref (parent),
+                g_object_unref);
+}
+
+static void
+setup_cancel_cb (GtkWidget *button, GtkWidget *win)
+{
+        (void)button;
+        setup_queue_restore_parent (win);
+        fabulor_gtk_window_destroy (GTK_WINDOW (win));
+}
+
+static gboolean
+setup_close_request_cb (GtkWindow *window, gpointer user_data)
+{
+        (void)user_data;
+        setup_queue_restore_parent (GTK_WIDGET (window));
+        return FALSE;
+}
+
 static GtkWidget *
 setup_window_open (void)
 {
@@ -2392,8 +2460,10 @@ setup_window_open (void)
         char buf[128];
 
         g_snprintf(buf, sizeof(buf), _("Preferences - %s"), _(DISPLAY_NAME));
-        win = gtkutil_window_new (buf, "prefs", 0, 600, 2);
+        win = gtkutil_window_new (buf, "prefs", 900, 600, 2);
         setup_window = win;
+        g_signal_connect (win, "close-request",
+                G_CALLBACK (setup_close_request_cb), NULL);
 
         vbox = gtkutil_box_new (GTK_ORIENTATION_VERTICAL, FALSE, 5);
         fabulor_gtk_container_set_uniform_inset (vbox, 6);
@@ -2413,7 +2483,7 @@ setup_window_open (void)
 
         cancel_button = wid = gtkutil_button_new_from_stock ("gtk-cancel", _("_Cancel"));
         g_signal_connect (G_OBJECT (wid), "clicked",
-                                                        G_CALLBACK (gtkutil_destroy), win);
+                                                        G_CALLBACK (setup_cancel_cb), win);
         fabulor_gtk_box_append (GTK_BOX (hbbox), wid, FALSE, FALSE, 0);
 
         wid = gtkutil_button_new_from_stock ("gtk-ok", _("_OK"));

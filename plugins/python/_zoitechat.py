@@ -16,7 +16,7 @@ __all__ = [
     'register_callback', 'send_message', 'set_pluginpref', 'strip', 'unhook',
 ]
 
-__doc__ = 'ZoiteChat Scripting Interface'
+__doc__ = 'Fabulor Python Scripting Interface'
 __version__ = (2, 0)
 __license__ = 'GPL-2.0+'
 

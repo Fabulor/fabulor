@@ -8,6 +8,7 @@
  */
 
 #include "channel-tree-view.h"
+#include "gtk-compat.h"
 
 #define FABULOR_CHANNEL_TREE_VIEW_DATA "fabulor-channel-tree-view-data"
 
@@ -17,6 +18,7 @@ typedef struct
 	FabulorChannelModel *model;
 	FabulorChannelTreeSelectionFunc selection_callback;
 	gpointer selection_data;
+	gpointer notified_identity;
 	gulong selection_id;
 	gboolean use_icons;
 	gboolean compact;
@@ -70,18 +72,7 @@ channel_tree_item_set_icon (FabulorChannelTreeItemBinding *binding,
 		return;
 	binding->icon_source = pixbuf;
 	if (pixbuf)
-	{
-		GBytes *bytes = g_bytes_new_with_free_func (
-			gdk_pixbuf_get_pixels (pixbuf), gdk_pixbuf_get_byte_length (pixbuf),
-			(GDestroyNotify) g_object_unref, g_object_ref (pixbuf));
-		GdkMemoryFormat format = gdk_pixbuf_get_has_alpha (pixbuf) ?
-			GDK_MEMORY_R8G8B8A8 : GDK_MEMORY_R8G8B8;
-
-		texture = gdk_memory_texture_new (gdk_pixbuf_get_width (pixbuf),
-			gdk_pixbuf_get_height (pixbuf), format, bytes,
-			(gsize) gdk_pixbuf_get_rowstride (pixbuf));
-		g_bytes_unref (bytes);
-	}
+		texture = fabulor_gtk_texture_new_from_pixbuf (pixbuf);
 	gtk_image_set_from_paintable (GTK_IMAGE (binding->icon),
 		texture ? GDK_PAINTABLE (texture) : NULL);
 	g_clear_object (&texture);
@@ -242,6 +233,7 @@ channel_tree_selection_changed (GtkSingleSelection *selection,
 	if (!owner->selection_callback)
 		return;
 	identity = fabulor_channel_model_get_selected_identity (owner->model);
+	owner->notified_identity = identity;
 	if (identity)
 		owner->selection_callback (owner->view, identity,
 			owner->selection_data);
@@ -352,6 +344,13 @@ fabulor_channel_tree_view_focus_identity (GtkWidget *view, gpointer identity)
 		guint position;
 		if (!fabulor_channel_model_select_identity (owner->model, identity))
 			return FALSE;
+		if (owner->selection_callback &&
+			owner->notified_identity != identity)
+		{
+			owner->notified_identity = identity;
+			owner->selection_callback (owner->view, identity,
+				owner->selection_data);
+		}
 		position = gtk_single_selection_get_selected (
 			fabulor_channel_model_get_selection (owner->model));
 		if (position == GTK_INVALID_LIST_POSITION)

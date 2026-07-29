@@ -23,6 +23,8 @@
 #include <string.h>
 
 #include "../theme-manager.h"
+#include "../theme-appearance-monitor-gtk4.h"
+#include "../theme-gtk4-controller.h"
 #include "../../../common/zoitechat.h"
 #include "../../../common/zoitechatc.h"
 
@@ -35,6 +37,100 @@ static int window_refresh_calls;
 static int widget_style_calls;
 static int palette_reapply_calls;
 static int unmatched_listener_calls;
+static int input_style_reload_calls;
+static int palette_candidate_apply_calls;
+
+char *
+get_xdir (void)
+{
+	return NULL;
+}
+
+ThemeAppearanceMonitorGtk4 *
+theme_appearance_monitor_gtk4_new (GdkDisplay *display,
+	ThemeAppearanceGtk4ApplyFunc apply, gpointer user_data,
+	GDestroyNotify user_data_destroy, GError **error)
+{
+	(void)display;
+	(void)apply;
+	(void)user_data;
+	(void)user_data_destroy;
+	(void)error;
+	return NULL;
+}
+
+void
+theme_appearance_monitor_gtk4_free (ThemeAppearanceMonitorGtk4 *monitor)
+{
+	(void)monitor;
+}
+
+gboolean
+theme_appearance_monitor_gtk4_prefers_dark (
+	const ThemeAppearanceMonitorGtk4 *monitor)
+{
+	(void)monitor;
+	return FALSE;
+}
+
+gboolean
+theme_appearance_monitor_gtk4_high_contrast (
+	const ThemeAppearanceMonitorGtk4 *monitor)
+{
+	(void)monitor;
+	return FALSE;
+}
+
+ThemeGtk4Controller *
+theme_gtk4_controller_new (GdkDisplay *display)
+{
+	(void)display;
+	return NULL;
+}
+
+void
+theme_gtk4_controller_free (ThemeGtk4Controller *controller)
+{
+	(void)controller;
+}
+
+gboolean
+theme_gtk4_controller_refresh (ThemeGtk4Controller *controller,
+	const char *config_dir, const char *stored_id, guint stored_variant,
+	gboolean system_prefers_dark, gboolean high_contrast, GError **error)
+{
+	(void)controller;
+	(void)config_dir;
+	(void)stored_id;
+	(void)stored_variant;
+	(void)system_prefers_dark;
+	(void)high_contrast;
+	(void)error;
+	return TRUE;
+}
+
+guint
+theme_gtk4_controller_selected_variant (
+	const ThemeGtk4Controller *controller)
+{
+	(void)controller;
+	return 0;
+}
+
+const FabulorGtk4ThemeChoice *
+theme_gtk4_controller_selected_choice (
+	const ThemeGtk4Controller *controller)
+{
+	(void)controller;
+	return NULL;
+}
+
+const FabulorGtk4ThemeAppearanceDecision *
+theme_gtk4_controller_appearance (const ThemeGtk4Controller *controller)
+{
+	(void)controller;
+	return NULL;
+}
 
 void setup_apply_real (const ThemeChangedEvent *event)
 {
@@ -87,6 +183,7 @@ gboolean theme_application_apply_mode (unsigned int mode, gboolean *palette_chan
 
 void theme_application_reload_input_style (void)
 {
+	input_style_reload_calls++;
 }
 
 void theme_runtime_dark_set_color (ThemeSemanticToken token, const GdkRGBA *color)
@@ -99,6 +196,17 @@ void theme_runtime_user_set_color (ThemeSemanticToken token, const GdkRGBA *colo
 {
 	(void) token;
 	(void) color;
+}
+
+gboolean
+theme_runtime_apply_palette_candidate (const ThemePaletteCandidate *candidate,
+	gboolean *palette_changed)
+{
+	g_assert_nonnull (candidate);
+	palette_candidate_apply_calls++;
+	if (palette_changed)
+		*palette_changed = TRUE;
+	return TRUE;
 }
 
 void theme_runtime_reset_mode_colors (gboolean dark_mode)
@@ -192,7 +300,7 @@ static void
 unmatched_reason_listener (const ThemeChangedEvent *event, gpointer userdata)
 {
 	(void) userdata;
-	if (theme_changed_event_has_reason (event, THEME_CHANGED_REASON_IDENTD))
+	if (theme_changed_event_has_reason (event, THEME_CHANGED_REASON_MODE))
 		unmatched_listener_calls++;
 }
 
@@ -203,6 +311,30 @@ reset_counters (void)
 	widget_style_calls = 0;
 	palette_reapply_calls = 0;
 	unmatched_listener_calls = 0;
+	input_style_reload_calls = 0;
+	palette_candidate_apply_calls = 0;
+}
+
+static void
+test_palette_candidate_uses_one_dispatch_and_reload (void)
+{
+	ThemePaletteCandidate candidate = { 0 };
+	gboolean changed = FALSE;
+	guint listener;
+
+	reset_counters ();
+	candidate.initialized = TRUE;
+	candidate.dark_mode = FALSE;
+	listener = theme_listener_register ("palette.candidate",
+		window_refresh_listener, NULL);
+	g_assert_true (theme_manager_apply_palette_candidate (
+		ZOITECHAT_DARK_MODE_LIGHT, &candidate, &changed));
+	g_assert_true (changed);
+	g_assert_cmpint (palette_candidate_apply_calls, ==, 1);
+	g_assert_cmpint (palette_reapply_calls, ==, 1);
+	g_assert_cmpint (window_refresh_calls, ==, 1);
+	g_assert_cmpint (input_style_reload_calls, ==, 1);
+	theme_listener_unregister (listener);
 }
 
 static void
@@ -256,8 +388,6 @@ test_preferences_change_synthesizes_theme_reasons (void)
 	strcpy (new_prefs.hex_text_background, "new.png");
 	old_prefs.hex_gui_tab_dots = 0;
 	new_prefs.hex_gui_tab_dots = 1;
-	old_prefs.hex_identd_port = 113;
-	new_prefs.hex_identd_port = 114;
 	old_prefs.hex_gui_ulist_color = 0;
 	new_prefs.hex_gui_ulist_color = 1;
 
@@ -265,7 +395,6 @@ test_preferences_change_synthesizes_theme_reasons (void)
 
 	g_assert_true (theme_changed_event_has_reason (&event, THEME_CHANGED_REASON_PIXMAP));
 	g_assert_true (theme_changed_event_has_reason (&event, THEME_CHANGED_REASON_LAYOUT));
-	g_assert_true (theme_changed_event_has_reason (&event, THEME_CHANGED_REASON_IDENTD));
 	g_assert_true (theme_changed_event_has_reason (&event, THEME_CHANGED_REASON_USERLIST));
 	g_assert_true (theme_changed_event_has_reason (&event, THEME_CHANGED_REASON_WIDGET_STYLE));
 }
@@ -286,7 +415,6 @@ test_preferences_change_omits_reasons_without_differences (void)
 
 	g_assert_false (theme_changed_event_has_reason (&event, THEME_CHANGED_REASON_PIXMAP));
 	g_assert_false (theme_changed_event_has_reason (&event, THEME_CHANGED_REASON_LAYOUT));
-	g_assert_false (theme_changed_event_has_reason (&event, THEME_CHANGED_REASON_IDENTD));
 	g_assert_false (theme_changed_event_has_reason (&event, THEME_CHANGED_REASON_USERLIST));
 	g_assert_false (theme_changed_event_has_reason (&event, THEME_CHANGED_REASON_WIDGET_STYLE));
 }
@@ -301,5 +429,7 @@ main (int argc, char **argv)
 			 test_preferences_change_synthesizes_theme_reasons);
 	g_test_add_func ("/theme/manager/preferences_change_omits_reasons_without_differences",
 			 test_preferences_change_omits_reasons_without_differences);
+	g_test_add_func ("/theme/manager/palette_candidate_single_dispatch",
+			 test_palette_candidate_uses_one_dispatch_and_reload);
 	return g_test_run ();
 }

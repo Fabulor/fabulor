@@ -52,6 +52,7 @@
 #include "zoitechatc.h"
 #include "servlist.h"
 #include "server.h"
+#include "service-message.h"
 #include "tree.h"
 #include "outbound.h"
 #include "chanopt.h"
@@ -622,7 +623,14 @@ cmd_clear (struct session *sess, char *tbuf, char *word[], char *word_eol[])
 
 	if (g_ascii_strcasecmp (reason, "HISTORY") == 0)
 	{
-		history_free (&sess->history);
+		history_erase (&sess->history);
+		return TRUE;
+	}
+
+	if (g_ascii_strcasecmp (reason, "LOG") == 0)
+	{
+		if (!log_clear (sess))
+			PrintText (sess, _("* Could not clear the current log file.\n"));
 		return TRUE;
 	}
 
@@ -2447,6 +2455,7 @@ cmd_join (struct session *sess, char *tbuf, char *word[], char *word_eol[])
 		sess_find = find_channel (sess->server, chan);
 		if (!sess_find)
 		{
+			server_join_request_add (sess->server, chan);
 			sess->server->p_join (sess->server, chan, pass);
 			if (sess->channel[0] == 0 && sess->waitchannel[0])
 			{
@@ -2657,7 +2666,9 @@ cmd_load (struct session *sess, char *tbuf, char *word[], char *word_eol[])
 		return TRUE;
 	}
 
-	sprintf (tbuf, "Unknown file type %s. Maybe you need to install the Perl or Python plugin?\n", word[2]);
+	g_snprintf (tbuf, TBUFSIZE,
+				"Unknown file type %s. Supported add-ons use DLL, Python, or Tcl files.\n",
+				word[2]);
 	PrintText (sess, tbuf);
 #endif
 
@@ -3012,40 +3023,36 @@ cmd_msg (struct session *sess, char *tbuf, char *word[], char *word_eol[])
 				sess->server->p_message (sess->server, nick, msg + offset);
 				offset = 0;
 			}
-			newsess = find_dialog (sess->server, nick);
-			if (!newsess)
-				newsess = find_channel (sess->server, nick);
-			if (newsess && !sess->server->have_echo_message)
+			if (!sess->server->have_echo_message)
 			{
-				message_tags_data no_tags = MESSAGE_TAGS_DATA_INIT;
-
-				while ((split_text = split_up_text (sess, msg + offset, cmd_length, split_text)))
+				newsess = find_dialog (sess->server, nick);
+				if (!newsess)
+					newsess = find_channel (sess->server, nick);
+				if (newsess)
 				{
+					message_tags_data no_tags = MESSAGE_TAGS_DATA_INIT;
+
+					while ((split_text = split_up_text (sess, msg + offset, cmd_length, split_text)))
+					{
+						inbound_chanmsg (newsess->server, NULL, newsess->channel,
+											  newsess->server->nick, split_text, TRUE, FALSE,
+											  &no_tags);
+
+						if (*split_text)
+							offset += strlen(split_text);
+
+						g_free (split_text);
+					}
 					inbound_chanmsg (newsess->server, NULL, newsess->channel,
-										  newsess->server->nick, split_text, TRUE, FALSE,
+										  newsess->server->nick, msg + offset, TRUE, FALSE,
 										  &no_tags);
-
-					if (*split_text)
-						offset += strlen(split_text);
-
-					g_free (split_text);
 				}
-				inbound_chanmsg (newsess->server, NULL, newsess->channel,
-									  newsess->server->nick, msg + offset, TRUE, FALSE,
-									  &no_tags);
-			}
-			else
-			{
-				/* mask out passwords */
-				if (g_ascii_strcasecmp (nick, "nickserv") == 0)
+				else
 				{
-					if (g_ascii_strncasecmp (msg, "identify ", 9) == 0)
-						msg = "identify ****";
-					else if (g_ascii_strncasecmp (msg, "ghost ", 6) == 0)
-						msg = "ghost ****";
+					EMIT_SIGNAL (XP_TE_MSGSEND, sess, nick,
+									service_message_for_display (nick, msg),
+									NULL, NULL, 0);
 				}
-
-				EMIT_SIGNAL (XP_TE_MSGSEND, sess, nick, msg, NULL, NULL, 0);
 			}
 
 			return TRUE;
@@ -3793,7 +3800,7 @@ cmd_tray (struct session *sess, char *tbuf, char *word[], char *word_eol[])
 
 	if (!word[3][0])
 	{
-		fe_tray_set_file (NULL);	/* default ZoiteChat icon */
+		fe_tray_set_file (NULL);	/* default Fabulor icon */
 		return TRUE;
 	}
 
@@ -3924,6 +3931,7 @@ url_join_only (server *serv, char *tbuf, char *channel, char *key)
 	tbuf[0] = '#';
 	/* tbuf is 4kb */
 	safe_strcpy ((tbuf + 1), channel, 256);
+	server_join_request_add (serv, tbuf);
 	if (key)
 		serv->p_join (serv, tbuf, key);
 	else
@@ -4137,7 +4145,7 @@ const struct commands xc_cmds[] = {
 	 N_("BAN <mask> [<bantype>], bans everyone matching the mask from the current channel. If they are already on the channel this doesn't kick them (needs chanop)")},
 	{"CHANOPT", cmd_chanopt, 0, 0, 1, N_("CHANOPT [-quiet] <variable> [<value>]")},
 	{"CHARSET", cmd_charset, 0, 0, 1, N_("CHARSET [<encoding>], get or set the encoding used for the current connection")},
-	{"CLEAR", cmd_clear, 0, 0, 1, N_("CLEAR [ALL|HISTORY|[-]<amount>], Clears the current text window or command history")},
+	{"CLEAR", cmd_clear, 0, 0, 1, N_("CLEAR [ALL|HISTORY|LOG|[-]<amount>], Clears the current text window, command history, or current log file")},
 	{"CLOSE", cmd_close, 0, 0, 1, N_("CLOSE [-m], Closes the current tab, closing the window if this is the only open tab, or with the \"-m\" flag, closes all queries.")},
 
 	{"COUNTRY", cmd_country, 0, 0, 1,

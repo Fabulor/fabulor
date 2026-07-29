@@ -27,6 +27,7 @@
 #include "cfgfiles.h"
 #include "util.h"
 #include "fe.h"
+#include "proxy-policy.h"
 #include "text.h"
 #include "zoitechatc.h"
 #include "typedef.h"
@@ -53,6 +54,13 @@ const char * const languages[LANGUAGES_LENGTH] = {
 	"pt_BR", "pa", "ru", "sr", "sk", "sl", "es", "sv", "th", "tr",       /* 40 .. 49 */
 	"uk", "vi", "wa"                                                     /* 50 .. */
 };
+
+static void
+normalize_proxy_type (void)
+{
+	prefs.hex_net_proxy_type =
+		fabulor_proxy_type_normalize (prefs.hex_net_proxy_type);
+}
 
 void
 list_addentry (GSList ** list, char *cmd, char *name)
@@ -478,11 +486,11 @@ const struct prefs vars[] =
 	{"gui_ulist_hide", P_OFFINT (hex_gui_ulist_hide), TYPE_BOOL},
 	{"gui_ulist_icons", P_OFFINT (hex_gui_ulist_icons), TYPE_BOOL},
 	{"gui_ulist_pos", P_OFFINT (hex_gui_ulist_pos), TYPE_INT},
+	{"gui_ulist_resizable", P_OFFINT (hex_gui_ulist_resizable), TYPE_BOOL},
 	{"gui_ulist_nick_width", P_OFFINT (hex_gui_ulist_nick_width), TYPE_INT},
 	{"gui_ulist_host_width", P_OFFINT (hex_gui_ulist_host_width), TYPE_INT},
 	{"gui_ulist_show_hosts", P_OFFINT(hex_gui_ulist_show_hosts), TYPE_BOOL},
 	{"gui_ulist_sort", P_OFFINT (hex_gui_ulist_sort), TYPE_INT},
-	{"gui_ulist_style", P_OFFINT (hex_gui_ulist_style), TYPE_BOOL},
 	{"gui_url_mod", P_OFFINT (hex_gui_url_mod), TYPE_INT},
 	{"gui_usermenu", P_OFFINT (hex_gui_usermenu), TYPE_BOOL},
 	{"gui_win_height", P_OFFINT (hex_gui_win_height), TYPE_INT},
@@ -496,9 +504,6 @@ const struct prefs vars[] =
 	{"gui_win_top", P_OFFINT (hex_gui_win_top), TYPE_INT},
 	{"gui_win_ucount", P_OFFINT (hex_gui_win_ucount), TYPE_BOOL},
 	{"gui_win_width", P_OFFINT (hex_gui_win_width), TYPE_INT},
-
-	{"identd_server", P_OFFINT (hex_identd_server), TYPE_BOOL},
-	{"identd_port", P_OFFINT (hex_identd_port), TYPE_INT},
 
 	{"input_balloon_chans", P_OFFINT (hex_input_balloon_chans), TYPE_BOOL},
 	{"input_balloon_hilight", P_OFFINT (hex_input_balloon_hilight), TYPE_BOOL},
@@ -520,7 +525,6 @@ const struct prefs vars[] =
 	{"irc_auto_rejoin", P_OFFINT (hex_irc_auto_rejoin), TYPE_BOOL},
 	{"irc_reconnect_rejoin", P_OFFINT (hex_irc_reconnect_rejoin), TYPE_BOOL},
 	{"irc_ban_type", P_OFFINT (hex_irc_ban_type), TYPE_INT},
-	{"irc_cap_server_time", P_OFFINT (hex_irc_cap_server_time), TYPE_BOOL},
 	{"irc_conf_mode", P_OFFINT (hex_irc_conf_mode), TYPE_BOOL},
 	{"irc_extra_hilight", P_OFFSET (hex_irc_extra_hilight), TYPE_STR},
 	{"irc_hide_nickchange", P_OFFINT (hex_irc_hide_nickchange), TYPE_BOOL},
@@ -573,8 +577,6 @@ const struct prefs vars[] =
 	{"notify_timeout", P_OFFINT (hex_notify_timeout), TYPE_INT},
 	{"notify_whois_online", P_OFFINT (hex_notify_whois_online), TYPE_BOOL},
 
-	{"perl_warnings", P_OFFINT (hex_perl_warnings), TYPE_BOOL},
-
 	{"stamp_log", P_OFFINT (hex_stamp_log), TYPE_BOOL},
 	{"stamp_log_format", P_OFFSET (hex_stamp_log_format), TYPE_STR},
 	{"stamp_text", P_OFFINT (hex_stamp_text), TYPE_BOOL},
@@ -604,7 +606,6 @@ const struct prefs vars[] =
 	{"text_stripcolor_replay", P_OFFINT (hex_text_stripcolor_replay), TYPE_BOOL},
 	{"text_stripcolor_topic", P_OFFINT (hex_text_stripcolor_topic), TYPE_BOOL},
 	{"text_thin_sep", P_OFFINT (hex_text_thin_sep), TYPE_BOOL},
-	{"text_transparent", P_OFFINT (hex_text_transparent), TYPE_BOOL},
 	{"text_wordwrap", P_OFFINT (hex_text_wordwrap), TYPE_BOOL},
 
 	{"url_grabber", P_OFFINT (hex_url_grabber), TYPE_BOOL},
@@ -803,7 +804,6 @@ load_default_config(void)
 	prefs.hex_gui_ulist_color = 1;
 	prefs.hex_gui_ulist_count = 1;
 	prefs.hex_gui_ulist_icons = 1;
-	prefs.hex_gui_ulist_style = 1;
 	prefs.hex_gui_win_nick = 1;
 	prefs.hex_gui_win_save = 1;
 	prefs.hex_input_filter_beep = 1;
@@ -812,7 +812,6 @@ load_default_config(void)
 	prefs.hex_input_tray_hilight = 1;
 	prefs.hex_input_tray_priv = 1;
 	prefs.hex_irc_reconnect_rejoin = 1;
-	prefs.hex_irc_cap_server_time = 1;
 	prefs.hex_irc_logging = 1;
 	prefs.hex_irc_who_join = 1;
 	prefs.hex_irc_whois_front = 1;
@@ -1070,6 +1069,7 @@ load_config (void)
 	while (vars[i].name);
 
 	g_free (cfg);
+	normalize_proxy_type ();
 
 	if (prefs.hex_gui_win_height < 138)
 		prefs.hex_gui_win_height = 138;
@@ -1088,6 +1088,7 @@ save_config_write_to_fd (int fh)
 {
 	int i;
 
+	normalize_proxy_type ();
 	if (!cfg_put_str (fh, "version", PACKAGE_VERSION))
 		return 0;
 
@@ -1416,6 +1417,9 @@ cmd_set (struct session *sess, char *tbuf, char *word[], char *word_eol[])
 						{
 							*((int *) &prefs + vars[i].offset) = atoi (val);
 						}
+						if (vars[i].offset ==
+							P_OFFINTNL (hex_net_proxy_type))
+							normalize_proxy_type ();
 					}
 					if (!quiet)
 					{

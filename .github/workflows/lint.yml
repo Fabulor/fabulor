@@ -191,6 +191,19 @@ jobs:
                   if dependency not in discovered_ids:
                       raise SystemExit(f"{manifest_path} declares an unknown dependency '{dependency}'.")
 
+          simple_samples = {
+              "simple-csharp-greeter": "simple-csharp-greeter.csproj",
+              "simple-python-greeter": "simple-python-greeter.py",
+              "simple-tcl-greeter": "simple-tcl-greeter.tcl",
+          }
+          for folder_name, entrypoint_name in simple_samples.items():
+              sample_dir = manifest_root / folder_name
+              entrypoint = sample_dir / entrypoint_name
+              if not entrypoint.is_file():
+                  raise SystemExit(f"Missing simple sample entrypoint: {entrypoint}")
+              if (sample_dir / "plugin.json").exists():
+                  raise SystemExit(f"Simple sample must not contain plugin.json: {sample_dir}")
+
           python_roots = [
               repo / "plugins" / "python",
               repo / "samples" / "plugins",
@@ -201,7 +214,7 @@ jobs:
               for py_file in root.rglob("*.py"):
                   py_compile.compile(str(py_file), doraise=True)
 
-          print(f"Validated {len(workflow_files)} workflow files, {len(manifests)} sample manifests, and Python syntax checks.")
+          print(f"Validated {len(workflow_files)} workflow files, {len(manifests)} sample manifests, {len(simple_samples)} simple samples, and Python syntax checks.")
           '@ | python -
 
           python plugins/python/test_capabilities.py

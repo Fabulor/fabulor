@@ -52,8 +52,10 @@
 #include "util.h"
 #include "url.h"
 #include "proto-irc.h"
+#include "proxy-policy.h"
 #include "servlist.h"
 #include "server.h"
+#include "socks5-protocol.h"
 #include "sts.h"
 
 #ifdef USE_OPENSSL
@@ -920,29 +922,6 @@ server_read_child (GIOChannel *source, GIOCondition condition, server *serv)
 				closesocket (serv->proxy_sok4);
 		}
 
-		{
-			struct sockaddr_storage addr;
-			int addr_len = sizeof (addr);
-			guint16 port;
-			ircnet *net = serv->network;
-
-			if (!getsockname (serv->sok, (struct sockaddr *)&addr, &addr_len))
-			{
-				if (addr.ss_family == AF_INET)
-					port = ntohs(((struct sockaddr_in *)&addr)->sin_port);
-				else
-					port = ntohs(((struct sockaddr_in6 *)&addr)->sin6_port);
-
-				g_snprintf (outbuf, sizeof (outbuf), "IDENTD %"G_GUINT16_FORMAT" ", port);
-				if (net && net->user && !(net->flags & FLAG_USE_GLOBAL))
-					g_strlcat (outbuf, net->user, sizeof (outbuf));
-				else
-					g_strlcat (outbuf, prefs.hex_irc_user_name, sizeof (outbuf));
-
-				handle_command (serv->server_session, outbuf, FALSE);
-			}
-		}
-
 		server_connect_success (serv);
 		break;
 	case '5':						  /* prefs ip discovered */
@@ -975,6 +954,8 @@ static int
 server_cleanup (server * serv)
 {
 	fe_set_lag (serv, 0);
+	g_slist_free_full (serv->requested_joins, g_free);
+	serv->requested_joins = NULL;
 
 	if (serv->iotag)
 	{
@@ -1135,105 +1116,141 @@ traverse_socks (int print_fd, int sok, char *serverAddr, int port)
 	return 1;
 }
 
-struct sock5_connect1
+static int
+socks5_socket_interrupted (void)
 {
-	char version;
-	char nmethods;
-	char method;
-};
+#ifdef WIN32
+	return sock_error () == WSAEINTR;
+#else
+	return sock_error () == EINTR;
+#endif
+}
+
+static int
+socks5_send_all (int sok, const unsigned char *buffer, size_t length)
+{
+	size_t sent = 0;
+
+	while (sent < length)
+	{
+		int result = send (sok, (const char *)buffer + sent,
+						  (int)(length - sent), 0);
+
+		if (result > 0)
+		{
+			sent += (size_t)result;
+			continue;
+		}
+		if (result < 0 && socks5_socket_interrupted ())
+			continue;
+		return 0;
+	}
+
+	return 1;
+}
+
+static int
+socks5_receive_all (int sok, unsigned char *buffer, size_t length)
+{
+	size_t received = 0;
+
+	while (received < length)
+	{
+		int result = recv (sok, (char *)buffer + received,
+						  (int)(length - received), 0);
+
+		if (result > 0)
+		{
+			received += (size_t)result;
+			continue;
+		}
+		if (result < 0 && socks5_socket_interrupted ())
+			continue;
+		return 0;
+	}
+
+	return 1;
+}
 
 static int
 traverse_socks5 (int print_fd, int sok, char *serverAddr, int port)
 {
-	struct sock5_connect1 sc1;
-	unsigned char *sc2;
-	unsigned int packetlen, addrlen;
+	unsigned char request[FABULOR_SOCKS5_MAX_AUTH_REQUEST];
 	unsigned char buf[260];
-	int auth = prefs.hex_net_proxy_auth && prefs.hex_net_proxy_user[0] && prefs.hex_net_proxy_pass[0];
+	size_t request_size;
+	size_t reply_tail_size;
+	int auth_required = prefs.hex_net_proxy_auth;
 
-	sc1.version = 5;
-	sc1.nmethods = 1;
-	if (auth)
-		sc1.method = 2;  /* Username/Password Authentication (UPA) */
-	else
-		sc1.method = 0;  /* NO Authentication */
-	send (sok, (char *) &sc1, 3, 0);
-	if (recv (sok, buf, 2, 0) != 2)
-		goto read_error;
-
-	if (buf[0] != 5)
+	if (!fabulor_socks5_credentials_valid (auth_required,
+										   prefs.hex_net_proxy_user,
+										   prefs.hex_net_proxy_pass))
 	{
-		proxy_error (print_fd, "SOCKS\tServer is not socks version 5.\n");
+		proxy_error (print_fd, "SOCKS\tAuthentication requires a username "
+							 "and password of 1 to 255 bytes.\n");
 		return 1;
 	}
 
-	/* did the server say no auth required? */
-	if (buf[1] == 0)
-		auth = 0;
+	request_size = fabulor_socks5_build_method_request (
+		request, sizeof (request), auth_required);
+	if (!request_size || !socks5_send_all (sok, request, request_size) ||
+		!socks5_receive_all (sok, buf, 2))
+		goto read_error;
 
-	if (auth)
+	if (!fabulor_socks5_method_response_valid (buf, 2, auth_required))
 	{
-		int len_u=0, len_p=0;
-		unsigned char *u_p_buf;
+		if (buf[0] != FABULOR_SOCKS5_VERSION)
+			proxy_error (print_fd,
+						 "SOCKS\tServer is not SOCKS version 5.\n");
+		else if (buf[1] == FABULOR_SOCKS5_METHOD_UNACCEPTABLE)
+			proxy_error (print_fd,
+						 "SOCKS\tServer rejected all offered authentication methods.\n");
+		else if (auth_required)
+			proxy_error (print_fd,
+						 "SOCKS\tServer did not select required username/password authentication.\n");
+		else
+			proxy_error (print_fd,
+						 "SOCKS\tServer selected an authentication method that was not offered.\n");
+		return 1;
+	}
 
-		/* authentication sub-negotiation (RFC1929) */
-		if (buf[1] != 2)  /* UPA not supported by server */
-		{
-			proxy_error (print_fd, "SOCKS\tServer doesn't support UPA authentication.\n");
-			return 1;
-		}
-
-		/* form the UPA request */
-		len_u = strlen (prefs.hex_net_proxy_user);
-		len_p = strlen (prefs.hex_net_proxy_pass);
-
-        packetlen = 2 + len_u + 1 + len_p;
-		u_p_buf = g_malloc0 (packetlen);
-
-		u_p_buf[0] = 1;
-		u_p_buf[1] = len_u;
-		memcpy (u_p_buf + 2, prefs.hex_net_proxy_user, len_u);
-		u_p_buf[2 + len_u] = len_p;
-		memcpy (u_p_buf + 3 + len_u, prefs.hex_net_proxy_pass, len_p);
-
-		send (sok, u_p_buf, packetlen, 0);
-		g_free(u_p_buf);
-
-		if ( recv (sok, buf, 2, 0) != 2 )
+	if (auth_required)
+	{
+		request_size = fabulor_socks5_build_auth_request (
+			request, sizeof (request), prefs.hex_net_proxy_user,
+			prefs.hex_net_proxy_pass);
+		if (!request_size ||
+			!socks5_send_all (sok, request, request_size) ||
+			!socks5_receive_all (sok, buf, 2))
 			goto read_error;
-		if ( buf[1] != 0 )
+		if (!fabulor_socks5_auth_response_valid (buf, 2))
 		{
 			proxy_error (print_fd, "SOCKS\tAuthentication failed. "
 							 "Is username and password correct?\n");
-			return 1; /* UPA failed! */
-		}
-	}
-	else
-	{
-		if (buf[1] != 0)
-		{
-			proxy_error (print_fd, "SOCKS\tAuthentication required but disabled in settings.\n");
 			return 1;
 		}
 	}
 
-	addrlen = strlen (serverAddr);
-	packetlen = 4 + 1 + addrlen + 2;
-	sc2 = g_malloc (packetlen);
-	sc2[0] = 5;						  /* version */
-	sc2[1] = 1;						  /* command */
-	sc2[2] = 0;						  /* reserved */
-	sc2[3] = 3;						  /* address type */
-	sc2[4] = (unsigned char) addrlen;	/* hostname length */
-	memcpy (sc2 + 5, serverAddr, addrlen);
-	*((unsigned short *) (sc2 + 5 + addrlen)) = htons (port);
-	send (sok, sc2, packetlen, 0);
-	g_free (sc2);
+	request_size = fabulor_socks5_build_domain_connect_request (
+		request, sizeof (request), serverAddr, (unsigned int)port);
+	if (!request_size)
+	{
+		proxy_error (print_fd,
+					 "SOCKS\tDestination hostname or port is invalid.\n");
+		return 1;
+	}
+	if (!socks5_send_all (sok, request, request_size))
+		goto read_error;
 
 	/* consume all of the reply */
-	if (recv (sok, buf, 4, 0) != 4)
+	if (!socks5_receive_all (sok, buf, 4))
 		goto read_error;
-	if (buf[0] != 5 || buf[1] != 0)
+	if (!fabulor_socks5_reply_header_valid (buf, 4))
+	{
+		proxy_error (print_fd,
+					 "SOCKS\tServer returned a malformed connection reply.\n");
+		return 1;
+	}
+	if (buf[1] != 0)
 	{
 		if (buf[1] == 2)
 			g_snprintf (buf, sizeof (buf), "SOCKS\tProxy refused to connect to host (not allowed).\n");
@@ -1242,20 +1259,25 @@ traverse_socks5 (int print_fd, int sok, char *serverAddr, int port)
 		proxy_error (print_fd, buf);
 		return 1;
 	}
-	if (buf[3] == 1)	/* IPV4 32bit address */
+
+	reply_tail_size = fabulor_socks5_fixed_reply_tail_size (buf[3]);
+	if (reply_tail_size)
 	{
-		if (recv (sok, buf, 6, 0) != 6)
+		if (!socks5_receive_all (sok, buf, reply_tail_size))
 			goto read_error;
-	} else if (buf[3] == 4)	/* IPV6 128bit address */
+	}
+	else
 	{
-		if (recv (sok, buf, 18, 0) != 18)
+		if (!socks5_receive_all (sok, buf, 1))
 			goto read_error;
-	} else if (buf[3] == 3)	/* string, 1st byte is size */
-	{
-		if (recv (sok, buf, 1, 0) != 1)	/* read the string size */
-			goto read_error;
-		packetlen = buf[0] + 2;	/* can't exceed 260 */
-		if (recv (sok, buf, packetlen, 0) != packetlen)
+		if (!fabulor_socks5_domain_length_valid (buf[0]))
+		{
+			proxy_error (print_fd,
+						 "SOCKS\tServer returned an empty domain address.\n");
+			return 1;
+		}
+		reply_tail_size = (size_t)buf[0] + 2;
+		if (!socks5_receive_all (sok, buf, reply_tail_size))
 			goto read_error;
 	}
 
@@ -1264,17 +1286,6 @@ traverse_socks5 (int print_fd, int sok, char *serverAddr, int port)
 read_error:
 	proxy_error (print_fd, "SOCKS\tRead error from server.\n");
 	return 1;
-}
-
-static int
-traverse_wingate (int print_fd, int sok, char *serverAddr, int port)
-{
-	char buf[128];
-
-	g_snprintf (buf, sizeof (buf), "%s %d\r\n", serverAddr, port);
-	send (sok, buf, strlen (buf), 0);
-
-	return 0;
 }
 
 /* stuff for HTTP auth is here */
@@ -1392,13 +1403,11 @@ traverse_proxy (int proxy_type, int print_fd, int sok, char *ip, int port, netst
 {
 	switch (proxy_type)
 	{
-	case 1:
-		return traverse_wingate (print_fd, sok, ip, port);
-	case 2:
+	case FABULOR_PROXY_SOCKS4:
 		return traverse_socks (print_fd, sok, ip, port);
-	case 3:
+	case FABULOR_PROXY_SOCKS5:
 		return traverse_socks5 (print_fd, sok, ip, port);
-	case 4:
+	case FABULOR_PROXY_HTTP:
 		return traverse_http (print_fd, sok, ip, port);
 	}
 
@@ -1425,6 +1434,8 @@ server_child (server * serv)
 	char buf[512];
 	char bound = 0;
 	int proxy_type = 0;
+	int configured_proxy_type =
+		fabulor_proxy_type_normalize (prefs.hex_net_proxy_type);
 	char *proxy_host = NULL;
 	int proxy_port;
 
@@ -1450,7 +1461,7 @@ server_child (server * serv)
 
 	if (!serv->dont_use_proxy) /* blocked in serverlist? */
 	{
-		if (prefs.hex_net_proxy_type == 5)
+		if (configured_proxy_type == FABULOR_PROXY_AUTO)
 		{
 			char **proxy_list;
 			char *url, *proxy;
@@ -1475,13 +1486,13 @@ server_child (server * serv)
 				/* can use only one */
 				proxy = proxy_list[0];
 				if (!strncmp (proxy, "direct", 6))
-					proxy_type = 0;
+					proxy_type = FABULOR_PROXY_DISABLED;
 				else if (!strncmp (proxy, "http", 4))
-					proxy_type = 4;
+					proxy_type = FABULOR_PROXY_HTTP;
 				else if (!strncmp (proxy, "socks5", 6))
-					proxy_type = 3;
+					proxy_type = FABULOR_PROXY_SOCKS5;
 				else if (!strncmp (proxy, "socks", 5))
-					proxy_type = 2;
+					proxy_type = FABULOR_PROXY_SOCKS4;
 			} else {
 				write_error ("Failed to lookup proxy", &error);
 			}
@@ -1502,10 +1513,10 @@ server_child (server * serv)
 		}
 
 		if (prefs.hex_net_proxy_host[0] &&
-			   prefs.hex_net_proxy_type > 0 &&
+			   configured_proxy_type > FABULOR_PROXY_DISABLED &&
 			   prefs.hex_net_proxy_use != 2) /* proxy is NOT dcc-only */
 		{
-			proxy_type = prefs.hex_net_proxy_type;
+			proxy_type = configured_proxy_type;
 			proxy_host = g_strdup (prefs.hex_net_proxy_host);
 			proxy_port = prefs.hex_net_proxy_port;
 		}
@@ -1528,7 +1539,8 @@ server_child (server * serv)
 		connect_port = proxy_port;
 
 		/* if using socks4 or MS Proxy, attempt to resolve ip for irc server */
-		if ((proxy_type == 2) || (proxy_type == 5))
+		if ((proxy_type == FABULOR_PROXY_SOCKS4) ||
+			(proxy_type == FABULOR_PROXY_AUTO))
 		{
 			ns_proxy = net_store_new ();
 			proxy_ip = net_resolve (ns_proxy, hostname, port, &real_hostname);
@@ -1554,11 +1566,12 @@ server_child (server * serv)
 				 real_hostname, ip, connect_port);
 	write (serv->childwrite, buf, strlen (buf));
 
-	if (!serv->dont_use_proxy && (proxy_type == 5))
-		error = net_connect (ns_server, serv->proxy_sok4, serv->proxy_sok6, &psok);
+	if (!serv->dont_use_proxy && (proxy_type == FABULOR_PROXY_AUTO))
+		error = net_connect (ns_server, &serv->proxy_sok4,
+								  &serv->proxy_sok6, &psok);
 	else
 	{
-		error = net_connect (ns_server, serv->sok4, serv->sok6, &sok);
+		error = net_connect (ns_server, &serv->sok4, &serv->sok6, &sok);
 		psok = sok;
 	}
 
@@ -1989,6 +2002,49 @@ server_away_save_message (server *serv, char *nick, char *msg)
 }
 
 void
+server_join_request_add (server *serv, const char *channels)
+{
+	char **channel_list;
+	int i;
+
+	if (!serv || !channels || !*channels)
+		return;
+
+	channel_list = g_strsplit (channels, ",", -1);
+	for (i = 0; channel_list[i]; i++)
+	{
+		if (*channel_list[i])
+			serv->requested_joins = g_slist_append (
+				serv->requested_joins, g_strdup (channel_list[i]));
+	}
+	g_strfreev (channel_list);
+}
+
+gboolean
+server_join_request_take (server *serv, const char *channel)
+{
+	GSList *list;
+
+	if (!serv || !channel)
+		return FALSE;
+
+	for (list = serv->requested_joins; list; list = list->next)
+	{
+		char *requested_channel = list->data;
+
+		if (!serv->p_cmp (requested_channel, channel))
+		{
+			g_free (requested_channel);
+			serv->requested_joins = g_slist_delete_link (
+				serv->requested_joins, list);
+			return TRUE;
+		}
+	}
+
+	return FALSE;
+}
+
+void
 server_free (server *serv)
 {
 	serv->cleanup (serv);
@@ -2013,6 +2069,7 @@ server_free (server *serv)
 
 	if (serv->favlist)
 		g_slist_free_full (serv->favlist, (GDestroyNotify) servlist_favchan_free);
+	g_slist_free_full (serv->requested_joins, g_free);
 #ifdef USE_OPENSSL
 	if (serv->ctx)
 		_SSL_context_free (serv->ctx);

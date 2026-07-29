@@ -145,6 +145,7 @@ struct _SexySpellEntryPriv
 	guint                 theme_listener_id;
 	gboolean              checked;
 	gboolean              parseattr;
+	gboolean              context_click_pending;
 	GSimpleActionGroup    *menu_actions;
 	GMenuModel            *menu_model;
 };
@@ -176,6 +177,7 @@ static gchar     *get_lang_from_dict                          (struct EnchantDic
 static void       sexy_spell_entry_recheck_all                (SexySpellEntry       *entry);
 static void       sexy_spell_entry_refresh_words              (SexySpellEntry       *entry);
 static void       sexy_spell_entry_update_menu                (SexySpellEntry       *entry);
+static gboolean   sexy_spell_entry_context_click_finished     (gpointer              user_data);
 
 static GtkEntryClass *parent_class = NULL;
 
@@ -730,6 +732,30 @@ sexy_spell_entry_context_key (GtkWidget *widget, guint keyval,
 }
 
 static void
+sexy_spell_entry_cursor_changed (GObject *object, GParamSpec *pspec,
+	gpointer user_data)
+{
+	SexySpellEntry *entry = SEXY_SPELL_ENTRY (object);
+
+	(void) pspec;
+	(void) user_data;
+	if (!entry->priv->context_click_pending)
+		return;
+	entry->priv->mark_character =
+		gtk_editable_get_position (GTK_EDITABLE (entry));
+	sexy_spell_entry_update_menu (entry);
+}
+
+static gboolean
+sexy_spell_entry_context_click_finished (gpointer user_data)
+{
+	SexySpellEntry *entry = SEXY_SPELL_ENTRY (user_data);
+
+	entry->priv->context_click_pending = FALSE;
+	return G_SOURCE_REMOVE;
+}
+
+static void
 sexy_spell_entry_init(SexySpellEntry *entry)
 {
 	entry->priv = g_new0(SexySpellEntryPriv, 1);
@@ -752,10 +778,13 @@ sexy_spell_entry_init(SexySpellEntry *entry)
 
 	sexy_spell_entry_init_menu_actions (entry);
 	sexy_spell_entry_update_menu (entry);
-	fabulor_gtk_widget_on_key_pressed (GTK_WIDGET (entry),
-		sexy_spell_entry_context_key, NULL);
+	fabulor_gtk_widget_on_key_pressed_phase (GTK_WIDGET (entry),
+		GTK_PHASE_CAPTURE, sexy_spell_entry_context_key, NULL);
 	g_signal_connect(G_OBJECT(entry), "changed", G_CALLBACK(sexy_spell_entry_changed), NULL);
-	fabulor_gtk_widget_on_multi_click (GTK_WIDGET (entry), sexy_spell_entry_button_press, NULL);
+	g_signal_connect (G_OBJECT (entry), "notify::cursor-position",
+		G_CALLBACK (sexy_spell_entry_cursor_changed), NULL);
+	fabulor_gtk_widget_on_multi_click_phase (GTK_WIDGET (entry),
+		GTK_PHASE_CAPTURE, sexy_spell_entry_button_press, NULL);
 	entry->priv->theme_listener_id = theme_listener_register (
 		"spell-entry", sexy_spell_entry_theme_changed, entry);
 	sexy_spell_entry_apply_caret_style (entry);
@@ -937,15 +966,19 @@ sexy_spell_entry_button_press (GtkWidget *widget, guint button, guint n_press,
 {
 	SexySpellEntry *entry = SEXY_SPELL_ENTRY(widget);
 
-	(void) button;
 	(void) n_press;
 	(void) y;
 	(void) state;
 	(void) user_data;
+	if (button != GDK_BUTTON_SECONDARY)
+		return FALSE;
+	entry->priv->context_click_pending = TRUE;
 	entry->priv->mark_character = fabulor_spell_entry_pointer_position (
 		GTK_ENTRY (widget), x);
-	if (button == GDK_BUTTON_SECONDARY)
-		sexy_spell_entry_update_menu (entry);
+	sexy_spell_entry_update_menu (entry);
+	g_idle_add_full (G_PRIORITY_DEFAULT_IDLE,
+		sexy_spell_entry_context_click_finished, g_object_ref (entry),
+		g_object_unref);
 	return FALSE;
 }
 
@@ -1080,7 +1113,7 @@ sexy_spell_entry_activate_language_internal(SexySpellEntry *entry, const gchar *
 		return FALSE;
 	}
 
-	enchant_dict_add_to_session (dict, "ZoiteChat", strlen("ZoiteChat"));
+	enchant_dict_add_to_session (dict, "Fabulor", strlen("Fabulor"));
 	entry->priv->dict_list = g_slist_append(entry->priv->dict_list, (gpointer) dict);
 	g_hash_table_insert(entry->priv->dict_hash, get_lang_from_dict(dict), (gpointer) dict);
 

@@ -165,6 +165,15 @@ runtime from the official 3.14.3 x64 embeddable archive and verifies SHA-256
 `AD4961A479DEDBEB7C7D113253F8DB1B1935586B73C27488712BEEC4F2C894E6`;
 the full hosted Python installation remains a build dependency only.
 
+Stage 9 Tcl payload minimization replaces the inherited full Tcl distribution
+with an explicit embedded-runtime allowlist. Fabulor packages `tcl86t.dll`,
+the Tcl 8.6 core scripts, encodings, timezone/message data, and reviewed
+standard Tcl modules. Tk, shells, import/stub libraries, build tools, source,
+tests/examples, and third-party package collections are excluded. The staged
+Tcl payload falls from 5,588 files and 96.34 MiB to 825 files and 4.95 MiB.
+Isolated initialization, standard-package, encoding, timezone, and maintained
+sample-add-on probes pass against only the staged root.
+
 ## Sources And Provenance
 
 Windows CI downloads the pinned GTK4 archive from the `ZoiteChat/gvsbuild`
@@ -227,23 +236,26 @@ dependent module is loaded.
 ## Theme Payload Policy
 
 The final package does not include the legacy `MS-Windows` GTK theme, optional
-Windows 10 GTK theme downloads, or another optional default Fabulor theme.
-Fabulor follows Windows light/dark and high-contrast policy and otherwise uses
-the GTK4 runtime defaults when no custom theme is selected.
+Windows 10 GTK theme downloads, or a bundled GTK desktop theme. Fabulor
+follows Windows light/dark and high-contrast policy and otherwise uses the
+GTK4 runtime defaults when no custom desktop theme is selected. The package
+does include the original colours-only `Fabulor Dark.hct` starter palette
+under `share/palettes`; it is independent from GTK desktop CSS.
 
 Supported user-facing formats are `.hct`, `colors.conf`, system GTK4 desktop
 themes, and imported GTK4 desktop themes under `%APPDATA%\Fabulor\themes`.
 The `.zct` association is retired. Existing `%APPDATA%\Fabulor\gtk3-themes`
 content is not deleted during upgrade, but it stops being discovered after the
-GTK4 adapter replaces the shipping GTK3 theme service. Required GTK runtime
+GTK4 adapter replaced the retired GTK3 theme service. Required GTK runtime
 data and icon assets remain allowlisted runtime dependencies, not optional
 default themes.
 
 `tools/validate_theme_contract.py` enforces this boundary in repository lint.
-It verifies the active associations and import/persistence tokens, then rejects
-repository-authored default-theme files and WiX harvest rules for `.hct`,
-`.zct`, `colors.conf`, or `share/themes`. Isolated tests prove each rejection
-path while preserving the explicit stale `.zct` upgrade cleanup.
+It verifies the active associations and import/persistence tokens, validates
+that `Fabulor Dark.hct` contains exactly its tracked `colors.conf`, and rejects
+all additional repository-authored palettes and desktop themes. WiX may
+install that exact archive but cannot harvest `share/themes`. Isolated tests
+preserve the explicit stale `.zct` upgrade cleanup.
 
 ## Required Runtime Categories
 
@@ -287,39 +299,44 @@ DLL boundaries. Before cutover:
 
 ### 1. Freeze The Baseline
 
-- record current archive URLs, versions, hashes, file counts, and sizes
-- record the current GTK3 staged/installed files
-- keep the current installer functional while source conversion proceeds
+- [x] Record archive URLs, versions, hashes, file counts, and sizes.
+- [x] Record the former GTK3 staged and installed payload.
+- [x] Keep the production installer functional throughout conversion.
 
 ### 2. Build A GTK4 Staging Root
 
-- [x] generate a clean runtime candidate from pinned inputs
-- [x] separate build-only and runtime files through an explicit contract
-- [x] emit a source-bound file manifest with sizes and SHA-256 hashes
-- [ ] add ownership/category metadata after native feature verification
-- [x] validate executable-relative startup without ambient GTK paths
+- [x] Generate a clean runtime candidate from pinned inputs.
+- [x] Separate build-only and runtime files through an explicit contract.
+- [x] Emit a source-bound file manifest with sizes and SHA-256 hashes.
+- [x] Encode runtime ownership through the reviewed WiX allowlist and package
+      validators.
+- [x] Validate executable-relative startup without ambient GTK paths.
 
 ### 3. Parallel Package Validation
 
-- [x] package and publish the GTK4 runtime candidate without replacing the
-  shipping MSI/bootstrapper or removing the GTK3 payload
-- run clean-machine smoke tests against the GTK4 executable
-- compare Process Monitor/module lists against the allowlist
-- identify optional modules through feature tests, not startup alone
+- [x] Package and publish the GTK4 runtime candidate without initially
+      replacing the shipping MSI/bootstrapper.
+- [x] Run installed smoke tests against the GTK4 executable.
+- [x] Validate the native import closure and loaded runtime against the
+      allowlist.
+- [x] Retain optional modules through feature tests rather than startup alone.
 
 ### 4. Cutover
 
-- switch CI build/link inputs to GTK4
-- switch `win32/copy` and WiX component groups to the GTK4 allowlist
-- remove legacy GTK3 compatibility feature/components and duplicate root data
-- add upgrade removal coverage for every retired GTK3 path
+- [x] Switch CI build and link inputs to GTK4.
+- [x] Switch WiX component groups to the GTK4 allowlist.
+- [x] Remove legacy GTK3 compatibility features, components, and duplicate
+      runtime data.
+- [x] Add upgrade removal coverage for retired GTK3 paths.
 
 ### 5. Trim And Lock
 
-- remove unused locales, icons, typelibs, schemas, modules, and helper tools only
-  after the full validation matrix passes
-- fail CI if the generated payload differs from the locked manifest
-- publish MSI/bootstrapper and payload hashes with release metadata
+- [x] Remove verified development-only and retired runtime content.
+- [x] Fail validation when the production payload differs from its ownership
+      and allowlist contracts.
+- [ ] Reassess optional locales, icons, typelibs, schemas, modules, and helper
+      tools only after the final release-candidate feature pass.
+- [ ] Publish MSI/bootstrapper and payload hashes with release metadata.
 
 ## Installer Validation
 
@@ -339,12 +356,13 @@ Each packaging PR must cover as applicable:
 
 ## Cutover Gate
 
-Do not remove the GTK3 payload until all of these are true:
+The GTK4 cutover gate is complete:
 
-- production `fabulor.exe` imports GTK4 and does not import GTK3
-- every bundled native DLL is compatible with the final GLib/CRT family
-- clean and upgrade installs pass the validation matrix
-- the GTK4 payload manifest is allowlisted, hashed, and provenance-backed
-- no required feature depends on an omitted module or data file
-- legacy GTK3 files are removed by upgrade and absent from clean install
-- the known empty `lib/gio` harvest warning is resolved
+- [x] Production `fabulor.exe` imports GTK4 and does not import GTK3.
+- [x] Bundled native DLLs are compatible with the final GLib/CRT family.
+- [x] Clean and upgrade installations pass the migration validation matrix.
+- [x] The GTK4 payload is allowlisted, hashed, and provenance-backed.
+- [x] Required features do not depend on an omitted module or data file.
+- [x] Legacy GTK3 files are removed by upgrade and absent from clean installs.
+- [x] The former empty `lib/gio` harvest warning is absent from production
+      packaging.

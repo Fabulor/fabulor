@@ -157,15 +157,14 @@ struct zoitechatprefs
 	unsigned int hex_gui_ulist_count;
 	unsigned int hex_gui_ulist_hide;
 	unsigned int hex_gui_ulist_icons;
+	unsigned int hex_gui_ulist_resizable;
 	unsigned int hex_gui_ulist_show_hosts;
-	unsigned int hex_gui_ulist_style;
 	unsigned int hex_gui_usermenu;
 	unsigned int hex_gui_win_modes;
 	unsigned int hex_gui_win_nick;
 	unsigned int hex_gui_win_save;
 	unsigned int hex_gui_win_swap;
 	unsigned int hex_gui_win_ucount;
-	unsigned int hex_identd_server;
 	unsigned int hex_input_balloon_chans;
 	unsigned int hex_input_balloon_hilight;
 	unsigned int hex_input_balloon_priv;
@@ -196,13 +195,11 @@ struct zoitechatprefs
 	unsigned int hex_irc_wallops;
 	unsigned int hex_irc_who_join;
 	unsigned int hex_irc_whois_front;
-	unsigned int hex_irc_cap_server_time;
 	unsigned int hex_net_auto_reconnect;
 	unsigned int hex_net_auto_reconnectonfail;
 	unsigned int hex_net_proxy_auth;
 	unsigned int hex_net_throttle;
 	unsigned int hex_notify_whois_online;
-	unsigned int hex_perl_warnings;
 	unsigned int hex_stamp_log;
 	unsigned int hex_stamp_text;
 	unsigned int hex_text_autocopy_color;
@@ -221,7 +218,6 @@ struct zoitechatprefs
 	unsigned int hex_text_stripcolor_replay;
 	unsigned int hex_text_stripcolor_topic;
 	unsigned int hex_text_thin_sep;
-	unsigned int hex_text_transparent;
 	unsigned int hex_text_wordwrap;
 	unsigned int hex_url_grabber;
 	unsigned int hex_url_logging;
@@ -285,7 +281,6 @@ struct zoitechatprefs
 	int hex_gui_win_state;
 	int hex_gui_win_top;
 	int hex_gui_win_width;
-	int hex_identd_port;
 	int hex_irc_ban_type;
 	int hex_irc_join_delay;
 	int hex_irc_notice_pos;
@@ -295,7 +290,7 @@ struct zoitechatprefs
 	int hex_net_keepalive_interval;
 	int hex_net_keepalive_count;
 	int hex_net_proxy_port;
-	int hex_net_proxy_type;				/* 0=disabled, 1=wingate 2=socks4, 3=socks5, 4=http */
+	int hex_net_proxy_type;				/* 0=disabled, 1=retired, 2=socks4, 3=socks5, 4=http, 5=auto */
 	int hex_net_proxy_use;				/* 0=all 1=IRC_ONLY 2=DCC_ONLY */
 	int hex_net_reconnect_delay;
 	int hex_notify_timeout;
@@ -433,6 +428,7 @@ typedef struct session
 
 	char *quitreason;
 	char *topic;
+	char *topic_formatted;
 	char *current_modes;					/* free() me */
 	GSList *reply_items;
 	char *reply_msgid;
@@ -595,6 +591,7 @@ typedef struct server
 	GIConv write_converter; /* iconv converter for converting from UTF-8 to server encoding. */
 
 	GSList *favlist;			/* list of channels & keys to join */
+	GSList *requested_joins;	/* channel names explicitly joined by the user */
 
 	unsigned int motd_skipped:1;
 	unsigned int connected:1;

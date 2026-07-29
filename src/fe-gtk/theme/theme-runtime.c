@@ -39,6 +39,7 @@
 #include "../../common/zoitechatc.h"
 #include "../../common/util.h"
 #include "../../common/cfgfiles.h"
+#include "../../common/theme-archive-reader.h"
 #include "../../common/typedef.h"
 
 #define PALETTE_COLOR_INIT(r, g, b) { (r) / 65535.0f, (g) / 65535.0f, (b) / 65535.0f, 1.0f }
@@ -120,6 +121,8 @@ static gboolean dark_user_colors_valid = FALSE;
 static gboolean dark_mode_active = FALSE;
 static gboolean light_custom_tokens[THEME_TOKEN_COUNT];
 static gboolean dark_custom_tokens[THEME_TOKEN_COUNT];
+
+static gboolean palette_color_eq (const GdkRGBA *a, const GdkRGBA *b);
 
 #define THEME_PALETTE_MIGRATION_MARKER_KEY "theme.palette.semantic_migrated"
 #define THEME_PALETTE_MIGRATION_MARKER_VALUE 1
@@ -395,6 +398,123 @@ theme_runtime_dark_set_color (ThemeSemanticToken token, const GdkRGBA *col)
 	g_assert (theme_palette_set_color (&dark_palette, token, col));
 	dark_custom_tokens[token] = TRUE;
 	dark_user_colors_valid = TRUE;
+}
+
+void
+theme_runtime_palette_snapshot (gboolean dark_mode,
+	ThemePaletteCandidate *candidate)
+{
+	const ThemePalette *palette;
+	const gboolean *custom_tokens;
+
+	g_return_if_fail (candidate != NULL);
+	palette = dark_mode ? &dark_palette : &light_palette;
+	custom_tokens = dark_mode ? dark_custom_tokens : light_custom_tokens;
+	memset (candidate, 0, sizeof (*candidate));
+	candidate->palette = *palette;
+	memcpy (candidate->custom_tokens, custom_tokens,
+		sizeof (candidate->custom_tokens));
+	candidate->dark_mode = dark_mode;
+	candidate->initialized = TRUE;
+}
+
+gboolean
+theme_runtime_palette_candidate_from_colors (const char *contents,
+	gboolean dark_mode, ThemePaletteCandidate *candidate, GError **error)
+{
+	ThemePaletteCandidate parsed;
+	size_t i;
+
+	g_return_val_if_fail (contents != NULL, FALSE);
+	g_return_val_if_fail (candidate != NULL, FALSE);
+	theme_runtime_palette_snapshot (dark_mode, &parsed);
+	for (i = 0; i < theme_palette_token_def_count (); i++)
+	{
+		const ThemePaletteTokenDef *def = theme_palette_token_def_at (i);
+		FabulorThemeColorResult result;
+		GdkRGBA color;
+		guint16 red;
+		guint16 green;
+		guint16 blue;
+
+		g_assert (def != NULL);
+		result = fabulor_theme_colors_parse_token (contents,
+			(guint)def->token, dark_mode, &red, &green, &blue);
+		if (result == FABULOR_THEME_COLOR_INVALID)
+		{
+			g_set_error (error, G_FILE_ERROR, G_FILE_ERROR_INVAL,
+				"Theme colour '%s' is malformed or duplicated.", def->name);
+			return FALSE;
+		}
+		if (result == FABULOR_THEME_COLOR_MISSING)
+			continue;
+		color.red = red / 65535.0;
+		color.green = green / 65535.0;
+		color.blue = blue / 65535.0;
+		color.alpha = 1.0;
+		g_assert (theme_palette_set_color (&parsed.palette, def->token,
+			&color));
+		parsed.custom_tokens[def->token] = TRUE;
+		parsed.supplied_count++;
+	}
+	if (parsed.supplied_count == 0)
+	{
+		g_set_error_literal (error, G_FILE_ERROR, G_FILE_ERROR_INVAL,
+			"The theme does not contain any supported colours.");
+		return FALSE;
+	}
+	*candidate = parsed;
+	return TRUE;
+}
+
+gboolean
+theme_runtime_apply_palette_candidate (
+	const ThemePaletteCandidate *candidate, gboolean *palette_changed)
+{
+	ThemePalette *target_palette;
+	gboolean *target_custom_tokens;
+	gboolean *target_valid;
+	gboolean changed = FALSE;
+	size_t i;
+
+	g_return_val_if_fail (candidate != NULL, FALSE);
+	g_return_val_if_fail (candidate->initialized, FALSE);
+	target_palette = candidate->dark_mode ? &dark_palette : &light_palette;
+	target_custom_tokens = candidate->dark_mode ?
+		dark_custom_tokens : light_custom_tokens;
+	target_valid = candidate->dark_mode ?
+		&dark_user_colors_valid : &user_colors_valid;
+
+	if (candidate->dark_mode == dark_mode_active)
+	{
+		for (i = 0; i < theme_palette_token_def_count (); i++)
+		{
+			const ThemePaletteTokenDef *def = theme_palette_token_def_at (i);
+			GdkRGBA old_color;
+			GdkRGBA new_color;
+
+			g_assert (def != NULL);
+			g_assert (theme_palette_get_color (&active_palette, def->token,
+				&old_color));
+			g_assert (theme_palette_get_color (&candidate->palette,
+				def->token, &new_color));
+			if (!palette_color_eq (&old_color, &new_color))
+			{
+				changed = TRUE;
+				break;
+			}
+		}
+	}
+
+	*target_palette = candidate->palette;
+	memcpy (target_custom_tokens, candidate->custom_tokens,
+		sizeof (candidate->custom_tokens));
+	*target_valid = TRUE;
+	if (candidate->dark_mode == dark_mode_active)
+		active_palette = candidate->palette;
+	if (palette_changed)
+		*palette_changed = changed;
+	return TRUE;
 }
 
 void

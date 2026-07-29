@@ -38,6 +38,7 @@
 #include "notify.h"
 #include "plugin.h"
 #include "server.h"
+#include "service-message.h"
 #include "text.h"
 #include "outbound.h"
 #include "util.h"
@@ -900,21 +901,25 @@ process_numeric (session * sess, int n,
 		break;
 
 	case 471:
+		server_join_request_take (serv, word[4]);
 		EMIT_SIGNAL_TIMESTAMP (XP_TE_USERLIMIT, sess, word[4], NULL, NULL, NULL, 0,
 									  tags_data->timestamp);
 		break;
 
 	case 473:
+		server_join_request_take (serv, word[4]);
 		EMIT_SIGNAL_TIMESTAMP (XP_TE_INVITE, sess, word[4], NULL, NULL, NULL, 0,
 									  tags_data->timestamp);
 		break;
 
 	case 474:
+		server_join_request_take (serv, word[4]);
 		EMIT_SIGNAL_TIMESTAMP (XP_TE_BANNED, sess, word[4], NULL, NULL, NULL, 0,
 									  tags_data->timestamp);
 		break;
 
 	case 475:
+		server_join_request_take (serv, word[4]);
 		EMIT_SIGNAL_TIMESTAMP (XP_TE_KEYWORD, sess, word[4], NULL, NULL, NULL, 0,
 									  tags_data->timestamp);
 		break;
@@ -1371,13 +1376,14 @@ process_named_msg (session *sess, char *type, char *word[], char *word_eol[],
 							if (serv->have_echo_message && !serv->p_cmp (nick, serv->nick))
 							{
 								session *target_sess = find_dialog (serv, to);
+								char *display_text = service_message_for_display (to, text);
 
 								if (!target_sess)
 									target_sess = find_channel (serv, to);
 								if (target_sess)
-									inbound_chanmsg (serv, target_sess, target_sess->channel, nick, text, TRUE, tags_data->identified, tags_data);
+									inbound_chanmsg (serv, target_sess, target_sess->channel, nick, display_text, TRUE, tags_data->identified, tags_data);
 								else if (serv->front_session)
-									EMIT_SIGNAL_TIMESTAMP (XP_TE_MSGSEND, serv->front_session, to, text, NULL, NULL, 0, tags_data->timestamp);
+									EMIT_SIGNAL_TIMESTAMP (XP_TE_MSGSEND, serv->front_session, to, display_text, NULL, NULL, 0, tags_data->timestamp);
 							} else
 							{
 								inbound_privmsg (serv, nick, ip, text, tags_data->identified, tags_data);
@@ -1806,7 +1812,7 @@ irc_inline (server *serv, char *buf, int len)
 			goto xit;
 
 		word[1]++;
-		word_eol[1] = buf + 1;	/* but not for ZoiteChat internally */
+		word_eol[1] = buf + 1;	/* but not for Fabulor internally */
 
 	} else
 	{

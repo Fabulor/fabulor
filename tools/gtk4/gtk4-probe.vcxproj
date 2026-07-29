@@ -36,7 +36,7 @@
       <WarningLevel>Level4</WarningLevel>
       <TreatWarningAsError>true</TreatWarningAsError>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
-      <PreprocessorDefinitions>WIN32;_WIN64;_AMD64_;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;_WIN64;_AMD64_;NDEBUG;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>$(FabulorGtk4Root)\include;$(FabulorGtk4Root)\include\gtk-4.0;$(FabulorGtk4Root)\include\glib-2.0;$(FabulorGtk4Root)\lib\glib-2.0\include;$(FabulorGtk4Root)\include\pango-1.0;$(FabulorGtk4Root)\include\harfbuzz;$(FabulorGtk4Root)\include\cairo;$(FabulorGtk4Root)\include\gdk-pixbuf-2.0;$(FabulorGtk4Root)\include\graphene-1.0;$(FabulorGtk4Root)\lib\graphene-1.0\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <ExternalWarningLevel>TurnOffAllWarnings</ExternalWarningLevel>
       <AdditionalOptions>/external:anglebrackets %(AdditionalOptions)</AdditionalOptions>
@@ -57,6 +57,7 @@
 	<ClCompile Include="..\..\src\fe-gtk\emoji-picker.c" />
 	<ClCompile Include="..\..\src\common\gtk4-theme-discovery.c" />
 	<ClCompile Include="..\..\src\common\gtk4-theme-preferences.c" />
+	<ClCompile Include="..\..\src\common\theme-archive-reader.c" />
 	<ClCompile Include="..\..\src\fe-gtk\theme\theme-gtk4.c" />
 	<ClCompile Include="..\..\src\fe-gtk\theme\theme-gtk4-controller.c" />
 	<ClCompile Include="..\..\src\fe-gtk\theme\theme-preferences-gtk4.c" />

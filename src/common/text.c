@@ -26,6 +26,8 @@
 #include <fcntl.h>
 #include <sys/stat.h>
 
+#include <glib/gstdio.h>
+
 #ifdef WIN32
 #include <io.h>
 #else
@@ -721,6 +723,34 @@ log_open (session *sess)
 	}
 }
 
+gboolean
+log_clear (session *sess)
+{
+	char *netname;
+	char *filename;
+	gboolean removed;
+
+	if (!sess)
+		return FALSE;
+
+	netname = log_get_network_name (sess);
+	if (log_session_has_network_placeholder (sess, netname))
+		return FALSE;
+
+	filename = log_create_pathname (sess->server->servername, sess->channel,
+											 netname);
+	if (!filename)
+		return FALSE;
+
+	log_close (sess);
+	removed = g_remove (filename) == 0 ||
+		!g_file_test (filename, G_FILE_TEST_EXISTS);
+	g_free (filename);
+
+	log_open_or_close (sess);
+	return removed;
+}
+
 void
 log_open_or_close (session *sess)
 {
@@ -1022,7 +1052,7 @@ PrintTextTimeStampf (session *sess, time_t timestamp, const char *format, ...)
 /* Consider the following a NOTES file:
 
    The main upshot of this is:
-   * Plugins and Perl scripts (when I get round to signaling perl.c) can intercept text events and do what they like
+   * Plugins can intercept text events and do what they like.
    * The default text engine can be config'ed
 
    By default it should appear *exactly* the same (I'm working hard not to change the default style) but if you go into Settings->Edit Event Texts you can change the text's. The format is thus:
@@ -1083,13 +1113,6 @@ static char * const pevt_genmsg_help[] = {
 	N_("Left message"),
 	N_("Right message"),
 };
-
-#if 0
-static char * const pevt_identd_help[] = {
-	N_("IP address"),
-	N_("Username")
-};
-#endif
 
 static char * const pevt_join_help[] = {
 	N_("The nick of the joining person"),
@@ -1688,7 +1711,7 @@ pevent_make_pntevts (void)
 
 			if (pevt_build_string (pntevts_text[i], &(pntevts[i]), &m) != 0 && !translate)
 			{
-				g_error ("ZoiteChat CRITICAL *** default event text failed to build!");
+				g_error ("Fabulor CRITICAL *** default event text failed to build!");
 			}
 			else
 			{
@@ -1699,7 +1722,7 @@ pevent_make_pntevts (void)
 
 				if (pevt_build_string (pntevts_text[i], &(pntevts[i]), &m) != 0)
 				{
-					g_error ("ZoiteChat CRITICAL *** default event text failed to build!");
+					g_error ("Fabulor CRITICAL *** default event text failed to build!");
 				}
 			}
 		}
@@ -1828,7 +1851,7 @@ pevent_check_all_loaded (void)
 		if (pntevts_text[i] == NULL)
 		{
 			/*printf ("%s\n", te[i].name);
-			g_snprintf(out, sizeof(out), "The data for event %s failed to load. Reverting to defaults.\nThis may be because a new version of ZoiteChat is loading an old config file.\n\nCheck all print event texts are correct", evtnames[i]);
+			g_snprintf(out, sizeof(out), "The data for event %s failed to load. Reverting to defaults.\nThis may be because a new version of Fabulor is loading an old config file.\n\nCheck all print event texts are correct", evtnames[i]);
 			   gtkutil_simpledialog(out); */
 			/* make-te.c sets this 128 flag (DON'T call gettext() flag) */
 			if (te[i].num_args & 128)
@@ -1897,7 +1920,7 @@ format_event (session *sess, int index, char **args, char *o, gsize sizeofo, uns
 			if (a > numargs)
 			{
 				fprintf (stderr,
-							"ZoiteChat DEBUG: display_event: arg > numargs (%d %d %s)\n",
+							"Fabulor DEBUG: display_event: arg > numargs (%d %d %s)\n",
 							a, numargs, i);
 				break;
 			}
@@ -2465,7 +2488,7 @@ sound_play (const char *file, gboolean quiet)
 		{
 			ca_context_create (&ca_con);
 			ca_context_change_props (ca_con,
-											CA_PROP_APPLICATION_ID, "zoitechat",
+											CA_PROP_APPLICATION_ID, "net.fabulor.Fabulor",
 											CA_PROP_APPLICATION_NAME, "Fabulor",
 											CA_PROP_APPLICATION_ICON_NAME, "net.fabulor.Fabulor", NULL);
 		}

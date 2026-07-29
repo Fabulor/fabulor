@@ -41,20 +41,7 @@ if (Test-Path -LiteralPath $installerPropsPath -PathType Leaf)
 
 if (-not $versionParts)
 {
-	$mesonVersionFile = Join-Path $repoRoot 'meson.build'
-	if (Test-Path -LiteralPath $mesonVersionFile -PathType Leaf)
-	{
-		$versionMatch = Select-String -LiteralPath $mesonVersionFile -Pattern "  version: '([^']+)',$" | Select-Object -First 1
-		if ($versionMatch)
-		{
-			$versionParts = $versionMatch.Matches[0].Groups[1].Value.Split('.')
-		}
-	}
-}
-
-if (-not $versionParts)
-{
-	throw "Unable to resolve version source. Neither installer semver nor meson.build version could be read."
+	throw "Unable to resolve FabulorSemVer from installer\Directory.Build.props."
 }
 
 [string[]] $contents = Get-Content -LiteralPath $templateFilename -Encoding UTF8 | ForEach-Object {
