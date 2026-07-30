@@ -184,6 +184,9 @@ Detailed policy lives in
 
 Detailed stages live in
 [`docs/cleanup/repository-cleanup-plan.md`](docs/cleanup/repository-cleanup-plan.md).
+The planned repository cleanup programme is complete through Stage 7. Future
+cleanup work requires a new contained scope rather than extending the completed
+programme.
 
 - [x] Remove dead repository metadata and completed prompt scaffolding.
 - [x] Remove unsupported Lua and Perl source.
@@ -206,7 +209,8 @@ Detailed stages live in
   - [x] Make `fabulor_*` the sole native plugin ABI.
   - [x] Review and rename the remaining internal compatibility names.
 - [x] Audit ignored local build/runtime output and document a safe developer
-      cleanup command.
+      cleanup command in
+      [`docs/cleanup/developer-output-cleanup.md`](docs/cleanup/developer-output-cleanup.md).
 
 ## Optional Product Follow-Up
 
