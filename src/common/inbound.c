@@ -208,6 +208,7 @@ clear_channel (session *sess)
 	sess->channel[0] = 0;
 	sess->doing_who = FALSE;
 	sess->done_away_check = FALSE;
+	sess->cycle_pending = FALSE;
 
 	log_close (sess);
 
@@ -880,6 +881,9 @@ inbound_upart (server *serv, char *chan, char *ip, char *reason,
 	session *sess = find_channel (serv, chan);
 	if (sess)
 	{
+		gboolean cycle_pending = sess->cycle_pending;
+
+		sess->cycle_pending = FALSE;
 		if (*reason)
 			EMIT_SIGNAL_TIMESTAMP (XP_TE_UPARTREASON, sess, serv->nick, ip, chan,
 										  reason, 0, tags_data->timestamp);
@@ -887,6 +891,11 @@ inbound_upart (server *serv, char *chan, char *ip, char *reason,
 			EMIT_SIGNAL_TIMESTAMP (XP_TE_UPART, sess, serv->nick, ip, chan, NULL,
 										  0, tags_data->timestamp);
 		clear_channel (sess);
+		if (cycle_pending && serv->connected)
+		{
+			server_join_request_add (serv, chan);
+			serv->p_join (serv, chan, sess->channelkey);
+		}
 	}
 }
 
