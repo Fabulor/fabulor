@@ -45,6 +45,9 @@ development milestones and do not imply public release dates.
 - Archived completed GTK4 migration and security-review records while keeping
   current architecture, runtime, plugin, and trusted-configuration guidance in
   their active documentation locations.
+- Added a preview-first developer cleanup command for ignored build output,
+  with explicit protection for runtime payloads, local settings, installed
+  files, profile data, and external staging trees.
 - Retired the inherited updater and WinSparkle payload until Fabulor has an
   authenticated, product-owned update feed.
 - Moved maintained user add-ons to the independent `Fabulor/add-ons`

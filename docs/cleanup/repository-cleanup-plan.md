@@ -36,7 +36,7 @@ main client repository must not contain or stage a second add-ons checkout.
 | 4 | Audit the unbuilt text frontend, Windows compatibility shims, and duplicate backend implementations | Published |
 | 5 | Review historical migration/security documents for archive policy without deleting evidence required for maintenance | Published |
 | 6 | Review internal ZoiteChat/XChat compatibility names separately from product branding | Published |
-| 7 | Audit ignored local build/runtime output and document a safe developer cleanup command | Planned |
+| 7 | Audit ignored local build/runtime output and document a safe developer cleanup command | Published |
 
 ## Stage 1
 
@@ -421,6 +421,46 @@ Validation:
 
 No native or installer rebuild was required because Stage 5 changes
 documentation locations and regression policy only.
+
+## Stage 7
+
+Ignored local content was divided into three explicit classes:
+
+- reproducible compiler, managed, Python-cache, documentation, and installer
+  intermediate output;
+- release installer products that require a second opt-in before removal; and
+- protected local dependencies and settings that the cleanup command never
+  targets.
+
+The preview-first
+[`tools\clean-development-output.ps1`](../../tools/clean-development-output.ps1)
+command uses only fixed repository-owned targets, derives and canonicalizes
+its worktree root from its tracked location, and refuses paths outside that
+root. `-Apply` is required for any deletion.
+`-IncludeInstallerArtifacts` is additionally required to remove
+`installer\bin` and `installer\UX\bin`.
+
+`Runtime`, `.vscode`, `dos2unix.exe`, tracked source, installed Fabulor,
+profile data, the independent add-ons checkout, and the external
+`C:\zoitechat-build` staging tree are outside the cleanup set. The command also
+refuses Windows reparse points and output trees it cannot fully inspect.
+Detailed usage and recovery expectations are documented in
+[`developer-output-cleanup.md`](developer-output-cleanup.md).
+
+Stale ignore entries for source trees already removed by earlier cleanup
+stages were deleted. Generic rules still used for generated compiler, IDE,
+archive, dependency, and runtime content remain intentional.
+
+Validation:
+
+- cleanup behavior and repository tool contracts: 29/29 tests passed;
+- GTK4 and production installer-profile suites: 95/95 tests passed;
+- theme contract: passed; and
+- the command completed a non-destructive preview against the active
+  worktree.
+
+No native or installer rebuild was required because Stage 7 changes only
+developer cleanup tooling, ignore policy, tests, and documentation.
 
 ## Deliberately Retained
 

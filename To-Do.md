@@ -205,7 +205,7 @@ Detailed stages live in
         `FabulorUserInfo` the sole managed C# plugin contract.
   - [x] Make `fabulor_*` the sole native plugin ABI.
   - [x] Review and rename the remaining internal compatibility names.
-- [ ] Audit ignored local build/runtime output and document a safe developer
+- [x] Audit ignored local build/runtime output and document a safe developer
       cleanup command.
 
 ## Optional Product Follow-Up

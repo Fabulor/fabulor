@@ -26,16 +26,7 @@ installer/bootstrapper.log
 # Vendored runtimes are not committed
 Runtime/
 
-# Win32 generated files
-plugins/wmpa/wmpa_h.h
-plugins/wmpa/wmpa_i.c
-src/htm/obj/*
-win32/ipch/*
-win32/ext/perl/perl-x86-cache
-win32/ext/perl/perl-x86-SetupFiles
-win32/ext/perl/perl-x64-cache
-win32/ext/perl/perl-x64-SetupFiles
-resource.h
+# Generated compiler and IDE files
 *.opensdf
 *.sdf
 *.suo
