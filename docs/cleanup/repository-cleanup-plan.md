@@ -33,7 +33,7 @@ main client repository must not contain or stage a second add-ons checkout.
 | 2C | Rename active Visual Studio solution, properties, and build-only identifiers for Fabulor | Published |
 | 3 | Move active `win32\copy` payload assets into owned `data` locations and retire the legacy copy namespace | Planned |
 | 4 | Audit the unbuilt text frontend, Windows compatibility shims, and duplicate backend implementations | Planned |
-| 5 | Review historical migration/security documents for archive policy without deleting evidence required for maintenance | Planned |
+| 5 | Review historical migration/security documents for archive policy without deleting evidence required for maintenance | In progress |
 | 6 | Review internal ZoiteChat/XChat compatibility names separately from product branding | In progress |
 | 7 | Audit ignored local build/runtime output and document a safe developer cleanup command | Planned |
 
@@ -150,6 +150,18 @@ documentation use Fabulor-named build properties and output paths.
 Historical security records retain the build names used when their recorded
 scans were performed. Runtime internals and public plugin compatibility names
 remain outside this build-only stage.
+
+## Stage 5
+
+The imported `changelog.rst` described ZoiteChat releases and was not consumed
+by the Fabulor build, installer, or documentation. It has been replaced by the
+Fabulor-owned `ChangeLog.md`, which begins with the current 1.0.6 release
+candidate and records earlier Fabulor version milestones without presenting
+them as published GitHub releases.
+
+Historical migration and security documents remain retained because they
+provide implementation and audit evidence. Their wider archive policy remains
+planned.
 
 ## Stage 6
 
