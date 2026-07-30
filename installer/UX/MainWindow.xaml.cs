@@ -1,5 +1,7 @@
 using System.Text;
+using System.Runtime.InteropServices;
 using System.Windows;
+using System.Windows.Interop;
 using Forms = global::System.Windows.Forms;
 
 namespace Fabulor.Setup;
@@ -128,6 +130,44 @@ public partial class MainWindow : Window
     public void SetStatus(string message)
     {
         this.StatusTextBlock.Text = message;
+    }
+
+    public bool RestoreForegroundFocus()
+    {
+        if (!this.IsVisible)
+        {
+            this.Show();
+        }
+
+        if (this.WindowState == WindowState.Minimized)
+        {
+            this.WindowState = WindowState.Normal;
+        }
+
+        var handle = new WindowInteropHelper(this).Handle;
+        var activated = this.Activate();
+
+        if (handle != IntPtr.Zero)
+        {
+            NativeMethods.BringWindowToTop(handle);
+            activated = NativeMethods.SetForegroundWindow(handle) || activated;
+        }
+
+        if (!activated)
+        {
+            var wasTopmost = this.Topmost;
+            this.Topmost = true;
+            this.Topmost = wasTopmost;
+            activated = this.Activate();
+
+            if (handle != IntPtr.Zero)
+            {
+                activated = NativeMethods.SetForegroundWindow(handle) || activated;
+            }
+        }
+
+        this.Focus();
+        return activated;
     }
 
     private void UpdateModeSummary()
@@ -272,5 +312,16 @@ public partial class MainWindow : Window
             this.InstallFolder = dialog.SelectedPath;
             this.SetStatus($"Install folder set to {dialog.SelectedPath}");
         }
+    }
+
+    private static class NativeMethods
+    {
+        [DllImport("user32.dll")]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        internal static extern bool BringWindowToTop(IntPtr windowHandle);
+
+        [DllImport("user32.dll")]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        internal static extern bool SetForegroundWindow(IntPtr windowHandle);
     }
 }

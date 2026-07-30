@@ -741,7 +741,6 @@ cmd_country (struct session *sess, char *tbuf, char *word[], char *word_eol[])
 static int
 cmd_cycle (struct session *sess, char *tbuf, char *word[], char *word_eol[])
 {
-	char *key = NULL;
 	char *chan = word[2];
 	session *chan_sess;
 
@@ -754,8 +753,11 @@ cmd_cycle (struct session *sess, char *tbuf, char *word[], char *word_eol[])
 
 		if (chan_sess && chan_sess->type == SESS_CHANNEL)
 		{
-			key = chan_sess->channelkey;
-			sess->server->p_cycle (sess->server, chan, key);
+			if (!chan_sess->cycle_pending)
+			{
+				chan_sess->cycle_pending = TRUE;
+				sess->server->p_part (sess->server, chan, "");
+			}
 			return TRUE;
 		}
 	}

@@ -70,14 +70,14 @@ For repository examples and validation assets, see `samples\plugins\`. Those sam
 
 The manifest host is disabled by default. To opt in, open **Preferences > Advanced**, enable **Enable manifest plugins (requires restart)**, review the trusted-code warning, and restart Fabulor. Manifest plugins run with your user account's operating-system privileges; capabilities constrain cooperative Fabulor API access but do not provide a process sandbox. `FABULOR_ENABLE_MANIFEST_PLUGINS=1` remains available as a developer/testing override. Safe mode (`--no-plugins`) takes precedence over both enable paths.
 
-## Legacy Native Plugin Coexistence
+## Native Plugin Coexistence
 
 Fabulor currently has two plugin families:
 
-1. Legacy native plugin DLLs loaded by the original plugin loader.
+1. Native plugin DLLs loaded by the in-process plugin loader.
 2. C#, Python, and Tcl plugins loaded through the simple add-on and manifest plugin model.
 
-Legacy native C plugins are first-party compatibility components. On Windows the native autoload list includes installed DLLs such as checksum, Exec, FiSHLiM, Sysinfo, update, and language/runtime bridge plugins from the installed plugin library directory. User-selected native DLLs under the profile `addons` directory remain a local-trust compatibility path, but they are not the recommended third-party extension model.
+Native C plugins are first-party compatibility components. On Windows the native autoload list includes installed DLLs such as checksum, Exec, FiSHLiM, Sysinfo, update, and language/runtime bridge plugins from the installed plugin library directory. User-selected native DLLs under the profile `addons` directory remain a local-trust compatibility path, but they are not the recommended third-party extension model.
 
 Manifest plugins do not introduce a C language target. The manifest schema intentionally remains limited to `csharp`, `python`, and `tcl` while the shared API, isolation model, and capability policy are being hardened. Existing native plugins should not be migrated into manifests just to make them appear in the new catalog; any migration should be a deliberate redesign of that plugin around the shared API.
 
@@ -137,7 +137,12 @@ Use these rules to keep plugins loadable across upgrades:
 6. Ensure `entrypoint` exists and is shipped with the plugin.
 7. Keep `capabilities` accurate and up to date.
 
-The current host scaffold exposes the public contract in `src/common/fabulor-plugin-host.h`. It keeps `ZoiteChatAPI` as a compatibility alias for `FabulorAPI` while the plugin-facing host names are modernised.
+The manifest host exposes `FabulorAPI` in `src/common/fabulor-plugin-host.h`.
+Native C plugins use `src/common/fabulor-plugin.h`, export
+`fabulor_plugin_init` and optionally `fabulor_plugin_deinit`, and call the
+`fabulor_*` native ABI. The former product-prefixed native ABI is not exported
+or accepted; native plugins built for it must be rebuilt against the Fabulor
+header.
 
 Manifests are strict JSON. The root must be one object containing exactly the documented fields. Duplicate or unknown fields, trailing content, trailing commas, invalid UTF-8 or Unicode escapes, control characters in strings, and values of the wrong JSON type are rejected. The manifest file must be a regular file between 1 byte and 64 KiB; symbolic-link manifests are rejected.
 

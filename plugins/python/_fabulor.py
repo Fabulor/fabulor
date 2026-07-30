@@ -72,7 +72,7 @@ else:
 # ------------ API ------------
 def prnt(string):
     __require_capability('ui.write')
-    lib.zoitechat_print(lib.ph, string.encode())
+    lib.fabulor_print(lib.ph, string.encode())
 
 
 def emit_print(event_name, *args, **kwargs):
@@ -85,46 +85,46 @@ def emit_print(event_name, *args, **kwargs):
         cargs.append(cstring)
 
     if time == 0:
-        return lib.zoitechat_emit_print(lib.ph, event_name.encode(), *cargs)
+        return lib.fabulor_emit_print(lib.ph, event_name.encode(), *cargs)
 
-    attrs = lib.zoitechat_event_attrs_create(lib.ph)
+    attrs = lib.fabulor_event_attrs_create(lib.ph)
     attrs.server_time_utc = time
-    ret = lib.zoitechat_emit_print_attrs(lib.ph, attrs, event_name.encode(), *cargs)
-    lib.zoitechat_event_attrs_free(lib.ph, attrs)
+    ret = lib.fabulor_emit_print_attrs(lib.ph, attrs, event_name.encode(), *cargs)
+    lib.fabulor_event_attrs_free(lib.ph, attrs)
     return ret
 
 
 def command(command):
     __require_capability('commands.execute')
-    lib.zoitechat_command(lib.ph, command.encode())
+    lib.fabulor_command(lib.ph, command.encode())
 
 
 def log(text):
     plugin = __get_current_plugin()
     prefix = '[Python:{}] '.format(plugin.manifest_id) if plugin.manifest_id is not None else ''
-    lib.zoitechat_print(lib.ph, (prefix + text).encode())
+    lib.fabulor_print(lib.ph, (prefix + text).encode())
 
 
 def send_message(target, text):
     __require_capability('messages.write')
-    lib.zoitechat_command(lib.ph, 'MSG {} {}'.format(target, text).encode())
+    lib.fabulor_command(lib.ph, 'MSG {} {}'.format(target, text).encode())
 
 
 def nickcmp(string1, string2):
     __require_capability('session.read')
-    return lib.zoitechat_nickcmp(lib.ph, string1.encode(), string2.encode())
+    return lib.fabulor_nickcmp(lib.ph, string1.encode(), string2.encode())
 
 
 def strip(text, length=-1, flags=3):
-    stripped = lib.zoitechat_strip(lib.ph, text.encode(), length, flags)
+    stripped = lib.fabulor_strip(lib.ph, text.encode(), length, flags)
     ret = __decode(ffi.string(stripped))
-    lib.zoitechat_free(lib.ph, stripped)
+    lib.fabulor_free(lib.ph, stripped)
     return ret
 
 
 def get_info(name):
     __require_capability('session.read')
-    ret = lib.zoitechat_get_info(lib.ph, name.encode())
+    ret = lib.fabulor_get_info(lib.ph, name.encode())
     if ret == ffi.NULL:
         return None
     if name in ('gtkwin_ptr', 'win_ptr'):
@@ -139,7 +139,7 @@ def get_prefs(name):
     __require_capability('preferences.read')
     string_out = ffi.new('char**')
     int_out = ffi.new('int*')
-    _type = lib.zoitechat_get_prefs(lib.ph, name.encode(), string_out, int_out)
+    _type = lib.fabulor_get_prefs(lib.ph, name.encode(), string_out, int_out)
     if _type == 0:
         return None
 
@@ -166,7 +166,7 @@ __FIELD_CACHE = {}
 
 
 def __get_fields(name):
-    return __FIELD_CACHE.setdefault(name, __cstrarray_to_list(lib.zoitechat_list_fields(lib.ph, name)))
+    return __FIELD_CACHE.setdefault(name, __cstrarray_to_list(lib.fabulor_list_fields(lib.ph, name)))
 
 
 __FIELD_PROPERTY_CACHE = {}
@@ -228,7 +228,7 @@ def get_list(name):
     if name not in __get_fields(b'lists'):
         raise KeyError('list not available')
 
-    list_ = lib.zoitechat_list_get(lib.ph, name)
+    list_ = lib.fabulor_list_get(lib.ph, name)
     if list_ == ffi.NULL:
         return None
 
@@ -236,7 +236,7 @@ def get_list(name):
     fields = __get_fields(name)
 
     def string_getter(field):
-        string = lib.zoitechat_list_str(lib.ph, list_, field)
+        string = lib.fabulor_list_str(lib.ph, list_, field)
         if string != ffi.NULL:
             return __decode(ffi.string(string))
 
@@ -244,20 +244,20 @@ def get_list(name):
 
     def ptr_getter(field):
         if field == b'context':
-            ptr = lib.zoitechat_list_str(lib.ph, list_, field)
-            ctx = ffi.cast('zoitechat_context*', ptr)
+            ptr = lib.fabulor_list_str(lib.ph, list_, field)
+            ctx = ffi.cast('fabulor_context*', ptr)
             return Context(ctx)
 
         return None
 
     getters = {
         ord('s'): string_getter,
-        ord('i'): lambda field: lib.zoitechat_list_int(lib.ph, list_, field),
-        ord('t'): lambda field: lib.zoitechat_list_time(lib.ph, list_, field),
+        ord('i'): lambda field: lib.fabulor_list_int(lib.ph, list_, field),
+        ord('t'): lambda field: lib.fabulor_list_time(lib.ph, list_, field),
         ord('p'): ptr_getter,
     }
 
-    while lib.zoitechat_list_next(lib.ph, list_) == 1:
+    while lib.fabulor_list_next(lib.ph, list_) == 1:
         item = ListItem(orig_name)
         for _field in fields:
             getter = getters.get(get_getter(_field))
@@ -267,7 +267,7 @@ def get_list(name):
 
         ret.append(item)
 
-    lib.zoitechat_list_free(lib.ph, list_)
+    lib.fabulor_list_free(lib.ph, list_)
     return ret
 
 
@@ -275,7 +275,7 @@ def hook_command(command, callback, userdata=None, priority=PRI_NORM, help=None)
     __require_capability('events.command')
     plugin = __get_current_plugin()
     hook = plugin.add_hook(callback, userdata)
-    handle = lib.zoitechat_hook_command(lib.ph, command.encode(), priority, lib._on_command_hook,
+    handle = lib.fabulor_hook_command(lib.ph, command.encode(), priority, lib._on_command_hook,
                                       help.encode() if help is not None else ffi.NULL, hook.handle)
 
     hook.fabulor_hook = handle
@@ -286,7 +286,7 @@ def hook_print(name, callback, userdata=None, priority=PRI_NORM):
     __require_capability('events.print')
     plugin = __get_current_plugin()
     hook = plugin.add_hook(callback, userdata)
-    handle = lib.zoitechat_hook_print(lib.ph, name.encode(), priority, lib._on_print_hook, hook.handle)
+    handle = lib.fabulor_hook_print(lib.ph, name.encode(), priority, lib._on_print_hook, hook.handle)
     hook.fabulor_hook = handle
     return id(hook)
 
@@ -295,7 +295,7 @@ def hook_print_attrs(name, callback, userdata=None, priority=PRI_NORM):
     __require_capability('events.print')
     plugin = __get_current_plugin()
     hook = plugin.add_hook(callback, userdata)
-    handle = lib.zoitechat_hook_print_attrs(lib.ph, name.encode(), priority, lib._on_print_attrs_hook, hook.handle)
+    handle = lib.fabulor_hook_print_attrs(lib.ph, name.encode(), priority, lib._on_print_attrs_hook, hook.handle)
     hook.fabulor_hook = handle
     return id(hook)
 
@@ -304,7 +304,7 @@ def hook_server(name, callback, userdata=None, priority=PRI_NORM):
     __require_capability('events.server')
     plugin = __get_current_plugin()
     hook = plugin.add_hook(callback, userdata)
-    handle = lib.zoitechat_hook_server(lib.ph, name.encode(), priority, lib._on_server_hook, hook.handle)
+    handle = lib.fabulor_hook_server(lib.ph, name.encode(), priority, lib._on_server_hook, hook.handle)
     hook.fabulor_hook = handle
     return id(hook)
 
@@ -313,7 +313,7 @@ def hook_server_attrs(name, callback, userdata=None, priority=PRI_NORM):
     __require_capability('events.server')
     plugin = __get_current_plugin()
     hook = plugin.add_hook(callback, userdata)
-    handle = lib.zoitechat_hook_server_attrs(lib.ph, name.encode(), priority, lib._on_server_attrs_hook, hook.handle)
+    handle = lib.fabulor_hook_server_attrs(lib.ph, name.encode(), priority, lib._on_server_attrs_hook, hook.handle)
     hook.fabulor_hook = handle
     return id(hook)
 
@@ -322,7 +322,7 @@ def hook_timer(timeout, callback, userdata=None):
     __require_capability('events.timer')
     plugin = __get_current_plugin()
     hook = plugin.add_hook(callback, userdata)
-    handle = lib.zoitechat_hook_timer(lib.ph, timeout, lib._on_timer_hook, hook.handle)
+    handle = lib.fabulor_hook_timer(lib.ph, timeout, lib._on_timer_hook, hook.handle)
     hook.fabulor_hook = handle
     return id(hook)
 
@@ -379,7 +379,7 @@ def _register_callback_for_plugin(plugin, event_name, callback, userdata=None):
             return build_event(words, word_eol, local_userdata, attrs, 'PRIVMSG')
 
         hook = plugin.add_hook(on_message, userdata, callback_key=callback_key)
-        handle = lib.zoitechat_hook_server_attrs(lib.ph, b'PRIVMSG', PRI_NORM,
+        handle = lib.fabulor_hook_server_attrs(lib.ph, b'PRIVMSG', PRI_NORM,
                                                 lib._on_server_attrs_hook, hook.handle)
         hook.fabulor_hook = handle
         return id(hook)
@@ -392,7 +392,7 @@ def _register_callback_for_plugin(plugin, event_name, callback, userdata=None):
             return build_event(words, word_eol, local_userdata, attrs, source_name)
 
         hook = plugin.add_hook(on_server, userdata, callback_key=callback_key)
-        handle = lib.zoitechat_hook_server_attrs(lib.ph, b'RAW LINE', PRI_NORM,
+        handle = lib.fabulor_hook_server_attrs(lib.ph, b'RAW LINE', PRI_NORM,
                                                 lib._on_server_attrs_hook, hook.handle)
         hook.fabulor_hook = handle
         return id(hook)
@@ -405,7 +405,7 @@ def _register_callback_for_plugin(plugin, event_name, callback, userdata=None):
             return build_event(words, word_eol, local_userdata, attrs, server_name)
 
         hook = plugin.add_hook(on_named_server, userdata, callback_key=callback_key)
-        handle = lib.zoitechat_hook_server_attrs(lib.ph, server_name.encode(), PRI_NORM,
+        handle = lib.fabulor_hook_server_attrs(lib.ph, server_name.encode(), PRI_NORM,
                                                 lib._on_server_attrs_hook, hook.handle)
         hook.fabulor_hook = handle
         return id(hook)
@@ -419,7 +419,7 @@ def _register_callback_for_plugin(plugin, event_name, callback, userdata=None):
             return build_event(words, word_eol, local_userdata, attrs, source_name)
 
         hook = plugin.add_hook(on_print, userdata, callback_key=callback_key)
-        handle = lib.zoitechat_hook_print_attrs(lib.ph, print_name.encode(), PRI_NORM,
+        handle = lib.fabulor_hook_print_attrs(lib.ph, print_name.encode(), PRI_NORM,
                                                lib._on_print_attrs_hook, hook.handle)
         hook.fabulor_hook = handle
         return id(hook)
@@ -440,7 +440,7 @@ def _register_callback_for_plugin(plugin, event_name, callback, userdata=None):
             return callback(event)
 
         hook = plugin.add_hook(on_command, userdata, callback_key=callback_key)
-        handle = lib.zoitechat_hook_command(lib.ph, command_name.encode(), PRI_NORM,
+        handle = lib.fabulor_hook_command(lib.ph, command_name.encode(), PRI_NORM,
                                           lib._on_command_hook, ffi.NULL, hook.handle)
         hook.fabulor_hook = handle
         return id(hook)
@@ -454,10 +454,10 @@ def unhook(handle):
 def set_pluginpref(name, value):
     __require_capability('preferences.write')
     if isinstance(value, str):
-        return bool(lib.zoitechat_pluginpref_set_str(lib.ph, name.encode(), value.encode()))
+        return bool(lib.fabulor_pluginpref_set_str(lib.ph, name.encode(), value.encode()))
 
     if isinstance(value, int):
-        return bool(lib.zoitechat_pluginpref_set_int(lib.ph, name.encode(), value))
+        return bool(lib.fabulor_pluginpref_set_int(lib.ph, name.encode(), value))
 
     # XXX: This should probably raise but this keeps API
     return False
@@ -467,7 +467,7 @@ def get_pluginpref(name):
     __require_capability('preferences.read')
     name = name.encode()
     string_out = ffi.new('char[512]')
-    if lib.zoitechat_pluginpref_get_str(lib.ph, name, string_out) != 1:
+    if lib.fabulor_pluginpref_get_str(lib.ph, name, string_out) != 1:
         return None
 
     string = ffi.string(string_out)
@@ -476,7 +476,7 @@ def get_pluginpref(name):
     if len(string) > 12:  # Can't be a number
         return __decode(string)
 
-    number = lib.zoitechat_pluginpref_get_int(lib.ph, name)
+    number = lib.fabulor_pluginpref_get_int(lib.ph, name)
     if number == -1 and string != b'-1':
         return __decode(string)
 
@@ -485,13 +485,13 @@ def get_pluginpref(name):
 
 def del_pluginpref(name):
     __require_capability('preferences.write')
-    return bool(lib.zoitechat_pluginpref_delete(lib.ph, name.encode()))
+    return bool(lib.fabulor_pluginpref_delete(lib.ph, name.encode()))
 
 
 def list_pluginpref():
     __require_capability('preferences.read')
     prefs_str = ffi.new('char[4096]')
-    if lib.zoitechat_pluginpref_list(lib.ph, prefs_str) == 1:
+    if lib.fabulor_pluginpref_list(lib.ph, prefs_str) == 1:
         return __decode(ffi.string(prefs_str)).split(',')
 
     return []
@@ -509,19 +509,19 @@ class Context:
 
     @contextmanager
     def __change_context(self):
-        old_ctx = lib.zoitechat_get_context(lib.ph)
+        old_ctx = lib.fabulor_get_context(lib.ph)
         if not self.set():
             # XXX: Behavior change, previously used wrong context
-            lib.zoitechat_print(lib.ph, b'Context object refers to closed context, ignoring call')
+            lib.fabulor_print(lib.ph, b'Context object refers to closed context, ignoring call')
             return
 
         yield
-        lib.zoitechat_set_context(lib.ph, old_ctx)
+        lib.fabulor_set_context(lib.ph, old_ctx)
 
     def set(self):
         __require_capability('session.read')
         # XXX: API addition, C plugin silently ignored failure
-        return bool(lib.zoitechat_set_context(lib.ph, self._ctx))
+        return bool(lib.fabulor_set_context(lib.ph, self._ctx))
 
     def prnt(self, string):
         with self.__change_context():
@@ -547,7 +547,7 @@ class Context:
 
 def get_context():
     __require_capability('session.read')
-    ctx = lib.zoitechat_get_context(lib.ph)
+    ctx = lib.fabulor_get_context(lib.ph)
     return Context(ctx)
 
 
@@ -555,7 +555,7 @@ def find_context(server=None, channel=None):
     __require_capability('session.read')
     server = server.encode() if server is not None else ffi.NULL
     channel = channel.encode() if channel is not None else ffi.NULL
-    ctx = lib.zoitechat_find_context(lib.ph, server, channel)
+    ctx = lib.fabulor_find_context(lib.ph, server, channel)
     if ctx == ffi.NULL:
         return None
 

@@ -163,8 +163,7 @@ removed from source and the production payload. The intentional `xchat` and
 
 The embedded Python bridge is now `_fabulor_embedded`, the isolated manifest
 runtime installs only the `fabulor` API, and maintained samples and authoring
-guidance use `import fabulor`. The native `zoitechat_*` entry points called by
-the bridge remain until the separate native ABI pass.
+guidance use `import fabulor`.
 
 The Tcl pass makes `fabulor::*` the sole public namespace for simple and
 manifest Tcl add-ons. The host's twelve exposed commands, maintained samples,
@@ -245,8 +244,35 @@ Automated evidence for the managed C# pass:
 - the managed abstraction extracted from the MSI has the same SHA-256 hash as
   the validated staged assembly.
 
-Installed-client acceptance remains required before the managed C# pass is
-published.
+Installed-client acceptance for the managed C# pass completed on 2026-07-29.
+The rebuilt simple C# add-on loaded through the installed managed host and
+reported its Fabulor greeting.
+
+The native ABI pass makes `fabulor_plugin`, `fabulor_hook`,
+`fabulor_event_attrs`, the `fabulor_*` functions, and the `FABULOR_*` constants
+the sole native plugin contract. Bundled native plugins and the Python bridge
+export `fabulor_plugin_init` and `fabulor_plugin_deinit`; FiSHLiM also exports
+`fabulor_plugin_get_info`. The loader no longer accepts the former
+product-prefixed entry points, and no compatibility typedef or symbol alias is
+retained.
+
+Automated evidence for the native ABI pass:
+
+- the native API contract suite guards the Fabulor header, loader entry points,
+  export definitions, bridge consumers, and current guidance;
+- the common library, GTK4 frontend, checksum, Exec, FiSHLiM, Python, and
+  Sysinfo, updater, notification, and launcher projects rebuild through the
+  complete x64 solution with zero warnings and errors;
+- all six native plugin DLLs extracted from the rebuilt MSI export the Fabulor
+  entry points and no former product-prefixed entry points;
+- the complete plugin/runtime validation set and native 37-test suite pass; and
+- the version 1.0.6 MSI and bootstrapper rebuild with zero warnings and errors,
+  then pass production, runtime-content, and bundle validation.
+
+Installed-client acceptance for the native ABI pass completed on 2026-07-29.
+The installed checksum, Exec, FiSHLiM, and Python interface plugins loaded
+successfully, and the installed Python wrapper loaded the existing Python
+add-ons through the Fabulor-native bridge without retired-symbol errors.
 
 ## Deliberately Retained
 

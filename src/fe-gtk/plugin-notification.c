@@ -19,11 +19,11 @@
 #include "config.h"
 #include <glib.h>
 
-#include "../common/zoitechat-plugin.h"
+#include "../common/fabulor-plugin.h"
 #include "../common/inbound.h" /* For alert_match_word() */
 #include "notifications/notification-backend.h"
 
-static zoitechat_plugin *ph;
+static fabulor_plugin *ph;
 
 const int CHANNEL_FLAG_BALLOON       = 1 << 21;
 const int CHANNEL_FLAG_BALLOON_UNSET = 1 << 22;
@@ -33,27 +33,27 @@ should_alert (void)
 {
 	int omit_away, omit_focused, omit_tray;
 
-	if (zoitechat_get_prefs (ph, "gui_focus_omitalerts", NULL, &omit_focused) == 3 && omit_focused)
+	if (fabulor_get_prefs (ph, "gui_focus_omitalerts", NULL, &omit_focused) == 3 && omit_focused)
 	{
-		const char *status = zoitechat_get_info (ph, "win_status");
+		const char *status = fabulor_get_info (ph, "win_status");
 
 		if (status && !g_strcmp0 (status, "active"))
 			return FALSE;
 	}
 
-	if (zoitechat_get_prefs (ph, "away_omit_alerts", NULL, &omit_away) == 3 && omit_away)
+	if (fabulor_get_prefs (ph, "away_omit_alerts", NULL, &omit_away) == 3 && omit_away)
 	{
-		if (zoitechat_get_info (ph, "away"))
+		if (fabulor_get_info (ph, "away"))
 			return FALSE;
 	}
 
-	if (zoitechat_get_prefs (ph, "gui_tray_quiet", NULL, &omit_tray) == 3 && omit_tray)
+	if (fabulor_get_prefs (ph, "gui_tray_quiet", NULL, &omit_tray) == 3 && omit_tray)
 	{
 		int tray_enabled;
 
-		if (zoitechat_get_prefs (ph, "gui_tray", NULL, &tray_enabled) == 3 && tray_enabled)
+		if (fabulor_get_prefs (ph, "gui_tray", NULL, &tray_enabled) == 3 && tray_enabled)
 		{
-			const char *status = zoitechat_get_info (ph, "win_status");
+			const char *status = fabulor_get_info (ph, "win_status");
 
 			if (status && g_strcmp0 (status, "hidden") != 0)
 				return FALSE;
@@ -68,7 +68,7 @@ is_ignored (char *nick)
 {
 	const char *no_hilight;
 
-	if (zoitechat_get_prefs (ph, "irc_no_hilight", &no_hilight, NULL) == 1 && no_hilight)
+	if (fabulor_get_prefs (ph, "irc_no_hilight", &no_hilight, NULL) == 1 && no_hilight)
 	{
 		return alert_match_word (nick, (char*)no_hilight);
 	}
@@ -80,13 +80,13 @@ show_notification (const char *title, const char *text)
 {
 	char *stripped_title, *stripped_text;
 
-	stripped_title = zoitechat_strip (ph, title, -1, 7);
-	stripped_text = zoitechat_strip (ph, text, -1, 7);
+	stripped_title = fabulor_strip (ph, title, -1, 7);
+	stripped_text = fabulor_strip (ph, text, -1, 7);
 	
 	notification_backend_show (stripped_title, stripped_text);
 
-	zoitechat_free (ph, stripped_title);
-	zoitechat_free (ph, stripped_text);
+	fabulor_free (ph, stripped_title);
+	fabulor_free (ph, stripped_text);
 }
 
 static void
@@ -108,11 +108,11 @@ incoming_hilight_cb (char *word[], gpointer userdata)
 {
 	int hilight;
 
-	if (zoitechat_get_prefs (ph, "input_balloon_hilight", NULL, &hilight) == 3 && hilight && should_alert())
+	if (fabulor_get_prefs (ph, "input_balloon_hilight", NULL, &hilight) == 3 && hilight && should_alert())
 	{
-		show_notificationf (word[2], _("Highlighted message from: %s (%s)"), word[1], zoitechat_get_info (ph, "channel"));
+		show_notificationf (word[2], _("Highlighted message from: %s (%s)"), word[1], fabulor_get_info (ph, "channel"));
 	}
-	return ZOITECHAT_EAT_NONE;
+	return FABULOR_EAT_NONE;
 }
 
 static int
@@ -122,20 +122,20 @@ incoming_message_cb (char *word[], gpointer userdata)
 	int flags;
 	int alert = 0;
 
-	flags = zoitechat_list_int(ph, NULL, "flags");
+	flags = fabulor_list_int(ph, NULL, "flags");
 
 	if (should_alert()) {
 		if (!(flags & CHANNEL_FLAG_BALLOON_UNSET)) {
 			alert = (flags & CHANNEL_FLAG_BALLOON);
 		} else {
-			alert = (zoitechat_get_prefs(ph, "input_balloon_chans", NULL, &message) == 3 && message);
+			alert = (fabulor_get_prefs(ph, "input_balloon_chans", NULL, &message) == 3 && message);
 		}
 	}
 
 	if (alert) {
-		show_notificationf(word[2], _("Channel message from: %s (%s)"), word[1], zoitechat_get_info(ph, "channel"));
+		show_notificationf(word[2], _("Channel message from: %s (%s)"), word[1], fabulor_get_info(ph, "channel"));
 	}
-	return ZOITECHAT_EAT_NONE;
+	return FABULOR_EAT_NONE;
 }
 
 static int
@@ -145,21 +145,21 @@ incoming_priv_cb (char *word[], gpointer userdata)
 	int flags;
 	int alert = 0;
 
-	flags = zoitechat_list_int(ph, NULL, "flags");
+	flags = fabulor_list_int(ph, NULL, "flags");
 
 	if (should_alert()) {
 		if (!(flags & CHANNEL_FLAG_BALLOON_UNSET)) {
 			alert = (flags & CHANNEL_FLAG_BALLOON);
 		} else {
-			alert = (zoitechat_get_prefs(ph, "input_balloon_priv", NULL, &priv) == 3 && priv);
+			alert = (fabulor_get_prefs(ph, "input_balloon_priv", NULL, &priv) == 3 && priv);
 		}
 	}
 
 	if (alert)
 	{
-		const char *network = zoitechat_get_info (ph, "network");
+		const char *network = fabulor_get_info (ph, "network");
 		if (!network)
-			network = zoitechat_get_info (ph, "server");
+			network = fabulor_get_info (ph, "server");
 
 		if (userdata != NULL) /* Special event */
 		{
@@ -182,7 +182,7 @@ incoming_priv_cb (char *word[], gpointer userdata)
 		else
 			show_notificationf (word[2], _("Private message from: %s (%s)"), word[1], network);
 	}
-	return ZOITECHAT_EAT_NONE;
+	return FABULOR_EAT_NONE;
 }
 
 static int
@@ -192,14 +192,14 @@ tray_cmd_cb (char *word[], char *word_eol[], gpointer userdata)
 	{
 		if (should_alert ())
 			show_notification (word[3], word_eol[4]);
-		return ZOITECHAT_EAT_ALL;
+		return FABULOR_EAT_ALL;
 	}
 
-	return ZOITECHAT_EAT_NONE;
+	return FABULOR_EAT_NONE;
 }
 
 int
-notification_plugin_init (zoitechat_plugin *plugin_handle, char **plugin_name, char **plugin_desc, char **plugin_version, char *arg)
+notification_plugin_init (fabulor_plugin *plugin_handle, char **plugin_name, char **plugin_desc, char **plugin_version, char *arg)
 {
 	GError *error = NULL;
 
@@ -216,23 +216,23 @@ notification_plugin_init (zoitechat_plugin *plugin_handle, char **plugin_name, c
 		return 0;
 	}
 
-	zoitechat_hook_print (ph, "Channel Msg Hilight", ZOITECHAT_PRI_LOWEST, incoming_hilight_cb, NULL);
-	zoitechat_hook_print (ph, "Channel Action Hilight", ZOITECHAT_PRI_LOWEST, incoming_hilight_cb, NULL);
+	fabulor_hook_print (ph, "Channel Msg Hilight", FABULOR_PRI_LOWEST, incoming_hilight_cb, NULL);
+	fabulor_hook_print (ph, "Channel Action Hilight", FABULOR_PRI_LOWEST, incoming_hilight_cb, NULL);
 
-	zoitechat_hook_print (ph, "Channel Message", ZOITECHAT_PRI_LOWEST, incoming_message_cb, NULL);
-	zoitechat_hook_print (ph, "Channel Action", ZOITECHAT_PRI_LOWEST, incoming_message_cb, NULL);
-	zoitechat_hook_print (ph, "Channel Notice", ZOITECHAT_PRI_LOWEST, incoming_message_cb, NULL);
+	fabulor_hook_print (ph, "Channel Message", FABULOR_PRI_LOWEST, incoming_message_cb, NULL);
+	fabulor_hook_print (ph, "Channel Action", FABULOR_PRI_LOWEST, incoming_message_cb, NULL);
+	fabulor_hook_print (ph, "Channel Notice", FABULOR_PRI_LOWEST, incoming_message_cb, NULL);
 
-	zoitechat_hook_print (ph, "Private Message", ZOITECHAT_PRI_LOWEST, incoming_priv_cb, NULL);
-	zoitechat_hook_print (ph, "Private Message to Dialog", ZOITECHAT_PRI_LOWEST, incoming_priv_cb, NULL);
-	zoitechat_hook_print (ph, "Private Action", ZOITECHAT_PRI_LOWEST, incoming_priv_cb, NULL);
-	zoitechat_hook_print (ph, "Private Action to Dialog", ZOITECHAT_PRI_LOWEST, incoming_priv_cb, NULL);
+	fabulor_hook_print (ph, "Private Message", FABULOR_PRI_LOWEST, incoming_priv_cb, NULL);
+	fabulor_hook_print (ph, "Private Message to Dialog", FABULOR_PRI_LOWEST, incoming_priv_cb, NULL);
+	fabulor_hook_print (ph, "Private Action", FABULOR_PRI_LOWEST, incoming_priv_cb, NULL);
+	fabulor_hook_print (ph, "Private Action to Dialog", FABULOR_PRI_LOWEST, incoming_priv_cb, NULL);
 
-	zoitechat_hook_print (ph, "Notice", ZOITECHAT_PRI_LOWEST, incoming_priv_cb, GINT_TO_POINTER (1));
-	zoitechat_hook_print (ph, "Invited", ZOITECHAT_PRI_LOWEST, incoming_priv_cb, GINT_TO_POINTER (2));
-	zoitechat_hook_print (ph, "DCC Offer", ZOITECHAT_PRI_LOWEST, incoming_priv_cb, GINT_TO_POINTER (3));
+	fabulor_hook_print (ph, "Notice", FABULOR_PRI_LOWEST, incoming_priv_cb, GINT_TO_POINTER (1));
+	fabulor_hook_print (ph, "Invited", FABULOR_PRI_LOWEST, incoming_priv_cb, GINT_TO_POINTER (2));
+	fabulor_hook_print (ph, "DCC Offer", FABULOR_PRI_LOWEST, incoming_priv_cb, GINT_TO_POINTER (3));
 
-	zoitechat_hook_command (ph, "TRAY", ZOITECHAT_PRI_HIGH, tray_cmd_cb, NULL, NULL);
+	fabulor_hook_command (ph, "TRAY", FABULOR_PRI_HIGH, tray_cmd_cb, NULL, NULL);
 	
 	return 1;
 }

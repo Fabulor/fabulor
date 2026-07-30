@@ -278,12 +278,6 @@ irc_nctcp (server *serv, char *to, char *msg)
 }
 
 static void
-irc_cycle (server *serv, char *channel, char *key)
-{
-	tcp_sendf (serv, "PART %s\r\nJOIN %s %s\r\n", channel, channel, key);
-}
-
-static void
 irc_kick (server *serv, char *channel, char *nick, char *reason)
 {
 	if (reason[0])
@@ -1861,7 +1855,6 @@ proto_fill_her_up (server *serv)
 {
 	serv->p_inline = irc_inline;
 	serv->p_invite = irc_invite;
-	serv->p_cycle = irc_cycle;
 	serv->p_ctcp = irc_ctcp;
 	serv->p_nctcp = irc_nctcp;
 	serv->p_quit = irc_quit;

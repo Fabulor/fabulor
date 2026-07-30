@@ -114,6 +114,24 @@ class StagePluginHostsTests(unittest.TestCase):
         with self.assertRaisesRegex(hosts.PluginHostStagingError, "not empty"):
             hosts.stage_plugin_hosts(self.roots, output, self._load_contract())
 
+    def test_retired_python_native_api_is_rejected(self):
+        self.contract["entries"].append({
+            "source": "payload",
+            "path": "_fabulor.py",
+            "destination": "python/_fabulor.py",
+            "kind": "file",
+        })
+        self._write(
+            "payload",
+            "_fabulor.py",
+            b"handle = lib.zoitechat_hook_command(lib.ph)\n",
+        )
+        with self.assertRaisesRegex(
+                hosts.PluginHostStagingError, "retired native API"):
+            hosts.stage_plugin_hosts(
+                self.roots, self.base / "output", self._load_contract()
+            )
+
     def test_manifest_totals_are_enforced(self):
         output = self.base / "output"
         hosts.stage_plugin_hosts(self.roots, output, self._load_contract())

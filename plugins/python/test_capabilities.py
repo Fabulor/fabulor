@@ -33,25 +33,25 @@ class FakeLib:
         self.prints = []
         self.removed_plugins = []
 
-    def zoitechat_command(self, _ph, command):
+    def fabulor_command(self, _ph, command):
         self.commands.append(command)
 
-    def zoitechat_print(self, _ph, text):
+    def fabulor_print(self, _ph, text):
         self.prints.append(text)
 
     @staticmethod
-    def zoitechat_plugingui_add(*_args):
+    def fabulor_plugingui_add(*_args):
         return object()
 
-    def zoitechat_plugingui_remove(self, _ph, plugin):
+    def fabulor_plugingui_remove(self, _ph, plugin):
         self.removed_plugins.append(plugin)
 
     @staticmethod
-    def zoitechat_unhook(*_args):
+    def fabulor_unhook(*_args):
         return None
 
     @staticmethod
-    def zoitechat_hook_server_attrs(*_args):
+    def fabulor_hook_server_attrs(*_args):
         return object()
 
 
