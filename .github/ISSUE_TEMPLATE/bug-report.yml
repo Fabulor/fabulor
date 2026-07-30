@@ -1,0 +1,118 @@
+name: Bug report
+description: Report a reproducible problem in Fabulor
+title: "[Bug]: "
+labels:
+  - bug
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for testing Fabulor. Please provide enough detail for the problem to be reproduced.
+        Do not include passwords, authentication tokens, private messages, or other sensitive information.
+
+  - type: input
+    id: version
+    attributes:
+      label: Fabulor version
+      description: Find this in Help > About Fabulor.
+      placeholder: "For example: 1.0.6 or 1.0.6-rc.1"
+    validations:
+      required: true
+
+  - type: input
+    id: windows
+    attributes:
+      label: Windows version
+      description: Enter the edition, version, and OS build shown by winver.
+      placeholder: "For example: Windows 11 Pro 24H2, build 26100.4652"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: installation
+    attributes:
+      label: Installation type
+      options:
+        - Clean installation
+        - Upgrade from an earlier Fabulor version
+        - Portable installation
+        - Development build
+        - Other
+    validations:
+      required: true
+
+  - type: dropdown
+    id: frequency
+    attributes:
+      label: How often does the problem occur?
+      options:
+        - Every time
+        - Frequently
+        - Occasionally
+        - Once
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Problem description
+      description: Describe what went wrong and when it occurred.
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: List the shortest sequence that reliably demonstrates the problem.
+      placeholder: |
+        1. Start Fabulor
+        2. Connect to ...
+        3. Select ...
+        4. Observe ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behaviour
+      description: What did you expect Fabulor to do?
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behaviour
+      description: What did Fabulor do instead?
+    validations:
+      required: true
+
+  - type: textarea
+    id: addons
+    attributes:
+      label: Add-ons and connection details
+      description: |
+        State whether add-ons were enabled and whether the connection used ZNC, a proxy, TLS, or a direct IRC connection.
+        If possible, say whether the problem remains after restarting without add-ons.
+      placeholder: "No add-ons; direct TLS connection"
+
+  - type: textarea
+    id: diagnostics
+    attributes:
+      label: Logs, screenshots, or crash details
+      description: |
+        Drag relevant files here. For crashes, include the Windows Event Viewer entry if available.
+        Remove nick passwords, server passwords, tokens, private messages, IP addresses, and other sensitive data first.
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Submission checks
+      options:
+        - label: I searched the existing issues for the same problem.
+          required: true
+        - label: I removed passwords, tokens, and other sensitive information from this report.
+          required: true
