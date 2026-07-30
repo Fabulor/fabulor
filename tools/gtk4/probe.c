@@ -1883,6 +1883,10 @@ check_channel_list_model (void)
 	FabulorChannelListSnapshot alpha = {
 		&alpha_identity, "#alpha", 10, "Alpha topic", "alpha"
 	};
+	gint blank_identity = 3;
+	FabulorChannelListSnapshot blank = {
+		&blank_identity, "#blank", 0, NULL, NULL
+	};
 	FabulorChannelList *list = fabulor_channel_list_new (NULL, NULL);
 	GPtrArray *rows = NULL;
 	GPtrArray *selected = NULL;
@@ -1893,30 +1897,34 @@ check_channel_list_model (void)
 	{
 		valid = fabulor_channel_list_append (list, &beta) &&
 			fabulor_channel_list_append (list, &alpha) &&
+			fabulor_channel_list_append (list, &blank) &&
 			!fabulor_channel_list_append (list, &beta) &&
-			fabulor_channel_list_get_n_rows (list) == 2;
+			fabulor_channel_list_get_n_rows (list) == 3;
 	}
 	if (valid)
 	{
 		rows = fabulor_channel_list_dup_all (list);
-		valid = rows->len == 2 &&
+		valid = rows->len == 3 &&
 			strcmp (((FabulorChannelListRecord *) g_ptr_array_index (
-				rows, 0))->channel, "#alpha") == 0 &&
-			((FabulorChannelListRecord *) g_ptr_array_index (rows, 0))->users == 10 &&
+				rows, 0))->channel, "#blank") == 0 &&
+			((FabulorChannelListRecord *) g_ptr_array_index (rows, 0))->users == 0 &&
 			strcmp (((FabulorChannelListRecord *) g_ptr_array_index (
-				rows, 1))->topic, "Beta topic") == 0;
+				rows, 0))->topic, "") == 0 &&
+			strcmp (((FabulorChannelListRecord *) g_ptr_array_index (
+				rows, 2))->topic, "Beta topic") == 0;
 		g_ptr_array_unref (rows);
 	}
 	if (valid)
 	{
 		valid = fabulor_channel_list_set_selected (list, 0, TRUE) &&
-			fabulor_channel_list_set_selected (list, 1, TRUE);
+			fabulor_channel_list_set_selected (list, 1, TRUE) &&
+			fabulor_channel_list_set_selected (list, 2, TRUE);
 		selected = fabulor_channel_list_dup_selected_text (list,
 			FABULOR_CHANNEL_LIST_TOPIC);
 		first = fabulor_channel_list_dup_first_selected_channel (list);
-		valid = valid && selected->len == 2 &&
-			strcmp (g_ptr_array_index (selected, 0), "Alpha topic") == 0 &&
-			strcmp (first, "#alpha") == 0;
+		valid = valid && selected->len == 3 &&
+			strcmp (g_ptr_array_index (selected, 0), "") == 0 &&
+			strcmp (first, "#blank") == 0;
 		g_ptr_array_unref (selected);
 		g_free (first);
 	}

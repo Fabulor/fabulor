@@ -432,7 +432,8 @@ chanlist_build_gui_list (server *serv)
  * chanlistrow, adds it to our linked list and calls chanlist_place_row_in_gui.
  */
 void
-fe_add_chan_list (server *serv, char *chan, char *users, char *topic)
+fe_add_chan_list (server *serv, const char *chan, const char *users,
+					 const char *topic)
 {
 	chanlistrow *next_row;
 	size_t len = strlen (chan) + 1;

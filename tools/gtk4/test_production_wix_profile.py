@@ -67,6 +67,9 @@ GTK4_TRANSCRIPT_HELPER_SOURCES = (
     "xtext.h",
 )
 GTK4_TRANSCRIPT_RENDERER = ROOT / "src" / "fe-gtk" / "xtext.c"
+IRC_PROTOCOL_SOURCE = ROOT / "src" / "common" / "proto-irc.c"
+GTK4_CHANNEL_LIST_SOURCE = ROOT / "src" / "fe-gtk" / "channel-list.c"
+GTK4_MENU_SOURCE = ROOT / "src" / "fe-gtk" / "menu.c"
 GTK4_TRAY_SOURCES = (
     "plugin-tray.c",
     "tray-menu-presenter-gtk4.c",
@@ -133,6 +136,45 @@ WIX_NS = {"w": "http://wixtoolset.org/schemas/v4/wxs"}
 
 
 class ProductionWixProfileTests(unittest.TestCase):
+    def test_list_numeric_accepts_an_empty_trailing_topic(self):
+        source = IRC_PROTOCOL_SOURCE.read_text(encoding="utf-8")
+        list_numeric = re.search(
+            r"case 322:(.*?)\n\tcase 323:", source, re.DOTALL
+        )
+
+        self.assertIsNotNone(list_numeric)
+        self.assertIn(
+            "const char *topic = irc_trailing_parameter_text (word_eol[6]);",
+            list_numeric.group(1),
+        )
+        self.assertIn(
+            "return parameter[0] == ':' ? parameter + 1 : parameter;",
+            source,
+        )
+        self.assertNotIn("word_eol[6] + 1", list_numeric.group(1))
+
+    def test_channel_list_sorting_is_null_safe(self):
+        source = GTK4_CHANNEL_LIST_SOURCE.read_text(encoding="utf-8")
+
+        self.assertIn("gtk_custom_sorter_new (channel_row_compare", source)
+        self.assertIn("g_strcmp0 (row1->topic, row2->topic)", source)
+        self.assertIn(
+            "g_strcmp0 (row1->collation_key, row2->collation_key)", source
+        )
+        self.assertNotIn("gtk_string_sorter_new", source)
+
+    def test_server_menu_channel_list_requests_a_download(self):
+        source = GTK4_MENU_SOURCE.read_text(encoding="utf-8")
+        callback = re.search(
+            r"menu_chanlist \(.*?\n\}", source, re.DOTALL
+        )
+
+        self.assertIsNotNone(callback)
+        self.assertIn(
+            "chanlist_opengui (current_sess->server, TRUE);",
+            callback.group(0),
+        )
+
     def test_bootstrapper_application_is_self_contained(self):
         project = ET.parse(INSTALLER / "UX" / "Fabulor.BA.csproj").getroot()
         properties = {

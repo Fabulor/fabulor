@@ -42,6 +42,9 @@ development milestones and do not imply public release dates.
 - Corrected installed-client layout, menu, transcript selection, URL,
   user-list, server-tab, theme, sound, emoji-picker, tray, and window-lifecycle
   behavior found during extended Windows testing.
+- Prevented `/LIST` replies with empty or non-prefixed topics from advancing
+  beyond the received parameter and crashing in native string processing.
+- Made Server > Channel List request and display a fresh channel list.
 - Improved busy-channel and multi-network switching performance.
 - Bounded Windows address fallback so an unavailable DNS result cannot consume
   the operating system's full connection timeout.
