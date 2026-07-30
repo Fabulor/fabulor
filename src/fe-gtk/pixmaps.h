@@ -40,6 +40,7 @@ extern GdkPixbuf *pix_tree_server;
 extern GdkPixbuf *pix_tree_util;
 
 extern GdkPixbuf *pix_book;
+extern GdkPixbuf *pix_fabulor_about;
 extern GdkPixbuf *pix_zoitechat;
 
 extern cairo_surface_t *pixmap_load_from_file (char *file);

@@ -146,6 +146,33 @@ class ProductionWixProfileTests(unittest.TestCase):
         install = root.find(".//w:Directory[@Id='INSTALLFOLDER']", WIX_NS)
         self.assertEqual(install.get("Name"), "Fabulor")
 
+    def test_about_help_and_licence_contract(self):
+        menu = (ROOT / "src" / "fe-gtk" / "menu.c").read_text(encoding="utf-8")
+        pixmaps = (ROOT / "src" / "fe-gtk" / "pixmaps.c").read_text(
+            encoding="utf-8"
+        )
+        resources = (ROOT / "data" / "fabulor.gresource.xml").read_text(
+            encoding="utf-8"
+        )
+        share = (INSTALLER / "Components" / "ShareGtk4.wxs").read_text(
+            encoding="utf-8"
+        )
+
+        self.assertTrue((ROOT / "data" / "icons" / "fabulor-about.png").is_file())
+        self.assertIn("fabulor-about.png", resources)
+        self.assertIn(
+            'gdk_pixbuf_new_from_resource (\n'
+            '\t\t"/icons/fabulor-about.png", NULL);',
+            pixmaps,
+        )
+        self.assertIn("GTK_LICENSE_GPL_3_0_ONLY", menu)
+        self.assertNotIn("GTK_LICENSE_GPL_2_0_ONLY", menu)
+        for action in ("contents", "project-website", "report-issue", "about"):
+            self.assertIn(f'"{action}"', menu)
+        self.assertIn(r"..\..\Licence.md", share)
+        self.assertIn('Name="Licence.md"', share)
+        self.assertNotIn(r"..\..\COPYING", share)
+
     def test_production_product_has_no_legacy_gtk_payload(self):
         source = (INSTALLER / "ProductGtk4.wxs").read_text(encoding="utf-8")
 

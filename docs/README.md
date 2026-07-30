@@ -2,6 +2,8 @@
 
 This directory is the home for Fabulor technical and user documentation.
 
+- [Project licence](../Licence.md)
+
 ## User Guide
 
 - [Input history and conversation logs](user-guide/history-and-logs.md)

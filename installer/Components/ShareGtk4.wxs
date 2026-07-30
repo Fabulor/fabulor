@@ -4,8 +4,8 @@
     <ComponentGroup Id="ApplicationDocumentationComponents">
       <Component Id="FabulorLicenseDocument" Directory="SHAREFABULORDOCDIR" Guid="A2C34DF8-9374-482E-A064-7551E5818699">
         <File Id="FabulorLicenseDocumentFile"
-              Source="$(sys.SOURCEFILEDIR)..\..\COPYING"
-              Name="COPYING"
+              Source="$(sys.SOURCEFILEDIR)..\..\Licence.md"
+              Name="Licence.md"
               KeyPath="yes" />
       </Component>
       <Component Id="NotoEmojiLicenseDocument" Directory="SHARENOTODOCDIR" Guid="30039D4F-32E9-4DDA-964D-B88354E22286">

@@ -2432,7 +2432,7 @@ The legacy About-dialog layout and presentation is the next contained target.
 
 Native About-dialog pass 89 (2026-07-22):
 GTK4 now uses `GtkAboutDialog` as its native top-level window with built-in
-website, GPL 2.0-only license, Close, Escape, and presentation behavior. GTK3
+website, GPL 3.0-only license, Close, Escape, and presentation behavior. GTK3
 retains its custom action-area buttons and response handling. The shared logo
 boundary converts the retained pixbuf to an owned GTK4 texture paintable and
 releases the temporary reference after assignment. Shipping GTK3, strict MSVC

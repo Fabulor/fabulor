@@ -25,7 +25,7 @@
 </div>
 
 Fabulor — from Latin fabulor, “to chat, talk, converse.”\
-A modernised GTK4 IRC client for Windows 11+, inspired by [HexChat](https://hexchat.github.io/) | [ZoiteChat](https://zoitechat.org/): fast, simple, and highly scriptable with C#, Python, and Tcl.
+A modernised GTK4 IRC client for Windows 11+, inspired by [XChat](https://xchat.org/), [HexChat](https://hexchat.github.io/), and [ZoiteChat](https://zoitechat.org/): fast, simple, and highly scriptable with C#, Python, and Tcl.
 
 ---
 X-Chat ("xchat") Copyright (c) 1998-2010 by Peter Zelezny.\
@@ -35,7 +35,13 @@ ZoiteChat ("zoitechat") Copyright (c) 2026 by deepend.\
 Fabulor ("fabulor") Copyright (c) 2026 by Barry Suridge.
 
 ---
-This project has been updated from GPL v2 to GPL Version 3 (29 June 2007), with the additional exemption that compiling, linking, and/or using OpenSSL is allowed. You may provide binary packages linked to the OpenSSL libraries, provided that all other requirements of the GPL are met. The current licence text is in [Licence.md](Licence.md); [COPYING](COPYING) is retained for legacy reference.
+Fabulor is licensed under the GNU General Public License version 3.0 only. The current licence text is in [Licence.md](Licence.md); [COPYING](COPYING) is retained for legacy reference.
+
+## Acknowledgements
+
+Fabulor is led and maintained by Barry Suridge. Its project lineage includes XChat, HexChat, and ZoiteChat.
+
+Security review and hardening were assisted by OpenAI Codex through threat analysis, targeted code review, remediation, test design, and security-tool orchestration. Automated scanning includes GitHub CodeQL and Gitleaks. This acknowledgement does not represent independent security certification.
 
 <!-- Badge reference definitions -->
 [latest-release-badge]: https://img.shields.io/github/v/release/Fabulor/fabulor?sort=semver
@@ -48,6 +54,6 @@ This project has been updated from GPL v2 to GPL Version 3 (29 June 2007), with 
 [lint-link]: https://github.com/Fabulor/fabulor/actions/workflows/lint.yml
 
 [licence-badge]: https://img.shields.io/badge/License-GPLv3-blue.svg
-[licence-link]: https://www.gnu.org/licenses/agpl-3.0.en.html
+[licence-link]: https://www.gnu.org/licenses/gpl-3.0.en.html
 
 [download-badge]: https://img.shields.io/badge/Download-Latest%20Release-brightgreen?style=for-the-badge

@@ -49,6 +49,7 @@ GdkPixbuf *pix_tree_server;
 GdkPixbuf *pix_tree_util;
 
 GdkPixbuf *pix_book;
+GdkPixbuf *pix_fabulor_about;
 GdkPixbuf *pix_zoitechat;
 
 static cairo_surface_t *
@@ -292,6 +293,10 @@ pixmaps_init (void)
 	/* non-replaceable book pixmap */
 	pix_book = gdk_pixbuf_new_from_resource ("/icons/book.png", NULL);
 
-	/* used in About window, tray icon and WindowManager icon. */
+	/* Keep the full-resolution source for GTK's device-aware About logo sizing. */
+	pix_fabulor_about = gdk_pixbuf_new_from_resource (
+		"/icons/fabulor-about.png", NULL);
+
+	/* used for the tray icon and WindowManager icon */
 	pix_zoitechat = gdk_pixbuf_new_from_resource ("/icons/fabulor.png", NULL);
 }

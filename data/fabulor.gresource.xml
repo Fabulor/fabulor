@@ -2,6 +2,7 @@
 <gresources>
 	<gresource prefix="/icons">
 		<file alias="fabulor.png" preprocess="to-pixdata">icons/fabulor.png</file>
+		<file alias="fabulor-about.png" preprocess="to-pixdata">icons/fabulor-about.png</file>
 		<file alias="fabulor.svg">icons/Fabulor.svg</file>
 		<file alias="book.png" preprocess="to-pixdata">icons/book.png</file>
 
