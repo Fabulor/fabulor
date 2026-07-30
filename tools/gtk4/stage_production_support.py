@@ -13,7 +13,7 @@ DEFAULT_CONTRACT = pathlib.Path(__file__).with_name(
     "production-support-contract.json"
 )
 MANIFEST_NAME = "production-support-manifest.json"
-SOURCE_NAMES = {"dependency", "python", "repository", "winsparkle"}
+SOURCE_NAMES = {"dependency", "python", "repository"}
 REPARSE_POINT_ATTRIBUTE = getattr(stat, "FILE_ATTRIBUTE_REPARSE_POINT", 0x400)
 
 
@@ -229,7 +229,6 @@ def parse_args(argv):
     parser.add_argument("--dependency-root", type=pathlib.Path, required=True)
     parser.add_argument("--python-build-root", type=pathlib.Path, required=True)
     parser.add_argument("--repository-root", type=pathlib.Path, required=True)
-    parser.add_argument("--winsparkle-root", type=pathlib.Path, required=True)
     parser.add_argument("--output", type=pathlib.Path, required=True)
     return parser.parse_args(argv)
 
@@ -242,7 +241,6 @@ def main(argv=None):
             "dependency": args.dependency_root,
             "python": args.python_build_root,
             "repository": args.repository_root,
-            "winsparkle": args.winsparkle_root,
         }, args.output, contract)
     except (OSError, ProductionSupportError) as exc:
         print(f"Production-support staging failed: {exc}", file=sys.stderr)

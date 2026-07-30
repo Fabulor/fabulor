@@ -38,8 +38,7 @@ public partial class MainWindow : Window
         IncludeChecksumPlugin = this.ChecksumPluginCheckBox.IsChecked == true,
         IncludeExecPlugin = this.ExecPluginCheckBox.IsChecked == true,
         IncludeFishlimPlugin = this.FishlimPluginCheckBox.IsChecked == true,
-        IncludeSysinfoPlugin = this.SysinfoPluginCheckBox.IsChecked == true,
-        IncludeUpdatePlugin = this.UpdatePluginCheckBox.IsChecked == true
+        IncludeSysinfoPlugin = this.SysinfoPluginCheckBox.IsChecked == true
     };
 
     public void SetPortableMode(bool isPortable)
@@ -63,7 +62,6 @@ public partial class MainWindow : Window
         this.ExecPluginCheckBox.IsChecked = selection.IncludeExecPlugin;
         this.FishlimPluginCheckBox.IsChecked = selection.IncludeFishlimPlugin;
         this.SysinfoPluginCheckBox.IsChecked = selection.IncludeSysinfoPlugin;
-        this.UpdatePluginCheckBox.IsChecked = selection.IncludeUpdatePlugin;
         this.RefreshOptionState();
     }
 
@@ -101,7 +99,6 @@ public partial class MainWindow : Window
         this.ExecPluginCheckBox.IsEnabled = !isBusy;
         this.FishlimPluginCheckBox.IsEnabled = !isBusy;
         this.SysinfoPluginCheckBox.IsEnabled = !isBusy;
-        this.UpdatePluginCheckBox.IsEnabled = !isBusy;
 
         if (isBusy)
         {

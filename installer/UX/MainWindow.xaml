@@ -318,9 +318,6 @@
                         <CheckBox x:Name="SysinfoPluginCheckBox"
                                   Margin="0,10,0,0"
                                   Content="SysInfo plugin" />
-                        <CheckBox x:Name="UpdatePluginCheckBox"
-                                  Margin="0,10,0,0"
-                                  Content="Update Checker plugin" />
                     </StackPanel>
                 </GroupBox>
 

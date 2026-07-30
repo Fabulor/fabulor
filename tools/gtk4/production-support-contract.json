@@ -6,7 +6,6 @@
     {"source": "dependency", "path": "bin/cert.pem", "destination": "cert.pem", "kind": "file"},
     {"source": "dependency", "path": "bin/libcrypto-3-x64.dll", "destination": "libcrypto-3-x64.dll", "kind": "file"},
     {"source": "dependency", "path": "bin/libssl-3-x64.dll", "destination": "libssl-3-x64.dll", "kind": "file"},
-    {"source": "winsparkle", "path": "WinSparkle.dll", "destination": "WinSparkle.dll", "kind": "file"},
     {"source": "python", "path": "Lib/site-packages/_cffi_backend.*.pyd", "destination": ".", "kind": "single_glob"},
     {"source": "repository", "path": "plugins/python/xchat.py", "destination": "python/xchat.py", "kind": "file"},
     {"source": "repository", "path": "plugins/python/hexchat.py", "destination": "python/hexchat.py", "kind": "file"},

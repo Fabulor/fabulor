@@ -23,7 +23,6 @@ class ProductionSupportTests(unittest.TestCase):
                 "bin/libcrypto-3-x64.dll",
                 "bin/libssl-3-x64.dll",
             ],
-            "winsparkle": ["WinSparkle.dll"],
             "python": ["Lib/site-packages/_cffi_backend.test.pyd"],
             "repository": [
                 "plugins/python/xchat.py",
@@ -49,7 +48,7 @@ class ProductionSupportTests(unittest.TestCase):
         output = self.root / "output"
         manifest = support.stage(self.roots, output, self.contract)
 
-        self.assertEqual(manifest["file_count"], 10)
+        self.assertEqual(manifest["file_count"], 9)
         paths = [entry["path"] for entry in manifest["files"]]
         self.assertEqual(paths, sorted(paths, key=str.casefold))
         self.assertIn("python/fabulor.py", paths)

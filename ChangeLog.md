@@ -33,6 +33,8 @@ development milestones and do not imply public release dates.
   intentional XChat and HexChat compatibility imports.
 - Replaced broad runtime harvesting with validated GTK4, Python, Tcl, and .NET
   payload ownership.
+- Retired the inherited updater and WinSparkle payload until Fabulor has an
+  authenticated, product-owned update feed.
 - Moved maintained user add-ons to the independent `Fabulor/add-ons`
   repository.
 - Updated the supported licence to GNU GPL version 3.0 only.

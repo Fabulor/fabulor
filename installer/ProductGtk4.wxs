@@ -169,10 +169,6 @@
         <ComponentGroupRef Id="SysinfoPluginComponents" />
         <ComponentGroupRef Id="SysinfoPluginShareAssetComponents" />
       </Feature>
-      <Feature Id="UpdatePluginFeature" Title="Update Checker plugin" Level="1">
-        <ComponentGroupRef Id="UpdatePluginComponents" />
-        <ComponentGroupRef Id="UpdatePluginShareAssetComponents" />
-      </Feature>
       <ComponentGroupRef Id="PortableModeComponents" />
     </Feature>
   </Package>

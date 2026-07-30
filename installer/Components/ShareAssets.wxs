@@ -62,13 +62,5 @@
       </Component>
     </ComponentGroup>
 
-    <ComponentGroup Id="UpdatePluginShareAssetComponents">
-      <Component Id="UpdatePluginShareAsset" Guid="2154F42D-C4A7-40D0-A414-446D41A10E8F" Directory="SHAREDIR">
-        <File Id="UpdatePluginShareAssetFile"
-              Source="$(sys.SOURCEFILEDIR)..\..\win32\copy\share\download.png"
-              Name="download.png"
-              KeyPath="yes" />
-      </Component>
-    </ComponentGroup>
   </Fragment>
 </Wix>

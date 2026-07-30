@@ -32,16 +32,6 @@
       "required_imports": ["glib-2.0-0.dll"]
     },
     {
-      "path": "plugins/hcupd.dll",
-      "source": "plugins",
-      "required_imports": ["winsparkle.dll"]
-    },
-    {
-      "path": "WinSparkle.dll",
-      "source": "payload",
-      "required_imports": []
-    },
-    {
       "path": "libenchant-2-2.dll",
       "source": "enchant",
       "required_imports": ["glib-2.0-0.dll", "gmodule-2.0-0.dll", "gobject-2.0-0.dll"]
