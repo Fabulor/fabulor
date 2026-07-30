@@ -26,8 +26,8 @@
 
 #include "fe-gtk.h"
 
-#include "../common/zoitechat.h"
-#include "../common/zoitechatc.h"
+#include "../common/fabulor.h"
+#include "../common/fabulorc.h"
 #include "../common/cfgfiles.h"
 #include "../common/outbound.h"
 #include "../common/fe.h"

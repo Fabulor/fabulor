@@ -24,11 +24,11 @@
 #include "dbus-client.h"
 #include <stdlib.h>
 #include <gio/gio.h>
-#include "zoitechat.h"
-#include "zoitechatc.h"
+#include "fabulor.h"
+#include "fabulorc.h"
 
-#define DBUS_REMOTE_PATH "/org/zoitechat/Remote"
-#define DBUS_REMOTE_INTERFACE "org.zoitechat.plugin"
+#define DBUS_REMOTE_PATH "/org/fabulor/Remote"
+#define DBUS_REMOTE_INTERFACE "org.fabulor.plugin"
 
 #define DBUS_SERVICE_DBUS "org.freedesktop.DBus"
 #define DBUS_PATH_DBUS "/org/freedesktop/DBus"
@@ -59,7 +59,7 @@ has_theme_argument (void)
 	char *theme_path = NULL;
 	guint i;
 
-	if (arg_url && zoitechat_theme_path_from_arg (arg_url, &theme_path))
+	if (arg_url && fabulor_theme_path_from_arg (arg_url, &theme_path))
 	{
 		g_free (theme_path);
 		return TRUE;
@@ -69,7 +69,7 @@ has_theme_argument (void)
 	{
 		for (i = 0; i < g_strv_length (arg_urls); i++)
 		{
-			if (zoitechat_theme_path_from_arg (arg_urls[i], &theme_path))
+			if (fabulor_theme_path_from_arg (arg_urls[i], &theme_path))
 			{
 				g_free (theme_path);
 				return TRUE;
@@ -81,13 +81,13 @@ has_theme_argument (void)
 }
 
 void
-zoitechat_remote (void)
+fabulor_remote (void)
 {
 	GDBusConnection *connection;
 	GDBusProxy *dbus = NULL;
 	GVariant *ret;
 	GDBusProxy *remote_object = NULL;
-	gboolean zoitechat_running;
+	gboolean fabulor_running;
 	GError *error = NULL;
 	char *command = NULL;
 	guint i;
@@ -130,18 +130,18 @@ zoitechat_remote (void)
 	if (!ret)
 	{
 		write_error (_("Failed to complete NameHasOwner"), &error);
-		zoitechat_running = FALSE;
+		fabulor_running = FALSE;
 	}
 	else
 	{
 		GVariant *child = g_variant_get_child_value (ret, 0);
-		zoitechat_running = g_variant_get_boolean (child);
+		fabulor_running = g_variant_get_boolean (child);
 		g_variant_unref (ret);
 		g_variant_unref (child);
 	}
 	g_object_unref (dbus);
 
-	if (!zoitechat_running) {
+	if (!fabulor_running) {
 		g_object_unref (connection);
 		return;
 	}

@@ -17,10 +17,10 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301, USA
  */
 
-#ifndef ZOITECHAT_BANLIST_H
-#define ZOITECHAT_BANLIST_H
+#ifndef FABULOR_BANLIST_H
+#define FABULOR_BANLIST_H
 
-#include "../common/zoitechat.h"
+#include "../common/fabulor.h"
 void banlist_opengui (session *sess);
 
 #ifndef RPL_BANLIST
@@ -74,4 +74,4 @@ typedef struct mode_info_s {
 	void (*tester)(banlist_info *, int);	/* Function returns true to set bit into checkable */
 } mode_info;
 
-#endif /* ZOITECHAT_BANLIST_H */
+#endif /* FABULOR_BANLIST_H */

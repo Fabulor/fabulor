@@ -1,5 +1,5 @@
-#ifndef ZOITECHAT_ICON_RESOLVER_H
-#define ZOITECHAT_ICON_RESOLVER_H
+#ifndef FABULOR_ICON_RESOLVER_H
+#define FABULOR_ICON_RESOLVER_H
 
 #include <gtk/gtk.h>
 #include "gtk-compat.h"

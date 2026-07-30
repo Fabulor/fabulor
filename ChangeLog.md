@@ -31,6 +31,10 @@ development milestones and do not imply public release dates.
   profile.
 - Renamed Fabulor-owned Python, Tcl, and managed C# plugin APIs while retaining
   intentional XChat and HexChat compatibility imports.
+- Renamed the active application core, private native symbols, generated
+  marshallers, GTK identifiers, build macros, and dormant D-Bus identifiers
+  for Fabulor while preserving explicit saved-state and compatibility
+  boundaries.
 - Replaced broad runtime harvesting with validated GTK4, Python, Tcl, and .NET
   payload ownership.
 - Moved the remaining Windows copy payload into explicit `data` ownership and

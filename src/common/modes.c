@@ -20,8 +20,8 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-#include "zoitechat.h"
-#include "zoitechatc.h"
+#include "fabulor.h"
+#include "fabulorc.h"
 #include "modes.h"
 #include "server.h"
 #include "text.h"

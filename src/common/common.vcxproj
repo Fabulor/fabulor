@@ -52,8 +52,8 @@
     <ClInclude Include="userlist.h" />
     <ClInclude Include="util.h" />
     <ClInclude Include="fabulor-plugin.h" />
-    <ClInclude Include="zoitechat.h" />
-    <ClInclude Include="zoitechatc.h" />
+    <ClInclude Include="fabulor.h" />
+    <ClInclude Include="fabulorc.h" />
     <ClInclude Include="theme-service.h" />
     <ClInclude Include="theme-archive-reader.h" />
     <ClInclude Include="gtk4-theme-discovery.h" />
@@ -93,7 +93,7 @@
     <ClCompile Include="url.c" />
     <ClCompile Include="userlist.c" />
     <ClCompile Include="util.c" />
-    <ClCompile Include="zoitechat.c" />
+    <ClCompile Include="fabulor.c" />
     <ClCompile Include="theme-service.c" />
     <ClCompile Include="theme-archive-reader.c" />
     <ClCompile Include="gtk4-theme-discovery.c" />
@@ -145,9 +145,9 @@ FOR %%I IN ("$(FabulorLib)config.h") DO IF %%~zI EQU 0 (
   ECHO Generated configuration header is empty: $(FabulorLib)config.h
   EXIT /B 1
 )
-$(GlibGenMarshal) --prefix=_zoitechat_marshal --header "$(ProjectDir)marshalers.list" --output "$(FabulorLib)marshal.h"
+$(GlibGenMarshal) --prefix=_fabulor_marshal --header "$(ProjectDir)marshalers.list" --output "$(FabulorLib)marshal.h"
 IF ERRORLEVEL 1 EXIT /B 1
-$(GlibGenMarshal) --prefix=_zoitechat_marshal --body "$(ProjectDir)marshalers.list" --output "$(FabulorLib)marshal.c"
+$(GlibGenMarshal) --prefix=_fabulor_marshal --body "$(ProjectDir)marshalers.list" --output "$(FabulorLib)marshal.c"
 IF ERRORLEVEL 1 EXIT /B 1
       ]]></Command>
     </PreBuildEvent>

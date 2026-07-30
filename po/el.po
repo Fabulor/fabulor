@@ -165,142 +165,142 @@ msgstr "Ο/Η %s σας προσφέρει το «%s». Θέλετε να το �
 msgid "No active DCCs\n"
 msgstr "Δεν υπάρχουν ενεργά DCC\n"
 
-#: src/common/zoitechat.c:885
+#: src/common/fabulor.c:885
 msgid "_Open Dialog Window"
 msgstr "_Άνοιγμα Παραθύρου Διαλόγου"
 
-#: src/common/zoitechat.c:886
+#: src/common/fabulor.c:886
 msgid "_Send a File"
 msgstr "_Αποστολή ενός Αρχείου"
 
-#: src/common/zoitechat.c:887
+#: src/common/fabulor.c:887
 msgid "_User Info (WhoIs)"
 msgstr "_Πληροφορίες Χρήστη (Whois)"
 
-#: src/common/zoitechat.c:888
+#: src/common/fabulor.c:888
 msgid "_Add to Friends List"
 msgstr "_Προσθήκη στην Λίστα Φίλων"
 
-#: src/common/zoitechat.c:889
+#: src/common/fabulor.c:889
 msgid "_Ignore"
 msgstr "_Αγνόηση"
 
-#: src/common/zoitechat.c:890
+#: src/common/fabulor.c:890
 msgid "O_perator Actions"
 msgstr "Χ_ειριστής Δράσης"
 
-#: src/common/zoitechat.c:892
+#: src/common/fabulor.c:892
 msgid "Give Ops"
 msgstr "Απόδοση Chanops"
 
-#: src/common/zoitechat.c:893
+#: src/common/fabulor.c:893
 msgid "Take Ops"
 msgstr "Αφαίρεση Chanops"
 
-#: src/common/zoitechat.c:894
+#: src/common/fabulor.c:894
 msgid "Give Voice"
 msgstr "Απόδοση Voice"
 
-#: src/common/zoitechat.c:895
+#: src/common/fabulor.c:895
 msgid "Take Voice"
 msgstr "Αφαίρεση Voice"
 
-#: src/common/zoitechat.c:897
+#: src/common/fabulor.c:897
 msgid "Kick/Ban"
 msgstr "Kick/Ban"
 
-#: src/common/zoitechat.c:898 src/common/zoitechat.c:935
+#: src/common/fabulor.c:898 src/common/fabulor.c:935
 msgid "Kick"
 msgstr "Kick"
 
-#: src/common/zoitechat.c:899 src/common/zoitechat.c:900 src/common/zoitechat.c:901
-#: src/common/zoitechat.c:902 src/common/zoitechat.c:903 src/common/zoitechat.c:934
+#: src/common/fabulor.c:899 src/common/fabulor.c:900 src/common/fabulor.c:901
+#: src/common/fabulor.c:902 src/common/fabulor.c:903 src/common/fabulor.c:934
 #: src/fe-gtk/banlist.c:50
 msgid "Ban"
 msgstr "Πάρε μπούλο"
 
-#: src/common/zoitechat.c:904 src/common/zoitechat.c:905 src/common/zoitechat.c:906
-#: src/common/zoitechat.c:907
+#: src/common/fabulor.c:904 src/common/fabulor.c:905 src/common/fabulor.c:906
+#: src/common/fabulor.c:907
 msgid "KickBan"
 msgstr "KickBan"
 
-#: src/common/zoitechat.c:917
+#: src/common/fabulor.c:917
 msgid "Leave Channel"
 msgstr "Εγκατάλειψη καναλιού"
 
-#: src/common/zoitechat.c:918
+#: src/common/fabulor.c:918
 msgid "Join Channel..."
 msgstr "Σύνδεση σε κανάλι...."
 
-#: src/common/zoitechat.c:919 src/fe-gtk/menu.c:1411
+#: src/common/fabulor.c:919 src/fe-gtk/menu.c:1411
 msgid "Enter Channel to Join:"
 msgstr "Εισάγετε το κανάλι προς σύνδεση:"
 
-#: src/common/zoitechat.c:920
+#: src/common/fabulor.c:920
 msgid "Server Links"
 msgstr "Συνδέσεις διακομιστών"
 
-#: src/common/zoitechat.c:921
+#: src/common/fabulor.c:921
 msgid "Ping Server"
 msgstr "Ping στο διακομιστή"
 
-#: src/common/zoitechat.c:922
+#: src/common/fabulor.c:922
 msgid "Hide Version"
 msgstr "Απόκρυψη έκδοσης"
 
-#: src/common/zoitechat.c:932
+#: src/common/fabulor.c:932
 msgid "Op"
 msgstr "Op"
 
-#: src/common/zoitechat.c:933
+#: src/common/fabulor.c:933
 msgid "DeOp"
 msgstr "DeOp"
 
-#: src/common/zoitechat.c:936
+#: src/common/fabulor.c:936
 msgid "bye"
 msgstr "αντίο"
 
-#: src/common/zoitechat.c:937
+#: src/common/fabulor.c:937
 #, c-format
 msgid "Enter reason to kick %s:"
 msgstr "Εισάγετε αιτία για το kick του %s:"
 
-#: src/common/zoitechat.c:938
+#: src/common/fabulor.c:938
 msgid "Send File"
 msgstr ""
 
-#: src/common/zoitechat.c:939
+#: src/common/fabulor.c:939
 msgid "Dialog"
 msgstr "Διάλογος"
 
-#: src/common/zoitechat.c:948
+#: src/common/fabulor.c:948
 msgid "WhoIs"
 msgstr "ΠοιοςΕίναι"
 
-#: src/common/zoitechat.c:949
+#: src/common/fabulor.c:949
 msgid "Send"
 msgstr "Αποστολή"
 
-#: src/common/zoitechat.c:950
+#: src/common/fabulor.c:950
 msgid "Chat"
 msgstr "Διάλογος"
 
-#: src/common/zoitechat.c:951 src/fe-gtk/banlist.c:847 src/fe-gtk/dccgui.c:889
+#: src/common/fabulor.c:951 src/fe-gtk/banlist.c:847 src/fe-gtk/dccgui.c:889
 #: src/fe-gtk/ignoregui.c:387 src/fe-gtk/urlgrab.c:214
 msgid "Clear"
 msgstr "Καθαρισμός"
 
-#: src/common/zoitechat.c:952
+#: src/common/fabulor.c:952
 msgid "Ping"
 msgstr "Ping"
 
-#: src/common/zoitechat.c:1125
+#: src/common/fabulor.c:1125
 #, c-format
 msgid ""
 "You do not have write access to %s. Nothing from this session can be saved."
 msgstr "Δεν έχετε πρόσβαση εγγραφής στο%s. Δεν μπορεί τίποτα να σωθεί από αυτή τη συνεδρία."
 
-#: src/common/zoitechat.c:1134
+#: src/common/fabulor.c:1134
 msgid ""
 "* Running IRC as root is stupid! You should\n"
 "  create a User Account and use that to login.\n"

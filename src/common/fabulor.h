@@ -26,13 +26,13 @@
 
 #include <time.h>
 
-#ifndef ZOITECHAT_H
-#define ZOITECHAT_H
+#ifndef FABULOR_H
+#define FABULOR_H
 
-gboolean zoitechat_theme_path_from_arg (const char *arg, char **path_out);
-typedef void (*zoitechat_theme_post_apply_callback) (void);
-void zoitechat_set_theme_post_apply_callback (zoitechat_theme_post_apply_callback callback);
-void zoitechat_run_theme_post_apply_callback (void);
+gboolean fabulor_theme_path_from_arg (const char *arg, char **path_out);
+typedef void (*fabulor_theme_post_apply_callback) (void);
+void fabulor_set_theme_post_apply_callback (fabulor_theme_post_apply_callback callback);
+void fabulor_run_theme_post_apply_callback (void);
 
 #include "history.h"
 #include "tree.h"
@@ -78,9 +78,9 @@ void zoitechat_run_theme_post_apply_callback (void);
 #define USERNAMELEN 10
 #define HIDDEN_CHAR	8			/* invisible character for xtext */
 
-#define ZOITECHAT_DARK_MODE_AUTO 0
-#define ZOITECHAT_DARK_MODE_DARK 1
-#define ZOITECHAT_DARK_MODE_LIGHT 2
+#define FABULOR_DARK_MODE_AUTO 0
+#define FABULOR_DARK_MODE_DARK 1
+#define FABULOR_DARK_MODE_LIGHT 2
 
 struct nbexec
 {
@@ -93,9 +93,9 @@ struct nbexec
 	struct session *sess;
 };
 
-struct zoitechatprefs
+struct fabulorprefs
 {
-	/* these are the rebranded, consistent, sorted zoitechat variables */
+	/* Persisted preference fields retain their established hex_ names. */
 
 	/* BOOLEANS */
 	unsigned int hex_away_auto_unmark;
@@ -527,7 +527,7 @@ typedef struct server
 	int proxy_sok6;
 	int id;					/* unique ID number (for plugin API) */
 
-	/* dcc_ip moved from zoitechatprefs to make it per-server */
+	/* dcc_ip moved from fabulorprefs to make it per-server */
 	guint32 dcc_ip;
 
 #ifdef USE_OPENSSL

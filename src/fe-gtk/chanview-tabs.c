@@ -524,7 +524,7 @@ cv_tabs_add (chanview *cv, chan *ch, char *name, chan *parent)
 	GtkWidget *close_icon;
 
 	item->tab = gtk_toggle_button_new ();
-	gtk_widget_set_name (item->tab, "zoitechat-tab");
+	gtk_widget_set_name (item->tab, "fabulor-tab");
 	gtk_widget_set_size_request (item->tab, -1, 14);
 	hbox = gtk_box_new (GTK_ORIENTATION_HORIZONTAL, 2);
 	item->label = gtk_label_new (name);

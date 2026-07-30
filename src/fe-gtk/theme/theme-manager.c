@@ -32,8 +32,8 @@
 #include "../gtkutil.h"
 #include "../maingui.h"
 #include "../setup.h"
-#include "../../common/zoitechat.h"
-#include "../../common/zoitechatc.h"
+#include "../../common/fabulor.h"
+#include "../../common/fabulorc.h"
 #include "../../common/cfgfiles.h"
 #include "theme-appearance-monitor-gtk4.h"
 #include "theme-gtk4-controller.h"
@@ -131,8 +131,8 @@ theme_manager_setup_apply_listener (const ThemeChangedEvent *event, gpointer use
 }
 
 static ThemeChangedReason
-theme_manager_synthesize_preference_reasons (const struct zoitechatprefs *old_prefs,
-					      const struct zoitechatprefs *new_prefs,
+theme_manager_synthesize_preference_reasons (const struct fabulorprefs *old_prefs,
+					      const struct fabulorprefs *new_prefs,
 					      gboolean color_change)
 {
 	ThemeChangedReason reasons = THEME_CHANGED_REASON_NONE;
@@ -189,14 +189,14 @@ theme_manager_auto_dark_mode_changed (GtkSettings *settings, GParamSpec *pspec, 
 	theme_manager_auto_refresh_cache.resolved_dark_preference = resolved_dark_preference;
 	theme_manager_auto_refresh_cache.dark_mode = prefs.hex_gui_dark_mode;
 
-	if (prefs.hex_gui_dark_mode != ZOITECHAT_DARK_MODE_AUTO)
+	if (prefs.hex_gui_dark_mode != FABULOR_DARK_MODE_AUTO)
 		return;
 	if (in_handler)
 		return;
 
 	in_handler = TRUE;
 
-	if (prefs.hex_gui_dark_mode == ZOITECHAT_DARK_MODE_AUTO)
+	if (prefs.hex_gui_dark_mode == FABULOR_DARK_MODE_AUTO)
 	{
 		fe_set_auto_dark_mode_state (resolved_dark_preference);
 		theme_manager_commit_preferences (prefs.hex_gui_dark_mode, &color_change);
@@ -240,7 +240,7 @@ theme_manager_init (void)
 	if (!theme_manager_setup_listener_id)
 		theme_manager_setup_listener_id = theme_listener_register ("setup.apply", theme_manager_setup_apply_listener, NULL);
 
-	fe_set_auto_dark_mode_state (theme_policy_is_dark_mode_active (ZOITECHAT_DARK_MODE_AUTO));
+	fe_set_auto_dark_mode_state (theme_policy_is_dark_mode_active (FABULOR_DARK_MODE_AUTO));
 	theme_application_apply_mode (prefs.hex_gui_dark_mode, NULL);
 	if (!theme_manager_gtk4_theme_controller)
 	{
@@ -269,7 +269,7 @@ theme_manager_init (void)
 			g_clear_error (&error);
 		}
 	}
-	zoitechat_set_theme_post_apply_callback (theme_manager_handle_theme_applied);
+	fabulor_set_theme_post_apply_callback (theme_manager_handle_theme_applied);
 }
 
 void
@@ -279,7 +279,7 @@ theme_manager_shutdown (void)
 		theme_appearance_monitor_gtk4_free);
 	g_clear_pointer (&theme_manager_gtk4_theme_controller,
 		theme_gtk4_controller_free);
-	zoitechat_set_theme_post_apply_callback (NULL);
+	fabulor_set_theme_post_apply_callback (NULL);
 	if (theme_manager_auto_refresh_source)
 	{
 		g_source_remove (theme_manager_auto_refresh_source);
@@ -420,8 +420,8 @@ theme_manager_commit_preferences (unsigned int old_mode, gboolean *color_change)
 	if (color_change && (prefs.hex_gui_dark_mode != old_mode || palette_changed))
 		*color_change = TRUE;
 
-	if (prefs.hex_gui_dark_mode == ZOITECHAT_DARK_MODE_AUTO)
-		fe_set_auto_dark_mode_state (theme_policy_is_dark_mode_active (ZOITECHAT_DARK_MODE_AUTO));
+	if (prefs.hex_gui_dark_mode == FABULOR_DARK_MODE_AUTO)
+		fe_set_auto_dark_mode_state (theme_policy_is_dark_mode_active (FABULOR_DARK_MODE_AUTO));
 }
 
 gboolean
@@ -538,10 +538,10 @@ theme_manager_apply_platform_window_theme (GtkWidget *window)
 			theme_runtime_is_dark_active ();
 	}
 
-	gtk_widget_remove_css_class (window, "zoitechat-dark");
-	gtk_widget_remove_css_class (window, "zoitechat-light");
+	gtk_widget_remove_css_class (window, "fabulor-dark");
+	gtk_widget_remove_css_class (window, "fabulor-light");
 	gtk_widget_add_css_class (window,
-		dark ? "zoitechat-dark" : "zoitechat-light");
+		dark ? "fabulor-dark" : "fabulor-light");
 #ifdef G_OS_WIN32
 	fe_win32_apply_native_titlebar (window, dark);
 #endif
@@ -697,8 +697,8 @@ theme_manager_refresh_auto_mode (void)
 }
 
 ThemeChangedEvent
-theme_manager_on_preferences_changed (const struct zoitechatprefs *old_prefs,
-				      const struct zoitechatprefs *new_prefs,
+theme_manager_on_preferences_changed (const struct fabulorprefs *old_prefs,
+				      const struct fabulorprefs *new_prefs,
 				      unsigned int old_mode,
 				      gboolean *color_change)
 {

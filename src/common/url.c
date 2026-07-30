@@ -21,8 +21,8 @@
 #include <string.h>
 #include <ctype.h>
 #include <glib.h>
-#include "zoitechat.h"
-#include "zoitechatc.h"
+#include "fabulor.h"
+#include "fabulorc.h"
 #include "cfgfiles.h"
 #include "fe.h"
 #include "tree.h"
@@ -78,9 +78,9 @@ url_save_tree (const char *fname, const char *mode, gboolean fullpath)
 	FILE *fd;
 
 	if (fullpath)
-		fd = zoitechat_fopen_file (fname, mode, XOF_FULLPATH);
+		fd = fabulor_fopen_file (fname, mode, XOF_FULLPATH);
 	else
-		fd = zoitechat_fopen_file (fname, mode, 0);
+		fd = fabulor_fopen_file (fname, mode, 0);
 	if (fd == NULL)
 		return;
 
@@ -93,7 +93,7 @@ url_save_node (char* url)
 {
 	FILE *fd;
 
-	fd = zoitechat_fopen_file ("url.log", "a", 0);
+	fd = fabulor_fopen_file ("url.log", "a", 0);
 	if (fd == NULL)
 	{
 		return;

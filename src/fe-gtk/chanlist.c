@@ -32,8 +32,8 @@
 
 #include <gdk/gdkkeysyms.h>
 
-#include "../common/zoitechat.h"
-#include "../common/zoitechatc.h"
+#include "../common/fabulor.h"
+#include "../common/fabulorc.h"
 #include "../common/cfgfiles.h"
 #include "../common/outbound.h"
 #include "../common/util.h"
@@ -547,7 +547,7 @@ chanlist_filereq_done (server *serv, char *file)
 	if (!file)
 		return;
 
-	fh = zoitechat_open_file (file, O_TRUNC | O_WRONLY | O_CREAT, 0600,
+	fh = fabulor_open_file (file, O_TRUNC | O_WRONLY | O_CREAT, 0600,
 								 XOF_DOMODE | XOF_FULLPATH);
 	if (fh == -1)
 		return;

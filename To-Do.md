@@ -196,7 +196,7 @@ Detailed stages live in
       duplicate backend implementations.
 - [x] Review historical migration/security documents for archive policy.
 - [x] Retire stale ZoiteChat product branding and build-only identifiers.
-- [ ] Review internal ZoiteChat/XChat compatibility names separately from
+- [x] Review internal ZoiteChat/XChat compatibility names separately from
       product branding.
   - [x] Make `fabulor` the sole Fabulor-owned Python module while retaining
         intentional `xchat` and `hexchat` imports.
@@ -204,7 +204,7 @@ Detailed stages live in
   - [x] Make `IFabulorPlugin`, `FabulorContext`, `FabulorEvent`, and
         `FabulorUserInfo` the sole managed C# plugin contract.
   - [x] Make `fabulor_*` the sole native plugin ABI.
-  - [ ] Review and rename the remaining internal compatibility names.
+  - [x] Review and rename the remaining internal compatibility names.
 - [ ] Audit ignored local build/runtime output and document a safe developer
       cleanup command.
 

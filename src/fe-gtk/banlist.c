@@ -19,11 +19,11 @@
 #include "fe-gtk.h"
 #include "theme/theme-manager.h"
 
-#include "../common/zoitechat.h"
+#include "../common/fabulor.h"
 #include "../common/fe.h"
 #include "../common/modes.h"
 #include "../common/outbound.h"
-#include "../common/zoitechatc.h"
+#include "../common/fabulorc.h"
 #include "gtkutil.h"
 #include "gtk-compat.h"
 #include "maingui.h"

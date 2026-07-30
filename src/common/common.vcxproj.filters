@@ -110,10 +110,10 @@
     <ClInclude Include="util.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="zoitechat.h">
+    <ClInclude Include="fabulor.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="zoitechatc.h">
+    <ClInclude Include="fabulorc.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="fabulor-plugin.h">
@@ -217,7 +217,7 @@
     <ClCompile Include="util.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="zoitechat.c">
+    <ClCompile Include="fabulor.c">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="$(FabulorLib)marshal.c">

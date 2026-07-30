@@ -29,10 +29,6 @@ if (Test-Path -LiteralPath $installerPropsPath -PathType Leaf)
 {
 	[xml] $installerProps = Get-Content -LiteralPath $installerPropsPath -Encoding UTF8
 	$semanticVersion = $installerProps.Project.PropertyGroup.FabulorSemVer
-	if ([string]::IsNullOrWhiteSpace($semanticVersion))
-	{
-		$semanticVersion = $installerProps.Project.PropertyGroup.ZoiteChatSemVer
-	}
 	if (-not [string]::IsNullOrWhiteSpace($semanticVersion))
 	{
 		$versionParts = $semanticVersion.Split('.')

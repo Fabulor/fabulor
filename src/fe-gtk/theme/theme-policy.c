@@ -21,8 +21,8 @@
 #include "theme-policy.h"
 
 #include "../fe-gtk.h"
-#include "../../common/zoitechat.h"
-#include "../../common/zoitechatc.h"
+#include "../../common/fabulor.h"
+#include "../../common/fabulorc.h"
 #include <gtk/gtk.h>
 
 gboolean
@@ -64,7 +64,7 @@ theme_policy_system_prefers_dark (void)
 gboolean
 theme_policy_is_dark_mode_active (unsigned int mode)
 {
-	if (mode == ZOITECHAT_DARK_MODE_AUTO)
+	if (mode == FABULOR_DARK_MODE_AUTO)
 		return theme_policy_system_prefers_dark ();
 
 	return fe_dark_mode_is_enabled_for (mode);

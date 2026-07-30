@@ -1,5 +1,5 @@
-#ifndef ZOITECHAT_SYSINFO_H
-#define ZOITECHAT_SYSINFO_H
+#ifndef FABULOR_SYSINFO_H
+#define FABULOR_SYSINFO_H
 
 #include <stdint.h>
 

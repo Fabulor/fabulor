@@ -32,8 +32,8 @@
 
 #include <gdk/gdkkeysyms.h>
 
-#include "../common/zoitechat.h"
-#include "../common/zoitechatc.h"
+#include "../common/fabulor.h"
+#include "../common/fabulorc.h"
 #include "../common/cfgfiles.h"
 #include "../common/outbound.h"
 #include "../common/inbound.h"
@@ -205,7 +205,7 @@ static void
 nick_command (session * sess, char *cmd)
 {
 	if (*cmd == '!')
-		zoitechat_exec (cmd + 1);
+		fabulor_exec (cmd + 1);
 	else
 		handle_command (sess, cmd, TRUE);
 }
@@ -1833,7 +1833,7 @@ menu_set_metres (int mode)
 	prefs.hex_gui_lagometer = mode;
 	prefs.hex_gui_throttlemeter = mode;
 	menu_action_sync_selection ("network-meters", menu_metres_target (mode));
-	zoitechat_reinit_timers ();
+	fabulor_reinit_timers ();
 	menu_setting_foreach (menu_apply_metres_cb, -1, 0);
 }
 
@@ -1902,7 +1902,7 @@ menu_about (GtkWidget *wid, gpointer sess)
 	gtk_about_dialog_set_license_type (dialog, GTK_LICENSE_GPL_3_0_ONLY);
 	gtk_about_dialog_set_wrap_license (dialog, FALSE);
 	fabulor_gtk_about_dialog_set_logo_from_pixbuf (dialog,
-		pix_fabulor_about ? pix_fabulor_about : pix_zoitechat);
+		pix_fabulor_about ? pix_fabulor_about : pix_fabulor);
 	gtk_about_dialog_set_copyright (dialog,
 		"\302\251 1998-2010 Peter \305\275elezn\303\275 (XChat)\n"
 		"\302\251 2009-2014 Berke Viktor (HexChat)\n"
@@ -1918,7 +1918,7 @@ menu_about (GtkWidget *wid, gpointer sess)
 }
 
 static struct mymenu mymenu[] = {
-	{N_("_Fabulor"), 0, 0, M_NEWMENU, MENU_ID_ZOITECHAT, 0, 1},
+	{N_("_Fabulor"), 0, 0, M_NEWMENU, MENU_ID_FABULOR, 0, 1},
 #define NETWORK_LIST_OFFSET (1)
 	{N_("Network Li_st"), menu_open_server_list, 0, M_MENUITEM, 0, 0, 1, 0,
 		"network-list", MENU_ACTION_NETWORK_LIST},

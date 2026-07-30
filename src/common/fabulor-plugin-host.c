@@ -29,13 +29,13 @@
 #include <tcl.h>
 #endif
 
-#include "zoitechat.h"
+#include "fabulor.h"
 #include "cfgfiles.h"
 #include "plugin.h"
 #include "outbound.h"
 #include "server.h"
 #include "util.h"
-#include "zoitechatc.h"
+#include "fabulorc.h"
 #include "fabulor-plugin-host.h"
 #include "fabulor-plugin-manifest-json.h"
 #include "fabulor-plugin-path-policy.h"
@@ -849,13 +849,13 @@ manifest_plugin_get_libdir (void)
 {
 	const char *libdir;
 
-	libdir = g_getenv ("ZOITECHAT_LIBDIR");
+	libdir = g_getenv ("FABULOR_LIBDIR");
 	if (libdir && *libdir)
 	{
 		return libdir;
 	}
 
-	return ZOITECHATLIBDIR;
+	return FABULORLIBDIR;
 }
 
 static gboolean

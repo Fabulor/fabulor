@@ -25,13 +25,13 @@
 #include "../theme-manager.h"
 #include "../theme-appearance-monitor-gtk4.h"
 #include "../theme-gtk4-controller.h"
-#include "../../../common/zoitechat.h"
-#include "../../../common/zoitechatc.h"
+#include "../../../common/fabulor.h"
+#include "../../../common/fabulorc.h"
 
 struct session *current_sess;
 struct session *current_tab;
 struct session *lastact_sess;
-struct zoitechatprefs prefs;
+struct fabulorprefs prefs;
 
 static int window_refresh_calls;
 static int widget_style_calls;
@@ -139,7 +139,7 @@ void setup_apply_real (const ThemeChangedEvent *event)
 
 gboolean fe_dark_mode_is_enabled_for (unsigned int mode)
 {
-	return mode == ZOITECHAT_DARK_MODE_DARK;
+	return mode == FABULOR_DARK_MODE_DARK;
 }
 
 void fe_set_auto_dark_mode_state (gboolean enabled)
@@ -158,14 +158,14 @@ gboolean fe_win32_try_get_system_dark (gboolean *enabled)
 	return FALSE;
 }
 
-void zoitechat_set_theme_post_apply_callback (zoitechat_theme_post_apply_callback callback)
+void fabulor_set_theme_post_apply_callback (fabulor_theme_post_apply_callback callback)
 {
 	(void) callback;
 }
 
 gboolean theme_policy_is_dark_mode_active (unsigned int mode)
 {
-	return mode == ZOITECHAT_DARK_MODE_DARK;
+	return mode == FABULOR_DARK_MODE_DARK;
 }
 
 gboolean theme_policy_system_prefers_dark (void)
@@ -328,7 +328,7 @@ test_palette_candidate_uses_one_dispatch_and_reload (void)
 	listener = theme_listener_register ("palette.candidate",
 		window_refresh_listener, NULL);
 	g_assert_true (theme_manager_apply_palette_candidate (
-		ZOITECHAT_DARK_MODE_LIGHT, &candidate, &changed));
+		FABULOR_DARK_MODE_LIGHT, &candidate, &changed));
 	g_assert_true (changed);
 	g_assert_cmpint (palette_candidate_apply_calls, ==, 1);
 	g_assert_cmpint (palette_reapply_calls, ==, 1);
@@ -376,12 +376,12 @@ test_dispatch_filters_reasons_across_multiple_subscribers (void)
 static void
 test_preferences_change_synthesizes_theme_reasons (void)
 {
-	struct zoitechatprefs old_prefs = { 0 };
-	struct zoitechatprefs new_prefs = { 0 };
+	struct fabulorprefs old_prefs = { 0 };
+	struct fabulorprefs new_prefs = { 0 };
 	ThemeChangedEvent event;
 	gboolean color_change = TRUE;
 
-	prefs.hex_gui_dark_mode = ZOITECHAT_DARK_MODE_DARK;
+	prefs.hex_gui_dark_mode = FABULOR_DARK_MODE_DARK;
 	old_prefs.hex_gui_dark_mode = prefs.hex_gui_dark_mode;
 	new_prefs.hex_gui_dark_mode = prefs.hex_gui_dark_mode;
 	strcpy (old_prefs.hex_text_background, "old.png");
@@ -402,12 +402,12 @@ test_preferences_change_synthesizes_theme_reasons (void)
 static void
 test_preferences_change_omits_reasons_without_differences (void)
 {
-	struct zoitechatprefs old_prefs = { 0 };
-	struct zoitechatprefs new_prefs = { 0 };
+	struct fabulorprefs old_prefs = { 0 };
+	struct fabulorprefs new_prefs = { 0 };
 	ThemeChangedEvent event;
 	gboolean color_change = FALSE;
 
-	prefs.hex_gui_dark_mode = ZOITECHAT_DARK_MODE_DARK;
+	prefs.hex_gui_dark_mode = FABULOR_DARK_MODE_DARK;
 	old_prefs.hex_gui_dark_mode = prefs.hex_gui_dark_mode;
 	new_prefs.hex_gui_dark_mode = prefs.hex_gui_dark_mode;
 

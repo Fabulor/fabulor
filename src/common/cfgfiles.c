@@ -23,13 +23,13 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 
-#include "zoitechat.h"
+#include "fabulor.h"
 #include "cfgfiles.h"
 #include "util.h"
 #include "fe.h"
 #include "proxy-policy.h"
 #include "text.h"
-#include "zoitechatc.h"
+#include "fabulorc.h"
 #include "typedef.h"
 
 #ifdef WIN32
@@ -559,8 +559,8 @@ const struct prefs vars[] =
 	{"net_auto_reconnectonfail", P_OFFINT (hex_net_auto_reconnectonfail), TYPE_BOOL},
 #endif
 	{"net_bind_host", P_OFFSET (hex_net_bind_host), TYPE_STR},
-	{"net_ping_timeout", P_OFFINT (hex_net_ping_timeout), TYPE_INT, zoitechat_reinit_timers},
-	{"net_lag_check", P_OFFINT (hex_net_lag_check), TYPE_INT, zoitechat_reinit_timers},
+	{"net_ping_timeout", P_OFFINT (hex_net_ping_timeout), TYPE_INT, fabulor_reinit_timers},
+	{"net_lag_check", P_OFFINT (hex_net_lag_check), TYPE_INT, fabulor_reinit_timers},
 	{"net_keepalive_idle", P_OFFINT (hex_net_keepalive_idle), TYPE_INT},
 	{"net_keepalive_interval", P_OFFINT (hex_net_keepalive_interval), TYPE_INT},
 	{"net_keepalive_count", P_OFFINT (hex_net_keepalive_count), TYPE_INT},
@@ -762,7 +762,7 @@ load_default_config(void)
 	username = convert_with_fallback (username, "username");
 	realname = convert_with_fallback (realname, "realname");
 
-	memset (&prefs, 0, sizeof (struct zoitechatprefs));
+	memset (&prefs, 0, sizeof (struct fabulorprefs));
 
 	/* put in default values, anything left out is automatically zero */
 
@@ -972,7 +972,7 @@ make_config_dirs (void)
 	}
 	g_free (buf);
 
-	buf = g_build_filename (get_xdir (), ZOITECHAT_SOUND_DIR, NULL);
+	buf = g_build_filename (get_xdir (), FABULOR_SOUND_DIR, NULL);
 	if (g_mkdir (buf, 0700) != 0)
 	{
 		g_free (buf);
@@ -1455,7 +1455,7 @@ cmd_set (struct session *sess, char *tbuf, char *word[], char *word_eol[])
 }
 
 int
-zoitechat_open_file (const char *file, int flags, int mode, int xof_flags)
+fabulor_open_file (const char *file, int flags, int mode, int xof_flags)
 {
 	char *buf;
 	int fd;
@@ -1485,7 +1485,7 @@ zoitechat_open_file (const char *file, int flags, int mode, int xof_flags)
 }
 
 FILE *
-zoitechat_fopen_file (const char *file, const char *mode, int xof_flags)
+fabulor_fopen_file (const char *file, const char *mode, int xof_flags)
 {
 	char *buf;
 	FILE *fh;

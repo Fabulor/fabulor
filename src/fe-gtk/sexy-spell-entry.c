@@ -51,7 +51,7 @@
 #endif
 
 #include "../common/cfgfiles.h"
-#include "../common/zoitechatc.h"
+#include "../common/fabulorc.h"
 #include "theme/theme-access.h"
 #include "theme/theme-manager.h"
 #include "theme/theme-palette.h"
@@ -351,7 +351,7 @@ sexy_spell_entry_class_init(SexySpellEntryClass *klass)
 					   G_SIGNAL_RUN_LAST,
 					   G_STRUCT_OFFSET(SexySpellEntryClass, word_check),
 					   (GSignalAccumulator) spell_accumulator, NULL,
-					   _zoitechat_marshal_BOOLEAN__STRING,
+					   _fabulor_marshal_BOOLEAN__STRING,
 					   G_TYPE_BOOLEAN,
 					   1, G_TYPE_STRING);
 
@@ -383,7 +383,7 @@ sexy_spell_entry_apply_caret_style (SexySpellEntry *entry)
 		provider = gtk_css_provider_new ();
 		g_object_set_data_full (G_OBJECT (entry), "sexy-spell-entry-caret-provider", provider, g_object_unref);
 	}
-	g_snprintf (css, sizeof (css), "#zoitechat-inputbox, #zoitechat-inputbox text { caret-color: #%02x%02x%02x; }",
+	g_snprintf (css, sizeof (css), "#fabulor-inputbox, #fabulor-inputbox text { caret-color: #%02x%02x%02x; }",
 		caret, caret, caret);
 	gtk_css_provider_load_from_string (provider, css);
 	context = gtk_widget_get_style_context (GTK_WIDGET (entry));
