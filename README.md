@@ -20,6 +20,7 @@
 
 
 [Manual](./docs/README.md) •
+[Change Log](./ChangeLog.md) •
 [Plugin Authoring Guides](./docs/plugin-authoring-guides.md)
 
 </div>
