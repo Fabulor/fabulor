@@ -82,7 +82,6 @@ LEGACY_BUILD_GRAPH = (
     ROOT / "src" / "common" / "meson.build",
     ROOT / "src" / "common" / "dbus" / "meson.build",
     ROOT / "src" / "fe-gtk" / "meson.build",
-    ROOT / "src" / "fe-text" / "meson.build",
     ROOT / "plugins" / "meson.build",
     ROOT / "plugins" / "checksum" / "meson.build",
     ROOT / "plugins" / "exec" / "meson.build",
@@ -329,6 +328,40 @@ class ProductionWixProfileTests(unittest.TestCase):
         self.assertIn("Components\\GTK4Allowlist.wxs", component_sources)
         self.assertNotIn("Components\\Core.wxs", component_sources)
         self.assertNotIn("LegacyGtkRootRuntime.wxs", component_sources)
+
+    def test_repository_cleanup_stage4_has_one_windows_backend_set(self):
+        removed_paths = (
+            ROOT / "src" / "fe-text" / "fe-text.vcxproj",
+            ROOT / "src" / "fe-text" / "fe-text.c",
+            ROOT / "src" / "dirent" / "dirent-win32.h",
+            ROOT / "src" / "fe-gtk" / "notifications" / "notification-dummy.c",
+            ROOT / "src" / "fe-gtk" / "notifications" / "notification-freedesktop.c",
+            ROOT / "plugins" / "sysinfo" / "osx" / "backend.m",
+            ROOT / "plugins" / "sysinfo" / "shared" / "df.c",
+            ROOT / "plugins" / "sysinfo" / "shared" / "df.h",
+        )
+        for path in removed_paths:
+            self.assertFalse(path.exists(), f"retired Stage 4 path remains: {path}")
+
+        frontend_project = (ROOT / "src" / "fe-gtk" / "fe-gtk.vcxproj").read_text(
+            encoding="utf-8"
+        )
+        common_project = (ROOT / "src" / "common" / "common.vcxproj").read_text(
+            encoding="utf-8"
+        )
+        sysinfo_project = (
+            ROOT / "plugins" / "sysinfo" / "sysinfo.vcxproj"
+        ).read_text(encoding="utf-8")
+        enchant_project = (
+            ROOT / "tools" / "enchant-msvc" / "CMakeLists.txt"
+        ).read_text(encoding="utf-8")
+
+        self.assertIn(r"notifications\notification-windows.c", frontend_project)
+        self.assertIn(r"sysinfo\win32\backend.c", common_project)
+        self.assertIn(r"win32\backend.c", sysinfo_project)
+        self.assertIn("compat/flock.c", enchant_project)
+        self.assertIn("compat/relocatable.c", enchant_project)
+        self.assertTrue(GTK_COMPAT.is_file())
 
     def test_obsolete_product_graphs_are_removed(self):
         obsolete = {

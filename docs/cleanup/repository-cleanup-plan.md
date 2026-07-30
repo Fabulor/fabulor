@@ -32,7 +32,7 @@ main client repository must not contain or stage a second add-ons checkout.
 | 2B | Remove stale ZoiteChat product branding and dead packaged metadata | Published |
 | 2C | Rename active Visual Studio solution, properties, and build-only identifiers for Fabulor | Published |
 | 3 | Move active `win32\copy` payload assets into owned `data` locations and retire the legacy copy namespace | Published |
-| 4 | Audit the unbuilt text frontend, Windows compatibility shims, and duplicate backend implementations | Planned |
+| 4 | Audit the unbuilt text frontend, Windows compatibility shims, and duplicate backend implementations | Published |
 | 5 | Review historical migration/security documents for archive policy without deleting evidence required for maintenance | In progress |
 | 6 | Review internal ZoiteChat/XChat compatibility names separately from product branding | In progress |
 | 7 | Audit ignored local build/runtime output and document a safe developer cleanup command | Planned |
@@ -316,12 +316,49 @@ Validation:
 - production MSI, runtime-content, and bundle validation: passed, with 2,858
   installed files and both ISO datasets present.
 
+## Stage 4
+
+The repository now contains only the frontend and platform backends used by the
+supported Windows 11+, GTK4 product:
+
+- the unbuilt `src\fe-text` console frontend and its standalone Visual Studio
+  project were removed;
+- the unreferenced `src\dirent` compatibility header was removed;
+- the unbuilt dummy and freedesktop notification implementations were removed,
+  leaving the active Windows notification bridge and WinRT helper;
+- the unbuilt macOS sysinfo backend and its unreferenced shared disk helpers
+  were removed.
+
+The two Windows sysinfo source files are deliberately retained because they are
+separate active layers rather than duplicate implementations. The common
+backend owns WMI collection and is linked into `common.lib`; the plugin backend
+formats that data and exposes it through the native sysinfo plugin.
+
+The GTK4 compatibility helper, Windows application manifest, and
+`tools\enchant-msvc\compat` sources are also retained. Each is referenced by
+the production build and provides current GTK4, Windows-version, or MSVC
+portability behavior.
+
+Regression coverage rejects every removed Stage 4 path and requires the active
+Windows notification, sysinfo, GTK4 helper, and Enchant compatibility sources.
+
+Validation:
+
+- GTK4 Python suites: 94/94 tests passed;
+- theme contract: 14/14 tests passed;
+- Release x64 solution and native manifest/theme suite: 37/37 tests passed
+  with zero warnings and errors;
+- MSI and bootstrapper rebuild: zero warnings and errors; and
+- GTK4 runtime, MSI content hashes, and embedded bootstrapper MSI identity:
+  validated.
+
 ## Deliberately Retained
 
 - Native generated symbol prefixes remain active ABI surfaces for their
   contained Stage 6 pass.
-- `src\fe-text` and `src\dirent` require build/reference audits before any
-  removal.
+- The active GTK4 helper, Windows manifest, Enchant MSVC compatibility layer,
+  Windows notification bridge, and two-layer Windows sysinfo implementation
+  remain production build inputs.
 - GTK4 migration and security records remain evidence, even where they describe
   retired intermediate states.
 

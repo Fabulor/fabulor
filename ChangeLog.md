@@ -35,6 +35,9 @@ development milestones and do not imply public release dates.
   payload ownership.
 - Moved the remaining Windows copy payload into explicit `data` ownership and
   retired the legacy `win32/copy` namespace.
+- Removed the unbuilt text frontend, orphaned dirent shim, and unused
+  non-Windows notification and sysinfo backends while retaining the active
+  Windows compatibility layers.
 - Retired the inherited updater and WinSparkle payload until Fabulor has an
   authenticated, product-owned update feed.
 - Moved maintained user add-ons to the independent `Fabulor/add-ons`

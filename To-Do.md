@@ -191,7 +191,7 @@ Detailed stages live in
 - [x] Move maintained add-ons to `Fabulor/add-ons`.
 - [x] Remove Python 3.12 and generated investigation artefacts.
 - [x] Move active `win32/copy` payload assets into explicit `data` ownership.
-- [ ] Audit the unbuilt text frontend, Windows compatibility shims, and
+- [x] Audit the unbuilt text frontend, Windows compatibility shims, and
       duplicate backend implementations.
 - [ ] Review historical migration/security documents for archive policy.
 - [x] Retire stale ZoiteChat product branding and build-only identifiers.
