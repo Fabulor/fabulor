@@ -14,6 +14,12 @@ DEFAULT_CONTRACT = pathlib.Path(__file__).with_name(
     "plugin-host-payload-contract.json"
 )
 MANIFEST_RELATIVE = "Runtime/plugin-host-manifest.json"
+PYTHON_API_WRAPPER = "python/_fabulor.py"
+RETIRED_PYTHON_API_MARKERS = (
+    "lib.zoitechat_",
+    "zoitechat_context",
+    "zoitechat_event_attrs",
+)
 REPARSE_POINT_ATTRIBUTE = getattr(stat, "FILE_ATTRIBUTE_REPARSE_POINT", 0x400)
 SOURCE_NAMES = {"dotnet", "managed", "payload", "python", "tcl"}
 ENTRY_KINDS = {"file", "single_glob", "tree"}
@@ -223,6 +229,23 @@ def _file_record(path, relative):
 
 def stage_plugin_hosts(roots, output, contract):
     selected = collect_payload(roots, contract)
+    wrapper = selected.get(PYTHON_API_WRAPPER)
+    if wrapper is not None:
+        try:
+            wrapper_source = wrapper.read_text(encoding="utf-8")
+        except (OSError, UnicodeDecodeError) as exc:
+            raise PluginHostStagingError(
+                f"Unable to validate staged Python API wrapper: {exc}"
+            ) from exc
+        retired = [
+            marker for marker in RETIRED_PYTHON_API_MARKERS
+            if marker in wrapper_source
+        ]
+        if retired:
+            raise PluginHostStagingError(
+                "Python API wrapper contains retired native API names: "
+                + ", ".join(retired)
+            )
     output = output.absolute()
     if output.exists() and (_is_reparse(output) or not output.is_dir()):
         raise PluginHostStagingError("Plugin-host output is not a regular directory")

@@ -25,8 +25,8 @@
 
 #include "../common/zoitechat.h"
 #define PLUGIN_C
-typedef struct session zoitechat_context;
-#include "../common/zoitechat-plugin.h"
+typedef struct session fabulor_context;
+#include "../common/fabulor-plugin.h"
 #include "../common/plugin.h"
 #include "../common/util.h"
 #include "../common/outbound.h"
@@ -144,7 +144,7 @@ extern GSList *plugin_list;
 void
 fe_pluginlist_update (void)
 {
-	zoitechat_plugin *pl;
+	fabulor_plugin *pl;
 	GSList *list;
 
 	if (!plugin_window || !plugin_list_view)

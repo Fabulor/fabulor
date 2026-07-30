@@ -43,7 +43,7 @@
     <ClInclude Include="utils.h" />
     <ClInclude Include="irc.h" />
     <ClInclude Include="keystore.h" />
-    <ClInclude Include="plugin_zoitechat.h" />
+    <ClInclude Include="plugin_fabulor.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="dh1080.c" />
@@ -51,7 +51,7 @@
     <ClCompile Include="utils.c" />
     <ClCompile Include="irc.c" />
     <ClCompile Include="keystore.c" />
-    <ClCompile Include="plugin_zoitechat.c" />
+    <ClCompile Include="plugin_fabulor.c" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
 </Project>

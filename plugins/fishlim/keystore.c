@@ -30,7 +30,7 @@
 #include "irc.h"
 #include "fish.h"
 #include "keystore.h"
-#include "plugin_zoitechat.h"
+#include "plugin_fabulor.h"
 
 
 static char *keystore_password = NULL;

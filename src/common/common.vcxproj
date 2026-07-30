@@ -51,7 +51,7 @@
     <ClInclude Include="url.h" />
     <ClInclude Include="userlist.h" />
     <ClInclude Include="util.h" />
-    <ClInclude Include="zoitechat-plugin.h" />
+    <ClInclude Include="fabulor-plugin.h" />
     <ClInclude Include="zoitechat.h" />
     <ClInclude Include="zoitechatc.h" />
     <ClInclude Include="theme-service.h" />

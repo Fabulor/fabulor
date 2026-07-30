@@ -54,8 +54,6 @@ typedef struct _fabulor_api
 	gboolean (*get_user_info) (void *user_data, FabulorUserInfo *user_info);
 } FabulorAPI;
 
-typedef FabulorAPI ZoiteChatAPI;
-
 typedef struct _fabulor_plugin_manifest
 {
 	char *id;

@@ -22,7 +22,7 @@
 #ifndef ZOITECHAT_DBUS_PLUGIN_H
 #define ZOITECHAT_DBUS_PLUGIN_H
 
-int	dbus_plugin_init	(zoitechat_plugin *plugin_handle,
+int	dbus_plugin_init	(fabulor_plugin *plugin_handle,
 				 char **plugin_name,
 				 char **plugin_desc,
 				 char **plugin_version,

@@ -1,4 +1,4 @@
-EXPORTS 
-zoitechat_plugin_init 
-zoitechat_plugin_deinit 
-zoitechat_plugin_get_info 
+EXPORTS
+fabulor_plugin_init
+fabulor_plugin_deinit
+fabulor_plugin_get_info

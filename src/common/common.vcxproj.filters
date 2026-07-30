@@ -116,7 +116,7 @@
     <ClInclude Include="zoitechatc.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="zoitechat-plugin.h">
+    <ClInclude Include="fabulor-plugin.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="$(FabulorLib)config.h">
