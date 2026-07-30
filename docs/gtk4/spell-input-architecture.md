@@ -132,6 +132,15 @@ reveal adapters; GTK3 retains pixbuf images and its native emoji signal until
 cutover. Flag codes must contain exactly two ASCII letters and Unicode scalar
 values are validated before insertion text is allocated.
 
+The flags page includes a GTK4 search entry that filters its existing flow-box
+children without rebuilding buttons or reloading images. Matching is
+case-insensitive across the two-letter code and the localized ISO 3166 country
+name. Ascension Island, the European Union, the United Nations, and Kosovo have
+explicit labels because their picker codes are outside the packaged ISO table.
+The ISO table is reference counted so picker construction cannot invalidate
+spell-check language names. Selecting a flag continues to insert the native
+Windows regional-indicator sequence rather than custom inline image data.
+
 ## Invariants
 
 - Pango and Enchant ranges are UTF-8 byte indexed.
@@ -159,6 +168,8 @@ values are validated before insertion text is allocated.
 - One edit box owns at most one emoji popover and its teardown path.
 - Lazy emoji pages populate at most once and never own static category arrays.
 - Flag insertion accepts exactly two ASCII letters and normalizes their case.
+- Flag filtering reuses loaded buttons and matches country names or codes.
+- Picker use cannot release an ISO table still owned by a spell entry.
 - Invalid or zero Unicode scalar values cannot become insertion text.
 - The picker uses stack visibility rather than removed notebook page signals.
 
@@ -199,6 +210,8 @@ The strict GTK4 probe verifies:
 - lazy emoji-page state can be claimed exactly once;
 - category arrays remain borrowed and flags pages are identified explicitly;
 - upper- and lower-case two-letter flags produce the same regional indicators;
+- flag queries match country names and two-letter codes without case
+  sensitivity;
 - malformed flag codes and invalid Unicode scalar values are rejected; and
 - the GTK3/GTK4 popover ownership implementations compile against their
   respective toolkit headers.

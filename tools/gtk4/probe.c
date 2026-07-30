@@ -2951,6 +2951,14 @@ check_emoji_picker_policy (void)
 		g_strcmp0 (eu, "\xF0\x9F\x87\xAA\xF0\x9F\x87\xBA") == 0 &&
 		g_strcmp0 (lowercase_eu, eu) == 0 &&
 		g_strcmp0 (grinning, "\xF0\x9F\x98\x80") == 0 &&
+		fabulor_emoji_picker_flag_matches ("AU", "Australia", "") &&
+		fabulor_emoji_picker_flag_matches ("AU", "Australia", "au") &&
+		fabulor_emoji_picker_flag_matches ("AU", "Australia", "STRAL") &&
+		fabulor_emoji_picker_flag_matches ("CI", "Côte d'Ivoire",
+			"côte") &&
+		!fabulor_emoji_picker_flag_matches ("AU", "Australia",
+			"Canada") &&
+		!fabulor_emoji_picker_flag_matches (NULL, "Australia", "AU") &&
 		fabulor_emoji_picker_flag_sequence (NULL) == NULL &&
 		fabulor_emoji_picker_flag_sequence ("E") == NULL &&
 		fabulor_emoji_picker_flag_sequence ("EUU") == NULL &&

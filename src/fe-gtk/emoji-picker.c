@@ -88,6 +88,38 @@ fabulor_emoji_picker_codepoint_sequence (gunichar codepoint)
 	return g_strndup (utf8, length);
 }
 
+gboolean
+fabulor_emoji_picker_flag_matches (const gchar *code,
+	const gchar *country_name, const gchar *query)
+{
+	gchar *folded_query;
+	gchar *folded_code;
+	gchar *folded_name;
+	gboolean matches;
+
+	if (!query || *query == '\0')
+		return TRUE;
+	if (!code || !country_name)
+		return FALSE;
+
+	folded_query = g_utf8_casefold (query, -1);
+	g_strstrip (folded_query);
+	if (*folded_query == '\0')
+	{
+		g_free (folded_query);
+		return TRUE;
+	}
+
+	folded_code = g_utf8_casefold (code, -1);
+	folded_name = g_utf8_casefold (country_name, -1);
+	matches = strstr (folded_code, folded_query) != NULL ||
+		strstr (folded_name, folded_query) != NULL;
+	g_free (folded_name);
+	g_free (folded_code);
+	g_free (folded_query);
+	return matches;
+}
+
 void
 fabulor_emoji_picker_viewport_size (gint root_width, gint root_height,
 	gint *width, gint *height)
