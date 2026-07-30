@@ -853,6 +853,37 @@ public sealed class FabulorBootstrapperApplication : BootstrapperApplication
             this.window?.SetStatus($"Elevation failed or was cancelled: 0x{e.Status:X8}.");
             this.window?.AppendLog($"ElevateComplete: status=0x{e.Status:X8}.");
         });
+
+        this.RestoreWindowFocusAfterElevation();
+    }
+
+    private void RestoreWindowFocusAfterElevation()
+    {
+        this.DispatchToWindow(() =>
+        {
+            if (this.window == null)
+            {
+                return;
+            }
+
+            var activated = this.window.RestoreForegroundFocus();
+            this.window.AppendLog($"Elevation focus restore: immediate activation={activated}.");
+        });
+
+        _ = Task.Run(async () =>
+        {
+            await Task.Delay(250).ConfigureAwait(false);
+            this.DispatchToWindow(() =>
+            {
+                if (this.window == null)
+                {
+                    return;
+                }
+
+                var activated = this.window.RestoreForegroundFocus();
+                this.window.AppendLog($"Elevation focus restore: delayed activation={activated}.");
+            });
+        });
     }
 
     private void OnExecuteBegin(object? sender, ExecuteBeginEventArgs e)
