@@ -43,7 +43,8 @@ Last reconciled: 2026-07-31
       clipboard copying, URL activation, user-list ownership, and server-tab
       startup behavior through installed-client testing.
 - [x] Record accessibility, rendering, lifecycle, performance, packaging, and
-      installed acceptance evidence in `docs/gtk4/validation-log.md`.
+      installed acceptance evidence in
+      `docs/gtk4/archive/validation-log.md`.
 - [x] Publish `v1.0.6-rc.3` after its production-candidate pull request passed
       all required checks, then verify the updater-retirement upgrade and
       release metadata.
@@ -68,9 +69,9 @@ Last reconciled: 2026-07-31
 
 Detailed evidence lives in:
 
-- [`docs/security/manifest-plugin-disabled-state-audit.md`](docs/security/manifest-plugin-disabled-state-audit.md)
+- [`docs/security/archive/manifest-plugin-disabled-state-audit.md`](docs/security/archive/manifest-plugin-disabled-state-audit.md)
 - [`docs/security/trusted-config.md`](docs/security/trusted-config.md)
-- [`docs/security/enchant-windows-crash-analysis.md`](docs/security/enchant-windows-crash-analysis.md)
+- [`docs/security/archive/enchant-windows-crash-analysis.md`](docs/security/archive/enchant-windows-crash-analysis.md)
 
 - [x] Complete manifest-loader disabled-state audit.
 - [x] Complete pre-enable design audit.
@@ -116,15 +117,15 @@ Detailed evidence lives in:
 
 Detailed architecture and evidence live in:
 
-- [`docs/gtk4/migration-plan.md`](docs/gtk4/migration-plan.md)
-- [`docs/gtk4/api-inventory.md`](docs/gtk4/api-inventory.md)
+- [`docs/gtk4/archive/migration-plan.md`](docs/gtk4/archive/migration-plan.md)
+- [`docs/gtk4/archive/api-inventory.md`](docs/gtk4/archive/api-inventory.md)
 - [`docs/gtk4/list-model-architecture.md`](docs/gtk4/list-model-architecture.md)
 - [`docs/gtk4/transcript-rendering-architecture.md`](docs/gtk4/transcript-rendering-architecture.md)
 - [`docs/gtk4/spell-input-architecture.md`](docs/gtk4/spell-input-architecture.md)
 - [`docs/gtk4/theme-architecture.md`](docs/gtk4/theme-architecture.md)
 - [`docs/gtk4/tray-architecture.md`](docs/gtk4/tray-architecture.md)
 - [`docs/gtk4/runtime-packaging.md`](docs/gtk4/runtime-packaging.md)
-- [`docs/gtk4/validation-log.md`](docs/gtk4/validation-log.md)
+- [`docs/gtk4/archive/validation-log.md`](docs/gtk4/archive/validation-log.md)
 
 - [x] Complete the GTK4 API inventory and retire active GTK3 API branches.
 - [x] Convert widget ownership, layout, visibility, and lifecycle.
@@ -193,7 +194,7 @@ Detailed stages live in
 - [x] Move active `win32/copy` payload assets into explicit `data` ownership.
 - [x] Audit the unbuilt text frontend, Windows compatibility shims, and
       duplicate backend implementations.
-- [ ] Review historical migration/security documents for archive policy.
+- [x] Review historical migration/security documents for archive policy.
 - [x] Retire stale ZoiteChat product branding and build-only identifiers.
 - [ ] Review internal ZoiteChat/XChat compatibility names separately from
       product branding.

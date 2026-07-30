@@ -38,6 +38,9 @@ development milestones and do not imply public release dates.
 - Removed the unbuilt text frontend, orphaned dirent shim, and unused
   non-Windows notification and sysinfo backends while retaining the active
   Windows compatibility layers.
+- Archived completed GTK4 migration and security-review records while keeping
+  current architecture, runtime, plugin, and trusted-configuration guidance in
+  their active documentation locations.
 - Retired the inherited updater and WinSparkle payload until Fabulor has an
   authenticated, product-owned update feed.
 - Moved maintained user add-ons to the independent `Fabulor/add-ons`

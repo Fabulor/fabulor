@@ -1,6 +1,6 @@
 # GTK4 Migration Plan
 
-Status: complete; GTK4 is the accepted production frontend
+Status: archived; GTK4 is the accepted production frontend
 
 Baseline date: 2026-07-14
 
@@ -584,7 +584,7 @@ across insertion, identity-based removal, hierarchy expansion, depth, and
 cleanup. Production GTK3 models and views are deliberately unchanged in this
 architecture pass; each following pass will replace one complete owning
 surface without parallel model writes. The detailed contract is in
-[`list-model-architecture.md`](list-model-architecture.md).
+[`list-model-architecture.md`](../list-model-architecture.md).
 
 Notify List pass 2 (2026-07-16): the first flat operational list now has one
 cross-version owner. `notifygui.c` supplies immutable row snapshots and consumes
@@ -945,7 +945,7 @@ probe covers empty targets, offscreen painting, active-context exchange and
 restoration, snapshot output, and cleanup. Geometry, class virtual methods,
 controllers, selection, clipboard behavior, and performance remain separate
 passes. The detailed contract is in
-[`transcript-rendering-architecture.md`](transcript-rendering-architecture.md).
+[`transcript-rendering-architecture.md`](../transcript-rendering-architecture.md).
 
 Transcript geometry pass 2 (2026-07-17): wrapping, page and partial rendering,
 selection auto-scroll, entry visibility, line recalculation, and buffer-switch
@@ -1074,7 +1074,7 @@ replaces three parallel arrays plus repeated cleanup blocks with one owner.
 The strict GTK4 probe covers `café`, cursor lookup, duplication, and empty
 input. Class lifecycle, formatting attributes, menus, and production Enchant
 validation remain separate passes. The detailed contract is in
-[`spell-input-architecture.md`](spell-input-architecture.md).
+[`spell-input-architecture.md`](../spell-input-architecture.md).
 
 Spell-input widget-lifecycle pass 2 (2026-07-17): the custom `GtkEntry`
 subclass is retained and now inherits the toolkit's `GtkEditable` contract
@@ -1182,7 +1182,7 @@ GTK4 theme-discovery pass 1 (2026-07-18):
 optional dark CSS and previews, suppresses canonical duplicates, and excludes
 GTK3-only layouts. No CSS is parsed or applied in this pass, and the shipping
 GTK3 adapter remains unchanged. The contract is documented in
-[`theme-architecture.md`](theme-architecture.md).
+[`theme-architecture.md`](../theme-architecture.md).
 
 GTK4 CSS-provider pass 2 (2026-07-18):
 `theme/theme-gtk4.c` now owns GTK4 display-scoped CSS providers and explicit
@@ -1234,7 +1234,7 @@ The WinRT apartment is initialized before notifier creation and balanced only
 when owned. Freedesktop and fallback backends follow the same managed error and
 teardown contract. Production GTK4 presentation and packaged interaction tests
 remain deferred. The boundary is documented in
-[`notification-architecture.md`](notification-architecture.md).
+[`notification-architecture.md`](../notification-architecture.md).
 
 Tray action-model pass 7 (2026-07-18):
 `tray-action-model.c` now owns a toolkit-neutral `GMenuModel` and
@@ -1244,7 +1244,7 @@ state, malformed-away normalization, typed dispatch, and final callback-data
 cleanup are covered by the strict GTK4 probe. Existing GTK3/AppIndicator and
 Win32 presentation remains unchanged; live plugin binding, dynamic `$TRAY`
 entries, and native shell-icon ownership are later passes. The contract is
-documented in [`tray-architecture.md`](tray-architecture.md).
+documented in [`tray-architecture.md`](../tray-architecture.md).
 
 Tray live-binding pass 8 (2026-07-18):
 the built-in tray plugin now owns the action model from initialization through

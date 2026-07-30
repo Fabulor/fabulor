@@ -1,6 +1,6 @@
 # GTK4 API Inventory
 
-Status: completed GTK4 inventory
+Status: archived completed GTK4 inventory
 
 Baseline date: 2026-07-14
 Completion date: 2026-07-27

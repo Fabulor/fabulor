@@ -31,9 +31,10 @@ main client repository must not contain or stage a second add-ons checkout.
 | 2A | Remove the superseded Python 3.12 runtime and generated investigation artefacts | Published |
 | 2B | Remove stale ZoiteChat product branding and dead packaged metadata | Published |
 | 2C | Rename active Visual Studio solution, properties, and build-only identifiers for Fabulor | Published |
+| 2D | Replace the imported ZoiteChat changelog with Fabulor release-candidate history | Published |
 | 3 | Move active `win32\copy` payload assets into owned `data` locations and retire the legacy copy namespace | Published |
 | 4 | Audit the unbuilt text frontend, Windows compatibility shims, and duplicate backend implementations | Published |
-| 5 | Review historical migration/security documents for archive policy without deleting evidence required for maintenance | In progress |
+| 5 | Review historical migration/security documents for archive policy without deleting evidence required for maintenance | Published |
 | 6 | Review internal ZoiteChat/XChat compatibility names separately from product branding | In progress |
 | 7 | Audit ignored local build/runtime output and document a safe developer cleanup command | Planned |
 
@@ -151,7 +152,7 @@ Historical security records retain the build names used when their recorded
 scans were performed. Runtime internals and public plugin compatibility names
 remain outside this build-only stage.
 
-## Stage 5
+## Stage 2D
 
 The imported `changelog.rst` described ZoiteChat releases and was not consumed
 by the Fabulor build, installer, or documentation. It has been replaced by the
@@ -352,6 +353,36 @@ Validation:
 - GTK4 runtime, MSI content hashes, and embedded bootstrapper MSI identity:
   validated.
 
+## Stage 5
+
+Completed migration and security records now have an explicit archive policy.
+No review evidence was deleted.
+
+The completed GTK4 migration plan, API inventory, validation log, and installed
+UI acceptance handoff live under `docs\gtk4\archive`. Current GTK4
+architecture, runtime packaging, and maintainer guidance remain in
+`docs\gtk4`.
+
+The completed manifest-plugin audit and Enchant crash analysis live under
+`docs\security\archive`. `docs\security\trusted-config.md` remains current
+policy, and the plugin guides remain the current enablement, schema, capability,
+and troubleshooting guidance.
+
+Archive indexes distinguish historical evidence from current instructions.
+Archived records are retained for decision history, threat-model rationale,
+regression provenance, and release review; they should change only for link
+repair, factual correction, or an explicit archive-policy update.
+
+Validation:
+
+- repository-wide relative documentation link check: passed;
+- production WiX profile: 38/38 tests passed;
+- GTK4 Python suites: 95/95 tests passed; and
+- theme contract: 14/14 tests passed.
+
+No native or installer rebuild was required because Stage 5 changes
+documentation locations and regression policy only.
+
 ## Deliberately Retained
 
 - Native generated symbol prefixes remain active ABI surfaces for their
@@ -360,7 +391,8 @@ Validation:
   Windows notification bridge, and two-layer Windows sysinfo implementation
   remain production build inputs.
 - GTK4 migration and security records remain evidence, even where they describe
-  retired intermediate states.
+  retired intermediate states; completed records now live in explicit archive
+  directories.
 
 ## Stage Gate
 
