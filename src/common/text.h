@@ -20,8 +20,8 @@
 #include <time.h>
 #include "textenums.h"
 
-#ifndef ZOITECHAT_TEXT_H
-#define ZOITECHAT_TEXT_H
+#ifndef FABULOR_TEXT_H
+#define FABULOR_TEXT_H
 
 /* timestamp is non-zero if we are using server-time */
 #define EMIT_SIGNAL_TIMESTAMP(i, sess, a, b, c, d, e, timestamp) \

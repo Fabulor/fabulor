@@ -17,8 +17,8 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301, USA
  */
 
-#ifndef ZOITECHAT_CHANVIEW_H
-#define ZOITECHAT_CHANVIEW_H
+#ifndef FABULOR_CHANVIEW_H
+#define FABULOR_CHANVIEW_H
 
 #include "fe-gtk.h"
 
@@ -55,7 +55,7 @@ gboolean chan_is_collapsed (chan *ch);
 chan * chan_get_parent (chan *ch);
 
 /*
- * Apply ZoiteChat's optional "dark mode" styling to the channel list.
+ * Apply Fabulor's optional "dark mode" styling to the channel list.
  *
  * This is a no-op for implementations that don't have a tree view.
  */

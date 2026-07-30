@@ -70,6 +70,7 @@ Last reconciled: 2026-07-31
 Detailed evidence lives in:
 
 - [`docs/security/archive/manifest-plugin-disabled-state-audit.md`](docs/security/archive/manifest-plugin-disabled-state-audit.md)
+- [`docs/security/archive/plugin-api-boundary-review.md`](docs/security/archive/plugin-api-boundary-review.md)
 - [`docs/security/trusted-config.md`](docs/security/trusted-config.md)
 - [`docs/security/archive/enchant-windows-crash-analysis.md`](docs/security/archive/enchant-windows-crash-analysis.md)
 
@@ -91,9 +92,9 @@ Detailed evidence lives in:
       library loading, updater behavior, rendering, URLs, and theme parsing.
 - [x] Close or contain the resulting archive, Exec, Enchant, add-on loading,
       log-mask, callback, runtime-root, and theme-import findings.
-- [ ] Decide whether the shared plugin API should expose additional helpers
-      before manifest plugins can be enabled by default.
-- [ ] Complete the deliberate API-boundary review for restricting plugin access
+- [x] Keep API version 1 compact; require a concrete cross-language use case
+      before adding shared manifest helpers.
+- [x] Complete the deliberate API-boundary review for restricting plugin access
       to the supported `FabulorAPI` surface.
 
 ## Plugins And Add-Ons
@@ -110,8 +111,8 @@ Detailed evidence lives in:
       repository.
 - [x] Document plugin authoring, schema, compatibility, safe mode, and
       troubleshooting.
-- [ ] Add broader shared API helpers only as concrete add-on requirements are
-      approved.
+- [x] Keep broader shared API helpers deferred until concrete add-on
+      requirements and cross-language enforcement are approved.
 
 ## GTK4 Migration
 
@@ -184,6 +185,9 @@ Detailed policy lives in
 
 Detailed stages live in
 [`docs/cleanup/repository-cleanup-plan.md`](docs/cleanup/repository-cleanup-plan.md).
+The planned repository cleanup programme is complete through Stage 7. Future
+cleanup work requires a new contained scope rather than extending the completed
+programme.
 
 - [x] Remove dead repository metadata and completed prompt scaffolding.
 - [x] Remove unsupported Lua and Perl source.
@@ -196,7 +200,7 @@ Detailed stages live in
       duplicate backend implementations.
 - [x] Review historical migration/security documents for archive policy.
 - [x] Retire stale ZoiteChat product branding and build-only identifiers.
-- [ ] Review internal ZoiteChat/XChat compatibility names separately from
+- [x] Review internal ZoiteChat/XChat compatibility names separately from
       product branding.
   - [x] Make `fabulor` the sole Fabulor-owned Python module while retaining
         intentional `xchat` and `hexchat` imports.
@@ -204,9 +208,10 @@ Detailed stages live in
   - [x] Make `IFabulorPlugin`, `FabulorContext`, `FabulorEvent`, and
         `FabulorUserInfo` the sole managed C# plugin contract.
   - [x] Make `fabulor_*` the sole native plugin ABI.
-  - [ ] Review and rename the remaining internal compatibility names.
-- [ ] Audit ignored local build/runtime output and document a safe developer
-      cleanup command.
+  - [x] Review and rename the remaining internal compatibility names.
+- [x] Audit ignored local build/runtime output and document a safe developer
+      cleanup command in
+      [`docs/cleanup/developer-output-cleanup.md`](docs/cleanup/developer-output-cleanup.md).
 
 ## Optional Product Follow-Up
 

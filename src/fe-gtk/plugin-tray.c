@@ -18,8 +18,8 @@
 
 #include <string.h>
 #include "../common/fabulor-plugin.h"
-#include "../common/zoitechat.h"
-#include "../common/zoitechatc.h"
+#include "../common/fabulor.h"
+#include "../common/fabulorc.h"
 #include "../common/inbound.h"
 #include "../common/server.h"
 #include "../common/fe.h"
@@ -1257,7 +1257,7 @@ int
 tray_plugin_init (fabulor_plugin *plugin_handle, char **plugin_name,
 				char **plugin_desc, char **plugin_version, char *arg)
 {
-	/* we need to save this for use with any zoitechat_* functions */
+	/* we need to save this for use with any fabulor_* functions */
 	ph = plugin_handle;
 
 	*plugin_name = "Tray";

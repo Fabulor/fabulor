@@ -38,18 +38,18 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 
-#include "zoitechat.h"
+#include "fabulor.h"
 #include "plugin.h"
 #include "ignore.h"
 #include "util.h"
 #include "fe.h"
-#include "cfgfiles.h"			  /* zoitechat_fopen_file() */
+#include "cfgfiles.h"			  /* fabulor_fopen_file() */
 #include "network.h"				/* net_ip() */
 #include "modes.h"
 #include "notify.h"
 #include "inbound.h"
 #include "text.h"
-#include "zoitechatc.h"
+#include "fabulorc.h"
 #include "servlist.h"
 #include "server.h"
 #include "service-message.h"
@@ -86,7 +86,7 @@ random_line (char *file_name)
 	if (!file_name[0])
 		goto nofile;
 
-	fh = zoitechat_fopen_file (file_name, "r", 0);
+	fh = fabulor_fopen_file (file_name, "r", 0);
 	if (!fh)
 	{
 	 nofile:
@@ -1959,7 +1959,7 @@ cmd_exec (struct session *sess, char *tbuf, char *word[], char *word_eol[])
 static int
 cmd_exportconf (struct session *sess, char *tbuf, char *word[], char *word_eol[])
 {
-	/* this is pretty much the same as in zoitechat_exit() */
+	/* this is pretty much the same as in fabulor_exit() */
 	save_config ();
 	if (prefs.save_pevents)
 	{
@@ -2518,7 +2518,7 @@ cmd_kickban (struct session *sess, char *tbuf, char *word[], char *word_eol[])
 static int
 cmd_killall (struct session *sess, char *tbuf, char *word[], char *word_eol[])
 {
-	zoitechat_exit();
+	fabulor_exit();
 	return 2;
 }
 
@@ -2603,7 +2603,7 @@ load_perform_file (session *sess, char *file)
 	char *nl;
 	FILE *fp;
 
-	fp = zoitechat_fopen_file (file, "r", 0);		/* load files from config dir */
+	fp = fabulor_fopen_file (file, "r", 0);		/* load files from config dir */
 	if (!fp)
 		return FALSE;
 

@@ -61,9 +61,9 @@ static char *read_hdd_info (IWbemClassObject *object);
 
 static char *bstr_to_utf8 (BSTR bstr);
 static uint64_t variant_to_uint64 (VARIANT *variant);
-static char *zoitechat_strdup (const char *value);
-static char *zoitechat_strdup_printf (const char *format, ...);
-static char *zoitechat_strchomp (char *value);
+static char *fabulor_strdup (const char *value);
+static char *fabulor_strdup_printf (const char *format, ...);
+static char *fabulor_strchomp (char *value);
 
 typedef struct
 {
@@ -94,7 +94,7 @@ sysinfo_get_cpu (void)
 	if (cpu_info == NULL)
 		cpu_info = query_wmi (QUERY_WMI_CPU);
 
-	return zoitechat_strdup (cpu_info);
+	return fabulor_strdup (cpu_info);
 }
 
 char *
@@ -108,7 +108,7 @@ sysinfo_get_os (void)
 		return NULL;
 	}
 
-	return zoitechat_strdup_printf ("%s (x%d)", os_name, sysinfo_get_cpu_arch ());
+	return fabulor_strdup_printf ("%s (x%d)", os_name, sysinfo_get_cpu_arch ());
 }
 
 int
@@ -163,7 +163,7 @@ sysinfo_get_gpu (void)
 	if (vga_name == NULL)
 		vga_name = query_wmi (QUERY_WMI_VGA);
 
-	return zoitechat_strdup (vga_name);
+	return fabulor_strdup (vga_name);
 }
 
 void
@@ -375,7 +375,7 @@ static char *read_os_name (IWbemClassObject *object)
 		return NULL;
 	}
 
-	zoitechat_strchomp (caption_utf8);
+	fabulor_strchomp (caption_utf8);
 
 	return caption_utf8;
 }
@@ -416,15 +416,15 @@ static char *read_cpu_info (IWbemClassObject *object)
 
 	VariantClear (&max_clock_speed_variant);
 
-	zoitechat_strchomp (name_utf8);
+	fabulor_strchomp (name_utf8);
 
 	if (cpu_freq_mhz > 1000)
 	{
-		result = zoitechat_strdup_printf ("%s (%.2fGHz)", name_utf8, cpu_freq_mhz / 1000.f);
+		result = fabulor_strdup_printf ("%s (%.2fGHz)", name_utf8, cpu_freq_mhz / 1000.f);
 	}
 	else
 	{
-		result = zoitechat_strdup_printf ("%s (%" PRIu32 "MHz)", name_utf8, cpu_freq_mhz);
+		result = fabulor_strdup_printf ("%s (%" PRIu32 "MHz)", name_utf8, cpu_freq_mhz);
 	}
 
 	free (name_utf8);
@@ -453,7 +453,7 @@ static char *read_vga_name (IWbemClassObject *object)
 		return NULL;
 	}
 
-	return zoitechat_strchomp (name_utf8);
+	return fabulor_strchomp (name_utf8);
 }
 
 static char *read_hdd_info (IWbemClassObject *object)
@@ -571,7 +571,7 @@ static uint64_t variant_to_uint64 (VARIANT *variant)
 	}
 }
 
-static char *zoitechat_strdup (const char *value)
+static char *fabulor_strdup (const char *value)
 {
 	size_t len;
 	char *copy;
@@ -593,7 +593,7 @@ static char *zoitechat_strdup (const char *value)
 	return copy;
 }
 
-static char *zoitechat_strdup_printf (const char *format, ...)
+static char *fabulor_strdup_printf (const char *format, ...)
 {
 	va_list args;
 	va_list args_copy;
@@ -633,7 +633,7 @@ static char *zoitechat_strdup_printf (const char *format, ...)
 	return buffer;
 }
 
-static char *zoitechat_strchomp (char *value)
+static char *fabulor_strchomp (char *value)
 {
 	size_t len;
 

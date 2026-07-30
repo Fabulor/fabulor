@@ -18,8 +18,8 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301, USA
  */
 
-#ifndef ZOITECHAT_THEME_MANAGER_H
-#define ZOITECHAT_THEME_MANAGER_H
+#ifndef FABULOR_THEME_MANAGER_H
+#define FABULOR_THEME_MANAGER_H
 
 #include <glib.h>
 #include <gtk/gtk.h>
@@ -28,7 +28,7 @@
 #include "theme-runtime.h"
 
 typedef struct _GtkWidget GtkWidget;
-struct zoitechatprefs;
+struct fabulorprefs;
 
 typedef enum
 {
@@ -94,8 +94,8 @@ void theme_manager_apply_channel_tree_style (GtkWidget *widget, ThemePaletteBeha
 void theme_manager_apply_input_style (gboolean enabled, const PangoFontDescription *font_desc);
 void theme_manager_reload_input_style (void);
 void theme_manager_refresh_auto_mode (void);
-ThemeChangedEvent theme_manager_on_preferences_changed (const struct zoitechatprefs *old_prefs,
-						 const struct zoitechatprefs *new_prefs,
+ThemeChangedEvent theme_manager_on_preferences_changed (const struct fabulorprefs *old_prefs,
+						 const struct fabulorprefs *new_prefs,
 						 unsigned int old_mode,
 						 gboolean *color_change);
 void theme_manager_dispatch_setup_apply (const ThemeChangedEvent *event);

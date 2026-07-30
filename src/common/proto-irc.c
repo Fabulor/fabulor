@@ -28,7 +28,7 @@
 #include <unistd.h>
 #endif
 
-#include "zoitechat.h"
+#include "fabulor.h"
 #include "proto-irc.h"
 #include "ctcp.h"
 #include "fe.h"
@@ -42,7 +42,7 @@
 #include "text.h"
 #include "outbound.h"
 #include "util.h"
-#include "zoitechatc.h"
+#include "fabulorc.h"
 #include "url.h"
 #include "servlist.h"
 

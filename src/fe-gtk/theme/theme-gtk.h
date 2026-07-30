@@ -1,5 +1,5 @@
-#ifndef ZOITECHAT_THEME_GTK_H
-#define ZOITECHAT_THEME_GTK_H
+#ifndef FABULOR_THEME_GTK_H
+#define FABULOR_THEME_GTK_H
 
 #include <gtk/gtk.h>
 

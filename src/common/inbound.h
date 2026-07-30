@@ -19,8 +19,8 @@
 
 #include "proto-irc.h"
 
-#ifndef ZOITECHAT_INBOUND_H
-#define ZOITECHAT_INBOUND_H
+#ifndef FABULOR_INBOUND_H
+#define FABULOR_INBOUND_H
 
 void inbound_next_nick (session *sess, char *nick, int error,
 								const message_tags_data *tags_data);

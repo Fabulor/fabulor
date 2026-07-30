@@ -33,7 +33,7 @@
 #define WANTDNS
 #include "inet.h"
 
-#include "zoitechat.h"
+#include "fabulor.h"
 #include "util.h"
 #include "ignore.h"
 #include "fe.h"
@@ -196,7 +196,7 @@ reply_context_print (session *sess, const message_tags_data *tags_data)
 		PrintTextTimeStamp (sess, "\00314│ ↪ Original message unavailable\017\n", tags_data->timestamp);
 }
 #include "ctcp.h"
-#include "zoitechatc.h"
+#include "fabulorc.h"
 #include "chanopt.h"
 
 

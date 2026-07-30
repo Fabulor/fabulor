@@ -1,4 +1,4 @@
-/* dbus-plugin.c - zoitechat plugin for remote access using DBUS
+/* dbus-plugin.c - fabulor plugin for remote access using DBUS
  * Copyright (C) 2006 Claessens Xavier
  *
  * This program is free software; you can redistribute it and/or modify
@@ -19,8 +19,8 @@
  * xclaesse@gmail.com
  */
 
-#ifndef ZOITECHAT_DBUS_PLUGIN_H
-#define ZOITECHAT_DBUS_PLUGIN_H
+#ifndef FABULOR_DBUS_PLUGIN_H
+#define FABULOR_DBUS_PLUGIN_H
 
 int	dbus_plugin_init	(fabulor_plugin *plugin_handle,
 				 char **plugin_name,

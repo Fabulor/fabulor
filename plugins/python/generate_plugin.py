@@ -68,7 +68,7 @@ int fabulor_plugin_init(fabulor_plugin *plugin_handle,
     }
 
     ph = plugin_handle;
-    return _on_plugin_init(name_out, description_out, version_out, arg, ZOITECHATLIBDIR);
+    return _on_plugin_init(name_out, description_out, version_out, arg, FABULORLIBDIR);
 }
 
 int fabulor_plugin_deinit(void)

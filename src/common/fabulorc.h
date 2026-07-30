@@ -17,12 +17,12 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301, USA
  */
 
-#ifndef ZOITECHAT_C_H
-#define ZOITECHAT_C_H
+#ifndef FABULOR_C_H
+#define FABULOR_C_H
 
-extern struct zoitechatprefs prefs;
+extern struct fabulorprefs prefs;
 
-extern int zoitechat_is_quitting;
+extern int fabulor_is_quitting;
 extern gint arg_skip_plugins;	/* command-line args */
 extern gint arg_dont_autoconnect;
 extern char *arg_url;
@@ -50,13 +50,13 @@ extern GList *sess_list_by_lastact[];
 session * find_channel (server *serv, char *chan);
 session * find_dialog (server *serv, char *nick);
 session * new_ircwindow (server *serv, char *name, int type, int focus);
-void zoitechat_reinit_timers (void);
+void fabulor_reinit_timers (void);
 void lastact_update (session * sess);
 session * lastact_getfirst (int (*filter) (session *sess));
 int is_session (session * sess);
 void session_free (session *killsess);
 void lag_check (void);
-void zoitechat_exit (void);
-void zoitechat_exec (const char *cmd);
+void fabulor_exit (void);
+void fabulor_exec (const char *cmd);
 
 #endif

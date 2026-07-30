@@ -35,7 +35,7 @@
 #include <sys/mman.h>
 #endif
 
-#include "zoitechat.h"
+#include "fabulor.h"
 #include "cfgfiles.h"
 #include "chanopt.h"
 #include "plugin.h"
@@ -43,7 +43,7 @@
 #include "server.h"
 #include "util.h"
 #include "outbound.h"
-#include "zoitechatc.h"
+#include "fabulorc.h"
 #include "text.h"
 #include "typedef.h"
 
@@ -1792,9 +1792,9 @@ pevent_load (char *filename)
 	char *ofs;
 
 	if (filename == NULL)
-		fd = zoitechat_open_file ("pevents.conf", O_RDONLY, 0, 0);
+		fd = fabulor_open_file ("pevents.conf", O_RDONLY, 0, 0);
 	else
-		fd = zoitechat_open_file (filename, O_RDONLY, 0, XOF_FULLPATH);
+		fd = fabulor_open_file (filename, O_RDONLY, 0, XOF_FULLPATH);
 
 	if (fd == -1)
 		return 1;
@@ -2398,10 +2398,10 @@ pevent_save (char *fn)
 	char buf[1024];
 
 	if (!fn)
-		fd = zoitechat_open_file ("pevents.conf", O_CREAT | O_TRUNC | O_WRONLY,
+		fd = fabulor_open_file ("pevents.conf", O_CREAT | O_TRUNC | O_WRONLY,
 									 0x180, XOF_DOMODE);
 	else
-		fd = zoitechat_open_file (fn, O_CREAT | O_TRUNC | O_WRONLY, 0x180,
+		fd = fabulor_open_file (fn, O_CREAT | O_TRUNC | O_WRONLY, 0x180,
 									 XOF_FULLPATH | XOF_DOMODE);
 	if (fd == -1)
 	{
@@ -2468,7 +2468,7 @@ sound_play (const char *file, gboolean quiet)
 	}
 	else
 	{
-		wavfile = g_build_filename (get_xdir (), ZOITECHAT_SOUND_DIR, file, NULL);
+		wavfile = g_build_filename (get_xdir (), FABULOR_SOUND_DIR, file, NULL);
 	}
 
 	if (g_access (wavfile, R_OK) == 0)
@@ -2501,7 +2501,7 @@ sound_play (const char *file, gboolean quiet)
 			if (cmd)
 			{
 				buf = g_strdup_printf ("%s \"%s\"", cmd, wavfile);
-				zoitechat_exec (buf);
+				fabulor_exec (buf);
 				g_free (buf);
 				g_free (cmd);
 			}
@@ -2551,7 +2551,7 @@ sound_load ()
 
 	memset (&sound_files, 0, sizeof (char *) * (NUM_XP));
 
-	fd = zoitechat_open_file ("sound.conf", O_RDONLY, 0, 0);
+	fd = fabulor_open_file ("sound.conf", O_RDONLY, 0, 0);
 	if (fd == -1)
 		return;
 
@@ -2581,7 +2581,7 @@ sound_save ()
 	int fd, i;
 	char buf[512];
 
-	fd = zoitechat_open_file ("sound.conf", O_CREAT | O_TRUNC | O_WRONLY, 0x180,
+	fd = fabulor_open_file ("sound.conf", O_CREAT | O_TRUNC | O_WRONLY, 0x180,
 								 XOF_DOMODE);
 	if (fd == -1)
 		return;

@@ -20,8 +20,8 @@
 #include "userlist.h"
 #include "dcc.h"
 
-#ifndef ZOITECHAT_FE_H
-#define ZOITECHAT_FE_H
+#ifndef FABULOR_FE_H
+#define FABULOR_FE_H
 
 /* for storage of /menu entries */
 typedef struct

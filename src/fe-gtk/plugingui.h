@@ -17,8 +17,8 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301, USA
  */
 
-#ifndef ZOITECHAT_PLUGINGUI_H
-#define ZOITECHAT_PLUGINGUI_H
+#ifndef FABULOR_PLUGINGUI_H
+#define FABULOR_PLUGINGUI_H
 
 void plugingui_open (void);
 void plugingui_load (void);

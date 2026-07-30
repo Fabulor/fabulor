@@ -21,8 +21,8 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "../../common/zoitechat.h"
-#include "../../common/zoitechatc.h"
+#include "../../common/fabulor.h"
+#include "../../common/fabulorc.h"
 
 #include <gio/gio.h>
 #include <glib/gstdio.h>
@@ -137,7 +137,7 @@ theme_preferences_stage_reset (void)
 static unsigned int
 theme_preferences_current_color_mode (void)
 {
-        return theme_runtime_is_dark_active () ? ZOITECHAT_DARK_MODE_DARK : ZOITECHAT_DARK_MODE_LIGHT;
+        return theme_runtime_is_dark_active () ? FABULOR_DARK_MODE_DARK : FABULOR_DARK_MODE_LIGHT;
 }
 
 static unsigned int
@@ -208,7 +208,7 @@ theme_preferences_stage_begin (void)
         theme_preferences_stage_reset ();
 	mode = theme_preferences_current_color_mode ();
 	theme_runtime_palette_snapshot (
-		mode == ZOITECHAT_DARK_MODE_DARK, &snapshot);
+		mode == FABULOR_DARK_MODE_DARK, &snapshot);
 	if (!theme_palette_transaction_begin (
 		&theme_preferences_stage.palette, mode, &snapshot))
 		return;
@@ -390,42 +390,42 @@ theme_preferences_manager_update_preview (theme_color_manager_ui *ui)
 
         gtkutil_apply_palette (ui->preview_window, &text_bg, &text_fg, NULL);
         gtkutil_apply_palette (ui->preview_chat, &text_bg, &text_fg, NULL);
-        label = g_object_get_data (G_OBJECT (ui->preview_chat), "zoitechat-preview-label");
+        label = g_object_get_data (G_OBJECT (ui->preview_chat), "fabulor-preview-label");
         if (GTK_IS_WIDGET (label))
                 gtkutil_apply_palette (label, NULL, &text_fg, NULL);
 
         gtkutil_apply_palette (ui->preview_selected, &sel_bg, &sel_fg, NULL);
-        label = g_object_get_data (G_OBJECT (ui->preview_selected), "zoitechat-preview-label");
+        label = g_object_get_data (G_OBJECT (ui->preview_selected), "fabulor-preview-label");
         if (GTK_IS_WIDGET (label))
                 gtkutil_apply_palette (label, NULL, &sel_fg, NULL);
 
         gtkutil_apply_palette (ui->preview_marker, &marker, &text_fg, NULL);
-        label = g_object_get_data (G_OBJECT (ui->preview_marker), "zoitechat-preview-label");
+        label = g_object_get_data (G_OBJECT (ui->preview_marker), "fabulor-preview-label");
         if (GTK_IS_WIDGET (label))
                 gtkutil_apply_palette (label, NULL, &text_fg, NULL);
 
         gtkutil_apply_palette (ui->preview_tab_new_data, &tab_new_data, &text_fg, NULL);
-        label = g_object_get_data (G_OBJECT (ui->preview_tab_new_data), "zoitechat-preview-label");
+        label = g_object_get_data (G_OBJECT (ui->preview_tab_new_data), "fabulor-preview-label");
         if (GTK_IS_WIDGET (label))
                 gtkutil_apply_palette (label, NULL, &text_fg, NULL);
 
         gtkutil_apply_palette (ui->preview_tab_new_message, &tab_new_message, &text_fg, NULL);
-        label = g_object_get_data (G_OBJECT (ui->preview_tab_new_message), "zoitechat-preview-label");
+        label = g_object_get_data (G_OBJECT (ui->preview_tab_new_message), "fabulor-preview-label");
         if (GTK_IS_WIDGET (label))
                 gtkutil_apply_palette (label, NULL, &text_fg, NULL);
 
         gtkutil_apply_palette (ui->preview_tab_highlight, &tab_highlight, &text_fg, NULL);
-        label = g_object_get_data (G_OBJECT (ui->preview_tab_highlight), "zoitechat-preview-label");
+        label = g_object_get_data (G_OBJECT (ui->preview_tab_highlight), "fabulor-preview-label");
         if (GTK_IS_WIDGET (label))
                 gtkutil_apply_palette (label, NULL, &text_fg, NULL);
 
         gtkutil_apply_palette (ui->preview_tab_away, &tab_away, &text_fg, NULL);
-        label = g_object_get_data (G_OBJECT (ui->preview_tab_away), "zoitechat-preview-label");
+        label = g_object_get_data (G_OBJECT (ui->preview_tab_away), "fabulor-preview-label");
         if (GTK_IS_WIDGET (label))
                 gtkutil_apply_palette (label, NULL, &text_fg, NULL);
 
         gtkutil_apply_palette (ui->preview_spell, &text_bg, &spell, NULL);
-        label = g_object_get_data (G_OBJECT (ui->preview_spell), "zoitechat-preview-label");
+        label = g_object_get_data (G_OBJECT (ui->preview_spell), "fabulor-preview-label");
         if (GTK_IS_WIDGET (label))
                 gtkutil_apply_palette (label, NULL, &spell, NULL);
 }
@@ -442,7 +442,7 @@ theme_preferences_manager_preview_item_new (const char *text)
         label = gtk_label_new (text);
         gtk_widget_set_halign (label, GTK_ALIGN_START);
         fabulor_gtk_content_surface_set_child (box, label);
-        g_object_set_data (G_OBJECT (box), "zoitechat-preview-label", label);
+        g_object_set_data (G_OBJECT (box), "fabulor-preview-label", label);
 
         return box;
 }
@@ -469,7 +469,7 @@ theme_preferences_manager_create_preview (theme_color_manager_ui *ui)
         chat_box = gtk_box_new (GTK_ORIENTATION_VERTICAL, 6);
         fabulor_gtk_content_surface_set_child (ui->preview_window, chat_box);
 
-        header = gtk_label_new (_("#zoitechat-preview"));
+        header = gtk_label_new (_("#fabulor-preview"));
         gtk_widget_set_halign (header, GTK_ALIGN_START);
         fabulor_gtk_box_append (GTK_BOX (chat_box), header, FALSE, FALSE, 0);
 
@@ -519,7 +519,7 @@ theme_preferences_manager_create_preview (theme_color_manager_ui *ui)
 static void
 theme_preferences_color_button_apply (GtkWidget *button, const GdkRGBA *color)
 {
-        GtkWidget *target = g_object_get_data (G_OBJECT (button), "zoitechat-color-box");
+        GtkWidget *target = g_object_get_data (G_OBJECT (button), "fabulor-color-box");
         GtkWidget *apply_widget = GTK_IS_WIDGET (target) ? target : button;
 
         gtkutil_apply_palette (apply_widget, color, NULL, NULL);
@@ -566,7 +566,7 @@ theme_preferences_profile_palette_refresh_swatches (
 	{
 		GtkWidget *button = g_ptr_array_index (ui->swatches, i);
 		ThemeSemanticToken token = GPOINTER_TO_INT (g_object_get_data (
-			G_OBJECT (button), "zoitechat-theme-token"));
+			G_OBJECT (button), "fabulor-theme-token"));
 		GdkRGBA color;
 
 		if (theme_preferences_staged_get_color (token, &color))
@@ -695,7 +695,7 @@ theme_preferences_profile_palette_read_done (GObject *source_object,
 	if (!contents || !archive)
 		goto failed;
 	if (!theme_runtime_palette_candidate_from_colors (contents,
-		theme_preferences_stage_color_mode () == ZOITECHAT_DARK_MODE_DARK,
+		theme_preferences_stage_color_mode () == FABULOR_DARK_MODE_DARK,
 		&candidate, &error)
 	    || !theme_preferences_profile_palette_stage (ui, &candidate, &error))
 		goto failed;
@@ -813,7 +813,7 @@ theme_preferences_color_cb (GtkWidget *button, gpointer userdata)
         GdkRGBA rgba;
         theme_color_dialog_data *data;
 
-        token = GPOINTER_TO_INT (g_object_get_data (G_OBJECT (button), "zoitechat-theme-token"));
+        token = GPOINTER_TO_INT (g_object_get_data (G_OBJECT (button), "fabulor-theme-token"));
 
         if (!theme_preferences_staged_get_color (token, &rgba))
                 return;
@@ -825,8 +825,8 @@ theme_preferences_color_cb (GtkWidget *button, gpointer userdata)
         data = g_new0 (theme_color_dialog_data, 1);
         data->button = button;
         data->token = token;
-        data->color_change_flag = g_object_get_data (G_OBJECT (button), "zoitechat-theme-color-change");
-        data->manager_ui = g_object_get_data (G_OBJECT (button), "zoitechat-theme-color-manager-ui");
+        data->color_change_flag = g_object_get_data (G_OBJECT (button), "fabulor-theme-color-change");
+        data->manager_ui = g_object_get_data (G_OBJECT (button), "fabulor-theme-color-manager-ui");
         g_signal_connect (dialog, "response", G_CALLBACK (theme_preferences_color_response_cb), data);
         gtk_widget_show (dialog);
 }
@@ -973,7 +973,7 @@ theme_preferences_manager_pick_cb (GtkWidget *button, gpointer user_data)
         data->original = rgba;
         data->has_original = TRUE;
         g_object_set_data_full (G_OBJECT (dialog),
-                                "zoitechat-theme-manager-live-picker",
+                                "fabulor-theme-manager-live-picker",
                                 data, g_free);
 
         g_signal_connect (G_OBJECT (dialog), "notify::rgba",
@@ -1054,7 +1054,7 @@ theme_preferences_manager_dialog_response_cb (GtkDialog *dialog, gint response_i
 
 			theme_runtime_palette_snapshot (
 				theme_preferences_stage.palette.mode
-					== ZOITECHAT_DARK_MODE_DARK,
+					== FABULOR_DARK_MODE_DARK,
 				&defaults);
 			theme_palette_transaction_replace (
 				&theme_preferences_stage.palette, &defaults);
@@ -1099,7 +1099,7 @@ theme_preferences_create_color_manager_dialog (GtkWindow *parent, gboolean *colo
         ui = g_new0 (theme_color_manager_ui, 1);
         ui->rows = g_ptr_array_new_with_free_func (theme_preferences_manager_row_free);
         ui->color_change_flag = color_change_flag;
-        g_object_set_data_full (G_OBJECT (dialog), "zoitechat-theme-color-manager", ui, theme_preferences_manager_ui_free);
+        g_object_set_data_full (G_OBJECT (dialog), "fabulor-theme-color-manager", ui, theme_preferences_manager_ui_free);
         g_signal_connect (G_OBJECT (dialog), "response", G_CALLBACK (theme_preferences_manager_dialog_response_cb), ui);
 
         content = gtk_dialog_get_content_area (GTK_DIALOG (dialog));
@@ -1202,7 +1202,7 @@ theme_preferences_create_color_manager_dialog (GtkWindow *parent, gboolean *colo
 
                 g_signal_connect (G_OBJECT (button), "clicked",
                                   G_CALLBACK (theme_preferences_manager_pick_cb), row);
-                g_object_set_data (G_OBJECT (button), "zoitechat-theme-color-manager-ui", ui);
+                g_object_set_data (G_OBJECT (button), "fabulor-theme-color-manager-ui", ui);
                 g_signal_connect (G_OBJECT (entry), "activate",
                                   G_CALLBACK (theme_preferences_manager_entry_activate_cb), row);
                 fabulor_gtk_widget_on_focus_leave (
@@ -1300,7 +1300,7 @@ theme_preferences_import_colors_conf_path (GtkWidget *button,
 
         import_mode = theme_preferences_stage_color_mode ();
 	if (!theme_runtime_palette_candidate_from_colors (cfg,
-		import_mode == ZOITECHAT_DARK_MODE_DARK, &candidate, &error))
+		import_mode == FABULOR_DARK_MODE_DARK, &candidate, &error))
         {
 		theme_preferences_show_import_error (button,
 			error ? error->message :
@@ -1444,10 +1444,10 @@ theme_preferences_create_color_button (GtkWidget *table,
         gtk_widget_set_valign (box, GTK_ALIGN_CENTER);
         gtk_widget_show (label);
         gtk_widget_show (box);
-        g_object_set_data (G_OBJECT (but), "zoitechat-color", (gpointer)1);
-        g_object_set_data (G_OBJECT (but), "zoitechat-color-box", box);
-        g_object_set_data (G_OBJECT (but), "zoitechat-theme-token", GINT_TO_POINTER (token));
-        g_object_set_data (G_OBJECT (but), "zoitechat-theme-color-change", color_change_flag);
+        g_object_set_data (G_OBJECT (but), "fabulor-color", (gpointer)1);
+        g_object_set_data (G_OBJECT (but), "fabulor-color-box", box);
+        g_object_set_data (G_OBJECT (but), "fabulor-theme-token", GINT_TO_POINTER (token));
+        g_object_set_data (G_OBJECT (but), "fabulor-theme-color-change", color_change_flag);
         gtk_grid_attach (GTK_GRID (table), but, col, row, 1, 1);
         g_signal_connect (G_OBJECT (but), "clicked", G_CALLBACK (theme_preferences_color_cb), parent);
         if (profile_ui)
@@ -1569,7 +1569,7 @@ theme_preferences_bundled_palette_dir (void)
 
 GtkWidget *
 theme_preferences_create_color_page (GtkWindow *parent,
-                                     struct zoitechatprefs *setup_prefs,
+                                     struct fabulorprefs *setup_prefs,
                                      gboolean *color_change_flag)
 {
         GtkWidget *tab;
@@ -1708,7 +1708,7 @@ static void
 theme_preferences_gtk4_commit (const char *theme_id, guint variant,
 	gpointer user_data)
 {
-	struct zoitechatprefs *setup_prefs = user_data;
+	struct fabulorprefs *setup_prefs = user_data;
 
 	g_strlcpy (setup_prefs->hex_gui_gtk4_theme, theme_id ? theme_id : "",
 		sizeof (setup_prefs->hex_gui_gtk4_theme));
@@ -1719,7 +1719,7 @@ theme_preferences_gtk4_commit (const char *theme_id, guint variant,
 
 GtkWidget *
 theme_preferences_create_page (GtkWindow *parent,
-                               struct zoitechatprefs *setup_prefs,
+                               struct fabulorprefs *setup_prefs,
                                gboolean *color_change_flag)
 {
 	ThemePreferencesGtk4 *preferences;

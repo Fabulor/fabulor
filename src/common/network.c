@@ -46,9 +46,9 @@
 
 #define NETWORK_PRIVATE
 #include "network.h"
-#include "zoitechat.h"
+#include "fabulor.h"
 
-extern struct zoitechatprefs prefs;
+extern struct fabulorprefs prefs;
 
 #define RAND_INT(n) ((int)(rand() / (RAND_MAX + 1.0) * (n)))
 

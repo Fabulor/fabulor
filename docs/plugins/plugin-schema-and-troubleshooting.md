@@ -138,6 +138,12 @@ Use these rules to keep plugins loadable across upgrades:
 7. Keep `capabilities` accurate and up to date.
 
 The manifest host exposes `FabulorAPI` in `src/common/fabulor-plugin-host.h`.
+Its shared manifest surface is deliberately compact: log text, send one
+message, read the active user count and identity, and register one of the
+supported callback families. C#, isolated Python, and manifest Tcl expose
+language-appropriate forms of only those operations. Trusted simple add-ons
+may retain broader language-specific helpers, but those helpers are not
+manifest capabilities and do not expand `FabulorAPI`.
 Native C plugins use `src/common/fabulor-plugin.h`, export
 `fabulor_plugin_init` and optionally `fabulor_plugin_deinit`, and call the
 `fabulor_*` native ABI. The former product-prefixed native ABI is not exported
@@ -186,19 +192,25 @@ Supported capabilities:
 | --- | --- |
 | `messages.write` | Send a message through the shared message API. |
 | `session.read` | Read active session, user, context, and list information. |
-| `ui.write` | Print or emit output into the client UI. |
-| `commands.execute` | Execute a client command. |
-| `commands.manage` | Add or remove user commands. |
-| `preferences.read` | Read client or plugin preference data. |
-| `preferences.write` | Set or delete plugin preference data. |
 | `events.message` | Register incoming IRC `PRIVMSG` callbacks. Locally entered channel text is an outgoing `command:SAY` event unless the server echoes it back. |
 | `events.server` | Register generic or named server callbacks. |
 | `events.print` | Register print-event callbacks. |
 | `events.command` | Register command callbacks. |
-| `events.timer` | Register timer callbacks. |
-| `events.unload` | Register unload callbacks. |
 
 Logging through the language-specific manifest logger and pure text stripping do not require capabilities. Capabilities constrain cooperation with the Fabulor host; they are not an operating-system sandbox and cannot contain native code or a compromised language runtime.
+
+The host accepts only these six capability names. Names for command execution,
+command management, preference access, direct UI printing, timer callbacks,
+and unload callbacks are rejected because those operations are not part of the
+shared manifest API. Adding a helper requires a concrete cross-language use
+case, an additive API-version decision, a capability mapping where needed, and
+equivalent enforcement tests in every supported manifest host.
+
+Shared message targets are limited to 512 UTF-8 bytes and cannot contain
+whitespace or control characters. Message text is limited to 4,096 UTF-8
+bytes and cannot contain CR or LF. Plugin-host log text is limited to 65,536
+UTF-8 bytes. These checks are repeated at the native `FabulorAPI` boundary so
+language-specific validation cannot bypass them.
 
 ## Safe Mode
 

@@ -106,7 +106,7 @@ COMMON_SERVER_LIST_SOURCE = ROOT / "src" / "common" / "servlist.c"
 COMMON_HISTORY_SOURCE = ROOT / "src" / "common" / "history.c"
 COMMON_HISTORY_HEADER = ROOT / "src" / "common" / "history.h"
 COMMON_OUTBOUND_SOURCE = ROOT / "src" / "common" / "outbound.c"
-COMMON_APPLICATION_SOURCE = ROOT / "src" / "common" / "zoitechat.c"
+COMMON_APPLICATION_SOURCE = ROOT / "src" / "common" / "fabulor.c"
 GTK4_CHANNEL_BAN_DIALOG_SOURCES = (
     "banlist.c",
     "chanlist.c",
@@ -1022,7 +1022,7 @@ class ProductionWixProfileTests(unittest.TestCase):
         cfgfiles = (ROOT / "src" / "common" / "cfgfiles.c").read_text(
             encoding="utf-8"
         )
-        preferences = (ROOT / "src" / "common" / "zoitechat.h").read_text(
+        preferences = (ROOT / "src" / "common" / "fabulor.h").read_text(
             encoding="utf-8"
         )
         outbound = (ROOT / "src" / "common" / "outbound.c").read_text(

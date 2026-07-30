@@ -21,13 +21,13 @@
 #include "../../fe-gtk.h"
 
 #include "../theme-manager.h"
-#include "../../../common/zoitechat.h"
-#include "../../../common/zoitechatc.h"
+#include "../../../common/fabulor.h"
+#include "../../../common/fabulorc.h"
 
 struct session *current_sess;
 struct session *current_tab;
 struct session *lastact_sess;
-struct zoitechatprefs prefs;
+struct fabulorprefs prefs;
 
 static gboolean stub_apply_mode_palette_changed;
 static gboolean stub_system_prefers_dark;
@@ -45,7 +45,7 @@ void setup_apply_real (const ThemeChangedEvent *event)
 
 gboolean fe_dark_mode_is_enabled_for (unsigned int mode)
 {
-	return mode == ZOITECHAT_DARK_MODE_DARK;
+	return mode == FABULOR_DARK_MODE_DARK;
 }
 
 void fe_set_auto_dark_mode_state (gboolean enabled)
@@ -65,14 +65,14 @@ gboolean fe_win32_try_get_system_dark (gboolean *enabled)
 	return FALSE;
 }
 
-void zoitechat_set_theme_post_apply_callback (zoitechat_theme_post_apply_callback callback)
+void fabulor_set_theme_post_apply_callback (fabulor_theme_post_apply_callback callback)
 {
 	(void) callback;
 }
 
 gboolean theme_policy_is_dark_mode_active (unsigned int mode)
 {
-	return mode == ZOITECHAT_DARK_MODE_DARK;
+	return mode == FABULOR_DARK_MODE_DARK;
 }
 
 gboolean theme_policy_system_prefers_dark (void)
@@ -206,7 +206,7 @@ test_auto_refresh_dispatches_mode_palette_and_style_reasons (void)
 	guint listener_id;
 
 	reset_state ();
-	prefs.hex_gui_dark_mode = ZOITECHAT_DARK_MODE_AUTO;
+	prefs.hex_gui_dark_mode = FABULOR_DARK_MODE_AUTO;
 	stub_apply_mode_palette_changed = TRUE;
 	stub_system_prefers_dark = TRUE;
 	listener_id = theme_listener_register ("auto.refresh", auto_listener, NULL);
@@ -233,7 +233,7 @@ test_auto_refresh_ignores_non_auto_mode (void)
 	guint listener_id;
 
 	reset_state ();
-	prefs.hex_gui_dark_mode = ZOITECHAT_DARK_MODE_DARK;
+	prefs.hex_gui_dark_mode = FABULOR_DARK_MODE_DARK;
 	stub_apply_mode_palette_changed = TRUE;
 	listener_id = theme_listener_register ("auto.nonauto", auto_listener, NULL);
 	theme_manager_set_idle_add_func (immediate_idle_add);

@@ -18,8 +18,8 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301, USA
  */
 
-#include "../../../common/zoitechat.h"
-#include "../../../common/zoitechatc.h"
+#include "../../../common/fabulor.h"
+#include "../../../common/fabulorc.h"
 
 #include <errno.h>
 #include <math.h>
@@ -41,7 +41,7 @@
 struct session *current_sess;
 struct session *current_tab;
 struct session *lastact_sess;
-struct zoitechatprefs prefs;
+struct fabulorprefs prefs;
 
 static char *test_home_dir;
 static gboolean stub_system_prefers_dark;
@@ -137,7 +137,7 @@ get_xdir (void)
 }
 
 int
-zoitechat_open_file (const char *file, int flags, int mode, int xof_flags)
+fabulor_open_file (const char *file, int flags, int mode, int xof_flags)
 {
 	char *path;
 	int fd;
@@ -152,7 +152,7 @@ zoitechat_open_file (const char *file, int flags, int mode, int xof_flags)
 gboolean
 fe_dark_mode_is_enabled_for (unsigned int mode)
 {
-	return mode == ZOITECHAT_DARK_MODE_DARK;
+	return mode == FABULOR_DARK_MODE_DARK;
 }
 
 gboolean
@@ -164,10 +164,10 @@ theme_policy_system_prefers_dark (void)
 gboolean
 theme_policy_is_dark_mode_active (unsigned int mode)
 {
-	if (mode == ZOITECHAT_DARK_MODE_AUTO)
+	if (mode == FABULOR_DARK_MODE_AUTO)
 		return stub_system_prefers_dark;
 
-	return mode == ZOITECHAT_DARK_MODE_DARK;
+	return mode == FABULOR_DARK_MODE_DARK;
 }
 
 static void
@@ -177,7 +177,7 @@ setup_temp_home (void)
 
 	if (test_home_dir)
 		return;
-	test_home_dir = g_dir_make_tmp ("zoitechat-theme-tests-XXXXXX", NULL);
+	test_home_dir = g_dir_make_tmp ("fabulor-theme-tests-XXXXXX", NULL);
 	g_assert_nonnull (test_home_dir);
 }
 
@@ -297,17 +297,17 @@ test_ui_edits_persist_without_legacy_array_mutation (void)
 	setup_temp_home ();
 	theme_runtime_load ();
 
-	apply_ui_color_edit (ZOITECHAT_DARK_MODE_LIGHT, THEME_TOKEN_SELECTION_FOREGROUND, "#224466");
-	apply_ui_color_edit (ZOITECHAT_DARK_MODE_DARK, THEME_TOKEN_SELECTION_FOREGROUND, "#88aacc");
+	apply_ui_color_edit (FABULOR_DARK_MODE_LIGHT, THEME_TOKEN_SELECTION_FOREGROUND, "#224466");
+	apply_ui_color_edit (FABULOR_DARK_MODE_DARK, THEME_TOKEN_SELECTION_FOREGROUND, "#88aacc");
 	theme_runtime_save ();
 
 	theme_runtime_load ();
-	theme_runtime_apply_mode (ZOITECHAT_DARK_MODE_LIGHT, NULL);
+	theme_runtime_apply_mode (FABULOR_DARK_MODE_LIGHT, NULL);
 	g_assert_true (theme_runtime_get_color (THEME_TOKEN_SELECTION_FOREGROUND, &light_loaded));
 	g_assert_true (gdk_rgba_parse (&light_expected, "#224466"));
 	g_assert_true (colors_equal (&light_loaded, &light_expected));
 
-	theme_runtime_apply_mode (ZOITECHAT_DARK_MODE_DARK, NULL);
+	theme_runtime_apply_mode (FABULOR_DARK_MODE_DARK, NULL);
 	g_assert_true (theme_runtime_get_color (THEME_TOKEN_SELECTION_FOREGROUND, &dark_loaded));
 	g_assert_true (gdk_rgba_parse (&dark_expected, "#88aacc"));
 	g_assert_true (colors_equal (&dark_loaded, &dark_expected));
@@ -323,12 +323,12 @@ test_apply_mode_resolves_auto_from_system_preference (void)
 	theme_runtime_load ();
 
 	stub_system_prefers_dark = TRUE;
-	dark = theme_runtime_apply_mode (ZOITECHAT_DARK_MODE_AUTO, &palette_changed);
+	dark = theme_runtime_apply_mode (FABULOR_DARK_MODE_AUTO, &palette_changed);
 	g_assert_true (dark);
 	g_assert_true (theme_runtime_is_dark_active ());
 
 	stub_system_prefers_dark = FALSE;
-	dark = theme_runtime_apply_mode (ZOITECHAT_DARK_MODE_AUTO, &palette_changed);
+	dark = theme_runtime_apply_mode (FABULOR_DARK_MODE_AUTO, &palette_changed);
 	g_assert_false (dark);
 	g_assert_false (theme_runtime_is_dark_active ());
 }
@@ -341,10 +341,10 @@ test_apply_mode_respects_explicit_dark_and_light_modes (void)
 	setup_temp_home ();
 	theme_runtime_load ();
 
-	g_assert_true (theme_runtime_apply_mode (ZOITECHAT_DARK_MODE_DARK, &palette_changed));
+	g_assert_true (theme_runtime_apply_mode (FABULOR_DARK_MODE_DARK, &palette_changed));
 	g_assert_true (theme_runtime_is_dark_active ());
 
-	g_assert_false (theme_runtime_apply_mode (ZOITECHAT_DARK_MODE_LIGHT, &palette_changed));
+	g_assert_false (theme_runtime_apply_mode (FABULOR_DARK_MODE_LIGHT, &palette_changed));
 	g_assert_false (theme_runtime_is_dark_active ());
 }
 
@@ -410,7 +410,7 @@ test_gtk_map_uses_theme_defaults_until_custom_token_is_set (void)
 
 	g_assert_true (gdk_rgba_parse (&custom, "#a1b2c3"));
 	theme_runtime_user_set_color (THEME_TOKEN_TEXT_FOREGROUND, &custom);
-	theme_runtime_apply_mode (ZOITECHAT_DARK_MODE_LIGHT, NULL);
+	theme_runtime_apply_mode (FABULOR_DARK_MODE_LIGHT, NULL);
 	theme_runtime_get_widget_style_values_mapped (&map, &values);
 	g_assert_true (colors_equal (&values.foreground, &custom));
 }
@@ -601,7 +601,7 @@ test_palette_transaction_tracks_edit_and_revert (void)
 	edited.red = original.red > 0.5 ? 0.25 : 0.75;
 
 	g_assert_true (theme_palette_transaction_begin (&transaction,
-		ZOITECHAT_DARK_MODE_LIGHT, &snapshot));
+		FABULOR_DARK_MODE_LIGHT, &snapshot));
 	g_assert_false (transaction.changed);
 	g_assert_true (theme_palette_transaction_set_color (&transaction,
 		THEME_TOKEN_MIRC_0, &edited));
@@ -634,7 +634,7 @@ test_palette_transaction_replaces_candidate_and_keeps_snapshot (void)
 		FALSE, &imported, &error));
 	g_assert_no_error (error);
 	g_assert_true (theme_palette_transaction_begin (&transaction,
-		ZOITECHAT_DARK_MODE_LIGHT, &snapshot));
+		FABULOR_DARK_MODE_LIGHT, &snapshot));
 	g_assert_true (theme_palette_transaction_replace (&transaction,
 		&imported));
 	g_assert_true (transaction.changed);
@@ -665,7 +665,7 @@ test_palette_transaction_tracks_custom_ownership (void)
 		!snapshot.custom_tokens[THEME_TOKEN_MIRC_2];
 
 	g_assert_true (theme_palette_transaction_begin (&transaction,
-		ZOITECHAT_DARK_MODE_LIGHT, &snapshot));
+		FABULOR_DARK_MODE_LIGHT, &snapshot));
 	g_assert_true (theme_palette_transaction_replace (&transaction,
 		&candidate));
 	g_assert_true (transaction.changed);
@@ -683,7 +683,7 @@ test_palette_transaction_rejects_mode_mismatch (void)
 	theme_runtime_palette_snapshot (FALSE, &light);
 	theme_runtime_palette_snapshot (TRUE, &dark);
 	g_assert_true (theme_palette_transaction_begin (&transaction,
-		ZOITECHAT_DARK_MODE_LIGHT, &light));
+		FABULOR_DARK_MODE_LIGHT, &light));
 	g_assert_false (theme_palette_transaction_replace (&transaction,
 		&dark));
 	g_assert_false (transaction.changed);

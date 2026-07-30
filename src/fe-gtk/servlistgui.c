@@ -24,13 +24,13 @@
 
 #include <gdk/gdkkeysyms.h>
 
-#include "../common/zoitechat.h"
+#include "../common/fabulor.h"
 #ifdef USE_OPENSSL
 #include <openssl/err.h>
 #include <openssl/ssl.h>
 #include <openssl/x509.h>
 #endif
-#include "../common/zoitechatc.h"
+#include "../common/fabulorc.h"
 #include "../common/servlist.h"
 #include "../common/cfgfiles.h"
 #include "../common/fe.h"
@@ -1697,7 +1697,7 @@ servlist_delete_cb (GtkWindow *win, gpointer userdata)
 	servlist_savegui ();
 
 	if (sess_list == NULL)
-		zoitechat_exit ();
+		fabulor_exit ();
 
 	return FALSE;
 }
@@ -1714,7 +1714,7 @@ servlist_close_cb (GtkWidget *button, gpointer userdata)
 		fabulor_gtk_window_destroy (GTK_WINDOW (window));
 
 	if (sess_list == NULL)
-		zoitechat_exit ();
+		fabulor_exit ();
 }
 
 /* convert "host:port" format to "host/port" */

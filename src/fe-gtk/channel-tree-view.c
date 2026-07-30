@@ -291,7 +291,7 @@ fabulor_channel_tree_view_new (FabulorChannelModel *model,
 	(void) unindent_children;
 	gtk_widget_set_hexpand (owner->view, TRUE);
 	gtk_widget_set_vexpand (owner->view, TRUE);
-	gtk_widget_set_name (owner->view, "zoitechat-tree");
+	gtk_widget_set_name (owner->view, "fabulor-tree");
 	gtk_widget_set_can_focus (owner->view, TRUE);
 	g_object_set_data_full (G_OBJECT (owner->view),
 		FABULOR_CHANNEL_TREE_VIEW_DATA, owner, channel_tree_view_free);

@@ -22,8 +22,8 @@
 #include <time.h>						/* for time_t */
 #include "proto-irc.h"
 
-#ifndef ZOITECHAT_DCC_H
-#define ZOITECHAT_DCC_H
+#ifndef FABULOR_DCC_H
+#define FABULOR_DCC_H
 
 enum dcc_state {
 	STAT_QUEUED = 0,

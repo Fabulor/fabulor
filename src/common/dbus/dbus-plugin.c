@@ -1,4 +1,4 @@
-/* dbus-plugin.c - zoitechat plugin for remote access using D-Bus
+/* dbus-plugin.c - fabulor plugin for remote access using D-Bus
  * Copyright (C) 2006 Claessens Xavier
  *
  * This program is free software; you can redistribute it and/or modify
@@ -29,16 +29,16 @@
 #define PDESC _("plugin for remote access using DBUS")
 #define PVERSION ""
 
-#define DBUS_OBJECT_PATH "/org/zoitechat"
-#define DBUS_INTERFACE_CONNECTION "org.zoitechat.connection"
-#define DBUS_INTERFACE_PLUGIN "org.zoitechat.plugin"
+#define DBUS_OBJECT_PATH "/org/fabulor"
+#define DBUS_INTERFACE_CONNECTION "org.fabulor.connection"
+#define DBUS_INTERFACE_PLUGIN "org.fabulor.plugin"
 #define DBUS_SERVICE_DBUS "org.freedesktop.DBus"
 #define DBUS_PATH_DBUS "/org/freedesktop/DBus"
 #define DBUS_INTERFACE_DBUS "org.freedesktop.DBus"
 
 static const char introspection_xml[] =
 "<node>"
-"  <interface name='org.zoitechat.connection'>"
+"  <interface name='org.fabulor.connection'>"
 "    <method name='Connect'>"
 "      <arg type='s' name='filename' direction='in'/>"
 "      <arg type='s' name='name' direction='in'/>"
@@ -48,7 +48,7 @@ static const char introspection_xml[] =
 "    </method>"
 "    <method name='Disconnect'/>"
 "  </interface>"
-"  <interface name='org.zoitechat.plugin'>"
+"  <interface name='org.fabulor.plugin'>"
 "    <method name='Command'><arg type='s' direction='in'/></method>"
 "    <method name='Print'><arg type='s' direction='in'/></method>"
 "    <method name='FindContext'><arg type='s' direction='in'/><arg type='s' direction='in'/><arg type='u' direction='out'/></method>"
@@ -656,7 +656,7 @@ method_call_cb (GDBusConnection *conn,
 				&error);
 			if (!obj->registration_id)
 			{
-				g_dbus_method_invocation_return_dbus_error (invocation, "org.zoitechat.Error", error->message);
+				g_dbus_method_invocation_return_dbus_error (invocation, "org.fabulor.Error", error->message);
 				g_error_free (error);
 				remote_object_free (obj);
 				g_free (path);
@@ -678,7 +678,7 @@ method_call_cb (GDBusConnection *conn,
 	obj = find_remote_by_path (object_path);
 	if (!obj)
 	{
-		g_dbus_method_invocation_return_dbus_error (invocation, "org.zoitechat.Error", "No such object");
+		g_dbus_method_invocation_return_dbus_error (invocation, "org.fabulor.Error", "No such object");
 		return;
 	}
 
@@ -885,7 +885,7 @@ method_call_cb (GDBusConnection *conn,
 		g_variant_unref (targets);
 	}
 	else
-		g_dbus_method_invocation_return_dbus_error (invocation, "org.zoitechat.Error", "Unknown method");
+		g_dbus_method_invocation_return_dbus_error (invocation, "org.fabulor.Error", "Unknown method");
 }
 
 static const GDBusInterfaceVTable connection_vtable = {

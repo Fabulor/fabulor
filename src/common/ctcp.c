@@ -24,7 +24,7 @@
 #include <unistd.h>
 #endif
 
-#include "zoitechat.h"
+#include "fabulor.h"
 #include "cfgfiles.h"
 #include "util.h"
 #include "modes.h"
@@ -35,7 +35,7 @@
 #include "text.h"
 #include "ctcp.h"
 #include "server.h"
-#include "zoitechatc.h"
+#include "fabulorc.h"
 
 
 static void

@@ -17,8 +17,8 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301, USA
  */
 
-#ifndef ZOITECHAT_CHANLIST_H
-#define ZOITECHAT_CHANLIST_H
+#ifndef FABULOR_CHANLIST_H
+#define FABULOR_CHANLIST_H
 
 void chanlist_opengui (server *serv, int do_refresh);
 

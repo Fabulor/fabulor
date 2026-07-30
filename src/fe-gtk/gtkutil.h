@@ -17,8 +17,8 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301, USA
  */
 
-#ifndef ZOITECHAT_GTKUTIL_H
-#define ZOITECHAT_GTKUTIL_H
+#ifndef FABULOR_GTKUTIL_H
+#define FABULOR_GTKUTIL_H
 
 #include <gtk/gtk.h>
 #include "../common/fe.h"

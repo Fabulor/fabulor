@@ -12,7 +12,7 @@
 #include "fe-gtk.h"
 #include "theme/theme-manager.h"
 
-#include "../common/zoitechat.h"
+#include "../common/fabulor.h"
 #include "../common/ignore.h"
 #include "../common/fe.h"
 #include "gtkutil.h"

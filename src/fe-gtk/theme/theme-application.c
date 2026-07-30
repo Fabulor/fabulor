@@ -21,7 +21,7 @@
 #include "theme-application.h"
 
 #include "../../common/fe.h"
-#include "../../common/zoitechatc.h"
+#include "../../common/fabulorc.h"
 #include "theme-css.h"
 #include "theme-runtime.h"
 #include "../maingui.h"
