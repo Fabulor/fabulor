@@ -459,6 +459,7 @@ typedef struct session
 	int end_of_names:1;
 	int doing_who:1;		/* /who sent on this channel */
 	int done_away_check:1;	/* done checking for away status changes */
+	int cycle_pending:1;	/* rejoin after the server confirms our PART */
 	tab_state_flags tab_state;
 	tab_state_flags last_tab_state; /* before event is handled */
 	gtk_xtext_search_flags lastlog_flags;
@@ -483,7 +484,6 @@ typedef struct server
 	/* irc protocol functions (in proto*.c) */
 	void (*p_inline)(struct server *, char *buf, int len);
 	void (*p_invite)(struct server *, char *channel, char *nick);
-	void (*p_cycle)(struct server *, char *channel, char *key);
 	void (*p_ctcp)(struct server *, char *to, char *msg);
 	void (*p_nctcp)(struct server *, char *to, char *msg);
 	void (*p_quit)(struct server *, char *reason);
