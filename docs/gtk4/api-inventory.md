@@ -1243,7 +1243,7 @@ active GTK4 link boundary; remaining raw calls are confined to GTK3-only menu
 and adapter code.
 
 Stage 8 native About-dialog pass 89 gives GTK4 its native `GtkWindow`-owned
-About presentation, website link, GPL 2.0-only license page, built-in Close and
+About presentation, website link, GPL 3.0-only license page, built-in Close and
 Escape handling, and `gtk_window_present()` path. GTK3 retains the existing
 custom Website, License, and Close action-area layout. A typed logo helper
 projects the retained `GdkPixbuf` into a temporary GTK4 `GdkTexture` paintable

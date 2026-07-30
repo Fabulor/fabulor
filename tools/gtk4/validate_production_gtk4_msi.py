@@ -24,7 +24,7 @@ REQUIRED_PATHS = {
     "Plugins/hcupd.dll",
     "Runtime/plugin-host-manifest.json",
     "Runtime/GTK4/bin/gtk-4-1.dll",
-    "share/doc/fabulor/COPYING",
+    "share/doc/fabulor/Licence.md",
     "share/doc/NotoColorEmoji/NotoColorEmoji-LICENSE.txt",
     "share/emoji-flags/eu.png",
     "share/fonts/NotoColorEmoji.ttf",

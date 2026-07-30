@@ -71,8 +71,9 @@
 #include "nick-context-menu-model.h"
 #include "url-context-menu-model.h"
 
-#define FABULOR_DOCS_URL "https://github.com/Fabulor/fabulor/tree/main/docs"
-#define FABULOR_README_URL "https://github.com/Fabulor/fabulor/blob/main/README.md"
+#define FABULOR_DOCS_URL "https://github.com/Fabulor/fabulor/blob/main/docs/README.md"
+#define FABULOR_ISSUES_URL "https://github.com/Fabulor/fabulor/issues"
+#define FABULOR_WEBSITE_URL "https://github.com/Fabulor"
 
 
 #define FABULOR_MENU_ACTION_GROUP "fabulor-menu-action-group"
@@ -152,6 +153,8 @@ typedef enum
 	MENU_ACTION_SEARCH_NEXT,
 	MENU_ACTION_SEARCH_PREVIOUS,
 	MENU_ACTION_CONTENTS,
+	MENU_ACTION_WEBSITE,
+	MENU_ACTION_REPORT_ISSUE,
 	MENU_ACTION_ABOUT,
 	MENU_ACTION_PREFERENCES,
 	MENU_ACTION_AUTO_REPLACE,
@@ -1725,6 +1728,18 @@ menu_docs (GtkWidget *wid, gpointer none)
 }
 
 static void
+menu_website (GtkWidget *wid, gpointer none)
+{
+	fe_open_url (FABULOR_WEBSITE_URL);
+}
+
+static void
+menu_report_issue (GtkWidget *wid, gpointer none)
+{
+	fe_open_url (FABULOR_ISSUES_URL);
+}
+
+static void
 menu_dcc_win (GtkWidget *wid, gpointer none)
 {
 	fe_dcc_open_recv_win (FALSE);
@@ -1839,12 +1854,32 @@ static void
 menu_about (GtkWidget *wid, gpointer sess)
 {
 	GtkAboutDialog *dialog;
-	static const gchar *empty_people[] = { NULL };
+	static const gchar *authors[] = {
+		"Barry Suridge - Project lead and maintainer",
+		NULL
+	};
+	static const gchar *documenters[] = {
+		"Barry Suridge",
+		NULL
+	};
+	static const gchar *lineage[] = {
+		"XChat - Peter \305\275elezn\303\275",
+		"HexChat - Berke Viktor, Patrick Griffis, and contributors",
+		"ZoiteChat - deepend and contributors",
+		NULL
+	};
+	static const gchar *security[] = {
+		"OpenAI Codex - threat analysis, targeted code review, remediation, test design, and security-tool orchestration",
+		"Automated scanning - GitHub CodeQL and Gitleaks",
+		NULL
+	};
 
 	dialog = GTK_ABOUT_DIALOG (gtk_about_dialog_new ());
 	theme_manager_attach_window (GTK_WIDGET (dialog));
 	char comment[512];
 	g_snprintf  (comment, sizeof(comment), ""
+				"A modern GTK4 IRC client for Windows 11+\n"
+				"Licensed under the GNU General Public License v3.0 only.\n\n"
 #ifdef WIN32
 				"Portable Mode: %s\n"
 				"Build Type: x%d\n"
@@ -1858,16 +1893,22 @@ menu_about (GtkWidget *wid, gpointer sess)
 
 	gtk_about_dialog_set_program_name (dialog, _(DISPLAY_NAME));
 	gtk_about_dialog_set_version (dialog, PACKAGE_VERSION);
-	gtk_about_dialog_set_authors (dialog, empty_people);
-	gtk_about_dialog_set_documenters (dialog, empty_people);
-	gtk_about_dialog_set_artists (dialog, empty_people);
-	gtk_about_dialog_set_translator_credits (dialog, "");
-	gtk_about_dialog_set_website (dialog, FABULOR_README_URL);
-	gtk_about_dialog_set_website_label (dialog, _("Website"));
-	gtk_about_dialog_set_license_type (dialog, GTK_LICENSE_GPL_2_0_ONLY);
+	gtk_about_dialog_set_authors (dialog, authors);
+	gtk_about_dialog_set_documenters (dialog, documenters);
+	gtk_about_dialog_add_credit_section (dialog, _("Project lineage"), lineage);
+	gtk_about_dialog_add_credit_section (dialog, _("Security review and hardening"), security);
+	gtk_about_dialog_set_website (dialog, FABULOR_WEBSITE_URL);
+	gtk_about_dialog_set_website_label (dialog, _("Fabulor on GitHub"));
+	gtk_about_dialog_set_license_type (dialog, GTK_LICENSE_GPL_3_0_ONLY);
 	gtk_about_dialog_set_wrap_license (dialog, FALSE);
-	fabulor_gtk_about_dialog_set_logo_from_pixbuf (dialog, pix_zoitechat);
-	gtk_about_dialog_set_copyright (dialog, "\302\251 1998-2010 Peter \305\275elezn\303\275\n\302\251 2009-2014 Berke Viktor\n\302\251 2015-2025 Patrick Griffis\n\302\251 2026 deepend");
+	fabulor_gtk_about_dialog_set_logo_from_pixbuf (dialog,
+		pix_fabulor_about ? pix_fabulor_about : pix_zoitechat);
+	gtk_about_dialog_set_copyright (dialog,
+		"\302\251 1998-2010 Peter \305\275elezn\303\275 (XChat)\n"
+		"\302\251 2009-2014 Berke Viktor (HexChat)\n"
+		"\302\251 2015-2025 Patrick Griffis (HexChat)\n"
+		"\302\251 2026 deepend (ZoiteChat)\n"
+		"\302\251 2026 Barry Suridge (Fabulor)");
 	gtk_about_dialog_set_comments (dialog, comment);
 
 	gtk_window_set_transient_for (GTK_WINDOW(dialog), GTK_WINDOW(parent_window));
@@ -2043,11 +2084,15 @@ static struct mymenu mymenu[] = {
 		{0, 0, 0, M_END, 0, 0, 0},
 
 #define HELP_OFFSET (SEARCH_OFFSET + SEARCH_ACTION_COUNT + 2)
-#define HELP_ACTION_COUNT (2)
+#define HELP_ACTION_COUNT (4)
 	{N_("_Help"), 0, 0, M_NEWMENU, 0, 0, 1},
 	{N_("_Contents"), menu_docs, 0, M_MENUITEM, 0, 0, 1, 0,
 		"contents", MENU_ACTION_CONTENTS},
-	{N_("_About"), menu_about, 0, M_MENUITEM, 0, 0, 1, 0,
+	{N_("_Project Website"), menu_website, 0, M_MENUITEM, 0, 0, 1, 0,
+		"project-website", MENU_ACTION_WEBSITE},
+	{N_("_Report an Issue"), menu_report_issue, 0, M_MENUITEM, 0, 0, 1, 0,
+		"report-issue", MENU_ACTION_REPORT_ISSUE},
+	{N_("_About Fabulor"), menu_about, 0, M_MENUITEM, 0, 0, 1, 0,
 		"about", MENU_ACTION_ABOUT},
 
 	{0, 0, 0, M_END, 0, 0, 0},
@@ -2180,6 +2225,12 @@ menu_key_action (const char *name, guint keyval, GdkModifierType state)
 	case MENU_ACTION_CONTENTS:
 		menu_docs (NULL, NULL);
 		break;
+	case MENU_ACTION_WEBSITE:
+		menu_website (NULL, NULL);
+		break;
+	case MENU_ACTION_REPORT_ISSUE:
+		menu_report_issue (NULL, NULL);
+		break;
 	case MENU_ACTION_ABOUT:
 		menu_about (NULL, NULL);
 		break;
@@ -2278,6 +2329,8 @@ menu_action_is_stateless (menu_action_id id)
 	case MENU_ACTION_SEARCH_NEXT:
 	case MENU_ACTION_SEARCH_PREVIOUS:
 	case MENU_ACTION_CONTENTS:
+	case MENU_ACTION_WEBSITE:
+	case MENU_ACTION_REPORT_ISSUE:
 	case MENU_ACTION_ABOUT:
 	case MENU_ACTION_PREFERENCES:
 	case MENU_ACTION_AUTO_REPLACE:

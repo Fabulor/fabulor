@@ -6844,7 +6844,7 @@ Automated evidence:
   strict probe build systems
 - source audit: GTK4 constructs `GtkAboutDialog` through its native constructor
   and does not cast it to the removed `GtkDialog` base
-- source audit: GTK4 uses the native website, GPL 2.0-only license,
+- source audit: GTK4 uses the native website, GPL 3.0-only license,
   Close/Escape, link activation, transient-parent, and window presentation
   contracts; GTK3 retains its custom response buttons
 - ownership audit: GTK4 creates one `GdkTexture` from the retained logo pixbuf,
@@ -6865,7 +6865,7 @@ Manual checks deferred until the full GTK4 frontend links:
 - [ ] open About and confirm the logo, program name, version, copyright,
   platform details, and theme styling render correctly
 - [ ] activate Website and confirm it opens the Fabulor project URL once
-- [ ] open the GPL 2.0-only license page and return to the main About view
+- [ ] open the GPL 3.0-only license page and return to the main About view
 - [ ] close About through its native Close control, Escape, and window control,
   confirming each path finalizes the window once
 - [ ] repeat the custom Website, License, and Close actions on GTK3 and confirm
