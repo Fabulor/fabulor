@@ -367,6 +367,13 @@ release assets, product metadata, and package-signing keys. A restored updater
 must authenticate its appcast and installer before offering or launching an
 update.
 
+The accepted replacement architecture is recorded in
+[`../security/signed-update-feed-design.md`](../security/signed-update-feed-design.md).
+It uses TUF metadata plus pinned Authenticode publisher verification. Completing
+that design does not restore the updater: its release keys, code-signing
+identity, verifier, downloader, UI, and installed acceptance gates remain
+separate implementation work.
+
 ## Cutover Gate
 
 The GTK4 cutover gate is complete:

@@ -215,7 +215,10 @@ programme.
 
 ## Optional Product Follow-Up
 
-- [ ] Design a Fabulor-owned, authenticated, and signed update feed before
+- [x] Design a Fabulor-owned, authenticated, and signed update feed in
+      [`docs/security/signed-update-feed-design.md`](docs/security/signed-update-feed-design.md).
+- [ ] Provision the update signing identities, metadata origin, bounded TUF
+      verifier, Authenticode verification, downloader, and manual UI before
       restoring in-client update checks.
 - [x] Store saved input history per network and channel under the profile
       `history` directory, and provide scoped `/CLEAR HISTORY` and `/CLEAR LOG`

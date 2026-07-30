@@ -170,6 +170,29 @@ class ProductionWixProfileTests(unittest.TestCase):
             for token in retired_tokens:
                 self.assertNotIn(token, source, f"{token} remains in {path}")
 
+    def test_future_updater_remains_behind_signed_feed_gate(self):
+        design = (
+            ROOT / "docs" / "security" / "signed-update-feed-design.md"
+        ).read_text(encoding="utf-8")
+        roadmap = (ROOT / "To-Do.md").read_text(encoding="utf-8")
+
+        required_design = (
+            "Status: design accepted; implementation and activation remain blocked.",
+            "The Update Framework (TUF) specification version 1.0.33",
+            "WinVerifyTrust",
+            "2 of 3",
+            "rollback",
+            "SubjectPublicKeyInfo",
+            "The in-client action remains absent until all of these are true:",
+        )
+        for requirement in required_design:
+            self.assertIn(requirement, design)
+
+        self.assertIn(
+            "- [ ] Provision the update signing identities, metadata origin,",
+            roadmap,
+        )
+
     def test_list_numeric_accepts_an_empty_trailing_topic(self):
         source = IRC_PROTOCOL_SOURCE.read_text(encoding="utf-8")
         list_numeric = re.search(
@@ -399,6 +422,7 @@ class ProductionWixProfileTests(unittest.TestCase):
             ROOT / "docs" / "gtk4" / "theme-architecture.md",
             ROOT / "docs" / "plugins" / "plugin-schema-and-troubleshooting.md",
             ROOT / "docs" / "security" / "README.md",
+            ROOT / "docs" / "security" / "signed-update-feed-design.md",
             ROOT / "docs" / "security" / "trusted-config.md",
         )
         for path in current_paths:
