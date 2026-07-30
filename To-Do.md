@@ -44,13 +44,12 @@ Last reconciled: 2026-07-31
       startup behavior through installed-client testing.
 - [x] Record accessibility, rendering, lifecycle, performance, packaging, and
       installed acceptance evidence in `docs/gtk4/validation-log.md`.
+- [x] Publish `v1.0.6-rc.3` after its production-candidate pull request passed
+      all required checks, then verify the updater-retirement upgrade and
+      release metadata.
 
 ### Remaining Release Gate
 
-- [ ] Design a Fabulor-owned, signed update feed before restoring in-client
-      update checks.
-- [ ] Merge the current production-candidate pull request after all required
-      GitHub checks pass.
 - [ ] Perform one final release-candidate clean-install and upgrade pass from
       the last public installer.
 - [ ] Exercise repair and uninstall once against the final signed or
@@ -163,7 +162,8 @@ maintenance and must be tracked as contained follow-up fixes.
 - [x] Validate upgrade removal of retired runtime files.
 - [ ] Reassess optional GTK4 locales, icons, schemas, and helper tools only
       after the final release-candidate feature pass.
-- [ ] Publish installer and payload hashes with release metadata.
+- [x] Publish release-candidate installer and payload hashes with release
+      metadata.
 
 ## Obsolete Function Retirement
 
@@ -190,7 +190,7 @@ Detailed stages live in
       inputs.
 - [x] Move maintained add-ons to `Fabulor/add-ons`.
 - [x] Remove Python 3.12 and generated investigation artefacts.
-- [ ] Move active `win32/copy` payload assets into explicit `data` ownership.
+- [x] Move active `win32/copy` payload assets into explicit `data` ownership.
 - [ ] Audit the unbuilt text frontend, Windows compatibility shims, and
       duplicate backend implementations.
 - [ ] Review historical migration/security documents for archive policy.
@@ -209,6 +209,8 @@ Detailed stages live in
 
 ## Optional Product Follow-Up
 
+- [ ] Design a Fabulor-owned, authenticated, and signed update feed before
+      restoring in-client update checks.
 - [x] Store saved input history per network and channel under the profile
       `history` directory, and provide scoped `/CLEAR HISTORY` and `/CLEAR LOG`
       maintenance commands.

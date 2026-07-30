@@ -33,6 +33,8 @@ development milestones and do not imply public release dates.
   intentional XChat and HexChat compatibility imports.
 - Replaced broad runtime harvesting with validated GTK4, Python, Tcl, and .NET
   payload ownership.
+- Moved the remaining Windows copy payload into explicit `data` ownership and
+  retired the legacy `win32/copy` namespace.
 - Retired the inherited updater and WinSparkle payload until Fabulor has an
   authenticated, product-owned update feed.
 - Moved maintained user add-ons to the independent `Fabulor/add-ons`
@@ -54,6 +56,8 @@ development milestones and do not imply public release dates.
   callback cleanup.
 - Made the installer interface self-contained so setup can start on a clean
   Windows machine without a separately installed .NET Desktop runtime.
+- Restored installed ISO language and country data used by spell-check
+  language-name lookup.
 
 ### Security
 

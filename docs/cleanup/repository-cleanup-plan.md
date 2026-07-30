@@ -1,6 +1,6 @@
 # Repository Cleanup Plan
 
-Last updated: 2026-07-29
+Last updated: 2026-07-31
 
 ## Purpose
 
@@ -31,7 +31,7 @@ main client repository must not contain or stage a second add-ons checkout.
 | 2A | Remove the superseded Python 3.12 runtime and generated investigation artefacts | Published |
 | 2B | Remove stale ZoiteChat product branding and dead packaged metadata | Published |
 | 2C | Rename active Visual Studio solution, properties, and build-only identifiers for Fabulor | Published |
-| 3 | Move active `win32\copy` payload assets into owned `data` locations and retire the legacy copy namespace | Planned |
+| 3 | Move active `win32\copy` payload assets into owned `data` locations and retire the legacy copy namespace | Published |
 | 4 | Audit the unbuilt text frontend, Windows compatibility shims, and duplicate backend implementations | Planned |
 | 5 | Review historical migration/security documents for archive policy without deleting evidence required for maintenance | In progress |
 | 6 | Review internal ZoiteChat/XChat compatibility names separately from product branding | In progress |
@@ -273,7 +273,7 @@ Automated evidence for the native ABI pass:
 - the native API contract suite guards the Fabulor header, loader entry points,
   export definitions, bridge consumers, and current guidance;
 - the common library, GTK4 frontend, checksum, Exec, FiSHLiM, Python, and
-  Sysinfo, updater, notification, and launcher projects rebuild through the
+  Sysinfo, notification, and launcher projects rebuild through the
   complete x64 solution with zero warnings and errors;
 - all six native plugin DLLs extracted from the rebuilt MSI export the Fabulor
   entry points and no former product-prefixed entry points;
@@ -286,11 +286,38 @@ The installed checksum, Exec, FiSHLiM, and Python interface plugins loaded
 successfully, and the installed Python wrapper loaded the existing Python
 add-ons through the Fabulor-native bridge without retired-symbol errors.
 
+## Stage 3
+
+The legacy `win32\copy` payload namespace is retired. Its active files now have
+explicit owners:
+
+- shell metadata lives under `data\windows`;
+- application and plugin icons live under `data\icons`;
+- Adwaita attribution lives beside the bundled Adwaita assets; and
+- ISO language and country data lives under `data\iso-codes`.
+
+WiX continues to install the existing shell and icon files at their established
+runtime paths. The ISO data now has explicit WiX ownership under
+`share\xml\iso-codes`; this restores the language and country-name data expected
+by the enabled ISO-code lookup instead of silently falling back to raw codes.
+The orphaned updater `download.png` was deleted rather than moved because RC3
+retired its only consumer.
+
+Regression coverage requires every relocated source file, rejects the retired
+`win32\copy` namespace, and confirms the MSI still contains the established
+installed paths.
+
+Validation:
+
+- production WiX profile: 36/36 tests passed;
+- theme contract: 14/14 tests passed;
+- Release x64 solution and 37 native tests: passed;
+- MSI and bootstrapper rebuild: zero warnings and errors; and
+- production MSI, runtime-content, and bundle validation: passed, with 2,858
+  installed files and both ISO datasets present.
+
 ## Deliberately Retained
 
-- `win32\copy` currently supplies WiX assets and ISO code data at runtime. It is
-  active despite its legacy location and remains until Stage 3 moves each file
-  to an explicit owner.
 - Native generated symbol prefixes remain active ABI surfaces for their
   contained Stage 6 pass.
 - `src\fe-text` and `src\dirent` require build/reference audits before any

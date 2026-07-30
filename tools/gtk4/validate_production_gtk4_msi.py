@@ -15,6 +15,7 @@ UPGRADE_CODE = "8F6C0C7E-9A4D-4E4C-9F8C-2B6F5A4E9C11"
 REQUIRED_PATHS = {
     "fabulor.exe",
     "fabulor-gtk4-frontend.dll",
+    "readme.url",
     "Plugins/hcchecksum.dll",
     "Plugins/hcexec.dll",
     "Plugins/hcfishlim.dll",
@@ -23,11 +24,17 @@ REQUIRED_PATHS = {
     "Plugins/hcsysinfo.dll",
     "Runtime/plugin-host-manifest.json",
     "Runtime/GTK4/bin/gtk-4-1.dll",
+    "share/adwaita-icons-attribution.txt",
     "share/doc/fabulor/Licence.md",
     "share/doc/NotoColorEmoji/NotoColorEmoji-LICENSE.txt",
     "share/emoji-flags/eu.png",
     "share/fonts/NotoColorEmoji.ttf",
+    "share/gtkpref.png",
+    "share/music.png",
     "share/palettes/Fabulor Dark.hct",
+    "share/system.png",
+    "share/xml/iso-codes/iso_3166.xml",
+    "share/xml/iso-codes/iso_639.xml",
 }
 REQUIRED_FEATURES = {
     "MainFeature",
