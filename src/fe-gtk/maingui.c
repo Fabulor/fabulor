@@ -69,6 +69,7 @@
 #include "plugin-tray.h"
 #include "xtext.h"
 #include "ui-performance-profile.h"
+#include "sexy-iso-codes.h"
 #include "sexy-spell-entry.h"
 #include "servlistgui.h"
 #include "gtkutil.h"
@@ -4505,6 +4506,9 @@ typedef struct
 } EmojiPickerPage;
 
 #define MG_EMOJI_PAGE_DATA "fabulor-emoji-page"
+#define MG_EMOJI_FLAG_CODE_DATA "fabulor-emoji-flag-code"
+#define MG_EMOJI_FLAG_NAME_DATA "fabulor-emoji-flag-name"
+#define MG_EMOJI_FLAG_QUERY_DATA "fabulor-emoji-flag-query"
 #define MG_EMOJI_BUTTON_WIDTH 52
 #define MG_EMOJI_BUTTON_HEIGHT 48
 #define MG_EMOJI_FLAG_WIDTH 42
@@ -4747,7 +4751,7 @@ mg_emoji_scroller_new (GtkWidget **flow_out)
         return scrolled;
 }
 
-static void
+static GtkWidget *
 mg_emoji_add_button_sized (GtkWidget *flow, GtkEntry *entry,
                            GtkWidget *popover, GtkWidget *child,
                            const char *sequence, const char *tooltip,
@@ -4775,16 +4779,18 @@ mg_emoji_add_button_sized (GtkWidget *flow, GtkEntry *entry,
                                0);
 
         gtk_flow_box_append (GTK_FLOW_BOX (flow), button);
+        return button;
 }
 
-static void
+static GtkWidget *
 mg_emoji_add_button (GtkWidget *flow, GtkEntry *entry, GtkWidget *popover,
                      GtkWidget *child, const char *sequence,
                      const char *tooltip)
 {
-        mg_emoji_add_button_sized (flow, entry, popover, child, sequence,
-                                   tooltip, MG_EMOJI_BUTTON_WIDTH,
-                                   MG_EMOJI_BUTTON_HEIGHT);
+        return mg_emoji_add_button_sized (flow, entry, popover, child,
+                                          sequence, tooltip,
+                                          MG_EMOJI_BUTTON_WIDTH,
+                                          MG_EMOJI_BUTTON_HEIGHT);
 }
 
 static GtkWidget *
@@ -4817,23 +4823,90 @@ mg_emoji_codepoint_page_new (GtkEntry *entry, GtkWidget *popover, const gunichar
         return scrolled;
 }
 
+static const char *
+mg_emoji_flag_country_name (const char *code)
+{
+        const char *name;
+
+        if (g_strcmp0 (code, "AC") == 0)
+                return _("Ascension Island");
+        if (g_strcmp0 (code, "EU") == 0)
+                return _("European Union");
+        if (g_strcmp0 (code, "UN") == 0)
+                return _("United Nations");
+        if (g_strcmp0 (code, "XK") == 0)
+                return _("Kosovo");
+
+        name = codetable_country_lookup (code);
+        return name ? name : code;
+}
+
+static gboolean
+mg_emoji_flag_filter_cb (GtkFlowBoxChild *child, gpointer user_data)
+{
+        GtkWidget *button;
+        GtkWidget *flow = user_data;
+        const char *code;
+        const char *country_name;
+        const char *query;
+
+        button = gtk_flow_box_child_get_child (child);
+        code = g_object_get_data (G_OBJECT (button), MG_EMOJI_FLAG_CODE_DATA);
+        country_name = g_object_get_data (G_OBJECT (button),
+                                          MG_EMOJI_FLAG_NAME_DATA);
+        query = g_object_get_data (G_OBJECT (flow),
+                                   MG_EMOJI_FLAG_QUERY_DATA);
+        return fabulor_emoji_picker_flag_matches (code, country_name, query);
+}
+
+static void
+mg_emoji_flag_search_changed_cb (GtkSearchEntry *search, gpointer user_data)
+{
+        GtkWidget *flow = user_data;
+
+        g_object_set_data_full (
+                        G_OBJECT (flow), MG_EMOJI_FLAG_QUERY_DATA,
+                        g_strdup (gtk_editable_get_text (GTK_EDITABLE (search))),
+                        g_free);
+        gtk_flow_box_invalidate_filter (GTK_FLOW_BOX (flow));
+}
+
 static GtkWidget *
 mg_emoji_flags_page_new (GtkEntry *entry, GtkWidget *popover)
 {
+        GtkWidget *page;
+        GtkWidget *search;
         GtkWidget *scrolled;
         GtkWidget *flow;
         GtkWidget *box;
+        GtkWidget *button;
         GtkWidget *image;
         GtkWidget *label;
         GdkPixbuf *pixbuf;
+        const char *country_name;
         char *sequence;
         char *tooltip;
         int i;
 
+        page = gtk_box_new (GTK_ORIENTATION_VERTICAL, 6);
+        search = gtk_search_entry_new ();
+        gtk_search_entry_set_placeholder_text (GTK_SEARCH_ENTRY (search),
+                                               _("Search flags"));
+        gtk_widget_set_hexpand (search, TRUE);
         scrolled = mg_emoji_scroller_new (&flow);
+        gtk_flow_box_set_filter_func (GTK_FLOW_BOX (flow),
+                                      mg_emoji_flag_filter_cb,
+                                      flow, NULL);
+        g_signal_connect_object (search, "search-changed",
+                                 G_CALLBACK (mg_emoji_flag_search_changed_cb),
+                                 flow, 0);
+
+        codetable_init ();
 
         for (i = 0; mg_emoji_flag_codes[i] != NULL; i++)
         {
+                country_name = mg_emoji_flag_country_name (
+                                                mg_emoji_flag_codes[i]);
                 sequence = mg_emoji_flag_sequence (mg_emoji_flag_codes[i]);
                 if (sequence == NULL)
                         continue;
@@ -4868,23 +4941,35 @@ mg_emoji_flags_page_new (GtkEntry *entry, GtkWidget *popover)
                         fabulor_gtk_box_append (GTK_BOX (box), image, FALSE, FALSE, 0);
                         fabulor_gtk_box_append (GTK_BOX (box), label, FALSE, FALSE, 0);
 
-                        tooltip = g_strdup_printf (_("Insert %s flag."), mg_emoji_flag_codes[i]);
-                        mg_emoji_add_button (flow, entry, popover, box,
-                                             sequence, tooltip);
+                        tooltip = g_strdup_printf (_("Insert %s (%s) flag."),
+                                                   country_name,
+                                                   mg_emoji_flag_codes[i]);
+                        button = mg_emoji_add_button (flow, entry, popover,
+                                                     box, sequence, tooltip);
                         g_free (tooltip);
                 }
                 else
                 {
                         label = gtk_label_new (mg_emoji_flag_codes[i]);
-                        mg_emoji_add_button (flow, entry, popover, label,
-                                             sequence,
-                                             mg_emoji_flag_codes[i]);
+                        button = mg_emoji_add_button (flow, entry, popover,
+                                                     label, sequence,
+                                                     country_name);
                 }
 
+                g_object_set_data_full (G_OBJECT (button),
+                                        MG_EMOJI_FLAG_CODE_DATA,
+                                        g_strdup (mg_emoji_flag_codes[i]),
+                                        g_free);
+                g_object_set_data_full (G_OBJECT (button),
+                                        MG_EMOJI_FLAG_NAME_DATA,
+                                        g_strdup (country_name), g_free);
                 g_free (sequence);
         }
 
-        return scrolled;
+        codetable_free ();
+        fabulor_gtk_box_append (GTK_BOX (page), search, FALSE, FALSE, 0);
+        fabulor_gtk_box_append (GTK_BOX (page), scrolled, TRUE, TRUE, 0);
+        return page;
 }
 
 static void

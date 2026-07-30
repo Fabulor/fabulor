@@ -30,6 +30,7 @@
 
 static GHashTable *iso_639_table = NULL;
 static GHashTable *iso_3166_table = NULL;
+static guint codetable_refs = 0;
 
 static void
 iso_639_start_element (GMarkupParseContext *context,
@@ -140,6 +141,10 @@ codetable_init (void)
 		iso_3166_start_element, NULL, NULL, NULL, NULL
 	};
 
+	codetable_refs++;
+	if (codetable_refs > 1)
+		return;
+
 	g_return_if_fail (iso_639_table == NULL);
 	g_return_if_fail (iso_3166_table == NULL);
 
@@ -168,8 +173,13 @@ codetable_init (void)
 void
 codetable_free (void)
 {
+	g_return_if_fail (codetable_refs > 0);
 	g_return_if_fail (iso_639_table != NULL);
 	g_return_if_fail (iso_3166_table != NULL);
+
+	codetable_refs--;
+	if (codetable_refs > 0)
+		return;
 
 	g_hash_table_unref (iso_639_table);
 	g_hash_table_unref (iso_3166_table);
@@ -223,4 +233,21 @@ codetable_lookup (const gchar *language_code, const gchar **language_name, const
 	}
 
 	g_strfreev (parts);
+}
+
+const gchar *
+codetable_country_lookup (const gchar *country_code)
+{
+	gchar normalized[3];
+
+	g_return_val_if_fail (iso_3166_table != NULL, NULL);
+	if (!country_code || strlen (country_code) != 2 ||
+		!g_ascii_isalpha (country_code[0]) ||
+		!g_ascii_isalpha (country_code[1]))
+		return NULL;
+
+	normalized[0] = g_ascii_toupper (country_code[0]);
+	normalized[1] = g_ascii_toupper (country_code[1]);
+	normalized[2] = '\0';
+	return g_hash_table_lookup (iso_3166_table, normalized);
 }

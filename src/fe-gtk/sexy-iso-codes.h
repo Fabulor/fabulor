@@ -31,6 +31,7 @@ void codetable_free (void);
 void codetable_lookup (const gchar *language_code,
 	const gchar **language_name,
 	const gchar **country_name);
+const gchar *codetable_country_lookup (const gchar *country_code);
 
 G_END_DECLS
 

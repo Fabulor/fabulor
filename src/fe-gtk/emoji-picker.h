@@ -16,6 +16,8 @@ const gunichar *fabulor_emoji_picker_page_items (
 
 gchar *fabulor_emoji_picker_flag_sequence (const gchar *code);
 gchar *fabulor_emoji_picker_codepoint_sequence (gunichar codepoint);
+gboolean fabulor_emoji_picker_flag_matches (const gchar *code,
+	const gchar *country_name, const gchar *query);
 void fabulor_emoji_picker_viewport_size (gint root_width, gint root_height,
 	gint *width, gint *height);
 
