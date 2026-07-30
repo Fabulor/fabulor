@@ -5,7 +5,6 @@
 		<!-- SPECIFY YOUR DEPENDENCY DIRECTORIES HERE -->
 
 		<YourPython3Path>c:\gtk-build\python-3.14</YourPython3Path>
-		<YourWinSparklePath>c:\gtk-build\WinSparkle</YourWinSparklePath>
 
 		<!-- YOU SHOULDN'T TOUCH ANYTHING BELOW -->
 
@@ -24,11 +23,6 @@
 		<FabulorSupportDepsRoot Condition="'$(FabulorSupportDepsRoot)'==''">$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\build\vcpkg-installed\x64-windows'))</FabulorSupportDepsRoot>
 		<DepsRoot>$(FabulorGtk4Root)</DepsRoot>
 		<GtkDepsRoot>$(FabulorGtk4Root)</GtkDepsRoot>
-		<WinSparklePath Condition="Exists('$(YourWinSparklePath)\$(FabulorPlatform)\WinSparkle.dll') or Exists('$(YourWinSparklePath)\$(FabulorPlatform)\WinSparkle.lib') or Exists('$(YourWinSparklePath)\$(FabulorPlatform)\winsparkle.h')">$(YourWinSparklePath)\$(FabulorPlatform)</WinSparklePath>
-		<WinSparklePath Condition="'$(WinSparklePath)'=='' and (Exists('$(YourWinSparklePath)\WinSparkle.dll') or Exists('$(YourWinSparklePath)\WinSparkle.lib') or Exists('$(YourWinSparklePath)\winsparkle.h'))">$(YourWinSparklePath)</WinSparklePath>
-		<WinSparkleIncludePath Condition="Exists('$(WinSparklePath)\include\winsparkle.h')">$(WinSparklePath)\include</WinSparkleIncludePath>
-		<WinSparkleIncludePath Condition="'$(WinSparkleIncludePath)'=='' and Exists('$(WinSparklePath)\winsparkle.h')">$(WinSparklePath)</WinSparkleIncludePath>
-		<WinSparkleIncludePath Condition="'$(WinSparkleIncludePath)'=='' and Exists('$(YourWinSparklePath)\include\winsparkle.h')">$(YourWinSparklePath)\include</WinSparkleIncludePath>
 		<Python3Path>$(YourPython3Path)\$(FabulorPlatform)</Python3Path>
 		<Python3Lib>python314</Python3Lib>
 		<Python3Output>hcpython3</Python3Output>

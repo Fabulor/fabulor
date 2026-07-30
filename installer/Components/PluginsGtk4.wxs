@@ -36,19 +36,5 @@
       <Files Include="$(var.Gtk4FrontendRoot)\plugins\hcsysinfo.dll" />
     </ComponentGroup>
 
-    <ComponentGroup Id="UpdatePluginComponents">
-      <Component Id="UpdatePluginBinary" Guid="8E86FC18-9D9B-472E-B0B0-54B6362D0504" Directory="PLUGINDIR">
-        <File Id="UpdatePluginBinaryFile"
-              Source="$(var.Gtk4FrontendRoot)\plugins\hcupd.dll"
-              Name="hcupd.dll"
-              KeyPath="yes" />
-      </Component>
-      <Component Id="WinSparkleRuntimeBinary" Guid="1814E6D0-85E6-43FF-80AA-562EC7D670E4" Directory="INSTALLFOLDER">
-        <File Id="WinSparkleRuntimeBinaryFile"
-              Source="$(var.FabulorPayloadRoot)\WinSparkle.dll"
-              Name="WinSparkle.dll"
-              KeyPath="yes" />
-      </Component>
-    </ComponentGroup>
   </Fragment>
 </Wix>

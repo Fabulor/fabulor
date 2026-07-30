@@ -518,7 +518,9 @@ Provenance issue:
 
 Minimum follow-up:
 
-- Create a runtime payload bill of materials covering GTK, Python, Tcl, .NET, WinSparkle, Perl, MSYS2 packages, and other bundled binaries.
+- Create a runtime payload bill of materials covering GTK, Python, Tcl, .NET,
+  MSYS2 packages, and other bundled binaries. Any future updater runtime must
+  be added only with a Fabulor-owned authenticated feed.
 - Add expected SHA-256 checks to CI download/extraction steps.
 - Replace broad wildcard harvesting with allowlists or generated locked manifests where practical.
 - Add an installer payload audit step that fails on unexpected files.

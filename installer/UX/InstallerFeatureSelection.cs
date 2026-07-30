@@ -22,8 +22,6 @@ public sealed class InstallerFeatureSelection
 
     public bool IncludeSysinfoPlugin { get; set; } = true;
 
-    public bool IncludeUpdatePlugin { get; set; } = true;
-
     public InstallerFeatureSelection Clone()
     {
         return new InstallerFeatureSelection
@@ -37,8 +35,7 @@ public sealed class InstallerFeatureSelection
             IncludeChecksumPlugin = this.IncludeChecksumPlugin,
             IncludeExecPlugin = this.IncludeExecPlugin,
             IncludeFishlimPlugin = this.IncludeFishlimPlugin,
-            IncludeSysinfoPlugin = this.IncludeSysinfoPlugin,
-            IncludeUpdatePlugin = this.IncludeUpdatePlugin
+            IncludeSysinfoPlugin = this.IncludeSysinfoPlugin
         };
     }
 }

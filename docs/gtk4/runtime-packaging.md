@@ -354,6 +354,19 @@ Each packaging PR must cover as applicable:
 - MSI ICE validation or a documented environment limitation
 - artifact and installed-file hashes
 
+## Updater Retirement
+
+The 1.0.6 RC3 package removes the inherited updater plugin and WinSparkle
+runtime. Its external appcast was controlled by ZoiteChat and advertised
+ZoiteChat installers as updates to Fabulor. The Help menu, native autoload
+entry, build project, staging inputs, MSI feature, and bootstrapper option are
+all absent.
+
+In-client update checks must remain unavailable until Fabulor owns the feed,
+release assets, product metadata, and package-signing keys. A restored updater
+must authenticate its appcast and installer before offering or launching an
+update.
+
 ## Cutover Gate
 
 The GTK4 cutover gate is complete:

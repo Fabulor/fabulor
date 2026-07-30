@@ -32,7 +32,6 @@ public sealed class FabulorBootstrapperApplication : BootstrapperApplication
     private const string ExecPluginFeatureId = "ExecPluginFeature";
     private const string FishlimPluginFeatureId = "FishlimPluginFeature";
     private const string SysinfoPluginFeatureId = "SysinfoPluginFeature";
-    private const string UpdatePluginFeatureId = "UpdatePluginFeature";
 
     private int lastResult;
     private bool isFabulorMsiInstalled;
@@ -213,7 +212,7 @@ public sealed class FabulorBootstrapperApplication : BootstrapperApplication
         this.window.SetProgress(0);
         this.window.SetStatus(statusText + "…");
         this.window.AppendLog(this.DescribePlannedAction(action, statusText));
-        this.window.AppendLog($"Feature snapshot: dotnet={this.currentPlanFeatureSelection.IncludeDotNetPluginHost}, python={this.currentPlanFeatureSelection.IncludePythonRuntime}, tcl={this.currentPlanFeatureSelection.IncludeTclRuntime}, themeAssets=fixed, gtk4=fixed, startMenu={this.currentPlanFeatureSelection.IncludeStartMenuShortcuts}, shellIntegration={this.currentPlanFeatureSelection.IncludeShellIntegration}, translations={this.currentPlanFeatureSelection.IncludeTranslations}, checksum={this.currentPlanFeatureSelection.IncludeChecksumPlugin}, exec={this.currentPlanFeatureSelection.IncludeExecPlugin}, fishlim={this.currentPlanFeatureSelection.IncludeFishlimPlugin}, sysinfo={this.currentPlanFeatureSelection.IncludeSysinfoPlugin}, update={this.currentPlanFeatureSelection.IncludeUpdatePlugin}, portable={this.currentPlanPortable}.");
+        this.window.AppendLog($"Feature snapshot: dotnet={this.currentPlanFeatureSelection.IncludeDotNetPluginHost}, python={this.currentPlanFeatureSelection.IncludePythonRuntime}, tcl={this.currentPlanFeatureSelection.IncludeTclRuntime}, themeAssets=fixed, gtk4=fixed, startMenu={this.currentPlanFeatureSelection.IncludeStartMenuShortcuts}, shellIntegration={this.currentPlanFeatureSelection.IncludeShellIntegration}, translations={this.currentPlanFeatureSelection.IncludeTranslations}, checksum={this.currentPlanFeatureSelection.IncludeChecksumPlugin}, exec={this.currentPlanFeatureSelection.IncludeExecPlugin}, fishlim={this.currentPlanFeatureSelection.IncludeFishlimPlugin}, sysinfo={this.currentPlanFeatureSelection.IncludeSysinfoPlugin}, portable={this.currentPlanPortable}.");
         if (this.isFabulorMsiInstalled && (action == LaunchAction.Repair || action == LaunchAction.Uninstall))
         {
             this.window.AppendLog("Maintenance action is using the detected installed mode and feature state, not any pending UI edits.");
@@ -426,9 +425,7 @@ public sealed class FabulorBootstrapperApplication : BootstrapperApplication
             IncludeChecksumPlugin = System.IO.File.Exists(System.IO.Path.Combine(installFolder, "plugins", "hcchecksum.dll")),
             IncludeExecPlugin = System.IO.File.Exists(System.IO.Path.Combine(installFolder, "plugins", "hcexec.dll")),
             IncludeFishlimPlugin = System.IO.File.Exists(System.IO.Path.Combine(installFolder, "plugins", "hcfishlim.dll")),
-            IncludeSysinfoPlugin = System.IO.File.Exists(System.IO.Path.Combine(installFolder, "plugins", "hcsysinfo.dll")),
-            IncludeUpdatePlugin = System.IO.File.Exists(System.IO.Path.Combine(installFolder, "plugins", "hcupd.dll"))
-                && System.IO.File.Exists(System.IO.Path.Combine(installFolder, "WinSparkle.dll"))
+            IncludeSysinfoPlugin = System.IO.File.Exists(System.IO.Path.Combine(installFolder, "plugins", "hcsysinfo.dll"))
         };
     }
 
@@ -445,7 +442,6 @@ public sealed class FabulorBootstrapperApplication : BootstrapperApplication
         this.ApplyDetectedFeatureState(selection, ExecPluginFeatureId, value => selection.IncludeExecPlugin = value);
         this.ApplyDetectedFeatureState(selection, FishlimPluginFeatureId, value => selection.IncludeFishlimPlugin = value);
         this.ApplyDetectedFeatureState(selection, SysinfoPluginFeatureId, value => selection.IncludeSysinfoPlugin = value);
-        this.ApplyDetectedFeatureState(selection, UpdatePluginFeatureId, value => selection.IncludeUpdatePlugin = value);
         return selection;
     }
 
@@ -507,7 +503,6 @@ public sealed class FabulorBootstrapperApplication : BootstrapperApplication
             ExecPluginFeatureId => selection.IncludeExecPlugin ? FeatureState.Local : FeatureState.Absent,
             FishlimPluginFeatureId => selection.IncludeFishlimPlugin ? FeatureState.Local : FeatureState.Absent,
             SysinfoPluginFeatureId => selection.IncludeSysinfoPlugin ? FeatureState.Local : FeatureState.Absent,
-            UpdatePluginFeatureId => selection.IncludeUpdatePlugin ? FeatureState.Local : FeatureState.Absent,
             _ => e.RecommendedState
         };
 

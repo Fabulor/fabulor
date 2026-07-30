@@ -78,9 +78,6 @@ jobs:
           $supportRoot = Join-Path $supportInstallRoot 'x64-windows'
           "FABULOR_SUPPORT_DEPS_ROOT=$supportRoot" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
 
-          Download-WithRetry -Url https://github.com/ZoiteChat/gvsbuild/releases/download/zoitechat-2.18.0-pre4/WinSparkle-20260315.7z -OutFile deps\WinSparkle.7z
-          & 7z.exe x deps\WinSparkle.7z -oC:\gtk-build\WinSparkle
-
           Download-WithRetry -Url https://sourceforge.net/projects/magicsplat/files/magicsplat-tcl/tcl-8.6.16-installer-1.16.0-x64.msi/download -OutFile deps\tcltk-sourceforge.html
           $tclMsiMatch = [regex]::Match((Get-Content -Raw deps\tcltk-sourceforge.html), 'https://downloads\.sourceforge\.net/project/magicsplat/magicsplat-tcl/tcl-8\.6\.16-installer-1\.16\.0-x64\.msi\?[^"\s<>]*use_mirror=[^"\s<>]*')
           if (-not $tclMsiMatch.Success) {

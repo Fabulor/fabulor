@@ -1,7 +1,7 @@
 <!-- Fabulor production roadmap -->
 # Fabulor Production Roadmap
 
-Last reconciled: 2026-07-29
+Last reconciled: 2026-07-31
 
 ## Current Production Baseline
 
@@ -18,7 +18,8 @@ Last reconciled: 2026-07-29
 - [x] Enchant 2.8.19 and WinSpell provide the supported Windows spell-checking
       path; the legacy Enchant fallback is retired.
 - [x] Installed and portable modes are implemented by the bootstrapper.
-- [x] WinSparkle and the update plugin remain the supported updater path.
+- [x] The inherited WinSparkle updater is retired because its external
+      appcast offered ZoiteChat packages as Fabulor updates.
 - [x] Inno Setup, GTK3 packaging, Lua, Perl, and bundled user add-ons are
       retired from the supported product.
 
@@ -37,8 +38,7 @@ Last reconciled: 2026-07-29
       the operating system's full connection timeout.
 - [x] Validate C#, Python, and Tcl plugin hosts and simple add-on loading.
 - [x] Validate spell checking, suggestions, personal dictionaries, URL paste,
-      emoji and flag rendering, sounds, tray behavior, themes, and updater
-      installation.
+      emoji and flag rendering, sounds, tray behavior, and themes.
 - [x] Validate GTK4 menus, dialogs, channel navigation, transcript selection,
       clipboard copying, URL activation, user-list ownership, and server-tab
       startup behavior through installed-client testing.
@@ -47,6 +47,8 @@ Last reconciled: 2026-07-29
 
 ### Remaining Release Gate
 
+- [ ] Design a Fabulor-owned, signed update feed before restoring in-client
+      update checks.
 - [ ] Merge the current production-candidate pull request after all required
       GitHub checks pass.
 - [ ] Perform one final release-candidate clean-install and upgrade pass from

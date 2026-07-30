@@ -15,7 +15,6 @@
     <NativeExtensionProject Include="$(MSBuildThisFileDirectory)..\..\plugins\fishlim\fishlim.vcxproj" />
     <NativeExtensionProject Include="$(MSBuildThisFileDirectory)..\..\plugins\python\python3.vcxproj" />
     <NativeExtensionProject Include="$(MSBuildThisFileDirectory)..\..\plugins\sysinfo\sysinfo.vcxproj" />
-    <NativeExtensionProject Include="$(MSBuildThisFileDirectory)..\..\plugins\upd\upd.vcxproj" />
     <NativeExtensionProject Include="$(MSBuildThisFileDirectory)..\..\src\fe-gtk\notifications\notifications-winrt.vcxproj" />
   </ItemGroup>
 

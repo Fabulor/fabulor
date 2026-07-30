@@ -47,13 +47,11 @@
     <Error Condition="!Exists('$(FabulorPayloadRoot)\cert.pem')" Text="Missing GTK4 certificate bundle at $(FabulorPayloadRoot)." />
     <Error Condition="!Exists('$(FabulorPayloadRoot)\libssl-3-x64.dll')" Text="Missing GTK4 OpenSSL runtime at $(FabulorPayloadRoot)." />
     <Error Condition="!Exists('$(FabulorPayloadRoot)\libcrypto-3-x64.dll')" Text="Missing GTK4 OpenSSL crypto runtime at $(FabulorPayloadRoot)." />
-    <Error Condition="!Exists('$(FabulorPayloadRoot)\WinSparkle.dll')" Text="Missing GTK4 WinSparkle runtime at $(FabulorPayloadRoot)." />
     <Error Condition="!Exists('$(Gtk4FrontendRoot)\plugins\hcchecksum.dll')" Text="Missing GTK4 native extensions at $(Gtk4FrontendRoot)\plugins." />
     <Error Condition="!Exists('$(Gtk4FrontendRoot)\plugins\hcexec.dll')" Text="Missing GTK4 Exec extension at $(Gtk4FrontendRoot)\plugins." />
     <Error Condition="!Exists('$(Gtk4FrontendRoot)\plugins\hcfishlim.dll')" Text="Missing GTK4 FiSHLiM extension at $(Gtk4FrontendRoot)\plugins." />
     <Error Condition="!Exists('$(Gtk4FrontendRoot)\plugins\hcnotifications-winrt.dll')" Text="Missing GTK4 notification extension at $(Gtk4FrontendRoot)\plugins." />
     <Error Condition="!Exists('$(Gtk4FrontendRoot)\plugins\hcsysinfo.dll')" Text="Missing GTK4 Sysinfo extension at $(Gtk4FrontendRoot)\plugins." />
-    <Error Condition="!Exists('$(Gtk4FrontendRoot)\plugins\hcupd.dll')" Text="Missing GTK4 updater extension at $(Gtk4FrontendRoot)\plugins." />
     <Error Condition="!Exists('$(Gtk4FrontendRoot)\plugins\hcpython3.dll')" Text="Missing GTK4 Python host extension at $(Gtk4FrontendRoot)\plugins." />
     <Error Condition="!Exists('$(Gtk4EnchantRoot)\libenchant-2-2.dll')" Text="Missing GTK4-compatible Enchant core at $(Gtk4EnchantRoot)." />
     <Error Condition="!Exists('$(Gtk4EnchantRoot)\lib\enchant-2\enchant_winspell.dll')" Text="Missing GTK4-compatible WinSpell provider at $(Gtk4EnchantRoot)." />

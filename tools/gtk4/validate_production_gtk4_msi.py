@@ -21,7 +21,6 @@ REQUIRED_PATHS = {
     "Plugins/hcnotifications-winrt.dll",
     "Plugins/hcpython3.dll",
     "Plugins/hcsysinfo.dll",
-    "Plugins/hcupd.dll",
     "Runtime/plugin-host-manifest.json",
     "Runtime/GTK4/bin/gtk-4-1.dll",
     "share/doc/fabulor/Licence.md",
@@ -45,6 +44,15 @@ FORBIDDEN_MARKERS = (
     "gtk-3",
     "gtk3",
 )
+FORBIDDEN_PATHS = {
+    "plugins/hcupd.dll",
+    "winsparkle.dll",
+    "share/download.png",
+}
+FORBIDDEN_FEATURES = {
+    "LegacyGtkCompatibilityFeature",
+    "UpdatePluginFeature",
+}
 
 
 class ProductionGtk4MsiError(Exception):
@@ -110,10 +118,15 @@ def validate_paths(paths):
         path for path in paths
         if any(marker in path.casefold() for marker in FORBIDDEN_MARKERS)
     )
-    if missing or forbidden:
+    forbidden_paths = sorted(
+        folded[path.casefold()]
+        for path in FORBIDDEN_PATHS
+        if path.casefold() in folded
+    )
+    if missing or forbidden or forbidden_paths:
         raise ProductionGtk4MsiError(
             f"Production payload mismatch; missing={missing}, "
-            f"legacy_gtk={forbidden[:20]}"
+            f"legacy_gtk={forbidden[:20]}, retired={forbidden_paths}"
         )
 
 
@@ -126,8 +139,11 @@ def validate_features(root):
         raise ProductionGtk4MsiError(
             f"Production feature contract is incomplete: {missing}"
         )
-    if "LegacyGtkCompatibilityFeature" in features:
-        raise ProductionGtk4MsiError("Legacy GTK feature remains in production MSI")
+    forbidden = sorted(FORBIDDEN_FEATURES.intersection(features))
+    if forbidden:
+        raise ProductionGtk4MsiError(
+            f"Retired production features remain in MSI: {forbidden}"
+        )
 
 
 def parse_args(argv):

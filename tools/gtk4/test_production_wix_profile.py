@@ -70,6 +70,7 @@ GTK4_TRANSCRIPT_RENDERER = ROOT / "src" / "fe-gtk" / "xtext.c"
 IRC_PROTOCOL_SOURCE = ROOT / "src" / "common" / "proto-irc.c"
 GTK4_CHANNEL_LIST_SOURCE = ROOT / "src" / "fe-gtk" / "channel-list.c"
 GTK4_MENU_SOURCE = ROOT / "src" / "fe-gtk" / "menu.c"
+PLUGIN_LOADER_SOURCE = ROOT / "src" / "common" / "plugin.c"
 GTK4_TRAY_SOURCES = (
     "plugin-tray.c",
     "tray-menu-presenter-gtk4.c",
@@ -136,6 +137,40 @@ WIX_NS = {"w": "http://wixtoolset.org/schemas/v4/wxs"}
 
 
 class ProductionWixProfileTests(unittest.TestCase):
+    def test_inherited_updater_is_retired(self):
+        self.assertFalse((ROOT / "plugins" / "upd" / "upd.c").exists())
+        self.assertFalse((ROOT / "plugins" / "upd" / "upd.vcxproj").exists())
+
+        sources = (
+            SOLUTION,
+            PROPS,
+            NATIVE_EXTENSIONS,
+            PLUGIN_LOADER_SOURCE,
+            INSTALLER / "Fabulor.wixproj",
+            INSTALLER / "ProductGtk4.wxs",
+            INSTALLER / "Components" / "PluginsGtk4.wxs",
+            INSTALLER / "UX" / "FabulorBootstrapperApplication.cs",
+            INSTALLER / "UX" / "InstallerFeatureSelection.cs",
+            INSTALLER / "UX" / "MainWindow.xaml",
+            ROOT / "tools" / "gtk4" / "native-extension-contract.json",
+            ROOT / "tools" / "gtk4" / "production-support-contract.json",
+            ROOT / "tools" / "gtk4" / "stage_production_support.py",
+            ROOT / ".github" / "workflows" / "tests.yml",
+            ROOT / ".github" / "workflows" / "windows-build.yml",
+        )
+        retired_tokens = (
+            "zoitechat.org/appcast.xml",
+            "WinSparkle",
+            "hcupd",
+            "IncludeUpdatePlugin",
+            "UpdatePluginFeature",
+        )
+
+        for path in sources:
+            source = path.read_text(encoding="utf-8")
+            for token in retired_tokens:
+                self.assertNotIn(token, source, f"{token} remains in {path}")
+
     def test_list_numeric_accepts_an_empty_trailing_topic(self):
         source = IRC_PROTOCOL_SOURCE.read_text(encoding="utf-8")
         list_numeric = re.search(

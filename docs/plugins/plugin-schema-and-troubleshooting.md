@@ -77,7 +77,7 @@ Fabulor currently has two plugin families:
 1. Native plugin DLLs loaded by the in-process plugin loader.
 2. C#, Python, and Tcl plugins loaded through the simple add-on and manifest plugin model.
 
-Native C plugins are first-party compatibility components. On Windows the native autoload list includes installed DLLs such as checksum, Exec, FiSHLiM, Sysinfo, update, and language/runtime bridge plugins from the installed plugin library directory. User-selected native DLLs under the profile `addons` directory remain a local-trust compatibility path, but they are not the recommended third-party extension model.
+Native C plugins are first-party compatibility components. On Windows the native autoload list includes installed DLLs such as checksum, Exec, FiSHLiM, Sysinfo, and language/runtime bridge plugins from the installed plugin library directory. User-selected native DLLs under the profile `addons` directory remain a local-trust compatibility path, but they are not the recommended third-party extension model.
 
 Manifest plugins do not introduce a C language target. The manifest schema intentionally remains limited to `csharp`, `python`, and `tcl` while the shared API, isolation model, and capability policy are being hardened. Existing native plugins should not be migrated into manifests just to make them appear in the new catalog; any migration should be a deliberate redesign of that plugin around the shared API.
 
