@@ -1,7 +1,7 @@
 <!-- Fabulor production roadmap -->
 # Fabulor Production Roadmap
 
-Last reconciled: 2026-07-29
+Last reconciled: 2026-07-30
 
 ## Current Production Baseline
 
@@ -45,10 +45,24 @@ Last reconciled: 2026-07-29
 - [x] Record accessibility, rendering, lifecycle, performance, packaging, and
       installed acceptance evidence in `docs/gtk4/validation-log.md`.
 
+### Accepted And Pending Merge
+
+- [x] Rename the remaining native plugin ABI and generated bridge symbols for
+      Fabulor; installed C#, Python, Tcl, and native add-ons pass acceptance.
+      PR #256 is green and awaiting merge.
+- [x] Restore `/CYCLE` rejoin behavior through ZNC and other bouncers.
+      PR #257 is green and awaiting merge.
+- [x] Restore installer focus after the elevated UAC phase for update, modify,
+      and uninstall workflows. PR #258 is green and awaiting merge.
+- [x] Complete the production About and Help presentation with GPLv3 metadata,
+      project lineage, maintainer and security-review acknowledgements,
+      supported links, installed licence ownership, and crisp high-resolution
+      artwork. PR #259 is green and awaiting merge.
+
 ### Remaining Release Gate
 
-- [ ] Merge the current production-candidate pull request after all required
-      GitHub checks pass.
+- [ ] Merge accepted PRs #256 through #259 after confirming their required
+      GitHub checks remain green.
 - [ ] Perform one final release-candidate clean-install and upgrade pass from
       the last public installer.
 - [ ] Exercise repair and uninstall once against the final signed or
@@ -91,8 +105,10 @@ Detailed evidence lives in:
       log-mask, callback, runtime-root, and theme-import findings.
 - [ ] Decide whether the shared plugin API should expose additional helpers
       before manifest plugins can be enabled by default.
-- [ ] Complete the deliberate API-boundary review for restricting plugin access
-      to the supported `ZoiteChatAPI`/`FabulorAPI` surface.
+- [x] Complete the deliberate API-boundary review and restrict supported public
+      Python, Tcl, and managed C# contracts to Fabulor-owned names.
+- [ ] Merge the accepted native ABI rename in PR #256 to make `FabulorAPI` and
+      the Fabulor bridge symbols the sole supported native surface.
 
 ## Plugins And Add-Ons
 
@@ -106,6 +122,8 @@ Detailed evidence lives in:
 - [x] Maintain one simple C#, Python, and Tcl example under `samples/plugins`.
 - [x] Move maintained user add-ons to the independent `Fabulor/add-ons`
       repository.
+- [x] Make `fabulor`, `fabulor::*`, and the `IFabulorPlugin` family the sole
+      supported Python, Tcl, and managed C# Fabulor-owned API names.
 - [x] Document plugin authoring, schema, compatibility, safe mode, and
       troubleshooting.
 - [ ] Add broader shared API helpers only as concrete add-on requirements are
@@ -200,15 +218,23 @@ Detailed stages live in
   - [x] Make `fabulor::*` the sole public Tcl namespace.
   - [x] Make `IFabulorPlugin`, `FabulorContext`, `FabulorEvent`, and
         `FabulorUserInfo` the sole managed C# plugin contract.
-  - [ ] Review and rename the native plugin ABI and remaining internal names.
+  - [ ] Merge the implemented and accepted native plugin ABI rename from
+        PR #256.
 - [ ] Audit ignored local build/runtime output and document a safe developer
       cleanup command.
+- [ ] Reconcile and close superseded stacked pull requests whose commits are
+      already present on `main`.
 
 ## Optional Product Follow-Up
 
 - [x] Store saved input history per network and channel under the profile
       `history` directory, and provide scoped `/CLEAR HISTORY` and `/CLEAR LOG`
       maintenance commands.
+- [x] Stabilize emoji-picker sizing, scrolling, flag presentation, and an
+      obvious close path.
+- [x] Complete installed About and Help acceptance, including project credits,
+      GPLv3 presentation, supported links, and high-resolution artwork; merge
+      remains tracked under the release gate.
 - [ ] Decide whether editbox flag sequences should remain Windows regional
       indicator text or receive custom inline-image rendering.
 - [ ] Consider country-name or search/filter support in the flag picker.
