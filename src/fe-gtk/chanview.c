@@ -22,8 +22,8 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "../common/zoitechat.h"
-#include "../common/zoitechatc.h"
+#include "../common/fabulor.h"
+#include "../common/fabulorc.h"
 #include "fe-gtk.h"
 #include "maingui.h"
 #include "gtkutil.h"
@@ -613,9 +613,9 @@ chan_remove (chan *ch, gboolean force)
 {
 	chan *new_ch;
 	chan *first_ch;
-	extern int zoitechat_is_quitting;
+	extern int fabulor_is_quitting;
 
-	if (zoitechat_is_quitting)	/* avoid lots of looping on exit */
+	if (fabulor_is_quitting)	/* avoid lots of looping on exit */
 		return TRUE;
 
 	/* is this ch allowed to be closed while still having children? */

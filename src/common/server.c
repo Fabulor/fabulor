@@ -40,12 +40,12 @@
 #include <unistd.h>
 #endif
 
-#include "zoitechat.h"
+#include "fabulor.h"
 #include "fe.h"
 #include "cfgfiles.h"
 #include "network.h"
 #include "notify.h"
-#include "zoitechatc.h"
+#include "fabulorc.h"
 #include "inbound.h"
 #include "outbound.h"
 #include "text.h"
@@ -414,7 +414,7 @@ server_read (GIOChannel *source, GIOCondition condition, server *serv)
 				serv->linebuf[serv->pos] = lbuf[i];
 				if (serv->pos >= (sizeof (serv->linebuf) - 1))
 					fprintf (stderr,
-								"*** ZOITECHAT WARNING: Buffer overflow - non-compliant server!\n");
+								"*** FABULOR WARNING: Buffer overflow - non-compliant server!\n");
 				else
 					serv->pos++;
 			}

@@ -254,7 +254,7 @@ fabulor_user_list_view_new (gboolean compact, gboolean show_hosts,
 	}
 	gtk_widget_set_hexpand (owner->view, TRUE);
 	gtk_widget_set_vexpand (owner->view, TRUE);
-	gtk_widget_set_name (owner->view, "zoitechat-userlist");
+	gtk_widget_set_name (owner->view, "fabulor-userlist");
 	gtk_widget_set_can_focus (owner->view, TRUE);
 	g_object_set_data_full (G_OBJECT (owner->view), FABULOR_USER_LIST_VIEW_DATA,
 		owner, g_free);

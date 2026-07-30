@@ -24,7 +24,7 @@
 
 #include "fe-gtk.h"
 
-#include "../common/zoitechat.h"
+#include "../common/fabulor.h"
 #include "../common/notify.h"
 #include "../common/cfgfiles.h"
 #include "../common/fe.h"

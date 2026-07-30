@@ -17,8 +17,8 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301, USA
  */
 
-#ifndef ZOITECHAT_CUSTOM_LIST_H
-#define ZOITECHAT_CUSTOM_LIST_H
+#ifndef FABULOR_CUSTOM_LIST_H
+#define FABULOR_CUSTOM_LIST_H
 
 #include <gtk/gtk.h>
 
@@ -101,4 +101,4 @@ void custom_list_append (CustomList *, chanlistrow *);
 void custom_list_resort (CustomList *);
 void custom_list_clear (CustomList *);
 
-#endif /* ZOITECHAT_CUSTOM_LIST_H */
+#endif /* FABULOR_CUSTOM_LIST_H */

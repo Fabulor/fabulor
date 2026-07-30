@@ -31,11 +31,12 @@ main client repository must not contain or stage a second add-ons checkout.
 | 2A | Remove the superseded Python 3.12 runtime and generated investigation artefacts | Published |
 | 2B | Remove stale ZoiteChat product branding and dead packaged metadata | Published |
 | 2C | Rename active Visual Studio solution, properties, and build-only identifiers for Fabulor | Published |
+| 2D | Replace the imported ZoiteChat changelog with Fabulor release-candidate history | Published |
 | 3 | Move active `win32\copy` payload assets into owned `data` locations and retire the legacy copy namespace | Published |
-| 4 | Audit the unbuilt text frontend, Windows compatibility shims, and duplicate backend implementations | Planned |
-| 5 | Review historical migration/security documents for archive policy without deleting evidence required for maintenance | In progress |
-| 6 | Review internal ZoiteChat/XChat compatibility names separately from product branding | In progress |
-| 7 | Audit ignored local build/runtime output and document a safe developer cleanup command | Planned |
+| 4 | Audit the unbuilt text frontend, Windows compatibility shims, and duplicate backend implementations | Published |
+| 5 | Review historical migration/security documents for archive policy without deleting evidence required for maintenance | Published |
+| 6 | Review internal ZoiteChat/XChat compatibility names separately from product branding | Published |
+| 7 | Audit ignored local build/runtime output and document a safe developer cleanup command | Published |
 
 ## Stage 1
 
@@ -151,7 +152,7 @@ Historical security records retain the build names used when their recorded
 scans were performed. Runtime internals and public plugin compatibility names
 remain outside this build-only stage.
 
-## Stage 5
+## Stage 2D
 
 The imported `changelog.rst` described ZoiteChat releases and was not consumed
 by the Fabulor build, installer, or documentation. It has been replaced by the
@@ -286,6 +287,45 @@ The installed checksum, Exec, FiSHLiM, and Python interface plugins loaded
 successfully, and the installed Python wrapper loaded the existing Python
 add-ons through the Fabulor-native bridge without retired-symbol errors.
 
+The final internal pass renames the active application core to `fabulor.c`,
+`fabulor.h`, and `fabulorc.h`. Private native functions and types, header
+guards, generated marshaller symbols, GTK CSS classes and object-data keys,
+icon variables, build macros, and dormant D-Bus identifiers now use Fabulor
+names. The retired semantic-version fallback and stale FiSHLiM ABI description
+were also removed.
+
+Saved network passwords move to Fabulor-owned credential targets. Existing
+ZoiteChat credential targets are a persisted-data exception: the client reads
+one only when no Fabulor credential exists, writes the password to the current
+target, and deletes the legacy entry after a successful migration.
+
+The following reviewed names remain intentionally:
+
+- Python `xchat` and `hexchat` imports and native `xchatdir` information keys
+  remain public compatibility surfaces;
+- persisted `hex_*` preference fields remain coupled to the established
+  configuration and plugin preference schema;
+- retired Python/native tokens remain in denylist and regression checks;
+- the GTK4 dependency contract retains its upstream archive filename and URL;
+- the local `C:\zoitechat-build` path remains an active developer build root
+  until Stage 7 audits ignored build/runtime output; and
+- copyright, lineage, credits, archived reviews, and translation history
+  retain factual attribution.
+
+Automated evidence for the final internal pass:
+
+- core API and cleanup contracts pass 26/26 tests;
+- the complete GTK4 Python suite passes 95/95 tests;
+- the theme contract validator passes;
+- the two native GTK theme suites pass 22/22 tests;
+- the Release x64 solution and 37 native tests pass with zero warnings and
+  errors;
+- the version 1.0.6 MSI and bootstrapper rebuild with zero warnings and
+  errors; and
+- production MSI validation reports 2,858 installed files and no legacy GTK
+  payload, runtime validation verifies all content hashes, and bundle
+  validation confirms the embedded MSI identity.
+
 ## Stage 3
 
 The legacy `win32\copy` payload namespace is retired. Its active files now have
@@ -316,14 +356,123 @@ Validation:
 - production MSI, runtime-content, and bundle validation: passed, with 2,858
   installed files and both ISO datasets present.
 
+## Stage 4
+
+The repository now contains only the frontend and platform backends used by the
+supported Windows 11+, GTK4 product:
+
+- the unbuilt `src\fe-text` console frontend and its standalone Visual Studio
+  project were removed;
+- the unreferenced `src\dirent` compatibility header was removed;
+- the unbuilt dummy and freedesktop notification implementations were removed,
+  leaving the active Windows notification bridge and WinRT helper;
+- the unbuilt macOS sysinfo backend and its unreferenced shared disk helpers
+  were removed.
+
+The two Windows sysinfo source files are deliberately retained because they are
+separate active layers rather than duplicate implementations. The common
+backend owns WMI collection and is linked into `common.lib`; the plugin backend
+formats that data and exposes it through the native sysinfo plugin.
+
+The GTK4 compatibility helper, Windows application manifest, and
+`tools\enchant-msvc\compat` sources are also retained. Each is referenced by
+the production build and provides current GTK4, Windows-version, or MSVC
+portability behavior.
+
+Regression coverage rejects every removed Stage 4 path and requires the active
+Windows notification, sysinfo, GTK4 helper, and Enchant compatibility sources.
+
+Validation:
+
+- GTK4 Python suites: 94/94 tests passed;
+- theme contract: 14/14 tests passed;
+- Release x64 solution and native manifest/theme suite: 37/37 tests passed
+  with zero warnings and errors;
+- MSI and bootstrapper rebuild: zero warnings and errors; and
+- GTK4 runtime, MSI content hashes, and embedded bootstrapper MSI identity:
+  validated.
+
+## Stage 5
+
+Completed migration and security records now have an explicit archive policy.
+No review evidence was deleted.
+
+The completed GTK4 migration plan, API inventory, validation log, and installed
+UI acceptance handoff live under `docs\gtk4\archive`. Current GTK4
+architecture, runtime packaging, and maintainer guidance remain in
+`docs\gtk4`.
+
+The completed manifest-plugin audit and Enchant crash analysis live under
+`docs\security\archive`. `docs\security\trusted-config.md` remains current
+policy, and the plugin guides remain the current enablement, schema, capability,
+and troubleshooting guidance.
+
+Archive indexes distinguish historical evidence from current instructions.
+Archived records are retained for decision history, threat-model rationale,
+regression provenance, and release review; they should change only for link
+repair, factual correction, or an explicit archive-policy update.
+
+Validation:
+
+- repository-wide relative documentation link check: passed;
+- production WiX profile: 38/38 tests passed;
+- GTK4 Python suites: 95/95 tests passed; and
+- theme contract: 14/14 tests passed.
+
+No native or installer rebuild was required because Stage 5 changes
+documentation locations and regression policy only.
+
+## Stage 7
+
+Ignored local content was divided into three explicit classes:
+
+- reproducible compiler, managed, Python-cache, documentation, and installer
+  intermediate output;
+- release installer products that require a second opt-in before removal; and
+- protected local dependencies and settings that the cleanup command never
+  targets.
+
+The preview-first
+[`tools\clean-development-output.ps1`](../../tools/clean-development-output.ps1)
+command uses only fixed repository-owned targets, derives and canonicalizes
+its worktree root from its tracked location, and refuses paths outside that
+root. `-Apply` is required for any deletion.
+`-IncludeInstallerArtifacts` is additionally required to remove
+`installer\bin` and `installer\UX\bin`.
+
+`Runtime`, `.vscode`, `dos2unix.exe`, tracked source, installed Fabulor,
+profile data, the independent add-ons checkout, and the external
+`C:\zoitechat-build` staging tree are outside the cleanup set. The command also
+refuses Windows reparse points and output trees it cannot fully inspect.
+Detailed usage and recovery expectations are documented in
+[`developer-output-cleanup.md`](developer-output-cleanup.md).
+
+Stale ignore entries for source trees already removed by earlier cleanup
+stages were deleted. Generic rules still used for generated compiler, IDE,
+archive, dependency, and runtime content remain intentional.
+
+Validation:
+
+- cleanup behavior and repository tool contracts: 29/29 tests passed;
+- GTK4 and production installer-profile suites: 95/95 tests passed;
+- theme contract: passed; and
+- the command completed a non-destructive preview against the active
+  worktree.
+
+No native or installer rebuild was required because Stage 7 changes only
+developer cleanup tooling, ignore policy, tests, and documentation.
+
 ## Deliberately Retained
 
-- Native generated symbol prefixes remain active ABI surfaces for their
-  contained Stage 6 pass.
-- `src\fe-text` and `src\dirent` require build/reference audits before any
-  removal.
+- Intentional XChat/HexChat plugin compatibility, persisted preference names,
+  credential migration identifiers, dependency provenance, and historical
+  attribution remain under the explicit Stage 6 policy.
+- The active GTK4 helper, Windows manifest, Enchant MSVC compatibility layer,
+  Windows notification bridge, and two-layer Windows sysinfo implementation
+  remain production build inputs.
 - GTK4 migration and security records remain evidence, even where they describe
-  retired intermediate states.
+  retired intermediate states; completed records now live in explicit archive
+  directories.
 
 ## Stage Gate
 

@@ -28,10 +28,10 @@
 #include <gdk/gdkcairo.h>
 #include <gdk-pixbuf/gdk-pixbuf.h>
 
-#include "../common/zoitechat.h"
+#include "../common/fabulor.h"
 #include "../common/fe.h"
 #include "../common/server.h"
-#include "../common/zoitechatc.h"
+#include "../common/fabulorc.h"
 #include "../common/outbound.h"
 #include "../common/inbound.h"
 #include "../common/plugin.h"
@@ -262,10 +262,10 @@ mg_apply_compact_mode_css (GtkWidget *widget)
 	}
 
 	gtk_css_provider_load_from_data (provider,
-		".zoitechat-mode-control { min-height: 11px; padding-top: 0; padding-bottom: 0; }"
-		".zoitechat-mode-control label { padding-top: 0; padding-bottom: 0; }",
+		".fabulor-mode-control { min-height: 11px; padding-top: 0; padding-bottom: 0; }"
+		".fabulor-mode-control label { padding-top: 0; padding-bottom: 0; }",
 		-1);
-	gtk_style_context_add_class (context, "zoitechat-mode-control");
+	gtk_style_context_add_class (context, "fabulor-mode-control");
 	theme_css_apply_widget_provider (widget, GTK_STYLE_PROVIDER (provider));
 }
 
@@ -1628,7 +1628,7 @@ mg_ircdestroy (session *sess)
 {
         GSList *list;
 
-        session_free (sess);    /* tell zoitechat.c about it */
+        session_free (sess);    /* tell fabulor.c about it */
 
         if (mg_gui == NULL)
         {
@@ -1837,7 +1837,7 @@ mg_quit_dialog_response (GtkDialog *dialog, gint response_id,
 
         if (should_quit)
         {
-                zoitechat_exit ();
+                fabulor_exit ();
                 return;
         }
 
@@ -1876,7 +1876,7 @@ mg_open_quit_dialog (gboolean minimize_button)
         cons = mg_count_networks ();
         if (dccs + cons == 0 || !prefs.hex_gui_quit_dialog)
         {
-                zoitechat_exit ();
+                fabulor_exit ();
                 return;
         }
 
@@ -2703,7 +2703,7 @@ mg_tabwindow_kill_cb (GtkWidget *win, gpointer userdata)
 
         mg_flush_config_save ();
 
-        zoitechat_is_quitting = TRUE;
+        fabulor_is_quitting = TRUE;
 
         /* see if there's any non-tab windows left */
         list = sess_list;
@@ -2713,7 +2713,7 @@ mg_tabwindow_kill_cb (GtkWidget *win, gpointer userdata)
                 next = list->next;
                 if (!sess->gui->is_tab)
                 {
-                        zoitechat_is_quitting = FALSE;
+                        fabulor_is_quitting = FALSE;
                 } else
                 {
                         mg_ircdestroy (sess);
@@ -2767,7 +2767,7 @@ mg_link_irctab (session *sess, int focus)
                 win = mg_changui_destroy (sess);
                 mg_changui_new (sess, sess->res, 0, focus);
                 mg_populate (sess);
-                zoitechat_is_quitting = FALSE;
+                fabulor_is_quitting = FALSE;
                 if (win)
                         fabulor_gtk_window_destroy (GTK_WINDOW (win));
                 return;
@@ -3005,12 +3005,12 @@ mg_apply_entry_scroll_artifact_fix (GtkWidget *entry)
 		provider = gtk_css_provider_new ();
 		g_object_set_data_full (G_OBJECT (entry), "mg-entry-scroll-artifact-provider", provider, g_object_unref);
 		gtk_css_provider_load_from_data (provider,
-			"entry.zoitechat-no-undershoot undershoot,\n"
-			"entry.zoitechat-no-undershoot undershoot.left,\n"
-			"entry.zoitechat-no-undershoot undershoot.right,\n"
-			".zoitechat-no-undershoot undershoot,\n"
-			".zoitechat-no-undershoot undershoot.left,\n"
-			".zoitechat-no-undershoot undershoot.right {\n"
+			"entry.fabulor-no-undershoot undershoot,\n"
+			"entry.fabulor-no-undershoot undershoot.left,\n"
+			"entry.fabulor-no-undershoot undershoot.right,\n"
+			".fabulor-no-undershoot undershoot,\n"
+			".fabulor-no-undershoot undershoot.left,\n"
+			".fabulor-no-undershoot undershoot.right {\n"
 			"  background-image: none;\n"
 			"  background-color: transparent;\n"
 			"  border: none;\n"
@@ -3019,7 +3019,7 @@ mg_apply_entry_scroll_artifact_fix (GtkWidget *entry)
 			-1);
 	}
 
-	gtk_style_context_add_class (context, "zoitechat-no-undershoot");
+	gtk_style_context_add_class (context, "fabulor-no-undershoot");
 	theme_css_apply_widget_provider (entry, GTK_STYLE_PROVIDER (provider));
 }
 
@@ -3052,7 +3052,7 @@ mg_create_chanmodebuttons (session_gui *gui, GtkWidget *box)
 
         gui->flag_k = mg_create_flagbutton (_("Keyword"), box, "k");
         gui->key_entry = gtk_entry_new ();
-        gtk_widget_set_name (gui->key_entry, "zoitechat-inputbox");
+        gtk_widget_set_name (gui->key_entry, "fabulor-inputbox");
         gtk_entry_set_max_length (GTK_ENTRY (gui->key_entry), 23);
         gtk_widget_set_size_request (gui->key_entry, 58, 11);
         fabulor_gtk_box_append (GTK_BOX (box), gui->key_entry, FALSE, FALSE, 0);
@@ -3069,7 +3069,7 @@ mg_create_chanmodebuttons (session_gui *gui, GtkWidget *box)
 
         gui->flag_l = mg_create_flagbutton (_("User Limit"), box, "l");
         gui->limit_entry = gtk_entry_new ();
-        gtk_widget_set_name (gui->limit_entry, "zoitechat-inputbox");
+        gtk_widget_set_name (gui->limit_entry, "fabulor-inputbox");
         gtk_entry_set_max_length (GTK_ENTRY (gui->limit_entry), 10);
 	fabulor_gtk_entry_set_width_chars (GTK_ENTRY (gui->limit_entry), 5);
         gtk_widget_set_size_request (gui->limit_entry, 45, 11);
@@ -3384,7 +3384,7 @@ mg_create_topicbar (session *sess, GtkWidget *box)
                 sess->res->tab = NULL;
 
         gui->topic_entry = topic = gtk_text_view_new ();
-        gtk_widget_set_name (topic, "zoitechat-topicbox");
+        gtk_widget_set_name (topic, "fabulor-topicbox");
         gtk_text_view_set_wrap_mode (GTK_TEXT_VIEW (topic),
 		prefs.hex_gui_topicbar_multiline && !prefs.hex_gui_mode_buttons_inline ?
 		GTK_WRAP_WORD_CHAR : GTK_WRAP_NONE);
@@ -3707,7 +3707,7 @@ mg_create_scroll_to_bottom_button (session_gui *gui, GtkOverlay *overlay)
         gtk_widget_set_margin_end (gui->scroll_bottom_button, 22);
         gtk_widget_set_margin_bottom (gui->scroll_bottom_button, 12);
         fabulor_gtk_widget_add_css_class (gui->scroll_bottom_button,
-                                          "zoitechat-scroll-bottom-button");
+                                          "fabulor-scroll-bottom-button");
         gtk_overlay_add_overlay (overlay, gui->scroll_bottom_button);
         gtk_overlay_set_clip_overlay (overlay, gui->scroll_bottom_button, FALSE);
 
@@ -5212,8 +5212,8 @@ mg_apply_emoji_fallback_widget (GtkWidget *widget)
         if (!desc)
                 return;
 
-        mg_apply_font_css (widget, desc, "zoitechat-emoji-font",
-                           "zoitechat-emoji-font-provider");
+        mg_apply_font_css (widget, desc, "fabulor-emoji-font",
+                           "fabulor-emoji-font-provider");
         pango_font_description_free (desc);
 }
 
@@ -5488,7 +5488,7 @@ mg_create_entry (session *sess, GtkWidget *box)
         const char *emoji_fallback_icon_name;
 
         gui->reply_box = mg_box_new (GTK_ORIENTATION_HORIZONTAL, FALSE, 6);
-        gtk_widget_set_name (gui->reply_box, "zoitechat-replybar");
+        gtk_widget_set_name (gui->reply_box, "fabulor-replybar");
         fabulor_gtk_widget_hide_until_explicitly_shown (gui->reply_box);
         fabulor_gtk_box_append (GTK_BOX (box), gui->reply_box, FALSE, FALSE, 0);
         gui->reply_label = gtk_label_new ("");
@@ -5526,7 +5526,7 @@ mg_create_entry (session *sess, GtkWidget *box)
                                                         G_CALLBACK (mg_inputbox_changed), gui);
         fabulor_gtk_box_append (GTK_BOX (hbox), entry, TRUE, TRUE, 0);
 
-        gtk_widget_set_name (entry, "zoitechat-inputbox");
+        gtk_widget_set_name (entry, "fabulor-inputbox");
         fabulor_gtk_widget_on_key_pressed (entry, key_handle_key_press, NULL);
         fabulor_gtk_widget_on_focus_enter (entry, mg_inputbox_focus, gui);
         g_signal_connect (G_OBJECT (entry), "icon-release",

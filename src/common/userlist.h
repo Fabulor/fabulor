@@ -20,8 +20,8 @@
 #include <time.h>
 #include "proto-irc.h"
 
-#ifndef ZOITECHAT_USERLIST_H
-#define ZOITECHAT_USERLIST_H
+#ifndef FABULOR_USERLIST_H
+#define FABULOR_USERLIST_H
 
 struct User
 {

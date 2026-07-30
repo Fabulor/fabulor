@@ -46,7 +46,7 @@
 #include <unistd.h>
 #endif
 
-#include "zoitechat.h"
+#include "fabulor.h"
 #include "util.h"
 #include "fe.h"
 #include "outbound.h"
@@ -58,7 +58,7 @@
 #include "socks5-protocol.h"
 #include "text.h"
 #include "url.h"
-#include "zoitechatc.h"
+#include "fabulorc.h"
 
 /* Setting _FILE_OFFSET_BITS to 64 doesn't change lseek to use off64_t on Windows, so override lseek to the version that does */
 #if defined(WIN32) && (!defined(__MINGW32__) && !defined(__MINGW64__))

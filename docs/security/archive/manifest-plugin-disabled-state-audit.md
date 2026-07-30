@@ -1,5 +1,7 @@
 # Manifest Plugin Security Audit
 
+Status: archived completed security review
+
 Date: 2026-07-11
 Branch: agent/log-scroll-installer-fixes
 PR context: https://github.com/Fabulor/fabulor/pull/7
@@ -653,7 +655,7 @@ Recommended fix:
 Fix status, 2026-07-12:
 
 - Enchant loading in `src/fe-gtk/sexy-spell-entry.c` is restricted to the absolute application-local `libenchant-2-2.dll` path on Windows. After installed-client validation and soak testing, the Enchant 1.6.1 core/provider fallback and the in-tree legacy Win8 provider were retired; packaging now requires the MSVC/UCRT Enchant 2.8.19 core, upstream WinSpell provider, and ordering file.
-- A later URL-paste crash was traced with CDB to cross-CRT heap corruption in the MinGW/MSVCRT Enchant 2.8.19 personal-word-list path. Enchant core and WinSpell are now rebuilt with MSVC/UCRT against Fabulor's GTK/GLib libraries. The analysis and reproducible build are documented in `docs/security/enchant-windows-crash-analysis.md`.
+- A later URL-paste crash was traced with CDB to cross-CRT heap corruption in the MinGW/MSVCRT Enchant 2.8.19 personal-word-list path. Enchant core and WinSpell are now rebuilt with MSVC/UCRT against Fabulor's GTK/GLib libraries. The analysis and reproducible build are documented in `docs/security/archive/enchant-windows-crash-analysis.md`.
 - The legacy Perl project and source tree are retired. Its project and
   `hcperl.dll` startup probe were already absent from the Windows solution and
   WiX payload; repository cleanup Stage 2 removed the remaining source,

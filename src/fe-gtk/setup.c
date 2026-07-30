@@ -22,7 +22,7 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 
-#include "../common/zoitechat.h"
+#include "../common/fabulor.h"
 
 #include <gio/gio.h>
 #include <glib/gstdio.h>
@@ -31,7 +31,7 @@
 #include "../common/text.h"
 #include "../common/userlist.h"
 #include "../common/util.h"
-#include "../common/zoitechatc.h"
+#include "../common/fabulorc.h"
 #include "../common/outbound.h"
 #include "../common/proxy-policy.h"
 #include "fe-gtk.h"
@@ -62,7 +62,7 @@ static int last_selected_page = 0;
 static int last_selected_row = 0; /* sound row */
 static FabulorPreferencesCategoryList *preferences_category_list = NULL;
 static gboolean color_change;
-static struct zoitechatprefs setup_prefs;
+static struct fabulorprefs setup_prefs;
 static GtkWidget *cancel_button;
 static GtkWidget *font_dialog = NULL;
 static GtkWidget *setup_topicbar_multiline_toggle = NULL;
@@ -879,10 +879,10 @@ setup_create_toggleL (GtkWidget *tab, int row, const setting *set)
                                              setup_get_int (&setup_prefs, set));
         g_signal_connect (G_OBJECT (wid), "toggled",
                                                         G_CALLBACK (setup_toggle_cb), (gpointer)set);
-        if (set->offset == STRUCT_OFFSET_INT (struct zoitechatprefs, hex_gui_mode_buttons_inline))
+        if (set->offset == STRUCT_OFFSET_INT (struct fabulorprefs, hex_gui_mode_buttons_inline))
                 g_signal_connect (G_OBJECT (wid), "toggled",
                                                         G_CALLBACK (setup_topicbar_inline_toggled_cb), NULL);
-        if (set->offset == STRUCT_OFFSET_INT (struct zoitechatprefs, hex_gui_topicbar_multiline))
+        if (set->offset == STRUCT_OFFSET_INT (struct fabulorprefs, hex_gui_topicbar_multiline))
         {
                 setup_topicbar_multiline_toggle = wid;
                 gtk_widget_set_sensitive (wid, !setup_prefs.hex_gui_mode_buttons_inline);
@@ -1737,7 +1737,7 @@ setup_snd_filereq_cb (GtkWidget *entry, char *file)
                         /* Use just the filename if the given sound file is in the default <config>/sounds directory.
                          * We're comparing absolute paths so this won't work in portable mode which uses a relative path.
                          */
-                        if (!strcmp (g_path_get_dirname (file), g_build_filename (get_xdir (), ZOITECHAT_SOUND_DIR, NULL)))
+                        if (!strcmp (g_path_get_dirname (file), g_build_filename (get_xdir (), FABULOR_SOUND_DIR, NULL)))
                         {
                                 fabulor_gtk_entry_set_text (GTK_ENTRY (entry), g_path_get_basename (file));
                         }
@@ -1752,7 +1752,7 @@ setup_snd_filereq_cb (GtkWidget *entry, char *file)
 static void
 setup_snd_browse_cb (GtkWidget *button, GtkEntry *entry)
 {
-        char *sounds_dir = g_build_filename (get_xdir (), ZOITECHAT_SOUND_DIR, NULL);
+        char *sounds_dir = g_build_filename (get_xdir (), FABULOR_SOUND_DIR, NULL);
         char *filter = NULL;
         int filter_type;
 #ifdef WIN32 /* win32 only supports wav, others could support anything */
@@ -2182,7 +2182,7 @@ setup_apply_real (const ThemeChangedEvent *event)
         mg_apply_setup (setup_transcript_metrics_changed);
         menu_update_quit_accel ();
         tray_apply_setup ();
-        zoitechat_reinit_timers ();
+        fabulor_reinit_timers ();
 
         if (theme_changed_event_has_reason (event, THEME_CHANGED_REASON_LAYOUT))
                 menu_change_layout ();
@@ -2190,7 +2190,7 @@ setup_apply_real (const ThemeChangedEvent *event)
 }
 
 static void
-setup_apply (struct zoitechatprefs *pr)
+setup_apply (struct fabulorprefs *pr)
 {
 #ifdef WIN32
         PangoFontDescription *old_desc;
@@ -2199,7 +2199,7 @@ setup_apply (struct zoitechatprefs *pr)
 #endif
 	int noapply = FALSE;
 	ThemeChangedEvent event;
-	struct zoitechatprefs old_prefs = prefs;
+	struct fabulorprefs old_prefs = prefs;
 	int old_dark_mode = prefs.hex_gui_dark_mode;
 
 
@@ -2323,7 +2323,7 @@ static void
 setup_save_and_close (GtkWidget *win)
 {
         PreferencesPersistenceResult save_result;
-        struct zoitechatprefs old_prefs;
+        struct fabulorprefs old_prefs;
         char buffer[192];
 
         memcpy (&old_prefs, &prefs, sizeof (prefs));

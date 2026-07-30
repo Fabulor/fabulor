@@ -43,7 +43,8 @@ Last reconciled: 2026-07-31
       clipboard copying, URL activation, user-list ownership, and server-tab
       startup behavior through installed-client testing.
 - [x] Record accessibility, rendering, lifecycle, performance, packaging, and
-      installed acceptance evidence in `docs/gtk4/validation-log.md`.
+      installed acceptance evidence in
+      `docs/gtk4/archive/validation-log.md`.
 - [x] Publish `v1.0.6-rc.3` after its production-candidate pull request passed
       all required checks, then verify the updater-retirement upgrade and
       release metadata.
@@ -68,9 +69,10 @@ Last reconciled: 2026-07-31
 
 Detailed evidence lives in:
 
-- [`docs/security/manifest-plugin-disabled-state-audit.md`](docs/security/manifest-plugin-disabled-state-audit.md)
+- [`docs/security/archive/manifest-plugin-disabled-state-audit.md`](docs/security/archive/manifest-plugin-disabled-state-audit.md)
+- [`docs/security/archive/plugin-api-boundary-review.md`](docs/security/archive/plugin-api-boundary-review.md)
 - [`docs/security/trusted-config.md`](docs/security/trusted-config.md)
-- [`docs/security/enchant-windows-crash-analysis.md`](docs/security/enchant-windows-crash-analysis.md)
+- [`docs/security/archive/enchant-windows-crash-analysis.md`](docs/security/archive/enchant-windows-crash-analysis.md)
 
 - [x] Complete manifest-loader disabled-state audit.
 - [x] Complete pre-enable design audit.
@@ -90,9 +92,9 @@ Detailed evidence lives in:
       library loading, updater behavior, rendering, URLs, and theme parsing.
 - [x] Close or contain the resulting archive, Exec, Enchant, add-on loading,
       log-mask, callback, runtime-root, and theme-import findings.
-- [ ] Decide whether the shared plugin API should expose additional helpers
-      before manifest plugins can be enabled by default.
-- [ ] Complete the deliberate API-boundary review for restricting plugin access
+- [x] Keep API version 1 compact; require a concrete cross-language use case
+      before adding shared manifest helpers.
+- [x] Complete the deliberate API-boundary review for restricting plugin access
       to the supported `FabulorAPI` surface.
 
 ## Plugins And Add-Ons
@@ -109,22 +111,22 @@ Detailed evidence lives in:
       repository.
 - [x] Document plugin authoring, schema, compatibility, safe mode, and
       troubleshooting.
-- [ ] Add broader shared API helpers only as concrete add-on requirements are
-      approved.
+- [x] Keep broader shared API helpers deferred until concrete add-on
+      requirements and cross-language enforcement are approved.
 
 ## GTK4 Migration
 
 Detailed architecture and evidence live in:
 
-- [`docs/gtk4/migration-plan.md`](docs/gtk4/migration-plan.md)
-- [`docs/gtk4/api-inventory.md`](docs/gtk4/api-inventory.md)
+- [`docs/gtk4/archive/migration-plan.md`](docs/gtk4/archive/migration-plan.md)
+- [`docs/gtk4/archive/api-inventory.md`](docs/gtk4/archive/api-inventory.md)
 - [`docs/gtk4/list-model-architecture.md`](docs/gtk4/list-model-architecture.md)
 - [`docs/gtk4/transcript-rendering-architecture.md`](docs/gtk4/transcript-rendering-architecture.md)
 - [`docs/gtk4/spell-input-architecture.md`](docs/gtk4/spell-input-architecture.md)
 - [`docs/gtk4/theme-architecture.md`](docs/gtk4/theme-architecture.md)
 - [`docs/gtk4/tray-architecture.md`](docs/gtk4/tray-architecture.md)
 - [`docs/gtk4/runtime-packaging.md`](docs/gtk4/runtime-packaging.md)
-- [`docs/gtk4/validation-log.md`](docs/gtk4/validation-log.md)
+- [`docs/gtk4/archive/validation-log.md`](docs/gtk4/archive/validation-log.md)
 
 - [x] Complete the GTK4 API inventory and retire active GTK3 API branches.
 - [x] Convert widget ownership, layout, visibility, and lifecycle.
@@ -183,6 +185,9 @@ Detailed policy lives in
 
 Detailed stages live in
 [`docs/cleanup/repository-cleanup-plan.md`](docs/cleanup/repository-cleanup-plan.md).
+The planned repository cleanup programme is complete through Stage 7. Future
+cleanup work requires a new contained scope rather than extending the completed
+programme.
 
 - [x] Remove dead repository metadata and completed prompt scaffolding.
 - [x] Remove unsupported Lua and Perl source.
@@ -191,11 +196,11 @@ Detailed stages live in
 - [x] Move maintained add-ons to `Fabulor/add-ons`.
 - [x] Remove Python 3.12 and generated investigation artefacts.
 - [x] Move active `win32/copy` payload assets into explicit `data` ownership.
-- [ ] Audit the unbuilt text frontend, Windows compatibility shims, and
+- [x] Audit the unbuilt text frontend, Windows compatibility shims, and
       duplicate backend implementations.
-- [ ] Review historical migration/security documents for archive policy.
+- [x] Review historical migration/security documents for archive policy.
 - [x] Retire stale ZoiteChat product branding and build-only identifiers.
-- [ ] Review internal ZoiteChat/XChat compatibility names separately from
+- [x] Review internal ZoiteChat/XChat compatibility names separately from
       product branding.
   - [x] Make `fabulor` the sole Fabulor-owned Python module while retaining
         intentional `xchat` and `hexchat` imports.
@@ -203,9 +208,10 @@ Detailed stages live in
   - [x] Make `IFabulorPlugin`, `FabulorContext`, `FabulorEvent`, and
         `FabulorUserInfo` the sole managed C# plugin contract.
   - [x] Make `fabulor_*` the sole native plugin ABI.
-  - [ ] Review and rename the remaining internal compatibility names.
-- [ ] Audit ignored local build/runtime output and document a safe developer
-      cleanup command.
+  - [x] Review and rename the remaining internal compatibility names.
+- [x] Audit ignored local build/runtime output and document a safe developer
+      cleanup command in
+      [`docs/cleanup/developer-output-cleanup.md`](docs/cleanup/developer-output-cleanup.md).
 
 ## Optional Product Follow-Up
 

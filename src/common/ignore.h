@@ -17,8 +17,8 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301, USA
  */
 
-#ifndef ZOITECHAT_IGNORE_H
-#define ZOITECHAT_IGNORE_H
+#ifndef FABULOR_IGNORE_H
+#define FABULOR_IGNORE_H
 
 extern GSList *ignore_list;
 

@@ -26,13 +26,13 @@
 #include <unistd.h>
 #endif
 
-#include "zoitechat.h"
+#include "fabulor.h"
 #include "cfgfiles.h"
 #include "fe.h"
 #include "server.h"
 #include "text.h"
 #include "util.h" /* token_foreach */
-#include "zoitechatc.h"
+#include "fabulorc.h"
 #include "secretstore.h"
 
 #include "servlist.h"
@@ -1092,7 +1092,7 @@ servlist_load (void)
 	g_free (oldfile);
 	g_free (newfile);
 
-	fp = zoitechat_fopen_file ("servlist.conf", "r", 0);
+	fp = fabulor_fopen_file ("servlist.conf", "r", 0);
 	if (!fp)
 		return FALSE;
 
@@ -1239,7 +1239,7 @@ servlist_save (void)
 		net->pass = encrypted;
 	}
 
-	fp = zoitechat_fopen_file ("servlist.conf", "w", 0);
+	fp = fabulor_fopen_file ("servlist.conf", "w", 0);
 	if (!fp)
 	{
 #ifndef WIN32

@@ -25,13 +25,13 @@
 
 #include <gdk/gdkkeysyms.h>
 
-#include "../common/zoitechat.h"
+#include "../common/fabulor.h"
 #include "../common/util.h"
 #include "../common/userlist.h"
 #include "../common/modes.h"
 #include "../common/text.h"
 #include "../common/notify.h"
-#include "../common/zoitechatc.h"
+#include "../common/fabulorc.h"
 #include "../common/fe.h"
 #include "gtkutil.h"
 #include "gtk-compat.h"

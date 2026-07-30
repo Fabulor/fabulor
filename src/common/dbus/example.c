@@ -2,10 +2,10 @@
 #include <glib.h>
 #include <stdlib.h>
 
-#define DBUS_SERVICE "org.zoitechat.service"
-#define DBUS_CONNECTION_PATH "/org/zoitechat"
-#define DBUS_CONNECTION_INTERFACE "org.zoitechat.connection"
-#define DBUS_PLUGIN_INTERFACE "org.zoitechat.plugin"
+#define DBUS_SERVICE "org.fabulor.service"
+#define DBUS_CONNECTION_PATH "/org/fabulor"
+#define DBUS_CONNECTION_INTERFACE "org.fabulor.connection"
+#define DBUS_PLUGIN_INTERFACE "org.fabulor.plugin"
 
 static gboolean
 call_sync (GDBusProxy *proxy, const char *method, GVariant *params, GVariant **out)

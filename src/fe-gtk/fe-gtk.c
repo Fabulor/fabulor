@@ -31,12 +31,12 @@
 #include <unistd.h>
 #endif
 
-#include "../common/zoitechat.h"
+#include "../common/fabulor.h"
 #include "../common/fe.h"
 #include "../common/util.h"
 #include "../common/text.h"
 #include "../common/cfgfiles.h"
-#include "../common/zoitechatc.h"
+#include "../common/fabulorc.h"
 #include "../common/plugin.h"
 #include "../common/server.h"
 #include "../common/url.h"
@@ -587,9 +587,9 @@ win32_configure_icon_theme (void)
 
 	win32_seed_user_icon_theme ();
 
-	env_icons_path = g_getenv ("ZOITECHAT_ICON_PATH");
+	env_icons_path = g_getenv ("FABULOR_ICON_PATH");
 	if (env_icons_path && *env_icons_path)
-		WIN32_SET_ICON_PATH ("ZOITECHAT_ICON_PATH", env_icons_path);
+		WIN32_SET_ICON_PATH ("FABULOR_ICON_PATH", env_icons_path);
 
 	icons_path = g_build_filename (get_xdir (), "icons", NULL);
 	if (win32_icon_path_has_payload (icons_path))
@@ -648,7 +648,7 @@ win32_configure_icon_theme (void)
 	if (selected_path)
 		g_message ("win32_configure_icon_theme: selected icon path (%s): %s", selected_source, selected_path);
 	else
-		g_message ("win32_configure_icon_theme: no usable icon path found (checked ZOITECHAT_ICON_PATH, user config/icons, module base/Runtime/GTK4/share/icons, module base/icons, module base/share/icons, cwd/icons, cwd/share/icons, argv[0]/icons, argv[0]/share/icons)");
+		g_message ("win32_configure_icon_theme: no usable icon path found (checked FABULOR_ICON_PATH, user config/icons, module base/Runtime/GTK4/share/icons, module base/icons, module base/share/icons, cwd/icons, cwd/share/icons, argv[0]/icons, argv[0]/share/icons)");
 
 	g_free (selected_path);
 	g_free (base_path);
@@ -898,11 +898,11 @@ fe_dark_mode_is_enabled_for (unsigned int mode)
 {
 	switch (mode)
 	{
-	case ZOITECHAT_DARK_MODE_DARK:
+	case FABULOR_DARK_MODE_DARK:
 		return TRUE;
-	case ZOITECHAT_DARK_MODE_LIGHT:
+	case FABULOR_DARK_MODE_LIGHT:
 		return FALSE;
-	case ZOITECHAT_DARK_MODE_AUTO:
+	case FABULOR_DARK_MODE_AUTO:
 	default:
 		return auto_dark_mode_enabled;
 	}
@@ -1007,7 +1007,7 @@ log_handler (const gchar   *log_domain,
 		sess = new_ircwindow (serv_list->data, "(warnings)", SESS_DIALOG, 0);
 
 	PrintTextf (sess, "%s\t%s\n", log_domain, message);
-	if (getenv ("ZOITECHAT_WARNING_ABORT"))
+	if (getenv ("FABULOR_WARNING_ABORT"))
 		abort ();
 }
 

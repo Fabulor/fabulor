@@ -19,8 +19,8 @@
 
 /* include stuff for internet */
 
-#ifndef ZOITECHAT_INET_H
-#define ZOITECHAT_INET_H
+#ifndef FABULOR_INET_H
+#define FABULOR_INET_H
 
 #ifndef WIN32
 

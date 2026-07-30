@@ -17,8 +17,8 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301, USA
  */
 
-#ifndef ZOITECHAT_TYPEDEF_H
-#define ZOITECHAT_TYPEDEF_H
+#ifndef FABULOR_TYPEDEF_H
+#define FABULOR_TYPEDEF_H
 
 #ifdef WIN32
 

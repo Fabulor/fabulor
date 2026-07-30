@@ -31,8 +31,8 @@
 
 #include <gdk/gdkkeysyms.h>
 
-#include "../common/zoitechat.h"
-#include "../common/zoitechatc.h"
+#include "../common/fabulor.h"
+#include "../common/fabulorc.h"
 #include "../common/cfgfiles.h"
 #include "../common/server.h"
 #include "gtkutil.h"
@@ -101,7 +101,7 @@ rawlog_save (server *serv, char *file)
 	if (file)
 	{
 		if (serv->gui->rawlog_window)
-			fh = zoitechat_open_file (file, O_TRUNC | O_WRONLY | O_CREAT,
+			fh = fabulor_open_file (file, O_TRUNC | O_WRONLY | O_CREAT,
 										 0600, XOF_DOMODE | XOF_FULLPATH);
 		if (fh != -1)
 		{

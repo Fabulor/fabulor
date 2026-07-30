@@ -20,12 +20,12 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "zoitechat.h"
+#include "fabulor.h"
 #include "modes.h"
 #include "fe.h"
 #include "notify.h"
 #include "tree.h"
-#include "zoitechatc.h"
+#include "fabulorc.h"
 #include "util.h"
 
 

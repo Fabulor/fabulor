@@ -18,15 +18,15 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301, USA
  */
 
-#ifndef ZOITECHAT_THEME_SERVICE_H
-#define ZOITECHAT_THEME_SERVICE_H
+#ifndef FABULOR_THEME_SERVICE_H
+#define FABULOR_THEME_SERVICE_H
 
-#include "zoitechat.h"
+#include "fabulor.h"
 
-char *zoitechat_theme_service_get_themes_dir (void);
-GStrv zoitechat_theme_service_discover_themes (void);
-gboolean zoitechat_theme_service_apply (const char *theme_name, GError **error);
-void zoitechat_theme_service_set_post_apply_callback (void (*callback) (void));
-void zoitechat_theme_service_run_post_apply_callback (void);
+char *fabulor_theme_service_get_themes_dir (void);
+GStrv fabulor_theme_service_discover_themes (void);
+gboolean fabulor_theme_service_apply (const char *theme_name, GError **error);
+void fabulor_theme_service_set_post_apply_callback (void (*callback) (void));
+void fabulor_theme_service_run_post_apply_callback (void);
 
 #endif

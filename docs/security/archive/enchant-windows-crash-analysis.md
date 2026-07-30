@@ -1,5 +1,7 @@
 # Enchant Windows Crash Analysis
 
+Status: archived completed incident analysis
+
 Date: 2026-07-12
 
 ## Symptom

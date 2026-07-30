@@ -22,13 +22,13 @@
 
 #include "../theme-application.h"
 #include "../../maingui.h"
-#include "../../../common/zoitechat.h"
-#include "../../../common/zoitechatc.h"
+#include "../../../common/fabulor.h"
+#include "../../../common/fabulorc.h"
 
 struct session *current_sess;
 struct session *current_tab;
 struct session *lastact_sess;
-struct zoitechatprefs prefs;
+struct fabulorprefs prefs;
 InputStyle *input_style;
 
 static gboolean css_enabled;

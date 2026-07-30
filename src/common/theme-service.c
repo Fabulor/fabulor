@@ -20,7 +20,7 @@
 
 #include <errno.h>
 
-#include "zoitechat.h"
+#include "fabulor.h"
 
 #include <gio/gio.h>
 #include <glib/gstdio.h>
@@ -28,10 +28,10 @@
 #include "cfgfiles.h"
 #include "theme-service.h"
 
-static zoitechat_theme_post_apply_callback zoitechat_theme_post_apply_cb;
+static fabulor_theme_post_apply_callback fabulor_theme_post_apply_cb;
 
 static gboolean
-zoitechat_theme_service_copy_file (const char *src, const char *dest, GError **error)
+fabulor_theme_service_copy_file (const char *src, const char *dest, GError **error)
 {
 	char *data = NULL;
 	gsize len = 0;
@@ -50,13 +50,13 @@ zoitechat_theme_service_copy_file (const char *src, const char *dest, GError **e
 }
 
 char *
-zoitechat_theme_service_get_themes_dir (void)
+fabulor_theme_service_get_themes_dir (void)
 {
 	return g_build_filename (get_xdir (), "themes", NULL);
 }
 
 static gboolean
-zoitechat_theme_service_validate (const char *theme_name,
+fabulor_theme_service_validate (const char *theme_name,
                                   char **colors_src,
                                   char **events_src,
                                   GError **error)
@@ -71,7 +71,7 @@ zoitechat_theme_service_validate (const char *theme_name,
 		return FALSE;
 	}
 
-	themes_dir = zoitechat_theme_service_get_themes_dir ();
+	themes_dir = fabulor_theme_service_get_themes_dir ();
 	theme_dir = g_build_filename (themes_dir, theme_name, NULL);
 	g_free (themes_dir);
 
@@ -95,7 +95,7 @@ zoitechat_theme_service_validate (const char *theme_name,
 }
 
 gboolean
-zoitechat_theme_service_apply (const char *theme_name, GError **error)
+fabulor_theme_service_apply (const char *theme_name, GError **error)
 {
 	char *colors_src = NULL;
 	char *colors_dest = NULL;
@@ -103,18 +103,18 @@ zoitechat_theme_service_apply (const char *theme_name, GError **error)
 	char *events_dest = NULL;
 	gboolean ok = FALSE;
 
-	if (!zoitechat_theme_service_validate (theme_name, &colors_src, &events_src, error))
+	if (!fabulor_theme_service_validate (theme_name, &colors_src, &events_src, error))
 		return FALSE;
 
 	colors_dest = g_build_filename (get_xdir (), "colors.conf", NULL);
 	events_dest = g_build_filename (get_xdir (), "pevents.conf", NULL);
 
-	if (!zoitechat_theme_service_copy_file (colors_src, colors_dest, error))
+	if (!fabulor_theme_service_copy_file (colors_src, colors_dest, error))
 		goto cleanup;
 
 	if (g_file_test (events_src, G_FILE_TEST_IS_REGULAR))
 	{
-		if (!zoitechat_theme_service_copy_file (events_src, events_dest, error))
+		if (!fabulor_theme_service_copy_file (events_src, events_dest, error))
 			goto cleanup;
 	}
 	else if (g_file_test (events_dest, G_FILE_TEST_EXISTS))
@@ -127,7 +127,7 @@ zoitechat_theme_service_apply (const char *theme_name, GError **error)
 		}
 	}
 
-	zoitechat_theme_service_run_post_apply_callback ();
+	fabulor_theme_service_run_post_apply_callback ();
 	ok = TRUE;
 
 cleanup:
@@ -139,7 +139,7 @@ cleanup:
 }
 
 GStrv
-zoitechat_theme_service_discover_themes (void)
+fabulor_theme_service_discover_themes (void)
 {
 	char *themes_dir;
 	GDir *dir;
@@ -147,7 +147,7 @@ zoitechat_theme_service_discover_themes (void)
 	GPtrArray *themes;
 	GStrv result;
 
-	themes_dir = zoitechat_theme_service_get_themes_dir ();
+	themes_dir = fabulor_theme_service_get_themes_dir ();
 	if (!g_file_test (themes_dir, G_FILE_TEST_IS_DIR))
 		g_mkdir_with_parents (themes_dir, 0700);
 
@@ -184,14 +184,14 @@ zoitechat_theme_service_discover_themes (void)
 }
 
 void
-zoitechat_theme_service_set_post_apply_callback (zoitechat_theme_post_apply_callback callback)
+fabulor_theme_service_set_post_apply_callback (fabulor_theme_post_apply_callback callback)
 {
-	zoitechat_theme_post_apply_cb = callback;
+	fabulor_theme_post_apply_cb = callback;
 }
 
 void
-zoitechat_theme_service_run_post_apply_callback (void)
+fabulor_theme_service_run_post_apply_callback (void)
 {
-	if (zoitechat_theme_post_apply_cb)
-		zoitechat_theme_post_apply_cb ();
+	if (fabulor_theme_post_apply_cb)
+		fabulor_theme_post_apply_cb ();
 }

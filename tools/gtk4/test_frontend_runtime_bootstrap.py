@@ -10,7 +10,7 @@ import validate_frontend_bootstrap
 REPOSITORY_ROOT = pathlib.Path(__file__).resolve().parents[2]
 PROPS_PATH = REPOSITORY_ROOT / "win32" / "fabulor.props"
 PROJECT_PATH = REPOSITORY_ROOT / "src" / "fe-gtk" / "fe-gtk.vcxproj"
-MAIN_PATH = REPOSITORY_ROOT / "src" / "common" / "zoitechat.c"
+MAIN_PATH = REPOSITORY_ROOT / "src" / "common" / "fabulor.c"
 LAUNCHER_PATH = REPOSITORY_ROOT / "tools" / "gtk4" / "gtk4-launcher.c"
 LAUNCHER_PROJECT_PATH = REPOSITORY_ROOT / "tools" / "gtk4" / "gtk4-launcher.vcxproj"
 MSBUILD_NAMESPACE = {"msbuild": "http://schemas.microsoft.com/developer/msbuild/2003"}

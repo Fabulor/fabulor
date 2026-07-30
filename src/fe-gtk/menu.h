@@ -17,8 +17,8 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301, USA
  */
 
-#ifndef ZOITECHAT_MENU_H
-#define ZOITECHAT_MENU_H
+#ifndef FABULOR_MENU_H
+#define FABULOR_MENU_H
 
 #include "menu-action-namespaces.h"
 
@@ -73,7 +73,7 @@ void menu_set_fullscreen (session_gui *gui, int fullscreen);
 #define MENU_ID_JOIN 11
 #define MENU_ID_USERMENU 12
 #define MENU_ID_FULLSCREEN 13
-#define MENU_ID_ZOITECHAT 14
+#define MENU_ID_FABULOR 14
 #define MENU_ID_QUIT 15
 
 #if (MENU_ID_NUM < MENU_ID_QUIT)
