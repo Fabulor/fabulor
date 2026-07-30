@@ -17,7 +17,14 @@ CURRENT_TCL_SURFACES = (
     REPO_ROOT / "docs" / "plugins" / "tcl-plugin-guide.md",
     REPO_ROOT / "docs" / "plugins" / "plugin-schema-and-troubleshooting.md",
 )
-PUBLIC_COMMANDS = (
+SHARED_MANIFEST_COMMANDS = (
+    "log",
+    "send_message",
+    "get_user_count",
+    "get_user_info",
+    "register_callback",
+)
+TRUSTED_SIMPLE_COMMANDS = (
     "log",
     "print",
     "command",
@@ -29,7 +36,6 @@ PUBLIC_COMMANDS = (
     "send_message",
     "get_user_count",
     "get_user_info",
-    "register_callback",
 )
 RETIRED_NAMESPACE = "zoite" "chat::"
 
@@ -46,12 +52,18 @@ class TclApiContractTests(unittest.TestCase):
     def test_host_registers_complete_fabulor_namespace(self):
         source = HOST_SOURCE.read_text(encoding="utf-8")
         self.assertIn('namespace eval fabulor {}', source)
-        for command in PUBLIC_COMMANDS:
+        for command in set(SHARED_MANIFEST_COMMANDS + TRUSTED_SIMPLE_COMMANDS):
             with self.subTest(command=command):
                 self.assertIn(
                     f'"fabulor::{command}"',
                     source,
                 )
+        self.assertIn("if (state->simple_addon)", source)
+        self.assertIn(
+            'else\n\t{\n\t\tfabulor_tcl_runtime.create_command '
+            '(state->interp, "fabulor::register_callback"',
+            source,
+        )
 
     def test_maintained_samples_use_fabulor_namespace(self):
         for path in CURRENT_TCL_SURFACES[1:3]:

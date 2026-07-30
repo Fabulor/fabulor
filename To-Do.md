@@ -70,6 +70,7 @@ Last reconciled: 2026-07-31
 Detailed evidence lives in:
 
 - [`docs/security/archive/manifest-plugin-disabled-state-audit.md`](docs/security/archive/manifest-plugin-disabled-state-audit.md)
+- [`docs/security/archive/plugin-api-boundary-review.md`](docs/security/archive/plugin-api-boundary-review.md)
 - [`docs/security/trusted-config.md`](docs/security/trusted-config.md)
 - [`docs/security/archive/enchant-windows-crash-analysis.md`](docs/security/archive/enchant-windows-crash-analysis.md)
 
@@ -91,9 +92,9 @@ Detailed evidence lives in:
       library loading, updater behavior, rendering, URLs, and theme parsing.
 - [x] Close or contain the resulting archive, Exec, Enchant, add-on loading,
       log-mask, callback, runtime-root, and theme-import findings.
-- [ ] Decide whether the shared plugin API should expose additional helpers
-      before manifest plugins can be enabled by default.
-- [ ] Complete the deliberate API-boundary review for restricting plugin access
+- [x] Keep API version 1 compact; require a concrete cross-language use case
+      before adding shared manifest helpers.
+- [x] Complete the deliberate API-boundary review for restricting plugin access
       to the supported `FabulorAPI` surface.
 
 ## Plugins And Add-Ons
@@ -110,8 +111,8 @@ Detailed evidence lives in:
       repository.
 - [x] Document plugin authoring, schema, compatibility, safe mode, and
       troubleshooting.
-- [ ] Add broader shared API helpers only as concrete add-on requirements are
-      approved.
+- [x] Keep broader shared API helpers deferred until concrete add-on
+      requirements and cross-language enforcement are approved.
 
 ## GTK4 Migration
 
