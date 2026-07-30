@@ -7,6 +7,12 @@
     <UseWindowsForms>true</UseWindowsForms>
     <AssemblyName>Fabulor.BA</AssemblyName>
     <RootNamespace>Fabulor.Setup</RootNamespace>
+    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+    <SelfContained>true</SelfContained>
+    <PublishSingleFile>true</PublishSingleFile>
+    <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
+    <EnableCompressionInSingleFile>true</EnableCompressionInSingleFile>
+    <PublishTrimmed>false</PublishTrimmed>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>

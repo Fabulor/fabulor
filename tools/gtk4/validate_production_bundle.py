@@ -23,14 +23,9 @@ MSI_UPGRADE_CODE = "8F6C0C7E-9A4D-4E4C-9F8C-2B6F5A4E9C11"
 EXPECTED_BA_FILES = {
     "BootstrapperApplicationData.xml",
     "BootstrapperExtensionData.xml",
-    "Fabulor.BA.deps.json",
-    "Fabulor.BA.dll",
     "Fabulor.BA.exe",
-    "Fabulor.BA.runtimeconfig.json",
     "WixBundle.ico",
-    "WixToolset.BootstrapperApplicationApi.dll",
     "manifest.xml",
-    "mbanative.dll",
 }
 EXPECTED_CHAIN_FILES = {"WixAttachedContainer/Fabulor.msi"}
 

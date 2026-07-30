@@ -47,6 +47,8 @@ development milestones and do not imply public release dates.
   the operating system's full connection timeout.
 - Corrected duplicate service-message echoes and hardened plugin shutdown and
   callback cleanup.
+- Made the installer interface self-contained so setup can start on a clean
+  Windows machine without a separately installed .NET Desktop runtime.
 
 ### Security
 

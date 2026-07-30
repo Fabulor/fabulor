@@ -10,13 +10,8 @@
     IconSourceFile="..\..\data\icons\fabulor.ico"
     UpgradeCode="D9F4A5C2-7F3B-4F9E-9A21-3C8F6B7E4A10">
 
-    <BootstrapperApplication SourceFile="$(var.BundleBootstrapperApplicationRoot)\Fabulor.BA.exe">
-      <Payload SourceFile="$(var.BundleBootstrapperApplicationRoot)\Fabulor.BA.dll" />
-      <Payload SourceFile="$(var.BundleBootstrapperApplicationRoot)\Fabulor.BA.deps.json" />
-      <Payload SourceFile="$(var.BundleBootstrapperApplicationRoot)\Fabulor.BA.runtimeconfig.json" />
-      <Payload SourceFile="$(var.BundleBootstrapperApplicationRoot)\WixToolset.BootstrapperApplicationApi.dll" />
-      <Payload SourceFile="$(var.BundleBootstrapperApplicationRoot)\runtimes\win-x64\native\mbanative.dll" />
-    </BootstrapperApplication>
+    <BootstrapperApplication
+      SourceFile="$(var.BundleBootstrapperApplicationRoot)\Fabulor.BA.exe" />
 
     <Variable Name="InstallFolder"
               Type="string"
