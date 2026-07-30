@@ -1,0 +1,73 @@
+name: Feature request
+description: Suggest an improvement or new capability for Fabulor
+title: "[Feature]: "
+labels:
+  - enhancement
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Describe the user problem first, then the change you would like Fabulor to make.
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - User interface
+        - IRC and networking
+        - Installer and updates
+        - Add-ons and plugin API
+        - Themes, colours, sounds, or emoji
+        - Accessibility
+        - Performance
+        - Documentation
+        - Other
+    validations:
+      required: true
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem or limitation
+      description: What is difficult, missing, or unnecessarily complicated today?
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed change
+      description: Describe how you would like Fabulor to behave.
+    validations:
+      required: true
+
+  - type: textarea
+    id: use-case
+    attributes:
+      label: Example use case
+      description: Give a concrete example showing who would benefit and how.
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: Describe any existing workaround or alternative approach.
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Additional context
+      description: Add mock-ups, screenshots, links, compatibility concerns, or related issues.
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Submission checks
+      options:
+        - label: I searched the existing issues for a similar request.
+          required: true
+        - label: This request describes one focused change.
+          required: true
