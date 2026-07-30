@@ -83,6 +83,9 @@ development milestones and do not imply public release dates.
 - Reviewed TLS, proxy, process execution, library loading, updater, URL,
   rendering, and installer boundaries.
 - Integrated GitHub CodeQL and Gitleaks into the security-review process.
+- Aligned C#, Python, and Tcl manifest plugins on the compact shared
+  `FabulorAPI`, rejected unreachable capability names, and repeated message
+  and log validation at the native boundary.
 
 ## Development Milestones
 

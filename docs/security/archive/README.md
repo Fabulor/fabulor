@@ -3,6 +3,7 @@
 This directory preserves completed security audits and incident analyses:
 
 - [Manifest plugin security audit](manifest-plugin-disabled-state-audit.md)
+- [Manifest plugin API boundary review](plugin-api-boundary-review.md)
 - [Enchant Windows crash analysis](enchant-windows-crash-analysis.md)
 
 The records remain useful for threat-model history, regression rationale, and

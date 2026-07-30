@@ -248,9 +248,8 @@ static gboolean
 fabulor_capability_is_known (const char *capability)
 {
 	static const char *known[] = {
-		"commands.execute", "commands.manage",
-		"events.command", "events.message", "events.print", "events.server", "events.timer", "events.unload",
-		"messages.write", "preferences.read", "preferences.write", "session.read", "ui.write"
+		"events.command", "events.message", "events.print", "events.server",
+		"messages.write", "session.read"
 	};
 	guint i;
 
@@ -1607,17 +1606,24 @@ fabulor_tcl_register_commands (FabulorTclPluginState *state, GError **error)
 	}
 
 	fabulor_tcl_runtime.create_command (state->interp, "fabulor::log", fabulor_tcl_log_cmd, state, NULL);
-	fabulor_tcl_runtime.create_command (state->interp, "fabulor::print", fabulor_tcl_print_cmd, state, NULL);
-	fabulor_tcl_runtime.create_command (state->interp, "fabulor::command", fabulor_tcl_command_cmd, state, NULL);
-	fabulor_tcl_runtime.create_command (state->interp, "fabulor::add_user_command", fabulor_tcl_add_user_command_cmd, state, NULL);
-	fabulor_tcl_runtime.create_command (state->interp, "fabulor::remove_user_command", fabulor_tcl_remove_user_command_cmd, state, NULL);
-	fabulor_tcl_runtime.create_command (state->interp, "fabulor::register_command", fabulor_tcl_register_command_cmd, state, NULL);
-	fabulor_tcl_runtime.create_command (state->interp, "fabulor::getinfo", fabulor_tcl_getinfo_cmd, state, NULL);
-	fabulor_tcl_runtime.create_command (state->interp, "fabulor::nickcmp", fabulor_tcl_nickcmp_cmd, state, NULL);
 	fabulor_tcl_runtime.create_command (state->interp, "fabulor::send_message", fabulor_tcl_send_message_cmd, state, NULL);
 	fabulor_tcl_runtime.create_command (state->interp, "fabulor::get_user_count", fabulor_tcl_get_user_count_cmd, state, NULL);
 	fabulor_tcl_runtime.create_command (state->interp, "fabulor::get_user_info", fabulor_tcl_get_user_info_cmd, state, NULL);
-	fabulor_tcl_runtime.create_command (state->interp, "fabulor::register_callback", fabulor_tcl_register_callback_cmd, state, NULL);
+
+	if (state->simple_addon)
+	{
+		fabulor_tcl_runtime.create_command (state->interp, "fabulor::print", fabulor_tcl_print_cmd, state, NULL);
+		fabulor_tcl_runtime.create_command (state->interp, "fabulor::command", fabulor_tcl_command_cmd, state, NULL);
+		fabulor_tcl_runtime.create_command (state->interp, "fabulor::add_user_command", fabulor_tcl_add_user_command_cmd, state, NULL);
+		fabulor_tcl_runtime.create_command (state->interp, "fabulor::remove_user_command", fabulor_tcl_remove_user_command_cmd, state, NULL);
+		fabulor_tcl_runtime.create_command (state->interp, "fabulor::register_command", fabulor_tcl_register_command_cmd, state, NULL);
+		fabulor_tcl_runtime.create_command (state->interp, "fabulor::getinfo", fabulor_tcl_getinfo_cmd, state, NULL);
+		fabulor_tcl_runtime.create_command (state->interp, "fabulor::nickcmp", fabulor_tcl_nickcmp_cmd, state, NULL);
+	}
+	else
+	{
+		fabulor_tcl_runtime.create_command (state->interp, "fabulor::register_callback", fabulor_tcl_register_callback_cmd, state, NULL);
+	}
 	return TRUE;
 }
 
@@ -2767,9 +2773,8 @@ fabulor_plugin_host_autoload_simple_csharp (const char *addons_root,
 {
 #ifdef WIN32
 	static const char *trusted_capabilities[] = {
-		"commands.execute", "commands.manage",
-		"events.command", "events.message", "events.print", "events.server", "events.timer", "events.unload",
-		"messages.write", "preferences.read", "preferences.write", "session.read", "ui.write"
+		"events.command", "events.message", "events.print", "events.server",
+		"messages.write", "session.read"
 	};
 	GDir *directory;
 	GList *names = NULL;

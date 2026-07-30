@@ -176,10 +176,38 @@ fabulor_api_send_message (void *user_data, const char *target, const char *text,
 {
 	session *sess = user_data;
 	char *command;
+	const unsigned char *cursor;
+	gsize target_length;
+	gsize text_length;
 
 	if (!sess || !target || !*target || !text)
 	{
 		g_set_error_literal (error, G_FILE_ERROR, G_FILE_ERROR_INVAL, "FabulorAPI send_message requires a valid session, target, and text.");
+		return FALSE;
+	}
+
+	target_length = strlen (target);
+	text_length = strlen (text);
+	if (target_length > FABULOR_PLUGIN_MESSAGE_TARGET_MAX
+		|| text_length > FABULOR_PLUGIN_MESSAGE_TEXT_MAX
+		|| !g_utf8_validate (target, -1, NULL)
+		|| !g_utf8_validate (text, -1, NULL))
+	{
+		g_set_error_literal (error, G_FILE_ERROR, G_FILE_ERROR_INVAL, "FabulorAPI send_message received invalid UTF-8 or exceeded its size limit.");
+		return FALSE;
+	}
+
+	for (cursor = (const unsigned char *) target; *cursor; cursor++)
+	{
+		if (*cursor <= 0x20 || *cursor == 0x7f)
+		{
+			g_set_error_literal (error, G_FILE_ERROR, G_FILE_ERROR_INVAL, "FabulorAPI message targets cannot contain whitespace or control characters.");
+			return FALSE;
+		}
+	}
+	if (strchr (text, '\r') || strchr (text, '\n'))
+	{
+		g_set_error_literal (error, G_FILE_ERROR, G_FILE_ERROR_INVAL, "FabulorAPI message text cannot contain CR or LF characters.");
 		return FALSE;
 	}
 
@@ -196,6 +224,12 @@ fabulor_api_log (void *user_data, const char *text)
 
 	if (sess && text)
 	{
+		if (!g_utf8_validate (text, -1, NULL)
+			|| strlen (text) > FABULOR_PLUGIN_LOG_TEXT_MAX)
+		{
+			PrintText (sess, "Fabulor plugin host\tRejected invalid or oversized plugin log text.\n");
+			return;
+		}
 		PrintTextf (sess, "Fabulor plugin host\t%s\n", text);
 	}
 }
