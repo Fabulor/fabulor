@@ -133,6 +133,38 @@ WIX_NS = {"w": "http://wixtoolset.org/schemas/v4/wxs"}
 
 
 class ProductionWixProfileTests(unittest.TestCase):
+    def test_bootstrapper_application_is_self_contained(self):
+        project = ET.parse(INSTALLER / "UX" / "Fabulor.BA.csproj").getroot()
+        properties = {
+            child.tag: (child.text or "").strip()
+            for group in project.findall("PropertyGroup")
+            for child in group
+        }
+
+        self.assertEqual(properties.get("RuntimeIdentifier"), "win-x64")
+        self.assertEqual(properties.get("SelfContained"), "true")
+        self.assertEqual(properties.get("PublishSingleFile"), "true")
+        self.assertEqual(
+            properties.get("IncludeNativeLibrariesForSelfExtract"), "true"
+        )
+        self.assertEqual(properties.get("EnableCompressionInSingleFile"), "true")
+        self.assertEqual(properties.get("PublishTrimmed"), "false")
+
+        setup_project = (
+            INSTALLER / "Bootstrapper" / "FabulorSetup.wixproj"
+        ).read_text(encoding="utf-8")
+        self.assertIn(r"net8.0-windows\win-x64\publish", setup_project)
+        self.assertIn('Targets="Restore;Publish"', setup_project)
+
+        bundle = ET.parse(INSTALLER / "Bootstrapper" / "Bundle.wxs").getroot()
+        application = bundle.find(".//w:BootstrapperApplication", WIX_NS)
+        self.assertIsNotNone(application)
+        self.assertEqual(
+            application.get("SourceFile"),
+            r"$(var.BundleBootstrapperApplicationRoot)\Fabulor.BA.exe",
+        )
+        self.assertEqual(application.findall("w:Payload", WIX_NS), [])
+
     def test_production_product_keeps_upgrade_identity(self):
         root = ET.parse(INSTALLER / "ProductGtk4.wxs").getroot()
         package = root.find("w:Package", WIX_NS)

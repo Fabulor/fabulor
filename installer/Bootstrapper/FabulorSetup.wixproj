@@ -12,7 +12,7 @@
 
     <WixToolsetMajorVersion>7</WixToolsetMajorVersion>
     <WixToolsetVersion>7.0.0</WixToolsetVersion>
-    <BundleBootstrapperApplicationRoot>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\UX\bin\$(Platform)\$(Configuration)\net8.0-windows\'))</BundleBootstrapperApplicationRoot>
+    <BundleBootstrapperApplicationRoot>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\UX\bin\$(Platform)\$(Configuration)\net8.0-windows\win-x64\publish\'))</BundleBootstrapperApplicationRoot>
     <DefineConstants>$(DefineConstants);FabulorSemVer=$(FabulorSemVer);BundleLicenseRtf=..\Licence.rtf;BundleMsiPath=..\bin\$(Platform)\$(Configuration)\Fabulor.msi;BundleBootstrapperApplicationRoot=$(BundleBootstrapperApplicationRoot)</DefineConstants>
   </PropertyGroup>
 
@@ -24,13 +24,8 @@
 
   <Target Name="BuildBootstrapperApplication" BeforeTargets="CoreCompile">
     <MSBuild Projects="..\UX\Fabulor.BA.csproj"
-             Targets="Restore;Build"
+             Targets="Restore;Publish"
              Properties="Configuration=$(Configuration);Platform=$(Platform)" />
     <Error Condition="!Exists('$(BundleBootstrapperApplicationRoot)\Fabulor.BA.exe')" Text="Missing custom bootstrapper application at $(BundleBootstrapperApplicationRoot)\Fabulor.BA.exe." />
-    <Error Condition="!Exists('$(BundleBootstrapperApplicationRoot)\Fabulor.BA.dll')" Text="Missing custom bootstrapper application assembly at $(BundleBootstrapperApplicationRoot)\Fabulor.BA.dll." />
-    <Error Condition="!Exists('$(BundleBootstrapperApplicationRoot)\Fabulor.BA.deps.json')" Text="Missing custom bootstrapper application deps file at $(BundleBootstrapperApplicationRoot)\Fabulor.BA.deps.json." />
-    <Error Condition="!Exists('$(BundleBootstrapperApplicationRoot)\Fabulor.BA.runtimeconfig.json')" Text="Missing custom bootstrapper application runtimeconfig file at $(BundleBootstrapperApplicationRoot)\Fabulor.BA.runtimeconfig.json." />
-    <Error Condition="!Exists('$(BundleBootstrapperApplicationRoot)\WixToolset.BootstrapperApplicationApi.dll')" Text="Missing WixToolset.BootstrapperApplicationApi.dll at $(BundleBootstrapperApplicationRoot)." />
-    <Error Condition="!Exists('$(BundleBootstrapperApplicationRoot)\runtimes\win-x64\native\mbanative.dll')" Text="Missing mbanative.dll at $(BundleBootstrapperApplicationRoot)\runtimes\win-x64\native\mbanative.dll." />
   </Target>
 </Project>
