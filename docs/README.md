@@ -34,3 +34,4 @@ Completed migration evidence is retained in the
 ## Security
 
 - [Current policy and historical evidence](security/README.md)
+- [Signed update feed design](security/signed-update-feed-design.md)
