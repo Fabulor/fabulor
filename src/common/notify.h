@@ -19,8 +19,8 @@
 
 #include "proto-irc.h"
 
-#ifndef ZOITECHAT_NOTIFY_H
-#define ZOITECHAT_NOTIFY_H
+#ifndef FABULOR_NOTIFY_H
+#define FABULOR_NOTIFY_H
 
 struct notify
 {

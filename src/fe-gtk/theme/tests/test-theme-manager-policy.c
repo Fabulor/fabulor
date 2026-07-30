@@ -22,13 +22,13 @@
 
 #include "../theme-palette.h"
 #include "../theme-manager.h"
-#include "../../../common/zoitechat.h"
-#include "../../../common/zoitechatc.h"
+#include "../../../common/fabulor.h"
+#include "../../../common/fabulorc.h"
 
 struct session *current_sess;
 struct session *current_tab;
 struct session *lastact_sess;
-struct zoitechatprefs prefs;
+struct fabulorprefs prefs;
 
 static gboolean stub_policy_dark;
 static unsigned int stub_policy_mode;
@@ -52,7 +52,7 @@ void setup_apply_real (const ThemeChangedEvent *event)
 
 gboolean fe_dark_mode_is_enabled_for (unsigned int mode)
 {
-	return mode == ZOITECHAT_DARK_MODE_DARK;
+	return mode == FABULOR_DARK_MODE_DARK;
 }
 
 void fe_set_auto_dark_mode_state (gboolean enabled)
@@ -71,7 +71,7 @@ gboolean fe_win32_try_get_system_dark (gboolean *enabled)
 	return FALSE;
 }
 
-void zoitechat_set_theme_post_apply_callback (zoitechat_theme_post_apply_callback callback)
+void fabulor_set_theme_post_apply_callback (fabulor_theme_post_apply_callback callback)
 {
 	(void) callback;
 }
@@ -239,8 +239,8 @@ test_token_roundtrip (void)
 static void
 test_policy_mode_resolution (void)
 {
-	g_assert_false (theme_policy_is_dark_mode_active (ZOITECHAT_DARK_MODE_LIGHT));
-	g_assert_true (theme_policy_is_dark_mode_active (ZOITECHAT_DARK_MODE_DARK));
+	g_assert_false (theme_policy_is_dark_mode_active (FABULOR_DARK_MODE_LIGHT));
+	g_assert_true (theme_policy_is_dark_mode_active (FABULOR_DARK_MODE_DARK));
 }
 
 static void
@@ -251,8 +251,8 @@ test_manager_set_token_color_routes_by_mode (void)
 
 	reset_manager_stubs ();
 	stub_policy_dark = FALSE;
-	theme_manager_set_token_color (ZOITECHAT_DARK_MODE_LIGHT, THEME_TOKEN_MIRC_2, &color, &palette_changed);
-	g_assert_cmpint (stub_policy_mode, ==, ZOITECHAT_DARK_MODE_LIGHT);
+	theme_manager_set_token_color (FABULOR_DARK_MODE_LIGHT, THEME_TOKEN_MIRC_2, &color, &palette_changed);
+	g_assert_cmpint (stub_policy_mode, ==, FABULOR_DARK_MODE_LIGHT);
 	g_assert_cmpint (stub_user_set_calls, ==, 1);
 	g_assert_cmpint (stub_dark_set_calls, ==, 0);
 	g_assert_cmpint (stub_apply_mode_calls, ==, 1);
@@ -261,15 +261,15 @@ test_manager_set_token_color_routes_by_mode (void)
 
 	reset_manager_stubs ();
 	stub_policy_dark = TRUE;
-	theme_manager_set_token_color (ZOITECHAT_DARK_MODE_DARK, THEME_TOKEN_MIRC_2, &color, &palette_changed);
-	g_assert_cmpint (stub_policy_mode, ==, ZOITECHAT_DARK_MODE_DARK);
+	theme_manager_set_token_color (FABULOR_DARK_MODE_DARK, THEME_TOKEN_MIRC_2, &color, &palette_changed);
+	g_assert_cmpint (stub_policy_mode, ==, FABULOR_DARK_MODE_DARK);
 	g_assert_cmpint (stub_user_set_calls, ==, 0);
 	g_assert_cmpint (stub_dark_set_calls, ==, 1);
 
 	reset_manager_stubs ();
 	stub_policy_dark = TRUE;
-	theme_manager_set_token_color (ZOITECHAT_DARK_MODE_AUTO, THEME_TOKEN_MIRC_2, &color, &palette_changed);
-	g_assert_cmpint (stub_policy_mode, ==, ZOITECHAT_DARK_MODE_AUTO);
+	theme_manager_set_token_color (FABULOR_DARK_MODE_AUTO, THEME_TOKEN_MIRC_2, &color, &palette_changed);
+	g_assert_cmpint (stub_policy_mode, ==, FABULOR_DARK_MODE_AUTO);
 	g_assert_cmpint (stub_user_set_calls, ==, 0);
 	g_assert_cmpint (stub_dark_set_calls, ==, 1);
 }
@@ -290,7 +290,7 @@ test_manager_set_token_color_routes_setup_indexes (void)
 		reset_manager_stubs ();
 		stub_policy_dark = FALSE;
 		palette_changed = FALSE;
-		theme_manager_set_token_color (ZOITECHAT_DARK_MODE_LIGHT, def->token, &color, &palette_changed);
+		theme_manager_set_token_color (FABULOR_DARK_MODE_LIGHT, def->token, &color, &palette_changed);
 		g_assert_cmpint (stub_user_set_calls, ==, 1);
 		g_assert_cmpint (stub_last_user_token, ==, def->token);
 		g_assert_cmpint (stub_dark_set_calls, ==, 0);
@@ -299,7 +299,7 @@ test_manager_set_token_color_routes_setup_indexes (void)
 		reset_manager_stubs ();
 		stub_policy_dark = TRUE;
 		palette_changed = FALSE;
-		theme_manager_set_token_color (ZOITECHAT_DARK_MODE_DARK, def->token, &color, &palette_changed);
+		theme_manager_set_token_color (FABULOR_DARK_MODE_DARK, def->token, &color, &palette_changed);
 		g_assert_cmpint (stub_dark_set_calls, ==, 1);
 		g_assert_cmpint (stub_last_dark_token, ==, def->token);
 		g_assert_cmpint (stub_user_set_calls, ==, 0);

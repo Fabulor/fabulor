@@ -17,8 +17,8 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301, USA
  */
 
-#ifndef ZOITECHAT_SERVLIST_H
-#define ZOITECHAT_SERVLIST_H
+#ifndef FABULOR_SERVLIST_H
+#define FABULOR_SERVLIST_H
 
 typedef struct ircserver
 {

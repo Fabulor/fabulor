@@ -106,7 +106,7 @@ COMMON_SERVER_LIST_SOURCE = ROOT / "src" / "common" / "servlist.c"
 COMMON_HISTORY_SOURCE = ROOT / "src" / "common" / "history.c"
 COMMON_HISTORY_HEADER = ROOT / "src" / "common" / "history.h"
 COMMON_OUTBOUND_SOURCE = ROOT / "src" / "common" / "outbound.c"
-COMMON_APPLICATION_SOURCE = ROOT / "src" / "common" / "zoitechat.c"
+COMMON_APPLICATION_SOURCE = ROOT / "src" / "common" / "fabulor.c"
 GTK4_CHANNEL_BAN_DIALOG_SOURCES = (
     "banlist.c",
     "chanlist.c",
@@ -362,6 +362,47 @@ class ProductionWixProfileTests(unittest.TestCase):
         self.assertIn("compat/flock.c", enchant_project)
         self.assertIn("compat/relocatable.c", enchant_project)
         self.assertTrue(GTK_COMPAT.is_file())
+
+    def test_repository_cleanup_stage5_separates_current_and_archived_docs(self):
+        retired_live_paths = (
+            ROOT / "docs" / "gtk4" / "migration-plan.md",
+            ROOT / "docs" / "gtk4" / "api-inventory.md",
+            ROOT / "docs" / "gtk4" / "validation-log.md",
+            ROOT / "docs" / "security" / "manifest-plugin-disabled-state-audit.md",
+            ROOT / "docs" / "security" / "enchant-windows-crash-analysis.md",
+        )
+        for path in retired_live_paths:
+            self.assertFalse(path.exists(), f"historical document is not archived: {path}")
+
+        archived_paths = (
+            ROOT / "docs" / "gtk4" / "archive" / "README.md",
+            ROOT / "docs" / "gtk4" / "archive" / "migration-plan.md",
+            ROOT / "docs" / "gtk4" / "archive" / "api-inventory.md",
+            ROOT / "docs" / "gtk4" / "archive" / "validation-log.md",
+            ROOT / "docs" / "security" / "archive" / "README.md",
+            ROOT
+            / "docs"
+            / "security"
+            / "archive"
+            / "manifest-plugin-disabled-state-audit.md",
+            ROOT
+            / "docs"
+            / "security"
+            / "archive"
+            / "enchant-windows-crash-analysis.md",
+        )
+        for path in archived_paths:
+            self.assertTrue(path.is_file(), f"archived evidence is missing: {path}")
+
+        current_paths = (
+            ROOT / "docs" / "gtk4" / "runtime-packaging.md",
+            ROOT / "docs" / "gtk4" / "theme-architecture.md",
+            ROOT / "docs" / "plugins" / "plugin-schema-and-troubleshooting.md",
+            ROOT / "docs" / "security" / "README.md",
+            ROOT / "docs" / "security" / "trusted-config.md",
+        )
+        for path in current_paths:
+            self.assertTrue(path.is_file(), f"current guidance is missing: {path}")
 
     def test_obsolete_product_graphs_are_removed(self):
         obsolete = {
@@ -981,7 +1022,7 @@ class ProductionWixProfileTests(unittest.TestCase):
         cfgfiles = (ROOT / "src" / "common" / "cfgfiles.c").read_text(
             encoding="utf-8"
         )
-        preferences = (ROOT / "src" / "common" / "zoitechat.h").read_text(
+        preferences = (ROOT / "src" / "common" / "fabulor.h").read_text(
             encoding="utf-8"
         )
         outbound = (ROOT / "src" / "common" / "outbound.c").read_text(

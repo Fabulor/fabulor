@@ -158,142 +158,142 @@ msgstr ""
 msgid "No active DCCs\n"
 msgstr "Tiada DCC aktif\n"
 
-#: src/common/zoitechat.c:885
+#: src/common/fabulor.c:885
 msgid "_Open Dialog Window"
 msgstr ""
 
-#: src/common/zoitechat.c:886
+#: src/common/fabulor.c:886
 msgid "_Send a File"
 msgstr ""
 
-#: src/common/zoitechat.c:887
+#: src/common/fabulor.c:887
 msgid "_User Info (WhoIs)"
 msgstr ""
 
-#: src/common/zoitechat.c:888
+#: src/common/fabulor.c:888
 msgid "_Add to Friends List"
 msgstr ""
 
-#: src/common/zoitechat.c:889
+#: src/common/fabulor.c:889
 msgid "_Ignore"
 msgstr ""
 
-#: src/common/zoitechat.c:890
+#: src/common/fabulor.c:890
 msgid "O_perator Actions"
 msgstr ""
 
-#: src/common/zoitechat.c:892
+#: src/common/fabulor.c:892
 msgid "Give Ops"
 msgstr "Beri Ops"
 
-#: src/common/zoitechat.c:893
+#: src/common/fabulor.c:893
 msgid "Take Ops"
 msgstr "Ambil Ops"
 
-#: src/common/zoitechat.c:894
+#: src/common/fabulor.c:894
 msgid "Give Voice"
 msgstr ""
 
-#: src/common/zoitechat.c:895
+#: src/common/fabulor.c:895
 msgid "Take Voice"
 msgstr ""
 
-#: src/common/zoitechat.c:897
+#: src/common/fabulor.c:897
 msgid "Kick/Ban"
 msgstr "Tendang/Ban"
 
-#: src/common/zoitechat.c:898 src/common/zoitechat.c:935
+#: src/common/fabulor.c:898 src/common/fabulor.c:935
 msgid "Kick"
 msgstr "Tendang"
 
-#: src/common/zoitechat.c:899 src/common/zoitechat.c:900 src/common/zoitechat.c:901
-#: src/common/zoitechat.c:902 src/common/zoitechat.c:903 src/common/zoitechat.c:934
+#: src/common/fabulor.c:899 src/common/fabulor.c:900 src/common/fabulor.c:901
+#: src/common/fabulor.c:902 src/common/fabulor.c:903 src/common/fabulor.c:934
 #: src/fe-gtk/banlist.c:50
 msgid "Ban"
 msgstr ""
 
-#: src/common/zoitechat.c:904 src/common/zoitechat.c:905 src/common/zoitechat.c:906
-#: src/common/zoitechat.c:907
+#: src/common/fabulor.c:904 src/common/fabulor.c:905 src/common/fabulor.c:906
+#: src/common/fabulor.c:907
 msgid "KickBan"
 msgstr ""
 
-#: src/common/zoitechat.c:917
+#: src/common/fabulor.c:917
 msgid "Leave Channel"
 msgstr ""
 
-#: src/common/zoitechat.c:918
+#: src/common/fabulor.c:918
 msgid "Join Channel..."
 msgstr "Sertai Saluran..."
 
-#: src/common/zoitechat.c:919 src/fe-gtk/menu.c:1411
+#: src/common/fabulor.c:919 src/fe-gtk/menu.c:1411
 msgid "Enter Channel to Join:"
 msgstr ""
 
-#: src/common/zoitechat.c:920
+#: src/common/fabulor.c:920
 msgid "Server Links"
 msgstr "Pautan Pelayan"
 
-#: src/common/zoitechat.c:921
+#: src/common/fabulor.c:921
 msgid "Ping Server"
 msgstr "Ping Pelayan"
 
-#: src/common/zoitechat.c:922
+#: src/common/fabulor.c:922
 msgid "Hide Version"
 msgstr "Sorok Versi"
 
-#: src/common/zoitechat.c:932
+#: src/common/fabulor.c:932
 msgid "Op"
 msgstr "Op"
 
-#: src/common/zoitechat.c:933
+#: src/common/fabulor.c:933
 msgid "DeOp"
 msgstr ""
 
-#: src/common/zoitechat.c:936
+#: src/common/fabulor.c:936
 msgid "bye"
 msgstr ""
 
-#: src/common/zoitechat.c:937
+#: src/common/fabulor.c:937
 #, c-format
 msgid "Enter reason to kick %s:"
 msgstr "Masukkan alasan untuk tendang %s:"
 
-#: src/common/zoitechat.c:938
+#: src/common/fabulor.c:938
 msgid "Send File"
 msgstr ""
 
-#: src/common/zoitechat.c:939
+#: src/common/fabulor.c:939
 msgid "Dialog"
 msgstr "Dialog"
 
-#: src/common/zoitechat.c:948
+#: src/common/fabulor.c:948
 msgid "WhoIs"
 msgstr ""
 
-#: src/common/zoitechat.c:949
+#: src/common/fabulor.c:949
 msgid "Send"
 msgstr ""
 
-#: src/common/zoitechat.c:950
+#: src/common/fabulor.c:950
 msgid "Chat"
 msgstr ""
 
-#: src/common/zoitechat.c:951 src/fe-gtk/banlist.c:847 src/fe-gtk/dccgui.c:889
+#: src/common/fabulor.c:951 src/fe-gtk/banlist.c:847 src/fe-gtk/dccgui.c:889
 #: src/fe-gtk/ignoregui.c:387 src/fe-gtk/urlgrab.c:214
 msgid "Clear"
 msgstr "Kosongkan"
 
-#: src/common/zoitechat.c:952
+#: src/common/fabulor.c:952
 msgid "Ping"
 msgstr "Ping"
 
-#: src/common/zoitechat.c:1125
+#: src/common/fabulor.c:1125
 #, c-format
 msgid ""
 "You do not have write access to %s. Nothing from this session can be saved."
 msgstr ""
 
-#: src/common/zoitechat.c:1134
+#: src/common/fabulor.c:1134
 msgid ""
 "* Running IRC as root is stupid! You should\n"
 "  create a User Account and use that to login.\n"

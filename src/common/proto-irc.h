@@ -18,10 +18,10 @@
  */
 
 #include <time.h>
-#include "zoitechat.h"
+#include "fabulor.h"
 
-#ifndef ZOITECHAT_PROTO_H
-#define ZOITECHAT_PROTO_H
+#ifndef FABULOR_PROTO_H
+#define FABULOR_PROTO_H
 
 #define MESSAGE_TAGS_DATA_INIT			\
 	{									\

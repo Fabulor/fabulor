@@ -33,9 +33,9 @@
 
 #include "fe-gtk.h"
 
-#include "../common/zoitechat.h"
+#include "../common/fabulor.h"
 #include "../common/cfgfiles.h"
-#include "../common/zoitechatc.h"
+#include "../common/fabulorc.h"
 #include "../common/fe.h"
 #include "menu.h"
 #include "gtkutil.h"
@@ -62,7 +62,7 @@ editlist_save (GtkWidget *igad, gchar *file)
 	int fh;
 
 	rows = fabulor_editable_list_dup_all (editlist_model);
-	fh = zoitechat_open_file (file, O_TRUNC | O_WRONLY | O_CREAT, 0600, XOF_DOMODE);
+	fh = fabulor_open_file (file, O_TRUNC | O_WRONLY | O_CREAT, 0600, XOF_DOMODE);
 	if (fh != -1)
 	{
 		for (i = 0; i < rows->len; i++)

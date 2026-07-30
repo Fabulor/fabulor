@@ -16,7 +16,7 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301, USA
  */
 
-#include "zoitechat.h"
+#include "fabulor.h"
 
 #include <time.h>
 #include <fcntl.h>
@@ -417,7 +417,7 @@ sts_init (void)
 		int fh;
 		char buf[512];
 
-		fh = zoitechat_open_file ("sts.conf", O_RDONLY, 0, 0);
+		fh = fabulor_open_file ("sts.conf", O_RDONLY, 0, 0);
 		if (fh != -1)
 		{
 			while (waitline (fh, buf, sizeof buf, FALSE) != -1)
@@ -461,7 +461,7 @@ sts_save (void)
 	int fh;
 
 	sts_profiles_ensure ();
-	fh = zoitechat_open_file ("sts.conf", O_TRUNC | O_WRONLY | O_CREAT, 0600, XOF_DOMODE);
+	fh = fabulor_open_file ("sts.conf", O_TRUNC | O_WRONLY | O_CREAT, 0600, XOF_DOMODE);
 	if (fh == -1)
 	{
 		return;

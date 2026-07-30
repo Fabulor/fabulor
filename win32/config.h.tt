@@ -7,7 +7,7 @@
 #define ISO_CODES_LOCALEDIR LOCALEDIR
 #define PACKAGE_NAME "fabulor"
 #define PACKAGE_VERSION "<#= [string]::Join('.', $versionParts) #>"
-#define ZOITECHATLIBDIR ".\\plugins"
-#define ZOITECHATSHAREDIR "."
+#define FABULORLIBDIR ".\\plugins"
+#define FABULORSHAREDIR "."
 #define GETTEXT_PACKAGE "fabulor"
 #define PACKAGE_TARNAME "fabulor-<#= [string]::Join('.', $versionParts) #>"

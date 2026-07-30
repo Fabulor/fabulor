@@ -16,11 +16,21 @@ This directory is the home for Fabulor technical and user documentation.
 - [Python plugin guide](plugins/python-plugin-guide.md)
 - [Tcl plugin guide](plugins/tcl-plugin-guide.md)
 
-## GTK4 Migration
+## GTK4
 
-The GTK4 conversion has a dedicated documentation set:
+Current architecture and runtime guidance:
 
-- [Migration plan](gtk4/migration-plan.md)
-- [API inventory](gtk4/api-inventory.md)
 - [Runtime and packaging](gtk4/runtime-packaging.md)
-- [Validation log](gtk4/validation-log.md)
+- [Theme architecture](gtk4/theme-architecture.md)
+- [Transcript rendering architecture](gtk4/transcript-rendering-architecture.md)
+- [Spell and input architecture](gtk4/spell-input-architecture.md)
+- [Tray architecture](gtk4/tray-architecture.md)
+- [Notification architecture](gtk4/notification-architecture.md)
+- [List model architecture](gtk4/list-model-architecture.md)
+
+Completed migration evidence is retained in the
+[GTK4 archive](gtk4/archive/README.md).
+
+## Security
+
+- [Current policy and historical evidence](security/README.md)

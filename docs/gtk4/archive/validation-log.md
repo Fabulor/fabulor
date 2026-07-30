@@ -1,6 +1,6 @@
 # GTK4 Validation Log
 
-Status: baseline and reusable test matrix
+Status: archived migration evidence and reusable historical test matrix
 
 Baseline date: 2026-07-14
 

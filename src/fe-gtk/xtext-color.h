@@ -6,8 +6,8 @@
  * (at your option) any later version.
  */
 
-#ifndef ZOITECHAT_XTEXT_COLOR_H
-#define ZOITECHAT_XTEXT_COLOR_H
+#ifndef FABULOR_XTEXT_COLOR_H
+#define FABULOR_XTEXT_COLOR_H
 
 typedef struct
 {

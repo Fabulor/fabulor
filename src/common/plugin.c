@@ -30,7 +30,7 @@
 #include <unistd.h>
 #endif
 
-#include "zoitechat.h"
+#include "fabulor.h"
 #ifdef WIN32
 #include <glib/gwin32.h>
 #endif
@@ -53,7 +53,7 @@ typedef struct session fabulor_context;
 #include "typedef.h"
 
 
-#include "zoitechatc.h"
+#include "fabulorc.h"
 
 /* the USE_PLUGIN define only removes libdl stuff */
 
@@ -85,13 +85,13 @@ struct _fabulor_list
 	struct notify_per_server *notifyps;	/* notify_per_server * */
 };
 
-typedef int (zoitechat_cmd_cb) (char *word[], char *word_eol[], void *user_data);
-typedef int (zoitechat_serv_cb) (char *word[], char *word_eol[], void *user_data);
+typedef int (fabulor_cmd_cb) (char *word[], char *word_eol[], void *user_data);
+typedef int (fabulor_serv_cb) (char *word[], char *word_eol[], void *user_data);
 typedef int (fabulor_print_cb) (char *word[], void *user_data);
-typedef int (zoitechat_serv_attrs_cb) (char *word[], char *word_eol[], fabulor_event_attrs *attrs, void *user_data);
+typedef int (fabulor_serv_attrs_cb) (char *word[], char *word_eol[], fabulor_event_attrs *attrs, void *user_data);
 typedef int (fabulor_print_attrs_cb) (char *word[], fabulor_event_attrs *attrs, void *user_data);
-typedef int (zoitechat_fd_cb) (int fd, int flags, void *user_data);
-typedef int (zoitechat_timer_cb) (void *user_data);
+typedef int (fabulor_fd_cb) (int fd, int flags, void *user_data);
+typedef int (fabulor_timer_cb) (void *user_data);
 typedef int (fabulor_init_func) (fabulor_plugin *, char **, char **, char **, char *);
 typedef int (fabulor_deinit_func) (fabulor_plugin *);
 
@@ -176,10 +176,38 @@ fabulor_api_send_message (void *user_data, const char *target, const char *text,
 {
 	session *sess = user_data;
 	char *command;
+	const unsigned char *cursor;
+	gsize target_length;
+	gsize text_length;
 
 	if (!sess || !target || !*target || !text)
 	{
 		g_set_error_literal (error, G_FILE_ERROR, G_FILE_ERROR_INVAL, "FabulorAPI send_message requires a valid session, target, and text.");
+		return FALSE;
+	}
+
+	target_length = strlen (target);
+	text_length = strlen (text);
+	if (target_length > FABULOR_PLUGIN_MESSAGE_TARGET_MAX
+		|| text_length > FABULOR_PLUGIN_MESSAGE_TEXT_MAX
+		|| !g_utf8_validate (target, -1, NULL)
+		|| !g_utf8_validate (text, -1, NULL))
+	{
+		g_set_error_literal (error, G_FILE_ERROR, G_FILE_ERROR_INVAL, "FabulorAPI send_message received invalid UTF-8 or exceeded its size limit.");
+		return FALSE;
+	}
+
+	for (cursor = (const unsigned char *) target; *cursor; cursor++)
+	{
+		if (*cursor <= 0x20 || *cursor == 0x7f)
+		{
+			g_set_error_literal (error, G_FILE_ERROR, G_FILE_ERROR_INVAL, "FabulorAPI message targets cannot contain whitespace or control characters.");
+			return FALSE;
+		}
+	}
+	if (strchr (text, '\r') || strchr (text, '\n'))
+	{
+		g_set_error_literal (error, G_FILE_ERROR, G_FILE_ERROR_INVAL, "FabulorAPI message text cannot contain CR or LF characters.");
 		return FALSE;
 	}
 
@@ -196,6 +224,12 @@ fabulor_api_log (void *user_data, const char *text)
 
 	if (sess && text)
 	{
+		if (!g_utf8_validate (text, -1, NULL)
+			|| strlen (text) > FABULOR_PLUGIN_LOG_TEXT_MAX)
+		{
+			PrintText (sess, "Fabulor plugin host\tRejected invalid or oversized plugin log text.\n");
+			return;
+		}
 		PrintTextf (sess, "Fabulor plugin host\t%s\n", text);
 	}
 }
@@ -682,7 +716,7 @@ plugin_list_add (fabulor_context *ctx, char *filename, const char *name,
 
 #ifndef WIN32
 static void *
-zoitechat_dummy (fabulor_plugin *ph)
+fabulor_dummy (fabulor_plugin *ph)
 {
 	return NULL;
 }
@@ -753,7 +787,7 @@ plugin_add (session *sess, char *filename, void *handle, void *init_func,
 #ifdef WIN32
 		pl->fabulor_read_fd = (void *) fabulor_read_fd;
 #else
-		pl->fabulor_read_fd = zoitechat_dummy;
+		pl->fabulor_read_fd = fabulor_dummy;
 #endif
 		pl->fabulor_list_time = fabulor_list_time;
 		pl->fabulor_gettext = fabulor_gettext;
@@ -920,7 +954,7 @@ plugin_get_libdir (void)
 {
 	const char *libdir;
 
-	libdir = g_getenv ("ZOITECHAT_LIBDIR");
+	libdir = g_getenv ("FABULOR_LIBDIR");
 #ifdef WIN32
 	if (libdir && *libdir)
 	{
@@ -950,7 +984,7 @@ plugin_get_libdir (void)
 	if (libdir && *libdir)
 		return libdir;
 #endif
-	return ZOITECHATLIBDIR;
+	return FABULORLIBDIR;
 }
 
 static char *
@@ -1261,16 +1295,16 @@ plugin_hook_run (session *sess, char *name, char *word[], char *word_eol[],
 		switch (hook->type)
 		{
 		case HOOK_COMMAND:
-			ret = ((zoitechat_cmd_cb *)hook->callback) (word, word_eol, hook->userdata);
+			ret = ((fabulor_cmd_cb *)hook->callback) (word, word_eol, hook->userdata);
 			break;
 		case HOOK_PRINT_ATTRS:
 			ret = ((fabulor_print_attrs_cb *)hook->callback) (word, attrs, hook->userdata);
 			break;
 		case HOOK_SERVER:
-			ret = ((zoitechat_serv_cb *)hook->callback) (word, word_eol, hook->userdata);
+			ret = ((fabulor_serv_cb *)hook->callback) (word, word_eol, hook->userdata);
 			break;
 		case HOOK_SERVER_ATTRS:
-			ret = ((zoitechat_serv_attrs_cb *)hook->callback) (word, word_eol, attrs, hook->userdata);
+			ret = ((fabulor_serv_attrs_cb *)hook->callback) (word, word_eol, attrs, hook->userdata);
 			break;
 		default: /*case HOOK_PRINT:*/
 			ret = ((fabulor_print_cb *)hook->callback) (word, hook->userdata);
@@ -1445,7 +1479,7 @@ plugin_timeout_cb (fabulor_hook *hook)
 	hook->pl->context = current_sess;
 
 	/* call the plugin's timeout function */
-	ret = ((zoitechat_timer_cb *)hook->callback) (hook->userdata);
+	ret = ((fabulor_timer_cb *)hook->callback) (hook->userdata);
 
 	/* the callback might have already unhooked it! */
 	if (!g_slist_find (hook_list, hook) || hook->type == HOOK_DELETED)
@@ -1502,7 +1536,7 @@ static gboolean
 plugin_fd_cb (GIOChannel *source, GIOCondition condition, fabulor_hook *hook)
 {
 	int flags = 0, ret;
-	typedef int (zoitechat_fd_cb2) (int fd, int flags, void *user_data, GIOChannel *);
+	typedef int (fabulor_fd_cb2) (int fd, int flags, void *user_data, GIOChannel *);
 
 	if (condition & G_IO_IN)
 		flags |= FABULOR_FD_READ;
@@ -1511,7 +1545,7 @@ plugin_fd_cb (GIOChannel *source, GIOCondition condition, fabulor_hook *hook)
 	if (condition & G_IO_PRI)
 		flags |= FABULOR_FD_EXCEPTION;
 
-	ret = ((zoitechat_fd_cb2 *)hook->callback) (hook->pri, flags, hook->userdata, source);
+	ret = ((fabulor_fd_cb2 *)hook->callback) (hook->pri, flags, hook->userdata, source);
 
 	/* the callback might have already unhooked it! */
 	if (!g_slist_find (hook_list, hook) || hook->type == HOOK_DELETED)
@@ -1695,7 +1729,7 @@ fabulor_unhook (fabulor_plugin *ph, fabulor_hook *hook)
 
 fabulor_hook *
 fabulor_hook_command (fabulor_plugin *ph, const char *name, int pri,
-						  zoitechat_cmd_cb *callb, const char *help_text, void *userdata)
+						  fabulor_cmd_cb *callb, const char *help_text, void *userdata)
 {
 	return plugin_add_hook (ph, HOOK_COMMAND, pri, name, help_text, callb, 0,
 									userdata);
@@ -1703,14 +1737,14 @@ fabulor_hook_command (fabulor_plugin *ph, const char *name, int pri,
 
 fabulor_hook *
 fabulor_hook_server (fabulor_plugin *ph, const char *name, int pri,
-						 zoitechat_serv_cb *callb, void *userdata)
+						 fabulor_serv_cb *callb, void *userdata)
 {
 	return plugin_add_hook (ph, HOOK_SERVER, pri, name, 0, callb, 0, userdata);
 }
 
 fabulor_hook *
 fabulor_hook_server_attrs (fabulor_plugin *ph, const char *name, int pri,
-						   zoitechat_serv_attrs_cb *callb, void *userdata)
+						   fabulor_serv_attrs_cb *callb, void *userdata)
 {
 	return plugin_add_hook (ph, HOOK_SERVER_ATTRS, pri, name, 0, callb, 0,
 							userdata);
@@ -1732,7 +1766,7 @@ fabulor_hook_print_attrs (fabulor_plugin *ph, const char *name, int pri,
 }
 
 fabulor_hook *
-fabulor_hook_timer (fabulor_plugin *ph, int timeout, zoitechat_timer_cb *callb,
+fabulor_hook_timer (fabulor_plugin *ph, int timeout, fabulor_timer_cb *callb,
 					   void *userdata)
 {
 	return plugin_add_hook (ph, HOOK_TIMER, 0, 0, 0, callb, timeout, userdata);
@@ -1740,7 +1774,7 @@ fabulor_hook_timer (fabulor_plugin *ph, int timeout, zoitechat_timer_cb *callb,
 
 fabulor_hook *
 fabulor_hook_fd (fabulor_plugin *ph, int fd, int flags,
-					zoitechat_fd_cb *callb, void *userdata)
+					fabulor_fd_cb *callb, void *userdata)
 {
 	fabulor_hook *hook;
 
@@ -2464,7 +2498,7 @@ fabulor_emit_print_attrs (fabulor_plugin *ph, fabulor_event_attrs *attrs,
 char *
 fabulor_gettext (fabulor_plugin *ph, const char *msgid)
 {
-	/* so that plugins can use ZoiteChat's internal gettext strings. */
+	/* so that plugins can use Fabulor's internal gettext strings. */
 	/* e.g. The EXEC plugin uses this on Windows. */
 	return _(msgid);
 }
@@ -2510,8 +2544,8 @@ fabulor_pluginpref_set_str_real (fabulor_plugin *pl, const char *var, const char
 	g_free (canon);
 	confname_tmp = g_strdup_printf ("%s.new", confname);
 
-	fhOut = zoitechat_open_file (confname_tmp, O_TRUNC | O_WRONLY | O_CREAT, 0600, XOF_DOMODE);
-	fpIn = zoitechat_fopen_file (confname, "r", 0);
+	fhOut = fabulor_open_file (confname_tmp, O_TRUNC | O_WRONLY | O_CREAT, 0600, XOF_DOMODE);
+	fpIn = fabulor_fopen_file (confname, "r", 0);
 
 	if (fhOut == -1)		/* unable to save, abort */
 	{
@@ -2729,7 +2763,7 @@ fabulor_pluginpref_list (fabulor_plugin *pl, char* dest)
 	sprintf (confname, "addon_%s.conf", token);
 	g_free (token);
 
-	fpIn = zoitechat_fopen_file (confname, "r", 0);
+	fpIn = fabulor_fopen_file (confname, "r", 0);
 
 	if (fpIn == NULL)										/* no existing config file, no parsing */
 	{

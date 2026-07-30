@@ -35,8 +35,8 @@
 #include "theme-runtime.h"
 #include "theme-policy.h"
 
-#include "../../common/zoitechat.h"
-#include "../../common/zoitechatc.h"
+#include "../../common/fabulor.h"
+#include "../../common/fabulorc.h"
 #include "../../common/util.h"
 #include "../../common/cfgfiles.h"
 #include "../../common/theme-archive-reader.h"
@@ -571,7 +571,7 @@ theme_runtime_load (void)
 	memset (light_custom_tokens, 0, sizeof light_custom_tokens);
 	memset (dark_custom_tokens, 0, sizeof dark_custom_tokens);
 
-	fh = zoitechat_open_file ("colors.conf", O_RDONLY, 0, 0);
+	fh = fabulor_open_file ("colors.conf", O_RDONLY, 0, 0);
 	if (fh != -1)
 	{
 		fstat (fh, &st);

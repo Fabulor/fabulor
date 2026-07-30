@@ -19,8 +19,8 @@
 
 #include "proto-irc.h"
 
-#ifndef ZOITECHAT_MODES_H
-#define ZOITECHAT_MODES_H
+#ifndef FABULOR_MODES_H
+#define FABULOR_MODES_H
 
 int is_channel (server *serv, char *chan);
 char get_nick_prefix (server *serv, unsigned int access);

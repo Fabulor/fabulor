@@ -34,8 +34,8 @@
 #define GLIB_DISABLE_DEPRECATION_WARNINGS
 #include "fe-gtk.h"
 
-#include "../common/zoitechat.h"
-#include "../common/zoitechatc.h"
+#include "../common/fabulor.h"
+#include "../common/fabulorc.h"
 #include "../common/cfgfiles.h"
 #include "../common/fe.h"
 #include "../common/userlist.h"
@@ -909,7 +909,7 @@ key_save_kbs (void)
 	GSList *list = keybind_list;
 	struct key_binding *kb;
 
-	fd = zoitechat_open_file ("keybindings.conf", O_CREAT | O_TRUNC | O_WRONLY,
+	fd = fabulor_open_file ("keybindings.conf", O_CREAT | O_TRUNC | O_WRONLY,
 									 0x180, XOF_DOMODE);
 	if (fd < 0)
 		return 1;
@@ -1155,7 +1155,7 @@ key_load_kbs (void)
 	off_t size;
 	GSList *list = NULL;
 
-	fd = zoitechat_open_file ("keybindings.conf", O_RDONLY, 0, 0);
+	fd = fabulor_open_file ("keybindings.conf", O_RDONLY, 0, 0);
 	if (fd < 0)
 	{
 		ibuf = g_strdup (default_kb_cfg);
@@ -1868,12 +1868,12 @@ static gboolean
 replace_set_pos_idle (gpointer data)
 {
 	GtkWidget *t = GTK_WIDGET (data);
-	gpointer pos_data = g_object_get_data (G_OBJECT (t), "zoitechat-replace-pos");
+	gpointer pos_data = g_object_get_data (G_OBJECT (t), "fabulor-replace-pos");
 
 	if (pos_data)
 		SPELL_ENTRY_SET_POS (t, GPOINTER_TO_INT (pos_data));
 
-	g_object_set_data (G_OBJECT (t), "zoitechat-replace-pos", NULL);
+	g_object_set_data (G_OBJECT (t), "fabulor-replace-pos", NULL);
 	g_object_unref (t);
 	return G_SOURCE_REMOVE;
 }
@@ -2012,7 +2012,7 @@ replace_handle (GtkWidget *t)
 	SPELL_ENTRY_SET_TEXT (t, buf->str);
 	new_cursor_offset = len_to_offset (buf->str, new_cursor_offset);
 	SPELL_ENTRY_SET_POS (t, new_cursor_offset);
-	g_object_set_data (G_OBJECT (t), "zoitechat-replace-pos", GINT_TO_POINTER ((gint) new_cursor_offset));
+	g_object_set_data (G_OBJECT (t), "fabulor-replace-pos", GINT_TO_POINTER ((gint) new_cursor_offset));
 	g_idle_add (replace_set_pos_idle, g_object_ref (t));
 	g_string_free (buf, TRUE);
 }

@@ -19,12 +19,12 @@
 #include <glib.h>
 #include <glib/gstdio.h>
 #include <string.h>
-#include "zoitechat.h"
+#include "fabulor.h"
 #include "history.h"
 #include "cfgfiles.h"
 #include "server.h"
 #include "util.h"
-#include "zoitechatc.h"
+#include "fabulorc.h"
 
 #define HISTORY_DIRECTORY "history"
 #define HISTORY_EXTENSION ".log"

@@ -35,7 +35,7 @@
 #include <unistd.h>
 #endif
 
-#include "zoitechat.h"
+#include "fabulor.h"
 #include "fe.h"
 #include "util.h"
 #include "cfgfiles.h"
@@ -52,7 +52,7 @@
 #include "outbound.h"
 #include "text.h"
 #include "url.h"
-#include "zoitechatc.h"
+#include "fabulorc.h"
 
 #if ! GLIB_CHECK_VERSION (2, 36, 0)
 #include <glib-object.h>			/* for g_type_init() */
@@ -89,8 +89,8 @@ GSList *tabmenu_list = 0;
 GList *sess_list_by_lastact[5] = {NULL, NULL, NULL, NULL, NULL};
 
 
-static int in_zoitechat_exit = FALSE;
-int zoitechat_is_quitting = FALSE;
+static int in_fabulor_exit = FALSE;
+int fabulor_is_quitting = FALSE;
 /* command-line args */
 int arg_dont_autoconnect = FALSE;
 int arg_skip_plugins = FALSE;
@@ -106,10 +106,10 @@ gint arg_existing = FALSE;
 
 struct session *current_tab;
 struct session *current_sess = 0;
-struct zoitechatprefs prefs;
+struct fabulorprefs prefs;
 
 gboolean
-zoitechat_theme_path_from_arg (const char *arg, char **path_out)
+fabulor_theme_path_from_arg (const char *arg, char **path_out)
 {
 	(void) arg;
 	(void) path_out;
@@ -118,12 +118,12 @@ zoitechat_theme_path_from_arg (const char *arg, char **path_out)
 
 #ifdef WIN32
 static gboolean
-zoitechat_has_theme_argument (void)
+fabulor_has_theme_argument (void)
 {
 	char *theme_path = NULL;
 	guint i;
 
-	if (arg_url && zoitechat_theme_path_from_arg (arg_url, &theme_path))
+	if (arg_url && fabulor_theme_path_from_arg (arg_url, &theme_path))
 	{
 		g_free (theme_path);
 		return TRUE;
@@ -133,7 +133,7 @@ zoitechat_has_theme_argument (void)
 	{
 		for (i = 0; i < g_strv_length (arg_urls); i++)
 		{
-			if (zoitechat_theme_path_from_arg (arg_urls[i], &theme_path))
+			if (fabulor_theme_path_from_arg (arg_urls[i], &theme_path))
 			{
 				g_free (theme_path);
 				return TRUE;
@@ -145,7 +145,7 @@ zoitechat_has_theme_argument (void)
 }
 
 static HWND
-zoitechat_find_running_window (void)
+fabulor_find_running_window (void)
 {
 	HWND hwnd = FindWindowA ("Fabulor", NULL);
 
@@ -158,7 +158,7 @@ zoitechat_find_running_window (void)
 }
 
 static gboolean
-zoitechat_send_command_to_existing (HWND hwnd, const char *command)
+fabulor_send_command_to_existing (HWND hwnd, const char *command)
 {
 	COPYDATASTRUCT copy_data;
 	DWORD_PTR send_result = 0;
@@ -177,33 +177,33 @@ zoitechat_send_command_to_existing (HWND hwnd, const char *command)
 }
 
 static gboolean
-zoitechat_remote_win32 (void)
+fabulor_remote_win32 (void)
 {
 	HWND hwnd;
 	gboolean allow_remote;
 	gboolean sent = FALSE;
 
-	allow_remote = arg_existing || zoitechat_has_theme_argument ();
+	allow_remote = arg_existing || fabulor_has_theme_argument ();
 	if (!allow_remote)
 		return FALSE;
 
-	hwnd = zoitechat_find_running_window ();
+	hwnd = fabulor_find_running_window ();
 	if (!hwnd)
 		return FALSE;
 
 	if (arg_url)
 	{
 		char *command = g_strdup_printf ("url %s", arg_url);
-		sent = zoitechat_send_command_to_existing (hwnd, command) || sent;
+		sent = fabulor_send_command_to_existing (hwnd, command) || sent;
 		g_free (command);
 	}
 	else if (arg_command)
 	{
-		sent = zoitechat_send_command_to_existing (hwnd, arg_command) || sent;
+		sent = fabulor_send_command_to_existing (hwnd, arg_command) || sent;
 	}
 	else if (arg_existing)
 	{
-		sent = zoitechat_send_command_to_existing (hwnd, "__WIN32_TASKBAR_TOGGLE__") || sent;
+		sent = fabulor_send_command_to_existing (hwnd, "__WIN32_TASKBAR_TOGGLE__") || sent;
 	}
 
 	if (arg_urls)
@@ -212,7 +212,7 @@ zoitechat_remote_win32 (void)
 		for (i = 0; i < g_strv_length (arg_urls); i++)
 		{
 			char *command = g_strdup_printf ("url %s", arg_urls[i]);
-			sent = zoitechat_send_command_to_existing (hwnd, command) || sent;
+			sent = fabulor_send_command_to_existing (hwnd, command) || sent;
 			g_free (command);
 		}
 		g_strfreev (arg_urls);
@@ -223,19 +223,19 @@ zoitechat_remote_win32 (void)
 }
 #endif
 
-static zoitechat_theme_post_apply_callback zoitechat_theme_post_apply_cb;
+static fabulor_theme_post_apply_callback fabulor_theme_post_apply_cb;
 
 void
-zoitechat_set_theme_post_apply_callback (zoitechat_theme_post_apply_callback callback)
+fabulor_set_theme_post_apply_callback (fabulor_theme_post_apply_callback callback)
 {
-	zoitechat_theme_post_apply_cb = callback;
+	fabulor_theme_post_apply_cb = callback;
 }
 
 void
-zoitechat_run_theme_post_apply_callback (void)
+fabulor_run_theme_post_apply_callback (void)
 {
-	if (zoitechat_theme_post_apply_cb)
-		zoitechat_theme_post_apply_cb ();
+	if (fabulor_theme_post_apply_cb)
+		fabulor_theme_post_apply_cb ();
 }
 
 /*
@@ -475,21 +475,21 @@ doover:
 }
 
 static int
-zoitechat_lag_check (void)
+fabulor_lag_check (void)
 {
 	lag_check ();
 	return 1;
 }
 
 static int
-zoitechat_lag_check_update (void)
+fabulor_lag_check_update (void)
 {
 	lagcheck_update ();
 	return 1;
 }
 
 void
-zoitechat_reinit_timers (void)
+fabulor_reinit_timers (void)
 {
 	static int lag_check_update_tag = 0;
 	static int lag_check_tag = 0;
@@ -518,7 +518,7 @@ zoitechat_reinit_timers (void)
 
 	if (prefs.hex_gui_lagometer && lag_check_update_tag == 0)
 	{
-		lag_check_update_tag = fe_timeout_add (500, zoitechat_lag_check_update, NULL);
+		lag_check_update_tag = fe_timeout_add (500, fabulor_lag_check_update, NULL);
 	}
 	else if (!prefs.hex_gui_lagometer && lag_check_update_tag != 0)
 	{
@@ -529,7 +529,7 @@ zoitechat_reinit_timers (void)
 	if ((prefs.hex_net_ping_timeout != 0 || prefs.hex_gui_lagometer)
 	    && lag_check_tag == 0)
 	{
-		lag_check_tag = fe_timeout_add_seconds (1, zoitechat_lag_check, NULL);
+		lag_check_tag = fe_timeout_add_seconds (1, fabulor_lag_check, NULL);
 	}
 	else if ((!prefs.hex_net_ping_timeout && !prefs.hex_gui_lagometer)
 					 && lag_check_tag != 0)
@@ -561,7 +561,7 @@ irc_init (session *sess)
 	plugin_add (sess, NULL, NULL, dbus_plugin_init, NULL, NULL, FALSE);
 #endif
 
-	zoitechat_reinit_timers ();
+	fabulor_reinit_timers ();
 
 	if (arg_url != NULL)
 	{
@@ -718,7 +718,7 @@ send_quit_or_part (session * killsess)
 			list = list->next;
 	}
 
-	if (zoitechat_is_quitting)
+	if (fabulor_is_quitting)
 		willquit = TRUE;
 
 	if (killserv->connected)
@@ -819,8 +819,8 @@ session_free (session *killsess)
 
 	g_free (killsess);
 
-	if (!sess_list && !in_zoitechat_exit)
-		zoitechat_exit ();						/* sess_list is empty, quit! */
+	if (!sess_list && !in_fabulor_exit)
+		fabulor_exit ();						/* sess_list is empty, quit! */
 
 	list = sess_list;
 	while (list)
@@ -1109,10 +1109,10 @@ xchat_init (void)
 }
 
 void
-zoitechat_exit (void)
+fabulor_exit (void)
 {
-	zoitechat_is_quitting = TRUE;
-	in_zoitechat_exit = TRUE;
+	fabulor_is_quitting = TRUE;
+	in_fabulor_exit = TRUE;
 	plugin_kill_all ();
 	fe_cleanup ();
 
@@ -1145,7 +1145,7 @@ zoitechat_exit (void)
 }
 
 void
-zoitechat_exec (const char *cmd)
+fabulor_exec (const char *cmd)
 {
 	util_exec (cmd);
 }
@@ -1234,12 +1234,12 @@ main (int argc, char *argv[])
 		return ret;
 
 #ifdef WIN32
-	if (zoitechat_remote_win32 ())
+	if (fabulor_remote_win32 ())
 		return 0;
 #endif
 
 #ifdef USE_DBUS
-	zoitechat_remote ();
+	fabulor_remote ();
 #endif
 
 #ifdef WIN32

@@ -30,11 +30,11 @@
 #include <pango/pangocairo.h>
 #endif
 
-#include "../common/zoitechat.h"
+#include "../common/fabulor.h"
 #include "../common/fe.h"
 #include "../common/util.h"
 #include "../common/cfgfiles.h"
-#include "../common/zoitechatc.h"
+#include "../common/fabulorc.h"
 #include "../common/typedef.h"
 #include "gtkutil.h"
 #include "gtk-compat.h"
@@ -794,7 +794,7 @@ gtkutil_set_icon (GtkWidget *win)
 	/* FIXME: Magically breaks icon rendering in most
 	 * (sub)windows, but OFC only on Windows. GTK <3
 	 */
-	gtk_window_set_icon (GTK_WINDOW (win), pix_zoitechat);
+	gtk_window_set_icon (GTK_WINDOW (win), pix_fabulor);
 #endif
 }
 

@@ -146,6 +146,17 @@ class CapabilityTests(unittest.TestCase):
         self.invoke(plugin, "api.send_message('#test', 'hello')")
         self.assertEqual(self.lib.commands, [b'MSG #test hello'])
 
+    def test_isolated_host_operations_are_rechecked_in_trusted_interpreter(self):
+        plugin = self.plugin_host.ManifestPlugin('example.forged', ())
+        plugin.host_send_message = lambda target, text: self.invoke(
+            plugin, "api.send_message({!r}, {!r})".format(target, text))
+        with self.assertRaisesRegex(PermissionError, 'messages.write'):
+            plugin._apply_operations([{
+                'op': 'send_message',
+                'target': '#test',
+                'text': 'forged',
+            }])
+
     def test_message_callback_does_not_grant_raw_server_hooks(self):
         plugin = FakePlugin('example.events', ('events.message',))
         self.invoke(plugin, "api.register_callback('message', lambda event: None)")

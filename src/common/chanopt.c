@@ -33,13 +33,13 @@
 #include <unistd.h>
 #endif
 
-#include "zoitechat.h"
+#include "fabulor.h"
 
 #include "cfgfiles.h"
 #include "server.h"
 #include "text.h"
 #include "util.h"
-#include "zoitechatc.h"
+#include "fabulorc.h"
 
 
 static GSList *chanopt_list = NULL;
@@ -254,7 +254,7 @@ chanopt_load_all (void)
 	char *network = NULL;
 	chanopt_in_memory *current = NULL;
 
-	fh = zoitechat_open_file ("chanopt.conf", O_RDONLY, 0, 0);
+	fh = fabulor_open_file ("chanopt.conf", O_RDONLY, 0, 0);
 	if (fh != -1)
 	{
 		while (waitline (fh, buf, sizeof buf, FALSE) != -1)
@@ -398,7 +398,7 @@ chanopt_save_all (gboolean flush)
 		return;
 	}
 
-	fh = zoitechat_open_file ("chanopt.conf", O_TRUNC | O_WRONLY | O_CREAT, 0600, XOF_DOMODE);
+	fh = fabulor_open_file ("chanopt.conf", O_TRUNC | O_WRONLY | O_CREAT, 0600, XOF_DOMODE);
 	if (fh == -1)
 	{
 		return;

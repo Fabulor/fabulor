@@ -17,8 +17,8 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301, USA
  */
 
-#ifndef ZOITECHAT_JOIND_H
-#define ZOITECHAT_JOIND_H
+#ifndef FABULOR_JOIND_H
+#define FABULOR_JOIND_H
 
 void joind_open (server *serv);
 void joind_close (server *serv);

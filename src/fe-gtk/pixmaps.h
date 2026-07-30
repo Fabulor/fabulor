@@ -17,8 +17,8 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301, USA
  */
 
-#ifndef ZOITECHAT_PIXMAPS_H
-#define ZOITECHAT_PIXMAPS_H
+#ifndef FABULOR_PIXMAPS_H
+#define FABULOR_PIXMAPS_H
 
 #include <cairo.h>
 
@@ -41,7 +41,7 @@ extern GdkPixbuf *pix_tree_util;
 
 extern GdkPixbuf *pix_book;
 extern GdkPixbuf *pix_fabulor_about;
-extern GdkPixbuf *pix_zoitechat;
+extern GdkPixbuf *pix_fabulor;
 
 extern cairo_surface_t *pixmap_load_from_file (char *file);
 extern void pixmaps_init (void);

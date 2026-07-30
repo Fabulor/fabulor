@@ -23,7 +23,7 @@
 
 #include "fe-gtk.h"
 
-#include "../common/zoitechat.h"
+#include "../common/fabulor.h"
 #define PLUGIN_C
 typedef struct session fabulor_context;
 #include "../common/fabulor-plugin.h"
@@ -31,7 +31,7 @@ typedef struct session fabulor_context;
 #include "../common/util.h"
 #include "../common/outbound.h"
 #include "../common/fe.h"
-#include "../common/zoitechatc.h"
+#include "../common/fabulorc.h"
 #include "../common/cfgfiles.h"
 #include "gtkutil.h"
 #include "gtk-compat.h"

@@ -99,3 +99,4 @@ def init():
 11. Maintained simple and manifest Python samples live under `samples\plugins\simple-python-greeter\` and `samples\plugins\example.python.greeter\`.
 12. Callback event names are limited to 128 UTF-8 bytes and each manifest plugin to 64 hooks. Registering the same Python callback for the same named event twice is rejected. Small main-interpreter proxy hooks deliver serialised event data to the owning subinterpreter and are removed before that interpreter closes.
 13. Interpreter isolation is not an operating-system sandbox. Python code can still use the standard library and operating-system facilities available to the Fabulor process. Manifest capabilities govern cooperative access to Fabulor host operations.
+14. The isolated runtime emits only the five shared host operations. The trusted main Python interpreter validates every emitted operation again against the owning manifest before invoking the native `FabulorAPI`.

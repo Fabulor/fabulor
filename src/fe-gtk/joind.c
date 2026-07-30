@@ -31,8 +31,8 @@
 #include <unistd.h>
 #endif
 
-#include "../common/zoitechat.h"
-#include "../common/zoitechatc.h"
+#include "../common/fabulor.h"
+#include "../common/fabulorc.h"
 #include "../common/server.h"
 #include "../common/servlist.h"
 #include "../common/fe.h"
@@ -261,7 +261,7 @@ joind_show_dialog (server *serv)
 	if (serv->network)
 		if (g_ascii_strcasecmp(((ircnet*)serv->network)->name, "Zoite") == 0)
 		{
-			fabulor_gtk_entry_set_text (GTK_ENTRY (entry1), "#zoitechat");
+			fabulor_gtk_entry_set_text (GTK_ENTRY (entry1), "#fabulor");
 		}
 
 	gtk_widget_grab_focus (okbutton1);

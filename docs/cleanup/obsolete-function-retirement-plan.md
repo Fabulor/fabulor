@@ -107,7 +107,7 @@ Current locations:
 - proxy type menu in `src/fe-gtk/setup.c`
 - IRC traversal in `src/common/server.c`
 - DCC traversal in `src/common/dcc.c`
-- proxy type documentation in `src/common/zoitechat.h`
+- proxy type documentation in `src/common/fabulor.h`
 
 Compatibility requirements:
 

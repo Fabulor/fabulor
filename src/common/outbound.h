@@ -17,10 +17,10 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301, USA
  */
 
-#ifndef ZOITECHAT_OUTBOUND_H
-#define ZOITECHAT_OUTBOUND_H
+#ifndef FABULOR_OUTBOUND_H
+#define FABULOR_OUTBOUND_H
 
-#include "zoitechat.h"
+#include "fabulor.h"
 
 extern const struct commands xc_cmds[];
 extern GSList *menu_list;

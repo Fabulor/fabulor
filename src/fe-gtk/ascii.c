@@ -22,8 +22,8 @@
 
 #include "fe-gtk.h"
 
-#include "../common/zoitechat.h"
-#include "../common/zoitechatc.h"
+#include "../common/fabulor.h"
+#include "../common/fabulorc.h"
 #include "gtkutil.h"
 #include "gtk-compat.h"
 #include "ascii.h"

@@ -17,8 +17,8 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301, USA
  */
 
-#ifndef ZOITECHAT_MAINGUI_H
-#define ZOITECHAT_MAINGUI_H
+#ifndef FABULOR_MAINGUI_H
+#define FABULOR_MAINGUI_H
 
 #include "gtk-compat.h"
 

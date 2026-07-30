@@ -36,8 +36,8 @@
 #include "config.h"
 #include <fcntl.h>
 #include <errno.h>
-#include "zoitechat.h"
-#include "zoitechatc.h"
+#include "fabulor.h"
+#include "fabulorc.h"
 #include <ctype.h>
 #include "util.h"
 

@@ -22,7 +22,7 @@
 
 #include "fe-gtk.h"
 #include "../common/cfgfiles.h"
-#include "../common/zoitechat.h"
+#include "../common/fabulor.h"
 #include "../common/fe.h"
 #include "resources.h"
 #include "icon-resolver.h"
@@ -50,7 +50,7 @@ GdkPixbuf *pix_tree_util;
 
 GdkPixbuf *pix_book;
 GdkPixbuf *pix_fabulor_about;
-GdkPixbuf *pix_zoitechat;
+GdkPixbuf *pix_fabulor;
 
 static cairo_surface_t *
 pixbuf_to_cairo_surface (GdkPixbuf *pixbuf)
@@ -298,5 +298,5 @@ pixmaps_init (void)
 		"/icons/fabulor-about.png", NULL);
 
 	/* used for the tray icon and WindowManager icon */
-	pix_zoitechat = gdk_pixbuf_new_from_resource ("/icons/fabulor.png", NULL);
+	pix_fabulor = gdk_pixbuf_new_from_resource ("/icons/fabulor.png", NULL);
 }

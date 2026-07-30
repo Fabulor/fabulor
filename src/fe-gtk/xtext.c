@@ -32,10 +32,10 @@
 #include <time.h>
 
 #include "config.h"
-#include "../common/zoitechat.h"
+#include "../common/fabulor.h"
 #include "../common/fe.h"
 #include "../common/util.h"
-#include "../common/zoitechatc.h"
+#include "../common/fabulorc.h"
 #include "../common/url.h"
 
 #ifdef WIN32
@@ -3206,7 +3206,7 @@ gtk_xtext_class_init (GtkXTextClass * class)
 							G_SIGNAL_RUN_FIRST | G_SIGNAL_ACTION,
 							G_STRUCT_OFFSET (GtkXTextClass, word_click),
 							NULL, NULL,
-							_zoitechat_marshal_VOID__POINTER_POINTER,
+							_fabulor_marshal_VOID__POINTER_POINTER,
 							G_TYPE_NONE,
 							2, G_TYPE_POINTER, G_TYPE_POINTER);
 	xtext_signals[SET_SCROLL_ADJUSTMENTS] =
@@ -3215,7 +3215,7 @@ gtk_xtext_class_init (GtkXTextClass * class)
 							G_SIGNAL_RUN_LAST | G_SIGNAL_ACTION,
 							G_STRUCT_OFFSET (GtkXTextClass, set_scroll_adjustments),
 							NULL, NULL,
-							_zoitechat_marshal_VOID__OBJECT_OBJECT,
+							_fabulor_marshal_VOID__OBJECT_OBJECT,
 							G_TYPE_NONE,
 							2, GTK_TYPE_ADJUSTMENT, GTK_TYPE_ADJUSTMENT);
 
