@@ -7,7 +7,7 @@
       <Files Include="$(var.FabulorPayloadRoot)\cert.pem" />
       <Files Include="$(var.FabulorPayloadRoot)\libcrypto-3-x64.dll" />
       <Files Include="$(var.FabulorPayloadRoot)\libssl-3-x64.dll" />
-      <Files Include="$(sys.SOURCEFILEDIR)..\..\win32\copy\readme.url" />
+      <Files Include="$(sys.SOURCEFILEDIR)..\..\data\windows\readme.url" />
     </ComponentGroup>
   </Fragment>
 </Wix>

@@ -225,10 +225,7 @@ def validate_repository_payload(repo: pathlib.Path) -> None:
         pathlib.PurePosixPath("data/palettes/fabulor dark.hct"),
         pathlib.PurePosixPath("data/palettes/fabulor dark/colors.conf"),
     }
-    payload_roots = (
-        pathlib.PurePosixPath("data"),
-        pathlib.PurePosixPath("win32/copy/share"),
-    )
+    payload_roots = (pathlib.PurePosixPath("data"),)
     for path in tracked_files(repo):
         lower = pathlib.PurePosixPath(str(path).casefold())
         if not any(lower == root or root in lower.parents for root in payload_roots):

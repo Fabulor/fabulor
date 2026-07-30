@@ -4,13 +4,13 @@
     <ComponentGroup Id="ThemeAssetComponents">
       <Component Id="AdwaitaIconsAttributionAsset" Guid="E4038AE8-C71C-440D-9876-61A6B7FA6D28" Directory="SHAREDIR">
         <File Id="AdwaitaIconsAttributionAssetFile"
-              Source="$(sys.SOURCEFILEDIR)..\..\win32\copy\share\adwaita-icons-attribution.txt"
+              Source="$(sys.SOURCEFILEDIR)..\..\data\icons\adwaita\ATTRIBUTION.txt"
               Name="adwaita-icons-attribution.txt"
               KeyPath="yes" />
       </Component>
       <Component Id="GtkPreferencesAsset" Guid="38C556BA-83A0-4522-996A-7506510B2DE7" Directory="SHAREDIR">
         <File Id="GtkPreferencesAssetFile"
-              Source="$(sys.SOURCEFILEDIR)..\..\win32\copy\share\gtkpref.png"
+              Source="$(sys.SOURCEFILEDIR)..\..\data\icons\gtkpref.png"
               Name="gtkpref.png"
               KeyPath="yes" />
       </Component>
@@ -47,8 +47,20 @@
     <ComponentGroup Id="CommonShareAssetComponents">
       <Component Id="MusicAsset" Guid="35584C2B-7E79-4AB7-8B87-76D44099D4A3" Directory="SHAREDIR">
         <File Id="MusicAssetFile"
-              Source="$(sys.SOURCEFILEDIR)..\..\win32\copy\share\music.png"
+              Source="$(sys.SOURCEFILEDIR)..\..\data\icons\music.png"
               Name="music.png"
+              KeyPath="yes" />
+      </Component>
+      <Component Id="Iso3166Asset" Guid="FCF4030A-540D-4C70-BAA0-39DD5798103F" Directory="SHAREISOCODESDIR">
+        <File Id="Iso3166AssetFile"
+              Source="$(sys.SOURCEFILEDIR)..\..\data\iso-codes\iso_3166.xml"
+              Name="iso_3166.xml"
+              KeyPath="yes" />
+      </Component>
+      <Component Id="Iso639Asset" Guid="3CCC5C5B-EACC-4D37-ACF8-E44021E1DFB4" Directory="SHAREISOCODESDIR">
+        <File Id="Iso639AssetFile"
+              Source="$(sys.SOURCEFILEDIR)..\..\data\iso-codes\iso_639.xml"
+              Name="iso_639.xml"
               KeyPath="yes" />
       </Component>
     </ComponentGroup>
@@ -56,7 +68,7 @@
     <ComponentGroup Id="SysinfoPluginShareAssetComponents">
       <Component Id="SysinfoShareAsset" Guid="4B7E7A99-3F13-4D81-90C3-3495A93A1D75" Directory="SHAREDIR">
         <File Id="SysinfoShareAssetFile"
-              Source="$(sys.SOURCEFILEDIR)..\..\win32\copy\share\system.png"
+              Source="$(sys.SOURCEFILEDIR)..\..\data\icons\system.png"
               Name="system.png"
               KeyPath="yes" />
       </Component>

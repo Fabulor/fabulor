@@ -912,6 +912,33 @@ class ProductionWixProfileTests(unittest.TestCase):
         legacy_installer = ROOT / "win32" / "installer"
         self.assertFalse(legacy_installer.exists() and any(legacy_installer.iterdir()))
 
+    def test_legacy_copy_payload_namespace_is_retired(self):
+        self.assertFalse((ROOT / "win32" / "copy").exists())
+
+        required_assets = (
+            "data/windows/readme.url",
+            "data/icons/adwaita/ATTRIBUTION.txt",
+            "data/icons/gtkpref.png",
+            "data/icons/music.png",
+            "data/icons/system.png",
+            "data/iso-codes/iso_3166.xml",
+            "data/iso-codes/iso_639.xml",
+        )
+        for relative in required_assets:
+            with self.subTest(asset=relative):
+                self.assertTrue((ROOT / relative).is_file())
+
+        installer_sources = (
+            INSTALLER / "Components" / "CoreGtk4.wxs",
+            INSTALLER / "Components" / "ShareAssets.wxs",
+        )
+        for source_path in installer_sources:
+            source = source_path.read_text(encoding="utf-8")
+            self.assertNotIn("win32\\copy", source)
+            self.assertNotIn("win32/copy", source)
+
+        self.assertFalse((ROOT / "data" / "icons" / "download.png").exists())
+
     def test_perl_integration_is_retired(self):
         self.assertFalse((ROOT / "plugins" / "perl").exists())
 
