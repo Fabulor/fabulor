@@ -479,6 +479,15 @@ trailing_index(char *word_eol[])
 	return param_index;
 }
 
+static const char *
+irc_trailing_parameter_text (const char *parameter)
+{
+	if (!parameter)
+		return "";
+
+	return parameter[0] == ':' ? parameter + 1 : parameter;
+}
+
 static void
 process_numeric (session * sess, int n,
 					  char *word[], char *word_eol[], char *text,
@@ -645,16 +654,20 @@ process_numeric (session * sess, int n,
 		break;
 
 	case 322:
-		if (fe_is_chanwindow (sess->server))
 		{
-			fe_add_chan_list (sess->server, word[4], word[5], word_eol[6] + 1);
-		} else
-		{
-			PrintTextTimeStampf (serv->server_session, tags_data->timestamp,
-										"%-16s %-7d %s\017\n", word[4], atoi (word[5]),
-										word_eol[6] + 1);
+			const char *topic = irc_trailing_parameter_text (word_eol[6]);
+
+			if (fe_is_chanwindow (sess->server))
+			{
+				fe_add_chan_list (sess->server, word[4], word[5], topic);
+			} else
+			{
+				PrintTextTimeStampf (serv->server_session, tags_data->timestamp,
+											"%-16s %-7d %s\017\n", word[4],
+											atoi (word[5]), topic);
+			}
+			break;
 		}
-		break;
 
 	case 323:
 		if (!fe_is_chanwindow (sess->server))

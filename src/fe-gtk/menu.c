@@ -1560,7 +1560,7 @@ menu_away_toggle (GtkWidget *item, gpointer none)
 static void
 menu_chanlist (GtkWidget * wid, gpointer none)
 {
-	chanlist_opengui (current_sess->server, FALSE);
+	chanlist_opengui (current_sess->server, TRUE);
 }
 
 static void

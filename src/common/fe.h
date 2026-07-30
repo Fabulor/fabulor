@@ -94,8 +94,8 @@ void fe_update_mode_buttons (struct session *sess, char mode, char sign);
 void fe_update_channel_key (struct session *sess);
 void fe_update_channel_limit (struct session *sess);
 int fe_is_chanwindow (struct server *serv);
-void fe_add_chan_list (struct server *serv, char *chan, char *users,
-							  char *topic);
+void fe_add_chan_list (struct server *serv, const char *chan,
+							  const char *users, const char *topic);
 void fe_chan_list_end (struct server *serv);
 gboolean fe_add_ban_list (struct session *sess, char *mask, char *who, char *when, int rplcode);
 gboolean fe_ban_list_end (struct session *sess, int rplcode);
