@@ -58,8 +58,12 @@ create activity.
 Activity belongs to the destination context, even when the user is viewing a
 different network or window.
 
-- An incoming event in the active, visible context is considered read and does
-  not increment a counter.
+- An incoming event is considered read without incrementing a counter only
+  when its context is selected and its owning top-level Fabulor window has
+  foreground keyboard focus.
+- A selected context still accumulates unread activity while its window is
+  minimized, hidden in the tray, covered by another application, or otherwise
+  lacks foreground keyboard focus.
 - Activating a context clears all of its counters after its current transcript
   has been presented.
 - Activating an Activity List row follows the same path as activating the
@@ -67,6 +71,9 @@ different network or window.
 - Clearing a child context subtracts its counters from its server aggregate.
 - Selecting a server tab clears only activity belonging to that server tab,
   not its child channels or dialogs.
+- A server's child aggregate is presentation state for its collapsed
+  channel-switcher parent. It is not the server tab's own unread count and does
+  not create a separate Activity List row.
 - Closing a context removes its counters and Activity List row.
 - Disconnecting preserves open-context activity until those contexts close;
   activity does not persist across an application restart in the first
@@ -90,10 +97,13 @@ classification and counter mutation must live in one core path. GTK code
 receives typed change notifications and must not infer activity by parsing
 rendered text.
 
-Each server owns an incrementally maintained aggregate of its child contexts.
-Incrementing, clearing, moving, and closing a context update that aggregate
-from the counter delta. The implementation must not scan all sessions to
-refresh a server row.
+Each server owns an incrementally maintained presentation aggregate of its
+child contexts for the collapsed channel switcher. The server session retains
+separate counters for events printed directly to its server tab; only those
+counters determine the server tab's Activity List row. Incrementing, clearing,
+moving, and closing a child context update the presentation aggregate from the
+counter delta. The implementation must not scan all sessions to refresh a
+server row.
 
 The GTK4 Activity List uses a typed `GListStore`, a sorting model, stable
 session identity, and single selection in accordance with
@@ -180,7 +190,8 @@ time, and visible GTK presentation time during acceptance testing.
   server aggregates.
 - Route existing tab-state changes through the single classifier.
 - Add tests for incrementing, priority, saturation, clearing, closing,
-  inactive windows, and no-activity events.
+  foreground and background windows, minimized and tray-hidden windows,
+  server-session versus child aggregates, and no-activity events.
 
 ### Stage 2: Channel-Switcher Counts
 
