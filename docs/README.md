@@ -6,7 +6,9 @@ This directory is the home for Fabulor technical and user documentation.
 
 ## User Guide
 
-- [Input history and conversation logs](user-guide/history-and-logs.md)
+- [Fabulor user manual](user/README.md)
+- [HexChat documentation reference map](user/hexchat-reference-map.md)
+- [Input history and conversation logs](user/history-and-logs.md)
 
 ## Plugin Authoring
 

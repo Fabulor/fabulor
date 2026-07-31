@@ -51,6 +51,18 @@ Last reconciled: 2026-07-31
 
 ### Remaining Release Gate
 
+- [ ] Complete a SignPath Foundation eligibility audit covering the public
+      repository, GPLv3 and bundled-component licensing, release status,
+      maintainership, MFA, and absence of proprietary payloads.
+- [ ] Publish the required code-signing policy, privacy statement, reviewer and
+      signing-approver roles, and SignPath attribution before applying for the
+      free open-source signing service.
+- [ ] Adapt the protected GitHub release workflow so SignPath can verify the
+      production build provenance and manually approve signing of the Fabulor
+      MSI and bootstrapper.
+- [ ] Obtain SignPath approval, verify the Authenticode signatures and RFC 3161
+      timestamps, and run installed acceptance against the final signed
+      artefacts.
 - [ ] Perform one final release-candidate clean-install and upgrade pass from
       the last public installer.
 - [ ] Exercise repair and uninstall once against the final signed or
@@ -64,6 +76,22 @@ Last reconciled: 2026-07-31
       runtime provenance before publishing `1.0.6`.
 - [ ] Record any remaining non-blocking visual or usability issues as separate
       follow-up work instead of reopening the completed GTK4 migration.
+
+## User Documentation
+
+- [x] Establish `docs/user` as the versioned GitHub source for the Fabulor user
+      manual and map the historical HexChat documentation to current,
+      rewritten, verification-required, and retired topics.
+- [ ] Write and verify installation, first-start, first-connection, Network
+      List, TLS, SASL, ZNC, SOCKS5, auto-connect, and autojoin guidance.
+- [ ] Write and verify the main-window, transcript, input, user-list, menu,
+      tray, emoji, flag, clipboard, accessibility, and keyboard guidance.
+- [ ] Write and verify the built-in command, Preferences, themes, colours,
+      sounds, alerts, saved history, and logging guidance.
+- [ ] Write and verify add-on installation, capability, safe-mode,
+      troubleshooting, security, privacy, migration, and glossary guidance.
+- [ ] Perform a final documentation review against the signed release
+      candidate and ensure all screenshots exclude personal or sensitive data.
 
 ## Security
 
