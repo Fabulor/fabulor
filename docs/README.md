@@ -10,6 +10,10 @@ This directory is the home for Fabulor technical and user documentation.
 - [HexChat documentation reference map](user/hexchat-reference-map.md)
 - [Input history and conversation logs](user/history-and-logs.md)
 
+## Product Design
+
+- [Activity List](product/activity-list-design.md)
+
 ## Plugin Authoring
 
 - [Plugin authoring overview](plugin-authoring-guides.md)

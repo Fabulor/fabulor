@@ -254,5 +254,11 @@ programme.
 - [x] Retain Windows regional-indicator text for editbox flag sequences.
 - [x] Add country-name and two-letter-code search/filter support to the flag
       picker.
+- [x] Define the optional post-1.0 Activity List, unread-counter, per-context
+      policy, automatic-policy, and noisy-nick design in
+      [`docs/product/activity-list-design.md`](docs/product/activity-list-design.md).
+- [ ] Implement the Activity List in the contained, acceptance-gated stages
+      defined by its design, beginning with the core activity model only after
+      the `1.0` release.
 - [ ] Continue contained installed-UI refinements based on reproducible
       screenshots, logs, and real-world acceptance.
