@@ -19,7 +19,8 @@
 [![Download Latest Release][download-badge]][latest-release-link]
 
 
-[Manual](./docs/README.md) •
+[User Manual](./docs/user/README.md) •
+[Technical Documentation](./docs/README.md) •
 [Change Log](./ChangeLog.md) •
 [Plugin Authoring Guides](./docs/plugin-authoring-guides.md)
 
