@@ -1,7 +1,10 @@
 # Fabulor Settings Reference
 
-Status: source-verified draft generated from the current Windows preference
-schema; installed release-candidate verification is still required.
+Status: verified against the current Windows `/SET` preference registry.
+
+The verification compared all 226 live Windows setting names and value types
+with this reference. It found no missing, obsolete, duplicated, or incorrectly
+typed entries. Final release-candidate smoke testing is still required.
 
 This page lists every setting exposed by `/SET` in the Windows build of
 Fabulor. It is a Fabulor-specific inventory, not a compatibility copy of an

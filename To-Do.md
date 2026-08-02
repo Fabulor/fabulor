@@ -104,11 +104,13 @@ Last reconciled: 2026-08-02
     - [x] Write the source-verified `commands.md` draft.
     - [ ] Verify the published command syntax and context requirements against
           an installed release candidate.
+      - [x] Verify the optional Exec plugin with `/EXEC ping google.com` in the
+            installed client.
     - [x] Write the source-derived `settings-reference.md` draft covering every
           live Windows `/SET` key, its value type, and its purpose.
-    - [ ] Compare the settings reference with `/SET` output from an installed
-          release candidate and verify numeric choices, sensitive-value
-          warnings, and retired-name guidance.
+    - [x] Compare all 226 live Windows `/SET` registry entries with the settings
+          reference and verify names, value types, numeric-choice guidance,
+          sensitive-value warnings, retired-name guidance, and duplicates.
   - [x] Write the source-verified `preferences.md` draft.
   - [ ] Verify the Preferences page inventory, save/cancel behaviour, and
         restart-required settings against an installed release candidate.

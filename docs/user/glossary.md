@@ -281,7 +281,7 @@ and DCC TCP connections. A proxy does not replace TLS server verification.
 ### Safe Mode
 
 A diagnostic start that disables automatic connections and third-party
-plugins. The installed **Fabulor (Safe Mode)** shortcut starts Fabulor with
+plugins. The installed **Fabulor Safe Mode** shortcut starts Fabulor with
 `--no-auto --no-plugins`.
 
 ### SASL
