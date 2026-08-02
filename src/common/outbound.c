@@ -41,6 +41,7 @@
 #include "fabulor.h"
 #include "plugin.h"
 #include "ignore.h"
+#include "irc-uri.h"
 #include "util.h"
 #include "fe.h"
 #include "cfgfiles.h"			  /* fabulor_fopen_file() */
@@ -3543,62 +3544,12 @@ cmd_splay (struct session *sess, char *tbuf, char *word[], char *word_eol[])
 }
 
 static int
-parse_irc_url (char *url, char *server_name[], char *port[], char *channel[], char *key[], int *use_ssl)
-{
-	char *co;
-#ifdef USE_OPENSSL
-	if (g_ascii_strncasecmp ("ircs://", url, 7) == 0)
-	{
-		*use_ssl = TRUE;
-		*server_name = url + 7;
-		goto urlserv;
-	}
-#endif
-
-	if (g_ascii_strncasecmp ("irc://", url, 6) == 0)
-	{
-		*server_name = url + 6;
-#ifdef USE_OPENSSL
-urlserv:
-#endif
-		/* check for port */
-		co = strchr (*server_name, ':');
-		if (co)
-		{
-			*port = co + 1;
-			*co = 0;
-		} else
-			co = *server_name;
-		/* check for channel - mirc style */
-		co = strchr (co + 1, '/');
-		if (co)
-		{
-			*co = 0;
-			co++;
-			if (*co == '#')
-				*channel = co+1;
-			else if (*co != '\0')
-				*channel = co;
-				
-			/* check for key - mirc style */
-			co = strchr (co + 1, '?');
-			if (co)
-			{
-				*co = 0;
-				co++;
-				*key = co;
-			}	
-		}
-			
-		return TRUE;
-	}
-	return FALSE;
-}
-
-static int
 cmd_server (struct session *sess, char *tbuf, char *word[], char *word_eol[])
 {
 	int offset = 0;
+	FabulorIrcUri irc_uri = { 0 };
+	GError *uri_error = NULL;
+	char uri_port[6];
 	char *server_name = NULL;
 	char *port = NULL;
 	char *pass = NULL;
@@ -3610,7 +3561,7 @@ cmd_server (struct session *sess, char *tbuf, char *word[], char *word_eol[])
 #else
 	int use_ssl = FALSE;
 #endif
-	int is_url = TRUE;
+	int is_url = FALSE;
 	int no_proxy = FALSE;
 	server *serv = sess->server;
 	ircnet *net = NULL;
@@ -3651,9 +3602,30 @@ cmd_server (struct session *sess, char *tbuf, char *word[], char *word_eol[])
 
 	serv->dont_use_proxy = no_proxy;
 
-	if (!parse_irc_url (word[2 + offset], &server_name, &port, &channel, &key, &use_ssl))
+	if (fabulor_irc_uri_has_supported_scheme (word[2 + offset]))
 	{
-		is_url = FALSE;
+		is_url = TRUE;
+		if (!fabulor_irc_uri_parse (word[2 + offset], &irc_uri, &uri_error))
+		{
+			PrintTextf (sess, _("Invalid IRC URL: %s\n"), uri_error->message);
+			g_clear_error (&uri_error);
+			return TRUE;
+		}
+
+		server_name = irc_uri.host;
+		channel = irc_uri.channel;
+		key = irc_uri.key;
+		if (irc_uri.has_port)
+		{
+			g_snprintf (uri_port, sizeof (uri_port), "%u", irc_uri.port);
+			port = uri_port;
+		}
+#ifdef USE_OPENSSL
+		use_ssl = irc_uri.use_tls;
+#endif
+	}
+	else
+	{
 		server_name = word[2 + offset];
 	}
 	if (port)
@@ -3665,7 +3637,10 @@ cmd_server (struct session *sess, char *tbuf, char *word[], char *word_eol[])
 	}
 	
 	if (!(*server_name))
+	{
+		fabulor_irc_uri_clear (&irc_uri);
 		return FALSE;
+	}
 
 	sess->server->network = NULL;
 
@@ -3725,7 +3700,10 @@ cmd_server (struct session *sess, char *tbuf, char *word[], char *word_eol[])
 
 	/* try to connect by Network name */
 	if (servlist_connect_by_netname (sess, server_name, !is_url))
+	{
+		fabulor_irc_uri_clear (&irc_uri);
 		return TRUE;
+	}
 
 	if (*port)
 	{
@@ -3741,6 +3719,7 @@ cmd_server (struct session *sess, char *tbuf, char *word[], char *word_eol[])
 	if ((serv->network = servlist_net_find_from_server (server_name)))
 		server_set_encoding (serv, ((ircnet*)serv->network)->encoding);
 
+	fabulor_irc_uri_clear (&irc_uri);
 	return TRUE;
 }
 
@@ -3927,12 +3906,22 @@ find_server_from_net (void *net)
 static void
 url_join_only (server *serv, char *tbuf, char *channel, char *key)
 {
+	session *channel_sess;
+
 	/* already connected, JOIN only. */
 	if (channel == NULL)
 		return;
 	tbuf[0] = '#';
 	/* tbuf is 4kb */
 	safe_strcpy ((tbuf + 1), channel, 256);
+
+	channel_sess = find_channel (serv, tbuf);
+	if (channel_sess)
+	{
+		fe_ctrl_gui (channel_sess, FE_GUI_FOCUS, 0);
+		return;
+	}
+
 	server_join_request_add (serv, tbuf);
 	if (key)
 		serv->p_join (serv, tbuf, key);
@@ -3940,59 +3929,77 @@ url_join_only (server *serv, char *tbuf, char *channel, char *key)
 		serv->p_join (serv, tbuf, "");
 }
 
+gboolean
+fabulor_open_irc_uri (session *sess, const char *uri_text, GError **error)
+{
+	FabulorIrcUri irc_uri = { 0 };
+	char tbuf[TBUFSIZE];
+	char *word[PDIWORDS + 1];
+	char *word_eol[PDIWORDS + 1];
+	void *net;
+	server *serv;
+	session *new_sess;
+	int index;
+
+	g_return_val_if_fail (sess != NULL, FALSE);
+
+	if (!fabulor_irc_uri_parse (uri_text, &irc_uri, error))
+		return FALSE;
+
+	/* Prefer an existing connection for the named network or server. */
+	net = servlist_net_find (irc_uri.host, NULL, g_ascii_strcasecmp);
+	if (!net)
+		net = servlist_net_find_from_server (irc_uri.host);
+
+	if (net)
+		serv = find_server_from_net (net);
+	else
+		serv = find_server_from_hostname (irc_uri.host);
+
+	if (serv)
+	{
+		url_join_only (serv, tbuf, irc_uri.channel, irc_uri.key);
+		fabulor_irc_uri_clear (&irc_uri);
+		return TRUE;
+	}
+
+	/*
+	 * Pass the already validated URI directly to cmd_server without sending it
+	 * through command-line tokenization.
+	 */
+	for (index = 0; index <= PDIWORDS; index++)
+	{
+		word[index] = "";
+		word_eol[index] = "";
+	}
+	word[1] = "SERVER";
+	word_eol[1] = "SERVER ";
+	word[2] = (char *)uri_text;
+	word_eol[2] = (char *)uri_text;
+
+	new_sess = new_ircwindow (NULL, NULL, SESS_SERVER, 1);
+	cmd_server (new_sess, tbuf, word, word_eol);
+	fabulor_irc_uri_clear (&irc_uri);
+	return TRUE;
+}
+
 static int
 cmd_url (struct session *sess, char *tbuf, char *word[], char *word_eol[])
 {
 	if (word[2][0])
 	{
-		char *server_name = NULL;
-		char *port = NULL;
-		char *channel = NULL;
-		char *key = NULL;
-		char *url = g_strdup (word[2]);
-		int use_ssl = FALSE;
-		void *net;
-		server *serv;
+		GError *uri_error = NULL;
 
-		if (parse_irc_url (url, &server_name, &port, &channel, &key, &use_ssl))
+		if (fabulor_irc_uri_has_supported_scheme (word[2]))
 		{
-			/* maybe we're already connected to this net */
-
-			/* check for "FreeNode" */
-			net = servlist_net_find (server_name, NULL, g_ascii_strcasecmp);
-			/* check for "irc.eu.freenode.net" */
-			if (!net)
-				net = servlist_net_find_from_server (server_name);
-
-			if (net)
+			if (!fabulor_open_irc_uri (sess, word[2], &uri_error))
 			{
-				/* found the network, but are we connected? */
-				serv = find_server_from_net (net);
-				if (serv)
-				{
-					url_join_only (serv, tbuf, channel, key);
-					g_free (url);
-					return TRUE;
-				}
+				PrintTextf (sess, _("Invalid IRC URL: %s\n"), uri_error->message);
+				g_clear_error (&uri_error);
 			}
-			else
-			{
-				/* an un-listed connection */
-				serv = find_server_from_hostname (server_name);
-				if (serv)
-				{
-					url_join_only (serv, tbuf, channel, key);
-					g_free (url);
-					return TRUE;
-				}
-			}
-
-			/* not connected to this net, open new window */
-			cmd_newserver (sess, tbuf, word, word_eol);
-
-		} else
+		}
+		else
 			fe_open_url (word[2]);
-		g_free (url);
 		return TRUE;
 	}
 

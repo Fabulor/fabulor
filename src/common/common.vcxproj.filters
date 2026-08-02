@@ -41,6 +41,12 @@
     <ClInclude Include="ignore.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="irc-uri.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="win32-ipc.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
     <ClInclude Include="inbound.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -161,6 +167,12 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="ignore.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="irc-uri.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="win32-ipc.c">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="inbound.c">

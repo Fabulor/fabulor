@@ -14,6 +14,10 @@
     <ClCompile Include="test-fabulor-plugin-manifest-json.c" />
     <ClCompile Include="test-service-message.c" />
     <ClCompile Include="test-theme-archive-reader.c" />
+    <ClCompile Include="test-irc-uri.c" />
+    <ClCompile Include="test-win32-ipc.c" />
+    <ClCompile Include="..\irc-uri.c" />
+    <ClCompile Include="..\win32-ipc.c" />
     <ClCompile Include="..\fabulor-plugin-enable-policy.c" />
     <ClCompile Include="..\fabulor-plugin-manifest-json.c" />
     <ClCompile Include="..\fabulor-plugin-path-policy.c" />
@@ -27,6 +31,8 @@
     <ClInclude Include="..\fabulor-plugin-host.h" />
     <ClInclude Include="..\service-message.h" />
     <ClInclude Include="..\theme-archive-reader.h" />
+    <ClInclude Include="..\irc-uri.h" />
+    <ClInclude Include="..\win32-ipc.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{A7B66F75-2C46-49A5-A3F6-FC123BB9A8D1}</ProjectGuid>
