@@ -1,7 +1,7 @@
 # Main Window
 
-Status: source-verified draft; screenshots and installed release-candidate
-verification are still required.
+Status: source-verified draft with an installed-client main-window screenshot;
+final release-candidate verification is still required.
 
 Fabulor keeps each IRC network, server tab, channel, and private conversation
 in a single main window by default. The layout can be adjusted without losing
@@ -20,6 +20,9 @@ The normal tree layout contains:
 
 Some items are meaningful only in a channel. A server tab has no channel user
 list, and a private conversation does not have channel mode controls.
+
+![Fabulor showing a public IRC channel with the channel switcher, topic bar,
+transcript, user list, nickname box, input box, and network meters visible.](images/main-window-channel.png)
 
 Use **View** to show or hide the menu bar, topic bar, user list, user-list
 buttons, and mode buttons. **View > Channel Switcher** changes between the

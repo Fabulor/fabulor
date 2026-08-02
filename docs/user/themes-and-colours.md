@@ -37,6 +37,10 @@ intended to retain user choices.
 
 ## Colour Themes
 
+![Fabulor's Colours preferences page showing the Fabulor Dark palette,
+standard IRC colour slots, transcript colours, selection colours, and
+interface-status colours.](images/colours-preferences.png)
+
 ### Fabulor Dark
 
 Fabulor includes the original **Fabulor Dark** colour theme. It is installed as
@@ -116,6 +120,10 @@ These settings affect IRC colour and style codes, not your chosen Fabulor
 palette or GTK4 desktop theme.
 
 ## GTK4 Desktop Themes
+
+![Fabulor's Appearance preferences showing the System default desktop theme,
+system-following variant, theme-archive import, and advanced appearance
+controls.](images/desktop-theme-preferences.png)
 
 ### Approved Source And Compatibility
 

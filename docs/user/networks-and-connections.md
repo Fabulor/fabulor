@@ -14,6 +14,9 @@ Open the editor through **Fabulor > Network List**.
 The main Network List contains global identity fields and the saved network
 list.
 
+![Fabulor's Network List showing blank global identity fields, the saved
+network list, favourite filtering, and connection controls.](images/network-list.png)
+
 - **Add** creates a network.
 - **Remove** deletes the selected network definition.
 - **Edit...** opens the selected network's complete settings.
@@ -35,6 +38,10 @@ per row. Use the form:
 ```text
 irc.example.net/6697
 ```
+
+![Fabulor's network editor showing a test server, TLS controls, global identity
+selection, Windows Credential Manager storage, blank identity and password
+fields, and the UTF-8 character set.](images/network-editor.png)
 
 The port belongs after `/`. The network-wide **Use TLS for all the servers on
 this network** setting applies TLS to every server entry. A `+` before an

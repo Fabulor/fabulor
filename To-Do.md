@@ -96,7 +96,7 @@ Last reconciled: 2026-08-02
 - [ ] Write and verify the main-window, transcript, input, user-list, menu,
       tray, emoji, flag, clipboard, accessibility, and keyboard guidance.
   - [x] Write the source-verified `main-window.md` draft.
-  - [ ] Add privacy-safe screenshots where they materially clarify the layout.
+  - [x] Add privacy-safe screenshots where they materially clarify the layout.
   - [ ] Verify the page through the final installed release-candidate keyboard
         and accessibility pass before marking this stage complete.
 - [ ] Write and verify the built-in command, Preferences, themes, colours,

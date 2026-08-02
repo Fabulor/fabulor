@@ -29,9 +29,9 @@ authoritative.
 
 ## Planned
 
-All planned source drafts are now available. Installed release-candidate
-verification, privacy-safe screenshots, and final editorial review remain
-before the user manual is complete.
+All planned source drafts and the privacy-safe screenshot set are now
+available. Installed release-candidate verification and final editorial review
+remain before the user manual is complete.
 
 Plugin authors should use the separate
 [plugin authoring guides](../plugin-authoring-guides.md).

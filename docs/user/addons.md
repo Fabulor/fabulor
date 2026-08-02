@@ -129,6 +129,9 @@ participate in the legacy plugin list. The window provides load, reload, and
 unload controls. Built-in Tcl and C# hosts, and therefore their simple add-ons,
 do not necessarily appear as conventional entries in this list.
 
+![Fabulor's Plugins and Scripts window listing loaded add-ons with their
+versions, files, descriptions, and load-management controls.](images/plugins-and-scripts.png)
+
 The corresponding commands are:
 
 ```text
