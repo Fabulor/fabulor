@@ -12,41 +12,26 @@ authoritative.
 
 ## Available
 
+- [Getting started](getting-started.md)
+- [Networks and connections](networks-and-connections.md)
+- [Main window](main-window.md)
+- [Commands](commands.md)
+- [Settings reference](settings-reference.md)
+- [Preferences](preferences.md)
+- [Themes and colours](themes-and-colours.md)
+- [Sounds and alerts](sounds-and-alerts.md)
 - [Input history and conversation logs](history-and-logs.md)
+- [Add-ons](addons.md)
+- [Security and privacy](security-and-privacy.md)
+- [Troubleshooting](troubleshooting.md)
+- [Migrating from XChat or HexChat](migration-from-xchat-and-hexchat.md)
+- [Glossary](glossary.md)
 
 ## Planned
 
-The following pages will be added in contained documentation stages:
-
-1. `getting-started.md`
-   - installation, first start, identity, and first connection;
-2. `networks-and-connections.md`
-   - Network List, TLS, SASL, ZNC, SOCKS5, auto-connect, and autojoin;
-3. `main-window.md`
-   - server and channel tabs, transcript, input box, user list, menus, tray,
-     emoji, flags, and clipboard behaviour;
-4. `commands.md`
-   - command syntax, built-in command reference, aliases, and context;
-5. `preferences.md`
-   - current Preferences pages and persistence behaviour;
-6. `themes-and-colours.md`
-   - Fabulor colour themes, `.hct` import, GTK4 desktop themes, and system
-     appearance;
-7. `sounds-and-alerts.md`
-   - sound events, notifications, away state, and tray alerts;
-8. `addons.md`
-   - installing, enabling, inspecting, troubleshooting, and safely removing
-     C#, Python, and Tcl add-ons;
-9. `security-and-privacy.md`
-   - TLS policy, credential handling, local data, add-on trust, and update
-     status;
-10. `troubleshooting.md`
-    - connection, display, spell-checking, add-on, installer, and performance
-      diagnosis;
-11. `migration-from-xchat-and-hexchat.md`
-    - supported concepts, intentional compatibility, and retired features; and
-12. `glossary.md`
-    - IRC and Fabulor terminology.
+All planned source drafts are now available. Installed release-candidate
+verification, privacy-safe screenshots, and final editorial review remain
+before the user manual is complete.
 
 Plugin authors should use the separate
 [plugin authoring guides](../plugin-authoring-guides.md).
@@ -72,9 +57,18 @@ Plugin authors should use the separate
 
 ## Reference Policy
 
-The [HexChat manual](https://hexchat.readthedocs.io/en/latest/) and
-[XChat documentation](https://xchat.org/docs/) are historical references, not
-copy sources. Their factual IRC explanations and topic structure may guide the
+Historical HexChat and XChat documentation are research references, not copy
+sources. Their factual IRC explanations and topic structure may guide the
 manual, but substantial passages must not be copied. The
-[reference map](hexchat-reference-map.md) records how each HexChat chapter is
-handled.
+[reference map](hexchat-reference-map.md) records how each historical HexChat
+chapter is handled.
+
+The user manual limits external links to the two approved theme sources:
+
+- [HexChat colour themes](https://hexchat.github.io/themes.html), for optional
+  `.hct` colour themes; and
+- [OpenDesktop](https://www.opendesktop.org/), the approved source for optional
+  GTK4 desktop themes.
+
+All Fabulor downloads, instructions, support, security information, and plugin
+documentation must use repository-relative links.

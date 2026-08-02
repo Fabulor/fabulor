@@ -67,3 +67,7 @@ changed.
 
 `/CLEAR LOG` does not provide a bulk-delete operation. Removing all archived
 logs remains an explicit filesystem maintenance action.
+
+Logs and input history can contain credentials, private messages, addresses,
+and other sensitive information. See [Security and privacy](security-and-privacy.md)
+before backing up or sharing them.

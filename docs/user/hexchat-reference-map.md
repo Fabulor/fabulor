@@ -3,10 +3,9 @@
 Status: initial mapping complete; individual Fabulor pages remain subject to
 installed-client verification.
 
-This document maps the official
-[HexChat manual](https://hexchat.readthedocs.io/en/latest/) to Fabulor's user
-documentation. It prevents obsolete behaviour from being carried forward merely
-because Fabulor descends from the same codebase.
+This document maps the historical HexChat manual to Fabulor's user
+documentation. It prevents obsolete behaviour from being carried forward
+merely because Fabulor descends from the same codebase.
 
 The HexChat documentation repository does not publish an explicit documentation
 licence. Fabulor therefore uses it as a factual and structural reference while
@@ -31,34 +30,34 @@ writing original text. XChat documentation is a secondary historical reference.
 | Settings: Config Files | Rewrite | `preferences.md` | Document `%APPDATA%\Fabulor`, installed mode, portable mode, and files users may safely maintain. |
 | Settings: Network List | Rewrite | `networks-and-connections.md` | Cover current identity, server, SASL, TLS, ZNC, auto-connect, autojoin, and ordering behaviour. |
 | Settings: Channel Options | Verify | `preferences.md` | Confirm the surviving per-channel options and their UI before publication. |
-| Settings: Preferences | Rewrite | `preferences.md` | Inventory the current GTK4 pages; omit retired settings and legacy GTK paths. |
+| Settings: Preferences | Rewrite | `preferences.md` | Source inventory drafted; installed release-candidate verification remains. Retired settings and legacy GTK paths are omitted. |
 | Settings: Keyboard Shortcuts | Verify | `main-window.md` | Document only shortcuts present and tested in Fabulor. |
-| Settings: URL Handlers | Verify | `preferences.md` | Prefer Windows default-browser behaviour; confirm whether configurable handlers remain user-facing. |
+| Settings: URL Handlers | Rewrite | `networks-and-connections.md` | RC4 validates `irc` and `ircs` addresses and uses a typed existing-instance handoff. Installed `irc` registration is retained; Windows-wide `ircs` registration remains a release task. |
 | Settings: Auto Replace | Verify | `preferences.md` | Confirm the editor and persistence path before retaining this topic. |
 | Settings: CTCP Replies | Verify | `preferences.md` | Confirm the current menu surface and substitution behaviour. |
 | Settings: `/SET` | Rewrite | `commands.md` | Explain querying, toggling, wildcards, persistence, and the distinction between supported and retired keys. |
-| Settings: List of Settings | Replace | `commands.md` | Generate or verify the list from Fabulor rather than copying HexChat defaults. |
+| Settings: List of Settings | Replace | `settings-reference.md` | A source-derived Windows `/SET` inventory is drafted from Fabulor's current schema; installed verification remains. |
 | Commands | Rewrite | `commands.md` | Verify command ordering, `//` escaping, `/HELP`, contexts, aliases, and every published built-in command. |
-| Appearance: Theme Files | Rewrite | `themes-and-colours.md` | Fabulor imports `.hct` files through Preferences; manual extraction is not the supported workflow. |
-| Appearance: Colours | Rewrite | `themes-and-colours.md` | Use Fabulor's Colours page and bundled Fabulor Dark theme. |
+| Appearance: Theme Files | Rewrite | `themes-and-colours.md` | Source workflow drafted: profile `.hct` files are selected through Preferences without manual extraction. Installed release-candidate verification remains. |
+| Appearance: Colours | Rewrite | `themes-and-colours.md` | Source workflow drafted for the Colours page, complete preview transaction, and bundled Fabulor Dark theme. Installed verification remains. |
 | Appearance: Text Events | Verify | `preferences.md` | Confirm the surviving event-format editor and codes before documenting it. |
 | Appearance: Icons | Replace | `main-window.md` | Document packaged GTK4 and emoji/flag assets; do not inherit HexChat icon override paths. |
-| Appearance: GTK Theme | Replace | `themes-and-colours.md` | Document GTK4 archive import, system appearance, variants, and approved theme-source policy. Retire GTK2/GTK3 instructions. |
+| Appearance: GTK Theme | Replace | `themes-and-colours.md` | Source workflow drafted for contained GTK4 archive import, system appearance, variants, and approved theme sources. GTK2/GTK3 instructions are retired; installed verification remains. |
 | Appearance: User-list Popup | Verify | `main-window.md` | Describe the current GTK4 nick menu after installed testing. |
 | Appearance: User-list Buttons | Verify | `main-window.md` | Confirm editing and command substitutions before publication. |
-| Add-ons | Replace | `addons.md` | Use Fabulor's add-on roots, simple scripts, manifests, capability policy, safe mode, and Plugins and Scripts window. |
-| Exec | Rewrite | `addons.md` | State that Exec is optional and document its bounded command behaviour and risk. |
-| FiSHLiM | Rewrite | `addons.md` | Document only Fabulor's shipped commands and key-management surface. |
-| Update Checker | Retire | `security-and-privacy.md` | The inherited updater is removed. Describe the signed-update activation gate without implying availability. |
-| Sysinfo | Rewrite | `addons.md` | Verify the shipped command and menu presentation. |
-| Checksum | Rewrite | `addons.md` | Verify current DCC checksum behaviour. |
-| Winamp | Retire | `migration-from-xchat-and-hexchat.md` | The legacy media-player integration is removed. |
-| Frequently Asked Questions | Rewrite | `troubleshooting.md` | Rebuild from Fabulor issues and installed acceptance results. |
+| Add-ons | Replace | `addons.md` | Source workflow drafted for Fabulor's add-on roots, simple scripts, manifests, capability policy, safe mode, and Plugins and Scripts window. Installed verification remains. |
+| Exec | Rewrite | `addons.md` | Source guidance drafted: Exec is optional, length-bounded, and still executes trusted operating-system commands. Installed verification remains. |
+| FiSHLiM | Rewrite | `addons.md` | Source guidance drafted for the key manager and shipped commands. Installed verification remains. |
+| Update Checker | Retire | `security-and-privacy.md` | Source guidance drafted: the inherited updater is absent and the signed-update design remains behind an explicit activation gate. Installed verification remains. |
+| Sysinfo | Rewrite | `addons.md` | Source guidance drafted for `/SYSINFO` and its Window menu entry. Installed verification remains. |
+| Checksum | Rewrite | `addons.md` | Source guidance drafted for installed file-transfer checksum handling. Installed verification remains. |
+| Winamp | Retire | `migration-from-xchat-and-hexchat.md` | Source guidance now records that the legacy media-player integration is removed; installed verification remains. |
+| Frequently Asked Questions | Rewrite | `troubleshooting.md` | Source symptom-first guide drafted from Fabulor's current installer, startup, connection, UI, runtime, and diagnostic behaviour. Installed verification remains. |
 | Tips: Spell Check | Rewrite | `main-window.md` | Use Enchant 2.8.19, WinSpell, Windows language support, suggestions, and personal dictionaries. |
 | Tips: Localisation | Rewrite | `preferences.md` | Document packaged translations and current Windows language behaviour only. |
 | Tips: Special Glyphs | Rewrite | `main-window.md` | Cover the packaged emoji fallback, regional indicators, and font behaviour. |
 | Tips: Client Certificates | Verify | `networks-and-connections.md` | Confirm current certificate-file support after retirement of Network List certificate controls. |
-| Tips: Custom Server Certificates | Replace | `security-and-privacy.md` | Document the supported CA bundle and invalid-certificate policy; do not recommend editing installed files. |
+| Tips: Custom Server Certificates | Replace | `security-and-privacy.md` | Source guidance drafted for the packaged trust store, server identity, imported client certificates, and invalid-certificate exception. Installed verification remains. |
 | Tips: Notice Placement | Verify | `main-window.md` | Test current server, channel, and query routing before documenting it. |
 
 ## Contributor And Developer Chapters
@@ -68,11 +67,11 @@ writing original text. XChat documentation is a secondary historical reference.
 | Plugin Interface | Replace | `../plugins/` | Fabulor exposes its own native ABI and C#, Python, and Tcl contracts. |
 | Developers | Replace | `../plugin-authoring-guides.md` | Do not inherit HexChat's recommended languages or versions. |
 | Python Interface | Replace | `../plugins/python-plugin-guide.md` | Use the `fabulor` module and current embedded Python runtime. |
-| Perl Interface | Retire | `migration-from-xchat-and-hexchat.md` | Perl is not a supported Fabulor plugin runtime. |
-| Lua Interface | Retire | `migration-from-xchat-and-hexchat.md` | Lua is not a supported Fabulor plugin runtime. |
-| JavaScript Interface | Retire | `migration-from-xchat-and-hexchat.md` | The external HexChat JavaScript interface is not a Fabulor contract. |
-| D-Bus Interface | Retire | `migration-from-xchat-and-hexchat.md` | The Unix-oriented HexChat D-Bus interface is outside the Windows product. |
-| Building Perl Modules | Retire | `migration-from-xchat-and-hexchat.md` | Perl and its build guidance are retired. |
+| Perl Interface | Retire | `migration-from-xchat-and-hexchat.md` | Source migration guidance records that Perl is not a supported Fabulor plugin runtime. |
+| Lua Interface | Retire | `migration-from-xchat-and-hexchat.md` | Source migration guidance records that Lua is not a supported Fabulor plugin runtime. |
+| JavaScript Interface | Retire | `migration-from-xchat-and-hexchat.md` | Source migration guidance records that the external HexChat JavaScript interface is not a Fabulor contract. |
+| D-Bus Interface | Retire | `migration-from-xchat-and-hexchat.md` | Source migration guidance records that the Unix-oriented HexChat D-Bus interface is outside the Windows product. |
+| Building Perl Modules | Retire | `migration-from-xchat-and-hexchat.md` | Source migration guidance records that Perl and its build guidance are retired. |
 | Building HexChat | Reference only | Developer documentation | Fabulor uses MSVC, GTK4, WiX, and its current repository workflows. |
 | How to Help | Replace | Repository contribution guidance | Use Fabulor issues, pull requests, security policy, and documentation review. |
 | HexChat ChangeLog | Reference only | `../../ChangeLog.md` | Fabulor maintains its own change log and credits its project lineage separately. |

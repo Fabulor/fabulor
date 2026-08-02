@@ -94,10 +94,14 @@ folder/entrypoint basename rule and intentionally omits `plugin.json`.
 
 Use `plugins\<plugin-id>\plugin.json` only for advanced packaged plugins that need dependency resolution, capability declarations, strict API versioning, or complex runtime setup.
 
-The manifest host is currently disabled by default while the API is being hardened. It can be enabled for development with:
+The manifest host is disabled by default. Users can opt in through
+**Settings > Preferences > Chatting > Advanced > Enable manifest plugins
+(requires restart)**, accept the trusted-code warning, and restart Fabulor.
+The developer/testing override remains available as:
 
 ```text
 FABULOR_ENABLE_MANIFEST_PLUGINS=1
 ```
 
 Manifest plugins currently support C#, Python, and Tcl only. Native C/C++ DLL plugins remain on the legacy loader path.
+The `--no-plugins` safe-mode option takes precedence over both enable paths.
