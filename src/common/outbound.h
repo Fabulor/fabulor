@@ -29,6 +29,8 @@ int auto_insert (char *dest, gsize destlen, unsigned char *src, char *word[], ch
 				 char *a, char *c, char *d, char *e, char *h, char *n, char *s, char *u);
 char *command_insert_vars (session *sess, char *cmd);
 int handle_command (session *sess, char *cmd, int check_spch);
+gboolean fabulor_open_irc_uri (session *sess, const char *uri_text,
+									GError **error);
 void process_data_init (char *buf, char *cmd, char *word[], char *word_eol[], gboolean handle_quotes, gboolean allow_escape_quotes);
 void handle_multiline (session *sess, char *cmd, int history, int nocommand);
 void check_special_chars (char *cmd, int do_ascii);

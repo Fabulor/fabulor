@@ -40,6 +40,7 @@
 #include "../common/url.h"
 #include "../common/util.h"
 #include "../common/text.h"
+#include "../common/win32-ipc.h"
 #include "../common/chanopt.h"
 #include "../common/cfgfiles.h"
 
@@ -76,6 +77,7 @@
 
 #ifdef G_OS_WIN32
 #include <windows.h>
+#include <commctrl.h>
 #include <gdk/win32/gdkwin32.h>
 #include <glib/gwin32.h>
 #endif
@@ -113,6 +115,50 @@ static void mg_schedule_rightpane_restore (session_gui *gui);
 
 static guint mg_config_save_source_id = 0;
 static gboolean mg_config_prefs_dirty = FALSE;
+
+#ifdef G_OS_WIN32
+static gboolean mg_win32_message_dispatch (MSG *msg);
+
+static LRESULT CALLBACK
+mg_win32_ipc_window_proc (HWND hwnd, UINT message, WPARAM wparam,
+	LPARAM lparam, UINT_PTR subclass_id, DWORD_PTR reference_data)
+{
+	MSG msg = { 0 };
+
+	(void) reference_data;
+	msg.hwnd = hwnd;
+	msg.message = message;
+	msg.wParam = wparam;
+	msg.lParam = lparam;
+
+	if (message == WM_NCDESTROY)
+	{
+		RemovePropA (hwnd, FABULOR_WIN32_IPC_WINDOW_PROPERTY);
+		RemoveWindowSubclass (hwnd, mg_win32_ipc_window_proc, subclass_id);
+	}
+
+	if (message == WM_COPYDATA && mg_win32_message_dispatch (&msg))
+		return TRUE;
+
+	return DefSubclassProc (hwnd, message, wparam, lparam);
+}
+
+static void
+mg_win32_register_ipc_window (GtkWidget *window)
+{
+	HWND hwnd;
+
+	hwnd = (HWND)fabulor_window_native_handle (GTK_WINDOW (window));
+	if (hwnd && SetWindowSubclass (hwnd, mg_win32_ipc_window_proc,
+		FABULOR_WIN32_IPC_WINDOW_MARKER, 0))
+	{
+		SetPropA (hwnd, FABULOR_WIN32_IPC_WINDOW_PROPERTY,
+			(HANDLE)(ULONG_PTR)FABULOR_WIN32_IPC_WINDOW_MARKER);
+	}
+}
+#else
+#define mg_win32_register_ipc_window(window) ((void)0)
+#endif
 
 static void
 mg_show_save_failure (const PreferencesPersistenceResult *save_result)
@@ -5839,6 +5885,7 @@ mg_create_topwindow (session *sess)
         mg_place_userlist_and_chanview (sess->gui);
 
 	gtk_widget_show (win);
+	mg_win32_register_ipc_window (win);
 	if (!sess->gui->theme_window_listener_id)
 		sess->gui->theme_window_listener_id = theme_listener_register ("maingui.window", mg_theme_window_changed, sess->gui);
 	theme_manager_attach_window (win);
@@ -5877,8 +5924,6 @@ mg_tabwindow_close_request_cb (GtkWindow *win, gpointer user_data)
 }
 
 #ifdef G_OS_WIN32
-#define MG_WIN32_COPYDATA_MAX_BYTES (64 * 1024)
-
 static gboolean
 mg_win32_message_dispatch (MSG *msg)
 {
@@ -5898,39 +5943,27 @@ mg_win32_message_dispatch (MSG *msg)
 	if (msg->message == WM_COPYDATA)
 	{
 		COPYDATASTRUCT *copy_data = (COPYDATASTRUCT *)msg->lParam;
+		GError *error = NULL;
 
-		if (copy_data && copy_data->dwData == 0 && copy_data->lpData &&
-			copy_data->cbData > 1 &&
-			copy_data->cbData <= MG_WIN32_COPYDATA_MAX_BYTES && current_sess)
+		if (copy_data &&
+			copy_data->dwData == FABULOR_WIN32_COPYDATA_IRC_URI &&
+			current_sess &&
+			fabulor_win32_ipc_validate_irc_uri_payload (
+				copy_data->lpData, copy_data->cbData, &error))
 		{
 			const char *payload = copy_data->lpData;
-			char *command;
 
-			if (payload[copy_data->cbData - 1] != '\0')
-				return FALSE;
-			command = g_strndup (payload, copy_data->cbData - 1);
-
-			if (command)
+			if (fabulor_open_irc_uri (current_sess, payload, &error))
 			{
-				if (strcmp (command, "__WIN32_TASKBAR_TOGGLE__") == 0)
-				{
-					FabulorWindowState state;
-
-					fabulor_window_state_get (
-						GTK_WINDOW (current_sess->gui->window), &state);
-					if (state.visible
-						&& !state.minimized)
-						fe_ctrl_gui (current_sess, FE_GUI_ICONIFY, 0);
-					else
-						fe_ctrl_gui (current_sess, FE_GUI_SHOW, 0);
-				}
-				else
-				{
-					handle_command (current_sess, command, FALSE);
-				}
-				g_free (command);
+				fe_ctrl_gui (current_sess, FE_GUI_SHOW, 0);
 				return TRUE;
 			}
+		}
+
+		if (error)
+		{
+			g_warning ("Rejected Windows IRC URI handoff: %s", error->message);
+			g_clear_error (&error);
 		}
 	}
 
@@ -6065,6 +6098,7 @@ mg_create_tabwindow (session *sess)
         mg_place_userlist_and_chanview (sess->gui);
 
         gtk_widget_show (win);
+	mg_win32_register_ipc_window (win);
         if (!sess->gui->theme_window_listener_id)
                 sess->gui->theme_window_listener_id = theme_listener_register ("maingui.window", mg_theme_window_changed, sess->gui);
         theme_manager_attach_window (win);

@@ -23,6 +23,8 @@
     <ClInclude Include="fe.h" />
     <ClInclude Include="history.h" />
     <ClInclude Include="ignore.h" />
+    <ClInclude Include="irc-uri.h" />
+    <ClInclude Include="win32-ipc.h" />
     <ClInclude Include="inbound.h" />
     <ClInclude Include="inet.h" />
     <ClInclude Include="$(FabulorLib)marshal.h" />
@@ -71,6 +73,8 @@
     <ClCompile Include="win32-gtk4-runtime.c" />
     <ClCompile Include="history.c" />
     <ClCompile Include="ignore.c" />
+    <ClCompile Include="irc-uri.c" />
+    <ClCompile Include="win32-ipc.c" />
     <ClCompile Include="inbound.c" />
     <ClCompile Include="$(FabulorLib)marshal.c" />
     <ClCompile Include="modes.c" />

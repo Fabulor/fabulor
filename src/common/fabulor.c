@@ -52,6 +52,7 @@
 #include "outbound.h"
 #include "text.h"
 #include "url.h"
+#include "win32-ipc.h"
 #include "fabulorc.h"
 
 #if ! GLIB_CHECK_VERSION (2, 36, 0)
@@ -117,74 +118,65 @@ fabulor_theme_path_from_arg (const char *arg, char **path_out)
 }
 
 #ifdef WIN32
-static gboolean
-fabulor_has_theme_argument (void)
+static BOOL CALLBACK
+fabulor_find_running_window_cb (HWND hwnd, LPARAM parameter)
 {
-	char *theme_path = NULL;
-	guint i;
+	HWND *result = (HWND *)parameter;
+	ULONG_PTR marker;
 
-	if (arg_url && fabulor_theme_path_from_arg (arg_url, &theme_path))
-	{
-		g_free (theme_path);
+	marker = (ULONG_PTR)GetPropA (hwnd, FABULOR_WIN32_IPC_WINDOW_PROPERTY);
+	if (marker != FABULOR_WIN32_IPC_WINDOW_MARKER)
 		return TRUE;
-	}
 
-	if (arg_urls)
-	{
-		for (i = 0; i < g_strv_length (arg_urls); i++)
-		{
-			if (fabulor_theme_path_from_arg (arg_urls[i], &theme_path))
-			{
-				g_free (theme_path);
-				return TRUE;
-			}
-		}
-	}
-
+	*result = hwnd;
 	return FALSE;
 }
 
 static HWND
 fabulor_find_running_window (void)
 {
-	HWND hwnd = FindWindowA ("Fabulor", NULL);
+	HWND result = NULL;
 
-	if (!hwnd)
-		hwnd = FindWindowA ("fabulor", NULL);
-	if (!hwnd)
-		hwnd = FindWindowA (NULL, "Fabulor");
-
-	return hwnd;
+	EnumWindows (fabulor_find_running_window_cb, (LPARAM)&result);
+	return result;
 }
 
 static gboolean
-fabulor_send_command_to_existing (HWND hwnd, const char *command)
+fabulor_send_irc_uri_to_existing (HWND hwnd, const char *uri_text)
 {
 	COPYDATASTRUCT copy_data;
 	DWORD_PTR send_result = 0;
+	gsize payload_size;
 
-	if (!hwnd || !command || !*command)
+	if (!hwnd || !uri_text || !*uri_text)
+		return FALSE;
+	payload_size = strlen (uri_text) + 1;
+	if (!fabulor_win32_ipc_validate_irc_uri_payload (
+		uri_text, payload_size, NULL))
 		return FALSE;
 
-	copy_data.dwData = 0;
-	copy_data.cbData = (DWORD)strlen (command) + 1;
-	copy_data.lpData = (void *)command;
+	copy_data.dwData = FABULOR_WIN32_COPYDATA_IRC_URI;
+	copy_data.cbData = (DWORD)payload_size;
+	copy_data.lpData = (void *)uri_text;
 
-	return SendMessageTimeoutA (hwnd, WM_COPYDATA, (WPARAM)NULL,
-	                            (LPARAM)&copy_data,
-	                            SMTO_ABORTIFHUNG | SMTO_BLOCK,
-	                            5000, &send_result) != 0;
+	if (!SendMessageTimeoutA (hwnd, WM_COPYDATA, (WPARAM)NULL,
+	                         (LPARAM)&copy_data,
+	                         SMTO_ABORTIFHUNG | SMTO_BLOCK,
+	                         5000, &send_result))
+		return FALSE;
+
+	return send_result != 0;
 }
 
 static gboolean
 fabulor_remote_win32 (void)
 {
 	HWND hwnd;
-	gboolean allow_remote;
 	gboolean sent = FALSE;
+	guint i;
 
-	allow_remote = arg_existing || fabulor_has_theme_argument ();
-	if (!allow_remote)
+	/* Commands are intentionally excluded from the Windows URI handoff. */
+	if (arg_command || (!arg_url && !arg_urls))
 		return FALSE;
 
 	hwnd = fabulor_find_running_window ();
@@ -192,31 +184,12 @@ fabulor_remote_win32 (void)
 		return FALSE;
 
 	if (arg_url)
-	{
-		char *command = g_strdup_printf ("url %s", arg_url);
-		sent = fabulor_send_command_to_existing (hwnd, command) || sent;
-		g_free (command);
-	}
-	else if (arg_command)
-	{
-		sent = fabulor_send_command_to_existing (hwnd, arg_command) || sent;
-	}
-	else if (arg_existing)
-	{
-		sent = fabulor_send_command_to_existing (hwnd, "__WIN32_TASKBAR_TOGGLE__") || sent;
-	}
+		sent = fabulor_send_irc_uri_to_existing (hwnd, arg_url) || sent;
 
 	if (arg_urls)
 	{
-		guint i;
 		for (i = 0; i < g_strv_length (arg_urls); i++)
-		{
-			char *command = g_strdup_printf ("url %s", arg_urls[i]);
-			sent = fabulor_send_command_to_existing (hwnd, command) || sent;
-			g_free (command);
-		}
-		g_strfreev (arg_urls);
-		arg_urls = NULL;
+			sent = fabulor_send_irc_uri_to_existing (hwnd, arg_urls[i]) || sent;
 	}
 
 	return sent;
