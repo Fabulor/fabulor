@@ -12,6 +12,9 @@
 - [SignPath Foundation eligibility audit](signpath-foundation-eligibility-audit.md)
   records the code-signing application criteria, current evidence, gaps, and
   required remediation order.
+- [SignPath artifact and metadata contract](signpath-artifact-metadata.md)
+  defines the canonical Windows metadata and the exact Fabulor-owned files
+  eligible for the initial signing configurations.
 - Plugin schema, enablement, capability, and troubleshooting guidance lives
   under [`docs/plugins`](../plugins).
 

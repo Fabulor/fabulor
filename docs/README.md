@@ -3,6 +3,7 @@
 This directory is the home for Fabulor technical and user documentation.
 
 - [Project licence](../Licence.md)
+- [Bundled components, licences, and SBOM](legal/bundled-components-and-sbom.md)
 
 ## User Guide
 
@@ -54,3 +55,5 @@ Completed migration evidence is retained in the
 
 - [Current policy and historical evidence](security/README.md)
 - [Signed update feed design](security/signed-update-feed-design.md)
+- [SignPath artifact and metadata contract](security/signpath-artifact-metadata.md)
+- [SignPath Foundation eligibility audit](security/signpath-foundation-eligibility-audit.md)

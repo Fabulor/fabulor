@@ -1,0 +1,661 @@
+{
+  "schema_version": 1,
+  "product": {
+    "name": "Fabulor",
+    "type": "application",
+    "homepage": "https://github.com/Fabulor/fabulor",
+    "licence": "GPL-3.0-only"
+  },
+  "components": [
+    {
+      "id": "adwaita-icon-theme",
+      "name": "Adwaita icon theme assets",
+      "version": "repository-snapshot",
+      "type": "data",
+      "scope": "required",
+      "licence": "CC-BY-SA-3.0 AND LGPL-3.0-or-later",
+      "licence_files": [
+        "adwaita-icon-theme-COPYING",
+        "adwaita-icon-theme-COPYING_CCBYSA3",
+        "adwaita-icon-theme-COPYING_LGPL"
+      ],
+      "source": "https://gitlab.gnome.org/GNOME/adwaita-icon-theme",
+      "installed_paths": [
+        "share/icons/Adwaita"
+      ]
+    },
+    {
+      "id": "cairo",
+      "name": "cairo",
+      "version": "1.18.4",
+      "type": "library",
+      "scope": "required",
+      "licence": "LGPL-2.1-only OR MPL-1.1",
+      "licence_files": [
+        "cairo-COPYING"
+      ],
+      "source": "https://gitlab.freedesktop.org/cairo/cairo",
+      "installed_paths": [
+        "Runtime/GTK4/bin/cairo-2.dll",
+        "Runtime/GTK4/bin/cairo-gobject-2.dll",
+        "Runtime/GTK4/bin/cairo-script-interpreter-2.dll"
+      ]
+    },
+    {
+      "id": "cffi",
+      "name": "CFFI native backend",
+      "version": "2.1.0",
+      "type": "library",
+      "scope": "optional",
+      "licence": "MIT-0",
+      "licence_files": [
+        "cffi-LICENSE"
+      ],
+      "source": "https://github.com/python-cffi/cffi/tree/v2.1.0",
+      "installed_paths": [
+        "Runtime/Python314/_cffi_backend.cp314-win_amd64.pyd"
+      ]
+    },
+    {
+      "id": "checksum-plugin",
+      "name": "Checksum plugin",
+      "version": "Fabulor-1.0.6",
+      "type": "library",
+      "scope": "optional",
+      "licence": "MIT",
+      "licence_files": [
+        "native-plugins-NOTICE.txt"
+      ],
+      "source": "https://github.com/Fabulor/fabulor/tree/main/plugins/checksum",
+      "installed_paths": [
+        "Plugins/hcchecksum.dll"
+      ]
+    },
+    {
+      "id": "dotnet-runtime",
+      "name": ".NET Runtime",
+      "version": "8.0.29",
+      "type": "framework",
+      "scope": "required",
+      "licence": "LicenseRef-Microsoft-Dotnet-Library",
+      "licence_files": [
+        "dotnet-LICENSE.txt",
+        "dotnet-ThirdPartyNotices.txt"
+      ],
+      "source": "https://github.com/dotnet/runtime/tree/v8.0.29",
+      "installed_paths": [
+        "Runtime/DotNet/host/fxr/8.0.29",
+        "Runtime/DotNet/shared/Microsoft.NETCore.App/8.0.29"
+      ]
+    },
+    {
+      "id": "enchant",
+      "name": "Enchant",
+      "version": "2.8.19",
+      "type": "library",
+      "scope": "required",
+      "licence": "LGPL-2.1-or-later",
+      "licence_files": [
+        "enchant-COPYING.LIB"
+      ],
+      "source": "https://github.com/rrthomas/enchant/tree/v2.8.19",
+      "installed_paths": [
+        "libenchant-2-2.dll",
+        "lib/enchant-2/enchant_winspell.dll",
+        "share/enchant-2/enchant.ordering"
+      ],
+      "distribution_sha256": "c8d70991d544ee39274b96bd01d2858a009fe732ff43f2aaf605fd61ecd06f60"
+    },
+    {
+      "id": "exec-plugin",
+      "name": "Exec plugin",
+      "version": "Fabulor-1.0.6",
+      "type": "library",
+      "scope": "optional",
+      "licence": "MIT",
+      "licence_files": [
+        "native-plugins-NOTICE.txt"
+      ],
+      "source": "https://github.com/Fabulor/fabulor/tree/main/plugins/exec",
+      "installed_paths": [
+        "Plugins/hcexec.dll"
+      ]
+    },
+    {
+      "id": "expat",
+      "name": "Expat",
+      "version": "2.8.0",
+      "type": "library",
+      "scope": "required",
+      "licence": "MIT",
+      "licence_files": [
+        "expat-COPYING"
+      ],
+      "source": "https://github.com/libexpat/libexpat",
+      "installed_paths": [
+        "Runtime/GTK4/bin/libexpat.dll"
+      ]
+    },
+    {
+      "id": "fishlim",
+      "name": "FiSHLiM plugin",
+      "version": "Fabulor-1.0.6",
+      "type": "library",
+      "scope": "optional",
+      "licence": "MIT AND GPL-2.0-or-later",
+      "licence_files": [
+        "fishlim-LICENSE",
+        "GPL-2.0-or-later.txt"
+      ],
+      "source": "https://github.com/Fabulor/fabulor/tree/main/plugins/fishlim",
+      "installed_paths": [
+        "Plugins/hcfishlim.dll"
+      ]
+    },
+    {
+      "id": "flagpedia-icons",
+      "name": "Flagpedia country flag icons",
+      "version": "2026-02-06",
+      "type": "data",
+      "scope": "required",
+      "licence": "LicenseRef-Public-Domain",
+      "licence_files": [
+        "flagpedia-public-domain.txt"
+      ],
+      "source": "https://flagpedia.net/download/icons",
+      "installed_paths": [
+        "share/emoji-flags"
+      ]
+    },
+    {
+      "id": "fontconfig",
+      "name": "Fontconfig",
+      "version": "2.17.1",
+      "type": "library",
+      "scope": "required",
+      "licence": "MIT",
+      "licence_files": [
+        "fontconfig-COPYING"
+      ],
+      "source": "https://gitlab.freedesktop.org/fontconfig/fontconfig",
+      "installed_paths": [
+        "Runtime/GTK4/bin/fontconfig-1.dll",
+        "Runtime/GTK4/etc/fonts",
+        "Runtime/GTK4/share/fontconfig"
+      ]
+    },
+    {
+      "id": "freetype",
+      "name": "FreeType",
+      "version": "2.14.3",
+      "type": "library",
+      "scope": "required",
+      "licence": "FTL OR GPL-2.0-or-later",
+      "licence_files": [
+        "freetype-FTL.txt"
+      ],
+      "source": "https://gitlab.freedesktop.org/freetype/freetype/-/tree/VER-2-14-3",
+      "installed_paths": [
+        "Runtime/GTK4/bin/freetype-6.dll"
+      ]
+    },
+    {
+      "id": "fribidi",
+      "name": "FriBidi",
+      "version": "1.0.16",
+      "type": "library",
+      "scope": "required",
+      "licence": "LGPL-2.1-or-later",
+      "licence_files": [
+        "fribidi-COPYING"
+      ],
+      "source": "https://github.com/fribidi/fribidi",
+      "installed_paths": [
+        "Runtime/GTK4/bin/fribidi-0.dll"
+      ]
+    },
+    {
+      "id": "gdk-pixbuf",
+      "name": "gdk-pixbuf",
+      "version": "2.44.6",
+      "type": "library",
+      "scope": "required",
+      "licence": "LGPL-2.1-or-later",
+      "licence_files": [
+        "gdk-pixbuf-COPYING"
+      ],
+      "source": "https://gitlab.gnome.org/GNOME/gdk-pixbuf",
+      "installed_paths": [
+        "Runtime/GTK4/bin/gdk_pixbuf-2.0-0.dll",
+        "Runtime/GTK4/lib/gdk-pixbuf-2.0"
+      ]
+    },
+    {
+      "id": "gettext-runtime",
+      "name": "GNU gettext runtime",
+      "version": "0.21.0",
+      "type": "library",
+      "scope": "required",
+      "licence": "LGPL-2.1-or-later",
+      "licence_files": [
+        "LGPL-2.1-or-later.txt"
+      ],
+      "source": "https://savannah.gnu.org/projects/gettext",
+      "installed_paths": [
+        "Runtime/GTK4/bin/intl.dll"
+      ]
+    },
+    {
+      "id": "glib",
+      "name": "GLib",
+      "version": "2.88.0",
+      "type": "library",
+      "scope": "required",
+      "licence": "LGPL-2.1-or-later",
+      "licence_files": [
+        "LGPL-2.1-or-later.txt"
+      ],
+      "source": "https://gitlab.gnome.org/GNOME/glib/-/tree/2.88.0",
+      "installed_paths": [
+        "Runtime/GTK4/bin/gio-2.0-0.dll",
+        "Runtime/GTK4/bin/glib-2.0-0.dll",
+        "Runtime/GTK4/bin/gmodule-2.0-0.dll",
+        "Runtime/GTK4/bin/gobject-2.0-0.dll",
+        "Runtime/GTK4/bin/gspawn-win64-helper.exe",
+        "Runtime/GTK4/bin/gspawn-win64-helper-console.exe"
+      ]
+    },
+    {
+      "id": "graphene",
+      "name": "Graphene",
+      "version": "1.10.8",
+      "type": "library",
+      "scope": "required",
+      "licence": "MIT",
+      "licence_files": [
+        "graphene-LICENSE.txt"
+      ],
+      "source": "https://github.com/ebassi/graphene/tree/1.10.8",
+      "installed_paths": [
+        "Runtime/GTK4/bin/graphene-1.0-0.dll"
+      ]
+    },
+    {
+      "id": "gtk4",
+      "name": "GTK",
+      "version": "4.22.4",
+      "type": "framework",
+      "scope": "required",
+      "licence": "LGPL-2.1-or-later",
+      "licence_files": [
+        "gtk4-COPYING"
+      ],
+      "source": "https://gitlab.gnome.org/GNOME/gtk/-/tree/4.22.4",
+      "installed_paths": [
+        "Runtime/GTK4/bin/gtk-4-1.dll",
+        "Runtime/GTK4/share/gtk-4.0"
+      ],
+      "distribution_sha256": "3910a612083c2a155c5a4a2026990701841c0d7f7de28756b2f0865decb161be"
+    },
+    {
+      "id": "harfbuzz",
+      "name": "HarfBuzz",
+      "version": "14.2.0",
+      "type": "library",
+      "scope": "required",
+      "licence": "MIT",
+      "licence_files": [
+        "harfbuzz-COPYING"
+      ],
+      "source": "https://github.com/harfbuzz/harfbuzz",
+      "installed_paths": [
+        "Runtime/GTK4/bin/harfbuzz.dll",
+        "Runtime/GTK4/bin/harfbuzz-subset.dll"
+      ]
+    },
+    {
+      "id": "iso-codes-data",
+      "name": "ISO 3166 and ISO 639 data",
+      "version": "repository-snapshot",
+      "type": "data",
+      "scope": "required",
+      "licence": "LGPL-2.1-or-later",
+      "licence_files": [
+        "LGPL-2.1-or-later.txt"
+      ],
+      "source": "https://salsa.debian.org/iso-codes-team/iso-codes",
+      "installed_paths": [
+        "share/xml/iso-codes/iso_3166.xml",
+        "share/xml/iso-codes/iso_639.xml"
+      ]
+    },
+    {
+      "id": "libepoxy",
+      "name": "libepoxy",
+      "version": "1.5.10",
+      "type": "library",
+      "scope": "required",
+      "licence": "MIT",
+      "licence_files": [
+        "libepoxy-COPYING"
+      ],
+      "source": "https://github.com/anholt/libepoxy",
+      "installed_paths": [
+        "Runtime/GTK4/bin/epoxy-0.dll"
+      ]
+    },
+    {
+      "id": "libffi",
+      "name": "libffi",
+      "version": "3.4.6",
+      "type": "library",
+      "scope": "required",
+      "licence": "MIT",
+      "licence_files": [
+        "libffi-LICENSE"
+      ],
+      "source": "https://github.com/libffi/libffi",
+      "installed_paths": [
+        "Runtime/GTK4/bin/ffi-8.dll"
+      ]
+    },
+    {
+      "id": "libjpeg-turbo",
+      "name": "libjpeg-turbo",
+      "version": "3.1.4.1",
+      "type": "library",
+      "scope": "required",
+      "licence": "BSD-3-Clause AND IJG AND Zlib",
+      "licence_files": [
+        "libjpeg-turbo-LICENSE.md"
+      ],
+      "source": "https://github.com/libjpeg-turbo/libjpeg-turbo",
+      "installed_paths": [
+        "Runtime/GTK4/bin/jpeg62.dll"
+      ]
+    },
+    {
+      "id": "libpng",
+      "name": "libpng",
+      "version": "1.6.58",
+      "type": "library",
+      "scope": "required",
+      "licence": "Libpng-2.0",
+      "licence_files": [
+        "libpng-LICENSE"
+      ],
+      "source": "https://github.com/pnggroup/libpng",
+      "installed_paths": [
+        "Runtime/GTK4/bin/libpng16.dll"
+      ]
+    },
+    {
+      "id": "librsvg",
+      "name": "librsvg",
+      "version": "2.62.1",
+      "type": "library",
+      "scope": "required",
+      "licence": "LGPL-2.1-or-later",
+      "licence_files": [
+        "librsvg-COPYING.LIB"
+      ],
+      "source": "https://gitlab.gnome.org/GNOME/librsvg",
+      "installed_paths": [
+        "Runtime/GTK4/bin/rsvg-2-2.dll",
+        "Runtime/GTK4/lib/gdk-pixbuf-2.0/2.10.0/loaders/pixbufloader_svg.dll"
+      ]
+    },
+    {
+      "id": "libtiff",
+      "name": "LibTIFF",
+      "version": "4.7.1",
+      "type": "library",
+      "scope": "required",
+      "licence": "libtiff",
+      "licence_files": [
+        "libtiff-license.txt"
+      ],
+      "source": "https://gitlab.com/libtiff/libtiff",
+      "installed_paths": [
+        "Runtime/GTK4/bin/tiff.dll"
+      ]
+    },
+    {
+      "id": "libxml2",
+      "name": "libxml2",
+      "version": "2.15.3",
+      "type": "library",
+      "scope": "required",
+      "licence": "MIT",
+      "licence_files": [
+        "libxml2-Copyright"
+      ],
+      "source": "https://gitlab.gnome.org/GNOME/libxml2/-/tree/v2.15.3",
+      "installed_paths": [
+        "Runtime/GTK4/bin/xml2-16.dll"
+      ]
+    },
+    {
+      "id": "mozilla-ca-bundle",
+      "name": "Mozilla CA certificate bundle converted by curl",
+      "version": "2026-07-16",
+      "type": "data",
+      "scope": "required",
+      "licence": "MPL-2.0",
+      "licence_files": [
+        "MPL-2.0.txt"
+      ],
+      "source": "https://curl.se/docs/caextract.html",
+      "distribution_sha256": "3ff344e30b9b1ed2971044eabb438a08f2e2245ddb5f8ab1a3ad8b63ab4eaf91",
+      "installed_paths": [
+        "cert.pem"
+      ]
+    },
+    {
+      "id": "notifications-plugin",
+      "name": "Windows notifications plugin",
+      "version": "Fabulor-1.0.6",
+      "type": "library",
+      "scope": "optional",
+      "licence": "MIT AND GPL-2.0-or-later",
+      "licence_files": [
+        "native-plugins-NOTICE.txt",
+        "GPL-2.0-or-later.txt"
+      ],
+      "source": "https://github.com/Fabulor/fabulor/tree/main/src/fe-gtk/notifications",
+      "installed_paths": [
+        "Plugins/hcnotifications-winrt.dll"
+      ]
+    },
+    {
+      "id": "noto-color-emoji",
+      "name": "Noto Color Emoji",
+      "version": "repository-snapshot",
+      "type": "data",
+      "scope": "required",
+      "licence": "OFL-1.1",
+      "licence_files": [
+        "NotoColorEmoji-LICENSE.txt"
+      ],
+      "source": "https://github.com/googlefonts/noto-emoji",
+      "installed_paths": [
+        "share/fonts/NotoColorEmoji.ttf"
+      ]
+    },
+    {
+      "id": "openssl",
+      "name": "OpenSSL",
+      "version": "3.6.3",
+      "type": "library",
+      "scope": "required",
+      "licence": "Apache-2.0",
+      "licence_files": [
+        "openssl-copyright"
+      ],
+      "source": "https://github.com/openssl/openssl/tree/openssl-3.6.3",
+      "installed_paths": [
+        "libcrypto-3-x64.dll",
+        "libssl-3-x64.dll"
+      ]
+    },
+    {
+      "id": "pango",
+      "name": "Pango",
+      "version": "1.57.1",
+      "type": "library",
+      "scope": "required",
+      "licence": "LGPL-2.1-or-later",
+      "licence_files": [
+        "pango-COPYING"
+      ],
+      "source": "https://gitlab.gnome.org/GNOME/pango",
+      "installed_paths": [
+        "Runtime/GTK4/bin/pango-1.0-0.dll",
+        "Runtime/GTK4/bin/pangocairo-1.0-0.dll",
+        "Runtime/GTK4/bin/pangoft2-1.0-0.dll",
+        "Runtime/GTK4/bin/pangowin32-1.0-0.dll"
+      ]
+    },
+    {
+      "id": "pcre2",
+      "name": "PCRE2",
+      "version": "10.47",
+      "type": "library",
+      "scope": "required",
+      "licence": "BSD-3-Clause",
+      "licence_files": [
+        "pcre2-LICENCE.md"
+      ],
+      "source": "https://github.com/PCRE2Project/pcre2/tree/pcre2-10.47",
+      "installed_paths": [
+        "Runtime/GTK4/bin/pcre2-8-0.dll"
+      ]
+    },
+    {
+      "id": "pixman",
+      "name": "Pixman",
+      "version": "0.46.4",
+      "type": "library",
+      "scope": "required",
+      "licence": "MIT",
+      "licence_files": [
+        "pixman-COPYING"
+      ],
+      "source": "https://gitlab.freedesktop.org/pixman/pixman",
+      "installed_paths": [
+        "Runtime/GTK4/bin/pixman-1-0.dll"
+      ]
+    },
+    {
+      "id": "python",
+      "name": "Python embeddable runtime",
+      "version": "3.14.3",
+      "type": "framework",
+      "scope": "optional",
+      "licence": "PSF-2.0",
+      "licence_files": [
+        "python-LICENSE.txt"
+      ],
+      "source": "https://www.python.org/downloads/release/python-3143/",
+      "distribution_sha256": "ad4961a479dedbeb7c7d113253f8db1b1935586b73c27488712beec4f2c894e6",
+      "installed_paths": [
+        "Runtime/Python314"
+      ]
+    },
+    {
+      "id": "python-host-plugin",
+      "name": "Python plugin host",
+      "version": "Fabulor-1.0.6",
+      "type": "library",
+      "scope": "optional",
+      "licence": "GPL-3.0-only",
+      "licence_files": [
+        "Fabulor-GPL-3.0-only.md"
+      ],
+      "source": "https://github.com/Fabulor/fabulor/tree/main/plugins/python",
+      "installed_paths": [
+        "Plugins/hcpython3.dll",
+        "python"
+      ]
+    },
+    {
+      "id": "sysinfo-plugin",
+      "name": "Sysinfo plugin",
+      "version": "Fabulor-1.0.6",
+      "type": "library",
+      "scope": "optional",
+      "licence": "GPL-2.0-or-later",
+      "licence_files": [
+        "native-plugins-NOTICE.txt",
+        "GPL-2.0-or-later.txt"
+      ],
+      "source": "https://github.com/Fabulor/fabulor/tree/main/plugins/sysinfo",
+      "installed_paths": [
+        "Plugins/hcsysinfo.dll"
+      ]
+    },
+    {
+      "id": "tcl",
+      "name": "Tcl runtime",
+      "version": "8.6.16",
+      "type": "framework",
+      "scope": "optional",
+      "licence": "TCL",
+      "licence_files": [
+        "tcl-license.terms"
+      ],
+      "source": "https://github.com/tcltk/tcl/tree/core-8-6-16",
+      "installed_paths": [
+        "Runtime/Tcl"
+      ],
+      "distribution_sha256": "754a5fc471fdae655dd0cec1fd5613b2302512adadcde28e17b516b0f5aed17a"
+    },
+    {
+      "id": "win-iconv",
+      "name": "win-iconv",
+      "version": "repository-runtime-snapshot",
+      "type": "library",
+      "scope": "required",
+      "licence": "LicenseRef-Public-Domain",
+      "licence_files": [
+        "win-iconv-COPYING"
+      ],
+      "source": "https://github.com/win-iconv/win-iconv",
+      "installed_paths": [
+        "Runtime/GTK4/bin/iconv.dll"
+      ]
+    },
+    {
+      "id": "wix-toolset",
+      "name": "WiX Toolset Burn engine and bootstrapper API",
+      "version": "7.0.0",
+      "type": "framework",
+      "scope": "required",
+      "licence": "MS-RL",
+      "licence_files": [
+        "wix-LICENSE.TXT",
+        "wix-OSMFEULA.txt"
+      ],
+      "source": "https://github.com/wixtoolset/wix/tree/v7.0.0",
+      "installed_paths": [],
+      "artifact_paths": [
+        "FabulorSetup.exe"
+      ]
+    },
+    {
+      "id": "zlib",
+      "name": "zlib",
+      "version": "1.3.2",
+      "type": "library",
+      "scope": "required",
+      "licence": "Zlib",
+      "licence_files": [
+        "zlib-README"
+      ],
+      "source": "https://github.com/madler/zlib/tree/v1.3.2",
+      "installed_paths": [
+        "Runtime/GTK4/bin/zlib1.dll"
+      ]
+    }
+  ]
+}

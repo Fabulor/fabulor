@@ -13,12 +13,13 @@
     <Gtk4LocaleRoot Condition="'$(Gtk4LocaleRoot)'==''">$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\build\gtk4-full\$(Platform)\bin\locale\'))</Gtk4LocaleRoot>
     <Gtk4EnchantRoot Condition="'$(Gtk4EnchantRoot)'==''">$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\build\gtk4-enchant-stage\'))</Gtk4EnchantRoot>
     <Gtk4PluginHostRoot Condition="'$(Gtk4PluginHostRoot)'==''">$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\build\gtk4-plugin-host-production-root\'))</Gtk4PluginHostRoot>
+    <FabulorLegalRoot Condition="'$(FabulorLegalRoot)'==''">$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\build\release-legal\'))</FabulorLegalRoot>
     <BuildFabulorBootstrapper Condition="'$(BuildFabulorBootstrapper)'==''">true</BuildFabulorBootstrapper>
     <OutputPath Condition="'$(FabulorInstallerOutputPath)'!=''">$(FabulorInstallerOutputPath)</OutputPath>
     <IntermediateOutputPath Condition="'$(FabulorInstallerIntermediateOutputPath)'!=''">$(FabulorInstallerIntermediateOutputPath)</IntermediateOutputPath>
     <BundledDotNetRuntimeVersion Condition="'$(BundledDotNetRuntimeVersion)'==''">8.0.29</BundledDotNetRuntimeVersion>
     <PythonRuntimeFolderName>Python314</PythonRuntimeFolderName>
-    <DefineConstants>$(DefineConstants);FabulorSemVer=$(FabulorSemVer);FabulorPayloadRoot=$(FabulorPayloadRoot);GtkRuntimeRoot=$(GtkRuntimeRoot);Gtk4FrontendRoot=$(Gtk4FrontendRoot);Gtk4LocaleRoot=$(Gtk4LocaleRoot);Gtk4EnchantRoot=$(Gtk4EnchantRoot);Gtk4PluginHostRoot=$(Gtk4PluginHostRoot);BundledDotNetRuntimeVersion=$(BundledDotNetRuntimeVersion);PythonRuntimeFolderName=$(PythonRuntimeFolderName)</DefineConstants>
+    <DefineConstants>$(DefineConstants);FabulorProductName=$(FabulorProductName);FabulorPublisher=$(FabulorPublisher);FabulorSemVer=$(FabulorSemVer);FabulorPayloadRoot=$(FabulorPayloadRoot);GtkRuntimeRoot=$(GtkRuntimeRoot);Gtk4FrontendRoot=$(Gtk4FrontendRoot);Gtk4LocaleRoot=$(Gtk4LocaleRoot);Gtk4EnchantRoot=$(Gtk4EnchantRoot);Gtk4PluginHostRoot=$(Gtk4PluginHostRoot);FabulorLegalRoot=$(FabulorLegalRoot);BundledDotNetRuntimeVersion=$(BundledDotNetRuntimeVersion);PythonRuntimeFolderName=$(PythonRuntimeFolderName)</DefineConstants>
 
     <WixProjectType>Package</WixProjectType>
     <OutputName Condition="'$(FabulorInstallerOutputName)'==''">Fabulor</OutputName>
@@ -29,7 +30,7 @@
 
   <ItemGroup>
     <Compile Include="ProductGtk4.wxs" />
-    <Compile Include="Components\Config.wxs;Components\CoreGtk4.wxs;Components\EnchantGtk4.wxs;Components\GTK4Allowlist.wxs;Components\InstalledMode.wxs;Components\PluginsGtk4.wxs;Components\PluginRuntimesGtk4.wxs;Components\PortableMode.wxs;Components\ShareAssets.wxs;Components\ShareGtk4.wxs" />
+    <Compile Include="Components\Config.wxs;Components\CoreGtk4.wxs;Components\EnchantGtk4.wxs;Components\GTK4Allowlist.wxs;Components\InstalledMode.wxs;Components\Legal.wxs;Components\PluginsGtk4.wxs;Components\PluginRuntimesGtk4.wxs;Components\PortableMode.wxs;Components\ShareAssets.wxs;Components\ShareGtk4.wxs" />
   </ItemGroup>
 
   <Target Name="BuildManagedPluginHost" BeforeTargets="Compile">
@@ -64,6 +65,8 @@
     <Error Condition="!Exists('$(Gtk4PluginHostRoot)\Runtime\DotNet\shared\Microsoft.NETCore.App\$(BundledDotNetRuntimeVersion)\hostpolicy.dll')" Text="Missing staged .NET shared runtime $(BundledDotNetRuntimeVersion) at $(Gtk4PluginHostRoot)." />
     <Error Condition="!Exists('$(GtkRuntimeRoot)\bin\gtk-4-1.dll')" Text="Missing GTK4 runtime payload at $(GtkRuntimeRoot)." />
     <Error Condition="!Exists('$(GtkRuntimeRoot)\runtime-manifest.json')" Text="Missing generated GTK4 runtime manifest at $(GtkRuntimeRoot). Stage the allowlisted runtime with tools\gtk4\stage_runtime.py before building WiX output." />
+    <Error Condition="!Exists('$(FabulorLegalRoot)\THIRD-PARTY-NOTICES.md')" Text="Missing generated third-party notices at $(FabulorLegalRoot)." />
+    <Error Condition="!Exists('$(FabulorLegalRoot)\Fabulor-$(FabulorSemVer).cdx.json')" Text="Missing generated CycloneDX SBOM at $(FabulorLegalRoot)." />
   </Target>
 
   <Target Name="BuildBootstrapper" AfterTargets="Build"

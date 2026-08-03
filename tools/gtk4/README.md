@@ -167,6 +167,6 @@ python tools\gtk4\validate_native_extensions.py --plugins-root C:\fabulor-master
 python tools\gtk4\test_stage_plugin_hosts.py
 python tools\gtk4\stage_plugin_hosts.py --output C:\fabulor-master\build\gtk4-plugin-host-production-root --payload-root C:\fabulor-master\build\gtk4-production-support --managed-root C:\fabulor-master\src\managed\Fabulor.PluginHost\bin\x64\Release\net8.0 --dotnet-root "C:\Program Files\dotnet" --python-root C:\fabulor-master\Runtime\Python314 --tcl-root C:\fabulor-master\Runtime\Tcl
 dotnet build installer\Fabulor.wixproj -c Release -p:Platform=x64
-python tools\gtk4\validate_production_gtk4_msi.py --wix C:\path\to\wix.exe --msi C:\fabulor-master\installer\bin\x64\Release\Fabulor.msi
+python tools\gtk4\validate_production_gtk4_msi.py --wix C:\path\to\wix.exe --msi C:\fabulor-master\installer\bin\x64\Release\Fabulor.msi --bootstrapper C:\fabulor-master\installer\bin\x64\Release\FabulorSetup.exe
 python tools\gtk4\validate_runtime_msi.py --wix C:\path\to\wix.exe --msi C:\fabulor-master\installer\bin\x64\Release\Fabulor.msi --manifest C:\fabulor-master\build\gtk4-runtime-production-root\Runtime\GTK4\runtime-manifest.json
 ```

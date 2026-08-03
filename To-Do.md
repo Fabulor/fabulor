@@ -59,11 +59,12 @@ Last reconciled: 2026-08-03
       maintainership, MFA, governance, metadata, and build provenance.
   - [x] Record the evidence, gaps, decision, and remediation order in
         `docs/security/signpath-foundation-eligibility-audit.md`.
-- [ ] Complete the bundled-component inventory, package all required licence
-      and notice files, and generate a release SBOM.
-- [ ] Normalize product name, company/publisher, and version metadata across
+- [x] Complete the bundled-component inventory, package all required licence
+      and notice files, and generate a deterministic CycloneDX 1.6 release
+      SBOM. See `docs/legal/bundled-components-and-sbom.md`.
+- [x] Normalize product name, company/publisher, and version metadata across
       the application, frontend, MSI, bootstrapper, and SignPath artifact
-      restrictions.
+      restrictions. See `docs/security/signpath-artifact-metadata.md`.
 - [ ] Complete public repository governance for the SignPath application.
   - [x] Require organization-wide two-factor authentication and secure methods.
   - [ ] Confirm every participating member has completed secure MFA setup.

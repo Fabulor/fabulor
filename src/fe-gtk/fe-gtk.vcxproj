@@ -42,27 +42,27 @@ IF NOT EXIST "$(MSBuildThisFileDirectory)..\..\win32\version-template.ps1" (
   ECHO Missing version template script: $(MSBuildThisFileDirectory)..\..\win32\version-template.ps1
   EXIT /B 1
 )
-powershell -NoProfile -ExecutionPolicy Bypass -File "$(MSBuildThisFileDirectory)..\..\win32\version-template.ps1" "$(MSBuildThisFileDirectory)fabulor.rc.tt" "$(FabulorLib)fabulor.rc.utf8"
+powershell -NoProfile -ExecutionPolicy Bypass -File "$(MSBuildThisFileDirectory)..\..\win32\version-template.ps1" "$(MSBuildThisFileDirectory)fabulor-frontend.rc.tt" "$(FabulorLib)fabulor-frontend.rc.utf8"
 IF ERRORLEVEL 1 EXIT /B %ERRORLEVEL%
-IF NOT EXIST "$(FabulorLib)fabulor.rc.utf8" (
-  ECHO Failed to generate $(FabulorLib)fabulor.rc.utf8
+IF NOT EXIST "$(FabulorLib)fabulor-frontend.rc.utf8" (
+  ECHO Failed to generate $(FabulorLib)fabulor-frontend.rc.utf8
   EXIT /B 1
 )
-FOR %%I IN ("$(FabulorLib)fabulor.rc.utf8") DO IF %%~zI EQU 0 (
-  ECHO Generated resource template is empty: $(FabulorLib)fabulor.rc.utf8
+FOR %%I IN ("$(FabulorLib)fabulor-frontend.rc.utf8") DO IF %%~zI EQU 0 (
+  ECHO Generated resource template is empty: $(FabulorLib)fabulor-frontend.rc.utf8
   EXIT /B 1
 )
-REM fabulor.rc needs to be in UCS-2 or Resource Compiler will complain
-powershell -NoProfile -ExecutionPolicy Bypass -Command "Get-Content -Encoding UTF8 '$(FabulorLib)fabulor.rc.utf8' | Set-Content -Encoding Unicode '$(FabulorLib)fabulor.rc'; Remove-Item '$(FabulorLib)fabulor.rc.utf8'"
+REM The generated resource needs to be in UCS-2 or Resource Compiler will complain.
+powershell -NoProfile -ExecutionPolicy Bypass -Command "Get-Content -Encoding UTF8 '$(FabulorLib)fabulor-frontend.rc.utf8' | Set-Content -Encoding Unicode '$(FabulorLib)fabulor-frontend.rc'; Remove-Item '$(FabulorLib)fabulor-frontend.rc.utf8'"
 IF ERRORLEVEL 1 EXIT /B %ERRORLEVEL%
-FOR %%I IN ("$(FabulorLib)fabulor.rc") DO IF %%~zI EQU 0 (
-  ECHO Converted resource file is empty: $(FabulorLib)fabulor.rc
+FOR %%I IN ("$(FabulorLib)fabulor-frontend.rc") DO IF %%~zI EQU 0 (
+  ECHO Converted resource file is empty: $(FabulorLib)fabulor-frontend.rc
   EXIT /B 1
 )
 "$(GlibCompileResources)" --generate-header --manual-register --sourcedir "$(DataDirForResourceCompilation)" --target "$(FabulorLib)resources.h" "$(DataDirForResourceCompilation)\fabulor.gresource.xml"
 "$(GlibCompileResources)" --generate-source --manual-register --sourcedir "$(DataDirForResourceCompilation)" --target "$(FabulorLib)resources.c" "$(DataDirForResourceCompilation)\fabulor.gresource.xml"
       ]]></Command>
-      <Message>Build fabulor.rc and gresource file</Message>
+      <Message>Build Fabulor frontend resource and gresource file</Message>
     </PreBuildEvent>
   </ItemDefinitionGroup>
   <PropertyGroup>
@@ -255,8 +255,8 @@ FOR %%I IN ("$(FabulorLib)fabulor.rc") DO IF %%~zI EQU 0 (
     <Manifest Include="..\..\win32\fabulor.exe.manifest" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="fabulor.rc.tt" />
-    <ResourceCompile Include="$(FabulorLib)fabulor.rc" />
+    <None Include="fabulor-frontend.rc.tt" />
+    <ResourceCompile Include="$(FabulorLib)fabulor-frontend.rc" />
   </ItemGroup>
   <ItemGroup>
     <None Include="..\..\data\icons\fabulor.ico" />

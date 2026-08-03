@@ -14,11 +14,10 @@ VS_VERSION_INFO VERSIONINFO
 		BEGIN
 			BLOCK "040904B0"
 			BEGIN
-				
-				VALUE "FileDescription", "Fabulor IRC Client"
+				VALUE "FileDescription", "Fabulor GTK4 Frontend"
 				VALUE "CompanyName", "Fabulor"
-				VALUE "InternalName", "fabulor"
-				VALUE "OriginalFilename", "fabulor.exe"
+				VALUE "InternalName", "fabulor-gtk4-frontend"
+				VALUE "OriginalFilename", "fabulor-gtk4-frontend.dll"
 				VALUE "ProductName", "Fabulor"
 				VALUE "LegalCopyright", "Copyright (C) 2025-2026 Fabulor contributors"
 				VALUE "ProductVersion", VERSION_STRING

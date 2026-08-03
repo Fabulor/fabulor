@@ -1,7 +1,21 @@
 <Project>
   <PropertyGroup>
-    <!-- Single source of truth for installer/bundle/BA versioning -->
+    <!-- Single source of truth for release and signed-file metadata. -->
+    <FabulorProductName>Fabulor</FabulorProductName>
+    <FabulorPublisher>Fabulor</FabulorPublisher>
+    <FabulorApplicationDescription>Fabulor IRC Client</FabulorApplicationDescription>
+    <FabulorSetupDescription>Fabulor Setup</FabulorSetupDescription>
     <FabulorSemVer>1.0.6</FabulorSemVer>
+    <FabulorBinaryVersion>$(FabulorSemVer).0</FabulorBinaryVersion>
     <Version>$(FabulorSemVer)</Version>
+    <AssemblyVersion>$(FabulorBinaryVersion)</AssemblyVersion>
+    <FileVersion>$(FabulorBinaryVersion)</FileVersion>
+    <InformationalVersion>$(FabulorSemVer)</InformationalVersion>
+    <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
+    <Authors>Fabulor contributors</Authors>
+    <Company>$(FabulorPublisher)</Company>
+    <Product>$(FabulorProductName)</Product>
+    <Copyright>Copyright (C) 2025-2026 Fabulor contributors</Copyright>
+    <PackageProjectUrl>https://github.com/Fabulor/fabulor</PackageProjectUrl>
   </PropertyGroup>
 </Project>
