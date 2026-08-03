@@ -1,7 +1,7 @@
 <!-- Fabulor production roadmap -->
 # Fabulor Production Roadmap
 
-Last reconciled: 2026-08-03
+Last reconciled: 2026-08-04
 
 ## Current Production Baseline
 
@@ -67,7 +67,7 @@ Last reconciled: 2026-08-03
       restrictions. See `docs/security/signpath-artifact-metadata.md`.
 - [ ] Complete public repository governance for the SignPath application.
   - [x] Require organization-wide two-factor authentication and secure methods.
-  - [ ] Confirm every participating member has completed secure MFA setup.
+  - [x] Confirm every participating member has completed secure MFA setup.
   - [ ] Make `Fabulor/fabulor` public, protect `main` and release tags, and
         require review of source, installer, build, and workflow changes.
 - [ ] Publish the required code-signing policy, privacy statement, reviewer and
