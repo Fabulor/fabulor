@@ -43,7 +43,7 @@ jobs:
           New-Item -Name "deps" -ItemType "Directory" -Force | Out-Null
 
           python -m pip install --upgrade pip
-          python -m pip install cffi
+          python -m pip install cffi==2.1.0
           python -m pip install meson==1.11.2 ninja==1.13.0
 
           $ProgressPreference = 'SilentlyContinue'
@@ -104,6 +104,10 @@ jobs:
             throw "Unable to resolve the direct Magicsplat Tcl/Tk MSI download URL from SourceForge."
           }
           Download-WithRetry -Url $tclMsiMatch.Value.Replace('&amp;', '&') -OutFile deps\tcltk-x64.msi
+          $tclMsiHash = (Get-FileHash -Algorithm SHA256 deps\tcltk-x64.msi).Hash.ToLowerInvariant()
+          if ($tclMsiHash -ne '754a5fc471fdae655dd0cec1fd5613b2302512adadcde28e17b516b0f5aed17a') {
+            throw "Tcl 8.6.16 MSI hash mismatch: $tclMsiHash"
+          }
           $tclExtractRoot = Join-Path $env:RUNNER_TEMP 'tcl-runtime'
           if (Test-Path $tclExtractRoot) {
             Remove-Item $tclExtractRoot -Recurse -Force
@@ -209,6 +213,11 @@ jobs:
           if not exist "%ENCHANT_WORK%" mkdir "%ENCHANT_WORK%"
           gh release download v2.8.19 --repo rrthomas/enchant --pattern enchant-2.8.19.tar.gz --dir "%ENCHANT_WORK%" --clobber
           if errorlevel 1 exit /b 1
+          for /f %%H in ('powershell -NoProfile -Command "(Get-FileHash -Algorithm SHA256 ''%ENCHANT_WORK%\enchant-2.8.19.tar.gz'').Hash.ToLowerInvariant()"') do set "ENCHANT_HASH=%%H"
+          if not "%ENCHANT_HASH%"=="c8d70991d544ee39274b96bd01d2858a009fe732ff43f2aaf605fd61ecd06f60" (
+            echo Enchant 2.8.19 source hash mismatch: %ENCHANT_HASH%
+            exit /b 1
+          )
 
           rem Configure the verified Enchant source against the production GTK4 GLib.
           set "GTK4_ENCHANT_ROOT=%GITHUB_WORKSPACE%\build\gtk4-enchant-stage"
@@ -230,13 +239,23 @@ jobs:
           python tools\gtk4\stage_plugin_hosts.py --dotnet-root "%ProgramFiles%\dotnet" --managed-root "%GITHUB_WORKSPACE%\src\managed\Fabulor.PluginHost\bin\${{ matrix.platform }}\Release\net8.0" --payload-root "%FABULOR_STAGE%" --python-root "%GITHUB_WORKSPACE%\Runtime\Python314" --tcl-root "%GITHUB_WORKSPACE%\Runtime\Tcl" --output "%GTK4_PLUGIN_HOST_ROOT%"
           if errorlevel 1 exit /b 1
 
+          python tools\release\test_generate_legal_bundle.py
+          if errorlevel 1 exit /b 1
+
+          set "FABULOR_LEGAL_ROOT=%GITHUB_WORKSPACE%\build\release-legal"
+          python tools\release\generate_legal_bundle.py --output "%FABULOR_LEGAL_ROOT%"
+          if errorlevel 1 exit /b 1
+
           rem Publish the production GTK4 MSI and bootstrapper.
-          dotnet build installer\Fabulor.wixproj -c Release /p:Platform=${{ matrix.platform }} /p:GtkRuntimeRoot="%GTK4_RUNTIME_ROOT%\Runtime\GTK4" /p:FabulorPayloadRoot="%FABULOR_STAGE%" /p:Gtk4PluginHostRoot="%GTK4_PLUGIN_HOST_ROOT%" /verbosity:minimal
+          dotnet build installer\Fabulor.wixproj -c Release /p:Platform=${{ matrix.platform }} /p:GtkRuntimeRoot="%GTK4_RUNTIME_ROOT%\Runtime\GTK4" /p:FabulorPayloadRoot="%FABULOR_STAGE%" /p:Gtk4PluginHostRoot="%GTK4_PLUGIN_HOST_ROOT%" /p:FabulorLegalRoot="%FABULOR_LEGAL_ROOT%" /verbosity:minimal
+          if errorlevel 1 exit /b 1
+
+          powershell -NoProfile -ExecutionPolicy Bypass -File tools\release\validate_product_metadata.ps1 -Launcher "%GITHUB_WORKSPACE%\build\gtk4-full\x64\rel\fabulor.exe" -Frontend "%GITHUB_WORKSPACE%\build\gtk4-full\x64\rel\fabulor-gtk4-frontend.dll" -Bootstrapper "%GITHUB_WORKSPACE%\installer\bin\${{ matrix.platform }}\Release\FabulorSetup.exe" -BootstrapperApplication "%GITHUB_WORKSPACE%\installer\UX\bin\${{ matrix.platform }}\Release\net8.0-windows\win-x64\publish\Fabulor.BA.exe" -VersionProps "%GITHUB_WORKSPACE%\installer\Directory.Build.props"
           if errorlevel 1 exit /b 1
 
           rem Validate production identity, features, absence of GTK3 files, and the
           rem deterministic GTK4 runtime allowlist.
-          python tools\gtk4\validate_production_gtk4_msi.py --wix "%USERPROFILE%\.nuget\packages\wixtoolset.sdk\7.0.0\tools\net472\x64\wix.exe" --msi "%GITHUB_WORKSPACE%\installer\bin\${{ matrix.platform }}\Release\Fabulor.msi"
+          python tools\gtk4\validate_production_gtk4_msi.py --wix "%USERPROFILE%\.nuget\packages\wixtoolset.sdk\7.0.0\tools\net472\x64\wix.exe" --msi "%GITHUB_WORKSPACE%\installer\bin\${{ matrix.platform }}\Release\Fabulor.msi" --bootstrapper "%GITHUB_WORKSPACE%\installer\bin\${{ matrix.platform }}\Release\FabulorSetup.exe"
           if errorlevel 1 exit /b 1
 
           python tools\gtk4\validate_runtime_msi.py --wix "%USERPROFILE%\.nuget\packages\wixtoolset.sdk\7.0.0\tools\net472\x64\wix.exe" --msi "%GITHUB_WORKSPACE%\installer\bin\${{ matrix.platform }}\Release\Fabulor.msi" --manifest "%GTK4_RUNTIME_ROOT%\Runtime\GTK4\runtime-manifest.json"
@@ -261,3 +280,9 @@ jobs:
         with:
           name: Fabulor Bootstrapper ${{ matrix.arch }}
           path: installer\bin\${{ matrix.platform }}\Release\FabulorSetup.exe
+
+      - name: Upload CycloneDX SBOM and third-party notices
+        uses: actions/upload-artifact@v6
+        with:
+          name: Fabulor legal bundle ${{ matrix.arch }}
+          path: build\release-legal

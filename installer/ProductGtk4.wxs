@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">
 
-  <Package Name="Fabulor"
-           Manufacturer="Barry"
+    <Package Name="$(var.FabulorProductName)"
+           Manufacturer="$(var.FabulorPublisher)"
            Version="$(var.FabulorSemVer)"
            ProductCode="*"
            UpgradeCode="8F6C0C7E-9A4D-4E4C-9F8C-2B6F5A4E9C11"
@@ -17,7 +17,7 @@
     <Property Id="ARPNOMODIFY" Value="1" />
     <Property Id="ARPNOREPAIR" Value="1" />
     <Property Id="ARPPRODUCTICON" Value="FabulorProductIcon" />
-    <Property Id="ARPCONTACT" Value="Barry" />
+    <Property Id="ARPCONTACT" Value="$(var.FabulorPublisher)" />
     <Property Id="ARPURLINFOABOUT" Value="https://github.com/Fabulor/fabulor/blob/main/README.md" />
     <Property Id="ARPHELPLINK" Value="https://github.com/Fabulor/fabulor/tree/main/docs" />
     <Property Id="ARPURLUPDATEINFO" Value="https://github.com/Fabulor/fabulor/blob/main/README.md" />
@@ -32,7 +32,9 @@
         </Directory>
         <Directory Id="SHAREDIR" Name="share">
           <Directory Id="SHAREDOCDIR" Name="doc">
-            <Directory Id="SHAREFABULORDOCDIR" Name="fabulor" />
+            <Directory Id="SHAREFABULORDOCDIR" Name="fabulor">
+              <Directory Id="SHAREFABULORTHIRDPARTYDIR" Name="third-party" />
+            </Directory>
             <Directory Id="SHARENOTODOCDIR" Name="NotoColorEmoji" />
           </Directory>
           <Directory Id="SHAREEMOJIFLAGSDIR" Name="emoji-flags" />
@@ -122,6 +124,7 @@
       <ComponentGroupRef Id="PluginBaseComponents" />
       <ComponentGroupRef Id="CommonShareAssetComponents" />
       <ComponentGroupRef Id="ApplicationDocumentationComponents" />
+      <ComponentGroupRef Id="ThirdPartyLegalComponents" />
       <ComponentGroupRef Id="ApplicationEmojiFlagComponents" />
       <ComponentGroupRef Id="ApplicationFontComponents" />
       <ComponentGroupRef Id="Enchant2ProviderComponents" />

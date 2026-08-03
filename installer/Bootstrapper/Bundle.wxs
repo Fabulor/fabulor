@@ -2,9 +2,9 @@
 <Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">
   <Bundle
     Id="Fabulor.Setup.Bundle"
-    Name="Fabulor Setup"
+    Name="$(var.FabulorSetupDescription)"
     Version="$(var.FabulorSemVer)"
-    Manufacturer="Fabulor Project"
+    Manufacturer="$(var.FabulorPublisher)"
     AboutUrl="https://github.com/Fabulor/fabulor/blob/main/README.md"
     HelpUrl="https://github.com/Fabulor/fabulor/tree/main/docs"
     IconSourceFile="..\..\data\icons\fabulor.ico"

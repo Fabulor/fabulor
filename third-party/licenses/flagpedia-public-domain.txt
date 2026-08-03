@@ -1,0 +1,11 @@
+Flagpedia country flag icons
+============================
+
+Source: https://flagpedia.net/download/icons
+Source set update: 2026-02-06
+
+Flagpedia states that its downloadable country flag icon package is
+completely free for commercial and non-commercial use and is public domain.
+The icons are based on vector files from Wikimedia Commons. Fabulor records
+this source and status here because the download does not include a separate
+licence file.

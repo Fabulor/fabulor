@@ -16,6 +16,7 @@ BURN_NS = {"burn": BURN_NAMESPACE}
 
 BUNDLE_ID = "Fabulor.Setup.Bundle"
 BUNDLE_NAME = "Fabulor Setup"
+BUNDLE_PUBLISHER = "Fabulor"
 BUNDLE_UPGRADE_CODE = "D9F4A5C2-7F3B-4F9E-9A21-3C8F6B7E4A10"
 MSI_PACKAGE_ID = "FabulorMsi"
 MSI_NAME = "Fabulor"
@@ -183,6 +184,14 @@ def validate_burn_manifest(root, expected_version, product_code):
             )
     if _guid(registration.get("PrimaryUpgradeCode")) != BUNDLE_UPGRADE_CODE:
         raise ProductionBundleError("Burn registration upgrade identity changed")
+    arp = _exactly_one(
+        registration.findall("burn:Arp", BURN_NS),
+        "Burn ARP registration",
+    )
+    if arp.get("Publisher") != BUNDLE_PUBLISHER:
+        raise ProductionBundleError(
+            f"Unexpected Burn publisher: {arp.get('Publisher')!r}"
+        )
 
     related = _exactly_one(
         root.findall("burn:RelatedBundle", BURN_NS),

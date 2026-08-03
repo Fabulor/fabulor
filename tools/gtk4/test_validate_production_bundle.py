@@ -32,7 +32,9 @@ BURN_XML = """\
     Container="WixAttachedContainer" />
   <Registration BundleId="Fabulor.Setup.Bundle" Version="1.0.3"
     Scope="perMachine"
-    PrimaryUpgradeCode="{D9F4A5C2-7F3B-4F9E-9A21-3C8F6B7E4A10}" />
+    PrimaryUpgradeCode="{D9F4A5C2-7F3B-4F9E-9A21-3C8F6B7E4A10}">
+    <Arp Publisher="Fabulor" />
+  </Registration>
   <Chain>
     <MsiPackage Id="FabulorMsi" ProductCode="{PRODUCT-CODE}" Version="1.0.3"
       UpgradeCode="{8F6C0C7E-9A4D-4E4C-9F8C-2B6F5A4E9C11}"

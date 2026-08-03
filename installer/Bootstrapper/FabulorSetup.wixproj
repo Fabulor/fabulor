@@ -13,7 +13,7 @@
     <WixToolsetMajorVersion>7</WixToolsetMajorVersion>
     <WixToolsetVersion>7.0.0</WixToolsetVersion>
     <BundleBootstrapperApplicationRoot>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\UX\bin\$(Platform)\$(Configuration)\net8.0-windows\win-x64\publish\'))</BundleBootstrapperApplicationRoot>
-    <DefineConstants>$(DefineConstants);FabulorSemVer=$(FabulorSemVer);BundleLicenseRtf=..\Licence.rtf;BundleMsiPath=..\bin\$(Platform)\$(Configuration)\Fabulor.msi;BundleBootstrapperApplicationRoot=$(BundleBootstrapperApplicationRoot)</DefineConstants>
+    <DefineConstants>$(DefineConstants);FabulorProductName=$(FabulorProductName);FabulorPublisher=$(FabulorPublisher);FabulorSetupDescription=$(FabulorSetupDescription);FabulorSemVer=$(FabulorSemVer);BundleLicenseRtf=..\Licence.rtf;BundleMsiPath=..\bin\$(Platform)\$(Configuration)\Fabulor.msi;BundleBootstrapperApplicationRoot=$(BundleBootstrapperApplicationRoot)</DefineConstants>
   </PropertyGroup>
 
 

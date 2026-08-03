@@ -42,6 +42,16 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Windows</SubSystem>
     </Link>
+    <PreBuildEvent>
+      <Command><![CDATA[
+SET "SOLUTIONDIR=$(MSBuildThisFileDirectory)..\..\"
+powershell -NoProfile -ExecutionPolicy Bypass -File "$(MSBuildThisFileDirectory)..\..\win32\version-template.ps1" "$(MSBuildThisFileDirectory)..\..\src\fe-gtk\fabulor.rc.tt" "$(FabulorGtk4BuildRoot)\x64\lib\fabulor-launcher.rc.utf8"
+IF ERRORLEVEL 1 EXIT /B %ERRORLEVEL%
+powershell -NoProfile -ExecutionPolicy Bypass -Command "Get-Content -Encoding UTF8 '$(FabulorGtk4BuildRoot)\x64\lib\fabulor-launcher.rc.utf8' | Set-Content -Encoding Unicode '$(FabulorGtk4BuildRoot)\x64\lib\fabulor-launcher.rc'; Remove-Item '$(FabulorGtk4BuildRoot)\x64\lib\fabulor-launcher.rc.utf8'"
+IF ERRORLEVEL 1 EXIT /B %ERRORLEVEL%
+      ]]></Command>
+      <Message>Build Fabulor launcher version resource</Message>
+    </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="gtk4-launcher.c" />
@@ -52,7 +62,7 @@
   </ItemGroup>
   <ItemGroup>
     <Manifest Include="..\..\win32\fabulor.exe.manifest" />
-    <ResourceCompile Include="$(FabulorGtk4BuildRoot)\x64\lib\fabulor.rc" />
+    <ResourceCompile Include="$(FabulorGtk4BuildRoot)\x64\lib\fabulor-launcher.rc" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
 </Project>
