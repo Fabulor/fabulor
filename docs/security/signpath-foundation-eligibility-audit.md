@@ -2,6 +2,8 @@
 
 Audit date: 2026-08-03  
 Repository state reviewed: `ca2b422f80e12917f11d03e160def342efafb86f`  
+MFA evidence updated: 2026-08-04
+
 Scope: SignPath Foundation eligibility and application readiness for the
 Fabulor Windows MSI and bootstrapper.
 
@@ -22,8 +24,8 @@ network activity, explicit installer choices, and normal uninstall support.
 The remaining gaps are remediable release-engineering and governance work:
 
 1. Make the source repository public before applying.
-2. Confirm every organization member involved in source access or signing has
-   completed secure multi-factor authentication under the enforced policy.
+2. Retain the verified organization-wide secure multi-factor authentication
+   posture and require it for every future GitHub or SignPath participant.
 3. Protect the release branch and publish clear author, reviewer, and signing
    approver responsibilities.
 4. Publish the prepared Code signing policy, required SignPath attribution,
@@ -59,7 +61,7 @@ project should re-check the published terms immediately before applying.
 | Respect user privacy and security | Provisional pass | Network traffic is initiated by the user or configured IRC connections; the retired updater performs no background update traffic. Current user guidance documents local data and credentials. Publish the required concise privacy statement on the public project home page. |
 | Announce system changes | Pass | Setup presents install scope and optional features. Protocol registration, shortcuts, runtime features, and other system integration are installer-owned and removable. |
 | Provide uninstallation | Pass | WiX provides uninstall, modify, repair, and upgrade behavior; these paths have installed-client acceptance evidence. Final signed-artifact uninstall testing remains required. |
-| MFA for all team members | Provisional pass | The GitHub organization now enforces two-factor authentication, and the organization owner has selected secure methods only. One member has not completed setup and cannot access organization resources until compliant. Confirm every participating member and every SignPath account uses MFA before applying. |
+| MFA for all team members | Pass for GitHub | The GitHub organization enforces two-factor authentication with secure methods only. On 2026-08-04, GitHub's `2fa_disabled` member filter returned no accounts and all four current members were confirmed. Require MFA on every future SignPath account before applying. |
 | Clear authors, reviewers, and signing approvers | Prepared | `CODE_SIGNING_POLICY.md` names the current author, reviewer, and signing approver, distinguishes Triage-only testers, and makes signing approval a separate manual decision. The assignments become public with the repository. |
 | Public Code signing policy and attribution | Prepared | The root Code signing policy and README contain the required heading and SignPath attribution. A reusable signed-release disclosure is ready. Verify the public links and use that disclosure on each signed release page after activation. |
 | Privacy policy or prescribed no-transfer statement | Prepared | `PRIVACY.md` contains the prescribed no-transfer statement and identifies user-directed IRC, proxy, bouncer, browser, add-on, GitHub, and future signing-service boundaries. It becomes public with the repository. |
@@ -75,8 +77,9 @@ At audit time:
 - GitHub recognizes the repository licence as GPL-3.0.
 - the Fabulor organization enforces two-factor authentication and the
   organization owner has selected secure methods only;
-- one member has not completed secure MFA setup and is prevented from
-  accessing organization resources until compliant;
+- GitHub's `2fa_disabled` member filter returned no accounts on 2026-08-04;
+- all four current organization members have completed MFA, with one
+  administrator and three Triage-only testers at repository level;
 - the private repository's current GitHub plan does not expose branch
   protection for `main`; GitHub reports that the repository must become public
   or the plan must be upgraded.
