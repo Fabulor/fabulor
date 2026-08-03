@@ -1,0 +1,12 @@
+# Default ownership for project changes.
+* @Alcheri
+
+# Release-sensitive boundaries require explicit maintainer review.
+/.github/workflows/ @Alcheri
+/installer/ @Alcheri
+/tools/release/ @Alcheri
+/third-party/ @Alcheri
+/CODE_SIGNING_POLICY.md @Alcheri
+/PRIVACY.md @Alcheri
+/SECURITY.md @Alcheri
+/docs/security/ @Alcheri
