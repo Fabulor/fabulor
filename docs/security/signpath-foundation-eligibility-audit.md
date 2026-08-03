@@ -26,8 +26,8 @@ The remaining gaps are remediable release-engineering and governance work:
    completed secure multi-factor authentication under the enforced policy.
 3. Protect the release branch and publish clear author, reviewer, and signing
    approver responsibilities.
-4. Publish a Code signing policy, the required SignPath attribution, and the
-   project's privacy statement.
+4. Publish the prepared Code signing policy, required SignPath attribution,
+   named roles, and privacy statement when the repository becomes public.
 5. Produce release candidates through a verifiable hosted build and promote
    those exact artifacts to SignPath with manual signing approval.
 6. Normalize signed-file product metadata.
@@ -60,9 +60,9 @@ project should re-check the published terms immediately before applying.
 | Announce system changes | Pass | Setup presents install scope and optional features. Protocol registration, shortcuts, runtime features, and other system integration are installer-owned and removable. |
 | Provide uninstallation | Pass | WiX provides uninstall, modify, repair, and upgrade behavior; these paths have installed-client acceptance evidence. Final signed-artifact uninstall testing remains required. |
 | MFA for all team members | Provisional pass | The GitHub organization now enforces two-factor authentication, and the organization owner has selected secure methods only. One member has not completed setup and cannot access organization resources until compliant. Confirm every participating member and every SignPath account uses MFA before applying. |
-| Clear authors, reviewers, and signing approvers | Gap | Pull-request review is established in practice, but the required public role assignments are not yet published. Define named teams or members and keep signing approval distinct and manual. |
-| Public Code signing policy and attribution | Gap | No policy currently contains the required `Code signing policy` heading and SignPath attribution. Publish it on the project home page and link it from release pages. |
-| Privacy policy or prescribed no-transfer statement | Gap | Detailed user guidance exists, but the concise statement required by SignPath is not yet published as the project privacy policy. Include affected upstream services, if any. |
+| Clear authors, reviewers, and signing approvers | Prepared | `CODE_SIGNING_POLICY.md` names the current author, reviewer, and signing approver, distinguishes Triage-only testers, and makes signing approval a separate manual decision. The assignments become public with the repository. |
+| Public Code signing policy and attribution | Prepared | The root Code signing policy and README contain the required heading and SignPath attribution. A reusable signed-release disclosure is ready. Verify the public links and use that disclosure on each signed release page after activation. |
+| Privacy policy or prescribed no-transfer statement | Prepared | `PRIVACY.md` contains the prescribed no-transfer statement and identifies user-directed IRC, proxy, bouncer, browser, add-on, GitHub, and future signing-service boundaries. It becomes public with the repository. |
 | Consistent signed-file metadata | Pass | Product, company/publisher, descriptions, and version values now follow the canonical contract in `installer/Directory.Build.props`. CI validates the built application, GTK4 frontend, bootstrapper application, MSI, and bundle. `signpath-artifact-metadata.md` restricts the future SignPath configurations to the two Fabulor-owned application files, MSI, and bootstrapper and explicitly excludes third-party payloads. |
 | Verifiable source-to-binary build | Blocked | GitHub Actions builds and validates the MSI and bootstrapper, but the release process does not yet promote those exact artifacts. `v1.0.6-rc.4` was published before the matching workflow run completed, so its provenance cannot be demonstrated from the current automation. |
 | Manual approval for every signing request | Gap | There is no SignPath submission environment or manual approval gate yet. Add a protected GitHub environment and a SignPath policy with an explicit approver. |
@@ -148,7 +148,8 @@ licence review, and SignPath should be asked to confirm that the redistributed
   contract;
 - add final malware, dependency, and artifact scanning;
 - retain the generated SBOM and add artifact attestations; and
-- draft the Code signing policy and privacy statement.
+- retain the prepared Code signing policy, privacy statement, ownership map,
+  and signed-release disclosure;
 
 ### 2. Public Governance
 
@@ -158,7 +159,8 @@ licence review, and SignPath should be asked to confirm that the redistributed
 - protect `main` and release tags;
 - require review for changes to source, build, installer, and workflow files;
   and
-- publish authors, reviewers, and signing approvers.
+- publish the prepared policies and named authors, reviewers, and signing
+  approvers, then verify every public policy link.
 
 ### 3. SignPath Integration
 

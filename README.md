@@ -22,7 +22,9 @@
 [User Manual](./docs/user/README.md) •
 [Technical Documentation](./docs/README.md) •
 [Change Log](./ChangeLog.md) •
-[Plugin Authoring Guides](./docs/plugin-authoring-guides.md)
+[Plugin Authoring Guides](./docs/plugin-authoring-guides.md) •
+[Security Policy](./SECURITY.md) •
+[Privacy Policy](./PRIVACY.md)
 
 *Fabulor — from Latin fabulor, “to chat, talk, converse.”*
 
@@ -43,6 +45,18 @@ Fabulor ("fabulor") Copyright (c) 2026 by Barry Suridge.
 
 ---
 Fabulor is licensed under the GNU General Public License version 3.0 only. The current licence text is in [Licence.md](Licence.md); [COPYING](COPYING) is retained for legacy reference.
+
+## Code Signing Policy
+
+[Fabulor's Code signing policy](CODE_SIGNING_POLICY.md) defines the signing
+scope, accountable team roles, review requirements, and manual release
+approval boundary.
+
+Free code signing provided by SignPath.io, certificate by SignPath Foundation.
+
+SignPath signing is not active yet. Release pages will identify signed
+artifacts explicitly after activation; current release candidates remain
+unsigned.
 
 ## Acknowledgements
 

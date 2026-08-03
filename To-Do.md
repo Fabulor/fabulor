@@ -73,6 +73,10 @@ Last reconciled: 2026-08-03
 - [ ] Publish the required code-signing policy, privacy statement, reviewer and
       signing-approver roles, and SignPath attribution before applying for the
       free open-source signing service.
+  - [x] Add the policies, named roles, sensitive-path ownership, and signed
+        release disclosure to the private repository.
+  - [ ] Confirm the policy links resolve publicly and add the disclosure to the
+        first signed release page after the repository becomes public.
 - [ ] Adapt the protected GitHub release workflow so SignPath can verify the
       production build provenance, attest the unsigned artefacts, promote only
       those exact artefacts, and manually approve signing of the Fabulor MSI

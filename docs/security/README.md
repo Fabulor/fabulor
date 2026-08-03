@@ -15,6 +15,13 @@
 - [SignPath artifact and metadata contract](signpath-artifact-metadata.md)
   defines the canonical Windows metadata and the exact Fabulor-owned files
   eligible for the initial signing configurations.
+- [Code signing policy](../../CODE_SIGNING_POLICY.md) defines accountable team
+  roles, review requirements, the signing allowlist, manual approval, and
+  incident response.
+- [Privacy policy](../../PRIVACY.md) defines Fabulor's user-directed network and
+  local-data boundary.
+- [Signed release disclosure](signed-release-disclosure.md) provides the
+  required policy and attribution block for future signed release pages.
 - Plugin schema, enablement, capability, and troubleshooting guidance lives
   under [`docs/plugins`](../plugins).
 
