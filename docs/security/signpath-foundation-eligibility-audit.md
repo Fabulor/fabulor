@@ -1,0 +1,185 @@
+# SignPath Foundation Eligibility Audit
+
+Audit date: 2026-08-03  
+Repository state reviewed: `ca2b422f80e12917f11d03e160def342efafb86f`  
+Scope: SignPath Foundation eligibility and application readiness for the
+Fabulor Windows MSI and bootstrapper.
+
+This is an engineering readiness assessment against the published SignPath
+Foundation conditions. It is not legal advice and does not predict SignPath
+Foundation's final eligibility decision.
+
+## Outcome
+
+Fabulor appears suitable in purpose and licensing for a SignPath Foundation
+application, but it is **not ready to apply yet**.
+
+No inherent disqualifier was found. Fabulor is an actively maintained GPLv3
+IRC client, not a security-circumvention or vulnerability-scanning tool. It
+has released Windows installers, substantial user documentation, user-directed
+network activity, explicit installer choices, and normal uninstall support.
+
+The remaining gaps are remediable release-engineering and governance work:
+
+1. Make the source repository public before applying.
+2. Confirm every organization member involved in source access or signing has
+   completed secure multi-factor authentication under the enforced policy.
+3. Protect the release branch and publish clear author, reviewer, and signing
+   approver responsibilities.
+4. Publish a Code signing policy, the required SignPath attribution, and the
+   project's privacy statement.
+5. Produce release candidates through a verifiable hosted build and promote
+   those exact artifacts to SignPath with manual signing approval.
+6. Normalize signed-file product metadata.
+7. Complete and package the third-party licence and notice inventory.
+
+## Authority
+
+The assessment uses the current official:
+
+- [SignPath Foundation conditions for Open Source projects](https://signpath.org/terms.html)
+- [SignPath Foundation application page](https://signpath.org/apply.html)
+
+The conditions page currently labels its code of conduct as a draft. The
+project should re-check the published terms immediately before applying.
+
+## Eligibility Matrix
+
+| Requirement | Status | Fabulor evidence and remaining action |
+| --- | --- | --- |
+| No malware or potentially unwanted programs | Provisional pass | Repository scanning, CodeQL, Gitleaks, dependency review, and targeted high-risk review are recorded in the security archive. Repeat scans against the final public release commit and artifact. |
+| OSI-approved licence without commercial dual licensing | Pass for project code | Fabulor is GPLv3 and GitHub identifies the repository as GPL-3.0. No commercial dual-licensing scheme was found. Bundled-component notice completeness remains a separate gap. |
+| No proprietary components, except qualifying system libraries | Provisional pass | The audited payload is assembled from Fabulor and identified open-source runtimes and libraries. No known proprietary application component was found. Finish the component inventory and licence evidence before applying. |
+| Actively maintained | Pass | The repository has sustained development, reviews, release candidates, security remediation, documentation, and installed-client testing. |
+| Already released in the form to sign | Pass | `v1.0.6-rc.4` publishes the Windows bootstrapper form intended for signing. The final candidate must be rebuilt through the protected release process. |
+| Functionality documented on the download page or app entry | Pass | The repository README, release entries, and `docs/user` manual describe the product, installation, connections, commands, preferences, themes, add-ons, privacy, and troubleshooting. |
+| Sign only the team's own project and binaries | Provisional pass | Fabulor owns its source and build scripts. Upstream OSS DLLs are included as unsigned installer payload, which the policy permits. The SignPath configuration must select only Fabulor-owned binaries and packages for signing. |
+| No hacking tools | Pass | Fabulor is an IRC client. The optional Exec add-on is a bounded, user-invoked local command facility; it is not designed to identify vulnerabilities, exploit systems, or circumvent security measures. Development-only scanners are outside the shipped product. |
+| Respect user privacy and security | Provisional pass | Network traffic is initiated by the user or configured IRC connections; the retired updater performs no background update traffic. Current user guidance documents local data and credentials. Publish the required concise privacy statement on the public project home page. |
+| Announce system changes | Pass | Setup presents install scope and optional features. Protocol registration, shortcuts, runtime features, and other system integration are installer-owned and removable. |
+| Provide uninstallation | Pass | WiX provides uninstall, modify, repair, and upgrade behavior; these paths have installed-client acceptance evidence. Final signed-artifact uninstall testing remains required. |
+| MFA for all team members | Provisional pass | The GitHub organization now enforces two-factor authentication, and the organization owner has selected secure methods only. One member has not completed setup and cannot access organization resources until compliant. Confirm every participating member and every SignPath account uses MFA before applying. |
+| Clear authors, reviewers, and signing approvers | Gap | Pull-request review is established in practice, but the required public role assignments are not yet published. Define named teams or members and keep signing approval distinct and manual. |
+| Public Code signing policy and attribution | Gap | No policy currently contains the required `Code signing policy` heading and SignPath attribution. Publish it on the project home page and link it from release pages. |
+| Privacy policy or prescribed no-transfer statement | Gap | Detailed user guidance exists, but the concise statement required by SignPath is not yet published as the project privacy policy. Include affected upstream services, if any. |
+| Consistent signed-file metadata | Gap | Core binaries identify Fabulor and version `1.0.6`, but installer metadata is inconsistent: the MSI uses `Barry`, the bundle uses `Fabulor Project`, and the bootstrapper application currently exposes `Fabulor.BA` metadata. Normalize product name, company/publisher, and version values and enforce them in the SignPath artifact configuration. |
+| Verifiable source-to-binary build | Blocked | GitHub Actions builds and validates the MSI and bootstrapper, but the release process does not yet promote those exact artifacts. `v1.0.6-rc.4` was published before the matching workflow run completed, so its provenance cannot be demonstrated from the current automation. |
+| Manual approval for every signing request | Gap | There is no SignPath submission environment or manual approval gate yet. Add a protected GitHub environment and a SignPath policy with an explicit approver. |
+
+## Repository And Governance Evidence
+
+At audit time:
+
+- `Fabulor/fabulor` is private, with `main` as its default branch.
+- GitHub recognizes the repository licence as GPL-3.0.
+- the Fabulor organization enforces two-factor authentication and the
+  organization owner has selected secure methods only;
+- one member has not completed secure MFA setup and is prevented from
+  accessing organization resources until compliant;
+- the private repository's current GitHub plan does not expose branch
+  protection for `main`; GitHub reports that the repository must become public
+  or the plan must be upgraded.
+- release candidates through `v1.0.6-rc.4` exist as published prereleases.
+
+The repository may remain private while remediation is prepared. Public
+visibility and branch protection should be enabled together before the
+application so the published governance state is internally consistent. MFA
+enforcement is already enabled; member compliance must be confirmed before
+roles are published.
+
+## Build And Release Provenance
+
+`.github/workflows/windows-build.yml` builds the Windows application, optional
+plugins, MSI, and bootstrapper, validates the staged and installed payload
+contracts, and uploads `Fabulor.msi` and `FabulorSetup.exe` as workflow
+artifacts.
+
+The workflow already requests OIDC and attestation permissions, but it does
+not generate an artifact attestation. It also does not publish a GitHub
+release or submit an artifact to SignPath.
+
+For `v1.0.6-rc.4`:
+
+- the release asset is `FabulorSetup-v1.0.6-rc4.exe`;
+- its recorded SHA-256 is
+  `bed56883d0fab42db0005bd38eb5698d1710569558b8615c990dbf334819977c`;
+- the asset was created at `2026-08-02T05:24:56Z`; and
+- the matching successful Windows build for the tagged commit completed at
+  `2026-08-02T05:44:28Z`.
+
+The release asset therefore was not demonstrably promoted from that completed
+workflow run. The final release pipeline must instead:
+
+1. build from a protected release tag or approved workflow dispatch;
+2. preserve the source commit, dependency inputs, and artifact hashes;
+3. attest the unsigned artifacts;
+4. submit the exact validated artifact to SignPath;
+5. require manual signing approval;
+6. verify Authenticode and RFC 3161 timestamps; and
+7. publish only the verified signed outputs and their checksums.
+
+## Bundled Component Evidence
+
+The build uses pinned or identified open-source components including GTK4,
+Python, Tcl, .NET, OpenSSL, Enchant, CFFI, Adwaita assets, Noto Color Emoji,
+ISO data, and optional native plugins. The installer currently includes the
+Fabulor GPL text, the Noto licence, and Adwaita attribution, while some runtime
+trees carry their own notices.
+
+The installed package does not yet present one complete, reviewable notice set
+for every redistributed component. Before applying:
+
+- generate a machine-readable component inventory and retain it per release;
+- confirm each component's exact source, version, licence, and checksum;
+- package all licence and notice files required by those components;
+- cover Tcl, .NET runtime, OpenSSL, Enchant, CFFI, ISO data, Adwaita assets,
+  certificate data, and optional native plugins explicitly; and
+- ensure no dependency licence imposes a condition incompatible with the
+  intended distribution.
+
+SignPath currently reserves the right to require SBOMs in the future. Producing
+an SBOM now is prudent even if it is not yet an application requirement.
+
+## Required Remediation Order
+
+### 1. Repository Preparation
+
+- complete the bundled-component and licence-notice inventory;
+- normalize product, company/publisher, and version metadata;
+- add final malware, dependency, and artifact scanning;
+- generate an SBOM and artifact attestations; and
+- draft the Code signing policy and privacy statement.
+
+### 2. Public Governance
+
+- make `Fabulor/fabulor` public;
+- confirm every participating organization and SignPath account complies with
+  the enforced secure-MFA policy;
+- protect `main` and release tags;
+- require review for changes to source, build, installer, and workflow files;
+  and
+- publish authors, reviewers, and signing approvers.
+
+### 3. SignPath Integration
+
+- configure a SignPath project and artifact configuration;
+- restrict signing to Fabulor-owned outputs;
+- connect SignPath to the verifiable GitHub Actions build;
+- require a protected manual approval for every signing request; and
+- place the required attribution on the home and release pages.
+
+### 4. Signed Release Acceptance
+
+- verify signatures, certificate chain, timestamps, hashes, and metadata;
+- test clean install, upgrade, repair, uninstall, protocol registration, and
+  optional features using the signed bootstrapper and MSI;
+- publish release notes, checksums, provenance, and SBOM; and
+- re-check the SignPath terms immediately before submitting the application.
+
+## Decision
+
+Do not apply yet. Complete repository preparation first, then make the
+repository public and enable the required governance controls. Once the
+release workflow can prove that the exact reviewed source produced the exact
+artifact submitted for manual signing, Fabulor should be in a credible
+position to apply.
