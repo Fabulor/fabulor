@@ -213,11 +213,8 @@ jobs:
           if not exist "%ENCHANT_WORK%" mkdir "%ENCHANT_WORK%"
           gh release download v2.8.19 --repo rrthomas/enchant --pattern enchant-2.8.19.tar.gz --dir "%ENCHANT_WORK%" --clobber
           if errorlevel 1 exit /b 1
-          for /f %%H in ('powershell -NoProfile -Command "(Get-FileHash -Algorithm SHA256 ''%ENCHANT_WORK%\enchant-2.8.19.tar.gz'').Hash.ToLowerInvariant()"') do set "ENCHANT_HASH=%%H"
-          if not "%ENCHANT_HASH%"=="c8d70991d544ee39274b96bd01d2858a009fe732ff43f2aaf605fd61ecd06f60" (
-            echo Enchant 2.8.19 source hash mismatch: %ENCHANT_HASH%
-            exit /b 1
-          )
+          powershell -NoProfile -Command "$actual = (Get-FileHash -Algorithm SHA256 -LiteralPath (Join-Path $env:ENCHANT_WORK 'enchant-2.8.19.tar.gz')).Hash.ToLowerInvariant(); if ($actual -ne 'c8d70991d544ee39274b96bd01d2858a009fe732ff43f2aaf605fd61ecd06f60') { throw ('Enchant 2.8.19 source hash mismatch: {0}' -f $actual) }"
+          if errorlevel 1 exit /b 1
 
           rem Configure the verified Enchant source against the production GTK4 GLib.
           set "GTK4_ENCHANT_ROOT=%GITHUB_WORKSPACE%\build\gtk4-enchant-stage"
