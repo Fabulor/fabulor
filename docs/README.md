@@ -7,6 +7,19 @@ This directory is the home for Fabulor technical and user documentation.
 ## User Guide
 
 - [Fabulor user manual](user/README.md)
+- [Getting started](user/getting-started.md)
+- [Networks and connections](user/networks-and-connections.md)
+- [Main window](user/main-window.md)
+- [Commands](user/commands.md)
+- [Settings reference](user/settings-reference.md)
+- [Preferences](user/preferences.md)
+- [Themes and colours](user/themes-and-colours.md)
+- [Sounds and alerts](user/sounds-and-alerts.md)
+- [Add-ons](user/addons.md)
+- [Security and privacy](user/security-and-privacy.md)
+- [Troubleshooting](user/troubleshooting.md)
+- [Migrating from XChat or HexChat](user/migration-from-xchat-and-hexchat.md)
+- [Glossary](user/glossary.md)
 - [HexChat documentation reference map](user/hexchat-reference-map.md)
 - [Input history and conversation logs](user/history-and-logs.md)
 

@@ -2,6 +2,9 @@
 
 ## Current Policy
 
+- [User security and privacy guidance](../user/security-and-privacy.md)
+  describes the product boundary, local data, credentials, add-ons,
+  diagnostics, and current update status for ordinary users.
 - [Trusted configuration](trusted-config.md) records the supported security
   policy for advanced local configuration.
 - [Signed update feed design](signed-update-feed-design.md) defines the trust,

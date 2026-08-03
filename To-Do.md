@@ -1,7 +1,7 @@
 <!-- Fabulor production roadmap -->
 # Fabulor Production Roadmap
 
-Last reconciled: 2026-07-31
+Last reconciled: 2026-08-02
 
 ## Current Production Baseline
 
@@ -48,6 +48,9 @@ Last reconciled: 2026-07-31
 - [x] Publish `v1.0.6-rc.3` after its production-candidate pull request passed
       all required checks, then verify the updater-retirement upgrade and
       release metadata.
+- [x] Publish `v1.0.6-rc.4` with strict IRC URI parsing and a typed Windows
+      existing-instance handoff after installed testing confirmed that links
+      join unopened channels and focus channels that are already open.
 
 ### Remaining Release Gate
 
@@ -74,6 +77,8 @@ Last reconciled: 2026-07-31
       `ui-performance.log` enabled only for diagnosis.
 - [ ] Confirm release notes, version metadata, installer hashes, and bundled
       runtime provenance before publishing `1.0.6`.
+- [ ] Complete the installed Windows registered-application boundary for both
+      `irc://` and `ircs://`, including repair and uninstall verification.
 - [ ] Record any remaining non-blocking visual or usability issues as separate
       follow-up work instead of reopening the completed GTK4 migration.
 
@@ -84,12 +89,64 @@ Last reconciled: 2026-07-31
       rewritten, verification-required, and retired topics.
 - [ ] Write and verify installation, first-start, first-connection, Network
       List, TLS, SASL, ZNC, SOCKS5, auto-connect, and autojoin guidance.
+  - [x] Write the source-verified `getting-started.md` and
+        `networks-and-connections.md` drafts.
+  - [ ] Verify both pages against an installed signed release candidate before
+        marking this stage complete.
 - [ ] Write and verify the main-window, transcript, input, user-list, menu,
       tray, emoji, flag, clipboard, accessibility, and keyboard guidance.
+  - [x] Write the source-verified `main-window.md` draft.
+  - [x] Add privacy-safe screenshots where they materially clarify the layout.
+  - [ ] Verify the page through the final installed release-candidate keyboard
+        and accessibility pass before marking this stage complete.
 - [ ] Write and verify the built-in command, Preferences, themes, colours,
       sounds, alerts, saved history, and logging guidance.
+    - [x] Write the source-verified `commands.md` draft.
+    - [ ] Verify the published command syntax and context requirements against
+          an installed release candidate.
+      - [x] Verify the optional Exec plugin with `/EXEC ping google.com` in the
+            installed client.
+    - [x] Write the source-derived `settings-reference.md` draft covering every
+          live Windows `/SET` key, its value type, and its purpose.
+    - [x] Compare all 226 live Windows `/SET` registry entries with the settings
+          reference and verify names, value types, numeric-choice guidance,
+          sensitive-value warnings, retired-name guidance, and duplicates.
+  - [x] Write the source-verified `preferences.md` draft.
+  - [ ] Verify the Preferences page inventory, save/cancel behaviour, and
+        restart-required settings against an installed release candidate.
+  - [x] Write the source-verified `themes-and-colours.md` draft.
+  - [ ] Verify bundled and profile `.hct` selection, GTK4 archive import,
+        variants, System default, rollback, and recovery guidance against an
+        installed release candidate.
+  - [x] Write the source-verified `sounds-and-alerts.md` draft.
+  - [ ] Verify Windows notifications, tray and taskbar attention, global and
+        per-tab suppression, event-sound assignment, and persistence against
+        an installed release candidate.
 - [ ] Write and verify add-on installation, capability, safe-mode,
       troubleshooting, security, privacy, migration, and glossary guidance.
+  - [x] Write the source-verified `addons.md` draft.
+  - [ ] Verify simple C#, Python, and Tcl installation, startup reporting,
+        manual loading, manifest opt-in, blacklist handling, and
+        `--no-plugins` recovery against an installed release candidate.
+  - [x] Write the source-verified `security-and-privacy.md` draft.
+  - [ ] Verify TLS and certificate warnings, Credential Manager and encrypted
+        profile storage, client-certificate removal, local-data paths,
+        diagnostic redaction, and retired updater status against an installed
+        release candidate.
+    - [x] Write the source-verified `troubleshooting.md` draft.
+    - [ ] Verify safe mode, temporary-profile isolation, repair, connection and
+          proxy diagnosis, spell checking, theme and sound recovery, UI
+          profiling, and bug-report collection against an installed release
+          candidate.
+    - [x] Write the source-verified `migration-from-xchat-and-hexchat.md` draft.
+    - [ ] Verify selective profile migration, network recreation, retained
+          Python compatibility imports, current Tcl and C# contracts, theme and
+          sound transfer, and retired-feature guidance against an installed
+          release candidate.
+    - [x] Write the source-verified `glossary.md` draft.
+    - [ ] Verify glossary terminology against the final manual and installed
+          release candidate, removing implementation terms that ordinary users
+          do not need.
 - [ ] Perform a final documentation review against the signed release
       candidate and ensure all screenshots exclude personal or sensitive data.
 
@@ -118,6 +175,8 @@ Detailed evidence lives in:
       dependency checks, GitHub Actions review, and payload provenance review.
 - [x] Complete the targeted high-risk review of paths, TLS/proxies, process and
       library loading, updater behavior, rendering, URLs, and theme parsing.
+- [x] Replace inherited IRC URL command interpolation with a strict shared URI
+      parser and a typed, size-limited Windows handoff to the running client.
 - [x] Close or contain the resulting archive, Exec, Enchant, add-on loading,
       log-mask, callback, runtime-root, and theme-import findings.
 - [x] Keep API version 1 compact; require a concrete cross-language use case
