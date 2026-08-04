@@ -54,6 +54,39 @@ ircv3_capability_token_clear (ircv3_capability_token *token)
 	token->disable = FALSE;
 }
 
+gboolean
+ircv3_capability_list_contains (const char *advertised, const char *name)
+{
+	char **tokens;
+	gsize i;
+	gboolean found = FALSE;
+
+	if (!advertised || !*advertised || !name || !*name)
+		return FALSE;
+
+	tokens = g_strsplit (advertised, " ", 0);
+	for (i = 0; tokens[i]; i++)
+	{
+		ircv3_capability_token token;
+		const char *text = tokens[i];
+
+		if (*text == ':')
+			text++;
+		if (!ircv3_capability_token_parse (text, &token))
+			continue;
+
+		if (!token.disable && !strcmp (token.name, name))
+			found = TRUE;
+
+		ircv3_capability_token_clear (&token);
+		if (found)
+			break;
+	}
+
+	g_strfreev (tokens);
+	return found;
+}
+
 static gboolean
 capability_is_supported (const char *name, const char * const *supported,
 							 gsize supported_count)

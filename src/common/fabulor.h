@@ -627,6 +627,7 @@ typedef struct server
 	unsigned int have_echo_message:1;
 	unsigned int have_batch:1;
 	unsigned int have_labeled_response:1;
+	unsigned int advertised_chathistory:1;
 	unsigned int have_chathistory:1;
 	unsigned int have_sasl:1;		/* SASL capability */
 	unsigned int have_except:1;	/* ban exemptions +e */

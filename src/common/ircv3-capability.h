@@ -14,6 +14,9 @@ gboolean ircv3_capability_token_parse (const char *text,
 										 ircv3_capability_token *token);
 void ircv3_capability_token_clear (ircv3_capability_token *token);
 
+gboolean ircv3_capability_list_contains (const char *advertised,
+										 const char *name);
+
 char *ircv3_capability_build_request (const char *advertised,
 										const char * const *supported,
 										gsize supported_count);

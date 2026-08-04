@@ -326,8 +326,10 @@ programme.
 - [x] Implement on-demand `draft/chathistory` requests while preserving normal
       ZNC playback behavior. See
       [`docs/protocol/ircv3-support.md`](docs/protocol/ircv3-support.md).
-- [ ] Verify `/CHATHISTORY` against one supporting server or bouncer and one
-      server that rejects the capability before the next release candidate.
+- [x] Verify `/CHATHISTORY` rejection against unsupported DALnet, ChatLounge,
+      Libera.Chat, and ZNC connections.
+- [ ] Verify `/CHATHISTORY` against one server or bouncer that advertises
+      `draft/chathistory` before the next release candidate.
 - [x] Design a Fabulor-owned, authenticated, and signed update feed in
       [`docs/security/signed-update-feed-design.md`](docs/security/signed-update-feed-design.md).
 - [ ] Provision the update signing identities, metadata origin, bounded TUF

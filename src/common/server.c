@@ -1894,6 +1894,7 @@ server_set_defaults (server *serv)
 	serv->have_echo_message = FALSE;
 	serv->have_batch = FALSE;
 	serv->have_labeled_response = FALSE;
+	serv->advertised_chathistory = FALSE;
 	serv->have_chathistory = FALSE;
 	serv->have_sasl = FALSE;
 	serv->have_except = FALSE;
