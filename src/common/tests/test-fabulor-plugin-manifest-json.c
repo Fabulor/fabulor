@@ -699,6 +699,7 @@ void register_theme_archive_reader_tests (void);
 void service_message_register_tests (void);
 void irc_uri_register_tests (void);
 void win32_ipc_register_tests (void);
+void ircv3_capability_register_tests (void);
 
 int
 main (int argc, char **argv)
@@ -726,5 +727,6 @@ main (int argc, char **argv)
 	service_message_register_tests ();
 	irc_uri_register_tests ();
 	win32_ipc_register_tests ();
+	ircv3_capability_register_tests ();
 	return g_test_run ();
 }

@@ -42,6 +42,7 @@
 #include "notify.h"
 #include "outbound.h"
 #include "inbound.h"
+#include "ircv3-capability.h"
 #include "server.h"
 #include "servlist.h"
 #include "sts.h"
@@ -1887,6 +1888,63 @@ static const char *sasl_mechanisms[] =
 	"SCRAM-SHA-512"
 };
 
+static const char * const supported_caps[] = {
+	/* IRCv3.1 */
+	"multi-prefix",
+	"away-notify",
+	"account-notify",
+	"extended-join",
+	/* "sasl", Handled manually */
+
+	/* IRCv3.2 */
+	"server-time",
+	"userhost-in-names",
+	"cap-notify",
+	"chghost",
+	"setname",
+	"invite-notify",
+	"account-tag",
+	"extended-monitor",
+	"standard-replies",
+	"message-tags",
+	"echo-message",
+
+	/* ZNC */
+	"znc.in/server-time-iso",
+	"znc.in/server-time",
+
+	/* Twitch */
+	"twitch.tv/membership",
+
+	/* Solanum */
+	"solanum.chat/identify-msg",
+};
+
+static int get_supported_mech (server *serv, const char *list);
+
+static gboolean
+server_wants_sasl (server *serv, const char *mechanisms)
+{
+	if (!(((serv->loginmethod == LOGIN_SASL
+			|| serv->loginmethod == LOGIN_SASL_SCRAM_SHA_1
+			|| serv->loginmethod == LOGIN_SASL_SCRAM_SHA_256
+			|| serv->loginmethod == LOGIN_SASL_SCRAM_SHA_512)
+				&& strlen (serv->password) != 0)
+			|| serv->loginmethod == LOGIN_SASLEXTERNAL))
+		return FALSE;
+
+	if (mechanisms)
+	{
+		int sasl_mech = get_supported_mech (serv, mechanisms);
+
+		if (sasl_mech == -1)
+			return FALSE;
+		serv->sasl_mech = sasl_mech;
+	}
+
+	return TRUE;
+}
+
 static void
 inbound_toggle_caps (server *serv, const char *extensions_str, gboolean enable)
 {
@@ -1897,34 +1955,42 @@ inbound_toggle_caps (server *serv, const char *extensions_str, gboolean enable)
 
 	for (i = 0; extensions[i]; i++)
 	{
-		const char *extension = extensions[i];
+		ircv3_capability_token token;
+		const char *extension;
+		gboolean token_enable;
+
+		if (!ircv3_capability_token_parse (extensions[i], &token))
+			continue;
+
+		extension = token.name;
+		token_enable = token.disable ? !enable : enable;
 
 		if (!strcmp (extension, "solanum.chat/identify-msg"))
-			serv->have_idmsg = enable;
+			serv->have_idmsg = token_enable;
 		else if (!strcmp (extension, "multi-prefix"))
-			serv->have_namesx = enable;
+			serv->have_namesx = token_enable;
 		else if (!strcmp (extension, "account-notify"))
-			serv->have_accnotify = enable;
+			serv->have_accnotify = token_enable;
 		else if (!strcmp (extension, "extended-join"))
-			serv->have_extjoin = enable;
+			serv->have_extjoin = token_enable;
 		else if (!strcmp (extension, "userhost-in-names"))
-			serv->have_uhnames = enable;
+			serv->have_uhnames = token_enable;
 		else if (!strcmp (extension, "server-time")
 				|| !strcmp (extension, "znc.in/server-time")
 				|| !strcmp (extension, "znc.in/server-time-iso"))
-			serv->have_server_time = enable;
+			serv->have_server_time = token_enable;
 		else if (!strcmp (extension, "away-notify"))
-			serv->have_awaynotify = enable;
+			serv->have_awaynotify = token_enable;
 		else if (!strcmp (extension, "account-tag"))
-			serv->have_account_tag = enable;
+			serv->have_account_tag = token_enable;
 		else if (!strcmp (extension, "message-tags"))
-			serv->have_message_tags = enable;
+			serv->have_message_tags = token_enable;
 		else if (!strcmp (extension, "echo-message"))
-			serv->have_echo_message = enable;
+			serv->have_echo_message = token_enable;
 		else if (!strcmp (extension, "sasl"))
 		{
-			serv->have_sasl = enable;
-			if (enable)
+			serv->have_sasl = token_enable;
+			if (token_enable)
 			{
 #ifdef USE_OPENSSL
 				if (serv->loginmethod == LOGIN_SASLEXTERNAL)
@@ -1940,6 +2006,8 @@ inbound_toggle_caps (server *serv, const char *extensions_str, gboolean enable)
 				tcp_sendf (serv, "AUTHENTICATE %s\r\n", sasl_mechanisms[serv->sasl_mech]);
 			}
 		}
+
+		ircv3_capability_token_clear (&token);
 	}
 
 	g_strfreev (extensions);
@@ -1979,6 +2047,9 @@ void
 inbound_cap_new (server *serv, char *nick, char *extensions,
 					 const message_tags_data *tags_data)
 {
+	char *request;
+	gboolean request_sasl = FALSE;
+
 	if (extensions)
 	{
 		char **tokens = g_strsplit (extensions, " ", 0);
@@ -1992,6 +2063,11 @@ inbound_cap_new (server *serv, char *nick, char *extensions,
 			{
 				sts_handle_capability (serv, parts[1]);
 			}
+			else if (!g_strcmp0 (parts[0], "sasl")
+					 && server_wants_sasl (serv, parts[1]))
+			{
+				request_sasl = TRUE;
+			}
 
 			g_strfreev (parts);
 		}
@@ -2002,7 +2078,24 @@ inbound_cap_new (server *serv, char *nick, char *extensions,
 	EMIT_SIGNAL_TIMESTAMP (XP_TE_CAPACK, serv->server_session, nick, extensions,
 								  NULL, NULL, 0, tags_data->timestamp);
 
-	inbound_toggle_caps (serv, extensions, TRUE);
+	request = ircv3_capability_build_request (extensions, supported_caps,
+												G_N_ELEMENTS (supported_caps));
+	if (request_sasl)
+	{
+		char *combined = request ? g_strconcat (request, " sasl", NULL)
+								 : g_strdup ("sasl");
+		g_free (request);
+		request = combined;
+		if (!serv->sent_capend)
+			serv->waiting_on_sasl = TRUE;
+	}
+	if (request)
+	{
+		EMIT_SIGNAL_TIMESTAMP (XP_TE_CAPREQ, serv->server_session, request,
+								  NULL, NULL, NULL, 0, tags_data->timestamp);
+		tcp_sendf (serv, "CAP REQ :%s\r\n", request);
+		g_free (request);
+	}
 }
 
 void
@@ -2033,38 +2126,6 @@ inbound_cap_del (server *serv, char *nick, char *extensions,
 
 	inbound_toggle_caps (serv, extensions, FALSE);
 }
-
-static const char * const supported_caps[] = {
-	/* IRCv3.1 */
-	"multi-prefix",
-	"away-notify",
-	"account-notify",
-	"extended-join",
-	/* "sasl", Handled manually */
-
-	/* IRCv3.2 */
-	"server-time",
-	"userhost-in-names",
-	"cap-notify",
-	"chghost",
-	"setname",
-	"invite-notify",
-	"account-tag",
-	"extended-monitor",
-	"standard-replies",
-	"message-tags",
-	"echo-message",
-
-	/* ZNC */
-	"znc.in/server-time-iso",
-	"znc.in/server-time",
-
-	/* Twitch */
-	"twitch.tv/membership",
-
-	/* Solanum */
-	"solanum.chat/identify-msg",
-};
 
 static int
 get_supported_mech (server *serv, const char *list)
@@ -2177,21 +2238,8 @@ inbound_cap_ls (server *serv, char *nick, char *extensions_str,
 		}
 
 		/* if the SASL password is set AND auth mode is set to SASL, request SASL auth */
-		if (!g_strcmp0 (extension, "sasl") &&
-			(((serv->loginmethod == LOGIN_SASL
-				|| serv->loginmethod == LOGIN_SASL_SCRAM_SHA_1
-				|| serv->loginmethod == LOGIN_SASL_SCRAM_SHA_256
-				|| serv->loginmethod == LOGIN_SASL_SCRAM_SHA_512)
-					&& strlen (serv->password) != 0)
-				|| serv->loginmethod == LOGIN_SASLEXTERNAL))
+		if (!g_strcmp0 (extension, "sasl") && server_wants_sasl (serv, value))
 		{
-			if (value)
-			{
-				int sasl_mech = get_supported_mech (serv, value);
-				if (sasl_mech == -1) /* No supported mech */
-					continue;
-				serv->sasl_mech = sasl_mech;
-			}
 			want_cap = TRUE;
 			serv->waiting_on_sasl = TRUE;
 			g_strlcat (buffer, "sasl ", sizeof(buffer));
