@@ -12,6 +12,7 @@ authoritative.
 
 ## Available
 
+- [Features](features.md)
 - [Getting started](getting-started.md)
 - [Networks and connections](networks-and-connections.md)
 - [Main window](main-window.md)
