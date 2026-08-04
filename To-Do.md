@@ -320,6 +320,14 @@ programme.
 
 ## Optional Product Follow-Up
 
+- [x] Correct IRCv3 capability handling for valued, dynamically announced,
+      disabled, and SASL capabilities; add focused protocol tests.
+- [x] Implement bounded IRCv3 `batch` tracking and `labeled-response` support.
+- [x] Implement on-demand `draft/chathistory` requests while preserving normal
+      ZNC playback behavior. See
+      [`docs/protocol/ircv3-support.md`](docs/protocol/ircv3-support.md).
+- [ ] Verify `/CHATHISTORY` against one supporting server or bouncer and one
+      server that rejects the capability before the next release candidate.
 - [x] Design a Fabulor-owned, authenticated, and signed update feed in
       [`docs/security/signed-update-feed-design.md`](docs/security/signed-update-feed-design.md).
 - [ ] Provision the update signing identities, metadata origin, bounded TUF

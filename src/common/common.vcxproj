@@ -25,6 +25,9 @@
     <ClInclude Include="ignore.h" />
     <ClInclude Include="irc-uri.h" />
     <ClInclude Include="ircv3-capability.h" />
+    <ClInclude Include="ircv3-batch.h" />
+    <ClInclude Include="ircv3-chathistory.h" />
+    <ClInclude Include="ircv3-message-tags.h" />
     <ClInclude Include="win32-ipc.h" />
     <ClInclude Include="inbound.h" />
     <ClInclude Include="inet.h" />
@@ -76,6 +79,9 @@
     <ClCompile Include="ignore.c" />
     <ClCompile Include="irc-uri.c" />
     <ClCompile Include="ircv3-capability.c" />
+    <ClCompile Include="ircv3-batch.c" />
+    <ClCompile Include="ircv3-chathistory.c" />
+    <ClCompile Include="ircv3-message-tags.c" />
     <ClCompile Include="win32-ipc.c" />
     <ClCompile Include="inbound.c" />
     <ClCompile Include="$(FabulorLib)marshal.c" />

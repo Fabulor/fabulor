@@ -31,6 +31,9 @@
 		NULL,						\
 		NULL,						\
 		NULL,						\
+		NULL,						\
+		NULL,						\
+		FALSE,					\
 	}
 
 #define STRIP_COLON(word, word_eol, idx) (word)[(idx)][0] == ':' ? (word_eol)[(idx)]+1 : (word)[(idx)]
@@ -47,6 +50,9 @@ typedef struct
 	char *msgid;
 	char *reply;
 	char *typing;
+	char *batch;
+	char *label;
+	gboolean chathistory_end;
 } message_tags_data;
 
 void message_tags_data_free (message_tags_data *tags_data);

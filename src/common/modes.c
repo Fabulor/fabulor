@@ -28,6 +28,7 @@
 #include "fe.h"
 #include "util.h"
 #include "inbound.h"
+#include "ircv3-chathistory.h"
 #ifdef HAVE_STRINGS_H
 #include <strings.h>
 #endif
@@ -915,6 +916,9 @@ inbound_005 (server * serv, char *word[], const message_tags_data *tags_data)
 		{
 			g_free (serv->clienttagdeny);
 			serv->clienttagdeny = tokadding ? g_strdup (tokvalue) : NULL;
+		} else if (g_strcmp0 (tokname, "CHATHISTORY") == 0)
+		{
+			serv->chathistory_limit = ircv3_chathistory_parse_limit (tokvalue);
 		} else if (g_strcmp0 (tokname, "CHARSET") == 0)
 		{
 			if (g_ascii_strcasecmp (tokvalue, "UTF-8") == 0)

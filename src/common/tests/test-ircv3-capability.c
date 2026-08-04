@@ -42,9 +42,23 @@ test_capability_request (void)
 	g_assert_null (request);
 }
 
+static void
+test_sasl_mechanisms (void)
+{
+	g_assert_true (ircv3_sasl_mechanism_available (
+		"EXTERNAL,PLAIN,SCRAM-SHA-256", "PLAIN"));
+	g_assert_true (ircv3_sasl_mechanism_available (
+		"EXTERNAL,PLAIN,SCRAM-SHA-256", "SCRAM-SHA-256"));
+	g_assert_false (ircv3_sasl_mechanism_available (
+		"EXTERNAL,PLAIN,SCRAM-SHA-256", "SCRAM-SHA-512"));
+	g_assert_false (ircv3_sasl_mechanism_available ("plain", "PLAIN"));
+	g_assert_false (ircv3_sasl_mechanism_available (NULL, "PLAIN"));
+}
+
 void
 ircv3_capability_register_tests (void)
 {
 	g_test_add_func ("/ircv3/capability-token", test_capability_token);
 	g_test_add_func ("/ircv3/capability-request", test_capability_request);
+	g_test_add_func ("/ircv3/sasl-mechanisms", test_sasl_mechanisms);
 }

@@ -183,6 +183,8 @@ The following commands are useful for temporary or diagnostic work:
 | `/NEWSERVER [-noconnect] <host> [port]` | Open a new server tab, optionally without connecting |
 | `/ADDSERVER <network> <host/port>` | Add a network and server to the Network List |
 | `/CHARSET [encoding]` | Show or change the current connection encoding |
+| `/CHATHISTORY` | Request recent server-side history for the current channel or private conversation |
+| `/CHATHISTORY <subcommand and arguments>` | Send an explicit IRCv3 chat-history request |
 | `/DNS <nickname|host|address>` | Resolve a nickname, hostname, or address |
 | `/FLUSHQ` | Flush the current connection's queued outbound data |
 

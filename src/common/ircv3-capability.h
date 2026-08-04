@@ -18,4 +18,7 @@ char *ircv3_capability_build_request (const char *advertised,
 										const char * const *supported,
 										gsize supported_count);
 
+gboolean ircv3_sasl_mechanism_available (const char *advertised,
+										 const char *mechanism);
+
 #endif

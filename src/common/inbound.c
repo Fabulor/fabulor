@@ -1908,6 +1908,8 @@ static const char * const supported_caps[] = {
 	"standard-replies",
 	"message-tags",
 	"echo-message",
+	"batch",
+	"labeled-response",
 
 	/* ZNC */
 	"znc.in/server-time-iso",
@@ -1987,6 +1989,12 @@ inbound_toggle_caps (server *serv, const char *extensions_str, gboolean enable)
 			serv->have_message_tags = token_enable;
 		else if (!strcmp (extension, "echo-message"))
 			serv->have_echo_message = token_enable;
+		else if (!strcmp (extension, "batch"))
+			serv->have_batch = token_enable;
+		else if (!strcmp (extension, "labeled-response"))
+			serv->have_labeled_response = token_enable;
+		else if (!strcmp (extension, "draft/chathistory"))
+			serv->have_chathistory = token_enable;
 		else if (!strcmp (extension, "sasl"))
 		{
 			serv->have_sasl = token_enable;
@@ -2041,6 +2049,7 @@ inbound_cap_ack (server *serv, char *nick, char *extensions,
 								  NULL, NULL, 0, tags_data->timestamp);
 
 	inbound_toggle_caps (serv, extensions, TRUE);
+	outbound_send_pending_chathistory (serv);
 }
 
 void
@@ -2130,56 +2139,21 @@ inbound_cap_del (server *serv, char *nick, char *extensions,
 static int
 get_supported_mech (server *serv, const char *list)
 {
-	char **mechs = g_strsplit (list, ",", 0);
-	gsize i;
-	int ret = -1;
-
-	for (i = 0; mechs[i]; ++i)
-	{
 #ifdef USE_OPENSSL
-		if (serv->loginmethod == LOGIN_SASLEXTERNAL)
-		{
-			if (!strcmp (mechs[i], "EXTERNAL"))
-			{
-				ret = MECH_EXTERNAL;
-				break;
-			}
-		}
-		else if (serv->loginmethod == LOGIN_SASL_SCRAM_SHA_1)
-		{
-			if (!strcmp(mechs[i], "SCRAM-SHA-1"))
-			{
-				ret = MECH_SCRAM_SHA_1;
-				break;
-			}
-		}
-		else if (serv->loginmethod == LOGIN_SASL_SCRAM_SHA_256)
-		{
-			if (!strcmp(mechs[i], "SCRAM-SHA-256"))
-			{
-				ret = MECH_SCRAM_SHA_256;
-				break;
-			}
-		}
-		else if (serv->loginmethod == LOGIN_SASL_SCRAM_SHA_512)
-		{
-			if (!strcmp(mechs[i], "SCRAM-SHA-512"))
-			{
-				ret = MECH_SCRAM_SHA_512;
-				break;
-			}
-        }
-		else
+	if (serv->loginmethod == LOGIN_SASLEXTERNAL)
+		return ircv3_sasl_mechanism_available (list, "EXTERNAL")
+			? MECH_EXTERNAL : -1;
+	if (serv->loginmethod == LOGIN_SASL_SCRAM_SHA_1)
+		return ircv3_sasl_mechanism_available (list, "SCRAM-SHA-1")
+			? MECH_SCRAM_SHA_1 : -1;
+	if (serv->loginmethod == LOGIN_SASL_SCRAM_SHA_256)
+		return ircv3_sasl_mechanism_available (list, "SCRAM-SHA-256")
+			? MECH_SCRAM_SHA_256 : -1;
+	if (serv->loginmethod == LOGIN_SASL_SCRAM_SHA_512)
+		return ircv3_sasl_mechanism_available (list, "SCRAM-SHA-512")
+			? MECH_SCRAM_SHA_512 : -1;
 #endif
-		if (!strcmp (mechs[i], "PLAIN"))
-		{
-			ret = MECH_PLAIN;
-			break;
-		}
-	}
-
-	g_strfreev (mechs);
-	return ret;
+	return ircv3_sasl_mechanism_available (list, "PLAIN") ? MECH_PLAIN : -1;
 }
 
 void
@@ -2291,6 +2265,12 @@ inbound_cap_nak (server *serv, char *extensions_str, const message_tags_data *ta
 	{
 		if (!g_strcmp0 (extensions[i], "sasl"))
 			serv->waiting_on_sasl = FALSE;
+		else if (!g_strcmp0 (extensions[i], "draft/chathistory"))
+		{
+			g_clear_pointer (&serv->pending_chathistory, g_free);
+			PrintText (serv->server_session,
+					  _("This server does not support IRCv3 chat history.\n"));
+		}
 	}
 
 	if (!serv->waiting_on_cap && !serv->waiting_on_sasl && !serv->sent_capend)

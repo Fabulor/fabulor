@@ -30,6 +30,8 @@
 
 #include "fabulor.h"
 #include "proto-irc.h"
+#include "ircv3-batch.h"
+#include "ircv3-message-tags.h"
 #include "ctcp.h"
 #include "fe.h"
 #include "ignore.h"
@@ -1252,6 +1254,25 @@ process_named_msg (session *sess, char *type, char *word[], char *word_eol[],
 			inbound_account (serv, nick, STRIP_COLON(word, word_eol, 3), tags_data);
 			return;
 
+		case WORDL('B','A','T','C'):
+			{
+				char *batch_id = word[3];
+
+				if (!batch_id || !*batch_id)
+					return;
+				if (*batch_id == '+')
+				{
+					const char *target = word[5] && *word[5] ? word[5] : NULL;
+					ircv3_batch_start (serv->ircv3_batches, batch_id + 1, word[4],
+									 target, tags_data->label, tags_data->batch);
+				}
+				else if (*batch_id == '-')
+				{
+					ircv3_batch_end (serv->ircv3_batches, batch_id + 1);
+				}
+			}
+			return;
+
 		case WORDL('A', 'U', 'T', 'H'):
 			inbound_sasl_authenticate (sess->server, word_eol[3]);
 			return;
@@ -1629,135 +1650,31 @@ handle_message_tag_time (const char *time, message_tags_data *tags_data)
 	}
 }
 
-/* Handle message tags.
- *
- * See http://ircv3.atheme.org/specification/message-tags-3.2 
- */
-static char *
-message_tag_unescape (const char *value)
-{
-	GString *out;
-	const char *p;
-
-	if (!*value)
-		return NULL;
-
-	out = g_string_sized_new (strlen (value));
-
-	for (p = value; *p; p++)
-	{
-		if (*p != '\\')
-		{
-			g_string_append_c (out, *p);
-			continue;
-		}
-
-		p++;
-		if (!*p)
-			break;
-
-		switch (*p)
-		{
-		case ':':
-			g_string_append_c (out, ';');
-			break;
-		case 's':
-			g_string_append_c (out, ' ');
-			break;
-		case '\\':
-			g_string_append_c (out, '\\');
-			break;
-		case 'r':
-			g_string_append_c (out, '\r');
-			break;
-		case 'n':
-			g_string_append_c (out, '\n');
-			break;
-		default:
-			g_string_append_c (out, *p);
-			break;
-		}
-	}
-
-	value = out->str;
-	if (!g_utf8_validate (value, -1, NULL))
-	{
-		g_string_free (out, TRUE);
-		return NULL;
-	}
-
-	return g_string_free (out, FALSE);
-}
-
 static void
 handle_message_tags (server *serv, const char *tags_str,
 							message_tags_data *tags_data)
 {
-	char **tags;
-	char *time = NULL;
-	int i;
+	ircv3_message_tags *tags = ircv3_message_tags_parse (tags_str);
+	const char *value;
+	gboolean present;
 
-	tags = g_strsplit (tags_str, ";", 0);
+	value = ircv3_message_tags_lookup (tags, "account", &present);
+	if (serv->have_account_tag && present)
+		tags_data->account = g_strdup (value);
+	ircv3_message_tags_lookup (tags, "solanum.chat/identified", &present);
+	tags_data->identified = serv->have_idmsg && present;
+	value = ircv3_message_tags_lookup (tags, "time", &present);
+	if (serv->have_server_time && present && value)
+		handle_message_tag_time (value, tags_data);
+	tags_data->msgid = g_strdup (ircv3_message_tags_lookup (tags, "msgid", NULL));
+	tags_data->reply = g_strdup (ircv3_message_tags_lookup (tags, "+reply", NULL));
+	tags_data->typing = g_strdup (ircv3_message_tags_lookup (tags, "+typing", NULL));
+	tags_data->batch = g_strdup (ircv3_message_tags_lookup (tags, "batch", NULL));
+	tags_data->label = g_strdup (ircv3_message_tags_lookup (tags, "label", NULL));
+	ircv3_message_tags_lookup (tags, "draft/chathistory-end", &present);
+	tags_data->chathistory_end = present;
 
-	for (i = 0; tags[i]; i++)
-	{
-		char *key = tags[i];
-		char *raw_value = strchr (tags[i], '=');
-		char *value = NULL;
-
-		if (!*key)
-			continue;
-
-		if (raw_value)
-		{
-			*raw_value = '\0';
-			raw_value++;
-			value = message_tag_unescape (raw_value);
-		}
-
-		if (serv->have_account_tag && !strcmp (key, "account"))
-		{
-			g_free (tags_data->account);
-			tags_data->account = value;
-			value = NULL;
-		}
-		else if (serv->have_idmsg && !strcmp (key, "solanum.chat/identified"))
-		{
-			tags_data->identified = TRUE;
-		}
-		else if (serv->have_server_time && !strcmp (key, "time"))
-		{
-			g_free (time);
-			time = value;
-			value = NULL;
-		}
-		else if (!strcmp (key, "msgid"))
-		{
-			g_free (tags_data->msgid);
-			tags_data->msgid = value;
-			value = NULL;
-		}
-		else if (!strcmp (key, "+reply"))
-		{
-			g_free (tags_data->reply);
-			tags_data->reply = value;
-			value = NULL;
-		}
-		else if (!strcmp (key, "+typing"))
-		{
-			g_free (tags_data->typing);
-			tags_data->typing = value;
-			value = NULL;
-		}
-
-		g_free (value);
-	}
-
-	if (time)
-		handle_message_tag_time (time, tags_data);
-
-	g_free (time);
-	g_strfreev (tags);
+	ircv3_message_tags_free (tags);
 }
 
 /* irc_inline() - 1 single line received from serv */
@@ -1861,6 +1778,8 @@ message_tags_data_free (message_tags_data *tags_data)
 	g_clear_pointer (&tags_data->msgid, g_free);
 	g_clear_pointer (&tags_data->reply, g_free);
 	g_clear_pointer (&tags_data->typing, g_free);
+	g_clear_pointer (&tags_data->batch, g_free);
+	g_clear_pointer (&tags_data->label, g_free);
 }
 
 void
