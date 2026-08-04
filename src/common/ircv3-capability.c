@@ -117,3 +117,26 @@ ircv3_capability_build_request (const char *advertised,
 
 	return g_string_free (request, FALSE);
 }
+
+gboolean
+ircv3_sasl_mechanism_available (const char *advertised, const char *mechanism)
+{
+	char **tokens;
+	gsize i;
+	gboolean available = FALSE;
+
+	if (!advertised || !*advertised || !mechanism || !*mechanism)
+		return FALSE;
+
+	tokens = g_strsplit (advertised, ",", 0);
+	for (i = 0; tokens[i]; i++)
+	{
+		if (!strcmp (tokens[i], mechanism))
+		{
+			available = TRUE;
+			break;
+		}
+	}
+	g_strfreev (tokens);
+	return available;
+}

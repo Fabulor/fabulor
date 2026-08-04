@@ -56,6 +56,8 @@
 #include "service-message.h"
 #include "tree.h"
 #include "outbound.h"
+#include "ircv3-batch.h"
+#include "ircv3-chathistory.h"
 #include "chanopt.h"
 
 #define TBUFSIZE 4096
@@ -1429,6 +1431,79 @@ static int
 cmd_discon (struct session *sess, char *tbuf, char *word[], char *word_eol[])
 {
 	sess->server->disconnect (sess, TRUE, -1);
+	return TRUE;
+}
+
+static void
+send_labeled_raw (server *serv, const char *command)
+{
+	char *raw;
+
+	if (serv->have_labeled_response)
+	{
+		char *label = ircv3_label_next (&serv->ircv3_label_counter);
+		raw = g_strdup_printf ("@label=%s %s", label, command);
+		g_free (label);
+	}
+	else
+	{
+		raw = g_strdup (command);
+	}
+
+	serv->p_raw (serv, raw);
+	g_free (raw);
+}
+
+void
+outbound_send_pending_chathistory (server *serv)
+{
+	char *command;
+
+	if (!serv || !serv->have_chathistory || !serv->pending_chathistory)
+		return;
+
+	command = g_steal_pointer (&serv->pending_chathistory);
+	send_labeled_raw (serv, command);
+	g_free (command);
+}
+
+static int
+cmd_chathistory (struct session *sess, char *tbuf, char *word[], char *word_eol[])
+{
+	char *command;
+	const char *arguments = word_eol[2];
+
+	if (!arguments || !*arguments)
+	{
+		if ((sess->type != SESS_CHANNEL && sess->type != SESS_DIALOG)
+			|| !sess->channel[0])
+			return FALSE;
+		command = ircv3_chathistory_latest_command (sess->channel,
+															 sess->server->chathistory_limit);
+		if (!command)
+			return FALSE;
+	}
+	else
+	{
+		if (strlen (arguments) > 480 || strpbrk (arguments, "\r\n"))
+			return FALSE;
+		command = g_strdup_printf ("CHATHISTORY %s", arguments);
+	}
+
+	if (!sess->server->have_chathistory)
+	{
+		gboolean request_capability = sess->server->pending_chathistory == NULL;
+
+		g_free (sess->server->pending_chathistory);
+		sess->server->pending_chathistory = command;
+		if (request_capability)
+			tcp_send_len (sess->server, "CAP REQ :draft/chathistory\r\n",
+						  sizeof ("CAP REQ :draft/chathistory\r\n") - 1);
+		return TRUE;
+	}
+
+	send_labeled_raw (sess->server, command);
+	g_free (command);
 	return TRUE;
 }
 
@@ -4154,6 +4229,8 @@ const struct commands xc_cmds[] = {
 	 N_("BAN <mask> [<bantype>], bans everyone matching the mask from the current channel. If they are already on the channel this doesn't kick them (needs chanop)")},
 	{"CHANOPT", cmd_chanopt, 0, 0, 1, N_("CHANOPT [-quiet] <variable> [<value>]")},
 	{"CHARSET", cmd_charset, 0, 0, 1, N_("CHARSET [<encoding>], get or set the encoding used for the current connection")},
+	{"CHATHISTORY", cmd_chathistory, 1, 0, 1,
+	 N_("CHATHISTORY [LATEST <target> <reference> <limit>|BEFORE <target> <reference> <limit>|AFTER <target> <reference> <limit>|AROUND <target> <reference> <limit>|BETWEEN <target> <reference> <reference> <limit>|TARGETS <reference> <reference> <limit>], requests IRCv3 message history; with no arguments requests recent history for the current channel")},
 	{"CLEAR", cmd_clear, 0, 0, 1, N_("CLEAR [ALL|HISTORY|LOG|[-]<amount>], Clears the current text window, command history, or current log file")},
 	{"CLOSE", cmd_close, 0, 0, 1, N_("CLOSE [-m], Closes the current tab, closing the window if this is the only open tab, or with the \"-m\" flag, closes all queries.")},
 

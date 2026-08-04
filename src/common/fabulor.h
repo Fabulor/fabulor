@@ -556,6 +556,7 @@ typedef struct server
 
 	char *chantypes;					/* for 005 numeric - free me */
 	char *clienttagdeny;
+	char *pending_chathistory;
 	char *chanmodes;					/* for 005 numeric - free me */
 	char *nick_prefixes;				/* e.g. "*@%+" */
 	char *nick_modes;					/* e.g. "aohv" */
@@ -592,6 +593,9 @@ typedef struct server
 
 	GSList *favlist;			/* list of channels & keys to join */
 	GSList *requested_joins;	/* channel names explicitly joined by the user */
+	struct ircv3_batch_state *ircv3_batches;
+	guint64 ircv3_label_counter;
+	unsigned int chathistory_limit;
 
 	unsigned int motd_skipped:1;
 	unsigned int connected:1;
@@ -621,6 +625,9 @@ typedef struct server
 	unsigned int have_server_time:1;	/* cap server-time */
 	unsigned int have_message_tags:1;
 	unsigned int have_echo_message:1;
+	unsigned int have_batch:1;
+	unsigned int have_labeled_response:1;
+	unsigned int have_chathistory:1;
 	unsigned int have_sasl:1;		/* SASL capability */
 	unsigned int have_except:1;	/* ban exemptions +e */
 	unsigned int have_invite:1;	/* invite exemptions +I */

@@ -17,9 +17,15 @@
     <ClCompile Include="test-irc-uri.c" />
     <ClCompile Include="test-win32-ipc.c" />
     <ClCompile Include="test-ircv3-capability.c" />
+    <ClCompile Include="test-ircv3-batch.c" />
+    <ClCompile Include="test-ircv3-chathistory.c" />
+    <ClCompile Include="test-ircv3-message-tags.c" />
     <ClCompile Include="..\irc-uri.c" />
     <ClCompile Include="..\win32-ipc.c" />
     <ClCompile Include="..\ircv3-capability.c" />
+    <ClCompile Include="..\ircv3-batch.c" />
+    <ClCompile Include="..\ircv3-chathistory.c" />
+    <ClCompile Include="..\ircv3-message-tags.c" />
     <ClCompile Include="..\fabulor-plugin-enable-policy.c" />
     <ClCompile Include="..\fabulor-plugin-manifest-json.c" />
     <ClCompile Include="..\fabulor-plugin-path-policy.c" />
@@ -36,6 +42,9 @@
     <ClInclude Include="..\irc-uri.h" />
     <ClInclude Include="..\win32-ipc.h" />
     <ClInclude Include="..\ircv3-capability.h" />
+    <ClInclude Include="..\ircv3-batch.h" />
+    <ClInclude Include="..\ircv3-chathistory.h" />
+    <ClInclude Include="..\ircv3-message-tags.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{A7B66F75-2C46-49A5-A3F6-FC123BB9A8D1}</ProjectGuid>

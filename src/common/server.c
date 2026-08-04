@@ -55,6 +55,8 @@
 #include "proxy-policy.h"
 #include "servlist.h"
 #include "server.h"
+#include "ircv3-batch.h"
+#include "ircv3-chathistory.h"
 #include "socks5-protocol.h"
 #include "sts.h"
 
@@ -1823,6 +1825,7 @@ server_new (void)
 	server *serv;
 
 	serv = g_new0 (struct server, 1);
+	serv->ircv3_batches = ircv3_batch_state_new ();
 
 	/* use server.c and proto-irc.c functions */
 	server_fill_her_up (serv);
@@ -1850,6 +1853,8 @@ server_set_defaults (server *serv)
 {
 	g_free (serv->chantypes);
 	g_clear_pointer (&serv->clienttagdeny, g_free);
+	g_clear_pointer (&serv->pending_chathistory, g_free);
+	ircv3_batch_state_clear (serv->ircv3_batches);
 	g_free (serv->chanmodes);
 	g_free (serv->nick_prefixes);
 	g_free (serv->nick_modes);
@@ -1861,6 +1866,7 @@ server_set_defaults (server *serv)
 	serv->nick_prefixes = g_strdup ("@%+");
 	serv->nick_modes = g_strdup ("ohv");
 	serv->modes_per_line = 3; /* https://datatracker.ietf.org/doc/html/rfc1459#section-4.2.3.1 */
+	serv->chathistory_limit = IRCV3_CHATHISTORY_DEFAULT_LIMIT;
 	serv->sasl_mech = MECH_PLAIN;
 
 	if (!serv->encoding)
@@ -1886,6 +1892,9 @@ server_set_defaults (server *serv)
 	serv->have_server_time = FALSE;
 	serv->have_message_tags = FALSE;
 	serv->have_echo_message = FALSE;
+	serv->have_batch = FALSE;
+	serv->have_labeled_response = FALSE;
+	serv->have_chathistory = FALSE;
 	serv->have_sasl = FALSE;
 	serv->have_except = FALSE;
 	serv->have_invite = FALSE;
@@ -2060,6 +2069,7 @@ server_free (server *serv)
 	g_free (serv->chanmodes);
 	g_free (serv->chantypes);
 	g_free (serv->clienttagdeny);
+	g_free (serv->pending_chathistory);
 	g_free (serv->bad_nick_prefixes);
 	g_free (serv->last_away_reason);
 	g_free (serv->encoding);
@@ -2070,6 +2080,7 @@ server_free (server *serv)
 	if (serv->favlist)
 		g_slist_free_full (serv->favlist, (GDestroyNotify) servlist_favchan_free);
 	g_slist_free_full (serv->requested_joins, g_free);
+	ircv3_batch_state_free (serv->ircv3_batches);
 #ifdef USE_OPENSSL
 	if (serv->ctx)
 		_SSL_context_free (serv->ctx);
