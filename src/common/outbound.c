@@ -1494,6 +1494,14 @@ cmd_chathistory (struct session *sess, char *tbuf, char *word[], char *word_eol[
 	{
 		gboolean request_capability = sess->server->pending_chathistory == NULL;
 
+		if (!sess->server->advertised_chathistory)
+		{
+			PrintText (sess,
+					  _("This server does not support IRCv3 chat history.\n"));
+			g_free (command);
+			return TRUE;
+		}
+
 		g_free (sess->server->pending_chathistory);
 		sess->server->pending_chathistory = command;
 		if (request_capability)

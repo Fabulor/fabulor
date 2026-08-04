@@ -2025,6 +2025,9 @@ void
 inbound_cap_ack (server *serv, char *nick, char *extensions,
 					  const message_tags_data *tags_data)
 {
+	if (ircv3_capability_list_contains (extensions, "draft/chathistory"))
+		serv->advertised_chathistory = TRUE;
+
 	if (extensions)
 	{
 		char **tokens = g_strsplit (extensions, " ", 0);
@@ -2058,6 +2061,9 @@ inbound_cap_new (server *serv, char *nick, char *extensions,
 {
 	char *request;
 	gboolean request_sasl = FALSE;
+
+	if (ircv3_capability_list_contains (extensions, "draft/chathistory"))
+		serv->advertised_chathistory = TRUE;
 
 	if (extensions)
 	{
@@ -2111,6 +2117,9 @@ void
 inbound_cap_del (server *serv, char *nick, char *extensions,
 					 const message_tags_data *tags_data)
 {
+	if (ircv3_capability_list_contains (extensions, "draft/chathistory"))
+		serv->advertised_chathistory = FALSE;
+
 	if (extensions)
 	{
 		char **tokens = g_strsplit (extensions, " ", 0);
@@ -2176,6 +2185,9 @@ inbound_cap_ls (server *serv, char *nick, char *extensions_str,
 	{
 		serv->waiting_on_cap = FALSE;
 	}
+
+	if (ircv3_capability_list_contains (extensions_str, "draft/chathistory"))
+		serv->advertised_chathistory = TRUE;
 
 	EMIT_SIGNAL_TIMESTAMP (XP_TE_CAPLIST, serv->server_session, nick,
 								  extensions_str, NULL, NULL, 0, tags_data->timestamp);
@@ -2267,6 +2279,7 @@ inbound_cap_nak (server *serv, char *extensions_str, const message_tags_data *ta
 			serv->waiting_on_sasl = FALSE;
 		else if (!g_strcmp0 (extensions[i], "draft/chathistory"))
 		{
+			serv->advertised_chathistory = FALSE;
 			g_clear_pointer (&serv->pending_chathistory, g_free);
 			PrintText (serv->server_session,
 					  _("This server does not support IRCv3 chat history.\n"));

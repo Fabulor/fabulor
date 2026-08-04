@@ -43,6 +43,17 @@ test_capability_request (void)
 }
 
 static void
+test_capability_list_contains (void)
+{
+	g_assert_true (ircv3_capability_list_contains (
+		"* :batch draft/chathistory=vendor server-time", "draft/chathistory"));
+	g_assert_false (ircv3_capability_list_contains (
+		"batch -draft/chathistory server-time", "draft/chathistory"));
+	g_assert_false (ircv3_capability_list_contains (
+		"batch draft/chathistory-extra server-time", "draft/chathistory"));
+}
+
+static void
 test_sasl_mechanisms (void)
 {
 	g_assert_true (ircv3_sasl_mechanism_available (
@@ -60,5 +71,6 @@ ircv3_capability_register_tests (void)
 {
 	g_test_add_func ("/ircv3/capability-token", test_capability_token);
 	g_test_add_func ("/ircv3/capability-request", test_capability_request);
+	g_test_add_func ("/ircv3/capability-list-contains", test_capability_list_contains);
 	g_test_add_func ("/ircv3/sasl-mechanisms", test_sasl_mechanisms);
 }

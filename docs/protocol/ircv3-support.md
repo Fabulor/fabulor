@@ -1,7 +1,8 @@
 # IRCv3 Support
 
-Status: source-verified; installed network verification is required before the
-next release candidate.
+Status: source-verified; installed rejection-path verification completed on
+DALnet, ChatLounge, Libera.Chat, and ZNC. Positive verification against a
+server or bouncer that advertises `draft/chathistory` remains outstanding.
 
 Fabulor negotiates IRCv3 capabilities conservatively. A capability is active
 only after the server acknowledges it, capability values are kept separate
@@ -55,9 +56,11 @@ honoured and bounded to 500 messages; the fallback request limit is 50.
 
 The capability is intentionally requested only when `/CHATHISTORY` is used.
 Negotiating it automatically can change a bouncer's normal playback behavior,
-so this policy preserves established ZNC startup and reconnect behavior. If the
-server rejects the capability, Fabulor discards the pending request and reports
-that chat history is unsupported.
+so this policy preserves established ZNC startup and reconnect behavior.
+Fabulor records whether the server advertised the capability and rejects the
+command locally when it did not. If an advertised capability is subsequently
+rejected, Fabulor discards the pending request and reports that chat history is
+unsupported.
 
 History replay uses the existing transcript path, including `server-time`
 timestamps and normal message rendering. Fabulor does not provide persistent
@@ -69,5 +72,6 @@ IRC server or bouncer.
 The protocol test suite covers capability values and disable tokens, supported
 capability requests, exact SASL mechanism matching, message-tag escaping and
 duplicate handling, bounded batch lifecycle, and generated labels. Installed
-verification should cover one server without chat history and one server or
-bouncer that advertises `draft/chathistory`.
+verification has covered unsupported connections to DALnet, ChatLounge,
+Libera.Chat, and ZNC. It still needs one server or bouncer that advertises
+`draft/chathistory`.
