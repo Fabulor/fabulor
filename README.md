@@ -19,6 +19,7 @@
 [![Download Latest Release][download-badge]][latest-release-link]
 
 
+[Features](./docs/user/features.md) •
 [User Manual](./docs/user/README.md) •
 [Technical Documentation](./docs/README.md) •
 [Change Log](./ChangeLog.md) •
