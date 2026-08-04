@@ -24,6 +24,7 @@
     <ClInclude Include="history.h" />
     <ClInclude Include="ignore.h" />
     <ClInclude Include="irc-uri.h" />
+    <ClInclude Include="ircv3-capability.h" />
     <ClInclude Include="win32-ipc.h" />
     <ClInclude Include="inbound.h" />
     <ClInclude Include="inet.h" />
@@ -74,6 +75,7 @@
     <ClCompile Include="history.c" />
     <ClCompile Include="ignore.c" />
     <ClCompile Include="irc-uri.c" />
+    <ClCompile Include="ircv3-capability.c" />
     <ClCompile Include="win32-ipc.c" />
     <ClCompile Include="inbound.c" />
     <ClCompile Include="$(FabulorLib)marshal.c" />
