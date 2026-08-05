@@ -43,6 +43,7 @@
 typedef struct
 {
 	FabulorCallbackRegistry *registry;
+	FabulorAPI api_snapshot;
 	char *event_name;
 	char *event_payload_json;
 } FabulorDeferredDispatch;
@@ -2647,10 +2648,11 @@ dispatch_tcl_callback (const FabulorPluginManifest *manifest,
 {
 #ifdef WIN32
 	FabulorTclPluginState *state;
+	const FabulorAPI *event_api;
+	const FabulorAPI *saved_api;
 	const char *argv[2];
 
 	(void) event_name;
-	(void) user_data;
 
 	if (!fabulor_tcl_runtime.plugins)
 	{
@@ -2667,8 +2669,15 @@ dispatch_tcl_callback (const FabulorPluginManifest *manifest,
 
 	argv[0] = handler_name;
 	argv[1] = event_payload_json ? event_payload_json : "{}";
+	event_api = user_data ? (const FabulorAPI *) user_data : state->api;
+	saved_api = state->api;
+	state->api = event_api;
 	if (!fabulor_tcl_eval_command (state->interp, 2, argv, error))
+	{
+		state->api = saved_api;
 		return FALSE;
+	}
+	state->api = saved_api;
 
 	{
 		const char *callback_result = fabulor_tcl_runtime.get_string_result (state->interp);
@@ -2702,9 +2711,8 @@ dispatch_csharp_callback (const FabulorPluginManifest *manifest,
 {
 #ifdef WIN32
 	FabulorManagedDispatchArgs args;
+	const FabulorAPI *saved_api;
 	int rc;
-
-	(void) user_data;
 
 	if (!fabulor_csharp_runtime.initialised || !fabulor_csharp_runtime.dispatch_callback)
 	{
@@ -2716,7 +2724,13 @@ dispatch_csharp_callback (const FabulorPluginManifest *manifest,
 	args.handler_name = handler_name;
 	args.event_name = event_name;
 	args.payload_json = event_payload_json ? event_payload_json : "{}";
+	saved_api = fabulor_active_api;
+	if (user_data)
+	{
+		fabulor_active_api = (const FabulorAPI *) user_data;
+	}
 	rc = fabulor_csharp_runtime.dispatch_callback (&args, sizeof (args));
+	fabulor_active_api = saved_api;
 	if (rc != FABULOR_CALLBACK_CONTINUE && rc != FABULOR_CALLBACK_CONSUME)
 	{
 		g_set_error (error, G_FILE_ERROR, G_FILE_ERROR_FAILED, "Managed callback dispatch failed for %s/%s (0x%x).",
@@ -3829,7 +3843,7 @@ fabulor_callback_registry_invoke_main_thread (gpointer user_data)
 	fabulor_callback_registry_dispatch_now (dispatch->registry,
 										 dispatch->event_name,
 										 dispatch->event_payload_json,
-										 NULL,
+										 &dispatch->api_snapshot,
 										 NULL,
 										 NULL);
 	return G_SOURCE_REMOVE;
@@ -3899,6 +3913,7 @@ fabulor_callback_registry_fire_event (FabulorCallbackRegistry *registry,
 		}
 		registry->queued_dispatches++;
 		dispatch->registry = fabulor_callback_registry_ref (registry);
+		dispatch->api_snapshot = *registry->api;
 		g_mutex_unlock (&registry->mutex);
 		dispatch->event_name = g_strdup (event_name);
 		dispatch->event_payload_json = g_strdup (event_payload_json ? event_payload_json : "{}");
