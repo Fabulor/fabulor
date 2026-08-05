@@ -25,10 +25,10 @@
     </ComponentGroup>
 
     <ComponentGroup Id="ManagedPluginHostComponents" Directory="DOTNETDIR">
-      <Files Include="$(var.Gtk4PluginHostRoot)\Runtime\DotNet\Fabulor.PluginAbstractions.dll" />
-      <Files Include="$(var.Gtk4PluginHostRoot)\Runtime\DotNet\Fabulor.PluginHost.deps.json" />
-      <Files Include="$(var.Gtk4PluginHostRoot)\Runtime\DotNet\Fabulor.PluginHost.dll" />
-      <Files Include="$(var.Gtk4PluginHostRoot)\Runtime\DotNet\Fabulor.PluginHost.runtimeconfig.json" />
+      <Files Include="$(var.ManagedPluginHostBuildRoot)\Fabulor.PluginAbstractions.dll" />
+      <Files Include="$(var.ManagedPluginHostBuildRoot)\Fabulor.PluginHost.deps.json" />
+      <Files Include="$(var.ManagedPluginHostBuildRoot)\Fabulor.PluginHost.dll" />
+      <Files Include="$(var.ManagedPluginHostBuildRoot)\Fabulor.PluginHost.runtimeconfig.json" />
     </ComponentGroup>
 
     <ComponentGroup Id="DotNetHostFxrComponents" Directory="DOTNETFXRVERSIONDIR">

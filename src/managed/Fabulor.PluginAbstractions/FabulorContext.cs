@@ -9,19 +9,23 @@ public sealed class FabulorContext
     private readonly Func<int> _getUserCount;
     private readonly Func<FabulorUserInfo> _getUserInfo;
     private readonly Action<string, FabulorEventHandler> _registerCallback;
+    private readonly Action<string, FabulorConsumingEventHandler> _registerConsumingCallback;
 
     public FabulorContext(
         Action<string> log,
         Func<string, string, bool> sendMessage,
         Func<int> getUserCount,
         Func<FabulorUserInfo> getUserInfo,
-        Action<string, FabulorEventHandler> registerCallback)
+        Action<string, FabulorEventHandler> registerCallback,
+        Action<string, FabulorConsumingEventHandler> registerConsumingCallback)
     {
         _log = log ?? throw new ArgumentNullException(nameof(log));
         _sendMessage = sendMessage ?? throw new ArgumentNullException(nameof(sendMessage));
         _getUserCount = getUserCount ?? throw new ArgumentNullException(nameof(getUserCount));
         _getUserInfo = getUserInfo ?? throw new ArgumentNullException(nameof(getUserInfo));
         _registerCallback = registerCallback ?? throw new ArgumentNullException(nameof(registerCallback));
+        _registerConsumingCallback = registerConsumingCallback
+            ?? throw new ArgumentNullException(nameof(registerConsumingCallback));
     }
 
     public void Log(string text)
@@ -52,5 +56,12 @@ public sealed class FabulorContext
         ArgumentException.ThrowIfNullOrWhiteSpace(eventName);
         ArgumentNullException.ThrowIfNull(handler);
         _registerCallback(eventName, handler);
+    }
+
+    public void RegisterCallback(string eventName, FabulorConsumingEventHandler handler)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(eventName);
+        ArgumentNullException.ThrowIfNull(handler);
+        _registerConsumingCallback(eventName, handler);
     }
 }

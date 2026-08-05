@@ -427,7 +427,7 @@ append_json_string (GString *json, const char *value)
 	g_string_append_c (json, '"');
 }
 
-static void
+static gboolean
 fabulor_plugin_host_dispatch_event (session *sess,
 									const char *event_name,
 									const char *source_name,
@@ -441,12 +441,15 @@ fabulor_plugin_host_dispatch_event (session *sess,
 	const char *nick = NULL;
 	const char *server_name = NULL;
 	const char *channel = NULL;
+	gboolean consumed = FALSE;
 
 	if (!fabulor_callback_registry
 		|| !fabulor_callback_registry_has_event (fabulor_callback_registry, event_name))
 	{
-		return;
+		return FALSE;
 	}
+
+	fabulor_plugin_api_set_session (sess);
 
 	if (sess)
 	{
@@ -491,6 +494,7 @@ fabulor_plugin_host_dispatch_event (session *sess,
 										  event_name,
 										  json->str,
 										  NULL,
+										  &consumed,
 										  &error);
 	if (error)
 	{
@@ -502,9 +506,10 @@ fabulor_plugin_host_dispatch_event (session *sess,
 	}
 
 	g_string_free (json, TRUE);
+	return consumed;
 }
 
-static void
+static gboolean
 fabulor_plugin_host_fire_event (session *sess,
 								const char *event_name,
 								const char *source_name,
@@ -512,19 +517,26 @@ fabulor_plugin_host_fire_event (session *sess,
 								char *word_eol[],
 								time_t server_time)
 {
+	gboolean consumed;
+
 	if (!event_name)
 	{
-		return;
+		return FALSE;
 	}
 
-	fabulor_plugin_host_dispatch_event (sess, event_name, source_name, word, word_eol, server_time);
+	consumed = fabulor_plugin_host_dispatch_event (sess, event_name, source_name,
+													 word, word_eol, server_time);
 
 	if (source_name && *source_name)
 	{
 		char *specific_event = g_strdup_printf ("%s:%s", event_name, source_name);
-		fabulor_plugin_host_dispatch_event (sess, specific_event, source_name, word, word_eol, server_time);
+		consumed = fabulor_plugin_host_dispatch_event (sess, specific_event,
+													 source_name, word, word_eol,
+													 server_time) || consumed;
 		g_free (specific_event);
 	}
+
+	return consumed;
 }
 
 static const char *
@@ -1348,6 +1360,7 @@ int
 plugin_emit_command (session *sess, char *name, char *word[], char *word_eol[])
 {
 	GError *tcl_error = NULL;
+	gboolean manifest_consumed = FALSE;
 
 	fabulor_plugin_api_set_session (sess);
 	if (fabulor_plugin_host_handle_simple_tcl_command (name,
@@ -1364,10 +1377,12 @@ plugin_emit_command (session *sess, char *name, char *word[], char *word_eol[])
 
 	if (name && word)
 	{
-		fabulor_plugin_host_fire_event (sess, "command", name, word, word_eol, 0);
+		manifest_consumed = fabulor_plugin_host_fire_event (sess, "command", name,
+														 word, word_eol, 0);
 	}
 
-	return plugin_hook_run (sess, name, word, word_eol, NULL, HOOK_COMMAND);
+	return plugin_hook_run (sess, name, word, word_eol, NULL, HOOK_COMMAND)
+		|| manifest_consumed;
 }
 
 fabulor_event_attrs *
@@ -1402,7 +1417,7 @@ plugin_emit_server (session *sess, char *name, char *word[], char *word_eol[],
 										server_time);
 	}
 
-	return plugin_hook_run (sess, name, word, word_eol, &attrs, 
+	return plugin_hook_run (sess, name, word, word_eol, &attrs,
 							HOOK_SERVER | HOOK_SERVER_ATTRS);
 }
 
@@ -1417,7 +1432,8 @@ plugin_emit_print (session *sess, char *word[], time_t server_time)
 
 	if (word && word[0])
 	{
-		fabulor_plugin_host_fire_event (sess, "print", word[0], word, NULL, server_time);
+		fabulor_plugin_host_fire_event (sess, "print", word[0], word, NULL,
+										  server_time);
 	}
 
 	return plugin_hook_run (sess, word[0], word, NULL, &attrs,

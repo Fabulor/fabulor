@@ -19,6 +19,11 @@ proc fabulor::plugins::example_tcl_greeter::on_message {eventData} {
     fabulor::log "Tcl sample observed its first incoming message event in $location."
 }
 
+proc fabulor::plugins::example_tcl_greeter::on_greeter_command {eventData} {
+    fabulor::log "Tcl greeter command handled."
+    return consume
+}
+
 proc init {} {
     array set user [fabulor::get_user_info]
     set nick "unknown"
@@ -28,4 +33,5 @@ proc init {} {
 
     fabulor::log "Hello, $nick. Tcl sample ready."
     fabulor::register_callback message fabulor::plugins::example_tcl_greeter::on_message
+    fabulor::register_callback command:GREETER fabulor::plugins::example_tcl_greeter::on_greeter_command
 }

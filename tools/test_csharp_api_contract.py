@@ -27,6 +27,8 @@ PUBLIC_TYPES = (
     "FabulorContext",
     "FabulorEvent",
     "FabulorEventHandler",
+    "FabulorConsumingEventHandler",
+    "FabulorEventResult",
     "FabulorUserInfo",
 )
 RETIRED_PREFIX = "Zoite" "Chat"
@@ -69,11 +71,20 @@ class CSharpApiContractTests(unittest.TestCase):
         self.assertIn("typeof(IFabulorPlugin)", host)
         self.assertIn("new FabulorContext(", host)
         self.assertIn("FabulorEvent.FromJson(", host)
+        self.assertIn("FabulorEventResult.Consume", host)
         for sample in SAMPLES:
             source = sample.read_text(encoding="utf-8")
             with self.subTest(sample=sample):
                 self.assertIn(": IFabulorPlugin", source)
                 self.assertIn("FabulorContext", source)
+
+    def test_consuming_callback_contract_is_backward_compatible(self):
+        context = (ABSTRACTIONS / "FabulorContext.cs").read_text(encoding="utf-8")
+        result = (ABSTRACTIONS / "FabulorEventResult.cs").read_text(encoding="utf-8")
+        self.assertIn("Action<string, FabulorEventHandler>", context)
+        self.assertIn("Action<string, FabulorConsumingEventHandler>", context)
+        self.assertIn("Continue = 0", result)
+        self.assertIn("Consume = 1", result)
 
 
 if __name__ == "__main__":

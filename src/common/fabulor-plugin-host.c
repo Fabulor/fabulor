@@ -43,6 +43,7 @@
 typedef struct
 {
 	FabulorCallbackRegistry *registry;
+	FabulorAPI api_snapshot;
 	char *event_name;
 	char *event_payload_json;
 } FabulorDeferredDispatch;
@@ -831,10 +832,12 @@ loader_stub_dispatch (const FabulorPluginManifest *manifest,
 					  const char *event_name,
 					  const char *event_payload_json,
 					  void *user_data,
+					  FabulorCallbackResult *result,
 					  GError **error)
 {
 	const FabulorAPI *api = (const FabulorAPI *) user_data;
 	(void)error;
+	*result = FABULOR_CALLBACK_CONTINUE;
 	fabulor_api_log (api, "Dispatch scaffold for %s handler '%s' on event '%s' with payload %s.",
 					 manifest->id,
 					 handler_name,
@@ -2640,14 +2643,16 @@ dispatch_tcl_callback (const FabulorPluginManifest *manifest,
 					   const char *event_name,
 					   const char *event_payload_json,
 					   void *user_data,
+					   FabulorCallbackResult *result,
 					   GError **error)
 {
 #ifdef WIN32
 	FabulorTclPluginState *state;
+	const FabulorAPI *event_api;
+	const FabulorAPI *saved_api;
 	const char *argv[2];
 
 	(void) event_name;
-	(void) user_data;
 
 	if (!fabulor_tcl_runtime.plugins)
 	{
@@ -2664,13 +2669,32 @@ dispatch_tcl_callback (const FabulorPluginManifest *manifest,
 
 	argv[0] = handler_name;
 	argv[1] = event_payload_json ? event_payload_json : "{}";
-	return fabulor_tcl_eval_command (state->interp, 2, argv, error);
+	event_api = user_data ? (const FabulorAPI *) user_data : state->api;
+	saved_api = state->api;
+	state->api = event_api;
+	if (!fabulor_tcl_eval_command (state->interp, 2, argv, error))
+	{
+		state->api = saved_api;
+		return FALSE;
+	}
+	state->api = saved_api;
+
+	{
+		const char *callback_result = fabulor_tcl_runtime.get_string_result (state->interp);
+		*result = callback_result
+			&& (g_ascii_strcasecmp (callback_result, "consume") == 0
+				|| strcmp (callback_result, "1") == 0)
+			? FABULOR_CALLBACK_CONSUME
+			: FABULOR_CALLBACK_CONTINUE;
+	}
+	return TRUE;
 #else
 	(void) manifest;
 	(void) handler_name;
 	(void) event_name;
 	(void) event_payload_json;
 	(void) user_data;
+	(void) result;
 	g_set_error_literal (error, G_FILE_ERROR, G_FILE_ERROR_NOSYS, "Tcl callback dispatch is only available on Windows builds.");
 	return FALSE;
 #endif
@@ -2682,13 +2706,13 @@ dispatch_csharp_callback (const FabulorPluginManifest *manifest,
 						  const char *event_name,
 						  const char *event_payload_json,
 						  void *user_data,
+						  FabulorCallbackResult *result,
 						  GError **error)
 {
 #ifdef WIN32
 	FabulorManagedDispatchArgs args;
+	const FabulorAPI *saved_api;
 	int rc;
-
-	(void) user_data;
 
 	if (!fabulor_csharp_runtime.initialised || !fabulor_csharp_runtime.dispatch_callback)
 	{
@@ -2700,8 +2724,14 @@ dispatch_csharp_callback (const FabulorPluginManifest *manifest,
 	args.handler_name = handler_name;
 	args.event_name = event_name;
 	args.payload_json = event_payload_json ? event_payload_json : "{}";
+	saved_api = fabulor_active_api;
+	if (user_data)
+	{
+		fabulor_active_api = (const FabulorAPI *) user_data;
+	}
 	rc = fabulor_csharp_runtime.dispatch_callback (&args, sizeof (args));
-	if (rc != 0)
+	fabulor_active_api = saved_api;
+	if (rc != FABULOR_CALLBACK_CONTINUE && rc != FABULOR_CALLBACK_CONSUME)
 	{
 		g_set_error (error, G_FILE_ERROR, G_FILE_ERROR_FAILED, "Managed callback dispatch failed for %s/%s (0x%x).",
 					 manifest->id,
@@ -2710,6 +2740,7 @@ dispatch_csharp_callback (const FabulorPluginManifest *manifest,
 		return FALSE;
 	}
 
+	*result = (FabulorCallbackResult) rc;
 	return TRUE;
 #else
 	(void) manifest;
@@ -2717,6 +2748,7 @@ dispatch_csharp_callback (const FabulorPluginManifest *manifest,
 	(void) event_name;
 	(void) event_payload_json;
 	(void) user_data;
+	(void) result;
 	g_set_error_literal (error, G_FILE_ERROR, G_FILE_ERROR_NOSYS, "C# callback dispatch is only available on Windows builds.");
 	return FALSE;
 #endif
@@ -3737,6 +3769,7 @@ fabulor_callback_registry_dispatch_now (FabulorCallbackRegistry *registry,
 										const char *event_name,
 										const char *event_payload_json,
 										void *loader_user_data,
+										gboolean *consumed,
 										GError **error)
 {
 	GPtrArray *entries;
@@ -3744,6 +3777,8 @@ fabulor_callback_registry_dispatch_now (FabulorCallbackRegistry *registry,
 	guint i;
 
 	entries = g_ptr_array_new_with_free_func ((GDestroyNotify) fabulor_callback_entry_free);
+	if (consumed)
+		*consumed = FALSE;
 	g_mutex_lock (&registry->mutex);
 	if (registry->shutting_down)
 	{
@@ -3768,6 +3803,7 @@ fabulor_callback_registry_dispatch_now (FabulorCallbackRegistry *registry,
 		const FabulorPluginManifest *manifest = fabulor_runtime_find_manifest (registry->catalog, entry->plugin_id);
 		const FabulorPluginLoader *loader = fabulor_plugin_loader_for_language (entry->language);
 		GError *dispatch_error = NULL;
+		FabulorCallbackResult callback_result = FABULOR_CALLBACK_CONTINUE;
 
 		if (!manifest || !loader)
 		{
@@ -3779,6 +3815,7 @@ fabulor_callback_registry_dispatch_now (FabulorCallbackRegistry *registry,
 										 event_name,
 										 event_payload_json,
 										 loader_user_data ? loader_user_data : (void *) registry->api,
+										 &callback_result,
 										 &dispatch_error))
 		{
 			fabulor_api_log (registry->api, "Callback dispatch failed for %s/%s: %s",
@@ -3786,6 +3823,12 @@ fabulor_callback_registry_dispatch_now (FabulorCallbackRegistry *registry,
 							 entry->handler_name,
 							 dispatch_error ? dispatch_error->message : "unknown error");
 			g_clear_error (&dispatch_error);
+		}
+		else if (consumed
+			&& manifest->requires_api_version >= FABULOR_PLUGIN_CALLBACK_RESULTS_API_VERSION
+			&& callback_result == FABULOR_CALLBACK_CONSUME)
+		{
+			*consumed = TRUE;
 		}
 	}
 
@@ -3800,6 +3843,7 @@ fabulor_callback_registry_invoke_main_thread (gpointer user_data)
 	fabulor_callback_registry_dispatch_now (dispatch->registry,
 										 dispatch->event_name,
 										 dispatch->event_payload_json,
+										 &dispatch->api_snapshot,
 										 NULL,
 										 NULL);
 	return G_SOURCE_REMOVE;
@@ -3810,6 +3854,7 @@ fabulor_callback_registry_fire_event (FabulorCallbackRegistry *registry,
 									  const char *event_name,
 									  const char *event_payload_json,
 									  void *loader_user_data,
+									  gboolean *consumed,
 									  GError **error)
 {
 	gsize payload_length;
@@ -3819,6 +3864,8 @@ fabulor_callback_registry_fire_event (FabulorCallbackRegistry *registry,
 		g_set_error_literal (error, G_FILE_ERROR, G_FILE_ERROR_INVAL, "Event dispatch requires a registry and event name.");
 		return FALSE;
 	}
+	if (consumed)
+		*consumed = FALSE;
 	if (!fabulor_callback_event_is_valid (event_name))
 	{
 		g_set_error (error, G_FILE_ERROR, G_FILE_ERROR_INVAL, "Unsupported or invalid callback event '%s'.", event_name);
@@ -3836,9 +3883,10 @@ fabulor_callback_registry_fire_event (FabulorCallbackRegistry *registry,
 	{
 		return fabulor_callback_registry_dispatch_now (registry,
 													 event_name,
-													 event_payload_json ? event_payload_json : "{}",
-													 loader_user_data,
-													 error);
+											 event_payload_json ? event_payload_json : "{}",
+											 loader_user_data,
+											 consumed,
+											 error);
 	}
 	if (loader_user_data)
 	{
@@ -3865,6 +3913,7 @@ fabulor_callback_registry_fire_event (FabulorCallbackRegistry *registry,
 		}
 		registry->queued_dispatches++;
 		dispatch->registry = fabulor_callback_registry_ref (registry);
+		dispatch->api_snapshot = *registry->api;
 		g_mutex_unlock (&registry->mutex);
 		dispatch->event_name = g_strdup (event_name);
 		dispatch->event_payload_json = g_strdup (event_payload_json ? event_payload_json : "{}");

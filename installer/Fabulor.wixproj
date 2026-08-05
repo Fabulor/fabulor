@@ -13,13 +13,14 @@
     <Gtk4LocaleRoot Condition="'$(Gtk4LocaleRoot)'==''">$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\build\gtk4-full\$(Platform)\bin\locale\'))</Gtk4LocaleRoot>
     <Gtk4EnchantRoot Condition="'$(Gtk4EnchantRoot)'==''">$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\build\gtk4-enchant-stage\'))</Gtk4EnchantRoot>
     <Gtk4PluginHostRoot Condition="'$(Gtk4PluginHostRoot)'==''">$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\build\gtk4-plugin-host-production-root\'))</Gtk4PluginHostRoot>
+    <ManagedPluginHostBuildRoot Condition="'$(ManagedPluginHostBuildRoot)'==''">$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\src\managed\Fabulor.PluginHost\bin\$(Platform)\$(Configuration)\net8.0\'))</ManagedPluginHostBuildRoot>
     <FabulorLegalRoot Condition="'$(FabulorLegalRoot)'==''">$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\build\release-legal\'))</FabulorLegalRoot>
     <BuildFabulorBootstrapper Condition="'$(BuildFabulorBootstrapper)'==''">true</BuildFabulorBootstrapper>
     <OutputPath Condition="'$(FabulorInstallerOutputPath)'!=''">$(FabulorInstallerOutputPath)</OutputPath>
     <IntermediateOutputPath Condition="'$(FabulorInstallerIntermediateOutputPath)'!=''">$(FabulorInstallerIntermediateOutputPath)</IntermediateOutputPath>
     <BundledDotNetRuntimeVersion Condition="'$(BundledDotNetRuntimeVersion)'==''">8.0.29</BundledDotNetRuntimeVersion>
     <PythonRuntimeFolderName>Python314</PythonRuntimeFolderName>
-    <DefineConstants>$(DefineConstants);FabulorProductName=$(FabulorProductName);FabulorPublisher=$(FabulorPublisher);FabulorSemVer=$(FabulorSemVer);FabulorPayloadRoot=$(FabulorPayloadRoot);GtkRuntimeRoot=$(GtkRuntimeRoot);Gtk4FrontendRoot=$(Gtk4FrontendRoot);Gtk4LocaleRoot=$(Gtk4LocaleRoot);Gtk4EnchantRoot=$(Gtk4EnchantRoot);Gtk4PluginHostRoot=$(Gtk4PluginHostRoot);FabulorLegalRoot=$(FabulorLegalRoot);BundledDotNetRuntimeVersion=$(BundledDotNetRuntimeVersion);PythonRuntimeFolderName=$(PythonRuntimeFolderName)</DefineConstants>
+    <DefineConstants>$(DefineConstants);FabulorProductName=$(FabulorProductName);FabulorPublisher=$(FabulorPublisher);FabulorSemVer=$(FabulorSemVer);FabulorPayloadRoot=$(FabulorPayloadRoot);GtkRuntimeRoot=$(GtkRuntimeRoot);Gtk4FrontendRoot=$(Gtk4FrontendRoot);Gtk4LocaleRoot=$(Gtk4LocaleRoot);Gtk4EnchantRoot=$(Gtk4EnchantRoot);Gtk4PluginHostRoot=$(Gtk4PluginHostRoot);ManagedPluginHostBuildRoot=$(ManagedPluginHostBuildRoot);FabulorLegalRoot=$(FabulorLegalRoot);BundledDotNetRuntimeVersion=$(BundledDotNetRuntimeVersion);PythonRuntimeFolderName=$(PythonRuntimeFolderName)</DefineConstants>
 
     <WixProjectType>Package</WixProjectType>
     <OutputName Condition="'$(FabulorInstallerOutputName)'==''">Fabulor</OutputName>
@@ -37,6 +38,17 @@
     <MSBuild Projects="..\src\managed\Fabulor.PluginHost\Fabulor.PluginHost.csproj"
              Targets="Restore;Build"
              Properties="Configuration=$(Configuration);Platform=$(Platform)" />
+    <ItemGroup>
+      <ManagedPluginHostOutput Include="$(ManagedPluginHostBuildRoot)\Fabulor.PluginAbstractions.dll" />
+      <ManagedPluginHostOutput Include="$(ManagedPluginHostBuildRoot)\Fabulor.PluginHost.deps.json" />
+      <ManagedPluginHostOutput Include="$(ManagedPluginHostBuildRoot)\Fabulor.PluginHost.dll" />
+      <ManagedPluginHostOutput Include="$(ManagedPluginHostBuildRoot)\Fabulor.PluginHost.runtimeconfig.json" />
+    </ItemGroup>
+    <Error Condition="!Exists('%(ManagedPluginHostOutput.Identity)')" Text="Missing rebuilt managed plugin-host file %(ManagedPluginHostOutput.Identity)." />
+    <MakeDir Directories="$(Gtk4PluginHostRoot)\Runtime\DotNet" />
+    <Copy SourceFiles="@(ManagedPluginHostOutput)"
+          DestinationFolder="$(Gtk4PluginHostRoot)\Runtime\DotNet"
+          SkipUnchangedFiles="true" />
   </Target>
 
   <Target Name="ValidateInstallerPayload" BeforeTargets="Build" DependsOnTargets="BuildManagedPluginHost">
@@ -60,6 +72,8 @@
     <Error Condition="!Exists('$(Gtk4PluginHostRoot)\Runtime\plugin-host-manifest.json')" Text="Missing staged GTK4 plugin-host manifest at $(Gtk4PluginHostRoot)." />
     <Error Condition="!Exists('$(Gtk4PluginHostRoot)\Runtime\Python314\python314.dll')" Text="Missing staged Python 3.14 runtime at $(Gtk4PluginHostRoot)." />
     <Error Condition="!Exists('$(Gtk4PluginHostRoot)\Runtime\Tcl\bin\tcl86t.dll')" Text="Missing staged Tcl 8.6 runtime at $(Gtk4PluginHostRoot)." />
+    <Error Condition="!Exists('$(Gtk4PluginHostRoot)\Runtime\DotNet\Fabulor.PluginAbstractions.dll')" Text="Missing staged managed plugin abstractions at $(Gtk4PluginHostRoot)." />
+    <Error Condition="!Exists('$(Gtk4PluginHostRoot)\Runtime\DotNet\Fabulor.PluginHost.dll')" Text="Missing staged managed plugin host at $(Gtk4PluginHostRoot)." />
     <Error Condition="!Exists('$(Gtk4PluginHostRoot)\Runtime\DotNet\Fabulor.PluginHost.runtimeconfig.json')" Text="Missing staged managed plugin host at $(Gtk4PluginHostRoot)." />
     <Error Condition="!Exists('$(Gtk4PluginHostRoot)\Runtime\DotNet\host\fxr\$(BundledDotNetRuntimeVersion)\hostfxr.dll')" Text="Missing staged .NET hostfxr $(BundledDotNetRuntimeVersion) at $(Gtk4PluginHostRoot)." />
     <Error Condition="!Exists('$(Gtk4PluginHostRoot)\Runtime\DotNet\shared\Microsoft.NETCore.App\$(BundledDotNetRuntimeVersion)\hostpolicy.dll')" Text="Missing staged .NET shared runtime $(BundledDotNetRuntimeVersion) at $(Gtk4PluginHostRoot)." />

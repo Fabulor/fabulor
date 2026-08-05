@@ -69,9 +69,9 @@ public sealed class HelperPlugin : IFabulorPlugin
   "version": "1.0.0",
   "language": "csharp",
   "entrypoint": "GreeterPlugin.dll",
-  "requires_api_version": 1,
+  "requires_api_version": 2,
   "dependencies": [],
-  "capabilities": ["events.message", "session.read"],
+  "capabilities": ["events.command", "events.message", "session.read"],
   "description": "Minimal C# event-observer plugin.",
   "author": "Fabulor",
   "homepage": "https://github.com/Fabulor/fabulor"
@@ -94,6 +94,7 @@ public sealed class GreeterPlugin : IFabulorPlugin
         var user = context.GetUserInfo();
         context.Log($"Hello, {user.Nickname ?? "unknown"}. C# sample ready.");
         context.RegisterCallback("message", OnMessage);
+        context.RegisterCallback("command:GREETER", OnGreeterCommand);
     }
 
     private void OnMessage(FabulorEvent evt)
@@ -106,6 +107,12 @@ public sealed class GreeterPlugin : IFabulorPlugin
             ? "the active session"
             : evt.Channel;
         _context.Log($"C# sample observed its first incoming message event in {location}.");
+    }
+
+    private FabulorEventResult OnGreeterCommand(FabulorEvent evt)
+    {
+        _context?.Log("C# greeter command handled.");
+        return FabulorEventResult.Consume;
     }
 }
 ```
@@ -125,3 +132,14 @@ public sealed class GreeterPlugin : IFabulorPlugin
 11. Maintained simple and manifest C# samples live under `samples\plugins\simple-csharp-greeter\` and `samples\plugins\example.csharp.greeter\`. The simple project's assembly name matches its folder and produces the exact profile entrypoint `simple-csharp-greeter.dll`. For the manifest sample, deploy `plugin.json`, `GreeterPlugin.dll`, and any plugin-owned dependencies together as direct children of one enabled manifest plugin folder. Build-tree paths such as `bin\Release\net8.0\GreeterPlugin.dll` are not valid manifest entrypoints.
 12. Callback event names are limited to 128 UTF-8 bytes, generated handler names to 256 bytes, each plugin to 64 callbacks, and each event to 256 callbacks. Registering the same event/handler pair twice is rejected.
 13. Manifest C# receives only the five shared operations represented by `FabulorContext`: log, send message, read user count, read user information, and register callback. The native boundary repeats capability and input validation for every privileged call.
+14. API version 2 adds consuming callbacks without breaking existing handlers. A
+    `void` callback continues normal Fabulor processing. A callback returning
+    `FabulorEventResult.Consume` prevents a command from reaching Fabulor after
+    all registered plugin callbacks have run. Use this for plugin-owned commands
+    such as `command:GREETER`; return `FabulorEventResult.Continue` otherwise.
+    Return values from server, message, and print callbacks are observational
+    and do not suppress Fabulor's IRC state processing.
+15. Shared API calls made inside a callback use that event's originating
+    network and channel session. This makes `SendMessage`, `GetUserInfo`, and
+    `GetUserCount` safe when callbacks arrive from a background channel or a
+    second network.

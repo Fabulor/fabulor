@@ -20,7 +20,7 @@ internal sealed class ManagedPluginState
 
     public IFabulorPlugin Plugin { get; }
 
-    public Dictionary<string, FabulorEventHandler> Callbacks { get; } = new(StringComparer.Ordinal);
+    public Dictionary<string, FabulorConsumingEventHandler> Callbacks { get; } = new(StringComparer.Ordinal);
 }
 
 internal sealed class PluginLoadContext : AssemblyLoadContext
@@ -182,6 +182,7 @@ public static class NativeExports
                 (target, text) => SendMessage(state, target, text),
                 () => GetUserCount(state),
                 () => GetUserInfo(state),
+                (eventName, handler) => RegisterCallback(state, eventName, handler),
                 (eventName, handler) => RegisterCallback(state, eventName, handler));
 
             try
@@ -210,7 +211,7 @@ public static class NativeExports
         {
             if (sizeBytes != Marshal.SizeOf<DispatchCallbackRequest>())
             {
-                return 1;
+                return 2;
             }
 
             var request = Marshal.PtrToStructure<DispatchCallbackRequest>(args);
@@ -225,16 +226,21 @@ public static class NativeExports
                 || !Plugins.TryGetValue(pluginId, out var state)
                 || !state.Callbacks.TryGetValue(handlerName, out var handler))
             {
-                return 1;
+                return 2;
             }
 
-            handler(FabulorEvent.FromJson(eventName, payloadJson));
-            return 0;
+            var result = handler(FabulorEvent.FromJson(eventName, payloadJson));
+            return result switch
+            {
+                FabulorEventResult.Continue => 0,
+                FabulorEventResult.Consume => 1,
+                _ => throw new InvalidOperationException($"Unsupported callback result '{result}'."),
+            };
         }
         catch (Exception ex)
         {
             LogException("Dispatch callback", ex);
-            return 1;
+            return 2;
         }
     }
 
@@ -261,6 +267,15 @@ public static class NativeExports
     }
 
     private static void RegisterCallback(ManagedPluginState state, string eventName, FabulorEventHandler handler)
+    {
+        RegisterCallback(state, eventName, evt =>
+        {
+            handler(evt);
+            return FabulorEventResult.Continue;
+        });
+    }
+
+    private static void RegisterCallback(ManagedPluginState state, string eventName, FabulorConsumingEventHandler handler)
     {
         if (_registerCallback is null)
         {

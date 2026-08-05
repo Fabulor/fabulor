@@ -71,6 +71,11 @@ class TclApiContractTests(unittest.TestCase):
             with self.subTest(path=path):
                 self.assertIn("fabulor::", source)
 
+    def test_manifest_callback_consumption_is_plumbed(self):
+        source = HOST_SOURCE.read_text(encoding="utf-8")
+        self.assertIn('g_ascii_strcasecmp (callback_result, "consume")', source)
+        self.assertIn("FABULOR_CALLBACK_CONSUME", source)
+
 
 if __name__ == "__main__":
     unittest.main()

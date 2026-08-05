@@ -186,6 +186,12 @@ The current runtime already enforces these checks:
 
 Manifest capabilities are deny-by-default and enforced across C#, Python, and Tcl. Unknown or duplicate capability names reject the manifest during validation. A plugin that calls an operation without declaring its capability is denied at runtime and receives a plugin-specific error or diagnostic.
 
+API version 2 adds language-neutral callback consumption and event-session
+binding. Tcl and C# plugins that consume callbacks must require version `2`.
+Version 1 plugins remain loadable and their existing non-consuming callbacks
+continue unchanged; their callback return values are never interpreted as
+consumption requests.
+
 Supported capabilities:
 
 | Capability | Grants |
