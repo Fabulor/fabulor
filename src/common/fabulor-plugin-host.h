@@ -26,7 +26,8 @@
 extern "C" {
 #endif
 
-#define FABULOR_PLUGIN_API_VERSION 1U
+#define FABULOR_PLUGIN_API_VERSION 2U
+#define FABULOR_PLUGIN_CALLBACK_RESULTS_API_VERSION 2U
 #define FABULOR_PLUGIN_LOG_TEXT_MAX 65536U
 #define FABULOR_PLUGIN_MESSAGE_TARGET_MAX 512U
 #define FABULOR_PLUGIN_MESSAGE_TEXT_MAX 4096U
@@ -81,6 +82,12 @@ typedef struct _fabulor_plugin_loader FabulorPluginLoader;
 typedef struct _fabulor_callback_entry FabulorCallbackEntry;
 typedef struct _fabulor_callback_registry FabulorCallbackRegistry;
 
+typedef enum
+{
+	FABULOR_CALLBACK_CONTINUE = 0,
+	FABULOR_CALLBACK_CONSUME = 1
+} FabulorCallbackResult;
+
 typedef gboolean (*FabulorPluginLoadFunc) (const FabulorPluginManifest *manifest,
 										   const FabulorAPI *api,
 										   void *user_data,
@@ -90,6 +97,7 @@ typedef gboolean (*FabulorPluginDispatchFunc) (const FabulorPluginManifest *mani
 											   const char *event_name,
 											   const char *event_payload_json,
 											   void *user_data,
+											   FabulorCallbackResult *result,
 											   GError **error);
 
 struct _fabulor_plugin_loader
@@ -149,6 +157,7 @@ gboolean fabulor_callback_registry_fire_event (FabulorCallbackRegistry *registry
 											   const char *event_name,
 											   const char *event_payload_json,
 											   void *loader_user_data,
+											   gboolean *consumed,
 											   GError **error);
 gboolean fabulor_plugin_host_autoload_simple_tcl (const char *addons_root,
 											   const FabulorAPI *api,

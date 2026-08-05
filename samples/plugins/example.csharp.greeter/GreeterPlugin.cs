@@ -11,6 +11,7 @@ public sealed class GreeterPlugin : IFabulorPlugin
         var user = context.GetUserInfo();
         context.Log($"Hello, {user.Nickname ?? "unknown"}. C# sample ready.");
         context.RegisterCallback("message", OnMessage);
+        context.RegisterCallback("command:GREETER", OnGreeterCommand);
     }
 
     private void OnMessage(FabulorEvent evt)
@@ -25,5 +26,11 @@ public sealed class GreeterPlugin : IFabulorPlugin
             ? "the active session"
             : evt.Channel;
         _context.Log($"C# sample observed its first incoming message event in {location}.");
+    }
+
+    private FabulorEventResult OnGreeterCommand(FabulorEvent evt)
+    {
+        _context?.Log("C# greeter command handled.");
+        return FabulorEventResult.Consume;
     }
 }

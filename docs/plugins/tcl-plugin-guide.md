@@ -51,9 +51,9 @@ proc init {} {
   "version": "1.0.0",
   "language": "tcl",
   "entrypoint": "plugin.tcl",
-  "requires_api_version": 1,
+  "requires_api_version": 2,
   "dependencies": [],
-  "capabilities": ["events.message", "session.read"],
+  "capabilities": ["events.command", "events.message", "session.read"],
   "description": "Minimal Tcl event-observer plugin.",
   "author": "Fabulor",
   "homepage": "https://github.com/Fabulor/fabulor"
@@ -80,6 +80,11 @@ proc onMessage {eventData} {
     fabulor::log "Tcl sample observed its first incoming message event in $location."
 }
 
+proc onGreeterCommand {eventData} {
+    fabulor::log "Tcl greeter command handled."
+    return consume
+}
+
 proc init {} {
     array set user [fabulor::get_user_info]
     set nick "unknown"
@@ -88,6 +93,7 @@ proc init {} {
     }
     fabulor::log "Hello, $nick. Tcl sample ready."
     fabulor::register_callback message onMessage
+    fabulor::register_callback command:GREETER onGreeterCommand
 }
 ```
 
@@ -114,3 +120,13 @@ proc init {} {
     libraries, or third-party package collections. Add-ons that need another
     Tcl package must distribute and load that dependency within their own
     trusted add-on directory.
+17. API version 2 callbacks may return `consume` (or `1`) to prevent the
+    command from reaching Fabulor after all registered plugin callbacks have
+    run. An empty return, `continue`, or any other value keeps normal
+    processing. Use consumption for plugin-owned commands such as
+    `command:GREETER`. Return values from server, message, and print callbacks
+    do not suppress Fabulor's IRC state processing.
+18. Shared API commands invoked inside a callback use that event's originating
+    network and channel session. A JOIN callback can therefore call
+    `fabulor::send_message` without accidentally targeting a same-named channel
+    on another network.

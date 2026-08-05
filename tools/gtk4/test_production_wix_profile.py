@@ -446,6 +446,13 @@ class ProductionWixProfileTests(unittest.TestCase):
         self.assertNotIn("Gtk4FrontendCandidate", source)
         self.assertIn("gtk4-runtime-production-root", source)
         self.assertIn("gtk4-plugin-host-production-root", source)
+        self.assertIn("ManagedPluginHostBuildRoot", source)
+        self.assertIn("ManagedPluginHostOutput", source)
+        self.assertIn("DestinationFolder=\"$(Gtk4PluginHostRoot)\\Runtime\\DotNet\"", source)
+        managed_components = (
+            INSTALLER / "Components" / "PluginRuntimesGtk4.wxs"
+        ).read_text(encoding="utf-8")
+        self.assertIn("$(var.ManagedPluginHostBuildRoot)", managed_components)
 
     def test_msvc_profile_is_gtk4_only(self):
         props = PROPS.read_text(encoding="utf-8")

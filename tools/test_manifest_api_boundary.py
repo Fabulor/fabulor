@@ -124,6 +124,14 @@ class ManifestApiBoundaryTests(unittest.TestCase):
             with self.subTest(capability=capability):
                 self.assertNotIn(f"`{capability}`", guide)
 
+    def test_callback_dispatch_binds_session_and_returns_consumption(self):
+        header = HOST_HEADER.read_text(encoding="utf-8")
+        source = PLUGIN_SOURCE.read_text(encoding="utf-8")
+        self.assertIn("FABULOR_CALLBACK_CONSUME = 1", header)
+        self.assertIn("FABULOR_PLUGIN_CALLBACK_RESULTS_API_VERSION 2U", header)
+        self.assertIn("fabulor_plugin_api_set_session (sess);", source)
+        self.assertIn("|| manifest_consumed", source)
+
 
 if __name__ == "__main__":
     unittest.main()
