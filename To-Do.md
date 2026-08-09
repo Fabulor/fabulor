@@ -1,7 +1,7 @@
 <!-- Fabulor production roadmap -->
 # Fabulor Production Roadmap
 
-Last reconciled: 2026-08-04
+Last reconciled: 2026-08-09
 
 ## Current Production Baseline
 
@@ -51,6 +51,10 @@ Last reconciled: 2026-08-04
 - [x] Publish `v1.0.6-rc.4` with strict IRC URI parsing and a typed Windows
       existing-instance handoff after installed testing confirmed that links
       join unopened channels and focus channels that are already open.
+- [x] Complete a one-week external tester soak with an experienced HexChat
+      user exercising the installed client broadly. The only report was one
+      non-reproducible channel-switcher tree duplication that cleared after a
+      normal restart and has not recurred.
 
 ### Remaining Release Gate
 
@@ -68,6 +72,11 @@ Last reconciled: 2026-08-04
 - [ ] Complete public repository governance for the SignPath application.
   - [x] Require organization-wide two-factor authentication and secure methods.
   - [x] Confirm every participating member has completed secure MFA setup.
+  - [x] Close six superseded draft pull requests, delete fourteen obsolete
+        remote feature branches, and enable automatic head-branch deletion.
+  - [x] Complete the private-to-public disclosure scan. Full-history Gitleaks
+        results contained only two reviewed source-text false positives; the
+        maintainer accepts publication of the historical Gmail commit address.
   - [ ] Make `Fabulor/fabulor` public, protect `main` and release tags, and
         require review of source, installer, build, and workflow changes.
 - [ ] Publish the required code-signing policy, privacy statement, reviewer and
@@ -99,6 +108,9 @@ Last reconciled: 2026-08-04
       `irc://` and `ircs://`, including repair and uninstall verification.
 - [ ] Record any remaining non-blocking visual or usability issues as separate
       follow-up work instead of reopening the completed GTK4 migration.
+  - [ ] If the one-time duplicated channel-switcher tree report recurs or a
+        screenshot becomes available, record it as an intermittent follow-up
+        issue with the triggering channel-switch sequence.
 
 ## User Documentation
 

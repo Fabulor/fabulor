@@ -1,7 +1,9 @@
 # SignPath Foundation Eligibility Audit
 
-Audit date: 2026-08-03  
-Repository state reviewed: `ca2b422f80e12917f11d03e160def342efafb86f`  
+Audit date: 2026-08-09
+
+Repository state reviewed: `95e0eb08d00f74d0f66b38b230d64ce6d95446ff`
+
 MFA evidence updated: 2026-08-04
 
 Scope: SignPath Foundation eligibility and application readiness for the
@@ -14,7 +16,9 @@ Foundation's final eligibility decision.
 ## Outcome
 
 Fabulor appears suitable in purpose and licensing for a SignPath Foundation
-application, but it is **not ready to apply yet**.
+application. The repository is **ready for its controlled transition to public
+visibility**, but the application should follow only after public governance
+controls are active and the verifiable release workflow is complete.
 
 No inherent disqualifier was found. Fabulor is an actively maintained GPLv3
 IRC client, not a security-circumvention or vulnerability-scanning tool. It
@@ -23,17 +27,18 @@ network activity, explicit installer choices, and normal uninstall support.
 
 The remaining gaps are remediable release-engineering and governance work:
 
-1. Make the source repository public before applying.
+1. Make the source repository public and immediately activate the prepared
+   branch and release-tag governance controls.
 2. Retain the verified organization-wide secure multi-factor authentication
    posture and require it for every future GitHub or SignPath participant.
 3. Protect the release branch and publish clear author, reviewer, and signing
    approver responsibilities.
-4. Publish the prepared Code signing policy, required SignPath attribution,
-   named roles, and privacy statement when the repository becomes public.
+4. Verify the prepared Code signing policy, required SignPath attribution,
+   named roles, and privacy statement through their public links.
 5. Produce release candidates through a verifiable hosted build and promote
    those exact artifacts to SignPath with manual signing approval.
-6. Normalize signed-file product metadata.
-7. The bundled-component licence inventory and release SBOM are now complete;
+6. The bundled-component licence inventory, signed-file metadata contract,
+   and release SBOM are complete;
    retain their validation as a release gate.
 
 ## Authority
@@ -50,7 +55,7 @@ project should re-check the published terms immediately before applying.
 
 | Requirement | Status | Fabulor evidence and remaining action |
 | --- | --- | --- |
-| No malware or potentially unwanted programs | Provisional pass | Repository scanning, CodeQL, Gitleaks, dependency review, and targeted high-risk review are recorded in the security archive. Repeat scans against the final public release commit and artifact. |
+| No malware or potentially unwanted programs | Provisional pass | Repository scanning, CodeQL, Gitleaks, dependency review, and targeted high-risk review are recorded in the security archive. A full-history public-disclosure Gitleaks pass on 2026-08-09 found only two reviewed source-text false positives (`Enchant/WinSpell` and `g_utf8_collate_key`). Repeat scans against the final public release commit and artifact. |
 | OSI-approved licence without commercial dual licensing | Pass for project code | Fabulor is GPLv3 and GitHub identifies the repository as GPL-3.0. No commercial dual-licensing scheme was found. The installed third-party inventory and evidence bundle are generated and packaged with each Windows build. |
 | No proprietary components, except qualifying system libraries | Provisional pass | The audited payload is assembled from Fabulor and identified open-source runtimes and libraries, plus Microsoft's redistributed .NET runtime under the Microsoft .NET Library terms. Confirm SignPath accepts that runtime under its system-library allowance before applying. |
 | Actively maintained | Pass | The repository has sustained development, reviews, release candidates, security remediation, documentation, and installed-client testing. |
@@ -84,12 +89,25 @@ At audit time:
   protection for `main`; GitHub reports that the repository must become public
   or the plan must be upgraded.
 - release candidates through `v1.0.6-rc.4` exist as published prereleases.
+- six superseded draft pull requests were closed with explanatory comments,
+  fourteen obsolete remote feature branches were deleted, automatic deletion
+  of merged head branches was enabled, and `main` is now the sole remote
+  branch;
+- the maintainer reviewed and accepted publication of the historical
+  `barry.suridge@gmail.com` commit-author address; and
+- the private-to-public Gitleaks scan found no credential, token, private key,
+  or other actionable secret. Its two findings were source-text false
+  positives rather than secrets.
 
 The repository may remain private while remediation is prepared. Public
 visibility and branch protection should be enabled together before the
 application so the published governance state is internally consistent. MFA
 enforcement is already enabled; member compliance must be confirmed before
 roles are published.
+
+The repository currently has no open pull requests. Its one open item is a
+normal enhancement request for an optional desktop shortcut and does not block
+publication or signing eligibility.
 
 ## Build And Release Provenance
 
@@ -142,6 +160,19 @@ This closes the packaging and traceability gap. It does not replace a final
 licence review, and SignPath should be asked to confirm that the redistributed
 .NET runtime falls within its permitted system-library exception.
 
+## External Acceptance Soak
+
+During the week ending 2026-08-09, an experienced long-term HexChat user
+exercised the installed Fabulor prerelease broadly. The only reported defect
+was a one-time apparent duplication of the channel-switcher tree while moving
+between channels. A normal restart cleared it, it has not recurred, and no
+screenshot or reproducible sequence is available yet.
+
+The observation is non-blocking at this stage and should become a separate
+follow-up issue if evidence or a reproduction becomes available. This external
+soak strengthens product-readiness evidence but does not replace final
+acceptance of the exact signed release-candidate artifacts.
+
 ## Required Remediation Order
 
 ### 1. Repository Preparation
@@ -183,8 +214,9 @@ licence review, and SignPath should be asked to confirm that the redistributed
 
 ## Decision
 
-Do not apply yet. Complete repository preparation first, then make the
-repository public and enable the required governance controls. Once the
-release workflow can prove that the exact reviewed source produced the exact
-artifact submitted for manual signing, Fabulor should be in a credible
-position to apply.
+Repository preparation and private disclosure review are complete. Make the
+repository public, immediately enable the required branch and release-tag
+governance controls, and verify every published policy link. Once the release
+workflow can prove that the exact reviewed source produced the exact artifact
+submitted for manual signing, Fabulor should be in a credible position to
+apply.
