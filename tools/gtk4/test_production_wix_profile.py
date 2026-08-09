@@ -269,7 +269,7 @@ class ProductionWixProfileTests(unittest.TestCase):
         package = root.find("w:Package", WIX_NS)
 
         self.assertIsNotNone(package)
-        self.assertEqual(package.get("Name"), "Fabulor")
+        self.assertEqual(package.get("Name"), "$(var.FabulorProductName)")
         self.assertEqual(
             package.get("UpgradeCode"),
             "8F6C0C7E-9A4D-4E4C-9F8C-2B6F5A4E9C11",
