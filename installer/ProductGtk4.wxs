@@ -113,6 +113,7 @@
     <StandardDirectory Id="ProgramMenuFolder">
       <Directory Id="ApplicationProgramsFolder" Name="Fabulor" />
     </StandardDirectory>
+    <StandardDirectory Id="DesktopFolder" />
     <SetProperty Id="ARPINSTALLLOCATION" Value="[INSTALLFOLDER]" After="CostFinalize" />
 
     <Feature Id="MainFeature" Title="Fabulor" Level="1">
@@ -133,6 +134,9 @@
       <ComponentGroupRef Id="PluginHostManifestComponents" />
       <Feature Id="StartMenuFeature" Title="Start menu shortcuts" Level="1">
         <ComponentGroupRef Id="StartMenuComponents" />
+      </Feature>
+      <Feature Id="DesktopShortcutFeature" Title="Desktop shortcut" Level="1">
+        <ComponentGroupRef Id="DesktopShortcutComponents" />
       </Feature>
       <Feature Id="ShellIntegrationFeature" Title="Protocol and theme integration" Level="1">
         <ComponentGroupRef Id="ShellIntegrationComponents" />

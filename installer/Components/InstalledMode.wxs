@@ -46,6 +46,21 @@
       </Component>
     </ComponentGroup>
 
+    <ComponentGroup Id="DesktopShortcutComponents">
+      <Component Id="DesktopShortcut" Guid="A4738A07-DB0F-40B4-88DE-242C2DEF653E" Directory="DesktopFolder" Condition="NOT FABULOR_PORTABLE">
+        <Shortcut Id="FabulorDesktopShortcut"
+                  Name="Fabulor"
+                  Target="[INSTALLFOLDER]fabulor.exe"
+                  WorkingDirectory="INSTALLFOLDER" />
+        <RegistryValue Root="HKCU"
+                       Key="Software\Fabulor\Installer"
+                       Name="DesktopShortcut"
+                       Type="integer"
+                       Value="1"
+                       KeyPath="yes" />
+      </Component>
+    </ComponentGroup>
+
     <ComponentGroup Id="ShellIntegrationComponents">
       <Component Id="IrcProtocolRegistration" Guid="DA174889-90E2-491D-B87D-8E4D654A8B58" Directory="INSTALLFOLDER" Condition="NOT FABULOR_PORTABLE">
         <RegistryKey Root="HKLM" Key="Software\Classes\irc">

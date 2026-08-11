@@ -1,7 +1,7 @@
 <!-- Fabulor production roadmap -->
 # Fabulor Production Roadmap
 
-Last reconciled: 2026-08-09
+Last reconciled: 2026-08-11
 
 ## Current Production Baseline
 
@@ -69,7 +69,7 @@ Last reconciled: 2026-08-09
 - [x] Normalize product name, company/publisher, and version metadata across
       the application, frontend, MSI, bootstrapper, and SignPath artifact
       restrictions. See `docs/security/signpath-artifact-metadata.md`.
-- [ ] Complete public repository governance for the SignPath application.
+- [x] Complete public repository governance for the SignPath application.
   - [x] Require organization-wide two-factor authentication and secure methods.
   - [x] Confirm every participating member has completed secure MFA setup.
   - [x] Close six superseded draft pull requests, delete fourteen obsolete
@@ -77,15 +77,15 @@ Last reconciled: 2026-08-09
   - [x] Complete the private-to-public disclosure scan. Full-history Gitleaks
         results contained only two reviewed source-text false positives; the
         maintainer accepts publication of the historical Gmail commit address.
-  - [ ] Make `Fabulor/fabulor` public, protect `main` and release tags, and
+  - [x] Make `Fabulor/fabulor` public, protect `main` and release tags, and
         require review of source, installer, build, and workflow changes.
-- [ ] Publish the required code-signing policy, privacy statement, reviewer and
-      signing-approver roles, and SignPath attribution before applying for the
-      free open-source signing service.
+- [x] Publish the required code-signing policy, privacy statement, reviewer and
+      signing-approver roles, and SignPath attribution, then submit the
+      SignPath Foundation application.
   - [x] Add the policies, named roles, sensitive-path ownership, and signed
-        release disclosure to the private repository.
-  - [ ] Confirm the policy links resolve publicly and add the disclosure to the
-        first signed release page after the repository becomes public.
+        release disclosure to the repository.
+  - [x] Confirm the policy links resolve publicly.
+  - [ ] Add the signed-release disclosure to the first signed release page.
 - [ ] Adapt the protected GitHub release workflow so SignPath can verify the
       production build provenance, attest the unsigned artefacts, promote only
       those exact artefacts, and manually approve signing of the Fabulor MSI
@@ -283,6 +283,19 @@ maintenance and must be tracked as contained follow-up fixes.
       after the final release-candidate feature pass.
 - [x] Publish release-candidate installer and payload hashes with release
       metadata.
+- [x] Replace the engineering-oriented bootstrapper screen with compact
+      install and maintenance layouts, collapsed advanced options and details,
+      a completion state, keyboard labels, and display-scaling constraints.
+- [x] Add timestamped installer logs beneath
+      `%LOCALAPPDATA%\Fabulor\Installer\Logs`, retaining the ten newest normal
+      logs and failed logs for 90 days, with folder and error-copy actions.
+- [x] Add a separately selectable installed-mode Desktop shortcut while
+      retaining the Start Menu and Safe Mode shortcuts and excluding all
+      shortcut features from Portable mode.
+- [x] Validate the installer improvement pass through an installed upgrade:
+      the Desktop shortcut was created and a persistent setup log was written.
+      The MSI passed local ICE validation with zero warnings and errors after
+      aligning the Desktop component with its per-user `HKCU` key path.
 
 ## Obsolete Function Retirement
 

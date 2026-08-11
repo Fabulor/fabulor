@@ -340,6 +340,28 @@ DLL boundaries. Before cutover:
 
 ## Installer Validation
 
+The production bootstrapper uses a compact install-or-maintain layout. Common
+installed-mode choices remain visible, while Portable mode, language runtimes,
+translations, and individual built-in plugins are grouped under a collapsed
+**Advanced options** section. An existing installation receives a dedicated
+maintenance state for Modify, Repair, and Uninstall. A successful install,
+upgrade, modify, or repair presents **Launch Fabulor** and **Close** rather
+than returning to the initial planning state.
+
+The Start Menu shortcuts and optional Desktop shortcut are separate MSI
+features. Both are conditioned out of Portable mode and use per-user `HKCU`
+registry key paths because Windows Installer treats their target directories
+as user-profile locations. Shell registrations remain separately owned
+installed-mode features. WiX ICE38, ICE43, and ICE57 enforce this ownership
+boundary for the Desktop shortcut component.
+
+Bootstrapper details are collapsed during normal operation and expand on
+failure. Every run also writes a timestamped UTF-8 log beneath
+`%LOCALAPPDATA%\Fabulor\Installer\Logs`. The bootstrapper retains the ten most
+recent ordinary logs and failed logs for 90 days. The UI provides **Open log
+folder** and **Copy error details** actions without placing machine-specific
+installer diagnostics in the roaming Fabulor profile.
+
 Each packaging PR must cover as applicable:
 
 - clean x64 install
@@ -348,7 +370,12 @@ Each packaging PR must cover as applicable:
 - repair
 - uninstall with no orphaned GTK3/GTK4 files
 - installed and portable modes
-- launch from Start menu, terminal, unrelated current directory, and safe mode
+- launch from Start Menu, Desktop shortcut, terminal, unrelated current
+  directory, setup completion, and safe mode
+- compact and maintenance layouts at 100%, 125%, and 150% display scaling,
+  including keyboard access and details/error expansion
+- persistent setup-log creation, retention, folder access, and copied error
+  details
 - spell check, emoji/flags, fonts, icons, themes, tray, notifications, file
   chooser, TLS, plugin runtimes, and updater
 - MSI ICE validation or a documented environment limitation

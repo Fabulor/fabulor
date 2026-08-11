@@ -79,10 +79,22 @@ bootstrapper is available.
 - Confirm another installation or Windows update is not already in progress.
 - Restart Windows once if the Windows Installer service reports that it cannot
   be accessed.
-- Keep the setup window open and record its final status and displayed log
-  lines.
+- Expand **Show details** and record the final status and relevant displayed
+  lines. Setup expands this section automatically after an error.
+- Use **Copy error details** when reporting the failure, and use **Open log
+  folder** to find the complete timestamped session log.
 - Do not disable antivirus protection merely to force an unknown installer to
   run.
+
+Persistent setup logs are stored under:
+
+```text
+%LOCALAPPDATA%\Fabulor\Installer\Logs
+```
+
+Setup retains the ten newest ordinary logs. Logs from failed sessions are
+marked as failed and retained for up to 90 days so an intermittent setup
+problem can still be investigated later.
 
 If setup reports that a newer Fabulor version is already installed, use that
 version's maintenance entry or a newer bootstrapper. Do not force a downgrade
