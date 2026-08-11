@@ -54,8 +54,8 @@ def main():
             with urllib.request.urlopen(url, timeout=30) as resp:
                 data = resp.read().decode("utf-8")
             break
-        except Exception:
-            pass
+        except (OSError, UnicodeError):
+            continue
     if data is None:
         for source in sources:
             if source.exists():
