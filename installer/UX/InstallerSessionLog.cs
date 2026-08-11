@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Text;
@@ -15,16 +16,20 @@ internal sealed class InstallerSessionLog : IDisposable
 
     public InstallerSessionLog()
     {
-        this.DirectoryPath = Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-            "Fabulor",
-            "Installer",
-            "Logs");
+        var localApplicationDataPath = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+        if (string.IsNullOrWhiteSpace(localApplicationDataPath)
+            || !Path.IsPathFullyQualified(localApplicationDataPath))
+        {
+            throw new InvalidOperationException("The local application data folder is unavailable.");
+        }
+
+        this.DirectoryPath = Path.GetFullPath(@"Fabulor\Installer\Logs", localApplicationDataPath);
         Directory.CreateDirectory(this.DirectoryPath);
         PruneOldLogs(this.DirectoryPath);
 
         var timestamp = DateTime.Now.ToString("yyyy-MM-dd-HHmmss", CultureInfo.InvariantCulture);
-        this.FilePath = Path.Combine(this.DirectoryPath, $"FabulorSetup-{timestamp}-{Environment.ProcessId}.log");
+        var fileName = Path.GetFileName($"FabulorSetup-{timestamp}-{Environment.ProcessId}.log");
+        this.FilePath = Path.GetFullPath(fileName, this.DirectoryPath);
         this.writer = new StreamWriter(this.FilePath, append: false, new UTF8Encoding(encoderShouldEmitUTF8Identifier: false))
         {
             AutoFlush = true
@@ -95,11 +100,13 @@ internal sealed class InstallerSessionLog : IDisposable
                 file.Delete();
             }
         }
-        catch (IOException)
+        catch (IOException ex)
         {
+            Debug.WriteLine($"Could not prune installer logs in '{directoryPath}': {ex}");
         }
-        catch (UnauthorizedAccessException)
+        catch (UnauthorizedAccessException ex)
         {
+            Debug.WriteLine($"Could not prune installer logs in '{directoryPath}': {ex}");
         }
     }
 }

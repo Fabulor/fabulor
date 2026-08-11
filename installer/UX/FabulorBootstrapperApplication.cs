@@ -1,10 +1,12 @@
 using System.Windows;
 using System.Windows.Interop;
 using System.Windows.Threading;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using System.Security;
 using System.Security.Principal;
 using System.Text.RegularExpressions;
 using System.Threading;
@@ -135,9 +137,16 @@ public sealed class FabulorBootstrapperApplication : BootstrapperApplication
             return;
         }
 
-        var executablePath = System.IO.Path.Combine(this.window.InstallFolder, "fabulor.exe");
         try
         {
+            var installFolder = this.window.InstallFolder;
+            if (!System.IO.Path.IsPathFullyQualified(installFolder))
+            {
+                this.window.ShowError("Fabulor could not be launched because the install folder is invalid.");
+                return;
+            }
+
+            var executablePath = System.IO.Path.GetFullPath("fabulor.exe", installFolder);
             if (!System.IO.File.Exists(executablePath))
             {
                 this.window.ShowError($"Fabulor could not be launched because {executablePath} was not found.");
@@ -151,11 +160,28 @@ public sealed class FabulorBootstrapperApplication : BootstrapperApplication
             });
             this.CloseWindow();
         }
-        catch (Exception ex)
+        catch (Win32Exception ex)
         {
-            this.window.AppendLog($"Launch failure: {ex.GetType().FullName}: {ex.Message}");
-            this.window.ShowError("Fabulor could not be launched. Review the setup details.");
+            this.ReportLaunchFailure(ex);
         }
+        catch (System.IO.IOException ex)
+        {
+            this.ReportLaunchFailure(ex);
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            this.ReportLaunchFailure(ex);
+        }
+        catch (SecurityException ex)
+        {
+            this.ReportLaunchFailure(ex);
+        }
+    }
+
+    private void ReportLaunchFailure(Exception exception)
+    {
+        this.window?.AppendLog($"Launch failure: {exception.GetType().FullName}: {exception.Message}");
+        this.window?.ShowError("Fabulor could not be launched. Review the setup details.");
     }
 
     public void RequestInstall()
@@ -506,7 +532,8 @@ public sealed class FabulorBootstrapperApplication : BootstrapperApplication
     {
         var programsFolder = Environment.GetFolderPath(folder);
         return !string.IsNullOrWhiteSpace(programsFolder)
-            && System.IO.File.Exists(System.IO.Path.Combine(programsFolder, "Fabulor", "Fabulor.lnk"));
+            && System.IO.Path.IsPathFullyQualified(programsFolder)
+            && System.IO.File.Exists(System.IO.Path.GetFullPath(@"Fabulor\Fabulor.lnk", programsFolder));
     }
 
     private bool DesktopShortcutExists()
@@ -519,7 +546,8 @@ public sealed class FabulorBootstrapperApplication : BootstrapperApplication
     {
         var desktopFolder = Environment.GetFolderPath(folder);
         return !string.IsNullOrWhiteSpace(desktopFolder)
-            && System.IO.File.Exists(System.IO.Path.Combine(desktopFolder, "Fabulor.lnk"));
+            && System.IO.Path.IsPathFullyQualified(desktopFolder)
+            && System.IO.File.Exists(System.IO.Path.GetFullPath("Fabulor.lnk", desktopFolder));
     }
 
     private void OnPlanMsiFeature(object? sender, PlanMsiFeatureEventArgs e)

@@ -293,7 +293,8 @@ class ProductionWixProfileTests(unittest.TestCase):
         self.assertIn('x:Name="DetailsExpander"', window)
         self.assertIn('x:Name="LaunchButton"', window)
         self.assertIn('SpecialFolder.LocalApplicationData', session_log)
-        self.assertIn('"Fabulor",\n            "Installer",\n            "Logs"', session_log)
+        self.assertIn("Path.IsPathFullyQualified(localApplicationDataPath)", session_log)
+        self.assertIn('@"Fabulor\\Installer\\Logs"', session_log)
         self.assertIn("SuccessfulLogRetentionCount = 10", session_log)
 
     def test_production_product_keeps_upgrade_identity(self):

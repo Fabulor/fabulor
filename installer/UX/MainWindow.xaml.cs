@@ -38,7 +38,7 @@ public partial class MainWindow : Window
         IncludePythonRuntime = this.PythonRuntimeCheckBox.IsChecked == true,
         IncludeTclRuntime = this.TclRuntimeCheckBox.IsChecked == true,
         IncludeStartMenuShortcuts = this.StartMenuShortcutsCheckBox.IsChecked == true,
-        IncludeDesktopShortcut = this.DesktopShortcutCheckBox.IsChecked == true,
+        IncludeDesktopShortcut = this.DesktopShortcutCheckBox.IsChecked is true,
         IncludeShellIntegration = this.ShellIntegrationCheckBox.IsChecked == true,
         IncludeTranslations = this.TranslationsCheckBox.IsChecked == true,
         IncludeChecksumPlugin = this.ChecksumPluginCheckBox.IsChecked == true,
@@ -217,7 +217,7 @@ public partial class MainWindow : Window
         if (this.IsPortable)
         {
             this.rememberedStartMenuShortcuts = this.StartMenuShortcutsCheckBox.IsChecked == true;
-            this.rememberedDesktopShortcut = this.DesktopShortcutCheckBox.IsChecked == true;
+            this.rememberedDesktopShortcut = this.DesktopShortcutCheckBox.IsChecked is true;
             this.rememberedShellIntegration = this.ShellIntegrationCheckBox.IsChecked == true;
             this.StartMenuShortcutsCheckBox.IsChecked = false;
             this.DesktopShortcutCheckBox.IsChecked = false;
