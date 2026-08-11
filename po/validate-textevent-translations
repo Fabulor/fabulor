@@ -18,7 +18,7 @@ def validate_translation(input, translation):
     if not translation:
         return True
 
-    if re.findall(r'(?:(?<!%)%[^%OCRUHBIH]|\$[^at1234])', translation):
+    if re.findall(r'(?:(?<!%)%[^%OCRUHBI]|\$[^at1234])', translation):
         log('Translation includes invalid formatting:', translation, input)
         return False
 

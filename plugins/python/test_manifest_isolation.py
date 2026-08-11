@@ -41,6 +41,7 @@ class ManifestIsolationTests(unittest.TestCase):
             try:
                 self.call(interpreter, {'action': 'shutdown'})
             except Exception:
+                # Continue closing the remaining isolated interpreters.
                 pass
             interpreter.close()
         self.temporary_directory.cleanup()

@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 
 import unittest
+import unittest.mock
 import xml.etree.ElementTree as ET
-from unittest import mock
 
 import validate_runtime_msi
 
@@ -28,7 +28,7 @@ def candidate_xml(bin_directory=True):
 
 
 class ValidateCandidateMsiTests(unittest.TestCase):
-    @mock.patch("validate_runtime_msi.subprocess.run")
+    @unittest.mock.patch("validate_runtime_msi.subprocess.run")
     def test_decompiler_explicitly_accepts_wix7_eula(self, run):
         run.return_value.returncode = 0
 

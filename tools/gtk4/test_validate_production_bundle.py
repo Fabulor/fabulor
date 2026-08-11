@@ -3,8 +3,8 @@
 import pathlib
 import tempfile
 import unittest
+import unittest.mock
 import xml.etree.ElementTree as ET
-from unittest import mock
 
 import validate_production_bundle
 
@@ -51,7 +51,7 @@ class ValidateProductionBundleTests(unittest.TestCase):
     def setUpClass(cls):
         TEST_TEMP_ROOT.mkdir(parents=True, exist_ok=True)
 
-    @mock.patch("validate_production_bundle.subprocess.run")
+    @unittest.mock.patch("validate_production_bundle.subprocess.run")
     def test_extraction_uses_separate_chain_and_ba_roots(self, run):
         run.return_value.returncode = 0
 
