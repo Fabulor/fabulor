@@ -26,6 +26,7 @@ public sealed class FabulorBootstrapperApplication : BootstrapperApplication
     private const string ThemeAssetFeatureId = "ThemeAssetFeature";
     private const string Gtk4RuntimeFeatureId = "Gtk4RuntimeFeature";
     private const string StartMenuFeatureId = "StartMenuFeature";
+    private const string DesktopShortcutFeatureId = "DesktopShortcutFeature";
     private const string ShellIntegrationFeatureId = "ShellIntegrationFeature";
     private const string TranslationsFeatureId = "TranslationsFeature";
     private const string ChecksumPluginFeatureId = "ChecksumPluginFeature";
@@ -127,6 +128,36 @@ public sealed class FabulorBootstrapperApplication : BootstrapperApplication
         this.CloseWindow();
     }
 
+    public void RequestLaunchFabulor()
+    {
+        if (this.window == null)
+        {
+            return;
+        }
+
+        var executablePath = System.IO.Path.Combine(this.window.InstallFolder, "fabulor.exe");
+        try
+        {
+            if (!System.IO.File.Exists(executablePath))
+            {
+                this.window.ShowError($"Fabulor could not be launched because {executablePath} was not found.");
+                return;
+            }
+
+            Process.Start(new ProcessStartInfo(executablePath)
+            {
+                UseShellExecute = true,
+                WorkingDirectory = this.window.InstallFolder
+            });
+            this.CloseWindow();
+        }
+        catch (Exception ex)
+        {
+            this.window.AppendLog($"Launch failure: {ex.GetType().FullName}: {ex.Message}");
+            this.window.ShowError("Fabulor could not be launched. Review the setup details.");
+        }
+    }
+
     public void RequestInstall()
     {
         var action = this.isCurrentMsiPackageInstalled ? LaunchAction.Modify : LaunchAction.Install;
@@ -212,7 +243,7 @@ public sealed class FabulorBootstrapperApplication : BootstrapperApplication
         this.window.SetProgress(0);
         this.window.SetStatus(statusText + "…");
         this.window.AppendLog(this.DescribePlannedAction(action, statusText));
-        this.window.AppendLog($"Feature snapshot: dotnet={this.currentPlanFeatureSelection.IncludeDotNetPluginHost}, python={this.currentPlanFeatureSelection.IncludePythonRuntime}, tcl={this.currentPlanFeatureSelection.IncludeTclRuntime}, themeAssets=fixed, gtk4=fixed, startMenu={this.currentPlanFeatureSelection.IncludeStartMenuShortcuts}, shellIntegration={this.currentPlanFeatureSelection.IncludeShellIntegration}, translations={this.currentPlanFeatureSelection.IncludeTranslations}, checksum={this.currentPlanFeatureSelection.IncludeChecksumPlugin}, exec={this.currentPlanFeatureSelection.IncludeExecPlugin}, fishlim={this.currentPlanFeatureSelection.IncludeFishlimPlugin}, sysinfo={this.currentPlanFeatureSelection.IncludeSysinfoPlugin}, portable={this.currentPlanPortable}.");
+        this.window.AppendLog($"Feature snapshot: dotnet={this.currentPlanFeatureSelection.IncludeDotNetPluginHost}, python={this.currentPlanFeatureSelection.IncludePythonRuntime}, tcl={this.currentPlanFeatureSelection.IncludeTclRuntime}, themeAssets=fixed, gtk4=fixed, startMenu={this.currentPlanFeatureSelection.IncludeStartMenuShortcuts}, desktop={this.currentPlanFeatureSelection.IncludeDesktopShortcut}, shellIntegration={this.currentPlanFeatureSelection.IncludeShellIntegration}, translations={this.currentPlanFeatureSelection.IncludeTranslations}, checksum={this.currentPlanFeatureSelection.IncludeChecksumPlugin}, exec={this.currentPlanFeatureSelection.IncludeExecPlugin}, fishlim={this.currentPlanFeatureSelection.IncludeFishlimPlugin}, sysinfo={this.currentPlanFeatureSelection.IncludeSysinfoPlugin}, portable={this.currentPlanPortable}.");
         if (this.isFabulorMsiInstalled && (action == LaunchAction.Repair || action == LaunchAction.Uninstall))
         {
             this.window.AppendLog("Maintenance action is using the detected installed mode and feature state, not any pending UI edits.");
@@ -418,6 +449,9 @@ public sealed class FabulorBootstrapperApplication : BootstrapperApplication
                 && (this.RegistryValueExists(Registry.LocalMachine, @"Software\Fabulor\Installer", "StartMenuShortcuts")
                     || this.RegistryValueExists(Registry.CurrentUser, @"Software\Fabulor\Installer", "StartMenuShortcuts")
                     || this.StartMenuShortcutExists()),
+            IncludeDesktopShortcut = !isPortable
+                && (this.RegistryValueExists(Registry.LocalMachine, @"Software\Fabulor\Installer", "DesktopShortcut")
+                    || this.DesktopShortcutExists()),
             IncludeShellIntegration = !isPortable
                 && this.RegistryValueExists(Registry.LocalMachine, @"Software\Fabulor\Installer", "IrcProtocol")
                 && this.RegistryValueExists(Registry.LocalMachine, @"Software\Fabulor\Installer", "ThemeAssociation"),
@@ -436,6 +470,7 @@ public sealed class FabulorBootstrapperApplication : BootstrapperApplication
         this.ApplyDetectedFeatureState(selection, PythonRuntimeFeatureId, value => selection.IncludePythonRuntime = value);
         this.ApplyDetectedFeatureState(selection, TclRuntimeFeatureId, value => selection.IncludeTclRuntime = value);
         this.ApplyDetectedFeatureState(selection, StartMenuFeatureId, value => selection.IncludeStartMenuShortcuts = value);
+        this.ApplyDetectedFeatureState(selection, DesktopShortcutFeatureId, value => selection.IncludeDesktopShortcut = value);
         this.ApplyDetectedFeatureState(selection, ShellIntegrationFeatureId, value => selection.IncludeShellIntegration = value);
         this.ApplyDetectedFeatureState(selection, TranslationsFeatureId, value => selection.IncludeTranslations = value);
         this.ApplyDetectedFeatureState(selection, ChecksumPluginFeatureId, value => selection.IncludeChecksumPlugin = value);
@@ -474,6 +509,19 @@ public sealed class FabulorBootstrapperApplication : BootstrapperApplication
             && System.IO.File.Exists(System.IO.Path.Combine(programsFolder, "Fabulor", "Fabulor.lnk"));
     }
 
+    private bool DesktopShortcutExists()
+    {
+        return this.DesktopShortcutExists(Environment.SpecialFolder.CommonDesktopDirectory)
+            || this.DesktopShortcutExists(Environment.SpecialFolder.DesktopDirectory);
+    }
+
+    private bool DesktopShortcutExists(Environment.SpecialFolder folder)
+    {
+        var desktopFolder = Environment.GetFolderPath(folder);
+        return !string.IsNullOrWhiteSpace(desktopFolder)
+            && System.IO.File.Exists(System.IO.Path.Combine(desktopFolder, "Fabulor.lnk"));
+    }
+
     private void OnPlanMsiFeature(object? sender, PlanMsiFeatureEventArgs e)
     {
         if (!string.Equals(e.PackageId, FabulorMsiPackageId, StringComparison.Ordinal) || this.window == null)
@@ -497,6 +545,7 @@ public sealed class FabulorBootstrapperApplication : BootstrapperApplication
             ThemeAssetFeatureId => FeatureState.Local,
             Gtk4RuntimeFeatureId => FeatureState.Local,
             StartMenuFeatureId => !isPortable && selection.IncludeStartMenuShortcuts ? FeatureState.Local : FeatureState.Absent,
+            DesktopShortcutFeatureId => !isPortable && selection.IncludeDesktopShortcut ? FeatureState.Local : FeatureState.Absent,
             ShellIntegrationFeatureId => !isPortable && selection.IncludeShellIntegration ? FeatureState.Local : FeatureState.Absent,
             TranslationsFeatureId => selection.IncludeTranslations ? FeatureState.Local : FeatureState.Absent,
             ChecksumPluginFeatureId => selection.IncludeChecksumPlugin ? FeatureState.Local : FeatureState.Absent,
@@ -592,11 +641,26 @@ public sealed class FabulorBootstrapperApplication : BootstrapperApplication
 
                 this.window.SetBusy(false);
                 this.window.SetProgress(100);
-                this.window.SetDetectedState(this.pendingAction != LaunchAction.Uninstall, this.isCurrentMsiPackageInstalled);
-                this.window.SetStatus(e.Status == 0
-                    ? "Bundle apply completed successfully."
-                    : $"Bundle apply failed with status 0x{e.Status:X8}.");
                 this.window.AppendLog($"ApplyComplete: status=0x{e.Status:X8}, restart={e.Restart}.");
+                if (e.Status == 0)
+                {
+                    this.isFabulorMsiInstalled = this.pendingAction != LaunchAction.Uninstall;
+                    this.isCurrentMsiPackageInstalled = this.pendingAction != LaunchAction.Uninstall;
+                    this.detectedFeatureSelection = this.currentPlanFeatureSelection.Clone();
+                    this.isDetectedPortableInstall = this.currentPlanPortable;
+                    this.window.SetStatus("Setup completed successfully.");
+                    if (this.pendingAction != LaunchAction.Uninstall)
+                    {
+                        this.window.ShowCompletion(this.pendingAction == LaunchAction.Repair
+                            ? "Fabulor was repaired successfully and is ready to use."
+                            : "Fabulor is installed and ready to use.");
+                    }
+                }
+                else
+                {
+                    this.window.SetDetectedState(this.isFabulorMsiInstalled, this.isCurrentMsiPackageInstalled);
+                    this.window.ShowError($"Setup failed with status 0x{e.Status:X8}. Review the details below.");
+                }
             });
         }
         catch (Exception ex)
@@ -616,14 +680,6 @@ public sealed class FabulorBootstrapperApplication : BootstrapperApplication
             return;
         }
 
-        if (e.Status == 0)
-        {
-            _ = Task.Run(async () =>
-            {
-                await Task.Delay(2000).ConfigureAwait(false);
-                this.engine.Detect();
-            });
-        }
     }
 
     private void OnApplyBegin(object? sender, ApplyBeginEventArgs e)
@@ -730,8 +786,8 @@ public sealed class FabulorBootstrapperApplication : BootstrapperApplication
             {
                 this.window?.SetBusy(false);
                 this.window?.SetDetectedState(this.isFabulorMsiInstalled, this.isCurrentMsiPackageInstalled);
-                this.window?.SetStatus("Detection failed. Review the session log.");
                 this.window?.AppendLog($"DetectComplete failure: {ex.GetType().FullName}: {ex.Message}");
+                this.window?.ShowError("Detection failed. Review the setup details.");
             });
         }
     }
@@ -810,7 +866,7 @@ public sealed class FabulorBootstrapperApplication : BootstrapperApplication
         this.DispatchToWindow(() =>
         {
             this.window?.AppendLog($"Error: type={e.ErrorType}, code=0x{e.ErrorCode:X8}, message={e.ErrorMessage}");
-            this.window?.SetStatus("The bootstrapper reported an error. Review the session log.");
+            this.window?.ShowError("Setup reported an error. Review the details below.");
         });
     }
 
@@ -845,8 +901,8 @@ public sealed class FabulorBootstrapperApplication : BootstrapperApplication
             }
 
             this.window?.SetBusy(false);
-            this.window?.SetStatus($"Elevation failed or was cancelled: 0x{e.Status:X8}.");
             this.window?.AppendLog($"ElevateComplete: status=0x{e.Status:X8}.");
+            this.window?.ShowError($"Elevation failed or was cancelled: 0x{e.Status:X8}.");
         });
 
         this.RestoreWindowFocusAfterElevation();
@@ -940,8 +996,8 @@ public sealed class FabulorBootstrapperApplication : BootstrapperApplication
             this.DispatchToWindow(() =>
             {
                 this.window?.SetBusy(false);
-                this.window?.SetStatus($"Planning failed with status 0x{e.Status:X8}.");
                 this.window?.AppendLog($"PlanComplete: failure status=0x{e.Status:X8}.");
+                this.window?.ShowError($"Planning failed with status 0x{e.Status:X8}.");
             });
             return;
         }
@@ -1430,8 +1486,8 @@ public sealed class FabulorBootstrapperApplication : BootstrapperApplication
                     else
                     {
                         this.window?.SetBusy(false);
-                        this.window?.SetStatus($"Detected MSI uninstall failed with status 0x{result:X8}.");
                         this.window?.AppendLog($"Related MSI uninstall failed with status 0x{result:X8}.");
+                        this.window?.ShowError($"Detected MSI uninstall failed with status 0x{result:X8}.");
                     }
                 });
             });

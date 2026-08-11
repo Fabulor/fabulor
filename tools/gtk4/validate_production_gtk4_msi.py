@@ -44,6 +44,7 @@ REQUIRED_PATHS = {
 REQUIRED_FEATURES = {
     "MainFeature",
     "StartMenuFeature",
+    "DesktopShortcutFeature",
     "ShellIntegrationFeature",
     "Gtk4RuntimeFeature",
     "DotNetRuntimeFeature",

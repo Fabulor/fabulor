@@ -23,11 +23,15 @@ uninstalling it.
 
 1. Start `FabulorSetup.exe`.
 2. Approve the Windows administrator prompt.
-3. Leave **Portable mode** clear for a normal installation.
-4. Keep the default install folder unless you have a specific reason to change
+3. Keep the default install folder unless you have a specific reason to change
    it.
-5. Review the optional features, then select **Install**.
-6. Wait for setup to report completion before closing it.
+4. Leave the Start Menu, Desktop shortcut, and IRC/theme integration options
+   selected unless you do not want one of those Windows integrations.
+5. Open **Advanced options** only when you need Portable mode, optional plugin
+   runtimes, translations, or individual built-in plugins.
+6. Select **Install** and wait for setup to report completion.
+7. Select **Launch Fabulor** to start the installed client, or **Close** to
+   leave setup without launching it.
 
 Installed mode normally places the application under:
 
@@ -47,6 +51,33 @@ changes installed features, **Repair** restores the selected installation, and
 **Uninstall** removes the installed application. Keep a separate backup of the
 profile before making major changes or moving to another computer.
 
+When Fabulor is already installed, setup opens in a maintenance layout. It
+shows the detected installation and selected features instead of presenting a
+second first-install workflow. Installed-mode integration can create:
+
+- **Fabulor** and **Fabulor Safe Mode** Start Menu shortcuts;
+- an optional **Fabulor** Desktop shortcut; and
+- the selected IRC protocol and theme-file associations.
+
+Portable mode disables all three installed-mode integration choices.
+
+## Setup Progress And Logs
+
+The progress bar and current status remain visible during setup. Detailed
+operation messages are collapsed under **Show details** during normal work and
+open automatically if setup reports an error. The error view can copy the
+displayed diagnostic details or open the log folder.
+
+Setup writes a timestamped log for every run beneath:
+
+```text
+%LOCALAPPDATA%\Fabulor\Installer\Logs
+```
+
+The filenames begin with `FabulorSetup-`. Setup retains the ten most recent
+ordinary logs and keeps failed-session logs for up to 90 days. These logs are
+machine-specific diagnostics and do not roam with the Fabulor user profile.
+
 The installed shell-integration feature registers Fabulor for `irc://` links.
 The client also accepts validated `irc://` and `ircs://` addresses through its
 `--url` startup option. Windows-wide `ircs://` association is not yet part of
@@ -55,8 +86,8 @@ the production registration and remains a release task.
 ## Portable Mode
 
 Portable mode creates a `portable-mode` marker and keeps configuration in the
-`Config` folder beside `fabulor.exe`. It also omits installed-mode Start menu,
-protocol, and theme registration.
+`Config` folder beside `fabulor.exe`. It also omits installed-mode Start Menu
+and Desktop shortcuts, protocol registration, and theme registration.
 
 Choose portable mode only when you specifically need a self-contained folder.
 Do not install portable mode under `C:\Program Files` if you expect to edit its

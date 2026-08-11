@@ -10,6 +10,8 @@ public sealed class InstallerFeatureSelection
 
     public bool IncludeStartMenuShortcuts { get; set; } = true;
 
+    public bool IncludeDesktopShortcut { get; set; } = true;
+
     public bool IncludeShellIntegration { get; set; } = true;
 
     public bool IncludeTranslations { get; set; } = true;
@@ -30,6 +32,7 @@ public sealed class InstallerFeatureSelection
             IncludePythonRuntime = this.IncludePythonRuntime,
             IncludeTclRuntime = this.IncludeTclRuntime,
             IncludeStartMenuShortcuts = this.IncludeStartMenuShortcuts,
+            IncludeDesktopShortcut = this.IncludeDesktopShortcut,
             IncludeShellIntegration = this.IncludeShellIntegration,
             IncludeTranslations = this.IncludeTranslations,
             IncludeChecksumPlugin = this.IncludeChecksumPlugin,

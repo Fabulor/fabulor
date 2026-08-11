@@ -264,6 +264,38 @@ class ProductionWixProfileTests(unittest.TestCase):
         )
         self.assertEqual(application.findall("w:Payload", WIX_NS), [])
 
+    def test_installer_ux_keeps_diagnostics_and_shortcuts_owned(self):
+        product = (INSTALLER / "ProductGtk4.wxs").read_text(encoding="utf-8")
+        components = (
+            INSTALLER / "Components" / "InstalledMode.wxs"
+        ).read_text(encoding="utf-8")
+        feature_selection = (
+            INSTALLER / "UX" / "InstallerFeatureSelection.cs"
+        ).read_text(encoding="utf-8")
+        bootstrapper = (
+            INSTALLER / "UX" / "FabulorBootstrapperApplication.cs"
+        ).read_text(encoding="utf-8")
+        window = (INSTALLER / "UX" / "MainWindow.xaml").read_text(
+            encoding="utf-8"
+        )
+        session_log = (INSTALLER / "UX" / "InstallerSessionLog.cs").read_text(
+            encoding="utf-8"
+        )
+
+        self.assertIn('Feature Id="DesktopShortcutFeature"', product)
+        self.assertIn('ComponentGroupRef Id="DesktopShortcutComponents"', product)
+        self.assertIn('ComponentGroup Id="DesktopShortcutComponents"', components)
+        self.assertIn('Directory="DesktopFolder"', components)
+        self.assertIn("IncludeDesktopShortcut", feature_selection)
+        self.assertIn("DesktopShortcutFeatureId", bootstrapper)
+        self.assertIn('x:Name="DesktopShortcutCheckBox"', window)
+        self.assertIn('x:Name="AdvancedOptionsExpander"', window)
+        self.assertIn('x:Name="DetailsExpander"', window)
+        self.assertIn('x:Name="LaunchButton"', window)
+        self.assertIn('SpecialFolder.LocalApplicationData', session_log)
+        self.assertIn('"Fabulor",\n            "Installer",\n            "Logs"', session_log)
+        self.assertIn("SuccessfulLogRetentionCount = 10", session_log)
+
     def test_production_product_keeps_upgrade_identity(self):
         root = ET.parse(INSTALLER / "ProductGtk4.wxs").getroot()
         package = root.find("w:Package", WIX_NS)
