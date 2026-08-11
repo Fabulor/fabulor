@@ -288,7 +288,12 @@ class ProductionWixProfileTests(unittest.TestCase):
         self.assertIn('Directory="DesktopFolder"', components)
         self.assertIn("IncludeDesktopShortcut", feature_selection)
         self.assertIn("DesktopShortcutFeatureId", bootstrapper)
+        self.assertIn(
+            'RegistryValueExists(Registry.CurrentUser, @"Software\\Fabulor\\Installer", "DesktopShortcut")',
+            bootstrapper,
+        )
         self.assertIn('x:Name="DesktopShortcutCheckBox"', window)
+        self.assertIn('Value="Select or clear this option."', window)
         self.assertIn('x:Name="AdvancedOptionsExpander"', window)
         self.assertIn('x:Name="DetailsExpander"', window)
         self.assertIn('x:Name="LaunchButton"', window)
@@ -296,6 +301,12 @@ class ProductionWixProfileTests(unittest.TestCase):
         self.assertIn("Path.IsPathFullyQualified(localApplicationDataPath)", session_log)
         self.assertIn('@"Fabulor\\Installer\\Logs"', session_log)
         self.assertIn("SuccessfulLogRetentionCount = 10", session_log)
+
+        window_code = (INSTALLER / "UX" / "MainWindow.xaml.cs").read_text(
+            encoding="utf-8"
+        )
+        self.assertIn("catch (COMException ex)", window_code)
+        self.assertIn("showingInstallFolderWarning", window_code)
 
     def test_production_product_keeps_upgrade_identity(self):
         root = ET.parse(INSTALLER / "ProductGtk4.wxs").getroot()

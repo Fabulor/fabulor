@@ -25,7 +25,7 @@
         <Style TargetType="CheckBox">
             <Setter Property="Foreground" Value="{StaticResource TextBrush}" />
             <Setter Property="Margin" Value="0,5,0,5" />
-            <Setter Property="AutomationProperties.HelpText" Value="Select whether this feature is installed." />
+            <Setter Property="AutomationProperties.HelpText" Value="Select or clear this option." />
         </Style>
         <Style TargetType="TextBox">
             <Setter Property="Background" Value="{StaticResource SurfaceAltBrush}" />

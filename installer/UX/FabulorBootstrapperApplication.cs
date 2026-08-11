@@ -477,6 +477,7 @@ public sealed class FabulorBootstrapperApplication : BootstrapperApplication
                     || this.StartMenuShortcutExists()),
             IncludeDesktopShortcut = !isPortable
                 && (this.RegistryValueExists(Registry.LocalMachine, @"Software\Fabulor\Installer", "DesktopShortcut")
+                    || this.RegistryValueExists(Registry.CurrentUser, @"Software\Fabulor\Installer", "DesktopShortcut")
                     || this.DesktopShortcutExists()),
             IncludeShellIntegration = !isPortable
                 && this.RegistryValueExists(Registry.LocalMachine, @"Software\Fabulor\Installer", "IrcProtocol")

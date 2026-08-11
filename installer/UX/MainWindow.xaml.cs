@@ -14,6 +14,7 @@ public partial class MainWindow : Window
     private bool rememberedStartMenuShortcuts = true;
     private bool rememberedDesktopShortcut = true;
     private bool rememberedShellIntegration = true;
+    private bool showingInstallFolderWarning;
     private string lastErrorDetails = string.Empty;
 
     public MainWindow(FabulorBootstrapperApplication bootstrapper)
@@ -247,10 +248,20 @@ public partial class MainWindow : Window
 
     private void CopyErrorDetailsButton_OnClick(object sender, RoutedEventArgs e)
     {
-        if (!string.IsNullOrWhiteSpace(this.lastErrorDetails))
+        if (string.IsNullOrWhiteSpace(this.lastErrorDetails))
+        {
+            return;
+        }
+
+        try
         {
             System.Windows.Clipboard.SetText(this.lastErrorDetails);
             this.SetStatus("Error details copied to the clipboard.");
+        }
+        catch (COMException ex)
+        {
+            this.AppendLog($"Clipboard copy failed: {ex.Message}");
+            this.SetStatus("Error details could not be copied. Try again in a moment.");
         }
     }
 
@@ -318,7 +329,15 @@ public partial class MainWindow : Window
     {
         if (string.IsNullOrWhiteSpace(this.InstallFolderTextBox.Text))
         {
+            this.showingInstallFolderWarning = true;
             this.SetStatus("Choose an install folder before starting setup.");
+            return;
+        }
+
+        if (this.showingInstallFolderWarning)
+        {
+            this.showingInstallFolderWarning = false;
+            this.SetStatus(string.Empty);
         }
     }
 
