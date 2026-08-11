@@ -1,4 +1,4 @@
-/* ZoiteChat
+/* Fabulor
  * Copyright (C) 1998-2010 Peter Zelezny.
  * Copyright (C) 2009-2013 Berke Viktor.
  *
