@@ -232,8 +232,10 @@ configuration and error categories.
 
 - Confirm the address begins with `irc://` or `ircs://` and contains a server
   name.
-- Installed Windows integration currently registers `irc://`; test an
-  `ircs://` address with the explicit `--url` PowerShell example in
+- Until [issue #298](https://github.com/Fabulor/fabulor/issues/298) is resolved,
+  Windows can open an `irc://` link in another registered application and does
+  not have an installed Fabulor association for `ircs://`. Test either scheme
+  with the explicit `--url` PowerShell example in
   [Networks and connections](networks-and-connections.md).
 - If the channel is already open, Fabulor should select it rather than send a
   second join request.

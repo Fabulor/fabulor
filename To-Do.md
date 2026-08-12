@@ -1,7 +1,7 @@
 <!-- Fabulor production roadmap -->
 # Fabulor Production Roadmap
 
-Last reconciled: 2026-08-11
+Last reconciled: 2026-08-12
 
 ## Current Production Baseline
 
@@ -105,7 +105,8 @@ Last reconciled: 2026-08-11
 - [ ] Confirm release notes, version metadata, installer hashes, and bundled
       runtime provenance before publishing `1.0.6`.
 - [ ] Complete the installed Windows registered-application boundary for both
-      `irc://` and `ircs://`, including repair and uninstall verification.
+      `irc://` and `ircs://`, including repair and uninstall verification
+      ([issue #298](https://github.com/Fabulor/fabulor/issues/298)).
 - [ ] Record any remaining non-blocking visual or usability issues as separate
       follow-up work instead of reopening the completed GTK4 migration.
   - [ ] If the one-time duplicated channel-switcher tree report recurs or a

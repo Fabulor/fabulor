@@ -78,10 +78,13 @@ The filenames begin with `FabulorSetup-`. Setup retains the ten most recent
 ordinary logs and keeps failed-session logs for up to 90 days. These logs are
 machine-specific diagnostics and do not roam with the Fabulor user profile.
 
-The installed shell-integration feature registers Fabulor for `irc://` links.
-The client also accepts validated `irc://` and `ircs://` addresses through its
-`--url` startup option. Windows-wide `ircs://` association is not yet part of
-the production registration and remains a release task.
+The client accepts validated `irc://` and `ircs://` addresses through its
+`--url` startup option. The production installer currently writes a basic
+`irc://` association, but Fabulor is not yet published through the Windows
+Registered Applications catalogue and another application can be selected
+instead. Windows-wide `ircs://` registration is also not yet present. Complete
+default-app registration for both schemes remains a release task tracked by
+[issue #298](https://github.com/Fabulor/fabulor/issues/298).
 
 ## Portable Mode
 

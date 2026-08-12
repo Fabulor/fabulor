@@ -12,8 +12,9 @@ chapters for operating details.
 - Use direct server connections or an IRC bouncer such as ZNC.
 - Connect with TLS, SASL authentication, client certificates, or a SOCKS5
   proxy where required.
-- Open registered `irc://` and `ircs://` links in a running or newly started
-  Fabulor instance.
+- Accept validated `irc://` and `ircs://` addresses in a running or newly
+  started Fabulor instance. Complete Windows default-app registration remains
+  a release task; see [Networks and connections](networks-and-connections.md).
 - Browse channel lists, private conversations, user information, ban lists,
   ignore lists, friends, file transfers, raw logs, and captured URLs.
 - Send and receive IRC messages, notices, actions, CTCP requests, and DCC file
