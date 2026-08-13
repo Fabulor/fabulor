@@ -4,11 +4,16 @@ This policy defines who may authorize Fabulor code signing, which artifacts
 may be signed, and the evidence required before a signed Windows release is
 published.
 
-Free code signing provided by SignPath.io, certificate by SignPath Foundation.
+Fabulor's initial SignPath Foundation application was not approved because the
+new public project had not yet established the community adoption and
+independent visibility required by the Foundation program. This was not a
+finding against the project's code, security controls, or licensing. Fabulor
+intends to reapply after building those public trust signals.
 
-Fabulor has not yet activated SignPath signing. Until that activation is
-announced on a release page, published release candidates must be treated as
-unsigned even when their hashes are provided.
+No signing service or certificate is currently active. Until signing is
+explicitly announced on a release page, published release candidates must be
+treated as unsigned even when their hashes are provided. Windows SmartScreen
+may therefore warn before running them.
 
 ## Team Roles
 

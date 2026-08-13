@@ -56,11 +56,12 @@ Fabulor is licensed under the GNU General Public License version 3.0 only. The c
 scope, accountable team roles, review requirements, and manual release
 approval boundary.
 
-Free code signing provided by SignPath.io, certificate by SignPath Foundation.
-
-SignPath signing is not active yet. Release pages will identify signed
-artifacts explicitly after activation; current release candidates remain
-unsigned.
+Fabulor intends to reapply for SignPath Foundation signing after the public
+project has established the required community adoption and independent
+visibility. No signing service or certificate is currently active. Release
+pages will identify signed artifacts explicitly if signing is activated;
+current release candidates remain unsigned and can trigger a Windows
+SmartScreen warning.
 
 ## Acknowledgements
 

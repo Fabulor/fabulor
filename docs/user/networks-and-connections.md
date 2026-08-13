@@ -195,15 +195,20 @@ typed IRC address rather than as a general command. If the matching connection
 is active, Fabulor joins an unopened channel or selects the channel when it is
 already open. Otherwise it starts a connection for the supplied server.
 
-Installed shell integration currently registers Fabulor for `irc://` links.
-Both schemes can be tested explicitly from PowerShell:
+Fabulor can process either scheme when it is supplied explicitly from
+PowerShell:
 
 ```powershell
 & 'C:\Program Files\Fabulor\fabulor.exe' `
   --url='ircs://irc.example.net:6697/fabulor'
 ```
 
-Windows-wide `ircs://` association remains a release task. Portable mode does
+The production installer currently writes a basic `irc://` association, but
+Fabulor is not yet published through the Windows Registered Applications
+catalogue and another application can be selected instead. Windows-wide
+`ircs://` registration is not yet present. Complete default-app registration
+for both schemes remains a release task tracked by
+[issue #298](https://github.com/Fabulor/fabulor/issues/298). Portable mode does
 not register either protocol.
 
 An IRC address identifies a server host, not a saved Fabulor network name. If

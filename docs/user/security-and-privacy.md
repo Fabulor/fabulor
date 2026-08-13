@@ -262,5 +262,12 @@ release location communicated by the maintainers. Compare published hashes
 when provided. Do not treat a familiar filename, a chat message, or an
 unverified mirror as proof that an installer is authentic.
 
+Current release candidates are unsigned and can trigger a Windows SmartScreen
+warning. This warning reflects the absence of an established Authenticode
+publisher identity; it does not replace release verification. Follow the
+[SmartScreen verification procedure](getting-started.md#windows-smartscreen-and-unsigned-release-candidates),
+and never disable Defender or SmartScreen merely to run Fabulor. Release pages
+will state explicitly if and when signing becomes active.
+
 The current design and activation gate are documented in the
 [signed update feed design](../security/signed-update-feed-design.md).

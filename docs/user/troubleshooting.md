@@ -74,6 +74,13 @@ bootstrapper is available.
 
 ### Setup Does Not Start Or Complete
 
+Current release candidates are unsigned and can produce a Windows SmartScreen
+**Unknown publisher** warning. Follow the verification procedure in
+[Getting started](getting-started.md#windows-smartscreen-and-unsigned-release-candidates)
+before choosing **More info > Run anyway**. A SmartScreen reputation warning
+is not permission to ignore a hash mismatch, malware detection, quarantine, or
+an installer obtained outside the official project release page.
+
 - Confirm the setup file finished downloading and is not blocked or
   quarantined by security software.
 - Confirm another installation or Windows update is not already in progress.
@@ -232,8 +239,10 @@ configuration and error categories.
 
 - Confirm the address begins with `irc://` or `ircs://` and contains a server
   name.
-- Installed Windows integration currently registers `irc://`; test an
-  `ircs://` address with the explicit `--url` PowerShell example in
+- Until [issue #298](https://github.com/Fabulor/fabulor/issues/298) is resolved,
+  Windows can open an `irc://` link in another registered application and does
+  not have an installed Fabulor association for `ircs://`. Test either scheme
+  with the explicit `--url` PowerShell example in
   [Networks and connections](networks-and-connections.md).
 - If the channel is already open, Fabulor should select it rather than send a
   second join request.
