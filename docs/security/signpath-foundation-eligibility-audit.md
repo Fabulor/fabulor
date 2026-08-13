@@ -6,6 +6,8 @@ Repository state reviewed: `95e0eb08d00f74d0f66b38b230d64ce6d95446ff`
 
 MFA evidence updated: 2026-08-04
 
+Application outcome recorded: 2026-08-13
+
 Scope: SignPath Foundation eligibility and application readiness for the
 Fabulor Windows MSI and bootstrapper.
 
@@ -14,6 +16,24 @@ Foundation conditions. It is not legal advice and does not predict SignPath
 Foundation's final eligibility decision.
 
 ## Outcome
+
+### Application Result
+
+The initial SignPath Foundation application was not approved. SignPath found
+that the newly public project had not yet established enough external trust
+and visibility signals, such as community adoption, independent references,
+contributors, and sustained public engagement. The response did not identify
+a defect in Fabulor's code, security controls, licensing, or prepared release
+governance, and invited the project to reapply after broader recognition has
+developed.
+
+The repository will retain the controls and evidence prepared by this audit.
+The remaining eligibility work is to build genuine public use and engagement,
+collect independent references, and demonstrate sustained activity before a
+future application. Until an application is accepted and signing is activated,
+release candidates remain unsigned and may trigger Windows SmartScreen.
+
+### Pre-Application Assessment
 
 Fabulor appears suitable in purpose and licensing for a SignPath Foundation
 application. The repository is **ready for its controlled transition to public

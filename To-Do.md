@@ -1,7 +1,7 @@
 <!-- Fabulor production roadmap -->
 # Fabulor Production Roadmap
 
-Last reconciled: 2026-08-12
+Last reconciled: 2026-08-13
 
 ## Current Production Baseline
 
@@ -85,14 +85,24 @@ Last reconciled: 2026-08-12
   - [x] Add the policies, named roles, sensitive-path ownership, and signed
         release disclosure to the repository.
   - [x] Confirm the policy links resolve publicly.
+  - [x] Record the 2026-08-13 application result. SignPath declined the initial
+        application because the newly public project does not yet have enough
+        community adoption and independent visibility; no engineering,
+        security-control, or licensing defect was identified.
   - [ ] Add the signed-release disclosure to the first signed release page.
-- [ ] Adapt the protected GitHub release workflow so SignPath can verify the
+- [ ] Build genuine public adoption, independent references, contributor
+      activity, and sustained engagement, then reapply to SignPath Foundation.
+- [ ] After acceptance, adapt the protected GitHub release workflow so
+      SignPath can verify the
       production build provenance, attest the unsigned artefacts, promote only
       those exact artefacts, and manually approve signing of the Fabulor MSI
       and bootstrapper.
-- [ ] Obtain SignPath approval, verify the Authenticode signatures and RFC 3161
+- [ ] Obtain signing approval, verify the Authenticode signatures and RFC 3161
       timestamps, and run installed acceptance against the final signed
       artefacts.
+- [x] Document the Windows SmartScreen warning shown for unsigned release
+      candidates, including official-source and SHA-256 verification without
+      advising users to disable Defender or SmartScreen.
 - [ ] Perform one final release-candidate clean-install and upgrade pass from
       the last public installer.
 - [ ] Exercise repair and uninstall once against the final signed or

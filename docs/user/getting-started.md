@@ -19,6 +19,37 @@ You need:
 Close Fabulor before installing an upgrade, changing installed features, or
 uninstalling it.
 
+## Windows SmartScreen And Unsigned Release Candidates
+
+Current Fabulor release candidates are not Authenticode-signed. Windows
+SmartScreen can therefore show **Windows protected your PC** or an
+**Unknown publisher** warning even when the installer is an authentic Fabulor
+release.
+
+Proceed only when all of the following are true:
+
+1. You downloaded the installer from the official `Fabulor/fabulor` GitHub
+   Releases page.
+2. The filename and version match the release notes.
+3. The installer's SHA-256 hash matches the hash published with that release.
+
+Open PowerShell in the folder containing the download and calculate its hash:
+
+```powershell
+Get-FileHash -Algorithm SHA256 .\FabulorSetup-v1.0.6-rc.6.exe
+```
+
+Compare the complete `Hash` value, not just its beginning or end. If the
+source, filename, version, and hash all match, select **More info**, confirm
+that the displayed application is the expected Fabulor installer, and then
+select **Run anyway**.
+
+Do not disable Microsoft Defender or SmartScreen. Do not continue when the
+hash differs, Windows reports malware or quarantine rather than an
+unrecognized publisher, or the installer came from a mirror, chat attachment,
+or other unverified location. A future signed release will be identified
+explicitly on its release page.
+
 ## Install Fabulor
 
 1. Start `FabulorSetup.exe`.
