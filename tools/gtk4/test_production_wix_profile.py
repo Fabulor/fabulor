@@ -724,7 +724,10 @@ class ProductionWixProfileTests(unittest.TestCase):
         plugin_source = (frontend / "plugin-tray.c").read_text(encoding="utf-8")
         self.assertIn("environment.toolkit_major = 4;", plugin_source)
         self.assertIn("tray_bind_current_context", plugin_source)
-        self.assertIn("if (!tray_bind_current_context ())", plugin_source)
+        self.assertRegex(
+            plugin_source,
+            r"if\s*\(\s*!tray_bind_current_context\s*\(\s*\)\s*\)",
+        )
 
         core_plugin = (ROOT / "src" / "common" / "plugin.c").read_text(
             encoding="utf-8"
@@ -733,8 +736,14 @@ class ProductionWixProfileTests(unittest.TestCase):
             encoding="utf-8"
         )
         self.assertIn("plugin_rebind_context", core_plugin)
-        self.assertIn("if (is_session (ph->context))", core_plugin)
-        self.assertIn("plugin_rebind_context (killsess, current_sess);", core_lifecycle)
+        self.assertRegex(
+            core_plugin,
+            r"if\s*\(\s*is_session\s*\(\s*ph->context\s*\)\s*\)",
+        )
+        self.assertRegex(
+            core_lifecycle,
+            r"plugin_rebind_context\s*\(\s*killsess\s*,\s*current_sess\s*\)\s*;",
+        )
 
         for path in LEGACY_BUILD_GRAPH:
             with self.subTest(path=path.relative_to(ROOT)):
