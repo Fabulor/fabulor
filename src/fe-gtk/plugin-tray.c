@@ -86,6 +86,7 @@ static void tray_foreach_server (GtkWidget *item, char *cmd);
 static void tray_menu_quit_cb (GtkWidget *item, gpointer userdata);
 static void tray_menu_settings (GtkWidget *wid, gpointer none);
 static WinStatus tray_get_window_status (void);
+static gboolean tray_bind_current_context (void);
 static void tray_window_state_cb (GtkWindow *window,
 	const FabulorWindowState *state, gpointer userdata);
 static void tray_window_visibility_cb (GtkWidget *widget, gpointer userdata);
@@ -523,6 +524,9 @@ tray_get_window_status (void)
 	GtkWindow *win;
 	const char *st;
 
+	if (!tray_bind_current_context ())
+		return WS_HIDDEN;
+
 	win = GTK_WINDOW (fabulor_get_info (ph, "gtkwin_ptr"));
 	if (win)
 	{
@@ -543,6 +547,18 @@ tray_get_window_status (void)
 		return WS_HIDDEN;
 
 	return WS_NORMAL;
+}
+
+static gboolean
+tray_bind_current_context (void)
+{
+	fabulor_context *context;
+
+	if (!ph)
+		return FALSE;
+
+	context = fabulor_find_context (ph, NULL, NULL);
+	return context != NULL && fabulor_set_context (ph, context);
 }
 
 static int
@@ -786,8 +802,8 @@ tray_toggle_visibility (gboolean force_hide)
 	if (!tray_backend_active)
 		return FALSE;
 
-	/* ph may have an invalid context now */
-	fabulor_set_context (ph, fabulor_find_context (ph, NULL, NULL));
+	if (!tray_bind_current_context ())
+		return FALSE;
 
 	win = GTK_WINDOW (fabulor_get_info (ph, "gtkwin_ptr"));
 
@@ -952,6 +968,9 @@ tray_win32_get_hwnd (void)
 	HWND hwnd;
 	GtkWindow *win;
 
+	if (!tray_bind_current_context ())
+		return GetActiveWindow ();
+
 	win = GTK_WINDOW (fabulor_get_info (ph, "gtkwin_ptr"));
 	if (!win)
 		return GetActiveWindow ();
@@ -970,7 +989,8 @@ tray_win32_menu_cb (void)
 	int away_status;
 	GMenuModel *projection = NULL;
 
-	fabulor_set_context (ph, fabulor_find_context (ph, NULL, NULL));
+	if (!tray_bind_current_context ())
+		return;
 
 	menu = CreatePopupMenu ();
 	if (!menu)
@@ -1237,6 +1257,9 @@ void
 tray_apply_setup (void)
 {
 	GtkWindow *window;
+
+	if (!tray_bind_current_context ())
+		return;
 
 	tray_action_model_refresh ();
 	if (tray_backend_active)
