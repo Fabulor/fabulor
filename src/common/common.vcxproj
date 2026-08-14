@@ -47,6 +47,7 @@
     <ClInclude Include="secretstore.h" />
     <ClInclude Include="socks5-protocol.h" />
     <ClInclude Include="ssl.h" />
+    <ClInclude Include="ssl-io.h" />
     <ClInclude Include="scram.h" />
     <ClInclude Include="sysinfo\sysinfo.h" />
     <ClInclude Include="text.h" />
@@ -97,6 +98,7 @@
     <ClCompile Include="servlist.c" />
     <ClCompile Include="secretstore.c" />
     <ClCompile Include="ssl.c" />
+    <ClCompile Include="ssl-io.c" />
     <ClCompile Include="scram.c" />
     <ClCompile Include="sts.c" />
     <ClCompile Include="sysinfo\win32\backend.c" />

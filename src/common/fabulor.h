@@ -534,6 +534,7 @@ typedef struct server
 	SSL_CTX *ctx;
 	SSL *ssl;
 	int ssl_do_connect_tag;
+	gboolean ssl_read_wants_write;
 #else
 	void *ssl;
 #endif

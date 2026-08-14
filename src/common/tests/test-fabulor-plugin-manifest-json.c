@@ -703,6 +703,7 @@ void ircv3_capability_register_tests (void);
 void ircv3_batch_register_tests (void);
 void ircv3_chathistory_register_tests (void);
 void ircv3_message_tags_register_tests (void);
+void ssl_io_register_tests (void);
 
 int
 main (int argc, char **argv)
@@ -734,5 +735,6 @@ main (int argc, char **argv)
 	ircv3_batch_register_tests ();
 	ircv3_chathistory_register_tests ();
 	ircv3_message_tags_register_tests ();
+	ssl_io_register_tests ();
 	return g_test_run ();
 }

@@ -20,6 +20,8 @@
 #ifndef FABULOR_SSL_H
 #define FABULOR_SSL_H
 
+#include "ssl-io.h"
+
 struct cert_info {
     char subject[256];
     char *subject_word[12];
@@ -60,7 +62,7 @@ struct chiper_info *_SSL_get_cipher_info (SSL * ssl);
 /*void _SSL_add_random_keypair(SSL_CTX *ctx, int bits);*/
 
 int _SSL_send (SSL * ssl, char *buf, int len);
-int _SSL_recv (SSL * ssl, char *buf, int len);
+int _SSL_recv (SSL * ssl, char *buf, int len, FabulorSslIoResult *result);
 
 /* misc */
 /*void broke_oneline (char *oneline, char *parray[]);*/
