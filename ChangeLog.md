@@ -26,8 +26,8 @@ history below describes the cumulative work toward the first stable release.
   bootstrapper.
 - Installer support for publishing both `irc://` and `ircs://` through Windows
   Default Apps without deliberately replacing the user's existing choices.
-  Clean-install RC.6 acceptance confirmed both schemes and Windows Default
-  Apps discovery.
+  A clean installation of `v1.0.6-rc.6` confirmed both schemes and Windows
+  Default Apps discovery.
 
 ### Changed
 
