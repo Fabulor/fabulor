@@ -308,7 +308,17 @@ class ProductionWixProfileTests(unittest.TestCase):
         self.assertIn("catch (COMException ex)", window_code)
         self.assertIn("showingInstallFolderWarning", window_code)
 
-        self.assertNotIn('Key="Software\\Classes\\irc"', components)
+        self.assertIn('Key="Software\\Classes\\irc"', components)
+        self.assertIn('Key="Software\\Classes\\ircs"', components)
+        self.assertIn('Component Id="IrcProtocolFallbackRegistration"', components)
+        self.assertIn('Component Id="IrcsProtocolFallbackRegistration"', components)
+        self.assertEqual(components.count('NeverOverwrite="yes"'), 2)
+        self.assertEqual(
+            components.count(
+                'Name="URL Protocol" Type="string" Value="" KeyPath="yes"'
+            ),
+            2,
+        )
         self.assertIn('Key="Software\\Classes\\Fabulor.Url.Irc"', components)
         self.assertIn(
             'Key="Software\\Classes\\Fabulor.Url.IrcSecure"', components
@@ -321,13 +331,15 @@ class ProductionWixProfileTests(unittest.TestCase):
             'Name="ircs" Type="string" Value="Fabulor.Url.IrcSecure"',
             components,
         )
-        self.assertEqual(components.count('--url=&quot;%1&quot;'), 2)
+        self.assertEqual(components.count('--url=&quot;%1&quot;'), 4)
         self.assertIn("NotifyShellAssociationsChanged();", bootstrapper)
-        self.assertIn("DeleteOwnedLegacyIrcProtocolRegistration", bootstrapper)
+        self.assertIn("DeleteOwnedIrcProtocolSchemeClaims", bootstrapper)
         self.assertEqual(
-            bootstrapper.count("this.DeleteOwnedLegacyIrcProtocolRegistration();"),
-            2,
+            bootstrapper.count("this.DeleteOwnedIrcProtocolSchemeClaims();"),
+            1,
         )
+        self.assertIn('this.DeleteOwnedIrcProtocolSchemeClaim("irc");', bootstrapper)
+        self.assertIn('this.DeleteOwnedIrcProtocolSchemeClaim("ircs");', bootstrapper)
 
     def test_production_product_keeps_upgrade_identity(self):
         root = ET.parse(INSTALLER / "ProductGtk4.wxs").getroot()

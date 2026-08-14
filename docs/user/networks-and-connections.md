@@ -204,11 +204,13 @@ PowerShell:
 ```
 
 Installed mode publishes Fabulor through Windows Registered Applications as an
-available handler for both `irc://` and `ircs://`. Setup does not replace an
-existing default-app choice. If Windows asks which application to use, or if a
-browser or another IRC client already owns either scheme, open **Windows
-Settings > Apps > Default apps > Fabulor** and assign the required link types.
-Portable mode does not register either protocol.
+available handler for both `irc://` and `ircs://`. When either scheme has no
+machine-level handler, Setup also registers Fabulor as its fallback. Setup does
+not replace an existing handler or a per-user default-app choice. If Windows
+asks which application to use, or if a browser or another IRC client already
+owns either scheme, open **Windows Settings > Apps > Default apps > Fabulor**
+and assign the required link types. Portable mode does not register either
+protocol.
 
 An IRC address identifies a server host, not a saved Fabulor network name. If
 several ZNC network definitions use the same bouncer host, the address cannot

@@ -120,8 +120,9 @@ Last reconciled: 2026-08-14
       `ui-performance.log` enabled only for diagnosis.
 - [ ] Confirm release notes, version metadata, installer hashes, and bundled
       runtime provenance before publishing `1.0.6`.
-- [x] Implement the installed Windows registered-application boundary for both
-      `irc://` and `ircs://` without replacing the user's current defaults
+- [x] Implement the installed Windows registered-application boundary and
+      guarded machine-level fallback claims for both `irc://` and `ircs://`
+      without replacing another application's valid handler
       ([issue #298](https://github.com/Fabulor/fabulor/issues/298)).
 - [ ] Verify clean install, upgrade, modify, repair, uninstall, and running and
       closed-client dispatch for both registered IRC link schemes.

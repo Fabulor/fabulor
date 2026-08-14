@@ -79,10 +79,12 @@ history below describes the cumulative work toward the first stable release.
 - Classified TLS read closure and retry states explicitly, preserving
   read/write watches and recording OpenSSL, socket, and operating-system error
   details instead of reporting an ambiguous disconnect.
-- Implemented replacement of the retired generic `irc://` registry owner with
-  stable Fabulor ProgIDs and Windows Registered Applications capabilities for
-  both IRC link schemes. Upgrade, repair, and uninstall cleanup remain subject
-  to the final installed acceptance pass.
+- Registered missing machine-level `irc://` and `ircs://` scheme fallbacks in
+  addition to stable Fabulor ProgIDs and Windows Registered Applications
+  capabilities. Setup preserves another application's valid handler and
+  removes a generic scheme only while it still points to Fabulor. Upgrade,
+  repair, and uninstall cleanup remain subject to the final installed
+  acceptance pass.
 
 ### Security
 
