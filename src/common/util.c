@@ -102,6 +102,8 @@ errorstring (int err)
 {
 	switch (err)
 	{
+	case FABULOR_ERR_TLS_READ_FAILURE:
+		return _("TLS connection closed unexpectedly");
 	case -1:
 		return "";
 	case 0:

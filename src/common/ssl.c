@@ -263,29 +263,24 @@ _SSL_send (SSL * ssl, char *buf, int len)
 
 
 int
-_SSL_recv (SSL * ssl, char *buf, int len)
+_SSL_recv (SSL * ssl, char *buf, int len, FabulorSslIoResult *result)
 {
 	int num;
 
+	g_return_val_if_fail (result != NULL, -1);
+	memset (result, 0, sizeof (*result));
+	ERR_clear_error ();
+#ifdef WIN32
+	WSASetLastError (0);
+#else
+	errno = 0;
+#endif
 
 	num = SSL_read (ssl, buf, len);
-
-	switch (SSL_get_error (ssl, num))
-	{
-	case SSL_ERROR_SSL:
-		/* ??? */
-		__SSL_fill_err_buf ("SSL_read");
-		fprintf (stderr, "%s\n", err_buf);
-		break;
-	case SSL_ERROR_SYSCALL:
-		/* ??? */
-		if (!would_block ())
-			perror ("SSL_read/read");
-		break;
-	case SSL_ERROR_ZERO_RETURN:
-		/* fprintf(stdeerr, "SSL closed on read\n"); */
-		break;
-	}
+	result->result = num;
+	result->ssl_error = SSL_get_error (ssl, num);
+	result->socket_error = sock_error ();
+	result->library_error = ERR_peek_error ();
 
 	return (num);
 }

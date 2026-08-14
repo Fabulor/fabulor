@@ -112,6 +112,48 @@ static void auto_reconnect (server *serv, int send_quit, int err);
 static void server_disconnect (session * sess, int sendquit, int err);
 static int server_cleanup (server * serv);
 static void server_connect (server *serv, char *hostname, int port, int no_login);
+static gboolean server_read (GIOChannel *source, GIOCondition condition,
+							 server *serv);
+
+static void
+server_set_socket_watch (server *serv, int flags)
+{
+	if (serv->iotag)
+		fe_input_remove (serv->iotag);
+	serv->iotag = fe_input_add (serv->sok, flags, server_read, serv);
+}
+
+#ifdef USE_OPENSSL
+static gboolean
+server_tls_socket_error_is_valid (int error)
+{
+#ifdef WIN32
+	return error >= WSABASEERR;
+#else
+	return error > 0;
+#endif
+}
+
+static void
+server_log_tls_read_failure (server *serv, const FabulorSslIoResult *result)
+{
+	char library_message[256] = "none";
+	char message[512];
+
+	if (result->library_error)
+		ERR_error_string_n (result->library_error, library_message,
+						 sizeof (library_message));
+
+	g_snprintf (message, sizeof (message),
+				"* TLS read diagnostic: result=%d ssl_error=%d "
+				"socket_error=%d openssl_error=%lu (%s)",
+				result->result, result->ssl_error, result->socket_error,
+				result->library_error, library_message);
+	EMIT_SIGNAL (XP_TE_SSLMESSAGE, serv->server_session, message, NULL,
+				 NULL, NULL, 0);
+	g_printerr ("%s\n", message);
+}
+#endif
 
 static void
 write_error (char *message, GError **error)
@@ -357,6 +399,10 @@ server_read (GIOChannel *source, GIOCondition condition, server *serv)
 	int sok = serv->sok;
 	int error, i, len;
 	char lbuf[2050];
+#ifdef USE_OPENSSL
+	FabulorSslIoResult tls_result = { 0 };
+	FabulorSslReadDisposition tls_disposition = FABULOR_SSL_READ_DATA;
+#endif
 
 	while (1)
 	{
@@ -366,11 +412,43 @@ server_read (GIOChannel *source, GIOCondition condition, server *serv)
 			len = recv (sok, lbuf, sizeof (lbuf) - 2, 0);
 #ifdef USE_OPENSSL
 		else
-			len = _SSL_recv (serv->ssl, lbuf, sizeof (lbuf) - 2);
+		{
+			len = _SSL_recv (serv->ssl, lbuf, sizeof (lbuf) - 2,
+						 &tls_result);
+			tls_disposition = fabulor_ssl_classify_read (&tls_result);
+		}
 #endif
 		if (len < 1)
 		{
 			error = 0;
+#ifdef USE_OPENSSL
+			if (serv->ssl)
+			{
+				if (tls_disposition == FABULOR_SSL_READ_RETRY ||
+					tls_disposition == FABULOR_SSL_READ_RETRY_WRITE)
+				{
+					if (tls_disposition == FABULOR_SSL_READ_RETRY_WRITE &&
+						!(condition & G_IO_OUT))
+						server_set_socket_watch (serv, FIA_WRITE | FIA_EX);
+					else if (tls_disposition == FABULOR_SSL_READ_RETRY &&
+						condition & G_IO_OUT)
+						server_set_socket_watch (serv, FIA_READ | FIA_EX);
+					return TRUE;
+				}
+
+				if (tls_disposition == FABULOR_SSL_READ_FAILED)
+				{
+					server_log_tls_read_failure (serv, &tls_result);
+					if (tls_result.ssl_error == SSL_ERROR_SYSCALL &&
+						server_tls_socket_error_is_valid (
+							tls_result.socket_error))
+						error = tls_result.socket_error;
+					else
+						error = FABULOR_ERR_TLS_READ_FAILURE;
+				}
+			}
+			else
+#endif
 			if (len < 0)
 			{
 				if (would_block ())
@@ -394,6 +472,11 @@ server_read (GIOChannel *source, GIOCondition condition, server *serv)
 			}
 			return TRUE;
 		}
+
+#ifdef USE_OPENSSL
+		if (serv->ssl && condition & G_IO_OUT)
+			server_set_socket_watch (serv, FIA_READ | FIA_EX);
+#endif
 
 		i = 0;
 
@@ -433,7 +516,7 @@ server_connected (server * serv)
 	serv->lag_sent = 0;
 	serv->connected = TRUE;
 	set_nonblocking (serv->sok);
-	serv->iotag = fe_input_add (serv->sok, FIA_READ|FIA_EX, server_read, serv);
+	server_set_socket_watch (serv, FIA_READ | FIA_EX);
 	if (!serv->no_login)
 	{
 		EMIT_SIGNAL (XP_TE_CONNECTED, serv->server_session, NULL, NULL, NULL,

@@ -20,12 +20,14 @@
     <ClCompile Include="test-ircv3-batch.c" />
     <ClCompile Include="test-ircv3-chathistory.c" />
     <ClCompile Include="test-ircv3-message-tags.c" />
+    <ClCompile Include="test-ssl-io.c" />
     <ClCompile Include="..\irc-uri.c" />
     <ClCompile Include="..\win32-ipc.c" />
     <ClCompile Include="..\ircv3-capability.c" />
     <ClCompile Include="..\ircv3-batch.c" />
     <ClCompile Include="..\ircv3-chathistory.c" />
     <ClCompile Include="..\ircv3-message-tags.c" />
+    <ClCompile Include="..\ssl-io.c" />
     <ClCompile Include="..\fabulor-plugin-enable-policy.c" />
     <ClCompile Include="..\fabulor-plugin-manifest-json.c" />
     <ClCompile Include="..\fabulor-plugin-path-policy.c" />
@@ -45,6 +47,7 @@
     <ClInclude Include="..\ircv3-batch.h" />
     <ClInclude Include="..\ircv3-chathistory.h" />
     <ClInclude Include="..\ircv3-message-tags.h" />
+    <ClInclude Include="..\ssl-io.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{A7B66F75-2C46-49A5-A3F6-FC123BB9A8D1}</ProjectGuid>
@@ -62,11 +65,11 @@
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
       <PreprocessorDefinitions>WIN32;_WIN64;_AMD64_;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>$(DepsRoot)\include;$(Glib);..;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(DepsRoot)\include;$(OpenSslInclude);$(Glib);..;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
-      <AdditionalLibraryDirectories>$(DepsRoot)\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>gio-2.0.lib;gobject-2.0.lib;glib-2.0.lib;$(IntlLib);$(IconvLib);%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(DepsRoot)\lib;$(FabulorSupportDepsRoot)\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>gio-2.0.lib;gobject-2.0.lib;glib-2.0.lib;libssl.lib;libcrypto.lib;$(IntlLib);$(IconvLib);%(AdditionalDependencies)</AdditionalDependencies>
       <SubSystem>Console</SubSystem>
     </Link>
     <PostBuildEvent>
