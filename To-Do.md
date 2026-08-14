@@ -1,7 +1,7 @@
 <!-- Fabulor production roadmap -->
 # Fabulor Production Roadmap
 
-Last reconciled: 2026-08-14
+Last reconciled: 2026-08-15
 
 ## Current Production Baseline
 
@@ -380,8 +380,10 @@ programme.
       [`docs/protocol/ircv3-support.md`](docs/protocol/ircv3-support.md).
 - [x] Verify `/CHATHISTORY` rejection against unsupported DALnet, ChatLounge,
       Libera.Chat, and ZNC connections.
-- [ ] Verify `/CHATHISTORY` against one server or bouncer that advertises
-      `draft/chathistory` before the next release candidate.
+- [x] Verify `/CHATHISTORY` against a server that advertises
+      `draft/chathistory`. Ergo Testnet advertised `draft/CHATHISTORY=1000`,
+      acknowledged `draft/chathistory`, and returned history for the
+      argument-free `/CHATHISTORY` request on 2026-08-15.
 - [x] Design a Fabulor-owned, authenticated, and signed update feed in
       [`docs/security/signed-update-feed-design.md`](docs/security/signed-update-feed-design.md).
 - [ ] Provision the update signing identities, metadata origin, bounded TUF
