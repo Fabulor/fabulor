@@ -114,9 +114,11 @@ Last reconciled: 2026-08-13
       `ui-performance.log` enabled only for diagnosis.
 - [ ] Confirm release notes, version metadata, installer hashes, and bundled
       runtime provenance before publishing `1.0.6`.
-- [ ] Complete the installed Windows registered-application boundary for both
-      `irc://` and `ircs://`, including repair and uninstall verification
+- [x] Implement the installed Windows registered-application boundary for both
+      `irc://` and `ircs://` without replacing the user's current defaults
       ([issue #298](https://github.com/Fabulor/fabulor/issues/298)).
+- [ ] Verify clean install, upgrade, modify, repair, uninstall, and running and
+      closed-client dispatch for both registered IRC link schemes.
 - [ ] Record any remaining non-blocking visual or usability issues as separate
       follow-up work instead of reopening the completed GTK4 migration.
   - [ ] If the one-time duplicated channel-switcher tree report recurs or a

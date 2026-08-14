@@ -110,12 +110,10 @@ ordinary logs and keeps failed-session logs for up to 90 days. These logs are
 machine-specific diagnostics and do not roam with the Fabulor user profile.
 
 The client accepts validated `irc://` and `ircs://` addresses through its
-`--url` startup option. The production installer currently writes a basic
-`irc://` association, but Fabulor is not yet published through the Windows
-Registered Applications catalogue and another application can be selected
-instead. Windows-wide `ircs://` registration is also not yet present. Complete
-default-app registration for both schemes remains a release task tracked by
-[issue #298](https://github.com/Fabulor/fabulor/issues/298).
+`--url` startup option. Installed mode publishes Fabulor in Windows Default
+Apps for both link types without replacing an existing user choice. If Windows
+asks which application to use, assign the required link types under **Windows
+Settings > Apps > Default apps > Fabulor**.
 
 ## Portable Mode
 

@@ -203,13 +203,12 @@ PowerShell:
   --url='ircs://irc.example.net:6697/fabulor'
 ```
 
-The production installer currently writes a basic `irc://` association, but
-Fabulor is not yet published through the Windows Registered Applications
-catalogue and another application can be selected instead. Windows-wide
-`ircs://` registration is not yet present. Complete default-app registration
-for both schemes remains a release task tracked by
-[issue #298](https://github.com/Fabulor/fabulor/issues/298). Portable mode does
-not register either protocol.
+Installed mode publishes Fabulor through Windows Registered Applications as an
+available handler for both `irc://` and `ircs://`. Setup does not replace an
+existing default-app choice. If Windows asks which application to use, or if a
+browser or another IRC client already owns either scheme, open **Windows
+Settings > Apps > Default apps > Fabulor** and assign the required link types.
+Portable mode does not register either protocol.
 
 An IRC address identifies a server host, not a saved Fabulor network name. If
 several ZNC network definitions use the same bouncer host, the address cannot

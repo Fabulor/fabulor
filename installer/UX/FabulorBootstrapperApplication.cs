@@ -6,6 +6,7 @@ using System.Diagnostics;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.InteropServices;
 using System.Security;
 using System.Security.Principal;
 using System.Text.RegularExpressions;
@@ -18,6 +19,8 @@ namespace Fabulor.Setup;
 
 public sealed class FabulorBootstrapperApplication : BootstrapperApplication
 {
+    private const uint ShellAssociationChanged = 0x08000000;
+    private const uint ShellNotifyIdList = 0x0000;
     private const string NoHandoffArgument = "FABULOR_NO_HANDOFF=1";
     private const string FabulorMsiPackageId = "FabulorMsi";
     private const string FabulorMsiUpgradeCode = "{8F6C0C7E-9A4D-4E4C-9F8C-2B6F5A4E9C11}";
@@ -53,6 +56,9 @@ public sealed class FabulorBootstrapperApplication : BootstrapperApplication
     private IntPtr windowHandle;
     private IBootstrapperCommand? command;
     private readonly AutoResetEvent windowReady = new(false);
+
+    [DllImport("shell32.dll")]
+    private static extern void SHChangeNotify(uint eventId, uint flags, IntPtr item1, IntPtr item2);
 
     public FabulorBootstrapperApplication()
     {
@@ -657,6 +663,11 @@ public sealed class FabulorBootstrapperApplication : BootstrapperApplication
         catch (Exception ex)
         {
             this.engine.Log(LogLevel.Error, $"Post-apply cleanup failed: {ex}");
+        }
+
+        if (e.Status == 0)
+        {
+            NotifyShellAssociationsChanged();
         }
 
         try
@@ -1629,8 +1640,8 @@ public sealed class FabulorBootstrapperApplication : BootstrapperApplication
 
         this.RemoveOtherBundleUninstallRegistrations(bundleName, currentBundlePath, preserveNewestRegisteredBundle: false);
         this.RemoveDependencyRegistrations();
+        this.RemoveShellIntegrationRegistryRoots();
         this.RemoveInstallerRegistryRoots();
-        this.RemoveThemeAssociationRegistryRoots();
     }
 
     private void CleanupOtherBundleRegistrationsAfterSuccessfulApply()
@@ -1902,12 +1913,65 @@ public sealed class FabulorBootstrapperApplication : BootstrapperApplication
         this.DeleteRegistryTreeIfEmpty(Registry.CurrentUser, @"Software\Fabulor");
     }
 
-    private void RemoveThemeAssociationRegistryRoots()
+    private static void NotifyShellAssociationsChanged()
+    {
+        SHChangeNotify(ShellAssociationChanged, ShellNotifyIdList, IntPtr.Zero, IntPtr.Zero);
+    }
+
+    private void RemoveShellIntegrationRegistryRoots()
     {
         this.DeleteRegistryTreeIfExists(Registry.LocalMachine, @"Software\Classes\Fabulor.Theme");
+        this.DeleteRegistryTreeIfExists(Registry.LocalMachine, @"Software\Classes\Fabulor.Url.Irc");
+        this.DeleteRegistryTreeIfExists(Registry.LocalMachine, @"Software\Classes\Fabulor.Url.IrcSecure");
         // Remove the retired ZoiteChat extension when cleaning older installs.
         this.DeleteRegistryTreeIfExists(Registry.LocalMachine, @"Software\Classes\.zct");
         this.DeleteRegistryTreeIfExists(Registry.LocalMachine, @"Software\Classes\.hct");
+        this.DeleteRegistryValueIfEquals(
+            Registry.LocalMachine,
+            @"Software\RegisteredApplications",
+            "Fabulor",
+            @"Software\Fabulor\Capabilities");
+        this.DeleteRegistryTreeIfExists(Registry.LocalMachine, @"Software\Fabulor\Capabilities");
+        this.DeleteOwnedLegacyIrcProtocolRegistration();
+        this.DeleteRegistryTreeIfEmpty(Registry.LocalMachine, @"Software\Fabulor");
+    }
+
+    private void DeleteOwnedLegacyIrcProtocolRegistration()
+    {
+        const string commandPath = @"Software\Classes\irc\shell\open\command";
+        using var commandKey = Registry.LocalMachine.OpenSubKey(commandPath);
+        var command = commandKey?.GetValue(null) as string;
+        if (string.IsNullOrWhiteSpace(command)
+            || !command.Contains("fabulor.exe", StringComparison.OrdinalIgnoreCase))
+        {
+            return;
+        }
+
+        this.DeleteRegistryTreeIfExists(Registry.LocalMachine, @"Software\Classes\irc");
+    }
+
+    private void DeleteRegistryValueIfEquals(
+        RegistryKey root,
+        string subkeyPath,
+        string valueName,
+        string expectedValue)
+    {
+        try
+        {
+            using var subkey = root.OpenSubKey(subkeyPath, writable: true);
+            var currentValue = subkey?.GetValue(valueName) as string;
+            if (!string.Equals(currentValue, expectedValue, StringComparison.OrdinalIgnoreCase))
+            {
+                return;
+            }
+
+            subkey!.DeleteValue(valueName, throwOnMissingValue: false);
+            this.engine.Log(LogLevel.Verbose, $"Deleted owned registry value '{root.Name}\\{subkeyPath}\\{valueName}'.");
+        }
+        catch (Exception ex)
+        {
+            this.engine.Log(LogLevel.Error, $"Failed to delete registry value '{root.Name}\\{subkeyPath}\\{valueName}': {ex}");
+        }
     }
 
     private void DeleteRegistryTreeIfExists(RegistryKey root, string subkeyPath)

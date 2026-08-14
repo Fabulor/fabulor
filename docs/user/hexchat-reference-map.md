@@ -32,7 +32,7 @@ writing original text. XChat documentation is a secondary historical reference.
 | Settings: Channel Options | Verify | `preferences.md` | Confirm the surviving per-channel options and their UI before publication. |
 | Settings: Preferences | Rewrite | `preferences.md` | Source inventory drafted; installed release-candidate verification remains. Retired settings and legacy GTK paths are omitted. |
 | Settings: Keyboard Shortcuts | Verify | `main-window.md` | Document only shortcuts present and tested in Fabulor. |
-| Settings: URL Handlers | Rewrite | `networks-and-connections.md` | RC4 validates `irc` and `ircs` addresses and uses a typed existing-instance handoff. Complete Windows Registered Applications support for both schemes remains a release task tracked by [issue #298](https://github.com/Fabulor/fabulor/issues/298). |
+| Settings: URL Handlers | Rewrite | `networks-and-connections.md` | Fabulor validates `irc` and `ircs` addresses, uses a typed existing-instance handoff, and publishes both schemes through Windows Registered Applications without forcing the default choice. |
 | Settings: Auto Replace | Verify | `preferences.md` | Confirm the editor and persistence path before retaining this topic. |
 | Settings: CTCP Replies | Verify | `preferences.md` | Confirm the current menu surface and substitution behaviour. |
 | Settings: `/SET` | Rewrite | `commands.md` | Explain querying, toggling, wildcards, persistence, and the distinction between supported and retired keys. |
