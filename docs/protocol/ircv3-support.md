@@ -63,9 +63,10 @@ rejected, Fabulor discards the pending request and reports that chat history is
 unsupported.
 
 Installed verification on Ergo Testnet confirmed the positive path. Ergo
-advertised `draft/CHATHISTORY=1000`; invoking argument-free `/CHATHISTORY`
-caused Fabulor to request the capability, the server acknowledged
-`draft/chathistory`, and the history request completed successfully.
+advertised the uppercase ISUPPORT token `draft/CHATHISTORY=1000`; invoking
+argument-free `/CHATHISTORY` caused Fabulor to request the lowercase IRCv3
+capability, the server acknowledged `draft/chathistory`, and the history request
+completed successfully.
 
 History replay uses the existing transcript path, including `server-time`
 timestamps and normal message rendering. Fabulor does not provide persistent
@@ -78,5 +79,4 @@ The protocol test suite covers capability values and disable tokens, supported
 capability requests, exact SASL mechanism matching, message-tag escaping and
 duplicate handling, bounded batch lifecycle, and generated labels. Installed
 verification has covered unsupported connections to DALnet, ChatLounge,
-Libera.Chat, and ZNC. It still needs one server or bouncer that advertises
-`draft/chathistory`.
+Libera.Chat, and ZNC, plus the supported positive path on Ergo Testnet.

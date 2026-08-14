@@ -392,9 +392,10 @@ programme.
 - [x] Verify `/CHATHISTORY` rejection against unsupported DALnet, ChatLounge,
       Libera.Chat, and ZNC connections.
 - [x] Verify `/CHATHISTORY` against a server that advertises
-      `draft/chathistory`. Ergo Testnet advertised `draft/CHATHISTORY=1000`,
-      acknowledged `draft/chathistory`, and returned history for the
-      argument-free `/CHATHISTORY` request on 2026-08-15.
+      `draft/chathistory`. Ergo Testnet advertised the uppercase ISUPPORT token
+      `draft/CHATHISTORY=1000`, acknowledged the lowercase IRCv3 capability
+      `draft/chathistory`, and returned history for the argument-free
+      `/CHATHISTORY` request on 2026-08-15.
 - [x] Store saved input history per network and channel under the profile
       `history` directory, and provide scoped `/CLEAR HISTORY` and `/CLEAR LOG`
       maintenance commands.
