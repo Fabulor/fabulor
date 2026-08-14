@@ -5,8 +5,8 @@ continuation of XChat, HexChat, and ZoiteChat; inherited history remains
 available through the Git repository rather than being presented as Fabulor
 release history.
 
-Fabulor does not yet have a published GitHub release. Dates below identify
-development milestones and do not imply public release dates.
+Fabulor 1.0.6 release candidates are published as GitHub prereleases. The
+history below describes the cumulative work toward the first stable release.
 
 ## Unreleased - 1.0.6 Release Candidate
 
@@ -24,6 +24,8 @@ development milestones and do not imply public release dates.
   scoped `/CLEAR HISTORY` and `/CLEAR LOG` maintenance commands.
 - Supported installed and portable setup modes through a WiX MSI and
   bootstrapper.
+- Windows Default Apps registration for both `irc://` and `ircs://` links
+  without replacing the user's existing handler choices.
 
 ### Changed
 
@@ -71,6 +73,14 @@ development milestones and do not imply public release dates.
   Windows machine without a separately installed .NET Desktop runtime.
 - Restored installed ISO language and country data used by spell-check
   language-name lookup.
+- Kept the tray plugin bound to a valid surviving session when networks or
+  channels close, preventing invalid-context warnings after disconnects.
+- Classified TLS read closure and retry states explicitly, preserving
+  read/write watches and recording OpenSSL, socket, and operating-system error
+  details instead of reporting an ambiguous disconnect.
+- Replaced the retired generic `irc://` registry owner with stable Fabulor
+  ProgIDs and Windows Registered Applications capabilities for both IRC link
+  schemes, including upgrade, repair, and uninstall cleanup.
 
 ### Security
 
