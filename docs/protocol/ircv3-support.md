@@ -1,8 +1,8 @@
 # IRCv3 Support
 
-Status: source-verified; installed rejection-path verification completed on
-DALnet, ChatLounge, Libera.Chat, and ZNC. Positive verification against a
-server or bouncer that advertises `draft/chathistory` remains outstanding.
+Status: source-verified and installed-verified. Rejection-path verification
+completed on DALnet, ChatLounge, Libera.Chat, and ZNC. Positive verification
+completed on Ergo Testnet on 2026-08-15.
 
 Fabulor negotiates IRCv3 capabilities conservatively. A capability is active
 only after the server acknowledges it, capability values are kept separate
@@ -62,6 +62,12 @@ command locally when it did not. If an advertised capability is subsequently
 rejected, Fabulor discards the pending request and reports that chat history is
 unsupported.
 
+Installed verification on Ergo Testnet confirmed the positive path. Ergo
+advertised the uppercase ISUPPORT token `draft/CHATHISTORY=1000`; invoking
+argument-free `/CHATHISTORY` caused Fabulor to request the lowercase IRCv3
+capability, the server acknowledged `draft/chathistory`, and the history request
+completed successfully.
+
 History replay uses the existing transcript path, including `server-time`
 timestamps and normal message rendering. Fabulor does not provide persistent
 server-side history itself; availability and retention are controlled by the
@@ -73,5 +79,4 @@ The protocol test suite covers capability values and disable tokens, supported
 capability requests, exact SASL mechanism matching, message-tag escaping and
 duplicate handling, bounded batch lifecycle, and generated labels. Installed
 verification has covered unsupported connections to DALnet, ChatLounge,
-Libera.Chat, and ZNC. It still needs one server or bouncer that advertises
-`draft/chathistory`.
+Libera.Chat, and ZNC, plus the supported positive path on Ergo Testnet.
