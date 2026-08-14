@@ -308,6 +308,27 @@ class ProductionWixProfileTests(unittest.TestCase):
         self.assertIn("catch (COMException ex)", window_code)
         self.assertIn("showingInstallFolderWarning", window_code)
 
+        self.assertNotIn('Key="Software\\Classes\\irc"', components)
+        self.assertIn('Key="Software\\Classes\\Fabulor.Url.Irc"', components)
+        self.assertIn(
+            'Key="Software\\Classes\\Fabulor.Url.IrcSecure"', components
+        )
+        self.assertIn('Key="Software\\RegisteredApplications"', components)
+        self.assertIn('Value="Software\\Fabulor\\Capabilities"', components)
+        self.assertIn('Key="Software\\Fabulor\\Capabilities\\UrlAssociations"', components)
+        self.assertIn('Name="irc" Type="string" Value="Fabulor.Url.Irc"', components)
+        self.assertIn(
+            'Name="ircs" Type="string" Value="Fabulor.Url.IrcSecure"',
+            components,
+        )
+        self.assertEqual(components.count('--url=&quot;%1&quot;'), 2)
+        self.assertIn("NotifyShellAssociationsChanged();", bootstrapper)
+        self.assertIn("DeleteOwnedLegacyIrcProtocolRegistration", bootstrapper)
+        self.assertEqual(
+            bootstrapper.count("this.DeleteOwnedLegacyIrcProtocolRegistration();"),
+            2,
+        )
+
     def test_production_product_keeps_upgrade_identity(self):
         root = ET.parse(INSTALLER / "ProductGtk4.wxs").getroot()
         package = root.find("w:Package", WIX_NS)

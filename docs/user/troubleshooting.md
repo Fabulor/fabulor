@@ -239,11 +239,13 @@ configuration and error categories.
 
 - Confirm the address begins with `irc://` or `ircs://` and contains a server
   name.
-- Until [issue #298](https://github.com/Fabulor/fabulor/issues/298) is resolved,
-  Windows can open an `irc://` link in another registered application and does
-  not have an installed Fabulor association for `ircs://`. Test either scheme
-  with the explicit `--url` PowerShell example in
-  [Networks and connections](networks-and-connections.md).
+- Installed mode makes Fabulor available for both link types but does not
+  replace an existing Windows default. Open **Windows Settings > Apps >
+  Default apps > Fabulor** and assign `IRC` and `IRCS` if another application
+  opens the link or Windows asks you to choose an application.
+- Test either scheme with the explicit `--url` PowerShell example in
+  [Networks and connections](networks-and-connections.md) to separate Windows
+  association problems from Fabulor address handling.
 - If the channel is already open, Fabulor should select it rather than send a
   second join request.
 - If several saved ZNC networks share one bouncer hostname, the URI cannot

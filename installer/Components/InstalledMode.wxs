@@ -62,20 +62,50 @@
     </ComponentGroup>
 
     <ComponentGroup Id="ShellIntegrationComponents">
-      <Component Id="IrcProtocolRegistration" Guid="DA174889-90E2-491D-B87D-8E4D654A8B58" Directory="INSTALLFOLDER" Condition="NOT FABULOR_PORTABLE">
-        <RegistryKey Root="HKLM" Key="Software\Classes\irc">
-          <RegistryValue Type="string" Value="URL:IRC Protocol" />
+      <Component Id="IrcProtocolRegistrationV2" Guid="67349AC3-5818-4F78-BE4A-A4B117632238" Directory="INSTALLFOLDER" Condition="NOT FABULOR_PORTABLE">
+        <RegistryKey Root="HKLM" Key="Software\Classes\Fabulor.Url.Irc">
+          <RegistryValue Type="string" Value="Fabulor IRC URL" />
           <RegistryValue Name="URL Protocol" Type="string" Value="" />
         </RegistryKey>
-        <RegistryKey Root="HKLM" Key="Software\Classes\irc\DefaultIcon">
+        <RegistryKey Root="HKLM" Key="Software\Classes\Fabulor.Url.Irc\DefaultIcon">
           <RegistryValue Type="string" Value="[INSTALLFOLDER]fabulor.exe,0" />
         </RegistryKey>
-        <RegistryKey Root="HKLM" Key="Software\Classes\irc\shell">
+        <RegistryKey Root="HKLM" Key="Software\Classes\Fabulor.Url.Irc\shell">
           <RegistryValue Type="string" Value="open" />
         </RegistryKey>
-        <RegistryKey Root="HKLM" Key="Software\Classes\irc\shell\open\command">
+        <RegistryKey Root="HKLM" Key="Software\Classes\Fabulor.Url.Irc\shell\open\command">
           <RegistryValue Type="string" Value="&quot;[INSTALLFOLDER]fabulor.exe&quot; --url=&quot;%1&quot;" />
         </RegistryKey>
+        <RegistryKey Root="HKLM" Key="Software\Classes\Fabulor.Url.IrcSecure">
+          <RegistryValue Type="string" Value="Fabulor secure IRC URL" />
+          <RegistryValue Name="URL Protocol" Type="string" Value="" />
+        </RegistryKey>
+        <RegistryKey Root="HKLM" Key="Software\Classes\Fabulor.Url.IrcSecure\DefaultIcon">
+          <RegistryValue Type="string" Value="[INSTALLFOLDER]fabulor.exe,0" />
+        </RegistryKey>
+        <RegistryKey Root="HKLM" Key="Software\Classes\Fabulor.Url.IrcSecure\shell">
+          <RegistryValue Type="string" Value="open" />
+        </RegistryKey>
+        <RegistryKey Root="HKLM" Key="Software\Classes\Fabulor.Url.IrcSecure\shell\open\command">
+          <RegistryValue Type="string" Value="&quot;[INSTALLFOLDER]fabulor.exe&quot; --url=&quot;%1&quot;" />
+        </RegistryKey>
+        <RegistryKey Root="HKLM" Key="Software\Fabulor\Capabilities">
+          <RegistryValue Name="ApplicationName" Type="string" Value="Fabulor" />
+          <RegistryValue Name="ApplicationDescription" Type="string" Value="Fabulor IRC client" />
+          <RegistryValue Name="ApplicationIcon" Type="string" Value="[INSTALLFOLDER]fabulor.exe,0" />
+        </RegistryKey>
+        <RegistryKey Root="HKLM" Key="Software\Fabulor\Capabilities\UrlAssociations">
+          <RegistryValue Name="irc" Type="string" Value="Fabulor.Url.Irc" />
+          <RegistryValue Name="ircs" Type="string" Value="Fabulor.Url.IrcSecure" />
+        </RegistryKey>
+        <RegistryKey Root="HKLM" Key="Software\Fabulor\Capabilities\FileAssociations">
+          <RegistryValue Name=".hct" Type="string" Value="Fabulor.Theme" />
+        </RegistryKey>
+        <RegistryValue Root="HKLM"
+                       Key="Software\RegisteredApplications"
+                       Name="Fabulor"
+                       Type="string"
+                       Value="Software\Fabulor\Capabilities" />
         <RegistryValue Root="HKLM"
                        Key="Software\Fabulor\Installer"
                        Name="IrcProtocol"
