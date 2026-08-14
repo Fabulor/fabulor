@@ -655,7 +655,6 @@ public sealed class FabulorBootstrapperApplication : BootstrapperApplication
             else if (e.Status == 0 && this.IsProcessElevated())
             {
                 this.CleanupOtherBundleRegistrationsAfterSuccessfulApply();
-                this.DeleteOwnedLegacyIrcProtocolRegistration();
             }
             else if (e.Status == 0)
             {
@@ -1934,22 +1933,32 @@ public sealed class FabulorBootstrapperApplication : BootstrapperApplication
             "Fabulor",
             @"Software\Fabulor\Capabilities");
         this.DeleteRegistryTreeIfExists(Registry.LocalMachine, @"Software\Fabulor\Capabilities");
-        this.DeleteOwnedLegacyIrcProtocolRegistration();
+        this.DeleteOwnedIrcProtocolSchemeClaims();
         this.DeleteRegistryTreeIfEmpty(Registry.LocalMachine, @"Software\Fabulor");
     }
 
-    private void DeleteOwnedLegacyIrcProtocolRegistration()
+    private void DeleteOwnedIrcProtocolSchemeClaims()
     {
-        const string commandPath = @"Software\Classes\irc\shell\open\command";
+        this.DeleteOwnedIrcProtocolSchemeClaim("irc");
+        this.DeleteOwnedIrcProtocolSchemeClaim("ircs");
+    }
+
+    private void DeleteOwnedIrcProtocolSchemeClaim(string scheme)
+    {
+        var protocolPath = $@"Software\Classes\{scheme}";
+        var commandPath = $@"{protocolPath}\shell\open\command";
         using var commandKey = Registry.LocalMachine.OpenSubKey(commandPath);
         var registeredCommand = commandKey?.GetValue(null) as string;
         if (string.IsNullOrWhiteSpace(registeredCommand)
-            || !registeredCommand.Contains("fabulor.exe", StringComparison.OrdinalIgnoreCase))
+            || !Regex.IsMatch(
+                registeredCommand,
+                @"^\s*""[^""]*\\fabulor\.exe""\s+--url=""%1""\s*$",
+                RegexOptions.IgnoreCase | RegexOptions.CultureInvariant))
         {
             return;
         }
 
-        this.DeleteRegistryTreeIfExists(Registry.LocalMachine, @"Software\Classes\irc");
+        this.DeleteRegistryTreeIfExists(Registry.LocalMachine, protocolPath);
     }
 
     private void DeleteRegistryValueIfEquals(

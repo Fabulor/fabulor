@@ -239,9 +239,10 @@ configuration and error categories.
 
 - Confirm the address begins with `irc://` or `ircs://` and contains a server
   name.
-- Installed mode makes Fabulor available for both link types but does not
-  replace an existing Windows default. Open **Windows Settings > Apps >
-  Default apps > Fabulor** and assign `IRC` and `IRCS` if another application
+- Installed mode makes Fabulor available for both link types and supplies a
+  fallback when a scheme is otherwise unclaimed, but it does not replace an
+  existing Windows handler or per-user default. Open **Windows Settings > Apps
+  > Default apps > Fabulor** and assign `IRC` and `IRCS` if another application
   opens the link or Windows asks you to choose an application.
 - Test either scheme with the explicit `--url` PowerShell example in
   [Networks and connections](networks-and-connections.md) to separate Windows
