@@ -428,11 +428,18 @@ server_read (GIOChannel *source, GIOCondition condition, server *serv)
 					tls_disposition == FABULOR_SSL_READ_RETRY_WRITE)
 				{
 					if (tls_disposition == FABULOR_SSL_READ_RETRY_WRITE &&
-						!(condition & G_IO_OUT))
-						server_set_socket_watch (serv, FIA_WRITE | FIA_EX);
+						!serv->ssl_read_wants_write)
+					{
+						serv->ssl_read_wants_write = TRUE;
+						server_set_socket_watch (serv,
+											 FIA_READ | FIA_WRITE | FIA_EX);
+					}
 					else if (tls_disposition == FABULOR_SSL_READ_RETRY &&
-						condition & G_IO_OUT)
+						serv->ssl_read_wants_write)
+					{
+						serv->ssl_read_wants_write = FALSE;
 						server_set_socket_watch (serv, FIA_READ | FIA_EX);
+					}
 					return TRUE;
 				}
 
@@ -474,8 +481,11 @@ server_read (GIOChannel *source, GIOCondition condition, server *serv)
 		}
 
 #ifdef USE_OPENSSL
-		if (serv->ssl && condition & G_IO_OUT)
+		if (serv->ssl && serv->ssl_read_wants_write)
+		{
+			serv->ssl_read_wants_write = FALSE;
 			server_set_socket_watch (serv, FIA_READ | FIA_EX);
+		}
 #endif
 
 		i = 0;
@@ -516,6 +526,9 @@ server_connected (server * serv)
 	serv->lag_sent = 0;
 	serv->connected = TRUE;
 	set_nonblocking (serv->sok);
+#ifdef USE_OPENSSL
+	serv->ssl_read_wants_write = FALSE;
+#endif
 	server_set_socket_watch (serv, FIA_READ | FIA_EX);
 	if (!serv->no_login)
 	{
