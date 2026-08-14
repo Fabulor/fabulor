@@ -726,6 +726,23 @@ plugin_list_add (fabulor_context *ctx, char *filename, const char *name,
 	return pl;
 }
 
+void
+plugin_rebind_context (session *retired, session *replacement)
+{
+	GSList *list;
+
+	g_return_if_fail (retired != NULL);
+	g_return_if_fail (replacement == NULL || is_session (replacement));
+
+	for (list = plugin_list; list; list = list->next)
+	{
+		fabulor_plugin *plugin = list->data;
+
+		if (plugin && plugin->context == retired)
+			plugin->context = replacement;
+	}
+}
+
 #ifndef WIN32
 static void *
 fabulor_dummy (fabulor_plugin *ph)
@@ -1885,7 +1902,12 @@ fabulor_set_context (fabulor_plugin *ph, fabulor_context *context)
 fabulor_context *
 fabulor_find_context (fabulor_plugin *ph, const char *servname, const char *channel)
 {
-	return plugin_find_context (servname, channel, ph->context->server);
+	server *current_server = NULL;
+
+	if (is_session (ph->context))
+		current_server = ph->context->server;
+
+	return plugin_find_context (servname, channel, current_server);
 }
 
 const char *

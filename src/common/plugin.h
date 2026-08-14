@@ -181,6 +181,7 @@ GList* plugin_command_list(GList *tmp_list);
 int plugin_show_help (session *sess, char *cmd);
 void plugin_command_foreach (session *sess, void *userdata, void (*cb) (session *sess, void *userdata, char *name, char *usage));
 session *plugin_find_context (const char *servname, const char *channel, server *current_server);
+void plugin_rebind_context (session *retired, session *replacement);
 
 #define PLUGIN_SUFFIX G_MODULE_SUFFIX
 

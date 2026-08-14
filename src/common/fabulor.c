@@ -755,6 +755,10 @@ session_free (session *killsess)
 
 	sess_list = g_slist_remove (sess_list, killsess);
 
+	if (current_sess == killsess)
+		current_sess = sess_list ? sess_list->data : NULL;
+	plugin_rebind_context (killsess, current_sess);
+
 	if (killsess->type == SESS_CHANNEL)
 		userlist_free (killsess);
 
@@ -782,13 +786,6 @@ session_free (session *killsess)
 	g_free (killsess->current_modes);
 
 	fe_session_callback (killsess);
-
-	if (current_sess == killsess)
-	{
-		current_sess = NULL;
-		if (sess_list)
-			current_sess = sess_list->data;
-	}
 
 	g_free (killsess);
 
