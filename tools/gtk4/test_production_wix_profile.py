@@ -269,6 +269,9 @@ class ProductionWixProfileTests(unittest.TestCase):
         components = (
             INSTALLER / "Components" / "InstalledMode.wxs"
         ).read_text(encoding="utf-8")
+        components_root = ET.parse(
+            INSTALLER / "Components" / "InstalledMode.wxs"
+        ).getroot()
         feature_selection = (
             INSTALLER / "UX" / "InstallerFeatureSelection.cs"
         ).read_text(encoding="utf-8")
@@ -310,9 +313,24 @@ class ProductionWixProfileTests(unittest.TestCase):
 
         self.assertIn('Key="Software\\Classes\\irc"', components)
         self.assertIn('Key="Software\\Classes\\ircs"', components)
-        self.assertIn('Component Id="IrcProtocolFallbackRegistration"', components)
-        self.assertIn('Component Id="IrcsProtocolFallbackRegistration"', components)
-        self.assertEqual(components.count('NeverOverwrite="yes"'), 2)
+        for component_id, handler_property in (
+            ("IrcProtocolFallbackRegistration", "IRC_PROTOCOL_HANDLER"),
+            ("IrcsProtocolFallbackRegistration", "IRCS_PROTOCOL_HANDLER"),
+        ):
+            component = components_root.find(
+                f".//w:Component[@Id='{component_id}']", WIX_NS
+            )
+            self.assertIsNotNone(component)
+            self.assertEqual(component.get("NeverOverwrite"), "yes")
+            self.assertIn(f"NOT {handler_property}", component.get("Condition"))
+
+            handler_search = components_root.find(
+                f".//w:Property[@Id='{handler_property}']/w:RegistrySearch",
+                WIX_NS,
+            )
+            self.assertIsNotNone(handler_search)
+            self.assertEqual(handler_search.get("Type"), "raw")
+            self.assertEqual(handler_search.get("Bitness"), "always64")
         self.assertEqual(
             components.count(
                 'Name="URL Protocol" Type="string" Value="" KeyPath="yes"'
@@ -340,6 +358,8 @@ class ProductionWixProfileTests(unittest.TestCase):
         )
         self.assertIn('this.DeleteOwnedIrcProtocolSchemeClaim("irc");', bootstrapper)
         self.assertIn('this.DeleteOwnedIrcProtocolSchemeClaim("ircs");', bootstrapper)
+        self.assertIn("RegexOptions.IgnoreCase | RegexOptions.CultureInvariant", bootstrapper)
+        self.assertIn(r'--url=""%1""', bootstrapper)
 
     def test_production_product_keeps_upgrade_identity(self):
         root = ET.parse(INSTALLER / "ProductGtk4.wxs").getroot()

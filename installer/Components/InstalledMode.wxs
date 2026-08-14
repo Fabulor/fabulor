@@ -1,6 +1,20 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">
   <Fragment>
+    <Property Id="IRC_PROTOCOL_HANDLER">
+      <RegistrySearch Id="IrcProtocolHandlerSearch"
+                      Root="HKLM"
+                      Key="Software\Classes\irc\shell\open\command"
+                      Type="raw"
+                      Bitness="always64" />
+    </Property>
+    <Property Id="IRCS_PROTOCOL_HANDLER">
+      <RegistrySearch Id="IrcsProtocolHandlerSearch"
+                      Root="HKLM"
+                      Key="Software\Classes\ircs\shell\open\command"
+                      Type="raw"
+                      Bitness="always64" />
+    </Property>
     <ComponentGroup Id="InstalledModeCoreComponents">
       <Component Id="InstalledModeCleanup" Guid="0A54F269-9BDB-4D60-9FD7-E5F9D4B6A1E8" Directory="INSTALLFOLDER" Condition="NOT FABULOR_PORTABLE">
         <RemoveFile Id="RemoveInstalledStartMenuShortcut"
@@ -113,7 +127,7 @@
                        Value="1"
                        KeyPath="yes" />
       </Component>
-      <Component Id="IrcProtocolFallbackRegistration" Guid="8236D81C-95C7-4C85-A99D-22E5EF6895D5" Directory="INSTALLFOLDER" Condition="NOT FABULOR_PORTABLE" NeverOverwrite="yes">
+      <Component Id="IrcProtocolFallbackRegistration" Guid="8236D81C-95C7-4C85-A99D-22E5EF6895D5" Directory="INSTALLFOLDER" Condition="NOT FABULOR_PORTABLE AND NOT IRC_PROTOCOL_HANDLER" NeverOverwrite="yes">
         <RegistryKey Root="HKLM" Key="Software\Classes\irc">
           <RegistryValue Type="string" Value="URL:IRC Protocol" />
           <RegistryValue Name="URL Protocol" Type="string" Value="" KeyPath="yes" />
@@ -128,7 +142,7 @@
           <RegistryValue Type="string" Value="&quot;[INSTALLFOLDER]fabulor.exe&quot; --url=&quot;%1&quot;" />
         </RegistryKey>
       </Component>
-      <Component Id="IrcsProtocolFallbackRegistration" Guid="12CD8341-88B1-467E-BFC2-265473D98432" Directory="INSTALLFOLDER" Condition="NOT FABULOR_PORTABLE" NeverOverwrite="yes">
+      <Component Id="IrcsProtocolFallbackRegistration" Guid="12CD8341-88B1-467E-BFC2-265473D98432" Directory="INSTALLFOLDER" Condition="NOT FABULOR_PORTABLE AND NOT IRCS_PROTOCOL_HANDLER" NeverOverwrite="yes">
         <RegistryKey Root="HKLM" Key="Software\Classes\ircs">
           <RegistryValue Type="string" Value="URL:IRCS Protocol" />
           <RegistryValue Name="URL Protocol" Type="string" Value="" KeyPath="yes" />

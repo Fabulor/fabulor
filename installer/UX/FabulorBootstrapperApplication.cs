@@ -1950,7 +1950,10 @@ public sealed class FabulorBootstrapperApplication : BootstrapperApplication
         using var commandKey = Registry.LocalMachine.OpenSubKey(commandPath);
         var registeredCommand = commandKey?.GetValue(null) as string;
         if (string.IsNullOrWhiteSpace(registeredCommand)
-            || !registeredCommand.Contains("fabulor.exe", StringComparison.OrdinalIgnoreCase))
+            || !Regex.IsMatch(
+                registeredCommand,
+                @"^\s*""[^""]*\\fabulor\.exe""\s+--url=""%1""\s*$",
+                RegexOptions.IgnoreCase | RegexOptions.CultureInvariant))
         {
             return;
         }
