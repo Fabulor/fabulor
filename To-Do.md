@@ -1,7 +1,7 @@
 <!-- Fabulor production roadmap -->
 # Fabulor Production Roadmap
 
-Last reconciled: 2026-08-13
+Last reconciled: 2026-08-14
 
 ## Current Production Baseline
 
@@ -55,6 +55,12 @@ Last reconciled: 2026-08-13
       user exercising the installed client broadly. The only report was one
       non-reproducible channel-switcher tree duplication that cleared after a
       normal restart and has not recurred.
+- [x] Fix tray plugin context lifetime after network and channel teardown so
+      post-disconnect tray refreshes cannot query a freed session
+      ([issue #297](https://github.com/Fabulor/fabulor/issues/297)).
+- [x] Classify TLS read closure and retry states, preserve the required socket
+      watches, and record useful diagnostics for unexpected encrypted
+      disconnects ([issue #294](https://github.com/Fabulor/fabulor/issues/294)).
 
 ### Remaining Release Gate
 
