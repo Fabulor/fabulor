@@ -23,7 +23,7 @@ Last reconciled: 2026-08-15
 - [x] Inno Setup, GTK3 packaging, Lua, Perl, and bundled user add-ons are
       retired from the supported product.
 
-## Production Readiness
+## 1.0 Release Gate
 
 ### Completed
 
@@ -65,51 +65,11 @@ Last reconciled: 2026-08-15
       disconnects ([issue #294](https://github.com/Fabulor/fabulor/issues/294)).
       Installed `v1.0.6-rc.6` acceptance confirmed the corrected diagnostic
       behaviour.
+- [x] Publish `v1.0.6-rc.6` from the accepted source revision with release
+      notes, the versioned installer, and its SHA-256 checksum.
 
-### Remaining Release Gate
+### Remaining Checks
 
-- [x] Complete a SignPath Foundation eligibility audit covering repository
-      visibility, GPLv3 and bundled-component licensing, release status,
-      maintainership, MFA, governance, metadata, and build provenance.
-  - [x] Record the evidence, gaps, decision, and remediation order in
-        `docs/security/signpath-foundation-eligibility-audit.md`.
-- [x] Complete the bundled-component inventory, package all required licence
-      and notice files, and generate a deterministic CycloneDX 1.6 release
-      SBOM. See `docs/legal/bundled-components-and-sbom.md`.
-- [x] Normalize product name, company/publisher, and version metadata across
-      the application, frontend, MSI, bootstrapper, and SignPath artifact
-      restrictions. See `docs/security/signpath-artifact-metadata.md`.
-- [x] Complete public repository governance for the SignPath application.
-  - [x] Require organization-wide two-factor authentication and secure methods.
-  - [x] Confirm every participating member has completed secure MFA setup.
-  - [x] Close six superseded draft pull requests, delete fourteen obsolete
-        remote feature branches, and enable automatic head-branch deletion.
-  - [x] Complete the private-to-public disclosure scan. Full-history Gitleaks
-        results contained only two reviewed source-text false positives; the
-        maintainer accepts publication of the historical Gmail commit address.
-  - [x] Make `Fabulor/fabulor` public, protect `main` and release tags, and
-        require review of source, installer, build, and workflow changes.
-- [x] Publish the required code-signing policy, privacy statement, reviewer and
-      signing-approver roles, and SignPath attribution, then submit the
-      SignPath Foundation application.
-  - [x] Add the policies, named roles, sensitive-path ownership, and signed
-        release disclosure to the repository.
-  - [x] Confirm the policy links resolve publicly.
-  - [x] Record the 2026-08-13 application result. SignPath declined the initial
-        application because the newly public project does not yet have enough
-        community adoption and independent visibility; no engineering,
-        security-control, or licensing defect was identified.
-  - [ ] Add the signed-release disclosure to the first signed release page.
-- [ ] Build genuine public adoption, independent references, contributor
-      activity, and sustained engagement, then reapply to SignPath Foundation.
-- [ ] After acceptance, adapt the protected GitHub release workflow so
-      SignPath can verify the
-      production build provenance, attest the unsigned artefacts, promote only
-      those exact artefacts, and manually approve signing of the Fabulor MSI
-      and bootstrapper.
-- [ ] Obtain signing approval, verify the Authenticode signatures and RFC 3161
-      timestamps, and run installed acceptance against the final signed
-      artefacts.
 - [x] Document the Windows SmartScreen warning shown for unsigned release
       candidates, including official-source and SHA-256 verification without
       advising users to disable Defender or SmartScreen.
@@ -135,9 +95,12 @@ Last reconciled: 2026-08-15
       closed-client dispatch for both registered IRC link schemes.
 - [ ] Record any remaining non-blocking visual or usability issues as separate
       follow-up work instead of reopening the completed GTK4 migration.
-  - [ ] If the one-time duplicated channel-switcher tree report recurs or a
-        screenshot becomes available, record it as an intermittent follow-up
-        issue with the triggering channel-switch sequence.
+
+### Release Watch List
+
+- [ ] Monitor the one-time duplicated channel-switcher tree report. Keep it as
+      a roadmap note unless it recurs with a screenshot or reproducible
+      channel-switch sequence; only then promote it to a tracked issue.
 
 ## User Documentation
 
@@ -148,7 +111,7 @@ Last reconciled: 2026-08-15
       List, TLS, SASL, ZNC, SOCKS5, auto-connect, and autojoin guidance.
   - [x] Write the source-verified `getting-started.md` and
         `networks-and-connections.md` drafts.
-  - [ ] Verify both pages against an installed signed release candidate before
+  - [ ] Verify both pages against the final installed release candidate before
         marking this stage complete.
 - [ ] Write and verify the main-window, transcript, input, user-list, menu,
       tray, emoji, flag, clipboard, accessibility, and keyboard guidance.
@@ -204,8 +167,59 @@ Last reconciled: 2026-08-15
     - [ ] Verify glossary terminology against the final manual and installed
           release candidate, removing implementation terms that ordinary users
           do not need.
-- [ ] Perform a final documentation review against the signed release
+- [ ] Perform a final documentation review against the final installed release
       candidate and ensure all screenshots exclude personal or sensitive data.
+
+## Post-1.0 Signing And Adoption
+
+These tasks depend on external adoption and SignPath Foundation acceptance.
+They are tracked separately from the engineering acceptance gate for `1.0.6`.
+
+- [x] Complete a SignPath Foundation eligibility audit covering repository
+      visibility, GPLv3 and bundled-component licensing, release status,
+      maintainership, MFA, governance, metadata, and build provenance.
+  - [x] Record the evidence, gaps, decision, and remediation order in
+        `docs/security/signpath-foundation-eligibility-audit.md`.
+- [x] Complete the bundled-component inventory, package all required licence
+      and notice files, and generate a deterministic CycloneDX 1.6 release
+      SBOM. See `docs/legal/bundled-components-and-sbom.md`.
+- [x] Normalize product name, company/publisher, and version metadata across
+      the application, frontend, MSI, bootstrapper, and SignPath artifact
+      restrictions. See `docs/security/signpath-artifact-metadata.md`.
+- [x] Complete public repository governance for the SignPath application.
+  - [x] Require organization-wide two-factor authentication and secure methods.
+  - [x] Confirm every participating member has completed secure MFA setup.
+  - [x] Close six superseded draft pull requests, delete fourteen obsolete
+        remote feature branches, and enable automatic head-branch deletion.
+  - [x] Complete the private-to-public disclosure scan. Full-history Gitleaks
+        results contained only two reviewed source-text false positives; the
+        maintainer accepts publication of the historical Gmail commit address.
+  - [x] Make `Fabulor/fabulor` public, protect `main` and release tags, and
+        require review of source, installer, build, and workflow changes.
+- [x] Publish the required code-signing policy, privacy statement, reviewer and
+      signing-approver roles, and SignPath attribution, then submit the
+      SignPath Foundation application.
+  - [x] Add the policies, named roles, sensitive-path ownership, and signed
+        release disclosure to the repository.
+  - [x] Confirm the policy links resolve publicly.
+  - [x] Record the 2026-08-13 application result. SignPath declined the initial
+        application because the newly public project does not yet have enough
+        community adoption and independent visibility; no engineering,
+        security-control, or licensing defect was identified.
+- [ ] Build genuine public adoption, independent references, contributor
+      activity, and sustained engagement, then reapply to SignPath Foundation.
+- [ ] After acceptance, adapt the protected GitHub release workflow so
+      SignPath can verify the production build provenance, attest the unsigned
+      artefacts, promote only those exact artefacts, and manually approve
+      signing of the Fabulor MSI and bootstrapper.
+- [ ] Obtain signing approval, verify the Authenticode signatures and RFC 3161
+      timestamps, and run installed acceptance against the signed artefacts.
+- [ ] Add the signed-release disclosure to the first signed release page.
+- [x] Design a Fabulor-owned, authenticated, and signed update feed in
+      [`docs/security/signed-update-feed-design.md`](docs/security/signed-update-feed-design.md).
+- [ ] Provision the update signing identities, metadata origin, bounded TUF
+      verifier, Authenticode verification, downloader, and manual UI before
+      restoring in-client update checks.
 
 ## Security
 
@@ -306,8 +320,6 @@ maintenance and must be tracked as contained follow-up fixes.
 - [x] Remove Python 3.12, legacy Enchant, GTK3, Inno, Perl, Lua, and
       development-only payloads.
 - [x] Validate upgrade removal of retired runtime files.
-- [ ] Reassess optional GTK4 locales, icons, schemas, and helper tools only
-      after the final release-candidate feature pass.
 - [x] Publish release-candidate installer and payload hashes with release
       metadata.
 - [x] Replace the engineering-oriented bootstrapper screen with compact
@@ -336,7 +348,6 @@ Detailed policy lives in
 - [x] Retire the misleading `irc_cap_server_time` preference while preserving
       unconditional server-time negotiation.
 - [x] Retire Perl source and residual configuration.
-- [ ] Review SOCKS4 separately; its current status remains `Proposed`.
 
 ## Repository Cleanup
 
@@ -384,11 +395,6 @@ programme.
       `draft/chathistory`. Ergo Testnet advertised `draft/CHATHISTORY=1000`,
       acknowledged `draft/chathistory`, and returned history for the
       argument-free `/CHATHISTORY` request on 2026-08-15.
-- [x] Design a Fabulor-owned, authenticated, and signed update feed in
-      [`docs/security/signed-update-feed-design.md`](docs/security/signed-update-feed-design.md).
-- [ ] Provision the update signing identities, metadata origin, bounded TUF
-      verifier, Authenticode verification, downloader, and manual UI before
-      restoring in-client update checks.
 - [x] Store saved input history per network and channel under the profile
       `history` directory, and provide scoped `/CLEAR HISTORY` and `/CLEAR LOG`
       maintenance commands.
@@ -401,5 +407,8 @@ programme.
 - [ ] Implement the Activity List in the contained, acceptance-gated stages
       defined by its design, beginning with the core activity model only after
       the `1.0` release.
+- [ ] Reassess optional GTK4 locales, icons, schemas, and helper tools after the
+      final release-candidate feature pass.
+- [ ] Review SOCKS4 separately; its current status remains `Proposed`.
 - [ ] Continue contained installed-UI refinements based on reproducible
       screenshots, logs, and real-world acceptance.
