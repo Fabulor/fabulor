@@ -25,8 +25,9 @@ history below describes the cumulative work toward the first stable release.
 - Supported installed and portable setup modes through a WiX MSI and
   bootstrapper.
 - Installer support for publishing both `irc://` and `ircs://` through Windows
-  Default Apps without deliberately replacing the user's existing choices;
-  full installed acceptance remains scheduled before issue closure.
+  Default Apps without deliberately replacing the user's existing choices.
+  A clean installation of `v1.0.6-rc.6` confirmed both schemes and Windows
+  Default Apps discovery.
 
 ### Changed
 
@@ -82,9 +83,9 @@ history below describes the cumulative work toward the first stable release.
 - Registered missing machine-level `irc://` and `ircs://` scheme fallbacks in
   addition to stable Fabulor ProgIDs and Windows Registered Applications
   capabilities. Setup preserves another application's valid handler and
-  removes a generic scheme only while it still points to Fabulor. Upgrade,
-  repair, and uninstall cleanup remain subject to the final installed
-  acceptance pass.
+  removes a generic scheme only while it still points to Fabulor. Clean-install
+  link dispatch is accepted; upgrade, repair, and uninstall cleanup remain
+  subject to the final installed acceptance pass.
 
 ### Security
 
