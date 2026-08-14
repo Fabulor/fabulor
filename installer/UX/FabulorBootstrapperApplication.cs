@@ -57,6 +57,7 @@ public sealed class FabulorBootstrapperApplication : BootstrapperApplication
     private IBootstrapperCommand? command;
     private readonly AutoResetEvent windowReady = new(false);
 
+    // Windows has no managed API for invalidating its cached file and URL associations.
     [DllImport("shell32.dll")]
     private static extern void SHChangeNotify(uint eventId, uint flags, IntPtr item1, IntPtr item2);
 
@@ -1940,9 +1941,9 @@ public sealed class FabulorBootstrapperApplication : BootstrapperApplication
     {
         const string commandPath = @"Software\Classes\irc\shell\open\command";
         using var commandKey = Registry.LocalMachine.OpenSubKey(commandPath);
-        var command = commandKey?.GetValue(null) as string;
-        if (string.IsNullOrWhiteSpace(command)
-            || !command.Contains("fabulor.exe", StringComparison.OrdinalIgnoreCase))
+        var registeredCommand = commandKey?.GetValue(null) as string;
+        if (string.IsNullOrWhiteSpace(registeredCommand)
+            || !registeredCommand.Contains("fabulor.exe", StringComparison.OrdinalIgnoreCase))
         {
             return;
         }
@@ -1968,7 +1969,7 @@ public sealed class FabulorBootstrapperApplication : BootstrapperApplication
             subkey!.DeleteValue(valueName, throwOnMissingValue: false);
             this.engine.Log(LogLevel.Verbose, $"Deleted owned registry value '{root.Name}\\{subkeyPath}\\{valueName}'.");
         }
-        catch (Exception ex)
+        catch (Exception ex) when (ex is System.IO.IOException or SecurityException or UnauthorizedAccessException)
         {
             this.engine.Log(LogLevel.Error, $"Failed to delete registry value '{root.Name}\\{subkeyPath}\\{valueName}': {ex}");
         }
