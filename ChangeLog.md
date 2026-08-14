@@ -8,7 +8,7 @@ release history.
 Fabulor 1.0.6 release candidates are published as GitHub prereleases. The
 history below describes the cumulative work toward the first stable release.
 
-## Unreleased - 1.0.6 Release Candidate
+## 1.0.6 Release Candidate Series
 
 ### Added
 
@@ -24,8 +24,9 @@ history below describes the cumulative work toward the first stable release.
   scoped `/CLEAR HISTORY` and `/CLEAR LOG` maintenance commands.
 - Supported installed and portable setup modes through a WiX MSI and
   bootstrapper.
-- Windows Default Apps registration for both `irc://` and `ircs://` links
-  without replacing the user's existing handler choices.
+- Installer support for publishing both `irc://` and `ircs://` through Windows
+  Default Apps without deliberately replacing the user's existing choices;
+  full installed acceptance remains scheduled before issue closure.
 
 ### Changed
 
@@ -78,9 +79,10 @@ history below describes the cumulative work toward the first stable release.
 - Classified TLS read closure and retry states explicitly, preserving
   read/write watches and recording OpenSSL, socket, and operating-system error
   details instead of reporting an ambiguous disconnect.
-- Replaced the retired generic `irc://` registry owner with stable Fabulor
-  ProgIDs and Windows Registered Applications capabilities for both IRC link
-  schemes, including upgrade, repair, and uninstall cleanup.
+- Implemented replacement of the retired generic `irc://` registry owner with
+  stable Fabulor ProgIDs and Windows Registered Applications capabilities for
+  both IRC link schemes. Upgrade, repair, and uninstall cleanup remain subject
+  to the final installed acceptance pass.
 
 ### Security
 
