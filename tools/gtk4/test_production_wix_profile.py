@@ -324,6 +324,10 @@ class ProductionWixProfileTests(unittest.TestCase):
         self.assertEqual(components.count('--url=&quot;%1&quot;'), 2)
         self.assertIn("NotifyShellAssociationsChanged();", bootstrapper)
         self.assertIn("DeleteOwnedLegacyIrcProtocolRegistration", bootstrapper)
+        self.assertEqual(
+            bootstrapper.count("this.DeleteOwnedLegacyIrcProtocolRegistration();"),
+            2,
+        )
 
     def test_production_product_keeps_upgrade_identity(self):
         root = ET.parse(INSTALLER / "ProductGtk4.wxs").getroot()

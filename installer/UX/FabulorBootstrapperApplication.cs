@@ -655,6 +655,7 @@ public sealed class FabulorBootstrapperApplication : BootstrapperApplication
             else if (e.Status == 0 && this.IsProcessElevated())
             {
                 this.CleanupOtherBundleRegistrationsAfterSuccessfulApply();
+                this.DeleteOwnedLegacyIrcProtocolRegistration();
             }
             else if (e.Status == 0)
             {
