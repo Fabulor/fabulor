@@ -57,10 +57,13 @@ Last reconciled: 2026-08-14
       normal restart and has not recurred.
 - [x] Fix tray plugin context lifetime after network and channel teardown so
       post-disconnect tray refreshes cannot query a freed session
-      ([issue #297](https://github.com/Fabulor/fabulor/issues/297)).
+      ([issue #297](https://github.com/Fabulor/fabulor/issues/297)). Installed
+      RC.6 acceptance confirmed that the warning no longer recurs in the
+      tested disconnect and tray workflows.
 - [x] Classify TLS read closure and retry states, preserve the required socket
       watches, and record useful diagnostics for unexpected encrypted
       disconnects ([issue #294](https://github.com/Fabulor/fabulor/issues/294)).
+      Installed RC.6 acceptance confirmed the corrected diagnostic behavior.
 
 ### Remaining Release Gate
 
@@ -123,7 +126,9 @@ Last reconciled: 2026-08-14
 - [x] Implement the installed Windows registered-application boundary and
       guarded machine-level fallback claims for both `irc://` and `ircs://`
       without replacing another application's valid handler
-      ([issue #298](https://github.com/Fabulor/fabulor/issues/298)).
+      ([issue #298](https://github.com/Fabulor/fabulor/issues/298)). Clean-install
+      RC.6 acceptance confirmed both schemes, Windows Default Apps discovery,
+      and preservation of the user's existing default-handler choice.
 - [ ] Verify clean install, upgrade, modify, repair, uninstall, and running and
       closed-client dispatch for both registered IRC link schemes.
 - [ ] Record any remaining non-blocking visual or usability issues as separate
