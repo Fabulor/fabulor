@@ -74,7 +74,7 @@ connected, an unknown command produces an error instead.
 | `/MSG <nickname> <message>` | Send a private message |
 | `/NAMES [channel]` | Request the nickname list for a channel |
 | `/NICK <nickname>` | Change nickname on the current connection |
-| `/NOTICE <nickname|channel> <message>` | Send an IRC notice |
+| <code>/NOTICE &lt;nickname&#124;channel&gt; &lt;message&gt;</code> | Send an IRC notice |
 | `/PART [channel] [reason]` | Leave the current or named channel |
 | `/QUERY <nickname> [message]` | Open a private conversation and optionally send a message |
 | `/QUIT [reason]` | Disconnect the current server with an optional reason |
@@ -142,11 +142,11 @@ and channel before using `/MOP`, `/MDEOP`, `/MHOP`, `/MDEHOP`, or `/MKICK`.
 | `/ID <password>` | Identify to NickServ using the connection's service method |
 | `/NOTIFY [nickname]` | Show the Friends List or add a nickname |
 | `/NOTIFY -n <networks> [nickname]` | Limit a Friends List entry to named networks |
-| `/PING <nickname|channel>` | Send a CTCP ping |
+| `/PING <nickname\|channel>` | Send a CTCP ping |
 | `/CTCP <nickname> <message>` | Send a CTCP request such as `VERSION` |
 | `/NCTCP <nickname> <message>` | Send CTCP content inside an IRC notice |
-| `/COUNTRY <code|pattern>` | Look up country codes |
-| `/COUNTRY -s <code|pattern>` | Search country names and codes |
+| `/COUNTRY <code\|pattern>` | Look up country codes |
+| `/COUNTRY -s <code\|pattern>` | Search country names and codes |
 
 Avoid placing account passwords directly in the input box. Input history may
 be saved to disk. Configure authentication and Windows Credential Manager in
@@ -185,7 +185,7 @@ The following commands are useful for temporary or diagnostic work:
 | `/CHARSET [encoding]` | Show or change the current connection encoding |
 | `/CHATHISTORY` | Request recent server-side history for the current channel or private conversation |
 | `/CHATHISTORY <subcommand and arguments>` | Send an explicit IRCv3 chat-history request |
-| `/DNS <nickname|host|address>` | Resolve a nickname, hostname, or address |
+| `/DNS <nickname\|host\|address>` | Resolve a nickname, hostname, or address |
 | `/FLUSHQ` | Flush the current connection's queued outbound data |
 
 TLS is the default for `/SERVER` and `/SERVCHAN` in the supported Windows
@@ -222,7 +222,7 @@ and may be blocked by firewalls, network address translation, or proxy policy.
 | `/ALLCHAN <command>` | Every joined channel on every open server |
 | `/ALLCHANL <command>` | Every joined channel on the current server |
 | `/ALLSERV <command>` | Every open server |
-| `/DOAT <channels|/network> <command>` | Selected channels or network |
+| `/DOAT <channels\|/network> <command>` | Selected channels or network |
 
 The nested command runs separately in every matching context. Avoid using
 these commands for destructive moderation, password handling, or text that
@@ -361,7 +361,7 @@ interface definitions. They are not required for ordinary IRC use:
 | `/SETTEXT <text>` | Replace the input-box contents |
 | `/SPLAY <sound-file>` | Play a sound file |
 | `/TRAY ...` | Control tray icon presentation |
-| `/TYPING [active|paused|done] [target]` | Send a typing notification where supported |
+| `/TYPING [active\|paused\|done] [target]` | Send a typing notification where supported |
 | `/USELECT ...`, `/USERLIST` | Automate user-list selection or access |
 
 `/GATE` is a retained low-level gateway command and is not the retired Wingate
