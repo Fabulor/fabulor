@@ -74,7 +74,7 @@ connected, an unknown command produces an error instead.
 | `/MSG <nickname> <message>` | Send a private message |
 | `/NAMES [channel]` | Request the nickname list for a channel |
 | `/NICK <nickname>` | Change nickname on the current connection |
-| `/NOTICE <nickname\|channel> <message>` | Send an IRC notice |
+| <code>/NOTICE &lt;nickname&#124;channel&gt; &lt;message&gt;</code> | Send an IRC notice |
 | `/PART [channel] [reason]` | Leave the current or named channel |
 | `/QUERY <nickname> [message]` | Open a private conversation and optionally send a message |
 | `/QUIT [reason]` | Disconnect the current server with an optional reason |
