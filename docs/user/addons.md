@@ -104,6 +104,11 @@ Tcl add-ons use the `fabulor::*` namespace. The former product namespace is
 retired. Each simple Tcl add-on receives its own interpreter and can register
 commands, but event callbacks require the advanced manifest model.
 
+Trusted simple Tcl add-ons can use `fabulor::get_windows_uptime_seconds` to
+read the local Windows uptime without starting PowerShell or another external
+process. The command is intentionally unavailable to advanced manifest
+plugins.
+
 C# add-ons must already be compiled for .NET 8 and implement the current
 `IFabulorPlugin` contract. Fabulor does not compile C# source at startup. Keep
 private dependency DLLs beside the primary assembly, but do not copy

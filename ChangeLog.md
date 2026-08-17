@@ -28,6 +28,9 @@ history below describes the cumulative work toward the first stable release.
   Default Apps without deliberately replacing the user's existing choices.
   A clean installation of `v1.0.6-rc.6` confirmed both schemes and Windows
   Default Apps discovery.
+- A narrow `fabulor::get_windows_uptime_seconds` command for trusted simple Tcl
+  add-ons. It reads the Windows boot timer directly and is unavailable to
+  manifest plugins.
 
 ### Changed
 
@@ -41,6 +44,9 @@ history below describes the cumulative work toward the first stable release.
   boundaries.
 - Replaced broad runtime harvesting with validated GTK4, Python, Tcl, and .NET
   payload ownership.
+- Reduced the allowlisted GTK4 runtime by 271 unused files and 16.21% while
+  retaining the native dependency closure, supported translations, Adwaita,
+  schemas, fonts, and spawn helpers.
 - Moved the remaining Windows copy payload into explicit `data` ownership and
   retired the legacy `win32/copy` namespace.
 - Removed the unbuilt text frontend, orphaned dirent shim, and unused

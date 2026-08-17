@@ -118,6 +118,39 @@ class StageGtk4RuntimeTests(unittest.TestCase):
             stage_runtime.stage_runtime(self.root, output, contract, self.contract_path)
         self.assertFalse(output.exists())
 
+    def test_production_contract_matches_supported_languages_and_trimmed_trees(self):
+        repository_root = pathlib.Path(__file__).resolve().parents[2]
+        contract = stage_runtime.load_contract(stage_runtime.DEFAULT_CONTRACT)
+        configured = {
+            pathlib.PurePosixPath(tree).parts[2]
+            for tree in contract["trees"]
+            if tree.startswith("share/locale/")
+        }
+        supported = set(
+            (repository_root / "po" / "LINGUAS").read_text(encoding="utf-8").split()
+        )
+        supported.discard("ja_JP")
+        supported.discard("no")
+        supported.update(("ja", "nb"))
+
+        self.assertEqual(configured, supported)
+        self.assertNotIn("share/locale", contract["trees"])
+        self.assertNotIn("share/gtk-4.0", contract["trees"])
+        self.assertNotIn("share/icons", contract["trees"])
+        self.assertIn("share/icons/Adwaita", contract["trees"])
+
+        inventory = json.loads(
+            (repository_root / "third-party" / "components.json").read_text(
+                encoding="utf-8"
+            )
+        )
+        installed_paths = {
+            path
+            for component in inventory["components"]
+            for path in component.get("installed_paths", [])
+        }
+        self.assertNotIn("Runtime/GTK4/share/gtk-4.0", installed_paths)
+
 
 if __name__ == "__main__":
     unittest.main()
