@@ -1534,6 +1534,28 @@ fabulor_tcl_get_user_info_cmd (ClientData client_data, Tcl_Interp *interp, int a
 }
 
 static int
+fabulor_tcl_get_windows_uptime_seconds_cmd (ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[])
+{
+	char *value;
+	guint64 seconds;
+
+	(void) client_data;
+	(void) argv;
+
+	if (argc != 1)
+	{
+		fabulor_tcl_set_result (interp, "wrong # args: should be \"fabulor::get_windows_uptime_seconds\"");
+		return TCL_ERROR;
+	}
+
+	seconds = (guint64) GetTickCount64 () / 1000U;
+	value = g_strdup_printf ("%" G_GUINT64_FORMAT, seconds);
+	fabulor_tcl_set_result (interp, value);
+	g_free (value);
+	return TCL_OK;
+}
+
+static int
 fabulor_tcl_register_callback_cmd (ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[])
 {
 	FabulorTclPluginState *state = client_data;
@@ -1622,6 +1644,7 @@ fabulor_tcl_register_commands (FabulorTclPluginState *state, GError **error)
 		fabulor_tcl_runtime.create_command (state->interp, "fabulor::register_command", fabulor_tcl_register_command_cmd, state, NULL);
 		fabulor_tcl_runtime.create_command (state->interp, "fabulor::getinfo", fabulor_tcl_getinfo_cmd, state, NULL);
 		fabulor_tcl_runtime.create_command (state->interp, "fabulor::nickcmp", fabulor_tcl_nickcmp_cmd, state, NULL);
+		fabulor_tcl_runtime.create_command (state->interp, "fabulor::get_windows_uptime_seconds", fabulor_tcl_get_windows_uptime_seconds_cmd, state, NULL);
 	}
 	else
 	{

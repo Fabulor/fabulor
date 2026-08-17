@@ -78,6 +78,11 @@ The Python, Tcl, and C# runtimes follow this layout for auto-loading add-ons. Py
 
 The Tcl and managed C# hosts are built into Fabulor rather than installed as separate legacy plugin DLLs, so they do not appear as standalone entries in the Plugins and Scripts window. Loaded add-ons report their own initialization messages and expose their registered behavior.
 
+Trusted simple Tcl add-ons can query the local Windows uptime with
+`fabulor::get_windows_uptime_seconds`. The helper returns whole seconds from
+the Windows boot timer and avoids launching an external PowerShell or WMI
+process. It is not available to manifest plugins.
+
 Fabulor does not compile C# source at startup. Build the add-on for `.NET 8`, reference the installed `Runtime\DotNet\Fabulor.PluginAbstractions.dll`, and place the resulting DLL and any private dependencies in the add-on folder. Restart Fabulor to load or reload simple Tcl and C# add-ons.
 
 After startup, Fabulor prints a sorted `Fabulor loaded plugins and add-ons` report in the initial server window. The report combines active native plugins, Python modules registered with the plugin GUI, and successfully initialised simple Tcl and C# add-ons. Discovery failures are logged separately and are not counted as loaded.

@@ -95,7 +95,6 @@
               <Directory Id="GTK4SHAREGLIBDIR" Name="glib-2.0">
                 <Directory Id="GTK4SHAREGLIBSCHEMASDIR" Name="schemas" />
               </Directory>
-              <Directory Id="GTK4SHAREGTKDIR" Name="gtk-4.0" />
               <Directory Id="GTK4SHAREICONSDIR" Name="icons" />
               <Directory Id="GTK4SHARELICENSESDIR" Name="licenses" />
               <Directory Id="GTK4SHARELOCALEDIR" Name="locale" />

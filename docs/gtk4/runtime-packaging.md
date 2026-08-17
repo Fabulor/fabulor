@@ -40,7 +40,7 @@ Top-level content:
 Before Stage 8 pass 5, the transitional broad WiX rules selected approximately
 1,721 files and 198,353,537 bytes, including development metadata and an empty
 `lib/gio` harvest that emitted WIX8600. Those rules are now retired. The normal
-MSI and bootstrapper consume the 1,431-file staged allowlist plus its manifest.
+MSI and bootstrapper consume the 1,160-file staged allowlist plus its manifest.
 
 Stage 8 pass 1 adds `tools/gtk4/runtime-payload-contract.json` and
 `tools/gtk4/stage_runtime.py`. The contract selects the native dependency
@@ -51,6 +51,31 @@ deterministic file/size/SHA-256 manifest tied to the pinned source archive.
 Windows CI now materializes this allowlist as the production runtime before
 compiling and packaging the GTK4 frontend. The following candidate passes are
 retained as historical steps that led to the production contract.
+
+## Post-Release-Candidate Payload Reassessment
+
+The optional-payload reassessment completed on 2026-08-15 after the release-
+candidate feature pass. It reduced the staged runtime from 1,431 files and
+102,726,736 bytes to 1,160 files and 86,075,789 bytes: 271 files and
+16,650,947 bytes removed (16.21%). The review used the native import ownership
+graph, source references, shipped language list, and installed feature
+requirements rather than startup success alone.
+
+| Payload class | Decision | Evidence |
+|---|---|---|
+| Native DLLs and both GLib spawn helpers | Retain | Required by the validated native dependency closure or the URL-launch fallback. |
+| Fontconfig configuration and fonts | Retain | Required for text and emoji rendering. |
+| GLib schemas | Retain | Required by GTK settings and live chooser behavior; the compiled schema payload is only 15,960 bytes. |
+| Adwaita icon theme | Retain | GTK controls and Fabulor source use named icons resolved through the icon theme. |
+| `hicolor` icon subtree | Remove | Its staged files were GtkSourceView completion icons, while GtkSourceView is not in the production runtime. |
+| GTK emoji resources and `gtk4builder.rng` | Remove | Fabulor owns its emoji picker and disables the GTK entry emoji control; the RNG file is development-time validation data. |
+| Runtime translations | Narrow | Retain only languages shipped by Fabulor, mapping `ja_JP` to GTK's `ja` directory and `no` to `nb`. |
+| Licences, XML data, and SVG pixbuf loader | Retain | Required legal data, runtime data, and supported image loading. |
+| Typelibs and unrelated modules | Keep absent | No production feature or owned native root requires them. |
+
+`test_stage_runtime.py` locks the locale mapping and rejects restoration of the
+broad locale, icon, or GTK data trees. Normal MSI validation still requires the
+installed runtime to match the generated manifest exactly.
 
 Stage 8 pass 2 adds an opt-in `GtkRuntimeCandidate=true` WiX composition. It
 selects `Components/GTK4Candidate.wxs`, requires the generated runtime manifest,
@@ -96,12 +121,13 @@ the explicit system allowlist, rejects GTK3 and lib-prefixed duplicate
 GLib-family names, and requires every packaged native file to be reachable from
 an ownership root.
 
-The current candidate contains 35 PE files, 107 packaged import edges, and 54
+That candidate contained 35 PE files, 107 packaged import edges, and 54
 distinct reviewed system imports. The roots are `gtk-4-1.dll`, the SVG pixbuf
 loader, and both GLib spawn helpers. This proves static native closure and
 package ownership; it does not detect data-driven module loading or make an
-unused-file decision. GIO, pixbuf, icon, locale, font, schema, and typelib
-trimming remains gated on packaged feature tests and module/process evidence.
+unused-file decision. At that pass, GIO, pixbuf, icon, locale, font, schema, and
+typelib trimming remained gated on packaged feature tests and module/process
+evidence.
 
 Stage 8 pass 5 retires the broad `GTK4.wxs` harvest and candidate-mode switch.
 `GTK4Allowlist.wxs` is now the sole `GTK4Components` provider and the normal
@@ -334,8 +360,9 @@ DLL boundaries. Before cutover:
 - [x] Remove verified development-only and retired runtime content.
 - [x] Fail validation when the production payload differs from its ownership
       and allowlist contracts.
-- [ ] Reassess optional locales, icons, typelibs, schemas, modules, and helper
-      tools only after the final release-candidate feature pass.
+- [x] Reassess optional locales, icons, typelibs, schemas, modules, and helper
+      tools after the release-candidate feature pass; retain feature-owned
+      content and remove 271 unowned files (16.21% of the staged payload).
 - [ ] Publish MSI/bootstrapper and payload hashes with release metadata.
 
 ## Installer Validation

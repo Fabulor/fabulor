@@ -82,12 +82,15 @@ The shared MSVC properties reject attempts to select a GTK3 frontend profile.
 
 ## Production Runtime
 
-`runtime-payload-contract.json` defines the production runtime
-as exact files and owned data trees from the pinned dependency root. It excludes
-headers, import libraries, debug symbols, build tools, GIR source, and Python
-build helpers. `stage_runtime.py` copies only that selection, normalizes the GDK
-pixbuf loader cache so it contains no build-machine path, and writes a SHA-256
-manifest of every staged file.
+`runtime-payload-contract.json` defines the production runtime as exact files
+and owned data trees from the pinned dependency root. It excludes headers,
+import libraries, debug symbols, build tools, GIR source, Python build helpers,
+GTK's unused built-in emoji resources, and GtkSourceView-only fallback icons.
+The runtime retains Adwaita and translations matching `po/LINGUAS`; `ja_JP`
+maps to GTK's `ja` directory and `no` maps to `nb`.
+`stage_runtime.py` copies only that selection, normalizes the GDK pixbuf loader
+cache so it contains no build-machine path, and writes a SHA-256 manifest of
+every staged file.
 
 ```powershell
 python tools\gtk4\test_stage_runtime.py

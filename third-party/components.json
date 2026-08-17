@@ -292,8 +292,7 @@
       ],
       "source": "https://gitlab.gnome.org/GNOME/gtk/-/tree/4.22.4",
       "installed_paths": [
-        "Runtime/GTK4/bin/gtk-4-1.dll",
-        "Runtime/GTK4/share/gtk-4.0"
+        "Runtime/GTK4/bin/gtk-4-1.dll"
       ],
       "distribution_sha256": "3910a612083c2a155c5a4a2026990701841c0d7f7de28756b2f0865decb161be"
     },

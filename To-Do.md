@@ -1,7 +1,7 @@
 <!-- Fabulor production roadmap -->
 # Fabulor Production Roadmap
 
-Last reconciled: 2026-08-15
+Last reconciled: 2026-08-17
 
 ## Current Production Baseline
 
@@ -37,6 +37,9 @@ Last reconciled: 2026-08-15
 - [x] Bound Windows address-pool fallback so a dead DNS result cannot consume
       the operating system's full connection timeout.
 - [x] Validate C#, Python, and Tcl plugin hosts and simple add-on loading.
+- [x] Provide trusted simple Tcl add-ons with a narrow native Windows-uptime
+      query backed by `GetTickCount64`, avoiding unreliable GUI-hosted child
+      process execution without expanding manifest-plugin permissions.
 - [x] Validate spell checking, suggestions, personal dictionaries, URL paste,
       emoji and flag rendering, sounds, tray behavior, and themes.
 - [x] Validate GTK4 menus, dialogs, channel navigation, transcript selection,
@@ -408,8 +411,11 @@ programme.
 - [ ] Implement the Activity List in the contained, acceptance-gated stages
       defined by its design, beginning with the core activity model only after
       the `1.0` release.
-- [ ] Reassess optional GTK4 locales, icons, schemas, and helper tools after the
-      final release-candidate feature pass.
+- [x] Reassess optional GTK4 locales, icons, schemas, and helper tools after the
+      release-candidate feature pass. The locked runtime now retains supported
+      translations, Adwaita, schemas, fonts, native dependencies, and spawn
+      helpers while removing 271 unused files (16.21%). See
+      [`docs/gtk4/runtime-packaging.md`](docs/gtk4/runtime-packaging.md).
 - [ ] Review SOCKS4 separately; its current status remains `Proposed`.
 - [ ] Continue contained installed-UI refinements based on reproducible
       screenshots, logs, and real-world acceptance.
