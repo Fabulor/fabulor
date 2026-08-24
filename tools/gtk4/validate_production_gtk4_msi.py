@@ -26,6 +26,8 @@ REQUIRED_PATHS = {
     "Plugins/hcpython3.dll",
     "Plugins/hcsysinfo.dll",
     "Runtime/plugin-host-manifest.json",
+    "Runtime/Python314/python3.dll",
+    "Runtime/Python314/python314.dll",
     "Runtime/GTK4/bin/gtk-4-1.dll",
     "share/adwaita-icons-attribution.txt",
     "share/doc/fabulor/Licence.md",

@@ -1018,6 +1018,15 @@ public sealed class FabulorBootstrapperApplication : BootstrapperApplication
 
     private void OnPlanRelatedBundle(object? sender, PlanRelatedBundleEventArgs e)
     {
+        if (this.pendingAction == LaunchAction.Install && this.isFabulorMsiInstalled)
+        {
+            // The MSI major-upgrade transaction owns removal of the previous product.
+            // A second Burn removal after installation can delete shared runtime files.
+            e.State = RequestState.None;
+            this.engine.Log(
+                LogLevel.Standard,
+                $"Suppressing late related-bundle removal for '{e.BundleCode}'; the MSI major upgrade owns replacement.");
+        }
     }
 
     private void OnPlanRelatedBundleType(object? sender, PlanRelatedBundleTypeEventArgs e)
