@@ -374,6 +374,37 @@ class ProductionWixProfileTests(unittest.TestCase):
         install = root.find(".//w:Directory[@Id='INSTALLFOLDER']", WIX_NS)
         self.assertEqual(install.get("Name"), "Fabulor")
 
+        major_upgrade = root.find("w:Package/w:MajorUpgrade", WIX_NS)
+        self.assertIsNotNone(major_upgrade)
+        self.assertEqual(major_upgrade.get("Schedule"), "afterInstallInitialize")
+
+        bootstrapper = (
+            INSTALLER / "UX" / "FabulorBootstrapperApplication.cs"
+        ).read_text(encoding="utf-8")
+        self.assertIn(
+            "this.pendingAction == LaunchAction.Install && this.isFabulorMsiInstalled",
+            bootstrapper,
+        )
+        self.assertIn("e.State = RequestState.None;", bootstrapper)
+        self.assertIn("this.detectedRelatedBundleCachePaths.Add(bundleCachePath);", bootstrapper)
+        self.assertIn("this.RemoveStaleBundleDependencyDependents(preservedBundleCode);", bootstrapper)
+        self.assertIn("this.RemoveStaleMsiDependencyRegistrations();", bootstrapper)
+        self.assertIn("this.RemoveDetectedRelatedBundleCaches(preservedBundlePath);", bootstrapper)
+        self.assertIn("!Guid.TryParse(cacheDirectoryName, out _)", bootstrapper)
+
+    def test_python_runtime_payload_keeps_loader_dlls(self):
+        project = (INSTALLER / "Fabulor.wixproj").read_text(encoding="utf-8")
+        components = (
+            INSTALLER / "Components" / "PluginRuntimesGtk4.wxs"
+        ).read_text(encoding="utf-8")
+
+        self.assertIn(r"Runtime\Python314\python314.dll", project)
+        self.assertIn(r"Runtime\Python314\python3.dll", project)
+        self.assertIn(
+            r'Files Include="$(var.Gtk4PluginHostRoot)\Runtime\Python314\**"',
+            components,
+        )
+
     def test_about_help_and_licence_contract(self):
         menu = (ROOT / "src" / "fe-gtk" / "menu.c").read_text(encoding="utf-8")
         pixmaps = (ROOT / "src" / "fe-gtk" / "pixmaps.c").read_text(

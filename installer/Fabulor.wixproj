@@ -70,6 +70,7 @@
     <Error Condition="!Exists('$(Gtk4EnchantRoot)\lib\enchant-2\enchant_winspell.dll')" Text="Missing GTK4-compatible WinSpell provider at $(Gtk4EnchantRoot)." />
     <Error Condition="!Exists('$(Gtk4EnchantRoot)\share\enchant-2\enchant.ordering')" Text="Missing GTK4-compatible Enchant provider ordering at $(Gtk4EnchantRoot)." />
     <Error Condition="!Exists('$(Gtk4PluginHostRoot)\Runtime\plugin-host-manifest.json')" Text="Missing staged GTK4 plugin-host manifest at $(Gtk4PluginHostRoot)." />
+    <Error Condition="!Exists('$(Gtk4PluginHostRoot)\Runtime\Python314\python3.dll')" Text="Missing staged Python stable ABI runtime at $(Gtk4PluginHostRoot)." />
     <Error Condition="!Exists('$(Gtk4PluginHostRoot)\Runtime\Python314\python314.dll')" Text="Missing staged Python 3.14 runtime at $(Gtk4PluginHostRoot)." />
     <Error Condition="!Exists('$(Gtk4PluginHostRoot)\Runtime\Tcl\bin\tcl86t.dll')" Text="Missing staged Tcl 8.6 runtime at $(Gtk4PluginHostRoot)." />
     <Error Condition="!Exists('$(Gtk4PluginHostRoot)\Runtime\DotNet\Fabulor.PluginAbstractions.dll')" Text="Missing staged managed plugin abstractions at $(Gtk4PluginHostRoot)." />

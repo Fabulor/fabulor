@@ -11,6 +11,7 @@
            Scope="perMachine">
     <MajorUpgrade
       AllowSameVersionUpgrades="yes"
+      Schedule="afterInstallInitialize"
       DowngradeErrorMessage="A newer version of Fabulor is already installed." />
     <MediaTemplate EmbedCab="yes" />
     <Icon Id="FabulorProductIcon" SourceFile="..\data\icons\fabulor.ico" />
