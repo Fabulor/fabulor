@@ -65,7 +65,6 @@ void menu_set_fullscreen (session_gui *gui, int fullscreen);
 #define MENU_ID_TOPICBAR 3
 #define MENU_ID_USERLIST 4
 #define MENU_ID_ULBUTTONS 5
-#define MENU_ID_MODEBUTTONS 6
 #define MENU_ID_LAYOUT_TABS 7
 #define MENU_ID_LAYOUT_TREE 8
 #define MENU_ID_DISCONNECT 9

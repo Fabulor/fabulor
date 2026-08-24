@@ -31,7 +31,7 @@ void fabulor_xtext_background_end_frame (FabulorXTextBackground *background);
 void fabulor_xtext_background_paint (FabulorXTextBackground *background,
 	cairo_t *context, const XTextColor *fallback,
 	const FabulorXTextGeometry *geometry, gint x, gint y, gint width,
-	gint height, gint tile_x, gint tile_y);
+	gint height, gint tile_x, gint tile_y, gint dim_percent);
 
 G_END_DECLS
 

@@ -905,7 +905,7 @@ class ProductionWixProfileTests(unittest.TestCase):
             "chanlist_menu_destroy",
             "gtk_box_pack_start",
             "gtk_container_add",
-            "gtk_menu_",
+            "gtk_menu_(?!button_)",
             "gtk_menu_shell_",
             "gtk_widget_destroy",
             "gtk_widget_show_all",
@@ -1011,7 +1011,7 @@ class ProductionWixProfileTests(unittest.TestCase):
             "gtk_container_get_children",
             "gtk_drag_dest_set",
             "gtk_get_current_event",
-            "gtk_menu_",
+            "gtk_menu_(?!button_)",
             "gtk_paned_get_child1",
             "gtk_paned_get_child2",
             "gtk_widget_destroy",
@@ -1036,7 +1036,9 @@ class ProductionWixProfileTests(unittest.TestCase):
         self.assertIn("FabulorGtkInternalDragKind kind", main_source)
         self.assertIn("fabulor_pane_clamp_end_size", main_source)
         self.assertIn(
-            "MAX (prefs.hex_gui_pane_right_size_min, 1)", main_source
+            "MAX (MG_USERLIST_MIN_WIDTH,\n"
+            "                    prefs.hex_gui_pane_right_size_min)",
+            main_source,
         )
         self.assertIn("fabulor_emoji_picker_viewport_size", main_source)
         self.assertIn("gtk_drop_down_new", main_source)

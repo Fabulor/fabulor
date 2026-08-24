@@ -44,11 +44,12 @@ bottom.
 
 **Timestamps** enables transcript timestamps and sets their format.
 
-**Title Bar** controls whether the current channel modes, user count, and
-nickname appear in the window title.
+**Title Bar** controls whether the user count and nickname appear in the
+window title.
 
-**Topic Bar** controls whether mode buttons sit beside the topic and whether a
-long topic may use more than one line.
+**Topic Bar** controls whether a long topic may use more than one line. Channel
+mode controls are always available from the compact **Modes** menu at the
+right of a channel topic.
 
 **Fabulor Theme** contains:
 
@@ -57,7 +58,10 @@ long topic may use more than one line.
 - **Import theme archive...** for supported GTK4 theme packages.
 
 The **Advanced** area sets a transcript background image, window opacity, and
-mouse-wheel transcript speed.
+mouse-wheel transcript speed. Background images preserve their aspect ratio,
+remain centred, and crop at the edges as needed to fill the transcript. The
+background-image dimming control blends the image into the configured
+transcript background from 0% to 100%.
 
 See [Themes and colours](themes-and-colours.md) for installation,
 compatibility, rollback, and recovery guidance.
@@ -119,7 +123,9 @@ the transcript and sorted alphabetically, by privilege, in reverse order, or
 left unsorted.
 
 **Allow user list to resize with the window** permits automatic width changes.
-Turn it off when you want Fabulor to retain the configured user-list width.
+Turn it off when you want Fabulor to retain the configured user-list width. A
+150-pixel minimum keeps the two-column action footer and network meters within
+the panel; larger configured widths remain unchanged.
 
 **Away Tracking** marks away users on channels below the configured size.
 Tracking very large channels can generate unnecessary network traffic and UI

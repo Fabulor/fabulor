@@ -21,8 +21,8 @@ network list, favourite filtering, and connection controls.](images/network-list
 - **Remove** deletes the selected network definition.
 - **Edit...** opens the selected network's complete settings.
 - **Sort** orders the list alphabetically.
-- **Favor** marks or unmarks the selected network as a favourite.
-- **Show favorites only** filters the visible list.
+- **Favour** marks or unmarks the selected network as a favourite.
+- **Show favourites only** filters the visible list.
 - **Connect** starts the selected network.
 - **Close** closes the Network List without starting a connection.
 
@@ -132,6 +132,18 @@ appropriate point.
 
 The channel list's context menu can also toggle **Autojoin Channel** for the
 selected network.
+
+## Browsing Public Channels
+
+Open **Server > Channel List** or use `/LIST` to download the connected
+network's public channel list. Filters above the results can search channel
+names, topics, and a selected user-count range. The toolbar below the results
+shows the current totals and provides Search, Download, Save, and **Join
+Channel** actions. Double-clicking a result also joins that channel.
+
+An empty result area explains whether no list has been downloaded or no
+channels match the current filters. Download and filter controls remain usable
+in either state.
 
 ## Connect Commands
 

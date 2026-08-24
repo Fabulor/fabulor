@@ -127,8 +127,6 @@ struct fabulorprefs
 	unsigned int hex_input_history_save;
 	unsigned int hex_gui_join_dialog;
 	unsigned int hex_gui_manifest_plugins;
-	unsigned int hex_gui_mode_buttons;
-	unsigned int hex_gui_mode_buttons_inline;
 	unsigned int hex_gui_quit_dialog;
 	unsigned int hex_gui_scroll_bottom_button;
 	/* unsigned int hex_gui_single; */
@@ -160,7 +158,6 @@ struct fabulorprefs
 	unsigned int hex_gui_ulist_resizable;
 	unsigned int hex_gui_ulist_show_hosts;
 	unsigned int hex_gui_usermenu;
-	unsigned int hex_gui_win_modes;
 	unsigned int hex_gui_win_nick;
 	unsigned int hex_gui_win_save;
 	unsigned int hex_gui_win_swap;
@@ -243,6 +240,8 @@ struct fabulorprefs
 	int hex_flood_ctcp_time;			/* seconds of floods */
 	int hex_flood_msg_num;				/* same deal */
 	int hex_flood_msg_time;
+	int hex_gui_banlist_height;
+	int hex_gui_banlist_width;
 	int hex_gui_chanlist_maxusers;
 	int hex_gui_chanlist_minusers;
 	int hex_gui_chanlist_width_channel;
@@ -252,6 +251,8 @@ struct fabulorprefs
 	int hex_gui_dialog_left;
 	int hex_gui_dialog_top;
 	int hex_gui_dialog_width;
+	int hex_gui_ignore_height;
+	int hex_gui_ignore_width;
 	int hex_gui_lagometer;
 	int hex_gui_lang;
 	int hex_gui_pane_divider_position;
@@ -297,6 +298,7 @@ struct fabulorprefs
 	int hex_text_max_indent;
 	int hex_text_max_lines;
 	int hex_url_grabber_limit;
+	int hex_text_background_dim;
 
 	/* STRINGS */
 	char hex_away_reason[256];

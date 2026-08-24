@@ -52,11 +52,11 @@
 #include "context-menu-presenter-gtk4.h"
 #include "menu-action-namespaces.h"
 
-#define ICON_CHANLIST_JOIN "zc-menu-join"
+#define ICON_CHANLIST_JOIN "go-jump-symbolic"
 #define ICON_CHANLIST_COPY "zc-menu-copy"
-#define ICON_CHANLIST_FIND "zc-menu-find"
-#define ICON_CHANLIST_REFRESH "zc-menu-refresh"
-#define ICON_CHANLIST_SAVE "zc-menu-save"
+#define ICON_CHANLIST_FIND "system-search-symbolic"
+#define ICON_CHANLIST_REFRESH "view-refresh-symbolic"
+#define ICON_CHANLIST_SAVE "document-save-symbolic"
 
 #ifndef CUSTOM_LIST
 typedef struct	/* this is now in custom-list.h */
@@ -138,6 +138,24 @@ chanlist_icon_button (const char *label, const char *icon_name,
 	return button;
 }
 
+static GtkWidget *
+chanlist_tool_button (const char *label, const char *icon_name,
+	GCallback callback, gpointer userdata)
+{
+	GtkWidget *button = gtk_button_new ();
+	GtkWidget *image = fabulor_gtk_image_new_from_icon_name (icon_name,
+		FABULOR_GTK_ICON_SIZE_LARGE_TOOLBAR);
+
+	gtk_button_set_child (GTK_BUTTON (button), image);
+	gtk_widget_set_size_request (button, 42, 42);
+	gtk_widget_set_tooltip_text (button, label);
+	fabulor_gtk_widget_set_accessible_label (button, label);
+	g_signal_connect (G_OBJECT (button), "clicked", callback, userdata);
+	gtk_widget_show (button);
+
+	return button;
+}
+
 
 
 static gboolean
@@ -181,6 +199,18 @@ chanlist_update_caption (server *serv)
 static void
 chanlist_update_buttons (server *serv)
 {
+	if (serv->gui->chanlist_empty)
+	{
+		if (serv->gui->chanlist_channels_found_count > 0)
+			gtk_label_set_text (GTK_LABEL (serv->gui->chanlist_empty),
+				_("No channels match the current filters."));
+		else
+			gtk_label_set_text (GTK_LABEL (serv->gui->chanlist_empty),
+				_("No channels to display. Download the list or adjust the filters."));
+		gtk_widget_set_visible (serv->gui->chanlist_empty,
+			serv->gui->chanlist_channels_shown_count == 0);
+	}
+
 	if (serv->gui->chanlist_channels_shown_count)
 	{
 		gtk_widget_set_sensitive (serv->gui->chanlist_join, TRUE);
@@ -276,10 +306,6 @@ chanlist_place_row_in_gui (server *serv, chanlistrow *next_row, gboolean force)
 	serv->gui->chanlist_users_found_count += next_row->users;
 	serv->gui->chanlist_channels_found_count++;
 
-	if (serv->gui->chanlist_channels_shown_count == 1)
-		/* join & save buttons become live */
-		chanlist_update_buttons (serv);
-
 	if (next_row->users < serv->gui->chanlist_minusers)
 	{
 		serv->gui->chanlist_caption_is_stale = TRUE;
@@ -342,6 +368,9 @@ chanlist_place_row_in_gui (server *serv, chanlistrow *next_row, gboolean force)
 	/* Update the 'shown' counter values */
 	serv->gui->chanlist_users_shown_count += next_row->users;
 	serv->gui->chanlist_channels_shown_count++;
+	if (serv->gui->chanlist_channels_shown_count == 1)
+		/* join & save buttons become live and the empty state disappears */
+		chanlist_update_buttons (serv);
 }
 
 /* Performs the LIST download from the IRC server. */
@@ -425,6 +454,7 @@ chanlist_build_gui_list (server *serv)
 	}
 
 	fabulor_channel_list_resort (serv->gui->chanlist_model);
+	chanlist_update_buttons (serv);
 }
 
 /**
@@ -462,6 +492,7 @@ fe_chan_list_end (server *serv)
 	chanlist_flush_pending (serv);
 	gtk_widget_set_sensitive (serv->gui->chanlist_refresh, TRUE);
 	fabulor_channel_list_resort (serv->gui->chanlist_model);
+	chanlist_update_buttons (serv);
 }
 
 static void
@@ -805,6 +836,7 @@ chanlist_cleanup (server *serv)
 	fabulor_channel_list_free (serv->gui->chanlist_model);
 	serv->gui->chanlist_model = NULL;
 	serv->gui->chanlist_list = NULL;
+	serv->gui->chanlist_empty = NULL;
 
 	if (serv->gui->chanlist_flash_tag)
 	{
@@ -846,7 +878,8 @@ chanlist_combo_cb (GtkWidget *combo, server *serv)
 void
 chanlist_opengui (server *serv, int do_refresh)
 {
-	GtkWidget *vbox, *hbox, *table, *wid, *view;
+	GtkWidget *vbox, *hbox, *table, *wid, *view, *toolbar, *actions;
+	GtkWidget *list_overlay, *list_box;
 	char tbuf[256];
 
 	if (serv->gui->chanlist_window)
@@ -889,88 +922,31 @@ chanlist_opengui (server *serv, int do_refresh)
 
 	serv->gui->chanlist_window =
 		mg_create_generic_tab ("ChanList", tbuf, FALSE, TRUE, chanlist_closegui,
-								serv, 640, 480, &vbox, serv);
+								serv, 760, 560, &vbox, serv);
 	gtkutil_destroy_on_esc (serv->gui->chanlist_window);
 
 	fabulor_gtk_container_set_uniform_inset (vbox, 6);
-	gtk_box_set_spacing (GTK_BOX (vbox), 12);
-
-	/* make a label to store the user/channel info */
-	wid = gtk_label_new (NULL);
-	fabulor_gtk_box_append (GTK_BOX (vbox), wid, FALSE, FALSE, 0);
-	gtk_widget_show (wid);
-	serv->gui->chanlist_label = wid;
-
-	/* ============================================================= */
-
-	serv->gui->chanlist_model = fabulor_channel_list_new (
-		chanlist_activate, serv);
-	if (!serv->gui->chanlist_model)
-	{
-		fabulor_gtk_window_destroy (GTK_WINDOW (serv->gui->chanlist_window));
-		return;
-	}
-	view = fabulor_channel_list_create_view (serv->gui->chanlist_model,
-		GTK_BOX (vbox), _("Channel"), _("Users"), _("Topic"),
-		prefs.hex_gui_chanlist_width_channel > 0 ?
-			chanlist_normalize_width (prefs.hex_gui_chanlist_width_channel) : 0,
-		prefs.hex_gui_chanlist_width_users > 0 ?
-			chanlist_normalize_width (prefs.hex_gui_chanlist_width_users) : 0,
-		prefs.hex_gui_chanlist_width_topic > 0 ?
-			chanlist_normalize_width (prefs.hex_gui_chanlist_width_topic) : 0);
-	if (!view)
-	{
-		fabulor_channel_list_free (serv->gui->chanlist_model);
-		serv->gui->chanlist_model = NULL;
-		fabulor_gtk_window_destroy (GTK_WINDOW (serv->gui->chanlist_window));
-		return;
-	}
-	serv->gui->chanlist_list = view;
-	fabulor_gtk_widget_on_multi_click (view, chanlist_button_cb, serv);
+	gtk_box_set_spacing (GTK_BOX (vbox), 8);
 
 	/* ============================================================= */
 
 	table = gtk_grid_new ();
 	gtk_grid_set_column_spacing (GTK_GRID (table), 12);
-	gtk_grid_set_row_spacing (GTK_GRID (table), 3);
+	gtk_grid_set_row_spacing (GTK_GRID (table), 6);
 	fabulor_gtk_box_append (GTK_BOX (vbox), table, FALSE, TRUE, 0);
 	gtk_widget_show (table);
-
-	wid = chanlist_icon_button (_("_Search"), ICON_CHANLIST_FIND,
-										 G_CALLBACK (chanlist_search_pressed), serv);
-	serv->gui->chanlist_search = wid;
-	chanlist_grid_attach (table, wid, 3, 3, 1, 1, FALSE, FALSE,
-						  GTK_ALIGN_FILL, GTK_ALIGN_FILL);
-
-	wid = chanlist_icon_button (_("_Download List"), ICON_CHANLIST_REFRESH,
-										 G_CALLBACK (chanlist_refresh), serv);
-	serv->gui->chanlist_refresh = wid;
-	chanlist_grid_attach (table, wid, 3, 2, 1, 1, FALSE, FALSE,
-						  GTK_ALIGN_FILL, GTK_ALIGN_FILL);
-
-	wid = chanlist_icon_button (_("Save _List..."), ICON_CHANLIST_SAVE,
-										 G_CALLBACK (chanlist_save), serv);
-	serv->gui->chanlist_savelist = wid;
-	chanlist_grid_attach (table, wid, 3, 1, 1, 1, FALSE, FALSE,
-						  GTK_ALIGN_FILL, GTK_ALIGN_FILL);
-
-	wid = chanlist_icon_button (_("_Join Channel"), ICON_CHANLIST_JOIN,
-										 G_CALLBACK (chanlist_join), serv);
-	serv->gui->chanlist_join = wid;
-	chanlist_grid_attach (table, wid, 3, 0, 1, 1, FALSE, FALSE,
-						  GTK_ALIGN_FILL, GTK_ALIGN_FILL);
 
 	/* ============================================================= */
 
 	wid = gtk_label_new (_("Show only:"));
 	chanlist_set_label_alignment (wid);
-	chanlist_grid_attach (table, wid, 0, 3, 1, 1, FALSE, FALSE,
+	chanlist_grid_attach (table, wid, 2, 1, 1, 1, FALSE, FALSE,
 						  GTK_ALIGN_START, GTK_ALIGN_CENTER);
 	gtk_widget_show (wid);
 
 	hbox = chanlist_box_new ();
 	gtk_box_set_spacing (GTK_BOX (hbox), 9);
-	chanlist_grid_attach (table, hbox, 1, 3, 1, 1, FALSE, FALSE,
+	chanlist_grid_attach (table, hbox, 3, 1, 1, 1, FALSE, FALSE,
 						  GTK_ALIGN_FILL, GTK_ALIGN_FILL);
 	gtk_widget_show (hbox);
 
@@ -1007,13 +983,13 @@ chanlist_opengui (server *serv, int do_refresh)
 
 	wid = gtk_label_new (_("Look in:"));
 	chanlist_set_label_alignment (wid);
-	chanlist_grid_attach (table, wid, 0, 2, 1, 1, FALSE, FALSE,
+	chanlist_grid_attach (table, wid, 2, 0, 1, 1, FALSE, FALSE,
 						  GTK_ALIGN_START, GTK_ALIGN_CENTER);
 	gtk_widget_show (wid);
 
 	hbox = chanlist_box_new ();
 	gtk_box_set_spacing (GTK_BOX (hbox), 12);
-	chanlist_grid_attach (table, hbox, 1, 2, 1, 1, FALSE, FALSE,
+	chanlist_grid_attach (table, hbox, 3, 0, 1, 1, FALSE, FALSE,
 						  GTK_ALIGN_FILL, GTK_ALIGN_FILL);
 	gtk_widget_show (hbox);
 
@@ -1048,7 +1024,7 @@ chanlist_opengui (server *serv, int do_refresh)
 	gtk_combo_box_text_append_text (GTK_COMBO_BOX_TEXT (wid), _("Pattern Match (Wildcards)"));
 	gtk_combo_box_text_append_text (GTK_COMBO_BOX_TEXT (wid), _("Regular Expression"));
 	gtk_combo_box_set_active (GTK_COMBO_BOX (wid), serv->gui->chanlist_search_type);
-	chanlist_grid_attach (table, wid, 1, 1, 1, 1, FALSE, FALSE,
+	chanlist_grid_attach (table, wid, 1, 1, 1, 1, TRUE, FALSE,
 						  GTK_ALIGN_FILL, GTK_ALIGN_CENTER);
 	g_signal_connect (G_OBJECT (wid), "changed",
 							G_CALLBACK (chanlist_combo_cb), serv);
@@ -1078,10 +1054,93 @@ chanlist_opengui (server *serv, int do_refresh)
 
 	/* ============================================================= */
 
-	wid = gtk_separator_new (GTK_ORIENTATION_VERTICAL);
-	chanlist_grid_attach (table, wid, 2, 0, 1, 5, FALSE, FALSE,
-						  GTK_ALIGN_FILL, GTK_ALIGN_FILL);
+	serv->gui->chanlist_model = fabulor_channel_list_new (
+		chanlist_activate, serv);
+	if (!serv->gui->chanlist_model)
+	{
+		fabulor_gtk_window_destroy (GTK_WINDOW (serv->gui->chanlist_window));
+		return;
+	}
+	list_overlay = gtk_overlay_new ();
+	gtk_widget_set_hexpand (list_overlay, TRUE);
+	gtk_widget_set_vexpand (list_overlay, TRUE);
+	fabulor_gtk_box_append (GTK_BOX (vbox), list_overlay, TRUE, TRUE, 0);
+
+	list_box = chanlist_box_new ();
+	gtk_orientable_set_orientation (GTK_ORIENTABLE (list_box),
+		GTK_ORIENTATION_VERTICAL);
+	gtk_widget_set_hexpand (list_box, TRUE);
+	gtk_widget_set_vexpand (list_box, TRUE);
+	gtk_overlay_set_child (GTK_OVERLAY (list_overlay), list_box);
+
+	view = fabulor_channel_list_create_view (serv->gui->chanlist_model,
+		GTK_BOX (list_box), _("Channel"), _("Users"), _("Topic"),
+		prefs.hex_gui_chanlist_width_channel > 0 ?
+			chanlist_normalize_width (prefs.hex_gui_chanlist_width_channel) : 0,
+		prefs.hex_gui_chanlist_width_users > 0 ?
+			chanlist_normalize_width (prefs.hex_gui_chanlist_width_users) : 0,
+		prefs.hex_gui_chanlist_width_topic > 0 ?
+			chanlist_normalize_width (prefs.hex_gui_chanlist_width_topic) : 0);
+	if (!view)
+	{
+		fabulor_channel_list_free (serv->gui->chanlist_model);
+		serv->gui->chanlist_model = NULL;
+		fabulor_gtk_window_destroy (GTK_WINDOW (serv->gui->chanlist_window));
+		return;
+	}
+	serv->gui->chanlist_list = view;
+	fabulor_gtk_widget_on_multi_click (view, chanlist_button_cb, serv);
+
+	wid = gtk_label_new (NULL);
+	gtk_label_set_wrap (GTK_LABEL (wid), TRUE);
+	gtk_label_set_justify (GTK_LABEL (wid), GTK_JUSTIFY_CENTER);
+	gtk_widget_set_halign (wid, GTK_ALIGN_CENTER);
+	gtk_widget_set_valign (wid, GTK_ALIGN_CENTER);
+	gtk_widget_set_margin_start (wid, 24);
+	gtk_widget_set_margin_end (wid, 24);
+	gtk_widget_add_css_class (wid, "dim-label");
+	gtk_widget_set_can_target (wid, FALSE);
+	gtk_overlay_add_overlay (GTK_OVERLAY (list_overlay), wid);
+	serv->gui->chanlist_empty = wid;
+
+	toolbar = chanlist_box_new ();
+	gtk_box_set_spacing (GTK_BOX (toolbar), 8);
+	fabulor_gtk_box_append (GTK_BOX (vbox), toolbar, FALSE, TRUE, 0);
+	gtk_widget_show (toolbar);
+
+	wid = gtk_label_new (NULL);
+	gtk_widget_set_hexpand (wid, TRUE);
+	gtk_widget_set_halign (wid, GTK_ALIGN_START);
+	gtk_widget_set_valign (wid, GTK_ALIGN_CENTER);
+	fabulor_gtk_box_append (GTK_BOX (toolbar), wid, TRUE, TRUE, 0);
 	gtk_widget_show (wid);
+	serv->gui->chanlist_label = wid;
+
+	actions = chanlist_box_new ();
+	gtk_box_set_spacing (GTK_BOX (actions), 6);
+	fabulor_gtk_box_append (GTK_BOX (toolbar), actions, FALSE, TRUE, 0);
+	gtk_widget_show (actions);
+
+	wid = chanlist_tool_button (_("Search channels"), ICON_CHANLIST_FIND,
+		G_CALLBACK (chanlist_search_pressed), serv);
+	serv->gui->chanlist_search = wid;
+	fabulor_gtk_box_append (GTK_BOX (actions), wid, FALSE, TRUE, 0);
+
+	wid = chanlist_tool_button (_("Download channel list"),
+		ICON_CHANLIST_REFRESH, G_CALLBACK (chanlist_refresh), serv);
+	serv->gui->chanlist_refresh = wid;
+	fabulor_gtk_box_append (GTK_BOX (actions), wid, FALSE, TRUE, 0);
+
+	wid = chanlist_tool_button (_("Save channel list"), ICON_CHANLIST_SAVE,
+		G_CALLBACK (chanlist_save), serv);
+	serv->gui->chanlist_savelist = wid;
+	fabulor_gtk_box_append (GTK_BOX (actions), wid, FALSE, TRUE, 0);
+
+	wid = chanlist_icon_button (_("_Join Channel"), ICON_CHANLIST_JOIN,
+		G_CALLBACK (chanlist_join), serv);
+	gtk_widget_set_tooltip_text (wid, _("Join the selected channel"));
+	serv->gui->chanlist_join = wid;
+	fabulor_gtk_box_append (GTK_BOX (actions), wid, FALSE, TRUE, 0);
 
 	/* reset the counters. */
 	chanlist_reset_counters (serv);
@@ -1093,5 +1152,5 @@ chanlist_opengui (server *serv, int do_refresh)
 
 	chanlist_update_buttons (serv);
 	gtk_widget_show (serv->gui->chanlist_window);
-	gtk_widget_grab_focus (serv->gui->chanlist_refresh);
+	gtk_widget_grab_focus (serv->gui->chanlist_wild);
 }

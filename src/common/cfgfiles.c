@@ -413,6 +413,8 @@ const struct prefs vars[] =
 	{"gui_autoopen_dialog", P_OFFINT (hex_gui_autoopen_dialog), TYPE_BOOL},
 	{"gui_autoopen_recv", P_OFFINT (hex_gui_autoopen_recv), TYPE_BOOL},
 	{"gui_autoopen_send", P_OFFINT (hex_gui_autoopen_send), TYPE_BOOL},
+	{"gui_banlist_height", P_OFFINT (hex_gui_banlist_height), TYPE_INT},
+	{"gui_banlist_width", P_OFFINT (hex_gui_banlist_width), TYPE_INT},
 	{"gui_chanlist_maxusers", P_OFFINT (hex_gui_chanlist_maxusers), TYPE_INT},
 	{"gui_chanlist_minusers", P_OFFINT (hex_gui_chanlist_minusers), TYPE_INT},
 	{"gui_chanlist_width_channel", P_OFFINT (hex_gui_chanlist_width_channel), TYPE_INT},
@@ -427,6 +429,8 @@ const struct prefs vars[] =
 	{"gui_filesize_iec", P_OFFINT (hex_gui_filesize_iec), TYPE_BOOL},
 	{"gui_focus_omitalerts", P_OFFINT (hex_gui_focus_omitalerts), TYPE_BOOL},
 	{"gui_hide_menu", P_OFFINT (hex_gui_hide_menu), TYPE_BOOL},
+	{"gui_ignore_height", P_OFFINT (hex_gui_ignore_height), TYPE_INT},
+	{"gui_ignore_width", P_OFFINT (hex_gui_ignore_width), TYPE_INT},
 	{"gui_input_attr", P_OFFINT (hex_gui_input_attr), TYPE_BOOL},
 	{"gui_input_icon", P_OFFINT (hex_gui_input_icon), TYPE_BOOL},
 	{"gui_input_nick", P_OFFINT (hex_gui_input_nick), TYPE_BOOL},
@@ -438,8 +442,6 @@ const struct prefs vars[] =
 	{"gui_lagometer", P_OFFINT (hex_gui_lagometer), TYPE_INT},
 	{"gui_lang", P_OFFINT (hex_gui_lang), TYPE_INT},
 	{"gui_manifest_plugins", P_OFFINT (hex_gui_manifest_plugins), TYPE_BOOL},
-	{"gui_mode_buttons", P_OFFINT (hex_gui_mode_buttons), TYPE_BOOL},
-	{"gui_mode_buttons_inline", P_OFFINT (hex_gui_mode_buttons_inline), TYPE_BOOL},
 	{"gui_pane_divider_position", P_OFFINT (hex_gui_pane_divider_position), TYPE_INT},
 	{"gui_pane_left_size", P_OFFINT (hex_gui_pane_left_size), TYPE_INT},
 	{"gui_pane_right_size", P_OFFINT (hex_gui_pane_right_size), TYPE_INT},
@@ -496,7 +498,6 @@ const struct prefs vars[] =
 	{"gui_win_height", P_OFFINT (hex_gui_win_height), TYPE_INT},
 	{"gui_win_fullscreen", P_OFFINT (hex_gui_win_fullscreen), TYPE_INT},
 	{"gui_win_left", P_OFFINT (hex_gui_win_left), TYPE_INT},
-	{"gui_win_modes", P_OFFINT (hex_gui_win_modes), TYPE_BOOL},
 	{"gui_win_nick", P_OFFINT (hex_gui_win_nick), TYPE_BOOL},
 	{"gui_win_save", P_OFFINT (hex_gui_win_save), TYPE_BOOL},
 	{"gui_win_state", P_OFFINT (hex_gui_win_state), TYPE_INT},
@@ -586,6 +587,7 @@ const struct prefs vars[] =
 	{"text_autocopy_stamp", P_OFFINT (hex_text_autocopy_stamp), TYPE_BOOL},
 	{"text_autocopy_text", P_OFFINT (hex_text_autocopy_text), TYPE_BOOL},
 	{"text_background", P_OFFSET (hex_text_background), TYPE_STR},
+	{"text_background_dim", P_OFFINT (hex_text_background_dim), TYPE_INT},
 	{"text_color_nicks", P_OFFINT (hex_text_color_nicks), TYPE_BOOL},
 	{"text_font", P_OFFSET (hex_text_font), TYPE_STR},
 	{"text_font_main", P_OFFSET (hex_text_font_main), TYPE_STR},
@@ -799,6 +801,7 @@ load_default_config(void)
 	prefs.hex_gui_topicbar = 1;
 	prefs.hex_gui_topicbar_multiline = 1;
 	prefs.hex_gui_transparency = 255;
+	prefs.hex_text_background_dim = 0;
 	prefs.hex_gui_tray = 1;
 	prefs.hex_gui_tray_blink = 1;
 	prefs.hex_gui_ulist_color = 1;
@@ -847,6 +850,8 @@ load_default_config(void)
 	prefs.hex_flood_ctcp_time = 30;
 	prefs.hex_flood_msg_num = 5;
 	prefs.hex_flood_msg_time = 30;
+	prefs.hex_gui_banlist_height = 520;
+	prefs.hex_gui_banlist_width = 760;
 	prefs.hex_gui_chanlist_maxusers = 9999;
 	prefs.hex_gui_chanlist_minusers = 5;
 	prefs.hex_gui_chanlist_width_channel = 0;
@@ -854,11 +859,13 @@ load_default_config(void)
 	prefs.hex_gui_chanlist_width_users = 0;
 	prefs.hex_gui_dialog_height = 256;
 	prefs.hex_gui_dialog_width = 500;
+	prefs.hex_gui_ignore_height = 520;
+	prefs.hex_gui_ignore_width = 700;
 	prefs.hex_gui_lagometer = 1;
 	prefs.hex_gui_lang = get_default_language();
 	prefs.hex_gui_pane_left_size = 128;		/* with treeview icons we need a bit bigger space */
-	prefs.hex_gui_pane_right_size = 100;
-	prefs.hex_gui_pane_right_size_min = 80;
+	prefs.hex_gui_pane_right_size = 150;
+	prefs.hex_gui_pane_right_size_min = 150;
 	prefs.hex_gui_tab_layout = 2;			/* 0=Tabs 1=Reserved 2=Tree */
 	prefs.hex_gui_tab_newtofront = 2;
 	prefs.hex_gui_tab_pos = 1;

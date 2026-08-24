@@ -19,6 +19,7 @@
 #include "fe-gtk.h"
 #include "theme/theme-manager.h"
 
+#include "../common/cfgfiles.h"
 #include "../common/fabulor.h"
 #include "../common/fe.h"
 #include "../common/modes.h"
@@ -29,10 +30,13 @@
 #include "maingui.h"
 #include "ban-list.h"
 #include "banlist.h"
+#include "window-geometry.h"
 
 #define ICON_BANLIST_REMOVE "list-remove"
 #define ICON_BANLIST_CLEAR "edit-clear"
 #define ICON_BANLIST_REFRESH "view-refresh"
+#define BANLIST_WINDOW_MIN_WIDTH 680
+#define BANLIST_WINDOW_MIN_HEIGHT 360
 
 /*
  * These supports_* routines set capable, readable, writable bits */
@@ -79,6 +83,18 @@ static mode_info modes[MODE_CT] = {
 		supports_quiet
 	}
 };
+
+static void
+banlist_geometry_cb (GtkWindow *window,
+	const FabulorWindowGeometry *geometry, gpointer user_data)
+{
+	(void) window;
+	(void) user_data;
+	if (geometry->width >= BANLIST_WINDOW_MIN_WIDTH)
+		prefs.hex_gui_banlist_width = geometry->width;
+	if (geometry->height >= BANLIST_WINDOW_MIN_HEIGHT)
+		prefs.hex_gui_banlist_height = geometry->height;
+}
 
 static void
 supports_bans (banlist_info *banl, int i)
@@ -518,6 +534,8 @@ banlist_closegui (gpointer userdata)
 {
 	banlist_info *banl = userdata;
 	session *sess = banl->sess;
+	if (!save_config ())
+		fe_message (_("Could not save fabulor.conf."), FE_MSG_WARN);
 
 	if (is_session (sess) && sess->res->banlist == banl)
 	{
@@ -577,8 +595,13 @@ banlist_opengui (struct session *sess)
 					sess->server->servername, _(DISPLAY_NAME));
 
 	banl->window = mg_create_generic_tab ("BanList", tbuf, FALSE,
-					TRUE, banlist_closegui, banl, 700, 300, &vbox, sess->server);
+					TRUE, banlist_closegui, banl, prefs.hex_gui_banlist_width,
+					prefs.hex_gui_banlist_height, &vbox, sess->server);
 	gtkutil_destroy_on_esc (banl->window);
+	gtk_widget_set_size_request (banl->window, BANLIST_WINDOW_MIN_WIDTH,
+		BANLIST_WINDOW_MIN_HEIGHT);
+	fabulor_window_geometry_watch (GTK_WINDOW (banl->window),
+		banlist_geometry_cb, NULL);
 
 	fabulor_gtk_container_set_uniform_inset (banl->window, 3);
 	gtk_box_set_spacing (GTK_BOX (vbox), 3);

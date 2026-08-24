@@ -67,6 +67,7 @@ struct server_gui
 	GtkWidget *chanlist_wild;		/* GtkEntry */
 	GtkWidget *chanlist_window;
 	GtkWidget *chanlist_list;
+	GtkWidget *chanlist_empty;
 	struct _FabulorChannelList *chanlist_model;
 	GtkWidget *chanlist_label;
 	GtkWidget *chanlist_min_spin;	/* minusers GtkSpinButton */
@@ -140,13 +141,13 @@ typedef struct session_gui
 		*button_box_parent,
 		*button_box,	/* userlist buttons' box */
 		*dialogbutton_box,
-		*topicbutton_box,
 		*meter_box,	/* all the meters inside this */
 		*lagometer,
 		*laginfo,
 		*throttlemeter,
 		*throttleinfo,
 		*topic_bar,
+		*mode_menu_button,
 		*hpane_left,
 		*hpane_right,
 		*vpane_left,
@@ -157,6 +158,7 @@ typedef struct session_gui
 		*nick_label,
 		*op_xpm,			/* icon to the left of nickname */
 		*namelistinfo,	/* label above userlist */
+		*userlist_empty,	/* empty channel placeholder */
 		*input_box,
 		*reply_box,
 		*reply_label,

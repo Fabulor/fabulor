@@ -12,17 +12,22 @@
 #include "fe-gtk.h"
 #include "theme/theme-manager.h"
 
+#include "../common/cfgfiles.h"
 #include "../common/fabulor.h"
+#include "../common/fabulorc.h"
 #include "../common/ignore.h"
 #include "../common/fe.h"
 #include "gtkutil.h"
 #include "gtk-compat.h"
 #include "ignore-list.h"
 #include "maingui.h"
+#include "window-geometry.h"
 
 #define ICON_IGNORE_NEW "document-new"
 #define ICON_IGNORE_DELETE "edit-delete"
 #define ICON_IGNORE_CLEAR "edit-clear"
+#define IGNORE_WINDOW_MIN_WIDTH 640
+#define IGNORE_WINDOW_MIN_HEIGHT 360
 
 static GtkWidget *ignorewin;
 static FabulorIgnoreList *ignore_view;
@@ -31,6 +36,18 @@ static GtkWidget *num_priv;
 static GtkWidget *num_chan;
 static GtkWidget *num_noti;
 static GtkWidget *num_invi;
+
+static void
+ignore_geometry_cb (GtkWindow *window,
+	const FabulorWindowGeometry *geometry, gpointer user_data)
+{
+	(void) window;
+	(void) user_data;
+	if (geometry->width >= IGNORE_WINDOW_MIN_WIDTH)
+		prefs.hex_gui_ignore_width = geometry->width;
+	if (geometry->height >= IGNORE_WINDOW_MIN_HEIGHT)
+		prefs.hex_gui_ignore_height = geometry->height;
+}
 
 static gboolean
 ignore_mask_renamed (const gchar *old_mask, const gchar *new_mask, guint flags,
@@ -134,6 +151,8 @@ close_ignore_gui_callback (gpointer userdata)
 {
 	(void) userdata;
 	ignore_save ();
+	if (!save_config ())
+		fe_message (_("Could not save fabulor.conf."), FE_MSG_WARN);
 	ignorewin = NULL;
 	ignore_view = NULL;
 }
@@ -169,8 +188,13 @@ ignore_gui_open (void)
 
 	g_snprintf (buf, sizeof (buf), _("Ignore list - %s"), _(DISPLAY_NAME));
 	ignorewin = mg_create_generic_tab ("IgnoreList", buf, FALSE, TRUE,
-		close_ignore_gui_callback, NULL, 700, 300, &vbox, 0);
+		close_ignore_gui_callback, NULL, prefs.hex_gui_ignore_width,
+		prefs.hex_gui_ignore_height, &vbox, 0);
 	gtkutil_destroy_on_esc (ignorewin);
+	gtk_widget_set_size_request (ignorewin, IGNORE_WINDOW_MIN_WIDTH,
+		IGNORE_WINDOW_MIN_HEIGHT);
+	fabulor_window_geometry_watch (GTK_WINDOW (ignorewin),
+		ignore_geometry_cb, NULL);
 	ignore_view = fabulor_ignore_list_new (ignore_mask_renamed,
 		ignore_flags_changed, NULL);
 	if (!ignore_view || !fabulor_ignore_list_create_view (ignore_view,

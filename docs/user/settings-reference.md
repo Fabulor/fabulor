@@ -114,6 +114,8 @@ dimensions, selected rows, or window state are normally maintained by Fabulor.
 | `gui_autoopen_dialog` | Boolean | Open a private-message tab when one is received. |
 | `gui_autoopen_recv` | Boolean | Open the transfer window for a received-file offer. |
 | `gui_autoopen_send` | Boolean | Open the transfer window when sending a file. |
+| `gui_banlist_height` | Integer | Saved Ban List window height. |
+| `gui_banlist_width` | Integer | Saved Ban List window width. |
 | `gui_chanlist_maxusers` | Integer | Maximum user count included in Channel List results. |
 | `gui_chanlist_minusers` | Integer | Minimum user count included in Channel List results. |
 | `gui_chanlist_width_channel` | Integer | Saved Channel List channel-column width. |
@@ -128,6 +130,8 @@ dimensions, selected rows, or window state are normally maintained by Fabulor.
 | `gui_filesize_iec` | Boolean | Display file sizes using IEC binary units. |
 | `gui_focus_omitalerts` | Boolean | Suppress alerts while the relevant Fabulor window is focused. |
 | `gui_hide_menu` | Boolean | Hide the main menu bar. |
+| `gui_ignore_height` | Integer | Saved Ignore List window height. |
+| `gui_ignore_width` | Integer | Saved Ignore List window width. |
 | `gui_input_attr` | Boolean | Enable IRC formatting attributes in the input box. |
 | `gui_input_icon` | Boolean | Show the current user-mode icon beside the input box. |
 | `gui_input_nick` | Boolean | Show the current nickname beside the input box. |
@@ -137,13 +141,11 @@ dimensions, selected rows, or window state are normally maintained by Fabulor.
 | `gui_lagometer` | Integer | Lag meter presentation: off, graph, text, or both. |
 | `gui_lang` | Integer | Selected packaged interface language. Use Preferences to change it. |
 | `gui_manifest_plugins` | Boolean | Enable discovered manifest plugins after explicit user opt-in. |
-| `gui_mode_buttons` | Boolean | Show channel mode controls. |
-| `gui_mode_buttons_inline` | Boolean | Place channel mode controls beside the topic. |
 | `gui_mouse_scroll_speed` | Integer | Number of transcript lines moved by a mouse-wheel step. |
 | `gui_pane_divider_position` | Integer | Saved divider position in the main conversation layout. |
 | `gui_pane_left_size` | Integer | Saved width of the channel-switcher pane. |
 | `gui_pane_right_size` | Integer | Saved width of the user-list pane. |
-| `gui_pane_right_size_min` | Integer | Minimum width allowed for the user-list pane. |
+| `gui_pane_right_size_min` | Integer | Preferred minimum width for the user-list pane; Fabulor enforces a 150-pixel usability floor. |
 | `gui_quit_dialog` | Boolean | Ask for confirmation before quitting in configured circumstances. |
 | `gui_scroll_bottom_button` | Boolean | Show the down-arrow overlay when the transcript is scrolled up. |
 | `gui_search_pos` | Integer | Saved transcript-search bar position. |
@@ -182,7 +184,7 @@ dimensions, selected rows, or window state are normally maintained by Fabulor.
 | `gui_ulist_hide` | Boolean | Hide the user list. |
 | `gui_ulist_host_width` | Integer | Width reserved for displayed hostmasks. |
 | `gui_ulist_icons` | Boolean | Show privilege icons in the user list. |
-| `gui_ulist_nick_width` | Integer | Width reserved for user-list nicknames. |
+| `gui_ulist_nick_width` | Integer | Width reserved for user-list nicknames; the complete panel remains at least 150 pixels wide. |
 | `gui_ulist_pos` | Integer | Position of the user list around the conversation area. |
 | `gui_ulist_resizable` | Boolean | Allow the user-list width to resize with the window. |
 | `gui_ulist_show_hosts` | Boolean | Show hostmasks beside nicknames in the user list. |
@@ -192,7 +194,6 @@ dimensions, selected rows, or window state are normally maintained by Fabulor.
 | `gui_win_fullscreen` | Integer | Saved fullscreen state. |
 | `gui_win_height` | Integer | Saved main-window height. |
 | `gui_win_left` | Integer | Saved main-window horizontal position. |
-| `gui_win_modes` | Boolean | Include channel modes in the window title. |
 | `gui_win_nick` | Boolean | Include the current nickname in the window title. |
 | `gui_win_save` | Boolean | Save and restore main-window geometry. |
 | `gui_win_state` | Integer | Saved normal, minimized, or maximized window state. |
@@ -310,7 +311,8 @@ Server-time capabilities are negotiated automatically and therefore have no
 | `text_autocopy_color` | Boolean | Preserve IRC colour codes when automatically copying selected text. |
 | `text_autocopy_stamp` | Boolean | Include timestamps when automatically copying selected text. |
 | `text_autocopy_text` | Boolean | Copy a completed transcript selection to the clipboard automatically. |
-| `text_background` | Text | Background-image path used by the transcript. |
+| `text_background` | Text | Background-image path used by the transcript; the image is centred and cropped proportionally to fill the available area. |
+| `text_background_dim` | Integer | Background-image dimming from 0 (original image) to 100 (fully blended into the transcript background). |
 | `text_color_nicks` | Boolean | Assign different transcript colours to nicknames. |
 | `text_font` | Text | Compatibility transcript font setting used outside the Windows-specific font path. |
 | `text_font_alternative` | Text | Comma-separated fallback fonts for missing glyphs. |

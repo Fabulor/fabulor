@@ -419,7 +419,8 @@ xtext_draw_bg_offset (GtkXText *xtext, int x, int y, int width, int height, int 
 		return;
 	if (fabulor_xtext_geometry_from_widget (GTK_WIDGET (xtext), &geometry))
 		fabulor_xtext_background_paint (xtext->background, cr, &xtext->bgc,
-			&geometry, x, y, width, height, tile_x, tile_y);
+			&geometry, x, y, width, height, tile_x, tile_y,
+			prefs.hex_text_background_dim);
 
 	cairo_destroy (cr);
 }

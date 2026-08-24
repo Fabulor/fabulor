@@ -24,9 +24,11 @@ list, and a private conversation does not have channel mode controls.
 ![Fabulor showing a public IRC channel with the channel switcher, topic bar,
 transcript, user list, nickname box, input box, and network meters visible.](images/main-window-channel.png)
 
-Use **View** to show or hide the menu bar, topic bar, user list, user-list
-buttons, and mode buttons. **View > Channel Switcher** changes between the
-tree and tab layouts. **View > Fullscreen** enters or leaves full-screen mode.
+Use **View** to show or hide the menu bar, topic bar, user list, and user-list
+buttons. Channel mode controls are always available from the compact
+**Modes** menu at the right of a channel topic. **View > Channel Switcher**
+changes between the tree and tab layouts. **View > Fullscreen** enters or
+leaves full-screen mode.
 
 If the menu bar has been hidden, press `Ctrl+F9` to show it again.
 
@@ -50,6 +52,10 @@ server, channel, or private conversation.
 The switcher uses text, icons, and theme colours to distinguish selected and
 inactive entries with activity. Do not rely on colour alone: the entry label
 and its position beneath the owning server also identify the context.
+
+Tree rows use compact, consistently aligned icons and spacing. Network headings
+use a restrained semibold weight. Long channel names remain shortened; hover
+over one to see its full name.
 
 The channel-switcher layout can be configured under **Settings > Preferences
 > Interface > Channel switcher**. Available settings include placement,
@@ -199,9 +205,15 @@ network. Nickname colours, sorting, hostnames, user counts, away tracking, and
 placement are controlled under **Settings > Preferences > Interface > User
 list**.
 
+When a channel has no visible users, Fabulor shows a quiet placeholder in the
+list area. The action footer and network meters remain available, and the
+placeholder disappears as soon as the user list is populated.
+
 Drag the divider to choose the user-list width. Disable **Allow user list to
 resize with the window** when the chosen width should remain fixed while
-switching channels or resizing the main window.
+switching channels or resizing the main window. Fabulor keeps the panel at
+least 150 pixels wide so its two-column action footer and network meters remain
+usable; larger saved widths are preserved.
 
 Right-click a nickname to open its action menu. Depending on context and your
 channel privileges, it can provide:
@@ -246,6 +258,10 @@ The **Window** menu opens the Ban List, Character Chart, Direct Chat, File
 Transfers, Friends List, Ignore List, Plugins and Scripts, Raw Log, and URL
 Grabber. Some utilities require a connected server or selected channel and are
 unavailable when their context does not exist.
+
+The Ban List and Ignore List are independently resizable. Fabulor remembers
+each window's last size when it is closed and restores that size when the
+window is opened again, including after a client restart.
 
 See [Add-ons](addons.md) before loading, reloading, or removing executable
 plugins and scripts.
