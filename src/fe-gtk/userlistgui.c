@@ -224,15 +224,21 @@ fe_userlist_numbers (session *sess)
 
 	if (sess == current_tab || !sess->gui->is_tab)
 	{
+		if (sess->gui->userlist_empty)
+			gtk_widget_set_visible (sess->gui->userlist_empty,
+				sess->type == SESS_CHANNEL && sess->total == 0);
+
 		if (sess->total)
 		{
 			g_snprintf (tbuf, sizeof (tbuf), _("%d ops, %d total"), sess->ops, sess->total);
 			tbuf[sizeof (tbuf) - 1] = 0;
 			gtk_label_set_text (GTK_LABEL (sess->gui->namelistinfo), tbuf);
+			gtk_widget_set_tooltip_text (sess->gui->namelistinfo, tbuf);
 			userlist_update_min_width (sess);
 		} else
 		{
 			gtk_label_set_text (GTK_LABEL (sess->gui->namelistinfo), NULL);
+			gtk_widget_set_tooltip_text (sess->gui->namelistinfo, NULL);
 			userlist_update_min_width (sess);
 		}
 

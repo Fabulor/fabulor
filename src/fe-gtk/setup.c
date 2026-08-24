@@ -65,7 +65,6 @@ static gboolean color_change;
 static struct fabulorprefs setup_prefs;
 static GtkWidget *cancel_button;
 static GtkWidget *font_dialog = NULL;
-static GtkWidget *setup_topicbar_multiline_toggle = NULL;
 static gboolean setup_transcript_metrics_changed;
 
 static void setup_queue_restore_parent (GtkWidget *window);
@@ -194,12 +193,10 @@ static const setting appearance_settings[] =
 #endif
 
         {ST_HEADER,     N_("Title Bar"),0,0,0},
-        {ST_TOGGLE, N_("Show channel modes"), P_OFFINTNL(hex_gui_win_modes),0,0,0},
         {ST_TOGGLR, N_("Show number of users"), P_OFFINTNL(hex_gui_win_ucount),0,0,0},
         {ST_TOGGLE, N_("Show nickname"), P_OFFINTNL(hex_gui_win_nick),0,0,0},
 
         {ST_HEADER,     N_("Topic Bar"),0,0,0},
-        {ST_TOGGLE, N_("Place mode buttons beside the topic"), P_OFFINTNL(hex_gui_mode_buttons_inline), 0, 0, 0},
         {ST_TOGGLE, N_("Allow multi-line topics"), P_OFFINTNL(hex_gui_topicbar_multiline), 0, 0, 0},
 
         {ST_END, 0, 0, 0, 0, 0}
@@ -207,9 +204,10 @@ static const setting appearance_settings[] =
 
 static const setting appearance_advanced_settings[] =
 {
-        {ST_HEADER,     N_("Advanced"),0,0,0},
-        {ST_EFILE, N_ ("Background image:"), P_OFFSETNL (hex_text_background), 0, 0, sizeof prefs.hex_text_background},
-        {ST_HSCALE, N_("Window opacity:"), P_OFFINTNL(hex_gui_transparency),0,0,0},
+	{ST_HEADER,     N_("Advanced"),0,0,0},
+	{ST_EFILE, N_ ("Background image:"), P_OFFSETNL (hex_text_background), 0, 0, sizeof prefs.hex_text_background},
+	{ST_HSCALE, N_("Background image dimming:"), P_OFFINTNL(hex_text_background_dim), N_("0% keeps the original image; 100% blends it fully into the transcript background."), 0, 100},
+	{ST_HSCALE, N_("Window opacity:"), P_OFFINTNL(hex_gui_transparency),0,0,0},
         {ST_HSCALE, N_("Mouse wheel scroll speed (Slower ← → Faster):"), P_OFFINTNL(hex_gui_mouse_scroll_speed), 0, 0, 100},
 
         {ST_END, 0, 0, 0, 0, 0}
@@ -844,16 +842,6 @@ setup_toggle_sensitive_cb (GtkWidget *button, GtkWidget *wid)
 }
 
 static void
-setup_topicbar_inline_toggled_cb (GtkWidget *button, gpointer userdata)
-{
-        (void) userdata;
-
-        if (setup_topicbar_multiline_toggle)
-                gtk_widget_set_sensitive (setup_topicbar_multiline_toggle,
-                        !fabulor_gtk_check_button_get_active (button));
-}
-
-static void
 setup_create_toggleR (GtkWidget *tab, int row, const setting *set)
 {
         GtkWidget *wid;
@@ -879,14 +867,6 @@ setup_create_toggleL (GtkWidget *tab, int row, const setting *set)
                                              setup_get_int (&setup_prefs, set));
         g_signal_connect (G_OBJECT (wid), "toggled",
                                                         G_CALLBACK (setup_toggle_cb), (gpointer)set);
-        if (set->offset == STRUCT_OFFSET_INT (struct fabulorprefs, hex_gui_mode_buttons_inline))
-                g_signal_connect (G_OBJECT (wid), "toggled",
-                                                        G_CALLBACK (setup_topicbar_inline_toggled_cb), NULL);
-        if (set->offset == STRUCT_OFFSET_INT (struct fabulorprefs, hex_gui_topicbar_multiline))
-        {
-                setup_topicbar_multiline_toggle = wid;
-                gtk_widget_set_sensitive (wid, !setup_prefs.hex_gui_mode_buttons_inline);
-        }
         if (set->tooltip)
                 gtk_widget_set_tooltip_text (wid, _(set->tooltip));
         setup_table_attach (tab, wid, 2, row==6 ? 6 : 4, row, row + 1, FALSE, FALSE,
@@ -1086,8 +1066,11 @@ setup_create_hscale (GtkWidget *table, int row, const setting *set)
                             SETUP_ALIGN_START, SETUP_ALIGN_CENTER,
                             LABEL_INDENT, 0);
 
-        wid = gtk_scale_new_with_range (GTK_ORIENTATION_HORIZONTAL, 0., 255., 1.);
-        gtk_scale_set_value_pos (GTK_SCALE (wid), GTK_POS_RIGHT);
+	wid = gtk_scale_new_with_range (GTK_ORIENTATION_HORIZONTAL, 0.,
+		set->extra > 0 ? (double) set->extra : 255., 1.);
+	gtk_scale_set_value_pos (GTK_SCALE (wid), GTK_POS_RIGHT);
+	if (set->tooltip)
+		gtk_widget_set_tooltip_text (wid, _(set->tooltip));
         gtk_range_set_value (GTK_RANGE (wid), setup_get_int (&setup_prefs, set));
         g_signal_connect (G_OBJECT(wid), "value-changed",
                                                         G_CALLBACK (setup_hscale_cb), (gpointer)set);
@@ -1552,9 +1535,9 @@ setup_create_frame (void)
         GtkWidget *tab;
 
         tab = gtkutil_grid_new (3, 2, FALSE);
-        fabulor_gtk_container_set_uniform_inset (tab, 6);
-        gtk_grid_set_row_spacing (GTK_GRID (tab), 2);
-        gtk_grid_set_column_spacing (GTK_GRID (tab), 3);
+        fabulor_gtk_container_set_uniform_inset (tab, 12);
+        gtk_grid_set_row_spacing (GTK_GRID (tab), 6);
+        gtk_grid_set_column_spacing (GTK_GRID (tab), 10);
 
         return tab;
 }
@@ -1573,7 +1556,6 @@ setup_create_page (const setting *set)
         GtkWidget *wid = NULL, *parentwid = NULL;
 
         tab = setup_create_frame ();
-        fabulor_gtk_container_set_uniform_inset (tab, 6);
 
         i = row = do_disable = 0;
         while (set[i].type != ST_END)
@@ -1914,11 +1896,11 @@ setup_add_page (const char *title, GtkWidget *book, GtkWidget *tab)
         gtk_label_set_markup (GTK_LABEL (label), buf);
         gtk_widget_set_halign (label, GTK_ALIGN_START);
         gtk_widget_set_valign (label, GTK_ALIGN_CENTER);
-        gtk_widget_set_margin_start (label, 2);
-        gtk_widget_set_margin_end (label, 2);
-        gtk_widget_set_margin_top (label, 1);
-        gtk_widget_set_margin_bottom (label, 1);
-        fabulor_gtk_box_append (GTK_BOX (vvbox), label, FALSE, FALSE, 2);
+        gtk_widget_set_margin_start (label, 12);
+        gtk_widget_set_margin_end (label, 12);
+        gtk_widget_set_margin_top (label, 10);
+        gtk_widget_set_margin_bottom (label, 6);
+        fabulor_gtk_box_append (GTK_BOX (vvbox), label, FALSE, FALSE, 0);
 
         fabulor_gtk_box_append (GTK_BOX (vvbox), tab, TRUE, TRUE, 0);
 
@@ -1969,7 +1951,7 @@ setup_ensure_page_created (int page)
 static const char *const cata_interface[] =
 {
         N_("Appearance"),
-        N_("Colors"),
+        N_("Colours"),
         N_("Input box"),
         N_("User list"),
         N_("Channel switcher"),
@@ -2219,8 +2201,6 @@ setup_apply (struct fabulorprefs *pr)
                 noapply = TRUE;
         if (DIFF (hex_gui_manifest_plugins))
                 noapply = TRUE;
-        if (DIFF (hex_gui_mode_buttons_inline))
-                noapply = TRUE;
         if (DIFF (hex_gui_tab_icons))
                 noapply = TRUE;
         if (DIFF (hex_gui_tab_closebuttons))
@@ -2234,8 +2214,6 @@ setup_apply (struct fabulorprefs *pr)
         if (DIFF (hex_gui_tab_trunc))
                 noapply = TRUE;
         if (DIFF (hex_gui_throttlemeter))
-                noapply = TRUE;
-        if (DIFF (hex_gui_topicbar_multiline))
                 noapply = TRUE;
         if (DIFF (hex_gui_ulist_count))
                 noapply = TRUE;
@@ -2460,16 +2438,16 @@ setup_window_open (void)
         char buf[128];
 
         g_snprintf(buf, sizeof(buf), _("Preferences - %s"), _(DISPLAY_NAME));
-        win = gtkutil_window_new (buf, "prefs", 900, 600, 2);
+        win = gtkutil_window_new (buf, "prefs", 960, 680, 2);
         setup_window = win;
         g_signal_connect (win, "close-request",
                 G_CALLBACK (setup_close_request_cb), NULL);
 
-        vbox = gtkutil_box_new (GTK_ORIENTATION_VERTICAL, FALSE, 5);
-        fabulor_gtk_container_set_uniform_inset (vbox, 6);
+        vbox = gtkutil_box_new (GTK_ORIENTATION_VERTICAL, FALSE, 8);
+        fabulor_gtk_container_set_uniform_inset (vbox, 10);
         fabulor_gtk_window_set_child (GTK_WINDOW (win), vbox);
 
-        hbox = gtkutil_box_new (GTK_ORIENTATION_HORIZONTAL, FALSE, 4);
+        hbox = gtkutil_box_new (GTK_ORIENTATION_HORIZONTAL, FALSE, 10);
         fabulor_gtk_box_append (GTK_BOX (vbox), hbox, TRUE, TRUE, 0);
 
         book = setup_create_pages ();
@@ -2478,15 +2456,17 @@ setup_window_open (void)
 
         /* prepare the button box */
         hbbox = fabulor_gtk_button_box_new (GTK_ORIENTATION_HORIZONTAL,
-                FABULOR_GTK_BUTTON_BOX_END, 4);
+                FABULOR_GTK_BUTTON_BOX_END, 8);
         fabulor_gtk_box_append (GTK_BOX (vbox), hbbox, FALSE, FALSE, 0);
 
         cancel_button = wid = gtkutil_button_new_from_stock ("gtk-cancel", _("_Cancel"));
+        gtk_widget_set_size_request (wid, 104, -1);
         g_signal_connect (G_OBJECT (wid), "clicked",
                                                         G_CALLBACK (setup_cancel_cb), win);
         fabulor_gtk_box_append (GTK_BOX (hbbox), wid, FALSE, FALSE, 0);
 
         wid = gtkutil_button_new_from_stock ("gtk-ok", _("_OK"));
+        gtk_widget_set_size_request (wid, 104, -1);
         g_signal_connect (G_OBJECT (wid), "clicked",
                                                         G_CALLBACK (setup_ok_cb), win);
         fabulor_gtk_box_append (GTK_BOX (hbbox), wid, FALSE, FALSE, 0);

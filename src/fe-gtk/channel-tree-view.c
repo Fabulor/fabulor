@@ -12,6 +12,26 @@
 
 #define FABULOR_CHANNEL_TREE_VIEW_DATA "fabulor-channel-tree-view-data"
 
+static void
+channel_tree_ensure_css (void)
+{
+	static GtkCssProvider *provider;
+	GdkDisplay *display;
+
+	if (provider)
+		return;
+
+	display = gdk_display_get_default ();
+	if (!display)
+		return;
+
+	provider = gtk_css_provider_new ();
+	gtk_css_provider_load_from_string (provider,
+		".fabulor-channel-network { font-weight: 600; }");
+	gtk_style_context_add_provider_for_display (display,
+		GTK_STYLE_PROVIDER (provider), GTK_STYLE_PROVIDER_PRIORITY_USER);
+}
+
 typedef struct
 {
 	GtkWidget *view;
@@ -81,6 +101,9 @@ channel_tree_item_set_icon (FabulorChannelTreeItemBinding *binding,
 static void
 channel_tree_item_update (FabulorChannelTreeItemBinding *binding)
 {
+	const gchar *name = fabulor_channel_model_get_item_name (binding->item);
+	const gchar *tooltip = fabulor_channel_model_get_item_tooltip (
+		binding->item);
 	PangoAttrList *source = fabulor_channel_model_get_item_attributes (
 		binding->item);
 	PangoUnderline underline = fabulor_channel_model_get_item_underline (
@@ -89,8 +112,9 @@ channel_tree_item_update (FabulorChannelTreeItemBinding *binding)
 
 	channel_tree_item_set_icon (binding,
 		fabulor_channel_model_get_item_icon (binding->item));
-	gtk_label_set_text (GTK_LABEL (binding->label),
-		fabulor_channel_model_get_item_name (binding->item));
+	gtk_label_set_text (GTK_LABEL (binding->label), name);
+	gtk_widget_set_tooltip_text (binding->label,
+		g_strcmp0 (name, tooltip) == 0 ? NULL : tooltip);
 	if (underline != PANGO_UNDERLINE_NONE)
 	{
 		if (!attributes)
@@ -126,9 +150,18 @@ channel_tree_factory_setup (GtkSignalListItemFactory *factory,
 	binding->box = gtk_box_new (GTK_ORIENTATION_HORIZONTAL, spacing);
 	binding->icon = gtk_image_new ();
 	binding->label = gtk_label_new (NULL);
+	gtk_tree_expander_set_indent_for_icon (
+		GTK_TREE_EXPANDER (binding->expander), FALSE);
+	gtk_widget_set_size_request (binding->box, -1,
+		owner->compact ? 24 : 28);
+	gtk_widget_set_valign (binding->icon, GTK_ALIGN_CENTER);
+	gtk_widget_set_size_request (binding->icon, 16, 16);
+	gtk_image_set_pixel_size (GTK_IMAGE (binding->icon), 16);
+	gtk_widget_set_valign (binding->label, GTK_ALIGN_CENTER);
 	gtk_label_set_xalign (GTK_LABEL (binding->label), 0.0f);
 	gtk_label_set_ellipsize (GTK_LABEL (binding->label), PANGO_ELLIPSIZE_END);
 	gtk_widget_set_hexpand (binding->label, TRUE);
+	channel_tree_ensure_css ();
 	if (owner->use_icons)
 		gtk_box_append (GTK_BOX (binding->box), binding->icon);
 	gtk_box_append (GTK_BOX (binding->box), binding->label);
@@ -150,6 +183,12 @@ channel_tree_factory_bind (GtkSignalListItemFactory *factory,
 	(void) factory;
 	(void) user_data;
 	binding->item = gtk_tree_list_row_get_item (tree_row);
+	if (gtk_tree_list_row_get_depth (tree_row) == 0)
+		gtk_widget_add_css_class (binding->label,
+			"fabulor-channel-network");
+	else
+		gtk_widget_remove_css_class (binding->label,
+			"fabulor-channel-network");
 	binding->notify_id = g_signal_connect (binding->item, "notify",
 		G_CALLBACK (channel_tree_item_notify), binding);
 	gtk_tree_expander_set_list_row (GTK_TREE_EXPANDER (binding->expander),
@@ -173,6 +212,9 @@ channel_tree_factory_unbind (GtkSignalListItemFactory *factory,
 	if (binding->item && binding->notify_id)
 		g_signal_handler_disconnect (binding->item, binding->notify_id);
 	binding->item = NULL;
+	gtk_widget_remove_css_class (binding->label,
+		"fabulor-channel-network");
+	gtk_widget_set_tooltip_text (binding->label, NULL);
 	binding->icon_source = NULL;
 	binding->notify_id = 0;
 	gtk_tree_expander_set_list_row (GTK_TREE_EXPANDER (binding->expander),

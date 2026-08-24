@@ -11,7 +11,7 @@
 
 #include "gtk-compat.h"
 
-#define PREFERENCES_CATEGORY_MIN_WIDTH 220
+#define PREFERENCES_CATEGORY_MIN_WIDTH 228
 
 typedef struct _FabulorPreferencesCategoryRow FabulorPreferencesCategoryRow;
 typedef struct _FabulorPreferencesCategoryRowClass FabulorPreferencesCategoryRowClass;
@@ -220,6 +220,10 @@ preferences_category_factory_setup (GtkSignalListItemFactory *factory,
 	gtk_label_set_xalign (GTK_LABEL (label), 0.0f);
 	gtk_label_set_ellipsize (GTK_LABEL (label), PANGO_ELLIPSIZE_END);
 	gtk_widget_set_hexpand (label, TRUE);
+	gtk_widget_set_margin_top (expander, 2);
+	gtk_widget_set_margin_bottom (expander, 2);
+	gtk_widget_set_margin_start (expander, 4);
+	gtk_widget_set_margin_end (expander, 4);
 	gtk_tree_expander_set_child (GTK_TREE_EXPANDER (expander), label);
 	gtk_list_item_set_child (list_item, expander);
 }
@@ -234,11 +238,22 @@ preferences_category_factory_bind (GtkSignalListItemFactory *factory,
 	GtkWidget *expander = gtk_list_item_get_child (list_item);
 	GtkWidget *label = gtk_tree_expander_get_child (
 		GTK_TREE_EXPANDER (expander));
+	PangoAttrList *attributes = NULL;
 
 	(void) factory;
 	(void) user_data;
 	gtk_tree_expander_set_list_row (GTK_TREE_EXPANDER (expander), tree_row);
 	gtk_label_set_text (GTK_LABEL (label), row->title);
+	gtk_widget_set_tooltip_text (label, row->title);
+	if (row->page_index < 0)
+	{
+		attributes = pango_attr_list_new ();
+		pango_attr_list_insert (attributes,
+			pango_attr_weight_new (PANGO_WEIGHT_SEMIBOLD));
+	}
+	gtk_label_set_attributes (GTK_LABEL (label), attributes);
+	if (attributes)
+		pango_attr_list_unref (attributes);
 }
 
 static void
@@ -250,6 +265,8 @@ preferences_category_factory_unbind (GtkSignalListItemFactory *factory,
 	(void) factory;
 	(void) user_data;
 	gtk_tree_expander_set_list_row (GTK_TREE_EXPANDER (expander), NULL);
+	gtk_widget_set_tooltip_text (gtk_tree_expander_get_child (
+		GTK_TREE_EXPANDER (expander)), NULL);
 }
 
 
@@ -384,7 +401,6 @@ fabulor_preferences_category_list_select_page (
 			gtk_single_selection_set_selected (list->selection, position);
 		preferences_category_commit_selection (list, page_index);
 	}
-		preferences_category_commit_selection (list, page_index);
 	return TRUE;
 }
 

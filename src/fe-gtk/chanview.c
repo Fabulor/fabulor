@@ -84,6 +84,7 @@ struct _chan
 	void *impl;	/* togglebutton or null */
 	GdkPixbuf *icon;
 	char *name;
+	char *full_name;
 	PangoAttrList *attributes;
 	PangoUnderline underline;
 	short allow_closure;	/* allow it to be closed when it still has children? */
@@ -260,6 +261,7 @@ static void
 chanview_free_ch (chan *ch)
 {
 	g_free (ch->name);
+	g_free (ch->full_name);
 	if (ch->attributes)
 		pango_attr_list_unref (ch->attributes);
 	g_free (ch);
@@ -383,7 +385,8 @@ chanview_find_parent (chanview *cv, void *family, chan *avoid)
 }
 
 static chan *
-chanview_add_real (chanview *cv, char *name, void *family, void *userdata,
+chanview_add_real (chanview *cv, char *name, const char *full_name,
+						 void *family, void *userdata,
 						 gboolean allow_closure, int tag, GdkPixbuf *icon,
 						 chan *ch, chan *avoid)
 {
@@ -404,8 +407,11 @@ chanview_add_real (chanview *cv, char *name, void *family, void *userdata,
 	}
 	g_free (ch->name);
 	ch->name = g_strdup (name);
+	g_free (ch->full_name);
+	ch->full_name = g_strdup (full_name);
 	row.identity = ch;
 	row.name = ch->name;
+	row.tooltip = ch->full_name;
 	row.attributes = ch->attributes;
 	row.icon = ch->icon;
 	row.underline = ch->underline;
@@ -427,7 +433,8 @@ chanview_add (chanview *cv, char *name, void *family, void *userdata, gboolean a
 
 	new_name = truncate_tab_name (name, cv->trunc_len);
 
-	ret = chanview_add_real (cv, new_name, family, userdata, allow_closure, tag, icon, NULL, NULL);
+	ret = chanview_add_real (cv, new_name, name, family, userdata,
+		allow_closure, tag, icon, NULL, NULL);
 
 	if (new_name != name)
 		g_free (new_name);
@@ -509,7 +516,7 @@ static void
 chanview_update_model_row (chan *ch)
 {
 	FabulorChannelModelRow row = {
-		ch, ch->name, ch->attributes, ch->icon, ch->underline
+		ch, ch->name, ch->full_name, ch->attributes, ch->icon, ch->underline
 	};
 
 	g_warn_if_fail (fabulor_channel_model_update (ch->cv->model, &row));
@@ -536,6 +543,8 @@ chan_rename (chan *ch, char *name, int trunc_len)
 
 	g_free (ch->name);
 	ch->name = g_strdup (new_name);
+	g_free (ch->full_name);
+	ch->full_name = g_strdup (name);
 	chanview_update_model_row (ch);
 	ch->cv->func_rename (ch, new_name);
 	ch->cv->trunc_len = trunc_len;

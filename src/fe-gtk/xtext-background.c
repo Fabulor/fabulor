@@ -19,6 +19,7 @@ struct _FabulorXTextBackground
 	gint cache_height;
 	gint cache_tile_x;
 	gint cache_tile_y;
+	gint cache_dim_percent;
 };
 
 static void
@@ -33,6 +34,7 @@ fabulor_xtext_background_clear_cache (FabulorXTextBackground *background)
 	background->cache_height = 0;
 	background->cache_tile_x = 0;
 	background->cache_tile_y = 0;
+	background->cache_dim_percent = 0;
 }
 
 static void
@@ -51,7 +53,8 @@ fabulor_xtext_background_fill (cairo_t *context,
 
 static gboolean
 fabulor_xtext_background_build_cache (FabulorXTextBackground *background,
-	const FabulorXTextGeometry *geometry, gint tile_x, gint tile_y)
+	const FabulorXTextGeometry *geometry, const XTextColor *fallback,
+	gint tile_x, gint tile_y, gint dim_percent)
 {
 	cairo_t *context;
 	gint width = geometry->width;
@@ -60,7 +63,8 @@ fabulor_xtext_background_build_cache (FabulorXTextBackground *background,
 	if (background->cache && background->cache_width == width &&
 		background->cache_height == height &&
 		background->cache_tile_x == tile_x &&
-		background->cache_tile_y == tile_y)
+		background->cache_tile_y == tile_y &&
+		background->cache_dim_percent == dim_percent)
 		return TRUE;
 
 	fabulor_xtext_background_clear_cache (background);
@@ -88,20 +92,23 @@ fabulor_xtext_background_build_cache (FabulorXTextBackground *background,
 		{
 			double scale_x = (double) width / (double) source_width;
 			double scale_y = (double) height / (double) source_height;
-			double scale = MIN (scale_x, scale_y);
+			double scale = MAX (scale_x, scale_y);
 			double draw_width = source_width * scale;
 			double draw_height = source_height * scale;
 			double draw_x = ((double) width - draw_width) / 2.0;
 			double draw_y = ((double) height - draw_height) / 2.0;
 
-			cairo_set_source_rgb (context, 0.0, 0.0, 0.0);
-			cairo_paint (context);
+			fabulor_xtext_background_fill (context, fallback, 0, 0,
+				width, height);
 			cairo_save (context);
+			cairo_rectangle (context, 0.0, 0.0, (double) width,
+				(double) height);
+			cairo_clip (context);
 			cairo_translate (context, draw_x, draw_y);
 			cairo_scale (context, scale, scale);
 			cairo_set_source_surface (context, background->source, 0.0, 0.0);
 			cairo_pattern_set_extend (cairo_get_source (context),
-				CAIRO_EXTEND_NONE);
+				CAIRO_EXTEND_PAD);
 			cairo_rectangle (context, 0.0, 0.0, (double) source_width,
 				(double) source_height);
 			cairo_fill (context);
@@ -124,12 +131,22 @@ fabulor_xtext_background_build_cache (FabulorXTextBackground *background,
 			CAIRO_EXTEND_REPEAT);
 		cairo_paint (context);
 	}
+	if (dim_percent > 0)
+	{
+		double opacity = (double) CLAMP (dim_percent, 0, 100) / 100.0;
+
+		cairo_set_source_rgba (context, fallback->red, fallback->green,
+			fallback->blue, opacity);
+		cairo_set_operator (context, CAIRO_OPERATOR_OVER);
+		cairo_paint (context);
+	}
 	cairo_destroy (context);
 
 	background->cache_width = width;
 	background->cache_height = height;
 	background->cache_tile_x = tile_x;
 	background->cache_tile_y = tile_y;
+	background->cache_dim_percent = dim_percent;
 	return TRUE;
 }
 
@@ -187,7 +204,7 @@ void
 fabulor_xtext_background_paint (FabulorXTextBackground *background,
 	cairo_t *context, const XTextColor *fallback,
 	const FabulorXTextGeometry *geometry, gint x, gint y, gint width,
-	gint height, gint tile_x, gint tile_y)
+	gint height, gint tile_x, gint tile_y, gint dim_percent)
 {
 	g_return_if_fail (background != NULL);
 	g_return_if_fail (context != NULL);
@@ -202,7 +219,7 @@ fabulor_xtext_background_paint (FabulorXTextBackground *background,
 		geometry->width > XTEXT_BACKGROUND_MAX_DIMENSION ||
 		geometry->height > XTEXT_BACKGROUND_MAX_DIMENSION ||
 		!fabulor_xtext_background_build_cache (background, geometry,
-			tile_x, tile_y))
+			fallback, tile_x, tile_y, dim_percent))
 	{
 		fabulor_xtext_background_fill (context, fallback, x, y, width,
 			height);

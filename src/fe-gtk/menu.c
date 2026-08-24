@@ -137,7 +137,6 @@ typedef enum
 	MENU_ACTION_TOPIC_BAR_TOGGLE,
 	MENU_ACTION_USER_LIST_TOGGLE,
 	MENU_ACTION_USER_LIST_BUTTONS_TOGGLE,
-	MENU_ACTION_MODE_BUTTONS_TOGGLE,
 	MENU_ACTION_FULLSCREEN_TOGGLE,
 	MENU_ACTION_CHANNEL_SWITCHER,
 	MENU_ACTION_NETWORK_METERS,
@@ -829,22 +828,6 @@ menu_ulbuttons_showhide_cb (session *sess)
 }
 
 static void
-menu_cmbuttons_showhide_cb (session *sess)
-{
-	switch (sess->type)
-	{
-	case SESS_CHANNEL:
-		if (prefs.hex_gui_mode_buttons)
-			gtk_widget_show (sess->gui->topicbutton_box);
-		else
-			gtk_widget_hide (sess->gui->topicbutton_box);
-		break;
-	default:
-		gtk_widget_hide (sess->gui->topicbutton_box);
-	}
-}
-
-static void
 menu_setting_foreach (void (*callback) (session *), int id, guint state)
 {
 	session *sess;
@@ -922,14 +905,6 @@ menu_ulbuttons_toggle (GtkWidget *wid, gpointer ud)
 	prefs.hex_gui_ulist_buttons = !prefs.hex_gui_ulist_buttons;
 	menu_setting_foreach (menu_ulbuttons_showhide_cb, MENU_ID_ULBUTTONS,
 								 prefs.hex_gui_ulist_buttons);
-}
-
-static void
-menu_cmbuttons_toggle (GtkWidget *wid, gpointer ud)
-{
-	prefs.hex_gui_mode_buttons = !prefs.hex_gui_mode_buttons;
-	menu_setting_foreach (menu_cmbuttons_showhide_cb, MENU_ID_MODEBUTTONS,
-								 prefs.hex_gui_mode_buttons);
 }
 
 static void
@@ -1953,7 +1928,7 @@ static struct mymenu mymenu[] = {
 
 	{N_("_View"), 0, 0, M_NEWMENU, 0, 0, 1},
 #define MENUBAR_OFFSET (17)
-#define VIEW_TOGGLE_ACTION_COUNT (5)
+#define VIEW_TOGGLE_ACTION_COUNT (4)
 	{N_("_Menu Bar"), menu_bar_toggle_cb, 0, M_MENUTOG, MENU_ID_MENUBAR, 0, 1, 0,
 		"menu-toggle", MENU_ACTION_MENU_TOGGLE},
 	{N_("_Topic Bar"), menu_topicbar_toggle, 0, M_MENUTOG, MENU_ID_TOPICBAR, 0, 1, 0,
@@ -1962,22 +1937,20 @@ static struct mymenu mymenu[] = {
 		"user-list-toggle", MENU_ACTION_USER_LIST_TOGGLE},
 	{N_("U_ser List Buttons"), menu_ulbuttons_toggle, 0, M_MENUTOG, MENU_ID_ULBUTTONS, 0, 1, 0,
 		"user-list-buttons-toggle", MENU_ACTION_USER_LIST_BUTTONS_TOGGLE},
-	{N_("M_ode Buttons"), menu_cmbuttons_toggle, 0, M_MENUTOG, MENU_ID_MODEBUTTONS, 0, 1, 0,
-		"mode-buttons-toggle", MENU_ACTION_MODE_BUTTONS_TOGGLE},
 	{0, 0, 0, M_SEP, 0, 0, 0},
-#define CHANNEL_SWITCHER_OFFSET (23)
+#define CHANNEL_SWITCHER_OFFSET (22)
 #define CHANNEL_SWITCHER_ACTION_COUNT (2)
 	{N_("_Channel Switcher"), 0, 0, M_MENUSUB, 0, 0, 1},	/* 23 */
-#define TABS_OFFSET (24)
+#define TABS_OFFSET (23)
 		{N_("_Tabs"), MENU_LAYOUT_WIDGET_CALLBACK, 0, M_MENURADIO, MENU_ID_LAYOUT_TABS, 0, 1, 0,
 			"channel-switcher", MENU_ACTION_CHANNEL_SWITCHER, "tabs"},
 		{N_("T_ree"), 0, 0, M_MENURADIO, MENU_ID_LAYOUT_TREE, 0, 1, 0,
 			"channel-switcher", MENU_ACTION_CHANNEL_SWITCHER, "tree"},
 		{0, 0, 0, M_END, 0, 0, 0},
-#define NETWORK_METERS_OFFSET (27)
+#define NETWORK_METERS_OFFSET (26)
 #define NETWORK_METERS_ACTION_COUNT (4)
 	{N_("_Network Meters"), 0, 0, M_MENUSUB, 0, 0, 1},	/* 27 */
-#define METRE_OFFSET (28)
+#define METRE_OFFSET (27)
 		{N_("Off"), MENU_METRES_OFF_WIDGET_CALLBACK, 0, M_MENURADIO, 0, 0, 1, 0,
 			"network-meters", MENU_ACTION_NETWORK_METERS, "off"},
 		{N_("Graph"), MENU_METRES_GRAPH_WIDGET_CALLBACK, 0, M_MENURADIO, 0, 0, 1, 0,
@@ -1986,13 +1959,13 @@ static struct mymenu mymenu[] = {
 			"network-meters", MENU_ACTION_NETWORK_METERS, "text"},
 		{N_("Both"), MENU_METRES_BOTH_WIDGET_CALLBACK, 0, M_MENURADIO, 0, 0, 1, 0,
 			"network-meters", MENU_ACTION_NETWORK_METERS, "both"},
-		{0, 0, 0, M_END, 0, 0, 0},	/* 32 */
+		{0, 0, 0, M_END, 0, 0, 0},	/* 31 */
 	{ 0, 0, 0, M_SEP, 0, 0, 0 },
-#define FULLSCREEN_OFFSET (34)
+#define FULLSCREEN_OFFSET (33)
 	{N_ ("_Fullscreen"), menu_fullscreen_toggle, 0, M_MENUTOG, MENU_ID_FULLSCREEN, 0, 1, 0,
 		"fullscreen-toggle", MENU_ACTION_FULLSCREEN_TOGGLE},
 
-#define SERVER_OFFSET (35)
+#define SERVER_OFFSET (34)
 #define SERVER_ACTION_COUNT (4)
 	{N_("_Server"), 0, 0, M_NEWMENU, 0, 0, 1},
 	{N_("_Disconnect"), menu_disconnect, 0, M_MENUITEM, MENU_ID_DISCONNECT, 0, 1, 0,
@@ -2004,19 +1977,19 @@ static struct mymenu mymenu[] = {
 	{N_("Channel _List"), menu_chanlist, 0, M_MENUITEM, 0, 0, 1, 0,
 		"channel-list", MENU_ACTION_CHANNEL_LIST},
 	{0, 0, 0, M_SEP, 0, 0, 0},
-#define AWAY_OFFSET (41)
+#define AWAY_OFFSET (40)
 	{N_("Marked _Away"), menu_away_toggle, 0, M_MENUITEM, MENU_ID_AWAY, 0, 1, 0,
 		"away-toggle", MENU_ACTION_AWAY_TOGGLE},
 
-	{N_("_Usermenu"), 0, 0, M_NEWMENU, MENU_ID_USERMENU, 0, 1},	/* 42 */
+	{N_("_Usermenu"), 0, 0, M_NEWMENU, MENU_ID_USERMENU, 0, 1},	/* 41 */
 
-#define SETTINGS_OFFSET (43)
+#define SETTINGS_OFFSET (42)
 #define SETTINGS_PREFERENCES_ACTION_COUNT (1)
 	{N_("S_ettings"), 0, 0, M_NEWMENU, 0, 0, 1},
 	{N_("_Preferences"), menu_settings, 0, M_MENUITEM, 0, 0, 1, 0,
 		"preferences", MENU_ACTION_PREFERENCES},
 	{0, 0, 0, M_SEP, 0, 0, 0},
-#define SETTINGS_EDITOR_OFFSET (46)
+#define SETTINGS_EDITOR_OFFSET (45)
 #define SETTINGS_EDITOR_ACTION_COUNT (9)
 	{N_("Auto Replace"), menu_rpopup, 0, M_MENUITEM, 0, 0, 1, 0,
 		"auto-replace", MENU_ACTION_AUTO_REPLACE},
@@ -2182,9 +2155,6 @@ menu_key_action (const char *name, guint keyval, GdkModifierType state)
 		break;
 	case MENU_ACTION_USER_LIST_BUTTONS_TOGGLE:
 		menu_ulbuttons_toggle (NULL, NULL);
-		break;
-	case MENU_ACTION_MODE_BUTTONS_TOGGLE:
-		menu_cmbuttons_toggle (NULL, NULL);
 		break;
 	case MENU_ACTION_FULLSCREEN_TOGGLE:
 		menu_fullscreen_toggle (NULL, NULL);
@@ -2366,7 +2336,6 @@ menu_action_is_view_stateful (menu_action_id id)
 		   id == MENU_ACTION_TOPIC_BAR_TOGGLE ||
 		   id == MENU_ACTION_USER_LIST_TOGGLE ||
 		   id == MENU_ACTION_USER_LIST_BUTTONS_TOGGLE ||
-		   id == MENU_ACTION_MODE_BUTTONS_TOGGLE ||
 		   id == MENU_ACTION_FULLSCREEN_TOGGLE;
 }
 
@@ -3860,7 +3829,6 @@ menu_main_model_state_prepare (int away, int away_sensitive,
 	mymenu[MENUBAR_OFFSET+1].state = prefs.hex_gui_topicbar;
 	mymenu[MENUBAR_OFFSET+2].state = !prefs.hex_gui_ulist_hide;
 	mymenu[MENUBAR_OFFSET+3].state = prefs.hex_gui_ulist_buttons;
-	mymenu[MENUBAR_OFFSET+4].state = prefs.hex_gui_mode_buttons;
 	mymenu[FULLSCREEN_OFFSET].state = prefs.hex_gui_win_fullscreen;
 
 	mymenu[AWAY_OFFSET].state = away;

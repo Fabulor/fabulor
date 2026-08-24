@@ -53,8 +53,11 @@
 #define SERVLIST_Y_PADDING 0			/* vertical padding in the network editor */
 
 #define ICON_SERVLIST_CONNECT "zc-menu-connect"
-#define ICON_SERVLIST_ADD "list-add"
-#define ICON_SERVLIST_REMOVE "list-remove"
+#define ICON_SERVLIST_ADD "list-add-symbolic"
+#define ICON_SERVLIST_REMOVE "list-remove-symbolic"
+#define ICON_SERVLIST_EDIT "document-edit-symbolic"
+#define ICON_SERVLIST_SORT "view-sort-ascending-symbolic"
+#define ICON_SERVLIST_FAVORITE "starred-symbolic"
 #define ICON_SERVLIST_CLOSE "gtk-close"
 #define ICON_SERVLIST_ERROR "dialog-error"
 
@@ -591,6 +594,21 @@ servlist_icon_button_new (const char *label, const char *icon_name)
 
 	(void)icon_name;
 	button = gtk_button_new_with_mnemonic (label);
+
+	return button;
+}
+
+static GtkWidget *
+servlist_tool_button_new (const char *label, const char *icon_name)
+{
+	GtkWidget *button = gtk_button_new ();
+	GtkWidget *image = fabulor_gtk_image_new_from_icon_name (icon_name,
+		FABULOR_GTK_ICON_SIZE_LARGE_TOOLBAR);
+
+	gtk_button_set_child (GTK_BUTTON (button), image);
+	gtk_widget_set_size_request (button, 42, 42);
+	gtk_widget_set_tooltip_text (button, label);
+	fabulor_gtk_widget_set_accessible_label (button, label);
 
 	return button;
 }
@@ -2327,6 +2345,7 @@ servlist_open_networks (void)
 	GtkWidget *button_remove;
 	GtkWidget *button_edit;
 	GtkWidget *button_sort;
+	GtkWidget *button_favorite;
 	GtkWidget *hseparator1;
 	GtkWidget *hbuttonbox1;
 	GtkWidget *button_connect;
@@ -2488,7 +2507,7 @@ servlist_open_networks (void)
 	gtk_widget_show (checkbutton_skip);
 
 	checkbutton_fav =
-		gtk_check_button_new_with_mnemonic (_("Show favorites only"));
+		gtk_check_button_new_with_mnemonic (_("Show favourites only"));
 	fabulor_gtk_check_button_set_active (checkbutton_fav,
 		prefs.hex_gui_slist_fav);
 	fabulor_gtk_box_append (GTK_BOX (hbox), checkbutton_fav, FALSE, TRUE, 0);
@@ -2504,43 +2523,48 @@ servlist_open_networks (void)
 						   SERVLIST_ALIGN_FILL, SERVLIST_ALIGN_FILL,
 						   0, 0);
 
-	button_add = servlist_icon_button_new (_("_Add"), ICON_SERVLIST_ADD);
+	button_add = servlist_tool_button_new (_("Add network"), ICON_SERVLIST_ADD);
 	g_signal_connect (G_OBJECT (button_add), "clicked",
 							G_CALLBACK (servlist_addnet_cb), networks_tree);
 	gtk_widget_show (button_add);
 	fabulor_gtk_box_append (GTK_BOX (vbuttonbox2), button_add, FALSE, TRUE, 0);
 	fabulor_gtk_widget_set_can_default (button_add, TRUE);
 
-	button_remove = servlist_icon_button_new (_("_Remove"), ICON_SERVLIST_REMOVE);
+	button_remove = servlist_tool_button_new (_("Remove selected network"),
+		ICON_SERVLIST_REMOVE);
 	g_signal_connect (G_OBJECT (button_remove), "clicked",
 							G_CALLBACK (servlist_deletenet_cb), 0);
 	gtk_widget_show (button_remove);
 	fabulor_gtk_box_append (GTK_BOX (vbuttonbox2), button_remove, FALSE, TRUE, 0);
 	fabulor_gtk_widget_set_can_default (button_remove, TRUE);
 
-	button_edit = gtk_button_new_with_mnemonic (_("_Edit..."));
+	button_edit = servlist_tool_button_new (_("Edit selected network"),
+		ICON_SERVLIST_EDIT);
 	g_signal_connect (G_OBJECT (button_edit), "clicked",
 							G_CALLBACK (servlist_edit_cb), 0);
 	gtk_widget_show (button_edit);
 	fabulor_gtk_box_append (GTK_BOX (vbuttonbox2), button_edit, FALSE, TRUE, 0);
 	fabulor_gtk_widget_set_can_default (button_edit, TRUE);
 
-	button_sort = gtk_button_new_with_mnemonic (_("_Sort"));
-	gtk_widget_set_tooltip_text (button_sort, _("Sorts the network list in alphabetical order. "
-				"Use Shift+Up and Shift+Down keys to move a row."));
+	button_sort = servlist_tool_button_new (_("Sort networks alphabetically"),
+		ICON_SERVLIST_SORT);
+	gtk_widget_set_tooltip_text (button_sort, _("Sort networks alphabetically. "
+		"Use Shift+Up and Shift+Down to move the selected network."));
 	g_signal_connect (G_OBJECT (button_sort), "clicked",
 							G_CALLBACK (servlist_sort), 0);
 	gtk_widget_show (button_sort);
 	fabulor_gtk_box_append (GTK_BOX (vbuttonbox2), button_sort, FALSE, TRUE, 0);
 	fabulor_gtk_widget_set_can_default (button_sort, TRUE);
 
-	button_sort = gtk_button_new_with_mnemonic (_("_Favor"));
-	gtk_widget_set_tooltip_text (button_sort, _("Mark or unmark this network as a favorite."));
-	g_signal_connect (G_OBJECT (button_sort), "clicked",
+	button_favorite = servlist_tool_button_new (
+		_("Mark or unmark selected network as favourite"),
+		ICON_SERVLIST_FAVORITE);
+	g_signal_connect (G_OBJECT (button_favorite), "clicked",
 							G_CALLBACK (servlist_favor), 0);
-	gtk_widget_show (button_sort);
-	fabulor_gtk_box_append (GTK_BOX (vbuttonbox2), button_sort, FALSE, TRUE, 0);
-	fabulor_gtk_widget_set_can_default (button_sort, TRUE);
+	gtk_widget_show (button_favorite);
+	fabulor_gtk_box_append (GTK_BOX (vbuttonbox2), button_favorite,
+		FALSE, TRUE, 0);
+	fabulor_gtk_widget_set_can_default (button_favorite, TRUE);
 
 	hseparator1 = gtk_separator_new (GTK_ORIENTATION_HORIZONTAL);
 	gtk_widget_show (hseparator1);

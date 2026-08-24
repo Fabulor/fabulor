@@ -90,6 +90,7 @@
 
 #define GUI_SPACING (3)
 #define GUI_BORDER (0)
+#define MG_USERLIST_MIN_WIDTH 150
 
 enum
 {
@@ -316,6 +317,37 @@ mg_apply_compact_mode_css (GtkWidget *widget)
 	theme_css_apply_widget_provider (widget, GTK_STYLE_PROVIDER (provider));
 }
 
+static void
+mg_apply_userlist_action_css (GtkWidget *widget)
+{
+	GtkStyleContext *context;
+	GtkCssProvider *provider;
+
+	if (!widget)
+		return;
+
+	context = gtk_widget_get_style_context (widget);
+	if (!context)
+		return;
+
+	provider = g_object_get_data (G_OBJECT (widget),
+		"mg-userlist-action-css-provider");
+	if (!provider)
+	{
+		provider = gtk_css_provider_new ();
+		g_object_set_data_full (G_OBJECT (widget),
+			"mg-userlist-action-css-provider", provider, g_object_unref);
+	}
+
+	gtk_css_provider_load_from_data (provider,
+		".fabulor-userlist-action { min-width: 0; min-height: 0; "
+		"padding: 2px 4px; }"
+		".fabulor-userlist-action label { padding: 0; }",
+		-1);
+	gtk_style_context_add_class (context, "fabulor-userlist-action");
+	theme_css_apply_widget_provider (widget, GTK_STYLE_PROVIDER (provider));
+}
+
 static GtkWidget *
 mg_box_new (GtkOrientation orientation, gboolean homogeneous, gint spacing)
 {
@@ -328,6 +360,9 @@ mg_box_new (GtkOrientation orientation, gboolean homogeneous, gint spacing)
 
 static void mg_create_entry (session *sess, GtkWidget *box);
 static void mg_create_search (session *sess, GtkWidget *box);
+static void mg_update_mode_menu_label (session_gui *gui);
+static gboolean mg_mode_control_get_active (GtkWidget *control);
+static void mg_mode_control_set_active (GtkWidget *control, gboolean active);
 static void mg_link_irctab (session *sess, int focus);
 static void mg_topwindow_lifecycle_connect (GtkWidget *window, session *sess);
 static void mg_topwindow_lifecycle_disconnect (GtkWidget *window, session *sess);
@@ -544,6 +579,24 @@ fe_set_tab_color (struct session *sess, tabcolor col)
                 lastact_update (sess);
                 sess->last_tab_state = sess->tab_state; /* For plugins handling future prints */
         }
+}
+
+static void
+mg_update_nick_label (session_gui *gui, const char *nick)
+{
+	GtkWidget *label;
+
+	if (!gui || !gui->nick_label || !nick)
+		return;
+
+	gtk_button_set_label (GTK_BUTTON (gui->nick_label), nick);
+	gtk_widget_set_tooltip_text (gui->nick_label, nick);
+	label = fabulor_gtk_button_get_child (GTK_BUTTON (gui->nick_label));
+	if (GTK_IS_LABEL (label))
+	{
+		gtk_label_set_ellipsize (GTK_LABEL (label), PANGO_ELLIPSIZE_END);
+		gtk_label_set_max_width_chars (GTK_LABEL (label), 16);
+	}
 }
 
 static void
@@ -871,13 +924,10 @@ fe_set_title (session *sess)
         case SESS_CHANNEL:
                 /* don't display keys in the titlebar */
                         g_snprintf (tbuf, sizeof (tbuf),
-                                         "%s%s%s / %s%s%s%s - %s",
+										 "%s%s%s / %s - %s",
                                          prefs.hex_gui_win_nick ? sess->server->nick : "",
                                          prefs.hex_gui_win_nick ? " @ " : "",
-                                         server_get_network (sess->server, TRUE), sess->channel,
-                                         prefs.hex_gui_win_modes && sess->current_modes ? " (" : "",
-                                         prefs.hex_gui_win_modes && sess->current_modes ? sess->current_modes : "",
-                                         prefs.hex_gui_win_modes && sess->current_modes ? ")" : "",
+										 server_get_network (sess->server, TRUE), sess->channel,
                                          _(DISPLAY_NAME));
                 if (prefs.hex_gui_win_ucount)
                 {
@@ -1243,7 +1293,7 @@ mg_unpopulate (session *sess)
                 res->queue_text = g_strdup (gtk_label_get_text (GTK_LABEL (gui->throttleinfo)));
 
         for (i = 0; i < NUM_FLAG_WIDS - 1; i++)
-                res->flag_wid_state[i] = gtk_toggle_button_get_active (GTK_TOGGLE_BUTTON (gui->flag_wid[i]));
+                res->flag_wid_state[i] = mg_mode_control_get_active (gui->flag_wid[i]);
 
         res->old_ul_value = userlist_get_value (gui->user_tree);
         if (gui->lagometer)
@@ -1499,7 +1549,7 @@ mg_populate (session *sess)
                 /* show the dialog buttons */
                 gtk_widget_show (gui->dialogbutton_box);
                 /* hide the chan-mode buttons */
-                gtk_widget_hide (gui->topicbutton_box);
+		gtk_widget_hide (gui->mode_menu_button);
                 /* hide the userlist */
                 mg_decide_userlist (sess, FALSE);
                 /* shouldn't edit the topic */
@@ -1509,8 +1559,7 @@ mg_populate (session *sess)
                         gtk_widget_show (gui->topic_bar);
                 break;
         case SESS_SERVER:
-                if (prefs.hex_gui_mode_buttons)
-                        gtk_widget_show (gui->topicbutton_box);
+		gtk_widget_hide (gui->mode_menu_button);
                 /* hide the dialog buttons */
                 gtk_widget_hide (gui->dialogbutton_box);
                 /* hide the userlist */
@@ -1518,11 +1567,11 @@ mg_populate (session *sess)
                 /* servers don't have topics */
                 gtk_widget_hide (gui->topic_bar);
                 break;
-        default:
-                /* hide the dialog buttons */
-                gtk_widget_hide (gui->dialogbutton_box);
-                if (prefs.hex_gui_mode_buttons)
-                        gtk_widget_show (gui->topicbutton_box);
+	default:
+		/* hide the dialog buttons */
+		gtk_widget_hide (gui->dialogbutton_box);
+		gtk_widget_set_visible (gui->mode_menu_button,
+						sess->type == SESS_CHANNEL);
                 /* show the userlist */
                 mg_decide_userlist (sess, FALSE);
                 /* let the topic be edited */
@@ -1575,7 +1624,7 @@ mg_populate (session *sess)
 
         /* this one flickers, so only change if necessary */
         if (strcmp (sess->server->nick, gtk_button_get_label (GTK_BUTTON (gui->nick_label))) != 0)
-                gtk_button_set_label (GTK_BUTTON (gui->nick_label), sess->server->nick);
+		mg_update_nick_label (gui, sess->server->nick);
 
         /*
          * Keep transcript and user-list replacement in one switch transaction.
@@ -1596,10 +1645,11 @@ mg_populate (session *sess)
                         gtk_widget_show (sess->gui->flag_wid[i]);
 
                 /* Update state */
-                gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (gui->flag_wid[i]),
-                                                                        res->flag_wid_state[i]);
-        }
-        ignore_chanmode = FALSE;
+                mg_mode_control_set_active (gui->flag_wid[i],
+                                            res->flag_wid_state[i]);
+	}
+	ignore_chanmode = FALSE;
+	mg_update_mode_menu_label (gui);
 
         if (gui->lagometer)
         {
@@ -2514,18 +2564,20 @@ mg_add_chan (session *sess)
 }
 
 static void
-mg_userlist_button (GtkWidget * box, char *label, char *cmd,
-                                                  int a, int b, int c, int d)
+mg_userlist_button (GtkWidget *grid, char *label, char *cmd,
+					gint column, gint row)
 {
-        GtkWidget *wid = gtk_button_new_with_label (label);
-        g_signal_connect (G_OBJECT (wid), "clicked",
-                                                        G_CALLBACK (userlist_button_cb), cmd);
-        gtk_widget_set_hexpand (wid, TRUE);
-        gtk_widget_set_vexpand (wid, FALSE);
-        gtk_widget_set_halign (wid, GTK_ALIGN_FILL);
-        gtk_widget_set_valign (wid, GTK_ALIGN_CENTER);
-        gtk_grid_attach (GTK_GRID (box), wid, a, c, b - a, d - c);
-        show_and_unfocus (wid);
+        GtkWidget *button = gtk_button_new_with_label (label);
+
+        g_signal_connect (G_OBJECT (button), "clicked",
+                          G_CALLBACK (userlist_button_cb), cmd);
+        gtk_widget_set_hexpand (button, TRUE);
+        gtk_widget_set_vexpand (button, FALSE);
+        gtk_widget_set_halign (button, GTK_ALIGN_FILL);
+        gtk_widget_set_valign (button, GTK_ALIGN_CENTER);
+	mg_apply_userlist_action_css (button);
+        gtk_grid_attach (GTK_GRID (grid), button, column, row, 1, 1);
+        show_and_unfocus (button);
 }
 
 static GtkWidget *
@@ -2533,29 +2585,31 @@ mg_create_userlistbuttons (GtkWidget *box)
 {
         struct popup *pop;
         GSList *list = button_list;
-        int a = 0, b = 0;
-        GtkWidget *tab;
+        GtkWidget *grid;
+        gint index = 0;
 
-        tab = gtk_grid_new ();
-        fabulor_gtk_box_append (GTK_BOX (box), tab, FALSE, FALSE, 0);
+        grid = gtk_grid_new ();
+        gtk_grid_set_column_homogeneous (GTK_GRID (grid), TRUE);
+        gtk_grid_set_row_homogeneous (GTK_GRID (grid), TRUE);
+        gtk_grid_set_column_spacing (GTK_GRID (grid), 2);
+        gtk_grid_set_row_spacing (GTK_GRID (grid), 2);
+        gtk_widget_set_hexpand (grid, TRUE);
+        gtk_widget_set_halign (grid, GTK_ALIGN_FILL);
+        fabulor_gtk_box_append (GTK_BOX (box), grid, FALSE, FALSE, 0);
 
         while (list)
         {
                 pop = list->data;
                 if (pop->cmd[0])
                 {
-                        mg_userlist_button (tab, pop->name, pop->cmd, a, a + 1, b, b + 1);
-                        a++;
-                        if (a == 2)
-                        {
-                                a = 0;
-                                b++;
-                        }
+                        mg_userlist_button (grid, pop->name, pop->cmd,
+                                            index % 2, index / 2);
+                        index++;
                 }
                 list = list->next;
         }
 
-        return tab;
+        return grid;
 }
 
 static void
@@ -2867,7 +2921,7 @@ check_is_number (char *t)
 }
 
 static void
-mg_change_flag (GtkWidget * wid, session *sess, char flag)
+mg_change_flag (session *sess, char flag, gboolean active)
 {
         server *serv = sess->server;
         char mode[3];
@@ -2876,7 +2930,7 @@ mg_change_flag (GtkWidget * wid, session *sess, char flag)
         mode[2] = '\0';
         if (serv->connected && sess->channel[0])
         {
-                if (gtk_toggle_button_get_active (GTK_TOGGLE_BUTTON (wid)))
+                if (active)
                         mode[0] = '+';
                 else
                         mode[0] = '-';
@@ -2888,13 +2942,13 @@ mg_change_flag (GtkWidget * wid, session *sess, char flag)
 }
 
 static void
-flagl_hit (GtkWidget * wid, struct session *sess)
+flagl_hit (struct session *sess, gboolean active)
 {
         char modes[512];
         const char *limit_str;
         server *serv = sess->server;
 
-        if (gtk_toggle_button_get_active (GTK_TOGGLE_BUTTON (wid)))
+        if (active)
         {
                 if (serv->connected && sess->channel[0])
                 {
@@ -2903,7 +2957,7 @@ flagl_hit (GtkWidget * wid, struct session *sess)
                         {
                                 fe_message (_("User limit must be a number!\n"), FE_MSG_ERROR);
                                 fabulor_gtk_entry_set_text (GTK_ENTRY (sess->gui->limit_entry), "");
-                                gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (wid), FALSE);
+                                mg_mode_control_set_active (sess->gui->flag_l, FALSE);
                                 return;
                         }
                         g_snprintf (modes, sizeof (modes), "+l %d", atoi (limit_str));
@@ -2911,11 +2965,11 @@ flagl_hit (GtkWidget * wid, struct session *sess)
                         serv->p_join_info (serv, sess->channel);
                 }
         } else
-                mg_change_flag (wid, sess, 'l');
+                mg_change_flag (sess, 'l', FALSE);
 }
 
 static void
-flagk_hit (GtkWidget * wid, struct session *sess)
+flagk_hit (struct session *sess, gboolean active)
 {
         char modes[512];
         server *serv = sess->server;
@@ -2925,7 +2979,7 @@ flagk_hit (GtkWidget * wid, struct session *sess)
                 g_snprintf (modes, sizeof (modes), "-k %s", 
                           fabulor_gtk_entry_get_text (GTK_ENTRY (sess->gui->key_entry)));
 
-                if (gtk_toggle_button_get_active (GTK_TOGGLE_BUTTON (wid)))
+                if (active)
                         modes[0] = '+';
 
                 serv->p_mode (serv, sess->channel, modes);
@@ -2933,10 +2987,11 @@ flagk_hit (GtkWidget * wid, struct session *sess)
 }
 
 static void
-mg_flagbutton_cb (GtkWidget *but, char *flag)
+mg_mode_control_changed (GtkWidget *control, char *flag, gboolean active)
 {
         session *sess;
         char mode;
+	(void) control;
 
         if (ignore_chanmode)
                 return;
@@ -2947,20 +3002,56 @@ mg_flagbutton_cb (GtkWidget *but, char *flag)
         switch (mode)
         {
         case 'l':
-                flagl_hit (but, sess);
+                flagl_hit (sess, active);
                 break;
         case 'k':
-                flagk_hit (but, sess);
+                flagk_hit (sess, active);
                 break;
-        case 'b':
-                ignore_chanmode = TRUE;
-                gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (sess->gui->flag_b), FALSE);
-                ignore_chanmode = FALSE;
-                banlist_opengui (sess);
-                break;
-        default:
-                mg_change_flag (but, sess, mode);
-        }
+	default:
+		mg_change_flag (sess, mode, active);
+	}
+	mg_update_mode_menu_label (sess->gui);
+}
+
+static void
+mg_flagbutton_cb (GtkToggleButton *button, char *flag)
+{
+	mg_mode_control_changed (GTK_WIDGET (button), flag,
+		gtk_toggle_button_get_active (button));
+}
+
+static gboolean
+mg_modeswitch_cb (GtkSwitch *control, gboolean state, char *flag)
+{
+	mg_mode_control_changed (GTK_WIDGET (control), flag, state);
+	return FALSE;
+}
+
+static void
+mg_banlist_button_cb (GtkWidget *button, gpointer user_data)
+{
+	(void) button;
+	(void) user_data;
+
+	if (current_sess)
+		banlist_opengui (current_sess);
+}
+
+static gboolean
+mg_mode_control_get_active (GtkWidget *control)
+{
+	if (GTK_IS_SWITCH (control))
+		return gtk_switch_get_active (GTK_SWITCH (control));
+	return gtk_toggle_button_get_active (GTK_TOGGLE_BUTTON (control));
+}
+
+static void
+mg_mode_control_set_active (GtkWidget *control, gboolean active)
+{
+	if (GTK_IS_SWITCH (control))
+		gtk_switch_set_active (GTK_SWITCH (control), active);
+	else
+		gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (control), active);
 }
 
 static GtkWidget *
@@ -2974,10 +3065,10 @@ mg_create_flagbutton (char *tip, GtkWidget *box, char *face)
         gtk_label_set_markup (GTK_LABEL(lbl), label_markup);
 
         btn = gtk_toggle_button_new ();
-        gtk_widget_set_size_request (btn, -1, 11);
+        gtk_widget_set_size_request (btn, 48, 32);
+        gtk_widget_set_hexpand (btn, TRUE);
         gtk_widget_set_tooltip_text (btn, tip);
         fabulor_gtk_button_set_flat (GTK_BUTTON (btn));
-        mg_apply_compact_mode_css (btn);
         fabulor_gtk_button_set_child (GTK_BUTTON (btn), lbl);
 
         fabulor_gtk_box_append (GTK_BOX (box), btn, FALSE, FALSE, 0);
@@ -2986,6 +3077,19 @@ mg_create_flagbutton (char *tip, GtkWidget *box, char *face)
         show_and_unfocus (btn);
 
         return btn;
+}
+
+static GtkWidget *
+mg_create_modeswitch (char *tip, char *flag)
+{
+	GtkWidget *control = gtk_switch_new ();
+
+	gtk_widget_set_tooltip_text (control, tip);
+	gtk_widget_set_halign (control, GTK_ALIGN_START);
+	gtk_widget_set_valign (control, GTK_ALIGN_CENTER);
+	g_signal_connect (G_OBJECT (control), "state-set",
+		G_CALLBACK (mg_modeswitch_cb), flag);
+	return control;
 }
 
 static void
@@ -3017,7 +3121,7 @@ mg_limit_entry_cb (GtkWidget * igad, gpointer userdata)
                 {
                         fabulor_gtk_entry_set_text (GTK_ENTRY (igad), "");
                         fe_message (_("User limit must be a number!\n"), FE_MSG_ERROR);
-                        gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (sess->gui->flag_l), FALSE);
+                        mg_mode_control_set_active (sess->gui->flag_l, FALSE);
                         return;
                 }
                 g_snprintf (modes, sizeof(modes), "+l %d", 
@@ -3088,23 +3192,54 @@ mg_entry_select_all (GtkWidget *entry, guint keyval, GdkModifierType state,
 }
 
 static void
-mg_create_chanmodebuttons (session_gui *gui, GtkWidget *box)
+mg_create_chanmodebuttons (session_gui *gui, GtkWidget *content)
 {
-        gui->flag_c = mg_create_flagbutton (_("Filter Colors"), box, "c");
-        gui->flag_n = mg_create_flagbutton (_("No outside messages"), box, "n");
-        gui->flag_t = mg_create_flagbutton (_("Topic Protection"), box, "t");
-        gui->flag_i = mg_create_flagbutton (_("Invite Only"), box, "i");
-        gui->flag_m = mg_create_flagbutton (_("Moderated"), box, "m");
-        gui->flag_b = mg_create_flagbutton (_("Ban List"), box, "b");
+	GtkWidget *toggles;
+	GtkWidget *separator;
+	GtkWidget *parameters;
+	GtkWidget *label;
 
-        gui->flag_k = mg_create_flagbutton (_("Keyword"), box, "k");
+	toggles = mg_box_new (GTK_ORIENTATION_HORIZONTAL, TRUE, 4);
+	gtk_widget_set_hexpand (toggles, TRUE);
+	fabulor_gtk_box_append (GTK_BOX (content), toggles, FALSE, FALSE, 0);
+
+        gui->flag_c = mg_create_flagbutton (_("Filter Colors"), toggles, "c");
+        gui->flag_n = mg_create_flagbutton (_("No outside messages"), toggles, "n");
+        gui->flag_t = mg_create_flagbutton (_("Topic Protection"), toggles, "t");
+        gui->flag_i = mg_create_flagbutton (_("Invite Only"), toggles, "i");
+        gui->flag_m = mg_create_flagbutton (_("Moderated"), toggles, "m");
+
+	separator = gtk_separator_new (GTK_ORIENTATION_HORIZONTAL);
+	fabulor_gtk_box_append (GTK_BOX (content), separator, FALSE, FALSE, 0);
+
+	gui->flag_b = gtk_button_new_with_label (_("Ban list"));
+	gtk_widget_set_hexpand (gui->flag_b, TRUE);
+	gtk_widget_set_halign (gui->flag_b, GTK_ALIGN_FILL);
+	g_signal_connect (G_OBJECT (gui->flag_b), "clicked",
+		G_CALLBACK (mg_banlist_button_cb), NULL);
+	fabulor_gtk_box_append (GTK_BOX (content), gui->flag_b, FALSE, FALSE, 0);
+
+	separator = gtk_separator_new (GTK_ORIENTATION_HORIZONTAL);
+	fabulor_gtk_box_append (GTK_BOX (content), separator, FALSE, FALSE, 0);
+
+	parameters = gtk_grid_new ();
+	gtk_grid_set_column_spacing (GTK_GRID (parameters), 10);
+	gtk_grid_set_row_spacing (GTK_GRID (parameters), 8);
+	gtk_widget_set_hexpand (parameters, TRUE);
+	fabulor_gtk_box_append (GTK_BOX (content), parameters, FALSE, FALSE, 0);
+
+	gui->flag_k = mg_create_modeswitch (_("Keyword"), "k");
+	gtk_grid_attach (GTK_GRID (parameters), gui->flag_k, 0, 0, 1, 1);
+	label = gtk_label_new (_("Key"));
+	gtk_widget_set_halign (label, GTK_ALIGN_START);
+	gtk_grid_attach (GTK_GRID (parameters), label, 1, 0, 1, 1);
         gui->key_entry = gtk_entry_new ();
         gtk_widget_set_name (gui->key_entry, "fabulor-inputbox");
         gtk_entry_set_max_length (GTK_ENTRY (gui->key_entry), 23);
-        gtk_widget_set_size_request (gui->key_entry, 58, 11);
-        fabulor_gtk_box_append (GTK_BOX (box), gui->key_entry, FALSE, FALSE, 0);
+	gtk_widget_set_hexpand (gui->key_entry, TRUE);
+	gtk_widget_set_size_request (gui->key_entry, 130, -1);
+	gtk_grid_attach (GTK_GRID (parameters), gui->key_entry, 2, 0, 1, 1);
         mg_apply_emoji_fallback_widget (gui->key_entry);
-        mg_apply_compact_mode_css (gui->key_entry);
         g_signal_connect (G_OBJECT (gui->key_entry), "activate",
                                                         G_CALLBACK (mg_key_entry_cb), NULL);
         fabulor_gtk_widget_on_key_pressed (gui->key_entry,
@@ -3114,15 +3249,21 @@ mg_create_chanmodebuttons (session_gui *gui, GtkWidget *box)
                 mg_apply_entry_style (gui->key_entry);
         mg_apply_entry_scroll_artifact_fix (gui->key_entry);
 
-        gui->flag_l = mg_create_flagbutton (_("User Limit"), box, "l");
+	separator = gtk_separator_new (GTK_ORIENTATION_HORIZONTAL);
+	gtk_grid_attach (GTK_GRID (parameters), separator, 0, 1, 3, 1);
+
+	gui->flag_l = mg_create_modeswitch (_("User Limit"), "l");
+	gtk_grid_attach (GTK_GRID (parameters), gui->flag_l, 0, 2, 1, 1);
+	label = gtk_label_new (_("User limit"));
+	gtk_widget_set_halign (label, GTK_ALIGN_START);
+	gtk_grid_attach (GTK_GRID (parameters), label, 1, 2, 1, 1);
         gui->limit_entry = gtk_entry_new ();
         gtk_widget_set_name (gui->limit_entry, "fabulor-inputbox");
         gtk_entry_set_max_length (GTK_ENTRY (gui->limit_entry), 10);
 	fabulor_gtk_entry_set_width_chars (GTK_ENTRY (gui->limit_entry), 5);
-        gtk_widget_set_size_request (gui->limit_entry, 45, 11);
-        fabulor_gtk_box_append (GTK_BOX (box), gui->limit_entry, FALSE, FALSE, 0);
+	gtk_widget_set_hexpand (gui->limit_entry, TRUE);
+	gtk_grid_attach (GTK_GRID (parameters), gui->limit_entry, 2, 2, 1, 1);
         mg_apply_emoji_fallback_widget (gui->limit_entry);
-        mg_apply_compact_mode_css (gui->limit_entry);
         g_signal_connect (G_OBJECT (gui->limit_entry), "activate",
                                                         G_CALLBACK (mg_limit_entry_cb), NULL);
         fabulor_gtk_widget_on_key_pressed (gui->limit_entry,
@@ -3131,6 +3272,62 @@ mg_create_chanmodebuttons (session_gui *gui, GtkWidget *box)
         if (prefs.hex_gui_input_style)
                 mg_apply_entry_style (gui->limit_entry);
         mg_apply_entry_scroll_artifact_fix (gui->limit_entry);
+}
+
+static void
+mg_update_mode_menu_label (session_gui *gui)
+{
+	char *label;
+	char modes[NUM_FLAG_WIDS] = { 0 };
+	guint i;
+	guint count = 0;
+
+	if (!gui || !gui->mode_menu_button)
+		return;
+	for (i = 0; i < G_N_ELEMENTS (chan_flags); i++)
+	{
+		if (gui->flag_wid[i] &&
+			mg_mode_control_get_active (gui->flag_wid[i]))
+			modes[count++] = chan_flags[i];
+	}
+	label = count ? g_strdup_printf (_("Modes +%s"), modes) :
+		g_strdup (_("Modes"));
+	gtk_menu_button_set_label (GTK_MENU_BUTTON (gui->mode_menu_button), label);
+	g_free (label);
+}
+
+static void
+mg_create_mode_menu (session_gui *gui, GtkWidget *parent)
+{
+	GtkWidget *button;
+	GtkWidget *popover;
+	GtkWidget *content;
+	GtkWidget *title;
+
+	button = gtk_menu_button_new ();
+	gtk_menu_button_set_label (GTK_MENU_BUTTON (button), _("Modes"));
+	gtk_widget_set_tooltip_text (button, _("Channel modes"));
+	mg_apply_compact_mode_css (button);
+	fabulor_gtk_box_append (GTK_BOX (parent), button, FALSE, FALSE, 0);
+
+	popover = gtk_popover_new ();
+	gtk_popover_set_position (GTK_POPOVER (popover), GTK_POS_BOTTOM);
+	gtk_popover_set_autohide (GTK_POPOVER (popover), TRUE);
+	content = mg_box_new (GTK_ORIENTATION_VERTICAL, FALSE, 6);
+	gtk_widget_set_size_request (content, 300, -1);
+	gtk_widget_set_margin_top (content, 12);
+	gtk_widget_set_margin_bottom (content, 12);
+	gtk_widget_set_margin_start (content, 12);
+	gtk_widget_set_margin_end (content, 12);
+	title = gtk_label_new (NULL);
+	gtk_label_set_markup (GTK_LABEL (title), _("<b>Channel modes</b>"));
+	gtk_widget_set_halign (title, GTK_ALIGN_CENTER);
+	fabulor_gtk_box_append (GTK_BOX (content), title, FALSE, FALSE, 0);
+	mg_create_chanmodebuttons (gui, content);
+
+	fabulor_gtk_popover_set_child (GTK_POPOVER (popover), content);
+	gtk_menu_button_set_popover (GTK_MENU_BUTTON (button), popover);
+	gui->mode_menu_button = button;
 }
 
 /*static void
@@ -3253,7 +3450,7 @@ mg_topicbar_update_height (GtkWidget *topic)
 	width -= margin_left + margin_right;
 	if (width < 1)
 		width = 1;
-	if (prefs.hex_gui_topicbar_multiline && !prefs.hex_gui_mode_buttons_inline)
+	if (prefs.hex_gui_topicbar_multiline)
 	{
 		pango_layout_set_width (layout, width * PANGO_SCALE);
 		pango_layout_set_wrap (layout, PANGO_WRAP_WORD_CHAR);
@@ -3269,7 +3466,7 @@ mg_topicbar_update_height (GtkWidget *topic)
 	if (line_height <= 0)
 		line_height = 16;
 
-	line_count = prefs.hex_gui_topicbar_multiline && !prefs.hex_gui_mode_buttons_inline ?
+	line_count = prefs.hex_gui_topicbar_multiline ?
 		pango_layout_get_line_count (layout) : 1;
 	if (line_count <= 0)
 		line_count = 1;
@@ -3418,7 +3615,7 @@ mg_apply_session_font_prefs (session_gui *gui)
 static void
 mg_create_topicbar (session *sess, GtkWidget *box)
 {
-	GtkWidget *vbox, *hbox, *mode_hbox, *topic, *topic_scroll, *bbox;
+	GtkWidget *vbox, *hbox, *topic, *topic_scroll, *bbox;
 	session_gui *gui = sess->gui;
 
 	gui->topic_bar = vbox = mg_box_new (GTK_ORIENTATION_VERTICAL, FALSE, 0);
@@ -3433,14 +3630,14 @@ mg_create_topicbar (session *sess, GtkWidget *box)
         gui->topic_entry = topic = gtk_text_view_new ();
         gtk_widget_set_name (topic, "fabulor-topicbox");
         gtk_text_view_set_wrap_mode (GTK_TEXT_VIEW (topic),
-		prefs.hex_gui_topicbar_multiline && !prefs.hex_gui_mode_buttons_inline ?
+		prefs.hex_gui_topicbar_multiline ?
 		GTK_WRAP_WORD_CHAR : GTK_WRAP_NONE);
         gtk_text_view_set_left_margin (GTK_TEXT_VIEW (topic), 4);
         gtk_text_view_set_right_margin (GTK_TEXT_VIEW (topic), 4);
         gtk_text_view_set_top_margin (GTK_TEXT_VIEW (topic),
-		prefs.hex_gui_mode_buttons_inline ? 0 : 4);
+		4);
         gtk_text_view_set_bottom_margin (GTK_TEXT_VIEW (topic),
-		prefs.hex_gui_mode_buttons_inline ? 0 : 4);
+		4);
         gtk_text_view_set_pixels_above_lines (GTK_TEXT_VIEW (topic), 0);
         gtk_text_view_set_pixels_below_lines (GTK_TEXT_VIEW (topic), 0);
         gtk_text_view_set_pixels_inside_wrap (GTK_TEXT_VIEW (topic), 0);
@@ -3471,16 +3668,7 @@ mg_create_topicbar (session *sess, GtkWidget *box)
 	fabulor_gtk_box_append (GTK_BOX (hbox), bbox, FALSE, FALSE, 0);
 	mg_create_dialogbuttons (bbox);
 
-	mode_hbox = mg_box_new (GTK_ORIENTATION_HORIZONTAL, FALSE, 0);
-	if (prefs.hex_gui_mode_buttons_inline)
-		fabulor_gtk_box_append (GTK_BOX (hbox), mode_hbox, FALSE, FALSE, 0);
-	else
-		fabulor_gtk_box_append (GTK_BOX (vbox), mode_hbox, FALSE, FALSE, 0);
-
-	gui->topicbutton_box = bbox = mg_box_new (GTK_ORIENTATION_HORIZONTAL, FALSE, 0);
-	gtk_widget_set_valign (bbox, GTK_ALIGN_CENTER);
-	fabulor_gtk_horizontal_box_append_trailing (GTK_BOX (mode_hbox), bbox);
-	mg_create_chanmodebuttons (gui, bbox);
+	mg_create_mode_menu (gui, hbox);
 }
 
 /* check if a word is clickable */
@@ -3850,11 +4038,14 @@ mg_create_meters (session_gui *gui, GtkWidget *parent_box)
         GtkWidget *infbox, *wid, *box;
 
         gui->meter_box = infbox = box = mg_box_new (GTK_ORIENTATION_VERTICAL, FALSE, 1);
+        gtk_widget_set_hexpand (box, TRUE);
+        gtk_widget_set_halign (box, GTK_ALIGN_FILL);
         fabulor_gtk_box_append (GTK_BOX (parent_box), box, FALSE, FALSE, 0);
 
         if ((prefs.hex_gui_lagometer & 2) || (prefs.hex_gui_throttlemeter & 2))
         {
                 infbox = mg_box_new (GTK_ORIENTATION_HORIZONTAL, TRUE, 0);
+                gtk_widget_set_hexpand (infbox, TRUE);
                 fabulor_gtk_box_append (GTK_BOX (box), infbox, FALSE, FALSE, 0);
         }
 
@@ -4084,7 +4275,7 @@ mg_tabwindow_lifecycle_disconnect (GtkWidget *window, session_gui *gui)
 static void
 mg_create_userlist (session_gui *gui, GtkWidget *box)
 {
-        GtkWidget *ulist, *vbox;
+        GtkWidget *ulist, *vbox, *list_overlay, *list_box;
 
         vbox = mg_box_new (GTK_ORIENTATION_VERTICAL, FALSE, 1);
         fabulor_gtk_box_append (GTK_BOX (box), vbox, TRUE, TRUE, 0);
@@ -4096,12 +4287,36 @@ mg_create_userlist (session_gui *gui, GtkWidget *box)
         gtk_label_set_width_chars (GTK_LABEL (gui->namelistinfo), 1);
         gtk_widget_set_margin_start (gui->namelistinfo, 0);
         gtk_widget_set_margin_end (gui->namelistinfo, 0);
+        gtk_widget_set_margin_top (gui->namelistinfo, 4);
+        gtk_widget_set_margin_bottom (gui->namelistinfo, 4);
         gtk_widget_set_hexpand (gui->namelistinfo, TRUE);
         gtk_widget_set_halign (gui->namelistinfo, GTK_ALIGN_FILL);
         if (prefs.hex_gui_ulist_count)
                 fabulor_gtk_box_append (GTK_BOX (vbox), gui->namelistinfo, FALSE, FALSE, 0);
 
-        gui->user_tree = ulist = userlist_create (GTK_BOX (vbox));
+        list_overlay = gtk_overlay_new ();
+        gtk_widget_set_hexpand (list_overlay, TRUE);
+        gtk_widget_set_vexpand (list_overlay, TRUE);
+        fabulor_gtk_box_append (GTK_BOX (vbox), list_overlay, TRUE, TRUE, 0);
+
+        list_box = mg_box_new (GTK_ORIENTATION_VERTICAL, FALSE, 0);
+        gtk_widget_set_hexpand (list_box, TRUE);
+        gtk_widget_set_vexpand (list_box, TRUE);
+        gtk_overlay_set_child (GTK_OVERLAY (list_overlay), list_box);
+
+        gui->user_tree = ulist = userlist_create (GTK_BOX (list_box));
+
+        gui->userlist_empty = gtk_label_new (_("No users are currently visible in this channel."));
+        gtk_label_set_wrap (GTK_LABEL (gui->userlist_empty), TRUE);
+        gtk_label_set_justify (GTK_LABEL (gui->userlist_empty), GTK_JUSTIFY_CENTER);
+        gtk_widget_set_halign (gui->userlist_empty, GTK_ALIGN_CENTER);
+        gtk_widget_set_valign (gui->userlist_empty, GTK_ALIGN_CENTER);
+        gtk_widget_set_margin_start (gui->userlist_empty, 12);
+        gtk_widget_set_margin_end (gui->userlist_empty, 12);
+        gtk_widget_add_css_class (gui->userlist_empty, "dim-label");
+        gtk_widget_set_can_target (gui->userlist_empty, FALSE);
+        gtk_widget_set_visible (gui->userlist_empty, FALSE);
+        gtk_overlay_add_overlay (GTK_OVERLAY (list_overlay), gui->userlist_empty);
 
         if (!gui->theme_userlist_listener_id)
                 gui->theme_userlist_listener_id = theme_listener_register ("maingui.userlist", mg_theme_userlist_changed, gui);
@@ -4111,6 +4326,20 @@ mg_create_userlist (session_gui *gui, GtkWidget *box)
         gui->button_box_parent = vbox;
         gui->button_box = mg_create_userlistbuttons (vbox);
         mg_create_meters (gui, vbox);
+}
+
+static int
+mg_userlist_min_width (void)
+{
+        return MAX (MG_USERLIST_MIN_WIDTH,
+                    prefs.hex_gui_pane_right_size_min);
+}
+
+static int
+mg_userlist_fallback_width (void)
+{
+        return MAX (mg_userlist_min_width (),
+                    prefs.hex_gui_ulist_nick_width);
 }
 
 static void
@@ -4142,7 +4371,7 @@ mg_rightpane_cb (GtkPaned *pane, GParamSpec *param, session_gui *gui)
         pane_width = fabulor_gtk_widget_get_allocated_width (GTK_WIDGET (pane));
         right_size = pane_width - gtk_paned_get_position (pane) - handle_size;
         prefs.hex_gui_pane_right_size = fabulor_pane_clamp_end_size (right_size,
-                prefs.hex_gui_pane_right_size_min, pane_width, handle_size);
+                mg_userlist_min_width (), pane_width, handle_size);
 }
 
 static void
@@ -4155,10 +4384,9 @@ mg_restore_rightpane (GtkPaned *pane, int pane_width, gpointer data)
          * have already overwritten prefs.hex_gui_pane_right_size during layout */
         saved_size = GPOINTER_TO_INT (data);
         handle_size = fabulor_gtk_paned_get_handle_size (pane);
-        fallback_size = MAX (prefs.hex_gui_ulist_nick_width,
-                prefs.hex_gui_pane_right_size_min);
+        fallback_size = mg_userlist_fallback_width ();
         saved_size = fabulor_pane_restore_end_size (saved_size, fallback_size,
-                prefs.hex_gui_pane_right_size_min, pane_width, handle_size);
+                mg_userlist_min_width (), pane_width, handle_size);
         if (saved_size < 1)
                 return;
         prefs.hex_gui_pane_right_size = saved_size;
@@ -4188,9 +4416,8 @@ mg_restore_rightpane_tick_cb (GtkWidget *widget, GdkFrameClock *frame_clock,
 
         handle_size = fabulor_gtk_paned_get_handle_size (pane);
         desired_size = fabulor_pane_restore_end_size (gui->pane_right_size,
-                MAX (prefs.hex_gui_ulist_nick_width,
-                        prefs.hex_gui_pane_right_size_min),
-                prefs.hex_gui_pane_right_size_min, pane_width, handle_size);
+                mg_userlist_fallback_width (), mg_userlist_min_width (),
+                pane_width, handle_size);
         gui->pane_right_size = desired_size;
         actual_size = pane_width - gtk_paned_get_position (pane) - handle_size;
         if (gui->pane_right_last_width != pane_width ||
@@ -4288,8 +4515,7 @@ mg_create_center (session *sess, session_gui *gui, GtkWidget *box)
                 book, TRUE, TRUE);
 
         hbox = mg_box_new (GTK_ORIENTATION_HORIZONTAL, FALSE, 0);
-        gtk_widget_set_size_request (hbox,
-                MAX (prefs.hex_gui_pane_right_size_min, 1), -1);
+        gtk_widget_set_size_request (hbox, mg_userlist_min_width (), -1);
         fabulor_gtk_paned_set_start_child (GTK_PANED (gui->vpane_right),
                 hbox, FALSE, TRUE);
         mg_create_userlist (gui, hbox);
@@ -5640,6 +5866,7 @@ mg_create_entry (session *sess, GtkWidget *box)
         gui->nick_label = but = gtk_button_new_with_label (sess->server->nick);
         fabulor_gtk_button_set_flat (GTK_BUTTON (but));
         gtk_widget_set_can_focus (but, FALSE);
+	mg_update_nick_label (gui, sess->server->nick);
         fabulor_gtk_horizontal_box_append_trailing (GTK_BOX (gui->nick_box), but);
         g_signal_connect (G_OBJECT (but), "clicked",
                                                         G_CALLBACK (mg_nickclick_cb), NULL);
@@ -5872,14 +6099,13 @@ mg_create_topwindow (session *sess)
 
         if (sess->type == SESS_DIALOG)
         {
-                /* hide the chan-mode buttons */
-                gtk_widget_hide (sess->gui->topicbutton_box);
+		gtk_widget_hide (sess->gui->mode_menu_button);
         } else
         {
                 gtk_widget_hide (sess->gui->dialogbutton_box);
 
-                if (!prefs.hex_gui_mode_buttons)
-                        gtk_widget_hide (sess->gui->topicbutton_box);
+		if (sess->type != SESS_CHANNEL)
+			gtk_widget_hide (sess->gui->mode_menu_button);
         }
 
         mg_place_userlist_and_chanview (sess->gui);
@@ -6084,8 +6310,8 @@ mg_create_tabwindow (session *sess)
         /* Will be shown when needed */
         gtk_widget_hide (sess->gui->topic_bar);
 
-        if (!prefs.hex_gui_mode_buttons)
-                gtk_widget_hide (sess->gui->topicbutton_box);
+	if (sess->type != SESS_CHANNEL)
+		gtk_widget_hide (sess->gui->mode_menu_button);
 
         if (!prefs.hex_gui_ulist_buttons)
                 gtk_widget_hide (sess->gui->button_box);
@@ -6254,9 +6480,10 @@ fe_update_mode_buttons (session *sess, char mode, char sign)
                         if (!sess->gui->is_tab || sess == current_tab)
                         {
                                 ignore_chanmode = TRUE;
-                                if (gtk_toggle_button_get_active (GTK_TOGGLE_BUTTON (sess->gui->flag_wid[i])) != state)
-                                        gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (sess->gui->flag_wid[i]), state);
-                                ignore_chanmode = FALSE;
+								if (mg_mode_control_get_active (sess->gui->flag_wid[i]) != state)
+									mg_mode_control_set_active (sess->gui->flag_wid[i], state);
+								ignore_chanmode = FALSE;
+								mg_update_mode_menu_label (sess->gui);
                         } else
                         {
                                 sess->res->flag_wid_state[i] = state;
@@ -6278,7 +6505,7 @@ fe_set_nick (server *serv, char *newnick)
                 if (sess->server == serv)
                 {
                         if (current_tab == sess || !sess->gui->is_tab)
-                                gtk_button_set_label (GTK_BUTTON (sess->gui->nick_label), newnick);
+				mg_update_nick_label (sess->gui, newnick);
                 }
                 list = list->next;
         }

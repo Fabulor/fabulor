@@ -21,6 +21,7 @@ struct _FabulorChannelRecord
 	FabulorChannelRecord *parent;
 	GPtrArray *children;
 	gchar *name;
+	gchar *tooltip;
 	PangoAttrList *attributes;
 	GdkPixbuf *icon;
 	PangoUnderline underline;
@@ -43,6 +44,7 @@ enum
 {
 	PROP_CHANNEL_RECORD_0,
 	PROP_CHANNEL_RECORD_NAME,
+	PROP_CHANNEL_RECORD_TOOLTIP,
 	PROP_CHANNEL_RECORD_ATTRIBUTES,
 	PROP_CHANNEL_RECORD_ICON,
 	PROP_CHANNEL_RECORD_UNDERLINE,
@@ -68,6 +70,9 @@ fabulor_channel_record_get_property (GObject *object, guint property_id,
 	case PROP_CHANNEL_RECORD_NAME:
 		g_value_set_string (value, record->name);
 		break;
+	case PROP_CHANNEL_RECORD_TOOLTIP:
+		g_value_set_string (value, record->tooltip);
+		break;
 	case PROP_CHANNEL_RECORD_ATTRIBUTES:
 		g_value_set_boxed (value, record->attributes);
 		break;
@@ -92,6 +97,7 @@ fabulor_channel_record_finalize (GObject *object)
 	g_clear_pointer (&record->attributes, pango_attr_list_unref);
 	g_clear_object (&record->icon);
 	g_free (record->name);
+	g_free (record->tooltip);
 	G_OBJECT_CLASS (fabulor_channel_record_parent_class)->finalize (object);
 }
 
@@ -104,6 +110,9 @@ fabulor_channel_record_class_init (FabulorChannelRecordClass *klass)
 	object_class->finalize = fabulor_channel_record_finalize;
 	channel_record_properties[PROP_CHANNEL_RECORD_NAME] = g_param_spec_string (
 		"name", "Name", "Displayed channel name", NULL,
+		G_PARAM_READABLE | G_PARAM_STATIC_STRINGS);
+	channel_record_properties[PROP_CHANNEL_RECORD_TOOLTIP] = g_param_spec_string (
+		"tooltip", "Tooltip", "Full channel name", NULL,
 		G_PARAM_READABLE | G_PARAM_STATIC_STRINGS);
 	channel_record_properties[PROP_CHANNEL_RECORD_ATTRIBUTES] =
 		g_param_spec_boxed ("attributes", "Attributes", "Text attributes",
@@ -140,6 +149,7 @@ channel_record_new (const FabulorChannelModelRow *row)
 
 	record->identity = row->identity;
 	record->name = g_strdup (row->name);
+	record->tooltip = g_strdup (row->tooltip);
 	if (row->attributes)
 		record->attributes = pango_attr_list_ref (row->attributes);
 	if (row->icon)
@@ -153,6 +163,7 @@ channel_record_update (FabulorChannelRecord *record,
 	const FabulorChannelModelRow *row)
 {
 	gboolean name_changed = g_strcmp0 (record->name, row->name) != 0;
+	gboolean tooltip_changed = g_strcmp0 (record->tooltip, row->tooltip) != 0;
 	gboolean attributes_changed = record->attributes != row->attributes;
 	gboolean icon_changed = record->icon != row->icon;
 	gboolean underline_changed = record->underline != row->underline;
@@ -161,6 +172,11 @@ channel_record_update (FabulorChannelRecord *record,
 	{
 		g_free (record->name);
 		record->name = g_strdup (row->name);
+	}
+	if (tooltip_changed)
+	{
+		g_free (record->tooltip);
+		record->tooltip = g_strdup (row->tooltip);
 	}
 	if (attributes_changed)
 	{
@@ -176,6 +192,9 @@ channel_record_update (FabulorChannelRecord *record,
 	if (name_changed)
 		g_object_notify_by_pspec (G_OBJECT (record),
 			channel_record_properties[PROP_CHANNEL_RECORD_NAME]);
+	if (tooltip_changed)
+		g_object_notify_by_pspec (G_OBJECT (record),
+			channel_record_properties[PROP_CHANNEL_RECORD_TOOLTIP]);
 	if (attributes_changed)
 		g_object_notify_by_pspec (G_OBJECT (record),
 			channel_record_properties[PROP_CHANNEL_RECORD_ATTRIBUTES]);
@@ -596,6 +615,14 @@ fabulor_channel_model_get_item_name (gpointer item)
 	g_return_val_if_fail (G_TYPE_CHECK_INSTANCE_TYPE ((GTypeInstance *) item,
 		FABULOR_TYPE_CHANNEL_RECORD), NULL);
 	return FABULOR_CHANNEL_RECORD (item)->name;
+}
+
+const gchar *
+fabulor_channel_model_get_item_tooltip (gpointer item)
+{
+	g_return_val_if_fail (G_TYPE_CHECK_INSTANCE_TYPE ((GTypeInstance *) item,
+		FABULOR_TYPE_CHANNEL_RECORD), NULL);
+	return FABULOR_CHANNEL_RECORD (item)->tooltip;
 }
 
 PangoAttrList *

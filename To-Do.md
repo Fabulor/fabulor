@@ -411,6 +411,11 @@ programme.
 - [ ] Implement the Activity List in the contained, acceptance-gated stages
       defined by its design, beginning with the core activity model only after
       the `1.0` release.
+- [ ] Design and implement post-1.0 inline image previews for direct image
+      URLs. Keep loading asynchronous and acceptance-gated; default to
+      click-to-load, preserve transcript selection and scroll position, and
+      enforce strict download, decode, redirect, cache, concurrency, and
+      private-network access limits before automatic previews are offered.
 - [x] Reassess optional GTK4 locales, icons, schemas, and helper tools after the
       release-candidate feature pass. The locked runtime now retains supported
       translations, Adwaita, schemas, fonts, native dependencies, and spawn
@@ -419,3 +424,16 @@ programme.
 - [ ] Review SOCKS4 separately; its current status remains `Proposed`.
 - [ ] Continue contained installed-UI refinements based on reproducible
       screenshots, logs, and real-world acceptance.
+    - [x] Consolidate channel modes into the permanent topic-bar **Modes**
+          popover and retire the two obsolete mode-placement settings.
+    - [x] Make the user-list footer, meters, minimum width, channel tree,
+          topic bar, input row, Preferences categories, Network List, Channel
+          List, and background-image controls responsive and visually
+          consistent.
+    - [x] Add non-blocking empty states for an unpopulated or filtered Channel
+          List and a channel with no visible users.
+    - [x] Preserve independently resized Ban List and Ignore List window
+          dimensions across close, reopen, and client restart.
+    - [x] Complete the final installed RC8 UI regression pass and reconcile
+          release-facing documentation.
+    - [ ] Package RC8 after the UI pull request is reviewed and merged.

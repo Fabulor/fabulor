@@ -20,6 +20,7 @@ typedef struct
 {
 	gpointer identity;
 	const gchar *name;
+	const gchar *tooltip;
 	PangoAttrList *attributes;
 	GdkPixbuf *icon;
 	PangoUnderline underline;
@@ -80,6 +81,7 @@ gpointer fabulor_channel_model_get_selected_identity (
 	FabulorChannelModel *model);
 gpointer fabulor_channel_model_get_item_identity (gpointer item);
 const gchar *fabulor_channel_model_get_item_name (gpointer item);
+const gchar *fabulor_channel_model_get_item_tooltip (gpointer item);
 PangoAttrList *fabulor_channel_model_get_item_attributes (gpointer item);
 GdkPixbuf *fabulor_channel_model_get_item_icon (gpointer item);
 PangoUnderline fabulor_channel_model_get_item_underline (gpointer item);

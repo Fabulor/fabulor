@@ -25,6 +25,26 @@ struct _FabulorServerNetworkList
 	GHashTable *bindings;
 };
 
+static void
+server_network_ensure_css (void)
+{
+	static GtkCssProvider *provider;
+	GdkDisplay *display;
+
+	if (provider)
+		return;
+
+	display = gdk_display_get_default ();
+	if (!display)
+		return;
+
+	provider = gtk_css_provider_new ();
+	gtk_css_provider_load_from_string (provider,
+		".fabulor-favorite-network { font-weight: 600; }");
+	gtk_style_context_add_provider_for_display (display,
+		GTK_STYLE_PROVIDER (provider), GTK_STYLE_PROVIDER_PRIORITY_USER);
+}
+
 
 typedef struct _FabulorServerNetworkRow FabulorServerNetworkRow;
 typedef struct _FabulorServerNetworkRowClass FabulorServerNetworkRowClass;
@@ -158,6 +178,7 @@ typedef struct
 {
 	FabulorServerNetworkList *owner;
 	GtkEditableLabel *label;
+	GtkWidget *favorite_icon;
 	FabulorServerNetworkRow *row;
 	gulong notify_id;
 	gboolean editing;
@@ -182,10 +203,13 @@ server_network_binding_refresh (ServerNetworkBinding *binding)
 		return;
 	binding->blocked = TRUE;
 	gtk_editable_set_text (GTK_EDITABLE (binding->label), binding->row->name);
+	gtk_widget_set_visible (binding->favorite_icon, binding->row->favorite);
 	if (binding->row->favorite)
-		gtk_widget_add_css_class (GTK_WIDGET (binding->label), "heading");
+		gtk_widget_add_css_class (GTK_WIDGET (binding->label),
+			"fabulor-favorite-network");
 	else
-		gtk_widget_remove_css_class (GTK_WIDGET (binding->label), "heading");
+		gtk_widget_remove_css_class (GTK_WIDGET (binding->label),
+			"fabulor-favorite-network");
 	binding->blocked = FALSE;
 }
 
@@ -245,17 +269,26 @@ server_network_factory_setup (GtkSignalListItemFactory *factory,
 	GtkListItem *item, gpointer user_data)
 {
 	ServerNetworkBinding *binding = g_new0 (ServerNetworkBinding, 1);
+	GtkWidget *box = gtk_box_new (GTK_ORIENTATION_HORIZONTAL, 6);
+	GtkWidget *favorite_icon = fabulor_gtk_image_new_from_icon_name (
+		"starred-symbolic", FABULOR_GTK_ICON_SIZE_MENU);
 	GtkWidget *label = gtk_editable_label_new (NULL);
 
 	(void) factory;
 	binding->owner = user_data;
 	binding->label = GTK_EDITABLE_LABEL (label);
+	binding->favorite_icon = favorite_icon;
+	gtk_widget_set_valign (favorite_icon, GTK_ALIGN_CENTER);
+	gtk_widget_set_visible (favorite_icon, FALSE);
 	gtk_widget_set_hexpand (label, TRUE);
 	gtk_widget_set_halign (label, GTK_ALIGN_FILL);
 	gtk_widget_set_can_target (label, FALSE);
 	g_signal_connect (label, "notify::editing",
 		G_CALLBACK (server_network_editing_changed), binding);
-	gtk_list_item_set_child (item, label);
+	server_network_ensure_css ();
+	gtk_box_append (GTK_BOX (box), favorite_icon);
+	gtk_box_append (GTK_BOX (box), label);
+	gtk_list_item_set_child (item, box);
 	g_object_set_data_full (G_OBJECT (item), "fabulor-server-network-binding",
 		binding, server_network_binding_free);
 }
