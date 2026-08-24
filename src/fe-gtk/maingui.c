@@ -3277,7 +3277,7 @@ mg_create_chanmodebuttons (session_gui *gui, GtkWidget *content)
 static void
 mg_update_mode_menu_label (session_gui *gui)
 {
-	char label[32] = "Modes";
+	char *label;
 	char modes[NUM_FLAG_WIDS] = { 0 };
 	guint i;
 	guint count = 0;
@@ -3290,9 +3290,10 @@ mg_update_mode_menu_label (session_gui *gui)
 			mg_mode_control_get_active (gui->flag_wid[i]))
 			modes[count++] = chan_flags[i];
 	}
-	if (count)
-		g_snprintf (label, sizeof (label), "Modes +%s", modes);
+	label = count ? g_strdup_printf (_("Modes +%s"), modes) :
+		g_strdup (_("Modes"));
 	gtk_menu_button_set_label (GTK_MENU_BUTTON (gui->mode_menu_button), label);
+	g_free (label);
 }
 
 static void
@@ -3304,7 +3305,7 @@ mg_create_mode_menu (session_gui *gui, GtkWidget *parent)
 	GtkWidget *title;
 
 	button = gtk_menu_button_new ();
-	gtk_menu_button_set_label (GTK_MENU_BUTTON (button), "Modes");
+	gtk_menu_button_set_label (GTK_MENU_BUTTON (button), _("Modes"));
 	gtk_widget_set_tooltip_text (button, _("Channel modes"));
 	mg_apply_compact_mode_css (button);
 	fabulor_gtk_box_append (GTK_BOX (parent), button, FALSE, FALSE, 0);
