@@ -2,13 +2,19 @@
 
 ## Scope
 
-This guide covers Python scripting for Fabulor and links to shared schema and troubleshooting rules.
+Fabulor provides two Python extension models:
 
-The supported Fabulor module is `fabulor`. The inherited `zoitechat` module
-name is retired and is not installed. The intentional `xchat` and `hexchat`
-compatibility modules remain available and forward to the same Fabulor API.
+1. **Simple add-ons** are trusted local scripts in the shared Python interpreter.
+   They provide the complete compatibility API documented in the
+   [Python API Reference](python-api-reference.md).
+2. **Manifest plugins** are capability-declared plugins in isolated Python 3.14
+   subinterpreters. They intentionally receive a smaller API.
 
-Read shared rules first:
+The supported module name is `fabulor`. The inherited `zoitechat` module is
+retired. The `xchat` and `hexchat` compatibility modules remain available to
+trusted simple add-ons and forward to the same Fabulor API.
+
+Read these shared rules first:
 
 1. [Simple Add-ons](simple-addons.md)
 2. [Plugin Schema, Compatibility, and Troubleshooting](plugin-schema-and-troubleshooting.md)
@@ -21,25 +27,56 @@ Preferred layout:
 %APPDATA%\Fabulor\addons\greeter\greeter.py
 ```
 
-Optional metadata:
+The folder and file basenames must match. A trusted Python add-on must also set
+`__module_name__`. Version and description are optional:
 
 ```python
-# Fabulor-Name: Greeter
-# Fabulor-Version: 1.0
-# Fabulor-Description: Small Python helper
-```
+__module_name__ = "Greeter"
+__module_version__ = "1.0.0"
+__module_description__ = "Small Python helper"
 
-Minimal script:
-
-```python
 import fabulor
 
 
 def init():
-    fabulor.log("Python add-on initialised")
+    user = fabulor.get_user_info()
+    nickname = user.get("nickname") or "unknown"
+    fabulor.prnt(f"Hello, {nickname}.")
+
+
+init()
 ```
 
-## Advanced Python plugin.json
+Simple add-ons execute when loaded. `init()` is a useful convention, but the
+trusted loader does not call it automatically. Call it from the script as shown
+above. Hooks and UI registrations are released when the script is unloaded.
+Plugin preferences persist until the add-on explicitly deletes them.
+
+### Loading and inspecting scripts
+
+Fabulor auto-loads matching add-on folders at startup. The following commands
+operate on trusted Python add-ons:
+
+```text
+/PY LOAD greeter
+/PY UNLOAD greeter.py
+/PY RELOAD greeter.py
+/PY LIST
+/PY ABOUT
+```
+
+`/LOAD`, `/UNLOAD`, and `/RELOAD` also recognise `.py` files. Relative loads
+resolve beneath `%APPDATA%\Fabulor\addons`; ordinary scripts cannot select files
+outside that trust boundary.
+
+`/PY EXEC <statement>` and `/PY CONSOLE` provide interactive development tools.
+Do not place secrets in commands because command history and diagnostics may
+retain the entered text.
+
+## Advanced Manifest Plugin
+
+Manifest plugins belong under one of the enabled manifest roots and require a
+`plugin.json` file:
 
 ```json
 {
@@ -57,7 +94,7 @@ def init():
 }
 ```
 
-## Minimal Python Plugin
+Minimal entrypoint:
 
 ```python
 import fabulor
@@ -68,13 +105,13 @@ _reported_first_message = False
 def on_message(event):
     global _reported_first_message
     if _reported_first_message:
-        return None
+        return 0
 
     _reported_first_message = True
     user = fabulor.get_user_info()
     location = user.get("channel") or "the active session"
-    fabulor.log(f"Python sample observed its first incoming message event in {location}.")
-    return None
+    fabulor.log(f"First incoming message observed in {location}.")
+    return 0
 
 
 def init():
@@ -84,19 +121,75 @@ def init():
     fabulor.register_callback("message", on_message)
 ```
 
-## Notes
+The isolated host calls `init()` after loading and `deinit()` before shutdown
+when those functions exist.
 
-1. Keep callback handlers lightweight to avoid blocking the main thread.
-2. Use the simple `addons\<name>\<name>.py` layout for personal scripts and helpers. Relative Python load requests resolve under the profile `addons` directory.
-3. Declare every host operation the plugin uses. Manifest Python API calls are denied when the corresponding capability is absent; simple add-ons remain outside manifest capability policy. Manifest Python entrypoints must resolve under the bundled `Plugins\` root or the user profile `plugins\` root.
-4. `fabulor.log(...)`, `fabulor.send_message(...)`, `fabulor.get_user_count()`, `fabulor.get_user_info()`, and `fabulor.register_callback(...)` are available in the embedded host.
-5. `fabulor.register_callback(...)` currently supports `message`, `server`, `server:<name>`, `print:<event>`, and `command:<name>`. `message` represents an incoming IRC `PRIVMSG`; locally entered channel text uses `command:SAY` unless the server echoes it back.
-6. Callback payloads now include richer context such as `source`, `time`, `channel`, `network`, `nick`, `server`, `word1`-`word4`, and `word_eol1`-`word_eol2` where the underlying event provides them.
-7. The host validates `plugin.json`, resolves declared dependencies, and dispatches callbacks on the main thread before language-specific execution.
-8. `fabulor.get_user_info()` returns a dictionary with `nickname`, `channel`, `server_name`, and `network_name`.
-9. Manifest Python entrypoints use a host-authenticated internal load path. The loader attaches the manifest id and declared capabilities to the Python plugin object; ordinary `/LOAD` and `/PY LOAD` requests remain confined to the profile `addons` directory and cannot opt themselves into manifest roots. Ordinary unload/reload commands cannot mutate manifest-host-owned Python plugins.
-10. Every Python manifest plugin runs in its own Python 3.14 subinterpreter. Its globals, imports, module cache, callback objects, and shutdown state are separate from simple add-ons and other manifest plugins. The CFFI bridge remains confined to the trusted main scripting interpreter; manifest plugins receive the smaller pure-Python API listed above.
-11. Maintained simple and manifest Python samples live under `samples\plugins\simple-python-greeter\` and `samples\plugins\example.python.greeter\`.
-12. Callback event names are limited to 128 UTF-8 bytes and each manifest plugin to 64 hooks. Registering the same Python callback for the same named event twice is rejected. Small main-interpreter proxy hooks deliver serialised event data to the owning subinterpreter and are removed before that interpreter closes.
-13. Interpreter isolation is not an operating-system sandbox. Python code can still use the standard library and operating-system facilities available to the Fabulor process. Manifest capabilities govern cooperative access to Fabulor host operations.
-14. The isolated runtime emits only the five shared host operations. The trusted main Python interpreter validates every emitted operation again against the owning manifest before invoking the native `FabulorAPI`.
+### Manifest API
+
+The isolated `fabulor` module exposes only:
+
+| Function | Required capability | Purpose |
+| --- | --- | --- |
+| `log(text)` | none | Write a prefixed diagnostic line. |
+| `send_message(target, text)` | `messages.write` | Send a message through the event-bound session. |
+| `get_user_count()` | `session.read` | Return the current channel user count. |
+| `get_user_info()` | `session.read` | Return nickname, channel, server, and network context. |
+| `register_callback(event, callback, userdata=None)` | matching `events.*` | Register a bounded host callback. |
+
+Supported callback names are `message`, `server`, `server:<name>`,
+`print:<event>`, and `command:<name>`. Callback event names are limited to 128
+UTF-8 bytes, each plugin may register at most 64 callbacks, and duplicate
+registrations are rejected.
+
+Callbacks receive a dictionary containing `event`, `source`, `words`,
+`word_eol`, `time`, and `userdata`. Call `get_user_info()` inside the callback
+when you need its event-bound nickname, channel, server, or network context.
+
+Return `0` (or `None`) to continue normal processing, `1` to stop Fabulor's
+normal handling, `2` to stop later plugins, or `3` to stop both normal handling
+and later plugins.
+
+## Choosing a Model
+
+Use a simple add-on when you need the established scripting surface, including
+native hooks, contexts, lists, preferences, print events, or compatibility with
+an existing XChat or HexChat script.
+
+Use a manifest plugin when you need explicit dependency/version metadata,
+declared host capabilities, isolated Python globals and imports, or packaged
+deployment. Interpreter isolation is not an operating-system sandbox: Python
+code can still use the standard library and operating-system facilities
+available to the Fabulor process.
+
+## Performance and Safety
+
+1. Keep callbacks short. They run as part of Fabulor's event processing.
+2. Do not perform slow network, process, or filesystem work synchronously in a
+   callback.
+3. Use contexts deliberately when an add-on works across multiple networks.
+4. Treat all simple add-ons as trusted local code.
+5. Declare every host operation used by a manifest plugin. Missing capabilities
+   are denied at runtime.
+6. Manifest entrypoints are limited to 1 MiB and host messages are bounded.
+7. Ordinary unload and reload commands cannot mutate manifest-host-owned
+   plugins.
+
+## Samples
+
+Maintained samples live under:
+
+```text
+samples\plugins\simple-python-greeter\
+samples\plugins\example.python.greeter\
+```
+
+The first demonstrates the trusted full Python interface. The second
+demonstrates the isolated manifest interface.
+
+## Historical Source
+
+The [original XChat Python reference](https://xchat.org/docs/xchatpython.html),
+written by Gustavo Niemeyer, preserved valuable explanations of contexts,
+hooks, word lists, and event-consumption values. This Fabulor documentation is
+an independently written and source-verified successor. It does not imply that
+all historical XChat behaviour remains supported.
