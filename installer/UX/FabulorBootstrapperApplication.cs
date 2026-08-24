@@ -1680,7 +1680,7 @@ public sealed class FabulorBootstrapperApplication : BootstrapperApplication
     private void RemoveDetectedRelatedBundleCaches(string? preservedBundlePath)
     {
         var packageCacheRoot = System.IO.Path.GetFullPath(
-            System.IO.Path.Combine(
+            System.IO.Path.Join(
                 Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData),
                 "Package Cache"));
 
@@ -1709,11 +1709,32 @@ public sealed class FabulorBootstrapperApplication : BootstrapperApplication
                     this.engine.Log(LogLevel.Standard, $"Removed stale related bundle cache '{cacheDirectory}'.");
                 }
             }
-            catch (Exception ex)
+            catch (System.IO.IOException ex)
             {
-                this.engine.Log(LogLevel.Error, $"Failed to remove stale related bundle cache '{bundleCachePath}': {ex}");
+                this.LogRelatedBundleCacheCleanupFailure(bundleCachePath, ex);
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                this.LogRelatedBundleCacheCleanupFailure(bundleCachePath, ex);
+            }
+            catch (SecurityException ex)
+            {
+                this.LogRelatedBundleCacheCleanupFailure(bundleCachePath, ex);
+            }
+            catch (ArgumentException ex)
+            {
+                this.LogRelatedBundleCacheCleanupFailure(bundleCachePath, ex);
+            }
+            catch (NotSupportedException ex)
+            {
+                this.LogRelatedBundleCacheCleanupFailure(bundleCachePath, ex);
             }
         }
+    }
+
+    private void LogRelatedBundleCacheCleanupFailure(string bundleCachePath, Exception exception)
+    {
+        this.engine.Log(LogLevel.Error, $"Failed to remove stale related bundle cache '{bundleCachePath}': {exception}");
     }
 
     private void CleanupStaleRegistrationsBeforeMaintenancePlan(LaunchAction action)
