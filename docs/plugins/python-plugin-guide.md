@@ -49,7 +49,8 @@ init()
 
 Simple add-ons execute when loaded. `init()` is a useful convention, but the
 trusted loader does not call it automatically. Call it from the script as shown
-above. Hooks and plugin preferences are released when the script is unloaded.
+above. Hooks and UI registrations are released when the script is unloaded.
+Plugin preferences persist until the add-on explicitly deletes them.
 
 ### Loading and inspecting scripts
 
@@ -140,12 +141,13 @@ Supported callback names are `message`, `server`, `server:<name>`,
 UTF-8 bytes, each plugin may register at most 64 callbacks, and duplicate
 registrations are rejected.
 
-Callbacks receive a dictionary containing the available event context,
-including `event`, `source`, `words`, `word_eol`, `time`, and `userdata`.
-Additional convenience fields such as `channel`, `network`, `nick`, and
-`server` are supplied when the underlying event provides them. Return an
-event-consumption integer to control further processing, or return `None` to
-continue normal processing.
+Callbacks receive a dictionary containing `event`, `source`, `words`,
+`word_eol`, `time`, and `userdata`. Call `get_user_info()` inside the callback
+when you need its event-bound nickname, channel, server, or network context.
+
+Return `0` (or `None`) to continue normal processing, `1` to stop Fabulor's
+normal handling, `2` to stop later plugins, or `3` to stop both normal handling
+and later plugins.
 
 ## Choosing a Model
 

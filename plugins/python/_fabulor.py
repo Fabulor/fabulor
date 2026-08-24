@@ -52,6 +52,11 @@ def __require_capability(capability):
     return _require_plugin_capability(plugin, capability)
 
 
+# Class methods cannot call a module-level double-underscore name directly
+# because Python applies class name mangling at compile time.
+_require_capability = __require_capability
+
+
 def _require_plugin_capability(plugin, capability):
     if plugin.manifest_id is not None and capability not in plugin.capabilities:
         raise PermissionError("Plugin '{}' lacks required capability '{}'.".format(
@@ -492,7 +497,8 @@ def list_pluginpref():
     __require_capability('preferences.read')
     prefs_str = ffi.new('char[4096]')
     if lib.fabulor_pluginpref_list(lib.ph, prefs_str) == 1:
-        return __decode(ffi.string(prefs_str)).split(',')
+        preference_names = __decode(ffi.string(prefs_str)).rstrip(',')
+        return preference_names.split(',') if preference_names else []
 
     return []
 
@@ -515,11 +521,13 @@ class Context:
             lib.fabulor_print(lib.ph, b'Context object refers to closed context, ignoring call')
             return
 
-        yield
-        lib.fabulor_set_context(lib.ph, old_ctx)
+        try:
+            yield
+        finally:
+            lib.fabulor_set_context(lib.ph, old_ctx)
 
     def set(self):
-        __require_capability('session.read')
+        _require_capability('session.read')
         # XXX: API addition, C plugin silently ignored failure
         return bool(lib.fabulor_set_context(lib.ph, self._ctx))
 

@@ -1544,7 +1544,7 @@ plugin_insert_hook (fabulor_hook *new_hook)
 			break;
 		case HOOK_SERVER:
 		case HOOK_SERVER_ATTRS:
-			new_hook_type = HOOK_SERVER | HOOK_PRINT_ATTRS;
+			new_hook_type = HOOK_SERVER | HOOK_SERVER_ATTRS;
 			break;
 		default:
 			new_hook_type = new_hook->type;

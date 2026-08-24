@@ -179,6 +179,41 @@ class CapabilityTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'already registered'):
             namespace['call']()
 
+    def test_plugin_preference_list_omits_native_trailing_separator(self):
+        plugin = FakePlugin(None, ())
+        buffer = object()
+        with unittest.mock.patch.object(self.api.ffi, 'new', return_value=buffer), \
+                unittest.mock.patch.object(
+                    self.api.ffi, 'string', return_value=b'alpha,beta,', create=True), \
+                unittest.mock.patch.object(
+                    self.lib, 'fabulor_pluginpref_list', return_value=1, create=True):
+            self.assertEqual(
+                self.invoke(plugin, 'api.list_pluginpref()'),
+                ['alpha', 'beta'],
+            )
+
+    def test_context_is_restored_when_context_operation_raises(self):
+        plugin = FakePlugin(None, ())
+        context = self.api.Context('target-context')
+        context_changes = []
+
+        def set_context(_ph, value):
+            context_changes.append(value)
+            return 1
+
+        with unittest.mock.patch.object(
+                self.lib, 'fabulor_get_context', return_value='original-context', create=True), \
+                unittest.mock.patch.object(
+                    self.lib, 'fabulor_set_context', side_effect=set_context, create=True), \
+                unittest.mock.patch.object(
+                    self.lib, 'fabulor_command', side_effect=RuntimeError('command failed')):
+            namespace = {'__plugin': plugin, 'api': self.api, 'context': context}
+            exec("def call():\n    return context.command('TEST')", namespace)
+            with self.assertRaisesRegex(RuntimeError, 'command failed'):
+                namespace['call']()
+
+        self.assertEqual(context_changes, ['target-context', 'original-context'])
+
     def test_manifest_hook_count_is_limited(self):
         plugin = self.plugin_host.Plugin('example.events', ('events.message',))
         for index in range(64):

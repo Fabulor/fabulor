@@ -33,7 +33,10 @@ Supported simple add-on extensions:
 .dll
 ```
 
-The extension selects the runtime. Metadata can be supplied as optional `Fabulor-*` comments at the top of the script.
+The extension selects the runtime. Tcl scripts may supply optional `Fabulor-*`
+comments at the top of the file. Trusted Python add-ons define
+`__module_name__`, `__module_version__`, and `__module_description__` in Python;
+see the [Python Plugin Guide](python-plugin-guide.md#trusted-simple-addon).
 
 See [Simple Add-ons](simple-addons.md) for the full convention.
 

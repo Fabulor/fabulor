@@ -221,6 +221,28 @@ server timestamp when available.
 word `n` through the end. Both are ordinary zero-based Python lists even though
 historical XChat documentation described one-based C arrays.
 
+### `register_callback(event_name, callback, userdata=None)`
+
+Register a callback through Fabulor's shared manifest callback registry. This
+API is exported to trusted add-ons as well as the isolated manifest module, but
+trusted scripts normally use the more specific native hook functions below.
+
+Supported event names are `message`, `server`, `server:<name>`,
+`print:<event>`, and `command:<name>`. The callback receives one dictionary
+containing `event`, `source`, `words`, `word_eol`, `time`, and `userdata`. Use
+`get_user_info()` to read the event-bound nickname, channel, server, and network
+context.
+
+Return `EAT_NONE` (or `None`) to continue normal processing,
+`EAT_FABULOR` to stop Fabulor's normal handling, `EAT_PLUGIN` to stop later
+plugins, or `EAT_ALL` to stop both. The corresponding numeric values in the
+isolated manifest module are `0`, `1`, `2`, and `3`.
+
+The event name is limited to 128 UTF-8 bytes. Duplicate registrations are
+rejected and each manifest plugin may register at most 64 callbacks. The
+required capability is selected from the event family: `events.message`,
+`events.server`, `events.print`, or `events.command`.
+
 ### `hook_command(name, callback, userdata=None, priority=PRI_NORM, help=None)`
 
 Register a slash command. `help` is displayed by `/HELP` when supplied.
