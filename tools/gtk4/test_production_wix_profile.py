@@ -376,7 +376,7 @@ class ProductionWixProfileTests(unittest.TestCase):
 
         major_upgrade = root.find("w:Package/w:MajorUpgrade", WIX_NS)
         self.assertIsNotNone(major_upgrade)
-        self.assertEqual(major_upgrade.get("Schedule"), "afterInstallValidate")
+        self.assertEqual(major_upgrade.get("Schedule"), "afterInstallInitialize")
 
         bootstrapper = (
             INSTALLER / "UX" / "FabulorBootstrapperApplication.cs"
@@ -386,6 +386,11 @@ class ProductionWixProfileTests(unittest.TestCase):
             bootstrapper,
         )
         self.assertIn("e.State = RequestState.None;", bootstrapper)
+        self.assertIn("this.detectedRelatedBundleCachePaths.Add(bundleCachePath);", bootstrapper)
+        self.assertIn("this.RemoveStaleBundleDependencyDependents(preservedBundleCode);", bootstrapper)
+        self.assertIn("this.RemoveStaleMsiDependencyRegistrations();", bootstrapper)
+        self.assertIn("this.RemoveDetectedRelatedBundleCaches(preservedBundlePath);", bootstrapper)
+        self.assertIn("!Guid.TryParse(cacheDirectoryName, out _)", bootstrapper)
 
     def test_python_runtime_payload_keeps_loader_dlls(self):
         project = (INSTALLER / "Fabulor.wixproj").read_text(encoding="utf-8")

@@ -48,6 +48,7 @@ public sealed class FabulorBootstrapperApplication : BootstrapperApplication
     private LaunchAction pendingAction;
     private bool pendingCommandActionRequested;
     private string? detectedInstalledBundleCachePath;
+    private readonly HashSet<string> detectedRelatedBundleCachePaths = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, FeatureState> detectedFeatureStates = new(StringComparer.Ordinal);
     private InstallerFeatureSelection detectedFeatureSelection = new();
     private InstallerFeatureSelection currentPlanFeatureSelection = new();
@@ -745,6 +746,7 @@ public sealed class FabulorBootstrapperApplication : BootstrapperApplication
         this.detectedInstalledMsiProductCode = null;
         this.detectedInstalledMsiLocation = null;
         this.detectedInstalledBundleCachePath = null;
+        this.detectedRelatedBundleCachePaths.Clear();
         this.detectedFeatureSelection = new InstallerFeatureSelection();
         this.detectedFeatureStates.Clear();
     }
@@ -862,6 +864,13 @@ public sealed class FabulorBootstrapperApplication : BootstrapperApplication
         if (missingFromCache || string.IsNullOrWhiteSpace(bundleCode))
         {
             return;
+        }
+
+        var bundleCachePath = this.TryGetBundleCachePath(bundleCode);
+        if (!string.IsNullOrWhiteSpace(bundleCachePath))
+        {
+            this.detectedRelatedBundleCachePaths.Add(bundleCachePath);
+            this.engine.Log(LogLevel.Verbose, $"Tracking related bundle cache for cleanup: {bundleCachePath}");
         }
     }
 
@@ -1658,8 +1667,53 @@ public sealed class FabulorBootstrapperApplication : BootstrapperApplication
     {
         var currentBundlePath = this.engine.GetVariableString("WixBundleSourceProcessPath");
         var bundleName = this.engine.GetVariableString("WixBundleName");
+        var registeredBundlePath = this.TryGetRegisteredBundleCachePath();
+        var preservedBundlePath = !string.IsNullOrWhiteSpace(registeredBundlePath) ? registeredBundlePath : currentBundlePath;
+        var preservedBundleCode = this.TryGetBundleCodeFromCachePath(preservedBundlePath);
 
-        this.RemoveOtherBundleUninstallRegistrations(bundleName, currentBundlePath, preserveNewestRegisteredBundle: true);
+        this.RemoveOtherBundleUninstallRegistrations(bundleName, preservedBundlePath, preserveNewestRegisteredBundle: true);
+        this.RemoveStaleBundleDependencyDependents(preservedBundleCode);
+        this.RemoveStaleMsiDependencyRegistrations();
+        this.RemoveDetectedRelatedBundleCaches(preservedBundlePath);
+    }
+
+    private void RemoveDetectedRelatedBundleCaches(string? preservedBundlePath)
+    {
+        var packageCacheRoot = System.IO.Path.GetFullPath(
+            System.IO.Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData),
+                "Package Cache"));
+
+        foreach (var bundleCachePath in this.detectedRelatedBundleCachePaths)
+        {
+            if (!string.IsNullOrWhiteSpace(preservedBundlePath) && this.PathsEqual(bundleCachePath, preservedBundlePath))
+            {
+                continue;
+            }
+
+            try
+            {
+                var cacheDirectory = System.IO.Path.GetDirectoryName(System.IO.Path.GetFullPath(bundleCachePath));
+                var cacheDirectoryName = System.IO.Path.GetFileName(cacheDirectory);
+                if (string.IsNullOrWhiteSpace(cacheDirectory)
+                    || !cacheDirectory.StartsWith(packageCacheRoot + System.IO.Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase)
+                    || !Guid.TryParse(cacheDirectoryName, out _))
+                {
+                    this.engine.Log(LogLevel.Error, $"Refusing to remove unexpected related bundle cache path '{bundleCachePath}'.");
+                    continue;
+                }
+
+                if (System.IO.Directory.Exists(cacheDirectory))
+                {
+                    System.IO.Directory.Delete(cacheDirectory, recursive: true);
+                    this.engine.Log(LogLevel.Standard, $"Removed stale related bundle cache '{cacheDirectory}'.");
+                }
+            }
+            catch (Exception ex)
+            {
+                this.engine.Log(LogLevel.Error, $"Failed to remove stale related bundle cache '{bundleCachePath}': {ex}");
+            }
+        }
     }
 
     private void CleanupStaleRegistrationsBeforeMaintenancePlan(LaunchAction action)
