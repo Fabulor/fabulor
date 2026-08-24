@@ -9,9 +9,28 @@
 
 #include "channel-tree-view.h"
 #include "gtk-compat.h"
-#include "theme/theme-css.h"
 
 #define FABULOR_CHANNEL_TREE_VIEW_DATA "fabulor-channel-tree-view-data"
+
+static void
+channel_tree_ensure_css (void)
+{
+	static GtkCssProvider *provider;
+	GdkDisplay *display;
+
+	if (provider)
+		return;
+
+	display = gdk_display_get_default ();
+	if (!display)
+		return;
+
+	provider = gtk_css_provider_new ();
+	gtk_css_provider_load_from_string (provider,
+		".fabulor-channel-network { font-weight: 600; }");
+	gtk_style_context_add_provider_for_display (display,
+		GTK_STYLE_PROVIDER (provider), GTK_STYLE_PROVIDER_PRIORITY_USER);
+}
 
 typedef struct
 {
@@ -124,7 +143,6 @@ channel_tree_factory_setup (GtkSignalListItemFactory *factory,
 	FabulorChannelTreeView *owner = user_data;
 	FabulorChannelTreeItemBinding *binding = g_new0 (
 		FabulorChannelTreeItemBinding, 1);
-	GtkCssProvider *provider;
 	gint spacing = owner->compact ? 1 : 3;
 
 	(void) factory;
@@ -143,12 +161,7 @@ channel_tree_factory_setup (GtkSignalListItemFactory *factory,
 	gtk_label_set_xalign (GTK_LABEL (binding->label), 0.0f);
 	gtk_label_set_ellipsize (GTK_LABEL (binding->label), PANGO_ELLIPSIZE_END);
 	gtk_widget_set_hexpand (binding->label, TRUE);
-	provider = gtk_css_provider_new ();
-	theme_css_provider_load_string (provider,
-		".fabulor-channel-network { font-weight: 600; }");
-	theme_css_apply_widget_provider (binding->label,
-		GTK_STYLE_PROVIDER (provider));
-	g_object_unref (provider);
+	channel_tree_ensure_css ();
 	if (owner->use_icons)
 		gtk_box_append (GTK_BOX (binding->box), binding->icon);
 	gtk_box_append (GTK_BOX (binding->box), binding->label);

@@ -108,7 +108,7 @@ fabulor_xtext_background_build_cache (FabulorXTextBackground *background,
 			cairo_scale (context, scale, scale);
 			cairo_set_source_surface (context, background->source, 0.0, 0.0);
 			cairo_pattern_set_extend (cairo_get_source (context),
-				CAIRO_EXTEND_NONE);
+				CAIRO_EXTEND_PAD);
 			cairo_rectangle (context, 0.0, 0.0, (double) source_width,
 				(double) source_height);
 			cairo_fill (context);

@@ -21,7 +21,7 @@
 #ifndef FABULOR_THEME_CSS_H
 #define FABULOR_THEME_CSS_H
 
-#include "../fe-gtk.h"
+#include <gtk/gtk.h>
 
 /**
  * theme_css_apply_app_provider/theme_css_remove_app_provider:

@@ -2764,7 +2764,7 @@ check_xtext_background_policy (void)
 	{
 		fabulor_xtext_background_begin_frame (background);
 		fabulor_xtext_background_paint (background, context, &fallback,
-			&geometry, 0, 0, 4, 4, 0, 0);
+			&geometry, 0, 0, 4, 4, 0, 0, 0);
 		fabulor_xtext_background_end_frame (background);
 		cairo_surface_flush (output);
 		memcpy (&pixel, cairo_image_surface_get_data (output), sizeof pixel);
@@ -2784,13 +2784,13 @@ check_xtext_background_policy (void)
 		valid = fabulor_xtext_background_has_surface (background);
 		fabulor_xtext_background_begin_frame (background);
 		fabulor_xtext_background_paint (background, context, &fallback,
-			&geometry, 0, 0, 4, 4, 0, 0);
+			&geometry, 0, 0, 4, 4, 0, 0, 0);
 		fabulor_xtext_background_end_frame (background);
 		cairo_surface_flush (output);
 		memcpy (&pixel, cairo_image_surface_get_data (output), sizeof pixel);
-		valid = valid && pixel == 0xff000000U;
-		if (pixel != 0xff000000U)
-			fprintf (stderr, "letterbox pixel: 0x%08x\n", pixel);
+		valid = valid && pixel == 0xff00ff00U;
+		if (pixel != 0xff00ff00U)
+			fprintf (stderr, "filled image edge pixel: 0x%08x\n", pixel);
 		memcpy (&pixel, cairo_image_surface_get_data (output) +
 			(2 * cairo_image_surface_get_stride (output)), sizeof pixel);
 		valid = valid && pixel == 0xff00ff00U;

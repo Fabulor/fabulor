@@ -12,7 +12,6 @@
 #include "gtk-compat.h"
 
 #include "gtk4-list-models.h"
-#include "theme/theme-css.h"
 
 struct _FabulorServerNetworkList
 {
@@ -25,6 +24,26 @@ struct _FabulorServerNetworkList
 	gulong selection_id;
 	GHashTable *bindings;
 };
+
+static void
+server_network_ensure_css (void)
+{
+	static GtkCssProvider *provider;
+	GdkDisplay *display;
+
+	if (provider)
+		return;
+
+	display = gdk_display_get_default ();
+	if (!display)
+		return;
+
+	provider = gtk_css_provider_new ();
+	gtk_css_provider_load_from_string (provider,
+		".fabulor-favorite-network { font-weight: 600; }");
+	gtk_style_context_add_provider_for_display (display,
+		GTK_STYLE_PROVIDER (provider), GTK_STYLE_PROVIDER_PRIORITY_USER);
+}
 
 
 typedef struct _FabulorServerNetworkRow FabulorServerNetworkRow;
@@ -250,7 +269,6 @@ server_network_factory_setup (GtkSignalListItemFactory *factory,
 	GtkListItem *item, gpointer user_data)
 {
 	ServerNetworkBinding *binding = g_new0 (ServerNetworkBinding, 1);
-	GtkCssProvider *provider;
 	GtkWidget *box = gtk_box_new (GTK_ORIENTATION_HORIZONTAL, 6);
 	GtkWidget *favorite_icon = fabulor_gtk_image_new_from_icon_name (
 		"starred-symbolic", FABULOR_GTK_ICON_SIZE_MENU);
@@ -267,11 +285,7 @@ server_network_factory_setup (GtkSignalListItemFactory *factory,
 	gtk_widget_set_can_target (label, FALSE);
 	g_signal_connect (label, "notify::editing",
 		G_CALLBACK (server_network_editing_changed), binding);
-	provider = gtk_css_provider_new ();
-	theme_css_provider_load_string (provider,
-		".fabulor-favorite-network { font-weight: 600; }");
-	theme_css_apply_widget_provider (label, GTK_STYLE_PROVIDER (provider));
-	g_object_unref (provider);
+	server_network_ensure_css ();
 	gtk_box_append (GTK_BOX (box), favorite_icon);
 	gtk_box_append (GTK_BOX (box), label);
 	gtk_list_item_set_child (item, box);
