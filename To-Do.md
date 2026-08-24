@@ -1,7 +1,7 @@
 <!-- Fabulor production roadmap -->
 # Fabulor Production Roadmap
 
-Last reconciled: 2026-08-17
+Last reconciled: 2026-08-25
 
 ## Current Production Baseline
 
@@ -70,14 +70,31 @@ Last reconciled: 2026-08-17
       behaviour.
 - [x] Publish `v1.0.6-rc.6` from the accepted source revision with release
       notes, the versioned installer, and its SHA-256 checksum.
+- [x] Publish `v1.0.6-rc.7` with the contained Windows uptime API correction
+      and complete installed acceptance before beginning the final interface
+      refinement pass.
+- [x] Publish `v1.0.6-rc.8` after the installed UI regression pass confirmed
+      the permanent channel Modes popover, responsive main-window and list
+      layouts, persistent Ban List and Ignore List dimensions, background-image
+      controls, and empty states.
+- [x] Preserve the optional Python, Tcl, and .NET plugin runtime payloads during
+      major upgrades, retain MSI rollback safety, and safely remove only stale
+      superseded Burn registrations and caches
+      ([PR #312](https://github.com/Fabulor/fabulor/pull/312)). Installed
+      testing confirmed that Python add-ons load after the corrected upgrade.
+- [x] Add a prominent known-issue warning to the published RC8 release notes:
+      its original installer may not preserve the bundled Python runtime during
+      an in-place upgrade, while clean installations remain unaffected.
 
 ### Remaining Checks
 
 - [x] Document the Windows SmartScreen warning shown for unsigned release
       candidates, including official-source and SHA-256 verification without
       advising users to disable Defender or SmartScreen.
-- [ ] Perform one final release-candidate clean-install and upgrade pass from
-      the last public installer.
+- [ ] Publish `v1.0.6-rc.9` as the installer-upgrade correction candidate,
+      then perform a clean installation and an RC8-to-RC9 in-place upgrade and
+      confirm that all selected Python, Tcl, and .NET plugin runtimes and
+      add-ons remain operational.
 - [ ] Exercise repair and uninstall once against the final signed or
       release-candidate artefacts.
 - [ ] Run a final installed accessibility and keyboard-navigation pass over
