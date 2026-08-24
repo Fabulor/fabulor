@@ -63,6 +63,13 @@ history below describes the cumulative work toward the first stable release.
 - Moved maintained user add-ons to the independent `Fabulor/add-ons`
   repository.
 - Updated the supported licence to GNU GPL version 3.0 only.
+- Consolidated channel mode controls into a permanent topic-bar **Modes**
+  popover and retired the two obsolete mode-placement settings.
+- Refined the GTK4 topic bar, input row, channel tree, user-list header and
+  footer, network and channel lists, Preferences categories, and network
+  meters for a denser and more responsive layout.
+- Added Fill, Fit, and Centre background-image presentation with independent
+  dimming control.
 
 ### Fixed
 
@@ -92,6 +99,11 @@ history below describes the cumulative work toward the first stable release.
   removes a generic scheme only while it still points to Fabulor. Clean-install
   link dispatch is accepted; upgrade, repair, and uninstall cleanup remain
   subject to the final installed acceptance pass.
+- Preserved independently resized Ban List and Ignore List windows across
+  close, reopen, and client restart.
+- Added clear non-blocking empty states to the Channel List and user list, and
+  kept the user-list controls and side-by-side meters aligned at supported
+  panel widths.
 
 ### Security
 
