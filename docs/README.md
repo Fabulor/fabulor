@@ -36,6 +36,7 @@ This directory is the home for Fabulor technical and user documentation.
 - [Simple add-ons](plugins/simple-addons.md)
 - [C# plugin guide](plugins/csharp-plugin-guide.md)
 - [Python plugin guide](plugins/python-plugin-guide.md)
+- [Python API reference](plugins/python-api-reference.md)
 - [Tcl plugin guide](plugins/tcl-plugin-guide.md)
 
 ## GTK4

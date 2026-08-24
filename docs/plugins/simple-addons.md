@@ -52,14 +52,25 @@ Native plugin DLLs may still be loaded through the legacy Add-ons GUI for compat
 
 ## Optional Metadata
 
-Metadata can be provided in comments at the top of the script. If metadata is absent, Fabulor uses the folder name.
+Metadata handling depends on the selected runtime. Tcl metadata comments are
+optional and fall back to the folder name. Python requires the module name
+variable shown below.
 
-Tcl and Python:
+Tcl metadata comments:
 
 ```text
 # Fabulor-Name: Personal aliases
 # Fabulor-Version: 1.0
 # Fabulor-Description: Adds local helper commands
+```
+
+Trusted Python add-ons instead define the metadata variables consumed by the
+Python loader:
+
+```python
+__module_name__ = "Personal helper"
+__module_version__ = "1.0.0"
+__module_description__ = "Adds local helper commands"
 ```
 
 Compiled C# metadata comes from the assembly. Source files and project files may remain beside the primary DLL, but Fabulor loads only the exact `<addon-name>.dll` entrypoint.
