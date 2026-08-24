@@ -436,4 +436,4 @@ programme.
           dimensions across close, reopen, and client restart.
     - [x] Complete the final installed RC8 UI regression pass and reconcile
           release-facing documentation.
-    - [ ] Package RC8 after the UI pull request is reviewed and merged.
+    - [x] Package RC8 after the UI pull request is reviewed and merged.

@@ -36,7 +36,7 @@ Proceed only when all of the following are true:
 Open PowerShell in the folder containing the download and calculate its hash:
 
 ```powershell
-Get-FileHash -Algorithm SHA256 .\FabulorSetup-v1.0.6-rc6.exe
+Get-FileHash -Algorithm SHA256 .\FabulorSetup-v1.0.6-rc8.exe
 ```
 
 Compare the complete `Hash` value, not just its beginning or end. If the
