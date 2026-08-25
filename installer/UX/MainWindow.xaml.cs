@@ -18,7 +18,7 @@ public partial class MainWindow : Window
     private bool changingInstallFolderProgrammatically;
     private bool changingPortableModeProgrammatically;
     private bool installFolderEditedByUser;
-    private bool trackingInstallFolderEdits;
+    private readonly bool trackingInstallFolderEdits;
     private string installedDefaultFolder = string.Empty;
     private string portableDefaultFolder = string.Empty;
     private string lastErrorDetails = string.Empty;
