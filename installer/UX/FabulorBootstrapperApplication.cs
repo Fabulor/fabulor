@@ -96,8 +96,10 @@ public sealed class FabulorBootstrapperApplication : BootstrapperApplication
 
     protected override void Run()
     {
-        var initialInstallFolder = this.GetInitialInstallFolder();
         var initialPortableMode = this.GetRequestedPortableMode();
+        var initialInstallFolder = this.GetInitialInstallFolder(initialPortableMode);
+        var installedDefaultFolder = System.IO.Path.Combine(this.GetDefaultProgramFilesFolder(), "Fabulor");
+        var portableDefaultFolder = PortableInstallLocationPolicy.GetDefaultInstallFolder();
 
         var uiThread = new Thread(() =>
         {
@@ -113,6 +115,7 @@ public sealed class FabulorBootstrapperApplication : BootstrapperApplication
                 this.window.AppendLog($"Window handle initialised: 0x{this.windowHandle.ToInt64():X}.");
             };
             this.window.Closed += (_, _) => application.Shutdown();
+            this.window.SetInstallFolderDefaults(installedDefaultFolder, portableDefaultFolder);
             this.window.InstallFolder = initialInstallFolder;
             this.window.SetPortableMode(initialPortableMode);
             this.window.SetBusy(true);
@@ -273,6 +276,17 @@ public sealed class FabulorBootstrapperApplication : BootstrapperApplication
             this.currentPlanPortable = this.window.IsPortable;
         }
 
+        if ((action == LaunchAction.Install || action == LaunchAction.Modify)
+            && this.currentPlanPortable
+            && PortableInstallLocationPolicy.IsProtectedLocation(installFolder))
+        {
+            var suggestedFolder = PortableInstallLocationPolicy.GetDefaultInstallFolder();
+            var message = $"Portable mode needs a user-writable folder outside Program Files and Windows. Choose a folder such as {suggestedFolder}.";
+            this.window.AppendLog($"Portable install location rejected: {installFolder}");
+            this.window.ShowError(message);
+            return;
+        }
+
         this.window.SetBusy(true);
         this.window.SetProgress(0);
         this.window.SetStatus(statusText + "…");
@@ -298,16 +312,23 @@ public sealed class FabulorBootstrapperApplication : BootstrapperApplication
         return $"{statusText}: {action}";
     }
 
-    private string GetInitialInstallFolder()
+    private string GetInitialInstallFolder(bool portableMode)
     {
-        var defaultInstallFolder = System.IO.Path.Combine(this.GetDefaultProgramFilesFolder(), "Fabulor");
-        var requestedInstallFolder = this.GetRequestedInstallFolder();
-        if (!string.IsNullOrWhiteSpace(requestedInstallFolder))
+        var commandLineInstallFolder = this.TryGetInstallFolderFromCommandLine();
+        if (!string.IsNullOrWhiteSpace(commandLineInstallFolder))
         {
-            return requestedInstallFolder;
+            return commandLineInstallFolder;
         }
 
-        return defaultInstallFolder;
+        if (portableMode)
+        {
+            return PortableInstallLocationPolicy.GetDefaultInstallFolder();
+        }
+
+        var requestedInstallFolder = this.GetRequestedInstallFolder();
+        return !string.IsNullOrWhiteSpace(requestedInstallFolder)
+            ? requestedInstallFolder
+            : System.IO.Path.Combine(this.GetDefaultProgramFilesFolder(), "Fabulor");
     }
 
     private string GetRequestedInstallFolder()

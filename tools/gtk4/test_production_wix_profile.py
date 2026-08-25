@@ -308,8 +308,36 @@ class ProductionWixProfileTests(unittest.TestCase):
         window_code = (INSTALLER / "UX" / "MainWindow.xaml.cs").read_text(
             encoding="utf-8"
         )
+        portable_policy = (
+            INSTALLER / "UX" / "PortableInstallLocationPolicy.cs"
+        ).read_text(encoding="utf-8")
         self.assertIn("catch (COMException ex)", window_code)
         self.assertIn("showingInstallFolderWarning", window_code)
+        self.assertIn(
+            "PortableInstallLocationPolicy.IsProtectedLocation", bootstrapper
+        )
+        self.assertIn(
+            "PortableInstallLocationPolicy.GetDefaultInstallFolder", bootstrapper
+        )
+        self.assertIn("Environment.SpecialFolder.ProgramFiles", portable_policy)
+        self.assertIn("Environment.SpecialFolder.ProgramFilesX86", portable_policy)
+        self.assertIn("Environment.SpecialFolder.Windows", portable_policy)
+        self.assertIn('Path.Combine(userProfile, "Fabulor Portable")', portable_policy)
+        self.assertIn("GetLongPathName", portable_policy)
+        self.assertIn("FileAttributes.ReparsePoint", portable_policy)
+        self.assertIn("TryGetInstallFolderFromCommandLine", bootstrapper)
+        initial_folder_method = bootstrapper[
+            bootstrapper.index("private string GetInitialInstallFolder") :
+            bootstrapper.index("private string GetRequestedInstallFolder")
+        ]
+        self.assertLess(
+            initial_folder_method.index("TryGetInstallFolderFromCommandLine"),
+            initial_folder_method.index("PortableInstallLocationPolicy.GetDefaultInstallFolder"),
+        )
+        self.assertIn("installFolderEditedByUser", window_code)
+        self.assertIn("trackingInstallFolderEdits", window_code)
+        self.assertIn("changingPortableModeProgrammatically", window_code)
+        self.assertIn("SetInstallFolderDefaults", window_code)
 
         self.assertIn('Key="Software\\Classes\\irc"', components)
         self.assertIn('Key="Software\\Classes\\ircs"', components)
