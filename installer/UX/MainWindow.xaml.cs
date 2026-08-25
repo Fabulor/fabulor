@@ -15,12 +15,19 @@ public partial class MainWindow : Window
     private bool rememberedDesktopShortcut = true;
     private bool rememberedShellIntegration = true;
     private bool showingInstallFolderWarning;
+    private bool changingInstallFolderProgrammatically;
+    private bool changingPortableModeProgrammatically;
+    private bool installFolderEditedByUser;
+    private bool trackingInstallFolderEdits;
+    private string installedDefaultFolder = string.Empty;
+    private string portableDefaultFolder = string.Empty;
     private string lastErrorDetails = string.Empty;
 
     public MainWindow(FabulorBootstrapperApplication bootstrapper)
     {
         this.bootstrapper = bootstrapper;
         this.InitializeComponent();
+        this.trackingInstallFolderEdits = true;
         this.UpdateModeSummary();
         this.Closed += (_, _) => this.sessionLog.Dispose();
     }
@@ -28,7 +35,18 @@ public partial class MainWindow : Window
     public string InstallFolder
     {
         get => this.InstallFolderTextBox.Text.Trim();
-        set => this.InstallFolderTextBox.Text = value;
+        set
+        {
+            this.changingInstallFolderProgrammatically = true;
+            try
+            {
+                this.InstallFolderTextBox.Text = value;
+            }
+            finally
+            {
+                this.changingInstallFolderProgrammatically = false;
+            }
+        }
     }
 
     public bool IsPortable => this.PortableModeCheckBox.IsChecked == true;
@@ -50,8 +68,22 @@ public partial class MainWindow : Window
 
     public void SetPortableMode(bool isPortable)
     {
-        this.PortableModeCheckBox.IsChecked = isPortable;
-        this.RefreshOptionState();
+        this.changingPortableModeProgrammatically = true;
+        try
+        {
+            this.PortableModeCheckBox.IsChecked = isPortable;
+            this.RefreshOptionState();
+        }
+        finally
+        {
+            this.changingPortableModeProgrammatically = false;
+        }
+    }
+
+    public void SetInstallFolderDefaults(string installedFolder, string portableFolder)
+    {
+        this.installedDefaultFolder = installedFolder;
+        this.portableDefaultFolder = portableFolder;
     }
 
     public void SetFeatureSelection(InstallerFeatureSelection selection)
@@ -323,10 +355,25 @@ public partial class MainWindow : Window
 
     private void UninstallButton_OnClick(object sender, RoutedEventArgs e) => this.bootstrapper.RequestUninstall();
 
-    private void PortableModeCheckBox_OnChanged(object sender, RoutedEventArgs e) => this.RefreshOptionState();
+    private void PortableModeCheckBox_OnChanged(object sender, RoutedEventArgs e)
+    {
+        if (!this.changingPortableModeProgrammatically && !this.installFolderEditedByUser)
+        {
+            this.InstallFolder = this.IsPortable
+                ? this.portableDefaultFolder
+                : this.installedDefaultFolder;
+        }
+
+        this.RefreshOptionState();
+    }
 
     private void InstallFolderTextBox_OnTextChanged(object sender, System.Windows.Controls.TextChangedEventArgs e)
     {
+        if (this.trackingInstallFolderEdits && !this.changingInstallFolderProgrammatically)
+        {
+            this.installFolderEditedByUser = true;
+        }
+
         if (string.IsNullOrWhiteSpace(this.InstallFolderTextBox.Text))
         {
             this.showingInstallFolderWarning = true;
@@ -351,6 +398,7 @@ public partial class MainWindow : Window
         };
         if (dialog.ShowDialog() == Forms.DialogResult.OK && !string.IsNullOrWhiteSpace(dialog.SelectedPath))
         {
+            this.installFolderEditedByUser = true;
             this.InstallFolder = dialog.SelectedPath;
             this.SetStatus($"Install folder set to {dialog.SelectedPath}");
         }
