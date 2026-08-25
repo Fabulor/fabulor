@@ -96,8 +96,8 @@ public sealed class FabulorBootstrapperApplication : BootstrapperApplication
 
     protected override void Run()
     {
-        var initialInstallFolder = this.GetInitialInstallFolder();
         var initialPortableMode = this.GetRequestedPortableMode();
+        var initialInstallFolder = this.GetInitialInstallFolder(initialPortableMode);
 
         var uiThread = new Thread(() =>
         {
@@ -273,6 +273,17 @@ public sealed class FabulorBootstrapperApplication : BootstrapperApplication
             this.currentPlanPortable = this.window.IsPortable;
         }
 
+        if ((action == LaunchAction.Install || action == LaunchAction.Modify)
+            && this.currentPlanPortable
+            && PortableInstallLocationPolicy.IsProtectedLocation(installFolder))
+        {
+            var suggestedFolder = PortableInstallLocationPolicy.GetDefaultInstallFolder();
+            var message = $"Portable mode needs a user-writable folder outside Program Files and Windows. Choose a folder such as {suggestedFolder}.";
+            this.window.AppendLog($"Portable install location rejected: {installFolder}");
+            this.window.ShowError(message);
+            return;
+        }
+
         this.window.SetBusy(true);
         this.window.SetProgress(0);
         this.window.SetStatus(statusText + "…");
@@ -298,16 +309,17 @@ public sealed class FabulorBootstrapperApplication : BootstrapperApplication
         return $"{statusText}: {action}";
     }
 
-    private string GetInitialInstallFolder()
+    private string GetInitialInstallFolder(bool portableMode)
     {
-        var defaultInstallFolder = System.IO.Path.Combine(this.GetDefaultProgramFilesFolder(), "Fabulor");
         var requestedInstallFolder = this.GetRequestedInstallFolder();
         if (!string.IsNullOrWhiteSpace(requestedInstallFolder))
         {
             return requestedInstallFolder;
         }
 
-        return defaultInstallFolder;
+        return portableMode
+            ? PortableInstallLocationPolicy.GetDefaultInstallFolder()
+            : System.IO.Path.Combine(this.GetDefaultProgramFilesFolder(), "Fabulor");
     }
 
     private string GetRequestedInstallFolder()

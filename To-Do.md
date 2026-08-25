@@ -18,6 +18,8 @@ Last reconciled: 2026-08-25
 - [x] Enchant 2.8.19 and WinSpell provide the supported Windows spell-checking
       path; the legacy Enchant fallback is retired.
 - [x] Installed and portable modes are implemented by the bootstrapper.
+- [x] Portable mode defaults to a user-writable profile folder and rejects
+      protected `Program Files` and Windows destinations before planning.
 - [x] The inherited WinSparkle updater is retired because its external
       appcast offered ZoiteChat packages as Fabulor updates.
 - [x] Inno Setup, GTK3 packaging, Lua, Perl, and bundled user add-ons are
@@ -32,6 +34,10 @@ Last reconciled: 2026-08-25
 - [x] Validate production identity, feature selection, upgrade identities,
       embedded MSI equality, and GTK4-only installed payload.
 - [x] Validate clean installation and repeated versioned upgrades on Windows.
+- [x] Validate the RC9 clean-install, installed-mode modification, portable
+      install, and uninstall paths. Installed modification preserved
+      `%APPDATA%\Fabulor`; the portable profile remained self-contained; and
+      uninstall preserved the installed-mode user profile.
 - [x] Validate normal IRC and ZNC connections, TLS, SOCKS5, reconnect, and
       multi-network startup.
 - [x] Bound Windows address-pool fallback so a dead DNS result cannot consume

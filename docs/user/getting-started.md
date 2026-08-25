@@ -122,8 +122,11 @@ Portable mode creates a `portable-mode` marker and keeps configuration in the
 and Desktop shortcuts, protocol registration, and theme registration.
 
 Choose portable mode only when you specifically need a self-contained folder.
-Do not install portable mode under `C:\Program Files` if you expect to edit its
-configuration without administrator permission.
+The installer defaults Portable mode to `%USERPROFILE%\Fabulor Portable` and
+rejects protected locations beneath `Program Files` or the Windows directory.
+Choose another ordinary user-writable folder when a different location is
+needed. Do not run the portable client as administrator to work around folder
+permissions.
 
 ## First Start
 

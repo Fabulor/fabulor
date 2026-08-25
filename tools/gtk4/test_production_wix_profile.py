@@ -308,8 +308,21 @@ class ProductionWixProfileTests(unittest.TestCase):
         window_code = (INSTALLER / "UX" / "MainWindow.xaml.cs").read_text(
             encoding="utf-8"
         )
+        portable_policy = (
+            INSTALLER / "UX" / "PortableInstallLocationPolicy.cs"
+        ).read_text(encoding="utf-8")
         self.assertIn("catch (COMException ex)", window_code)
         self.assertIn("showingInstallFolderWarning", window_code)
+        self.assertIn(
+            "PortableInstallLocationPolicy.IsProtectedLocation", bootstrapper
+        )
+        self.assertIn(
+            "PortableInstallLocationPolicy.GetDefaultInstallFolder", bootstrapper
+        )
+        self.assertIn("Environment.SpecialFolder.ProgramFiles", portable_policy)
+        self.assertIn("Environment.SpecialFolder.ProgramFilesX86", portable_policy)
+        self.assertIn("Environment.SpecialFolder.Windows", portable_policy)
+        self.assertIn('Path.Combine(userProfile, "Fabulor Portable")', portable_policy)
 
         self.assertIn('Key="Software\\Classes\\irc"', components)
         self.assertIn('Key="Software\\Classes\\ircs"', components)
