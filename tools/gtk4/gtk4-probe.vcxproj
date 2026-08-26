@@ -43,7 +43,7 @@
     </ClCompile>
     <Link>
       <AdditionalLibraryDirectories>$(FabulorGtk4Root)\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>gtk-4.lib;pango-1.0.lib;gdk_pixbuf-2.0.lib;cairo.lib;graphene-1.0.lib;gio-2.0.lib;gobject-2.0.lib;glib-2.0.lib;intl.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>gtk-4.lib;pango-1.0.lib;gdk_pixbuf-2.0.lib;cairo.lib;graphene-1.0.lib;gio-2.0.lib;gobject-2.0.lib;glib-2.0.lib;intl.lib;comctl32.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>

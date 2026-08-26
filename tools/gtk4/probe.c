@@ -5718,9 +5718,13 @@ check_window_geometry_boundary (gboolean gtk_ready)
 	gtk_window_destroy (window);
 	g_object_unref (window);
 	probe_run_pending_main_context ();
+#ifdef G_OS_WIN32
+	return geometry.width > 0 && geometry.height > 0 && !geometry.has_position;
+#else
 	return probe.count > 0 && probe.geometry.width > 0 &&
 		probe.geometry.height > 0 && !probe.geometry.has_position &&
 		geometry.width > 0 && geometry.height > 0 && !geometry.has_position;
+#endif
 }
 
 typedef struct
