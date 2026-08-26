@@ -49,6 +49,11 @@ gio_library = cc.find_library('gio-2.0', dirs: gtk4_library_dir, required: true)
 gobject_library = cc.find_library('gobject-2.0', dirs: gtk4_library_dir, required: true)
 glib_library = cc.find_library('glib-2.0', dirs: gtk4_library_dir, required: true)
 intl_library = cc.find_library('intl', dirs: gtk4_library_dir, required: true)
+probe_dependencies = [gtk4_library, pango_library, gdk_pixbuf_library, cairo_library, graphene_library, gio_library, gobject_library, glib_library, intl_library]
+
+if host_machine.system() == 'windows'
+  probe_dependencies += [cc.find_library('comctl32', required: true)]
+endif
 
 probe = executable(
   'fabulor-gtk4-probe',
@@ -113,7 +118,7 @@ probe = executable(
   '../../src/fe-gtk/user-list-view.c',
   '../../src/fe-gtk/url-list.c',
   include_directories: gtk4_includes,
-  dependencies: [gtk4_library, pango_library, gdk_pixbuf_library, cairo_library, graphene_library, gio_library, gobject_library, glib_library, intl_library],
+  dependencies: probe_dependencies,
 )
 
 probe_environment = environment()
