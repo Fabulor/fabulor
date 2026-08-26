@@ -114,8 +114,6 @@ cv_tree_init (chanview *cv)
 	fabulor_gtk_scrolled_window_set_child (GTK_SCROLLED_WINDOW (win), view);
 	fabulor_gtk_widget_on_multi_click (view, cv_tree_click_cb, cv);
 	fabulor_gtk_widget_on_scroll (view, cv_tree_scroll_cb, NULL);
-	fabulor_gtk_widget_enable_internal_drag_source (view,
-		FABULOR_GTK_INTERNAL_DRAG_CHANNEL_VIEW, mg_internal_drag_icon, NULL);
 	fabulor_gtk_widget_enable_internal_drop_target (view,
 		FABULOR_GTK_INTERNAL_DRAG_ACCEPT (FABULOR_GTK_INTERNAL_DRAG_USER_LIST),
 		mg_internal_drag_motion, NULL, mg_internal_drag_drop, NULL);

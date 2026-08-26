@@ -100,7 +100,13 @@ history below describes the cumulative work toward the first stable release.
   link dispatch is accepted; upgrade, repair, and uninstall cleanup remain
   subject to the final installed acceptance pass.
 - Preserved independently resized Ban List and Ignore List windows across
-  close, reopen, and client restart.
+  close, reopen, and client restart. Automatic GTK content layout no longer
+  replaces dimensions selected through `/SET` or a completed manual resize.
+- Made `gui_ulist_resizable OFF` lock the user-list divider to
+  `gui_ulist_nick_width`, while retaining manual divider resizing when the
+  setting is enabled.
+- Removed accidental channel-tree and user-list drag sources that could create
+  an unusable detached channel tree during ordinary navigation.
 - Added clear non-blocking empty states to the Channel List and user list, and
   kept the user-list controls and side-by-side meters aligned at supported
   panel widths.

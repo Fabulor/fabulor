@@ -179,6 +179,10 @@ ignore_gui_open (void)
 	GtkWidget *vbox, *box, *stat_box, *frame;
 	GSList *item;
 	char buf[128];
+	gint saved_width = MAX (prefs.hex_gui_ignore_width,
+		IGNORE_WINDOW_MIN_WIDTH);
+	gint saved_height = MAX (prefs.hex_gui_ignore_height,
+		IGNORE_WINDOW_MIN_HEIGHT);
 
 	if (ignorewin)
 	{
@@ -188,8 +192,7 @@ ignore_gui_open (void)
 
 	g_snprintf (buf, sizeof (buf), _("Ignore list - %s"), _(DISPLAY_NAME));
 	ignorewin = mg_create_generic_tab ("IgnoreList", buf, FALSE, TRUE,
-		close_ignore_gui_callback, NULL, prefs.hex_gui_ignore_width,
-		prefs.hex_gui_ignore_height, &vbox, 0);
+		close_ignore_gui_callback, NULL, saved_width, saved_height, &vbox, 0);
 	gtkutil_destroy_on_esc (ignorewin);
 	gtk_widget_set_size_request (ignorewin, IGNORE_WINDOW_MIN_WIDTH,
 		IGNORE_WINDOW_MIN_HEIGHT);
@@ -240,6 +243,8 @@ ignore_gui_open (void)
 		fabulor_ignore_list_append (ignore_view, ignore->mask,
 			(guint) ignore->type, FALSE);
 	}
+	gtk_window_set_default_size (GTK_WINDOW (ignorewin), saved_width,
+		saved_height);
 	gtk_widget_show (ignorewin);
 }
 

@@ -3,13 +3,23 @@
 
 #include "window-geometry.h"
 
+#ifdef G_OS_WIN32
+#include <windows.h>
+#include <commctrl.h>
+#include <gdk/win32/gdkwin32.h>
+#endif
+
 typedef struct
 {
 	GtkWindow *window;
 	FabulorWindowGeometryCallback callback;
 	gpointer user_data;
 	GdkSurface *surface;
+#ifdef G_OS_WIN32
+	HWND hwnd;
+#else
 	gulong layout_handler;
+#endif
 } FabulorWindowGeometryWatch;
 
 gint
@@ -62,26 +72,67 @@ fabulor_window_geometry_get (GtkWindow *window,
 	}
 }
 
+#ifdef G_OS_WIN32
+static void
+window_geometry_emit_current (FabulorWindowGeometryWatch *watch)
+{
+	FabulorWindowGeometry geometry = { 0 };
+
+	fabulor_window_geometry_get (watch->window, &geometry);
+	if (geometry.width <= 0 || geometry.height <= 0)
+		return;
+	watch->callback (watch->window, &geometry, watch->user_data);
+}
+
+static LRESULT CALLBACK
+window_geometry_win32_proc (HWND hwnd, UINT message, WPARAM wparam,
+	LPARAM lparam, UINT_PTR subclass_id, DWORD_PTR reference_data)
+{
+	FabulorWindowGeometryWatch *watch =
+		(FabulorWindowGeometryWatch *) reference_data;
+
+	(void) wparam;
+	(void) lparam;
+	if (message == WM_EXITSIZEMOVE && watch)
+		window_geometry_emit_current (watch);
+	else if (message == WM_NCDESTROY)
+	{
+		RemoveWindowSubclass (hwnd, window_geometry_win32_proc, subclass_id);
+		if (watch)
+			watch->hwnd = NULL;
+	}
+	return DefSubclassProc (hwnd, message, wparam, lparam);
+}
+#else
 static void
 window_geometry_layout_cb (GdkSurface *surface, gint width, gint height,
 	gpointer user_data)
 {
 	FabulorWindowGeometryWatch *watch = user_data;
 	FabulorWindowGeometry geometry = { 0 };
-	(void)surface;
+
+	(void) surface;
 	geometry.width = width;
 	geometry.height = height;
 	watch->callback (watch->window, &geometry, watch->user_data);
 }
+#endif
 
 static void
 window_geometry_detach_surface (FabulorWindowGeometryWatch *watch)
 {
 	if (!watch->surface)
 		return;
+#ifdef G_OS_WIN32
+	if (watch->hwnd)
+		RemoveWindowSubclass (watch->hwnd, window_geometry_win32_proc,
+			(UINT_PTR) watch);
+	watch->hwnd = NULL;
+#else
 	if (watch->layout_handler)
 		g_signal_handler_disconnect (watch->surface, watch->layout_handler);
 	watch->layout_handler = 0;
+#endif
 	g_clear_object (&watch->surface);
 }
 
@@ -93,8 +144,18 @@ window_geometry_attach_surface (FabulorWindowGeometryWatch *watch)
 	if (!GDK_IS_SURFACE (surface))
 		return;
 	watch->surface = g_object_ref (surface);
+#ifdef G_OS_WIN32
+	if (GDK_IS_WIN32_SURFACE (surface))
+	{
+		watch->hwnd = (HWND) gdk_win32_surface_get_handle (surface);
+		if (watch->hwnd && !SetWindowSubclass (watch->hwnd,
+			window_geometry_win32_proc, (UINT_PTR) watch, (DWORD_PTR) watch))
+			watch->hwnd = NULL;
+	}
+#else
 	watch->layout_handler = g_signal_connect (surface, "layout",
 		G_CALLBACK (window_geometry_layout_cb), watch);
+#endif
 }
 
 static void

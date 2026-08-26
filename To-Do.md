@@ -1,7 +1,7 @@
 <!-- Fabulor production roadmap -->
 # Fabulor Production Roadmap
 
-Last reconciled: 2026-08-25
+Last reconciled: 2026-08-27
 
 ## Current Production Baseline
 
@@ -97,10 +97,12 @@ Last reconciled: 2026-08-25
 - [x] Document the Windows SmartScreen warning shown for unsigned release
       candidates, including official-source and SHA-256 verification without
       advising users to disable Defender or SmartScreen.
-- [ ] Publish `v1.0.6-rc.9` as the installer-upgrade correction candidate,
-      then perform a clean installation and an RC8-to-RC9 in-place upgrade and
-      confirm that all selected Python, Tcl, and .NET plugin runtimes and
-      add-ons remain operational.
+- [x] Validate the RC9 candidate payload through an RC8-to-RC9 in-place
+      upgrade, clean installation, installed-mode modification, portable
+      installation, and uninstall. Selected plugin runtimes and add-ons loaded
+      correctly, modified features changed as requested, portable data stayed
+      self-contained, and installed-mode profile data survived uninstall.
+- [ ] Publish `v1.0.6-rc.9` from the reviewed and merged correction source.
 - [ ] Exercise repair and uninstall once against the final signed or
       release-candidate artefacts.
 - [ ] Run a final installed accessibility and keyboard-navigation pass over
@@ -456,7 +458,14 @@ programme.
     - [x] Add non-blocking empty states for an unpopulated or filtered Channel
           List and a channel with no visible users.
     - [x] Preserve independently resized Ban List and Ignore List window
-          dimensions across close, reopen, and client restart.
+          dimensions across close, reopen, and client restart. Empty and
+          populated content no longer overrides `/SET` values or dimensions
+          captured after a completed manual resize.
+    - [x] Make `gui_ulist_resizable OFF` lock the user-list divider to
+          `gui_ulist_nick_width`; retain manual divider resizing only while the
+          setting is enabled.
+    - [x] Remove accidental channel-tree and user-list drag sources that could
+          create an unusable detached channel tree during ordinary navigation.
     - [x] Complete the final installed RC8 UI regression pass and reconcile
           release-facing documentation.
     - [x] Package RC8 after the UI pull request is reviewed and merged.

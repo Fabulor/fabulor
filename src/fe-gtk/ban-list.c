@@ -350,6 +350,11 @@ fabulor_ban_list_create_view (FabulorBanList *list, GtkBox *parent,
 			fabulor_gtk4_flat_model_stack_get_selection (list->models);
 		GtkColumnViewColumn *column;
 
+		gtk_scrolled_window_set_propagate_natural_width (
+			GTK_SCROLLED_WINDOW (scroller), FALSE);
+		gtk_scrolled_window_set_propagate_natural_height (
+			GTK_SCROLLED_WINDOW (scroller), FALSE);
+		gtk_widget_set_size_request (scroller, 1, 1);
 		list->view = gtk_column_view_new (GTK_SELECTION_MODEL (
 			g_object_ref (selection)));
 		column = ban_column_new (type_title, BAN_FIELD_TYPE, "type", FALSE);

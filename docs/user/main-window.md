@@ -209,11 +209,12 @@ When a channel has no visible users, Fabulor shows a quiet placeholder in the
 list area. The action footer and network meters remain available, and the
 placeholder disappears as soon as the user list is populated.
 
-Drag the divider to choose the user-list width. Disable **Allow user list to
-resize with the window** when the chosen width should remain fixed while
-switching channels or resizing the main window. Fabulor keeps the panel at
-least 150 pixels wide so its two-column action footer and network meters remain
-usable; larger saved widths are preserved.
+Enable **Allow user list to resize with the window** to adjust the user-list
+divider manually. Disable it to lock the divider to the
+`gui_ulist_nick_width` setting while switching channels or resizing the main
+window. Fabulor keeps the panel at least 150 pixels wide so its two-column
+action footer and network meters remain usable; larger configured widths are
+preserved.
 
 Right-click a nickname to open its action menu. Depending on context and your
 channel privileges, it can provide:
@@ -259,9 +260,12 @@ Transfers, Friends List, Ignore List, Plugins and Scripts, Raw Log, and URL
 Grabber. Some utilities require a connected server or selected channel and are
 unavailable when their context does not exist.
 
-The Ban List and Ignore List are independently resizable. Fabulor remembers
-each window's last size when it is closed and restores that size when the
-window is opened again, including after a client restart.
+The Ban List and Ignore List are independently resizable. Fabulor saves each
+window's size when a manual resize finishes and restores that size when the
+window is opened again, including after a client restart. Opening an empty or
+populated list does not replace the saved dimensions. The corresponding
+`gui_banlist_width`, `gui_banlist_height`, `gui_ignore_width`, and
+`gui_ignore_height` settings may also be changed with `/SET`.
 
 See [Add-ons](addons.md) before loading, reloading, or removing executable
 plugins and scripts.

@@ -111,6 +111,9 @@ enum
 static void mg_apply_emoji_fallback_widget (GtkWidget *widget);
 static void mg_inputbox_insert_emoji_cb (GtkEntry *entry, gpointer user_data);
 static void mg_inputbox_icon_release_cb (GtkEntry *entry, GtkEntryIconPosition icon_pos, gpointer user_data);
+static int mg_userlist_min_width (void);
+static int mg_userlist_fallback_width (void);
+static int mg_userlist_restore_width (void);
 static void mg_schedule_rightpane_restore (session_gui *gui);
 #define MG_CONFIG_SAVE_DEBOUNCE_MS 250
 
@@ -1426,7 +1429,7 @@ mg_userlist_showhide (session *sess, int show)
         if (min_right_size < 1)
                 min_right_size = 1;
 
-        right_size = MAX (prefs.hex_gui_pane_right_size, min_right_size);
+        right_size = MAX (mg_userlist_restore_width (), min_right_size);
 
         if (show)
         {
@@ -4342,6 +4345,15 @@ mg_userlist_fallback_width (void)
                     prefs.hex_gui_ulist_nick_width);
 }
 
+static int
+mg_userlist_restore_width (void)
+{
+        if (!prefs.hex_gui_ulist_resizable)
+                return mg_userlist_fallback_width ();
+
+        return prefs.hex_gui_pane_right_size;
+}
+
 static void
 mg_vpane_cb (GtkPaned *pane, GParamSpec *param, session_gui *gui)
 {
@@ -4366,6 +4378,26 @@ mg_rightpane_cb (GtkPaned *pane, GParamSpec *param, session_gui *gui)
                 !gtk_widget_get_visible (gui->user_box) ||
                 fabulor_gtk_widget_get_allocated_width (gui->user_box) < 1)
                 return;
+        if (!prefs.hex_gui_ulist_resizable)
+        {
+                int locked_position;
+
+                handle_size = fabulor_gtk_paned_get_handle_size (pane);
+                pane_width = fabulor_gtk_widget_get_allocated_width (
+                        GTK_WIDGET (pane));
+                right_size = fabulor_pane_clamp_end_size (
+                        mg_userlist_fallback_width (), mg_userlist_min_width (),
+                        pane_width, handle_size);
+                prefs.hex_gui_pane_right_size = right_size;
+                locked_position = pane_width - right_size - handle_size;
+                if (gtk_paned_get_position (pane) != locked_position)
+                {
+                        gui->pane_right_restoring = 1;
+                        gtk_paned_set_position (pane, locked_position);
+                        gui->pane_right_restoring = 0;
+                }
+                return;
+        }
         handle_size = fabulor_gtk_paned_get_handle_size (pane);
         /* record the position from the RIGHT side */
         pane_width = fabulor_gtk_widget_get_allocated_width (GTK_WIDGET (pane));
@@ -4442,7 +4474,9 @@ mg_schedule_rightpane_restore (session_gui *gui)
         if (!gui || !GTK_IS_WIDGET (gui->hpane_right))
                 return;
 
-        gui->pane_right_size = prefs.hex_gui_pane_right_size;
+        gui->pane_right_size = mg_userlist_restore_width ();
+        if (!prefs.hex_gui_ulist_resizable)
+                prefs.hex_gui_pane_right_size = gui->pane_right_size;
         gui->pane_right_restoring = 1;
         gui->pane_right_last_width = 0;
         gui->pane_right_stable_frames = 0;
