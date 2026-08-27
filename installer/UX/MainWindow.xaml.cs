@@ -19,6 +19,8 @@ public partial class MainWindow : Window
     private bool changingPortableModeProgrammatically;
     private bool installFolderEditedByUser;
     private readonly bool trackingInstallFolderEdits;
+    private bool isBusy;
+    private bool isMaintenanceMode;
     private string installedDefaultFolder = string.Empty;
     private string portableDefaultFolder = string.Empty;
     private string lastErrorDetails = string.Empty;
@@ -134,6 +136,17 @@ public partial class MainWindow : Window
         this.sessionLog.MarkFailure();
     }
 
+    public void ShowBlockingError(string message)
+    {
+        this.ShowError(message);
+        System.Windows.MessageBox.Show(
+            this,
+            message,
+            "Fabulor Setup",
+            MessageBoxButton.OK,
+            MessageBoxImage.Warning);
+    }
+
     public void ShowCompletion(string message)
     {
         this.SetBusy(false);
@@ -150,12 +163,13 @@ public partial class MainWindow : Window
 
     public void SetBusy(bool isBusy)
     {
+        this.isBusy = isBusy;
         this.InstallButton.IsEnabled = !isBusy;
         this.RepairButton.IsEnabled = !isBusy;
         this.UninstallButton.IsEnabled = !isBusy;
-        this.PortableModeCheckBox.IsEnabled = !isBusy;
-        this.InstallFolderTextBox.IsEnabled = !isBusy;
-        this.BrowseInstallFolderButton.IsEnabled = !isBusy;
+        this.PortableModeCheckBox.IsEnabled = !isBusy && !this.isMaintenanceMode;
+        this.InstallFolderTextBox.IsEnabled = !isBusy && !this.isMaintenanceMode;
+        this.BrowseInstallFolderButton.IsEnabled = !isBusy && !this.isMaintenanceMode;
         this.DotNetPluginHostCheckBox.IsEnabled = !isBusy;
         this.PythonRuntimeCheckBox.IsEnabled = !isBusy;
         this.TclRuntimeCheckBox.IsEnabled = !isBusy;
@@ -178,6 +192,10 @@ public partial class MainWindow : Window
 
     public void SetDetectedState(bool isInstalled, bool isCurrentPackageInstalled)
     {
+        this.isMaintenanceMode = isCurrentPackageInstalled;
+        this.PortableModeCheckBox.IsEnabled = !this.isBusy && !this.isMaintenanceMode;
+        this.InstallFolderTextBox.IsEnabled = !this.isBusy && !this.isMaintenanceMode;
+        this.BrowseInstallFolderButton.IsEnabled = !this.isBusy && !this.isMaintenanceMode;
         this.StateHeadingTextBlock.Text = isInstalled ? "Maintain Fabulor" : "Ready to install";
         this.StateDescriptionTextBlock.Text = isCurrentPackageInstalled
             ? "Fabulor is installed. You can change installed features, repair the installation, or uninstall it."
@@ -192,6 +210,7 @@ public partial class MainWindow : Window
         this.UninstallButton.Visibility = isInstalled ? Visibility.Visible : Visibility.Collapsed;
         this.InstallButton.Visibility = Visibility.Visible;
         this.LaunchButton.Visibility = Visibility.Collapsed;
+        this.UpdateModeSummary();
         this.InstallButton.Focus();
     }
 
@@ -239,9 +258,12 @@ public partial class MainWindow : Window
 
     private void UpdateModeSummary()
     {
-        this.ModeSummaryTextBlock.Text = this.IsPortable
+        var summary = this.IsPortable
             ? "Portable mode keeps configuration beside the executable and does not create Windows shortcuts or registrations."
             : "Installed mode stores user configuration in the Fabulor profile and enables the selected Windows integrations.";
+        this.ModeSummaryTextBlock.Text = this.isMaintenanceMode
+            ? summary + " To change mode or install location, uninstall Fabulor and run Setup again. Existing profile data is not migrated automatically."
+            : summary;
     }
 
     private void RefreshOptionState()

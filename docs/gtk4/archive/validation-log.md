@@ -9041,6 +9041,38 @@ Store.
 The broader clean-install, modify, repair, uninstall, and running and
 closed-client dispatch matrix remains tracked separately in `To-Do.md`.
 
+## RC9 Portable Maintenance Guards (2026-08-28)
+
+Scope: prevent an existing MSI installation from being changed between
+Portable and Installed mode or relocated through Modify, make rejection of a
+protected portable destination unmistakable, and avoid presenting an expected
+unelevated stale-registration cleanup skip as a failure.
+
+Automated evidence:
+
+- 42 production WiX profile and installer contract tests pass
+- the bootstrapper application and clean MSI/bootstrapper build complete with
+  zero warnings and zero errors
+- production MSI, embedded bundle MSI, product metadata, and runtime-manifest
+  validation pass
+- the MSI contains 2,630 files, no legacy GTK files, and 1,160 verified GTK4
+  runtime manifest entries
+
+Initial installed acceptance exposed a release blocker: changing a portable
+installation to Installed mode through Modify reported success but left the
+payload and `portable-mode` marker in the portable directory while adding
+machine shell integration for that location. Recovery by uninstalling the
+hybrid installation and performing a fresh full install preserved the user's
+configuration and restored the expected Program Files installation and URI
+registrations.
+
+Corrected installed acceptance: pass. Maintenance now locks the installation
+mode and location and explains that changing either requires uninstalling and
+reinstalling. Selecting a protected Windows directory for Portable mode shows
+a prominent warning and performs no installation. The expected unelevated
+pre-plan cleanup skip is no longer reported as a failure, and the valid
+portable and installed workflows showed no regressions.
+
 ## Stage Completion Rule
 
 A stage can move to complete in `migration-plan.md` only when:
