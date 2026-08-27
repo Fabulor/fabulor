@@ -285,6 +285,16 @@ public sealed class FabulorBootstrapperApplication : BootstrapperApplication
             return;
         }
 
+        if (action == LaunchAction.Modify
+            && !string.IsNullOrWhiteSpace(this.detectedInstalledMsiLocation)
+            && !this.PathsEqual(installFolder, this.detectedInstalledMsiLocation))
+        {
+            const string message = "Setup cannot move an existing installation during Modify. Uninstall Fabulor first, then run Setup again and choose the required folder. Existing profile data is not migrated automatically.";
+            this.window.AppendLog("Installation location change rejected during Modify.");
+            this.window.ShowBlockingError(message);
+            return;
+        }
+
         if ((action == LaunchAction.Install || action == LaunchAction.Modify)
             && this.currentPlanPortable
             && PortableInstallLocationPolicy.IsProtectedLocation(installFolder))
@@ -2157,8 +2167,8 @@ public sealed class FabulorBootstrapperApplication : BootstrapperApplication
         try
         {
             return string.Equals(
-                System.IO.Path.GetFullPath(left),
-                System.IO.Path.GetFullPath(right),
+                System.IO.Path.TrimEndingDirectorySeparator(System.IO.Path.GetFullPath(left)),
+                System.IO.Path.TrimEndingDirectorySeparator(System.IO.Path.GetFullPath(right)),
                 StringComparison.OrdinalIgnoreCase);
         }
         catch

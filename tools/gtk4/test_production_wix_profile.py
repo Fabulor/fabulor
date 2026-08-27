@@ -347,8 +347,14 @@ class ProductionWixProfileTests(unittest.TestCase):
             bootstrapper,
         )
         self.assertIn("Installation mode change rejected during Modify", bootstrapper)
+        self.assertIn(
+            "!this.PathsEqual(installFolder, this.detectedInstalledMsiLocation)",
+            bootstrapper,
+        )
+        self.assertIn("Installation location change rejected during Modify", bootstrapper)
+        self.assertIn("Path.TrimEndingDirectorySeparator", bootstrapper)
         self.assertIn("Portable mode cannot use a protected Windows folder", bootstrapper)
-        self.assertEqual(bootstrapper.count("this.window.ShowBlockingError(message);"), 2)
+        self.assertEqual(bootstrapper.count("this.window.ShowBlockingError(message);"), 3)
         cleanup_method = bootstrapper[
             bootstrapper.index("private void CleanupStaleRegistrationsBeforeMaintenancePlan") :
             bootstrapper.index("private void RemoveOtherBundleUninstallRegistrations")
