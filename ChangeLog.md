@@ -95,10 +95,11 @@ history below describes the cumulative work toward the first stable release.
   details instead of reporting an ambiguous disconnect.
 - Registered missing machine-level `irc://` and `ircs://` scheme fallbacks in
   addition to stable Fabulor ProgIDs and Windows Registered Applications
-  capabilities. Setup preserves another application's valid handler and
-  removes a generic scheme only while it still points to Fabulor. Clean-install
-  link dispatch is accepted; upgrade, repair, and uninstall cleanup remain
-  subject to the final installed acceptance pass.
+  capabilities. Setup preserves another application's valid handler, retains
+  Fabulor-owned fallbacks through major upgrades, and removes a generic scheme
+  only while it still points to Fabulor.
+- Preserved an explicit IRC URI channel target when a failed endpoint cycles to
+  the saved network configuration before login.
 - Preserved independently resized Ban List and Ignore List windows across
   close, reopen, and client restart. Automatic GTK content layout no longer
   replaces dimensions selected through `/SET` or a completed manual resize.

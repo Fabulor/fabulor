@@ -626,6 +626,33 @@ servlist_auto_connect (session *sess)
 	return ret;
 }
 
+static void
+servlist_cycle_connect (server *serv)
+{
+	session *sess;
+	char willjoinchannel[CHANLEN];
+	char channelkey[sizeof (sess->channelkey)];
+
+	if (!serv->network || !serv->server_session)
+		return;
+
+	sess = serv->server_session;
+	safe_strcpy (willjoinchannel, sess->willjoinchannel,
+				 sizeof (willjoinchannel));
+	safe_strcpy (channelkey, sess->channelkey, sizeof (channelkey));
+	servlist_connect (sess, serv->network, TRUE);
+
+	/* Keep an explicit /SERVCHAN or IRC URI target across a failed endpoint. */
+	if (willjoinchannel[0])
+	{
+		safe_strcpy (sess->willjoinchannel, willjoinchannel,
+					 sizeof (sess->willjoinchannel));
+		safe_strcpy (sess->channelkey, channelkey,
+					 sizeof (sess->channelkey));
+	}
+
+}
+
 static gint
 servlist_cycle_cb (server *serv)
 {
@@ -633,7 +660,7 @@ servlist_cycle_cb (server *serv)
 	{
 		PrintTextf (serv->server_session,
 			_("Cycling to next server in %s...\n"), ((ircnet *)serv->network)->name);
-		servlist_connect (serv->server_session, serv->network, TRUE);
+		servlist_cycle_connect (serv);
 	}
 
 	return 0;
@@ -666,7 +693,7 @@ servlist_cycle (server *serv)
 			if (del)
 				serv->recondelay_tag = fe_timeout_add (del, servlist_cycle_cb, serv);
 			else
-				servlist_connect (serv->server_session, net, TRUE);
+				servlist_cycle_connect (serv);
 
 			return TRUE;
 		}
