@@ -629,9 +629,9 @@ servlist_auto_connect (session *sess)
 static void
 servlist_cycle_connect (server *serv)
 {
-	char willjoinchannel[CHANLEN];
-	char channelkey[64];
 	session *sess;
+	char willjoinchannel[CHANLEN];
+	char channelkey[sizeof (sess->channelkey)];
 
 	if (!serv->network || !serv->server_session)
 		return;

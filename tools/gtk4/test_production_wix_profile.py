@@ -933,9 +933,12 @@ class ProductionWixProfileTests(unittest.TestCase):
 
     def test_server_cycle_preserves_explicit_pending_channel(self):
         source = COMMON_SERVER_LIST_SOURCE.read_text(encoding="utf-8")
-        helper = source.split("servlist_cycle_connect (server *serv)", 1)[1].split(
-            "servlist_cycle_cb", 1
-        )[0]
+        _, helper_marker, helper_source = source.partition(
+            "servlist_cycle_connect (server *serv)"
+        )
+        self.assertTrue(helper_marker, "server-cycle helper is missing")
+        helper, callback_marker, _ = helper_source.partition("servlist_cycle_cb")
+        self.assertTrue(callback_marker, "server-cycle callback is missing")
 
         self.assertIn("willjoinchannel", helper)
         self.assertIn("channelkey", helper)
