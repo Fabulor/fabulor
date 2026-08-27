@@ -565,6 +565,10 @@ banlist_opengui (struct session *sess)
 	int i;
 	GtkWidget *table, *vbox, *bbox;
 	char tbuf[256];
+	gint saved_width = MAX (prefs.hex_gui_banlist_width,
+		BANLIST_WINDOW_MIN_WIDTH);
+	gint saved_height = MAX (prefs.hex_gui_banlist_height,
+		BANLIST_WINDOW_MIN_HEIGHT);
 
 	if (sess->type != SESS_CHANNEL || sess->channel[0] == 0)
 	{
@@ -595,8 +599,8 @@ banlist_opengui (struct session *sess)
 					sess->server->servername, _(DISPLAY_NAME));
 
 	banl->window = mg_create_generic_tab ("BanList", tbuf, FALSE,
-					TRUE, banlist_closegui, banl, prefs.hex_gui_banlist_width,
-					prefs.hex_gui_banlist_height, &vbox, sess->server);
+					TRUE, banlist_closegui, banl, saved_width,
+					saved_height, &vbox, sess->server);
 	gtkutil_destroy_on_esc (banl->window);
 	gtk_widget_set_size_request (banl->window, BANLIST_WINDOW_MIN_WIDTH,
 		BANLIST_WINDOW_MIN_HEIGHT);
@@ -651,5 +655,7 @@ banlist_opengui (struct session *sess)
 
 	banlist_do_refresh (banl);
 
+	gtk_window_set_default_size (GTK_WINDOW (banl->window), saved_width,
+		saved_height);
 	fabulor_gtk_widget_reveal_tree (banl->window);
 }

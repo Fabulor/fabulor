@@ -184,9 +184,9 @@ dimensions, selected rows, or window state are normally maintained by Fabulor.
 | `gui_ulist_hide` | Boolean | Hide the user list. |
 | `gui_ulist_host_width` | Integer | Width reserved for displayed hostmasks. |
 | `gui_ulist_icons` | Boolean | Show privilege icons in the user list. |
-| `gui_ulist_nick_width` | Integer | Width reserved for user-list nicknames; the complete panel remains at least 150 pixels wide. |
+| `gui_ulist_nick_width` | Integer | User-list width used while `gui_ulist_resizable` is disabled; the complete panel remains at least 150 pixels wide. |
 | `gui_ulist_pos` | Integer | Position of the user list around the conversation area. |
-| `gui_ulist_resizable` | Boolean | Allow the user-list width to resize with the window. |
+| `gui_ulist_resizable` | Boolean | Allow manual divider and window-driven user-list resizing. When disabled, the divider is locked to `gui_ulist_nick_width`. |
 | `gui_ulist_show_hosts` | Boolean | Show hostmasks beside nicknames in the user list. |
 | `gui_ulist_sort` | Integer | User-list ordering mode. Use Preferences to select it. |
 | `gui_url_mod` | Integer | Modifier-key policy for opening transcript URLs. |

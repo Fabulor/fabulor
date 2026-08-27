@@ -295,7 +295,9 @@ from interface delay using the performance steps later on this page.
 
 To hold a deliberately chosen user-list width, use
 `/SET gui_ulist_resizable OFF`, set the desired
-`/SET gui_ulist_nick_width <pixels>`, and close normally.
+`/SET gui_ulist_nick_width <pixels>`, and close normally. The divider cannot
+be dragged while resizing is disabled. Set `gui_ulist_resizable ON` before
+adjusting it manually.
 
 ### Transcript Text Cannot Be Selected Or Copied
 

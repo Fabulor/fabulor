@@ -676,8 +676,6 @@ userlist_create (GtkBox *box)
 		&prefs.hex_gui_ulist_host_width);
 
 	/* set up drops */
-	fabulor_gtk_widget_enable_internal_drag_source (treeview,
-		FABULOR_GTK_INTERNAL_DRAG_USER_LIST, mg_internal_drag_icon, NULL);
 	fabulor_gtk_widget_enable_internal_drop_target (treeview,
 		FABULOR_GTK_INTERNAL_DRAG_ACCEPT (FABULOR_GTK_INTERNAL_DRAG_CHANNEL_VIEW),
 		userlist_internal_drag_motion, userlist_internal_drag_leave,

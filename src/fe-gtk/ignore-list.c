@@ -508,6 +508,11 @@ fabulor_ignore_list_create_view (FabulorIgnoreList *list, GtkBox *parent,
 		GtkColumnViewColumn *column;
 		guint i;
 
+		gtk_scrolled_window_set_propagate_natural_width (
+			GTK_SCROLLED_WINDOW (scroller), FALSE);
+		gtk_scrolled_window_set_propagate_natural_height (
+			GTK_SCROLLED_WINDOW (scroller), FALSE);
+		gtk_widget_set_size_request (scroller, 1, 1);
 		list->view = gtk_column_view_new (GTK_SELECTION_MODEL (
 			g_object_ref (selection)));
 		column = ignore_mask_column_new (list, mask_title);

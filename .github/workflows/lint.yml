@@ -231,6 +231,8 @@ jobs:
           python tools/test_csharp_api_contract.py
           python tools/test_native_plugin_api_contract.py
           python tools/test_tcl_api_contract.py
+          python tools/test_pane_drag_contract.py
+          python tools/test_list_window_geometry_contract.py
           python tools/validate_theme_contract.py
           python tools/test_validate_theme_contract.py
         shell: powershell
