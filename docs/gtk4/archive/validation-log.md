@@ -9015,6 +9015,32 @@ connected network remained selected with its complete MOTD and server status
 visible after autojoins finished. A direct non-ZNC connection behaved the same
 way, while an explicitly requested channel continued to take foreground.
 
+## RC9 IRC URI Upgrade Corrections (2026-08-27)
+
+Scope: retain Fabulor-owned `irc://` and `ircs://` fallback registrations
+through an MSI major upgrade, and preserve an explicit URI channel target when
+a failed endpoint cycles to the saved network configuration.
+
+Automated evidence:
+
+- 42 production WiX profile and installer contract tests pass
+- native Release x64 tests pass 55/55
+- common core, GTK4 frontend, launcher, native extensions, MSI, and bootstrapper
+  build with zero warnings and zero errors
+- production MSI, embedded bundle MSI, runtime-manifest content hashes, and
+  product metadata validation pass
+- the cleanly rebuilt MSI contains 2,630 files, no legacy GTK files, and 1,160
+  verified GTK4 runtime manifest entries
+
+Installed acceptance: pass after upgrading with the corrected RC9 candidate.
+Both `irc://irc.chatlounge.net:6697/Fabulor` and
+`ircs://irc.chatlounge.net:6697/Fabulor` opened Fabulor, connected to the
+ChatLounge network, and joined `#Fabulor`. Neither scheme invoked the Microsoft
+Store.
+
+The broader clean-install, modify, repair, uninstall, and running and
+closed-client dispatch matrix remains tracked separately in `To-Do.md`.
+
 ## Stage Completion Rule
 
 A stage can move to complete in `migration-plan.md` only when:

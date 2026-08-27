@@ -351,6 +351,10 @@ class ProductionWixProfileTests(unittest.TestCase):
             self.assertIsNotNone(component)
             self.assertEqual(component.get("NeverOverwrite"), "yes")
             self.assertIn(f"NOT {handler_property}", component.get("Condition"))
+            self.assertIn(
+                f'{handler_property} ~>< "fabulor.exe"',
+                component.get("Condition"),
+            )
 
             handler_search = components_root.find(
                 f".//w:Property[@Id='{handler_property}']/w:RegistrySearch",
@@ -926,6 +930,18 @@ class ProductionWixProfileTests(unittest.TestCase):
             "encrypted = servlist_password_encrypt_for_storage (net->pass);",
             common,
         )
+
+    def test_server_cycle_preserves_explicit_pending_channel(self):
+        source = COMMON_SERVER_LIST_SOURCE.read_text(encoding="utf-8")
+        helper = source.split("servlist_cycle_connect (server *serv)", 1)[1].split(
+            "servlist_cycle_cb", 1
+        )[0]
+
+        self.assertIn("willjoinchannel", helper)
+        self.assertIn("channelkey", helper)
+        self.assertIn("servlist_connect (sess, serv->network, TRUE);", helper)
+        self.assertGreaterEqual(helper.count("safe_strcpy"), 4)
+        self.assertEqual(source.count("servlist_cycle_connect (serv);"), 2)
 
     def test_saved_input_history_is_network_and_channel_scoped(self):
         history = COMMON_HISTORY_SOURCE.read_text(encoding="utf-8")

@@ -127,7 +127,7 @@
                        Value="1"
                        KeyPath="yes" />
       </Component>
-      <Component Id="IrcProtocolFallbackRegistration" Guid="8236D81C-95C7-4C85-A99D-22E5EF6895D5" Directory="INSTALLFOLDER" Condition="NOT FABULOR_PORTABLE AND NOT IRC_PROTOCOL_HANDLER" NeverOverwrite="yes">
+      <Component Id="IrcProtocolFallbackRegistration" Guid="8236D81C-95C7-4C85-A99D-22E5EF6895D5" Directory="INSTALLFOLDER" Condition="NOT FABULOR_PORTABLE AND (NOT IRC_PROTOCOL_HANDLER OR IRC_PROTOCOL_HANDLER ~&gt;&lt; &quot;fabulor.exe&quot;)" NeverOverwrite="yes">
         <RegistryKey Root="HKLM" Key="Software\Classes\irc">
           <RegistryValue Type="string" Value="URL:IRC Protocol" />
           <RegistryValue Name="URL Protocol" Type="string" Value="" KeyPath="yes" />
@@ -142,7 +142,7 @@
           <RegistryValue Type="string" Value="&quot;[INSTALLFOLDER]fabulor.exe&quot; --url=&quot;%1&quot;" />
         </RegistryKey>
       </Component>
-      <Component Id="IrcsProtocolFallbackRegistration" Guid="12CD8341-88B1-467E-BFC2-265473D98432" Directory="INSTALLFOLDER" Condition="NOT FABULOR_PORTABLE AND NOT IRCS_PROTOCOL_HANDLER" NeverOverwrite="yes">
+      <Component Id="IrcsProtocolFallbackRegistration" Guid="12CD8341-88B1-467E-BFC2-265473D98432" Directory="INSTALLFOLDER" Condition="NOT FABULOR_PORTABLE AND (NOT IRCS_PROTOCOL_HANDLER OR IRCS_PROTOCOL_HANDLER ~&gt;&lt; &quot;fabulor.exe&quot;)" NeverOverwrite="yes">
         <RegistryKey Root="HKLM" Key="Software\Classes\ircs">
           <RegistryValue Type="string" Value="URL:IRCS Protocol" />
           <RegistryValue Name="URL Protocol" Type="string" Value="" KeyPath="yes" />
