@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import pathlib
+import re
 import unittest
 
 
@@ -26,10 +27,12 @@ class PaneDragContractTests(unittest.TestCase):
             encoding="utf-8"
         )
 
-        self.assertIn(
-            "if (!prefs.hex_gui_ulist_resizable)\n"
-            "                return mg_userlist_fallback_width ();",
+        self.assertRegex(
             source,
+            re.compile(
+                r"if\s*\(\s*!prefs\.hex_gui_ulist_resizable\s*\)\s*"
+                r"return\s+mg_userlist_fallback_width\s*\(\s*\)\s*;"
+            ),
         )
         self.assertIn(
             "gui->pane_right_size = mg_userlist_restore_width ();",
