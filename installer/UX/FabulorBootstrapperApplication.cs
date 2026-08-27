@@ -276,14 +276,23 @@ public sealed class FabulorBootstrapperApplication : BootstrapperApplication
             this.currentPlanPortable = this.window.IsPortable;
         }
 
+        if (action == LaunchAction.Modify
+            && this.currentPlanPortable != this.isDetectedPortableInstall)
+        {
+            const string message = "Setup cannot change an existing installation between Portable and Installed mode. Uninstall Fabulor first, then run Setup again and choose the required mode. Existing profile data is not migrated automatically.";
+            this.window.AppendLog("Installation mode change rejected during Modify.");
+            this.window.ShowBlockingError(message);
+            return;
+        }
+
         if ((action == LaunchAction.Install || action == LaunchAction.Modify)
             && this.currentPlanPortable
             && PortableInstallLocationPolicy.IsProtectedLocation(installFolder))
         {
             var suggestedFolder = PortableInstallLocationPolicy.GetDefaultInstallFolder();
-            var message = $"Portable mode needs a user-writable folder outside Program Files and Windows. Choose a folder such as {suggestedFolder}.";
+            var message = $"Portable mode cannot use a protected Windows folder such as Program Files or Windows because it must write configuration beside fabulor.exe. Choose a user-writable folder such as {suggestedFolder}.";
             this.window.AppendLog($"Portable install location rejected: {installFolder}");
-            this.window.ShowError(message);
+            this.window.ShowBlockingError(message);
             return;
         }
 
@@ -1764,6 +1773,12 @@ public sealed class FabulorBootstrapperApplication : BootstrapperApplication
             action != LaunchAction.Repair &&
             action != LaunchAction.Uninstall)
         {
+            return;
+        }
+
+        if (!this.IsProcessElevated())
+        {
+            this.engine.Log(LogLevel.Verbose, "Skipping pre-plan stale registration cleanup because the bootstrapper application is not elevated.");
             return;
         }
 

@@ -338,6 +338,25 @@ class ProductionWixProfileTests(unittest.TestCase):
         self.assertIn("trackingInstallFolderEdits", window_code)
         self.assertIn("changingPortableModeProgrammatically", window_code)
         self.assertIn("SetInstallFolderDefaults", window_code)
+        self.assertIn("ShowBlockingError", window_code)
+        self.assertIn("MessageBoxImage.Warning", window_code)
+        self.assertIn("this.isMaintenanceMode = isCurrentPackageInstalled", window_code)
+        self.assertIn("!isBusy && !this.isMaintenanceMode", window_code)
+        self.assertIn(
+            "this.currentPlanPortable != this.isDetectedPortableInstall",
+            bootstrapper,
+        )
+        self.assertIn("Installation mode change rejected during Modify", bootstrapper)
+        self.assertIn("Portable mode cannot use a protected Windows folder", bootstrapper)
+        self.assertEqual(bootstrapper.count("this.window.ShowBlockingError(message);"), 2)
+        cleanup_method = bootstrapper[
+            bootstrapper.index("private void CleanupStaleRegistrationsBeforeMaintenancePlan") :
+            bootstrapper.index("private void RemoveOtherBundleUninstallRegistrations")
+        ]
+        self.assertIn(
+            "Skipping pre-plan stale registration cleanup because the bootstrapper application is not elevated",
+            cleanup_method,
+        )
 
         self.assertIn('Key="Software\\Classes\\irc"', components)
         self.assertIn('Key="Software\\Classes\\ircs"', components)

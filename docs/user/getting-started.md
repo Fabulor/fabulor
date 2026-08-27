@@ -82,6 +82,11 @@ changes installed features, **Repair** restores the selected installation, and
 **Uninstall** removes the installed application. Keep a separate backup of the
 profile before making major changes or moving to another computer.
 
+Modify cannot change an existing installation between Installed and Portable
+mode or move it to another folder. Setup locks those choices during
+maintenance. To change mode or location, uninstall Fabulor and run Setup again;
+profile data is not migrated automatically.
+
 When Fabulor is already installed, setup opens in a maintenance layout. It
 shows the detected installation and selected features instead of presenting a
 second first-install workflow. Installed-mode integration can create:
@@ -124,9 +129,10 @@ and Desktop shortcuts, protocol registration, and theme registration.
 Choose portable mode only when you specifically need a self-contained folder.
 The installer defaults Portable mode to `%USERPROFILE%\Fabulor Portable` and
 rejects protected locations beneath `Program Files` or the Windows directory.
-Choose another ordinary user-writable folder when a different location is
-needed. Do not run the portable client as administrator to work around folder
-permissions.
+Setup displays a warning and does not begin installation when such a location
+is selected. Choose another ordinary user-writable folder when a different
+location is needed. Do not run the portable client as administrator to work
+around folder permissions.
 
 ## First Start
 

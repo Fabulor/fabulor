@@ -86,6 +86,11 @@ history below describes the cumulative work toward the first stable release.
   callback cleanup.
 - Made the installer interface self-contained so setup can start on a clean
   Windows machine without a separately installed .NET Desktop runtime.
+- Prevented Modify from creating a hybrid installation when Portable mode or
+  the install folder is changed. Switching modes or locations now requires an
+  uninstall and fresh install, and protected portable destinations display a
+  prominent warning with a user-writable alternative. Expected unelevated
+  pre-plan cleanup skips are no longer reported as setup failures.
 - Restored installed ISO language and country data used by spell-check
   language-name lookup.
 - Kept the tray plugin bound to a valid surviving session when networks or
