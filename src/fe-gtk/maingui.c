@@ -4367,6 +4367,32 @@ mg_leftpane_cb (GtkPaned *pane, GParamSpec *param, session_gui *gui)
 }
 
 static void
+mg_lock_rightpane_width (GtkPaned *pane, int pane_width, session_gui *gui)
+{
+        int handle_size;
+        int locked_position;
+        int right_size;
+
+        if (gui->pane_right_restoring || pane_width < 1 || !gui->user_box ||
+                !gtk_widget_get_visible (gui->user_box) ||
+                fabulor_gtk_widget_get_allocated_width (gui->user_box) < 1)
+                return;
+
+        handle_size = fabulor_gtk_paned_get_handle_size (pane);
+        right_size = fabulor_pane_clamp_end_size (
+                mg_userlist_fallback_width (), mg_userlist_min_width (),
+                pane_width, handle_size);
+        prefs.hex_gui_pane_right_size = right_size;
+        locked_position = pane_width - right_size - handle_size;
+        if (gtk_paned_get_position (pane) != locked_position)
+        {
+                gui->pane_right_restoring = 1;
+                gtk_paned_set_position (pane, locked_position);
+                gui->pane_right_restoring = 0;
+        }
+}
+
+static void
 mg_rightpane_cb (GtkPaned *pane, GParamSpec *param, session_gui *gui)
 {
         int handle_size;
@@ -4380,22 +4406,9 @@ mg_rightpane_cb (GtkPaned *pane, GParamSpec *param, session_gui *gui)
                 return;
         if (!prefs.hex_gui_ulist_resizable)
         {
-                int locked_position;
-
-                handle_size = fabulor_gtk_paned_get_handle_size (pane);
                 pane_width = fabulor_gtk_widget_get_allocated_width (
                         GTK_WIDGET (pane));
-                right_size = fabulor_pane_clamp_end_size (
-                        mg_userlist_fallback_width (), mg_userlist_min_width (),
-                        pane_width, handle_size);
-                prefs.hex_gui_pane_right_size = right_size;
-                locked_position = pane_width - right_size - handle_size;
-                if (gtk_paned_get_position (pane) != locked_position)
-                {
-                        gui->pane_right_restoring = 1;
-                        gtk_paned_set_position (pane, locked_position);
-                        gui->pane_right_restoring = 0;
-                }
+                mg_lock_rightpane_width (pane, pane_width, gui);
                 return;
         }
         handle_size = fabulor_gtk_paned_get_handle_size (pane);
@@ -4404,6 +4417,18 @@ mg_rightpane_cb (GtkPaned *pane, GParamSpec *param, session_gui *gui)
         right_size = pane_width - gtk_paned_get_position (pane) - handle_size;
         prefs.hex_gui_pane_right_size = fabulor_pane_clamp_end_size (right_size,
                 mg_userlist_min_width (), pane_width, handle_size);
+}
+
+static void
+mg_rightpane_size_allocate_cb (GtkWidget *widget, GtkAllocation *allocation,
+                               gpointer data)
+{
+        session_gui *gui = data;
+
+        if (prefs.hex_gui_ulist_resizable)
+                return;
+
+        mg_lock_rightpane_width (GTK_PANED (widget), allocation->width, gui);
 }
 
 static void
@@ -4491,6 +4516,8 @@ mg_add_pane_signals (session_gui *gui)
 {
         g_signal_connect (G_OBJECT (gui->hpane_right), "notify::position",
                                                         G_CALLBACK (mg_rightpane_cb), gui);
+        g_signal_connect (G_OBJECT (gui->hpane_right), "size-allocate",
+                                        G_CALLBACK (mg_rightpane_size_allocate_cb), gui);
         g_signal_connect (G_OBJECT (gui->hpane_left), "notify::position",
                                                         G_CALLBACK (mg_leftpane_cb), gui);
         g_signal_connect (G_OBJECT (gui->vpane_left), "notify::position",

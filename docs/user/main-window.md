@@ -212,9 +212,10 @@ placeholder disappears as soon as the user list is populated.
 Enable **Allow user list to resize with the window** to adjust the user-list
 divider manually. Disable it to lock the divider to the
 `gui_ulist_nick_width` setting while switching channels or resizing the main
-window. Fabulor keeps the panel at least 150 pixels wide so its two-column
-action footer and network meters remain usable; larger configured widths are
-preserved.
+window. The lock is reapplied after later layout changes so the divider cannot
+occasionally drift until another channel is selected. Fabulor keeps the panel
+at least 150 pixels wide so its two-column action footer and network meters
+remain usable; larger configured widths are preserved.
 
 Right-click a nickname to open its action menu. Depending on context and your
 channel privileges, it can provide:
