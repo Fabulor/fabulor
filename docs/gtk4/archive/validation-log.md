@@ -9073,6 +9073,25 @@ a prominent warning and performs no installation. The expected unelevated
 pre-plan cleanup skip is no longer reported as a failure, and the valid
 portable and installed workflows showed no regressions.
 
+## RC10 User-list Divider Allocation Guard (2026-09-06)
+
+Scope: keep the user-list divider at `gui_ulist_nick_width` whenever automatic
+user-list resizing is disabled. The initial three-frame GTK4 restore remains in
+place, while later pane allocations now reapply the same lock instead of
+allowing an occasional drift that corrected itself only after selecting another
+channel. Manual and window-driven resizing remain unchanged when the preference
+is enabled. Transcript marker-line behaviour is outside this change.
+
+Automated evidence:
+
+- pane-drag and list-window geometry contract tests pass;
+- the common core and GTK4 frontend Release x64 builds complete with zero
+  warnings and zero errors.
+
+Installed RC10 acceptance remains required for startup, channel switching,
+user-list hide/show, window resizing, minimise/restore, and maximise/restore
+with automatic user-list resizing both disabled and enabled.
+
 ## Stage Completion Rule
 
 A stage can move to complete in `migration-plan.md` only when:

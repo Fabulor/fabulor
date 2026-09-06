@@ -1,7 +1,7 @@
 <!-- Fabulor production roadmap -->
 # Fabulor Production Roadmap
 
-Last reconciled: 2026-08-27
+Last reconciled: 2026-09-06
 
 ## Current Production Baseline
 
@@ -102,7 +102,11 @@ Last reconciled: 2026-08-27
       installation, and uninstall. Selected plugin runtimes and add-ons loaded
       correctly, modified features changed as requested, portable data stayed
       self-contained, and installed-mode profile data survived uninstall.
-- [ ] Publish `v1.0.6-rc.9` from the reviewed and merged correction source.
+- [x] Publish `v1.0.6-rc.9` from the reviewed and merged correction source.
+- [ ] Publish `v1.0.6-rc.10` after focused installed testing confirms that a
+      locked user-list divider remains at its configured width through startup,
+      late layout changes, channel switching, user-list visibility changes,
+      and main-window resizing and restoration.
 - [ ] Exercise repair and uninstall once against the final signed or
       release-candidate artefacts.
 - [ ] Run a final installed accessibility and keyboard-navigation pass over

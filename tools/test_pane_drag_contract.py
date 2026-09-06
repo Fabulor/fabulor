@@ -46,6 +46,18 @@ class PaneDragContractTests(unittest.TestCase):
             "gtk_paned_set_position (pane, locked_position);",
             source,
         )
+        self.assertIn(
+            'g_signal_connect (G_OBJECT (gui->hpane_right), "size-allocate",',
+            source,
+        )
+        allocation_callback = source.split(
+            "mg_rightpane_size_allocate_cb", 1
+        )[1].split("mg_restore_rightpane", 1)[0]
+        self.assertIn("if (prefs.hex_gui_ulist_resizable)", allocation_callback)
+        self.assertIn(
+            "mg_lock_rightpane_width (GTK_PANED (widget), allocation->width, gui);",
+            allocation_callback,
+        )
 
 
 if __name__ == "__main__":

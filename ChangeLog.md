@@ -109,8 +109,9 @@ history below describes the cumulative work toward the first stable release.
   close, reopen, and client restart. Automatic GTK content layout no longer
   replaces dimensions selected through `/SET` or a completed manual resize.
 - Made `gui_ulist_resizable OFF` lock the user-list divider to
-  `gui_ulist_nick_width`, while retaining manual divider resizing when the
-  setting is enabled.
+  `gui_ulist_nick_width`, including after late GTK4 allocation changes, while
+  retaining manual and window-driven divider resizing when the setting is
+  enabled.
 - Removed accidental channel-tree and user-list drag sources that could create
   an unusable detached channel tree during ordinary navigation.
 - Added clear non-blocking empty states to the Channel List and user list, and
