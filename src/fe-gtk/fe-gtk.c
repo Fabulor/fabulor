@@ -226,7 +226,7 @@ win32_configure_font_rendering (void)
 	if (base_path == NULL)
 		return;
 
-	system_fonts_conf = g_build_filename (base_path, "etc", "fonts", "fonts.conf", NULL);
+	system_fonts_conf = g_build_filename (base_path, "Runtime", "GTK4", "etc", "fonts", "fonts.conf", NULL);
 	emoji_font = g_build_filename (base_path, "share", "fonts", "NotoColorEmoji.ttf", NULL);
 	if (!g_file_test (system_fonts_conf, G_FILE_TEST_IS_REGULAR) ||
 	    !g_file_test (emoji_font, G_FILE_TEST_IS_REGULAR))

@@ -902,6 +902,19 @@ class ProductionWixProfileTests(unittest.TestCase):
         self.assertIn("fabulor_application_main_loop_request_quit", source)
         self.assertIn('"Runtime", "GTK4"', source)
 
+    def test_windows_fontconfig_uses_packaged_runtime_root(self):
+        source = GTK4_APPLICATION_SOURCE.read_text(encoding="utf-8")
+
+        self.assertIn(
+            'g_build_filename (base_path, "Runtime", "GTK4", "etc", '
+            '"fonts", "fonts.conf", NULL)',
+            source,
+        )
+        self.assertNotIn(
+            'g_build_filename (base_path, "etc", "fonts", "fonts.conf", NULL)',
+            source,
+        )
+
     def test_server_list_lifecycle_is_gtk4_only(self):
         source = GTK4_SERVER_LIST_SOURCE.read_text(encoding="utf-8")
         retired_tokens = (
@@ -1042,6 +1055,9 @@ class ProductionWixProfileTests(unittest.TestCase):
         setup_source = (frontend / "setup.c").read_text(encoding="utf-8")
         self.assertIn("joind_finalized_cb", join_source)
         self.assertIn("setup_fontchooser_finalized_cb", setup_source)
+        self.assertIn("setup_fontchooser_refresh_cb", setup_source)
+        self.assertIn("pango_cairo_font_map_get_default", setup_source)
+        self.assertIn("gtk_font_chooser_set_font_map", setup_source)
         self.assertIn("setup_window_finalized_cb", setup_source)
         self.assertIn("g_object_weak_ref", join_source)
         self.assertIn("g_object_weak_ref", setup_source)

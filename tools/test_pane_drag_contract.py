@@ -46,18 +46,41 @@ class PaneDragContractTests(unittest.TestCase):
             "gtk_paned_set_position (pane, locked_position);",
             source,
         )
-        self.assertIn(
+        self.assertNotIn(
             'g_signal_connect (G_OBJECT (gui->hpane_right), "size-allocate",',
             source,
         )
-        allocation_callback = source.split(
-            "mg_rightpane_size_allocate_cb", 1
-        )[1].split("mg_restore_rightpane", 1)[0]
-        self.assertIn("if (prefs.hex_gui_ulist_resizable)", allocation_callback)
-        self.assertIn(
-            "mg_lock_rightpane_width (GTK_PANED (widget), allocation->width, gui);",
-            allocation_callback,
+        for signal in (
+            '"notify::maximized"',
+            '"notify::fullscreened"',
+            '"notify::scale-factor"',
+        ):
+            self.assertIn(signal, source)
+        layout_callback = source.split(
+            "mg_rightpane_window_layout_cb", 1
+        )[1].split("mg_add_pane_signals", 1)[0]
+        self.assertIn("if (!prefs.hex_gui_ulist_resizable)", layout_callback)
+        self.assertIn("mg_schedule_rightpane_restore (gui);", layout_callback)
+
+        populate = source.split("mg_populate (session *sess)", 1)[1].split(
+            "mg_bring_tofront_sess", 1
+        )[0]
+        model_attach = populate.index("mg_populate_userlist (sess);")
+        locked_restore = populate.index(
+            "if (!prefs.hex_gui_ulist_resizable)", model_attach
         )
+        self.assertGreater(locked_restore, model_attach)
+        self.assertIn(
+            "mg_schedule_rightpane_restore (gui);",
+            populate[locked_restore:],
+        )
+
+        schedule = source.split(
+            "mg_schedule_rightpane_restore (session_gui *gui)", 1
+        )[1].split("mg_rightpane_window_layout_cb", 1)[0]
+        immediate_restore = schedule.index("mg_restore_rightpane (")
+        tick_registration = schedule.index("gtk_widget_add_tick_callback")
+        self.assertLess(immediate_restore, tick_registration)
 
 
 if __name__ == "__main__":

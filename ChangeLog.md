@@ -73,6 +73,12 @@ history below describes the cumulative work toward the first stable release.
 
 ### Fixed
 
+- Kept a locked user-list divider at its configured width through initial
+  population, channel changes, and later window-state and scale allocations,
+  including high-DPI Windows desktop configurations.
+- Restored immediate Windows font discovery in the main-font chooser. Fabulor
+  now loads the packaged GTK4 Fontconfig configuration from its installed
+  runtime location and refreshes the chooser after it becomes visible.
 - Corrected installed-client layout, menu, transcript selection, URL,
   user-list, server-tab, theme, sound, emoji-picker, tray, and window-lifecycle
   behavior found during extended Windows testing.

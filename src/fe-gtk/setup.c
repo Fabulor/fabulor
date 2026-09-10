@@ -26,6 +26,9 @@
 
 #include <gio/gio.h>
 #include <glib/gstdio.h>
+#ifdef WIN32
+#include <pango/pangocairo.h>
+#endif
 #include "../common/cfgfiles.h"
 #include "../common/fe.h"
 #include "../common/text.h"
@@ -1372,6 +1375,21 @@ setup_fontchooser_response (GtkDialog *dialog, gint response, GtkWidget *entry)
         fabulor_gtk_window_destroy (GTK_WINDOW (dialog));
 }
 
+#ifdef WIN32
+static gboolean
+setup_fontchooser_refresh_cb (gpointer user_data)
+{
+        GtkWidget *dialog = GTK_WIDGET (user_data);
+
+        if (font_dialog == dialog && gtk_widget_get_visible (dialog))
+                gtk_font_chooser_set_font_map (
+                        GTK_FONT_CHOOSER (dialog),
+                        pango_cairo_font_map_get_default ());
+
+        return G_SOURCE_REMOVE;
+}
+#endif
+
 static void
 setup_browsefolder_cb (GtkWidget *button, GtkEntry *entry)
 {
@@ -1399,6 +1417,12 @@ setup_browsefont_cb (GtkWidget *button, GtkWidget *entry)
                                                         G_CALLBACK (setup_fontchooser_response), entry);
 
         gtk_widget_show (dialog);
+#ifdef WIN32
+        g_idle_add_full (G_PRIORITY_DEFAULT_IDLE,
+                         setup_fontchooser_refresh_cb,
+                         g_object_ref (dialog),
+                         g_object_unref);
+#endif
 }
 
 static void
