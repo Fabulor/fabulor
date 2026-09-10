@@ -34,8 +34,10 @@ session.
 
 Use **Appearance** to control the general presentation of the main window.
 
-**General** contains the interface language and main font. A language change
-may require a restart.
+**General** contains the interface language and main font. **Browse...** lists
+the fonts available to Fabulor when it started. Restart Fabulor after installing
+a new Windows font so the process can rebuild that list. A language change may
+also require a restart.
 
 **Text Box** controls coloured and indented nicknames, the marker line, and the
 scroll-to-bottom button. The marker line separates previously read text from

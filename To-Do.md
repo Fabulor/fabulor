@@ -1,7 +1,7 @@
 <!-- Fabulor production roadmap -->
 # Fabulor Production Roadmap
 
-Last reconciled: 2026-09-06
+Last reconciled: 2026-09-10
 
 ## Current Production Baseline
 
@@ -103,10 +103,16 @@ Last reconciled: 2026-09-06
       correctly, modified features changed as requested, portable data stayed
       self-contained, and installed-mode profile data survived uninstall.
 - [x] Publish `v1.0.6-rc.9` from the reviewed and merged correction source.
-- [ ] Publish `v1.0.6-rc.10` after focused installed testing confirms that a
-      locked user-list divider remains at its configured width through startup,
-      late layout changes, channel switching, user-list visibility changes,
-      and main-window resizing and restoration.
+- [ ] Publish `v1.0.6-rc.10`. Focused installed testing at 250% Windows desktop
+      scale has confirmed that a locked user-list divider retains its configured
+      width through startup, late layout changes, server/channel switching, and
+      long nickname rendering. The main-font chooser also lists installed fonts
+      without requiring a filter selection.
+- [ ] Revisit Per-Monitor-V2 DPI awareness as an RC11 candidate. Keep RC10
+      System-DPI-aware: the PMv2 experiment produced disproportionate GTK4
+      scaling at 250% and 300%. Any later implementation must pass high-DPI
+      startup, monitor-transition, window-state, and pane-layout acceptance
+      before activation.
 - [ ] Exercise repair and uninstall once against the final signed or
       release-candidate artefacts.
 - [ ] Run a final installed accessibility and keyboard-navigation pass over

@@ -9092,6 +9092,46 @@ Installed RC10 acceptance remains required for startup, channel switching,
 user-list hide/show, window resizing, minimise/restore, and maximise/restore
 with automatic user-list resizing both disabled and enabled.
 
+## RC10 User-list Lifecycle And Font Discovery Follow-up (2026-09-10)
+
+The allocation guard above did not eliminate the intermittent divider drift.
+Further installed testing showed that it occurred when a channel's user-list
+model was attached and during later main-window state or scale allocations.
+The follow-up reapplies the configured width immediately after user-list
+population and on maximised, fullscreen, and scale-factor changes, with a GTK4
+frame callback retained as a follow-up after layout settles. The obsolete GTK3
+`size-allocate` signal path has been removed. Transcript marker-line behaviour
+remains unchanged.
+
+Windows font discovery was also corrected. The frontend now loads Fontconfig
+from `Runtime\\GTK4\\etc\\fonts\\fonts.conf`, creates the profile-local
+`fontconfig\\fabulor-fonts.conf` cache configuration, and refreshes the default
+Pango Cairo font map after the font chooser becomes visible. Fonts installed
+after Fabulor starts are available after restarting the client.
+
+Automated evidence:
+
+- pane-drag contract tests cover model attachment, immediate locked-width
+  restoration, GTK4 frame follow-up, and window-state and scale notifications;
+- production WiX profile tests cover the packaged Fontconfig path and visible
+  font-chooser refresh;
+- the common core and GTK4 frontend Release x64 builds complete with zero
+  warnings and zero errors;
+- the production MSI and bootstrapper pass runtime, payload, and embedded-MSI
+  validation.
+
+Installed acceptance: pass at 250% Windows desktop scale. A configured
+`gui_ulist_nick_width` of 150 and `text_max_indent` of 256 retained long
+nicknames without timestamp overlap, the user list remained at its configured
+width through server/channel changes, and the font chooser populated without a
+filter selection. A newly installed JetBrains Mono family appeared after the
+expected client restart.
+
+RC10 remains System-DPI-aware. A Per-Monitor-V2 experiment was reverted because
+GTK4 scaled the interface disproportionately at 250% and 300%. PMv2 is deferred
+as an RC11 candidate and requires separate high-DPI and monitor-transition
+acceptance before it can be enabled.
+
 ## Stage Completion Rule
 
 A stage can move to complete in `migration-plan.md` only when:

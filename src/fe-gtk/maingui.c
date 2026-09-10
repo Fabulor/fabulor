@@ -1632,8 +1632,13 @@ mg_populate (session *sess)
         /*
          * Keep transcript and user-list replacement in one switch transaction.
          * Deferring this model swap makes the list visibly trail the transcript.
-         */
+        */
         mg_populate_userlist (sess);
+
+        /* Reattaching the model after a server or utility tab can change the
+         * user list's natural width during the following layout frames. */
+        if (!prefs.hex_gui_ulist_resizable)
+                mg_schedule_rightpane_restore (gui);
 
         fe_userlist_numbers (sess);
 
@@ -4420,18 +4425,6 @@ mg_rightpane_cb (GtkPaned *pane, GParamSpec *param, session_gui *gui)
 }
 
 static void
-mg_rightpane_size_allocate_cb (GtkWidget *widget, GtkAllocation *allocation,
-                               gpointer data)
-{
-        session_gui *gui = data;
-
-        if (prefs.hex_gui_ulist_resizable)
-                return;
-
-        mg_lock_rightpane_width (GTK_PANED (widget), allocation->width, gui);
-}
-
-static void
 mg_restore_rightpane (GtkPaned *pane, int pane_width, gpointer data)
 {
         int fallback_size;
@@ -4496,6 +4489,8 @@ mg_restore_rightpane_tick_cb (GtkWidget *widget, GdkFrameClock *frame_clock,
 static void
 mg_schedule_rightpane_restore (session_gui *gui)
 {
+        int pane_width;
+
         if (!gui || !GTK_IS_WIDGET (gui->hpane_right))
                 return;
 
@@ -4505,10 +4500,32 @@ mg_schedule_rightpane_restore (session_gui *gui)
         gui->pane_right_restoring = 1;
         gui->pane_right_last_width = 0;
         gui->pane_right_stable_frames = 0;
+
+        /* Apply the locked width before GTK can present a newly attached
+         * user-list model at its natural width. The tick callback remains
+         * active to cover allocations completed in following frames. */
+        pane_width = fabulor_gtk_widget_get_allocated_width (
+                gui->hpane_right);
+        if (pane_width > 0)
+                mg_restore_rightpane (GTK_PANED (gui->hpane_right), pane_width,
+                        GINT_TO_POINTER (gui->pane_right_size));
+
         if (!gui->pane_right_restore_tick_id)
                 gui->pane_right_restore_tick_id =
                         gtk_widget_add_tick_callback (gui->hpane_right,
                                 mg_restore_rightpane_tick_cb, gui, NULL);
+}
+
+static void
+mg_rightpane_window_layout_cb (GObject *object, GParamSpec *param,
+                               gpointer data)
+{
+        session_gui *gui = data;
+
+        (void) object;
+        (void) param;
+        if (!prefs.hex_gui_ulist_resizable)
+                mg_schedule_rightpane_restore (gui);
 }
 
 static gboolean
@@ -4516,8 +4533,12 @@ mg_add_pane_signals (session_gui *gui)
 {
         g_signal_connect (G_OBJECT (gui->hpane_right), "notify::position",
                                                         G_CALLBACK (mg_rightpane_cb), gui);
-        g_signal_connect (G_OBJECT (gui->hpane_right), "size-allocate",
-                                        G_CALLBACK (mg_rightpane_size_allocate_cb), gui);
+        g_signal_connect (G_OBJECT (gui->window), "notify::maximized",
+                          G_CALLBACK (mg_rightpane_window_layout_cb), gui);
+        g_signal_connect (G_OBJECT (gui->window), "notify::fullscreened",
+                          G_CALLBACK (mg_rightpane_window_layout_cb), gui);
+        g_signal_connect (G_OBJECT (gui->window), "notify::scale-factor",
+                          G_CALLBACK (mg_rightpane_window_layout_cb), gui);
         g_signal_connect (G_OBJECT (gui->hpane_left), "notify::position",
                                                         G_CALLBACK (mg_leftpane_cb), gui);
         g_signal_connect (G_OBJECT (gui->vpane_left), "notify::position",
