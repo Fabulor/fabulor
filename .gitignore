@@ -3,6 +3,8 @@ builddir/
 doxygen*.tmp
 html/
 *.patch
+!tools/gtk4/patches/0001-gdk-win32-fractional-dpi.patch
+!tools/gtk4/patches/0002-gdk-win32-fractional-scale-tests.patch
 tags
 
 # IDE / editor state

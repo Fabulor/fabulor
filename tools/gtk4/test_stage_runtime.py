@@ -118,6 +118,42 @@ class StageGtk4RuntimeTests(unittest.TestCase):
             stage_runtime.stage_runtime(self.root, output, contract, self.contract_path)
         self.assertFalse(output.exists())
 
+    def test_source_contract_override_records_candidate_identity(self):
+        contract = self._save_contract()
+        candidate_contract = self.base / "candidate-source.json"
+        candidate_contract.write_text(
+            json.dumps({"source": {"sha256": "b" * 64}}), encoding="utf-8"
+        )
+        output = self.base / "output"
+
+        manifest = stage_runtime.stage_runtime(
+            self.root,
+            output,
+            contract,
+            self.contract_path,
+            candidate_contract,
+        )
+
+        self.assertEqual(manifest["source_archive_sha256"], "b" * 64)
+
+    def test_invalid_source_contract_override_leaves_no_output(self):
+        contract = self._save_contract()
+        candidate_contract = self.base / "candidate-source.json"
+        candidate_contract.write_text(
+            json.dumps({"source": {"sha256": "not-a-hash"}}), encoding="utf-8"
+        )
+        output = self.base / "output"
+
+        with self.assertRaisesRegex(stage_runtime.StagingError, "lowercase SHA-256"):
+            stage_runtime.stage_runtime(
+                self.root,
+                output,
+                contract,
+                self.contract_path,
+                candidate_contract,
+            )
+        self.assertFalse(output.exists())
+
     def test_production_contract_matches_supported_languages_and_trimmed_trees(self):
         repository_root = pathlib.Path(__file__).resolve().parents[2]
         contract = stage_runtime.load_contract(stage_runtime.DEFAULT_CONTRACT)

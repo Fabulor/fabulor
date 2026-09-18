@@ -34,6 +34,11 @@ history below describes the cumulative work toward the first stable release.
 
 ### Changed
 
+- Enabled Per-Monitor-V2 DPI awareness for RC11. A pinned downstream GTK 4.22.4
+  Win32 patch preserves fractional surface scales, and Fabulor reacts to
+  fractional scale changes when restoring panes and redrawing transcripts.
+  Installed testing passed at 250% and 300%, including live scale changes,
+  themes, backgrounds, menus, and persistent list and pane layouts.
 - Made GTK4 the sole frontend, build, CI, staging, runtime, and installer
   profile.
 - Renamed Fabulor-owned Python, Tcl, and managed C# plugin APIs while retaining
@@ -73,6 +78,12 @@ history below describes the cumulative work toward the first stable release.
 
 ### Fixed
 
+- Restored the GTK4 Ban List filters. Bans now starts selected, supported
+  Exempts and Invites can be requested and displayed, and unavailable list
+  types remain unchecked and disabled.
+- Prevented the About dialog and `/SYSINFO OS` from displaying a null operating
+  system when Windows Management Instrumentation is temporarily unavailable.
+  Fabulor now falls back to GLib's native Windows version query.
 - Kept a locked user-list divider at its configured width through initial
   population, channel changes, and later window-state and scale allocations,
   including high-DPI Windows desktop configurations.

@@ -4528,6 +4528,28 @@ mg_rightpane_window_layout_cb (GObject *object, GParamSpec *param,
                 mg_schedule_rightpane_restore (gui);
 }
 
+static void
+mg_surface_scale_cb (GObject *object, GParamSpec *param, gpointer data)
+{
+        session_gui *gui = data;
+
+        mg_rightpane_window_layout_cb (object, param, data);
+        if (gui && GTK_IS_WIDGET (gui->xtext))
+                gtk_widget_queue_draw (gui->xtext);
+}
+
+static void
+mg_window_realize_scale_cb (GtkWidget *window, gpointer data)
+{
+        GdkSurface *surface;
+
+        surface = gtk_native_get_surface (GTK_NATIVE (window));
+        if (!GDK_IS_SURFACE (surface))
+                return;
+        g_signal_connect (G_OBJECT (surface), "notify::scale",
+                          G_CALLBACK (mg_surface_scale_cb), data);
+}
+
 static gboolean
 mg_add_pane_signals (session_gui *gui)
 {
@@ -4539,6 +4561,9 @@ mg_add_pane_signals (session_gui *gui)
                           G_CALLBACK (mg_rightpane_window_layout_cb), gui);
         g_signal_connect (G_OBJECT (gui->window), "notify::scale-factor",
                           G_CALLBACK (mg_rightpane_window_layout_cb), gui);
+        g_signal_connect (G_OBJECT (gui->window), "realize",
+                          G_CALLBACK (mg_window_realize_scale_cb), gui);
+        mg_window_realize_scale_cb (gui->window, gui);
         g_signal_connect (G_OBJECT (gui->hpane_left), "notify::position",
                                                         G_CALLBACK (mg_leftpane_cb), gui);
         g_signal_connect (G_OBJECT (gui->vpane_left), "notify::position",

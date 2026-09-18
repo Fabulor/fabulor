@@ -1,0 +1,491 @@
+diff --git a/gdk/win32/gdkdevice-win32.c b/gdk/win32/gdkdevice-win32.c
+index 5a88919..ef250e7 100644
+--- a/gdk/win32/gdkdevice-win32.c
++++ b/gdk/win32/gdkdevice-win32.c
+@@ -74,7 +74,7 @@ gdk_device_win32_query_state (GdkDevice        *device,
+ {
+   POINT point;
+   HWND hwnd, hwndc;
+-  int scale;
++  double scale;
+   GdkDisplay *display = gdk_device_get_display (device);
+ 
+   if (surface)
+diff --git a/gdk/win32/gdkdevice-winpointer.c b/gdk/win32/gdkdevice-winpointer.c
+index 57f7e03..ab02ed0 100644
+--- a/gdk/win32/gdkdevice-winpointer.c
++++ b/gdk/win32/gdkdevice-winpointer.c
+@@ -64,7 +64,7 @@ gdk_device_winpointer_query_state (GdkDevice        *device,
+   GdkDeviceWinpointer *device_winpointer;
+   POINT point;
+   HWND hwnd, hwndc;
+-  int scale;
++  double scale;
+   GdkDisplay *display = gdk_device_get_display (device);
+ 
+   device_winpointer = GDK_DEVICE_WINPOINTER (device);
+diff --git a/gdk/win32/gdkdevice-wintab.c b/gdk/win32/gdkdevice-wintab.c
+index 17c5dc1..496fba1 100644
+--- a/gdk/win32/gdkdevice-wintab.c
++++ b/gdk/win32/gdkdevice-wintab.c
+@@ -72,7 +72,7 @@ gdk_device_wintab_query_state (GdkDevice        *device,
+   GdkDeviceWintab *device_wintab;
+   POINT point;
+   HWND hwnd, hwndc;
+-  int scale;
++  double scale;
+   GdkDisplay *display = gdk_device_get_display (device);
+ 
+   device_wintab = GDK_DEVICE_WINTAB (device);
+diff --git a/gdk/win32/gdkdisplay-win32.c b/gdk/win32/gdkdisplay-win32.c
+index 8ec9114..024e4a4 100644
+--- a/gdk/win32/gdkdisplay-win32.c
++++ b/gdk/win32/gdkdisplay-win32.c
+@@ -267,9 +267,9 @@ gdk_win32_display_init_monitors (GdkWin32Display *win32_display)
+           gdk_monitor_set_refresh_rate (ex_monitor, gdk_monitor_get_refresh_rate (m));
+         }
+ 
+-      if (gdk_monitor_get_scale_factor (m) != gdk_monitor_get_scale_factor (ex_monitor))
++      if (gdk_monitor_get_scale (m) != gdk_monitor_get_scale (ex_monitor))
+         {
+-          gdk_monitor_set_scale_factor (ex_monitor, gdk_monitor_get_scale_factor (m));
++          gdk_monitor_set_scale (ex_monitor, gdk_monitor_get_scale (m));
+         }
+ 
+       if (gdk_monitor_get_subpixel_layout (m) != gdk_monitor_get_subpixel_layout (ex_monitor))
+@@ -964,6 +964,10 @@ _gdk_win32_enable_hidpi (GdkWin32Display *display)
+         (funcGTDAC) GetProcAddress (user32, "GetThreadDpiAwarenessContext");
+       display->user32_dpi_funcs.areDACEqual =
+         (funcADACE) GetProcAddress (user32, "AreDpiAwarenessContextsEqual");
++      display->user32_dpi_funcs.adjustWindowRectExForDpi =
++        (funcAWRXFD) GetProcAddress (user32, "AdjustWindowRectExForDpi");
++      display->user32_dpi_funcs.getDpiForWindow =
++        (funcGDFW) GetProcAddress (user32, "GetDpiForWindow");
+     }
+ 
+   if (g_getenv ("GDK_WIN32_DISABLE_HIDPI") == NULL)
+@@ -1203,7 +1207,7 @@ gdk_win32_display_init (GdkWin32Display *display_win32)
+   _gdk_win32_enable_hidpi (display_win32);
+   display_win32->running_on_arm64 = _gdk_win32_check_processor (GDK_WIN32_ARM64);
+ 
+-  display_win32->surface_scale = gdk_win32_display_get_monitor_scale_factor (display_win32, NULL, NULL);
++  display_win32->surface_scale = gdk_win32_display_get_monitor_scale (display_win32, NULL, NULL);
+ 
+   _gdk_win32_display_init_cursors (display_win32);
+   gdk_display_set_composited (GDK_DISPLAY (display_win32), TRUE);
+@@ -1238,25 +1242,34 @@ gdk_win32_display_get_monitors (GdkDisplay *display)
+   return self->monitors;
+ }
+ 
+-guint
+-gdk_win32_display_get_monitor_scale_factor (GdkWin32Display *display_win32,
+-                                            GdkSurface      *surface,
+-                                            HMONITOR         hmonitor)
++double
++gdk_win32_display_get_monitor_scale (GdkWin32Display *display_win32,
++                                     GdkSurface      *surface,
++                                     HMONITOR         hmonitor)
+ {
+   gboolean is_scale_acquired = FALSE;
+   guint dpix, dpiy;
+ 
+   if (surface != NULL && hmonitor == NULL)
+-    hmonitor = MonitorFromWindow (GDK_SURFACE_HWND (surface),
+-                                  MONITOR_DEFAULTTONEAREST);
++    {
++      if (display_win32->user32_dpi_funcs.getDpiForWindow != NULL)
++        {
++          dpix = display_win32->user32_dpi_funcs.getDpiForWindow (GDK_SURFACE_HWND (surface));
++          dpiy = dpix;
++          is_scale_acquired = dpix != 0;
++        }
++      else
++        hmonitor = MonitorFromWindow (GDK_SURFACE_HWND (surface),
++                                      MONITOR_DEFAULTTONEAREST);
++    }
+ 
+-  if (hmonitor != NULL)
++  if (!is_scale_acquired && hmonitor != NULL)
+     {
+       /* Use GetDpiForMonitor() when we have a HMONITOR */
+       if (GetDpiForMonitor (hmonitor, MDT_EFFECTIVE_DPI, &dpix, &dpiy) == S_OK)
+         is_scale_acquired = TRUE;
+     }
+-  else
++  if (!is_scale_acquired && hmonitor == NULL)
+     {
+       /* Go back to GetDeviceCaps() when we don't have a HMONITOR nor a HWND */
+       HDC hdc;
+@@ -1282,7 +1295,7 @@ gdk_win32_display_get_monitor_scale_factor (GdkWin32Display *display_win32,
+     }
+ 
+   if (is_scale_acquired)
+-    return dpix / USER_DEFAULT_SCREEN_DPI > 1 ? dpix / USER_DEFAULT_SCREEN_DPI : 1;
++    return MAX ((double) dpix / USER_DEFAULT_SCREEN_DPI, 1.0);
+   else
+     return 1;
+ }
+diff --git a/gdk/win32/gdkdisplay-win32.h b/gdk/win32/gdkdisplay-win32.h
+index 27ed5bf..88ba7ac 100644
+--- a/gdk/win32/gdkdisplay-win32.h
++++ b/gdk/win32/gdkdisplay-win32.h
+@@ -87,12 +87,16 @@ typedef struct _GdkWin32CbDnDItems GdkWin32CbDnDItems;
+ typedef BOOL (WINAPI *funcSPDAC)  (void *);
+ typedef HANDLE (WINAPI *funcGTDAC)  (void);
+ typedef BOOL (WINAPI *funcADACE) (void *, void *);
++typedef BOOL (WINAPI *funcAWRXFD) (LPRECT, DWORD, BOOL, DWORD, UINT);
++typedef UINT (WINAPI *funcGDFW) (HWND);
+ 
+ typedef struct _GdkWin32User32DPIFuncs
+ {
+   funcSPDAC setPDAC;
+   funcGTDAC getTDAC;
+   funcADACE areDACEqual;
++  funcAWRXFD adjustWindowRectExForDpi;
++  funcGDFW getDpiForWindow;
+ } GdkWin32User32DPIFuncs;
+ 
+ typedef enum {
+@@ -186,7 +190,7 @@ struct _GdkWin32Display
+ 
+   /* HiDPI Items */
+   PROCESS_DPI_AWARENESS dpi_aware_type;
+-  guint surface_scale;
++  double surface_scale;
+ 
+   GdkWin32User32DPIFuncs user32_dpi_funcs;
+ 
+@@ -223,7 +227,7 @@ IDXGIFactory4 *         gdk_win32_display_get_dxgi_factory              (GdkWin3
+ ID3D11Device *          gdk_win32_display_get_d3d11_device              (GdkWin32Display        *self);
+ ID3D12Device *          gdk_win32_display_get_d3d12_device              (GdkWin32Display        *self);
+ 
+-guint                   gdk_win32_display_get_monitor_scale_factor      (GdkWin32Display        *display_win32,
++double                  gdk_win32_display_get_monitor_scale             (GdkWin32Display        *display_win32,
+                                                                          GdkSurface             *surface,
+                                                                          HMONITOR                hmonitor);
+ 
+diff --git a/gdk/win32/gdkdrag-win32.c b/gdk/win32/gdkdrag-win32.c
+index 889b840..320ee29 100644
+--- a/gdk/win32/gdkdrag-win32.c
++++ b/gdk/win32/gdkdrag-win32.c
+@@ -236,7 +236,7 @@ typedef struct
+    * the context every time.
+    */
+   HWND                            source_window_handle;
+-  guint                           scale;
++  double                          scale;
+ 
+   /* We get this from the OS via IDropSourceNotify and pass it to the
+    * main thread.
+@@ -799,7 +799,7 @@ gdk_drag_new (GdkDisplay         *display,
+ 
+   drag = GDK_DRAG (drag_win32);
+ 
+-  drag_win32->scale = gdk_win32_display_get_monitor_scale_factor (display_win32, NULL, NULL);
++  drag_win32->scale = gdk_win32_display_get_monitor_scale (display_win32, NULL, NULL);
+   drag_win32->dnd_thread_items = display_win32->cb_dnd_items->clipdrop->dnd_thread_items;
+ 
+   return drag;
+diff --git a/gdk/win32/gdkdrop-win32.c b/gdk/win32/gdkdrop-win32.c
+index ce9e142..f27a092 100644
+--- a/gdk/win32/gdkdrop-win32.c
++++ b/gdk/win32/gdkdrop-win32.c
+@@ -78,7 +78,7 @@ struct _GdkWin32Drop
+   /* The actions supported at GTK level. Set in gdk_win32_drop_status(). */
+   GdkDragAction    actions;
+ 
+-  guint            scale;          /* Temporarily caches the HiDPI scale */
++  double           scale;          /* Temporarily caches the HiDPI scale */
+   int              last_x;         /* Coordinates from last event, in GDK space */
+   int              last_y;
+   DWORD            last_key_state; /* Key state from last event */
+@@ -177,7 +177,7 @@ gdk_drop_new (GdkDisplay        *display,
+                              "surface", surface,
+                              NULL);
+ 
+-  drop_win32->scale = gdk_win32_display_get_monitor_scale_factor (display_win32, NULL, NULL);
++  drop_win32->scale = gdk_win32_display_get_monitor_scale (display_win32, NULL, NULL);
+   drop_win32->protocol = protocol;
+ 
+   return GDK_DROP (drop_win32);
+diff --git a/gdk/win32/gdkevents-win32.c b/gdk/win32/gdkevents-win32.c
+index 2af2a58..cebcb2f 100644
+--- a/gdk/win32/gdkevents-win32.c
++++ b/gdk/win32/gdkevents-win32.c
+@@ -45,6 +45,7 @@
+ 
+ #include <glib/gprintf.h>
+ #include <cairo-win32.h>
++#include <math.h>
+ 
+ #include "gdk.h"
+ #include "gdkdevicemanager-win32.h"
+@@ -1155,7 +1156,7 @@ gdk_win32_get_surface_hwnd_rect (GdkSurface *surface,
+ 
+ cairo_region_t *
+ _gdk_win32_hrgn_to_region (HRGN  hrgn,
+-                           guint scale)
++                           double scale)
+ {
+   RGNDATA *rgndata;
+   RECT *rects;
+@@ -1184,10 +1185,10 @@ _gdk_win32_hrgn_to_region (HRGN  hrgn,
+     {
+       GdkRectangle r;
+ 
+-      r.x = rects[i].left;
+-      r.y = rects[i].top;
+-      r.width = (rects[i].right - r.x) / scale;
+-      r.height = (rects[i].bottom - r.y) / scale;
++      r.x = floor (rects[i].left / scale);
++      r.y = floor (rects[i].top / scale);
++      r.width = ceil (rects[i].right / scale) - r.x;
++      r.height = ceil (rects[i].bottom / scale) - r.y;
+ 
+       cairo_region_union_rectangle (result, &r);
+     }
+@@ -1343,34 +1344,43 @@ handle_dpi_changed (GdkSurface *surface,
+   GdkWin32Surface *impl = GDK_WIN32_SURFACE (surface);
+   GdkDisplay *display = gdk_surface_get_display (surface);
+   RECT *rect = (RECT *)msg->lParam;
+-  guint old_scale = impl->surface_scale;
++  double old_scale = impl->surface_scale;
++  int old_scale_factor = ceil (old_scale);
+ 
+   /* MSDN for WM_DPICHANGED: dpi_x == dpi_y here, so LOWORD (msg->wParam) == HIWORD (msg->wParam) */
+   guint dpi = LOWORD (msg->wParam);
+ 
+-  impl->surface_scale = dpi / USER_DEFAULT_SCREEN_DPI;
++  impl->surface_scale = MAX ((double) dpi / USER_DEFAULT_SCREEN_DPI, 1.0);
+ 
+   /* Don't bother if scales did not change in the end */
+   if (old_scale == impl->surface_scale)
+     return;
+ 
++  g_object_notify (G_OBJECT (surface), "scale");
++  if (old_scale_factor != (int) ceil (impl->surface_scale))
++    g_object_notify (G_OBJECT (surface), "scale-factor");
++
+   if (!IsIconic (msg->hwnd) &&
+       !GDK_SURFACE_DESTROYED (surface))
+     {
+       GdkMonitor *monitor;
+ 
+       monitor = gdk_display_get_monitor_at_surface (display, surface);
+-      gdk_monitor_set_scale_factor (monitor, impl->surface_scale);
++      gdk_monitor_set_scale (monitor, impl->surface_scale);
+     }
+ 
+-  _gdk_win32_adjust_client_rect (surface, rect);
+-
+-  if (impl->drag_move_resize_context.op != GDK_WIN32_DRAGOP_NONE)
+-    gdk_win32_surface_move_resize (surface,
+-                                   surface->x, surface->y,
+-                                   surface->width, surface->height);
+-  else
+-    gdk_win32_surface_resize (surface, surface->width, surface->height);
++  if (!IsIconic (msg->hwnd) &&
++      !GDK_SURFACE_DESTROYED (surface))
++    {
++      API_CALL (SetWindowPos, (msg->hwnd,
++                               SWP_NOZORDER_SPECIFIED,
++                               rect->left,
++                               rect->top,
++                               rect->right - rect->left,
++                               rect->bottom - rect->top,
++                               SWP_NOACTIVATE | SWP_NOZORDER));
++      gdk_surface_request_layout (surface);
++    }
+ }
+ 
+ static void
+diff --git a/gdk/win32/gdkinput-dmanipulation.c b/gdk/win32/gdkinput-dmanipulation.c
+index 55fafe0..a238f5f 100644
+--- a/gdk/win32/gdkinput-dmanipulation.c
++++ b/gdk/win32/gdkinput-dmanipulation.c
+@@ -160,7 +160,7 @@ DManipEventHandler_OnContentUpdated (IDirectManipulationViewportEventHandler *se
+         GdkWin32Surface *surface_win32;
+         GdkModifierType state;
+         uint32_t time;
+-        int scale;
++        double scale;
+         float pan_x;
+         float pan_y;
+         GdkEvent *event;
+diff --git a/gdk/win32/gdkmonitor-win32.c b/gdk/win32/gdkmonitor-win32.c
+index 09137d0..0b87e1e 100644
+--- a/gdk/win32/gdkmonitor-win32.c
++++ b/gdk/win32/gdkmonitor-win32.c
+@@ -564,7 +564,7 @@ enum_monitor (HMONITOR hmonitor,
+           GdkRectangle rect;
+           HMONITOR scale_hmonitor;
+           POINT pt;
+-          int scale;
++          double scale;
+ 
+           memset (&dd_monitor, 0, sizeof (dd_monitor));
+           dd_monitor.cb = sizeof (dd_monitor);
+@@ -664,15 +664,15 @@ enum_monitor (HMONITOR hmonitor,
+           w32mon->work_rect = rect;
+ 
+           /* First acquire the scale using the current screen */
+-          scale = gdk_win32_display_get_monitor_scale_factor (data->display, NULL, NULL);
++          scale = gdk_win32_display_get_monitor_scale (data->display, NULL, NULL);
+ 
+           /* acquire the scale using the monitor which the window is nearest */
+           pt.x = w32mon->work_rect.x + w32mon->work_rect.width / 2;
+           pt.y = w32mon->work_rect.y + w32mon->work_rect.height / 2;
+           scale_hmonitor = MonitorFromPoint (pt, MONITOR_DEFAULTTONEAREST);
+-          scale = gdk_win32_display_get_monitor_scale_factor (data->display, NULL, scale_hmonitor);
++          scale = gdk_win32_display_get_monitor_scale (data->display, NULL, scale_hmonitor);
+ 
+-          gdk_monitor_set_scale_factor (mon, scale);
++          gdk_monitor_set_scale (mon, scale);
+           /* Now apply the scale to the work rectangle */
+           w32mon->work_rect.x /= scale;
+           w32mon->work_rect.y /= scale;
+diff --git a/gdk/win32/gdkprivate-win32.h b/gdk/win32/gdkprivate-win32.h
+index b66d917..6f880e4 100644
+--- a/gdk/win32/gdkprivate-win32.h
++++ b/gdk/win32/gdkprivate-win32.h
+@@ -87,7 +87,7 @@ gpointer      gdk_win32_display_handle_table_lookup_ (GdkDisplay *display,
+                                                       HWND        handle);
+ 
+ cairo_region_t *_gdk_win32_hrgn_to_region    (HRGN  hrgn,
+-                                              guint scale);
++                                              double scale);
+ 
+ void    _gdk_win32_adjust_client_rect   (GdkSurface *surface,
+                                          RECT      *RECT);
+diff --git a/gdk/win32/gdksurface-win32.c b/gdk/win32/gdksurface-win32.c
+index e07db46..4b2b614 100644
+--- a/gdk/win32/gdksurface-win32.c
++++ b/gdk/win32/gdksurface-win32.c
+@@ -189,11 +189,20 @@ void
+ _gdk_win32_adjust_client_rect (GdkSurface *surface,
+                                RECT       *rect)
+ {
++  GdkWin32Display *display;
++  GdkWin32Surface *impl;
+   LONG style, exstyle;
+ 
++  display = GDK_WIN32_DISPLAY (gdk_surface_get_display (surface));
++  impl = GDK_WIN32_SURFACE (surface);
+   style = GetWindowLong (GDK_SURFACE_HWND (surface), GWL_STYLE);
+   exstyle = GetWindowLong (GDK_SURFACE_HWND (surface), GWL_EXSTYLE);
+-  API_CALL (AdjustWindowRectEx, (rect, style, FALSE, exstyle));
++  if (display->user32_dpi_funcs.adjustWindowRectExForDpi != NULL)
++    API_CALL (display->user32_dpi_funcs.adjustWindowRectExForDpi,
++              (rect, style, FALSE, exstyle,
++               (UINT) lround (impl->surface_scale * USER_DEFAULT_SCREEN_DPI)));
++  else
++    API_CALL (AdjustWindowRectEx, (rect, style, FALSE, exstyle));
+ }
+ 
+ void
+@@ -371,7 +380,7 @@ gdk_win32_surface_constructed (GObject *object)
+   int pos;
+   int size;
+ 
+-  impl->surface_scale = gdk_win32_display_get_monitor_scale_factor (display_win32, NULL, NULL);
++  impl->surface_scale = gdk_win32_display_get_monitor_scale (display_win32, NULL, NULL);
+ 
+   dwStyle = 0;
+   dwExStyle = 0;
+@@ -2171,11 +2180,11 @@ gdk_win32_surface_do_move_resize_drag (GdkSurface *surface,
+ 
+       if (GDK_IS_TOPLEVEL (surface))
+         {
+-          int scale = impl->surface_scale;
++          double scale = impl->surface_scale;
+ 
+           impl->next_layout.configured_rect = new_rect;
+-          impl->next_layout.configured_width = (new_rect.right - new_rect.left + scale - 1) / scale;
+-          impl->next_layout.configured_height = (new_rect.bottom - new_rect.top + scale - 1) / scale;
++          impl->next_layout.configured_width = ceil ((new_rect.right - new_rect.left) / scale);
++          impl->next_layout.configured_height = ceil ((new_rect.bottom - new_rect.top) / scale);
+         }
+       gdk_win32_get_window_size_and_position_from_client_rect (surface,
+                                                               &new_rect,
+@@ -2695,9 +2704,9 @@ _gdk_win32_surface_get_scale (GdkSurface *surface)
+ 
+   if (win32_display->dpi_aware_type != PROCESS_DPI_UNAWARE)
+     {
+-      impl->surface_scale = gdk_win32_display_get_monitor_scale_factor (win32_display,
+-                                                                        surface,
+-                                                                        NULL);
++      impl->surface_scale = gdk_win32_display_get_monitor_scale (win32_display,
++                                                                 surface,
++                                                                 NULL);
+ 
+       return impl->surface_scale;
+     }
+@@ -2815,7 +2824,7 @@ static void
+ _gdk_win32_surface_request_layout (GdkSurface *surface)
+ {
+   GdkWin32Surface *impl = GDK_WIN32_SURFACE (surface);
+-  int scale = impl->surface_scale;
++  double scale = impl->surface_scale;
+   RECT rect;
+ 
+   gdk_win32_get_surface_hwnd_rect (surface, &rect);
+@@ -2824,8 +2833,8 @@ _gdk_win32_surface_request_layout (GdkSurface *surface)
+   if (rect.right == rect.left || rect.bottom == rect.top)
+     return;
+ 
+-  impl->next_layout.configured_width = (rect.right - rect.left + scale - 1) / scale;
+-  impl->next_layout.configured_height = (rect.bottom - rect.top + scale - 1) / scale;
++  impl->next_layout.configured_width = ceil ((rect.right - rect.left) / scale);
++  impl->next_layout.configured_height = ceil ((rect.bottom - rect.top) / scale);
+ 
+   if (GDK_IS_TOPLEVEL (surface))
+     {
+diff --git a/gdk/win32/gdksurface-win32.h b/gdk/win32/gdksurface-win32.h
+index 666ec67..9593552 100644
+--- a/gdk/win32/gdksurface-win32.h
++++ b/gdk/win32/gdksurface-win32.h
+@@ -186,7 +186,7 @@ struct _GdkWin32Surface
+   LONG_PTR temp_styles;
+ 
+   /* scale of surface on HiDPI */
+-  int surface_scale;
++  double surface_scale;
+ 
+   GdkToplevelLayout *toplevel_layout;
+   struct {
+diff --git a/gdk/win32/gdkwin32dnd-private.h b/gdk/win32/gdkwin32dnd-private.h
+index d6d1253..cd3b92b 100644
+--- a/gdk/win32/gdkwin32dnd-private.h
++++ b/gdk/win32/gdkwin32dnd-private.h
+@@ -74,7 +74,7 @@ struct _GdkWin32Drag
+ 
+   GdkWin32DragUtilityData util_data;
+ 
+-  guint scale;             /* Temporarily caches the HiDPI scale */
++  double scale;            /* Temporarily caches the HiDPI scale */
+   int   hot_x;             /* Hotspot offset from the top-left of the drag-window, scaled (can be added to GDK space coordinates) */
+   int   hot_y;
+   int   start_x;           /* Coordinates of the drag start, in GDK space */
+diff --git a/gdk/win32/gdkwin32misc.c b/gdk/win32/gdkwin32misc.c
+index 23a1302..aa03079 100644
+--- a/gdk/win32/gdkwin32misc.c
++++ b/gdk/win32/gdkwin32misc.c
+@@ -27,6 +27,8 @@
+ #include "gdkprivate-win32.h"
+ #include "gdkdisplay-win32.h"
+ 
++#include <math.h>
++
+ #undef STRICT
+ #include <pango/pangowin32.h>
+ 
+@@ -461,7 +463,7 @@ gdk_win32_display_get_setting (GdkDisplay  *display,
+ 
+               if (dpi >= 96)
+                 {
+-                  int xft_dpi = 1024 * dpi / display_win32->surface_scale;
++                  int xft_dpi = lround (1024 * dpi / display_win32->surface_scale);
+                   GDK_NOTE(MISC, g_print ("gdk_screen_get_setting(\"%s\") : %d\n", name, xft_dpi));
+                   g_value_set_int (value, xft_dpi);
+                   return TRUE;
+

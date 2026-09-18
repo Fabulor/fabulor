@@ -9132,6 +9132,138 @@ GTK4 scaled the interface disproportionately at 250% and 300%. PMv2 is deferred
 as an RC11 candidate and requires separate high-DPI and monitor-transition
 acceptance before it can be enabled.
 
+## RC11 PMv2 Source Candidate (2026-09-10)
+
+Scope: correct GTK 4.22.4's Win32 integer surface-scale model before enabling
+PMv2 in Fabulor. The candidate preserves exact fractional scales across monitor,
+surface, input, drag-and-drop, damage-region, DPI-change, and window-sizing
+boundaries. Fabulor also handles fractional surface-scale notifications for
+locked-pane restoration and transcript redraws.
+
+Source evidence:
+
+- the candidate contract pins the exact GTK and ZoiteChat/gvsbuild commits,
+  downstream patch digest, and eight-scale acceptance matrix;
+- the patch applies cleanly to the pinned GTK source;
+- PMv2 candidate, pane-drag, and production WiX profile contract tests pass;
+- the production executable manifest remains unchanged and System-DPI-aware.
+
+An initial compile from the later gvsbuild master revision produced GTK 4.22.4
+successfully but was correctly rejected by `validate_root.py` because it also
+advanced GLib from 2.88.0 to 2.88.1. The candidate builder was therefore pinned
+back to the production `zoitechat-2.18.1` tag rather than weakening the runtime
+identity check or accepting an unrelated dependency change.
+
+Follow-up automated evidence on 2026-09-11:
+
+- the pinned GTK 4.22.4 and GLib 2.88.0 runtime built successfully with both
+  downstream patches;
+- GTK's native Win32 suite passed exact DPI conversion, coordinate round-trip,
+  and repeated transition tests;
+- the complete Fabulor x64 Release build completed with zero warnings and zero
+  errors, and its 55 native tests passed with two expected fixture skips;
+- the local immutable archive
+  `GTK4_Gvsbuild_zoitechat-2.18.1-pmv2.1_x64.zip` is 47,028,696 bytes with
+  SHA-256
+  `00792b5cc34d7a8da5b16c4dc6e453a6429d966dae7a18a0a7797e82238e2d4b`;
+- the archive and extracted root match the isolated candidate dependency
+  contract, including GTK/GLib versions, x64 architecture, and all 24 required
+  build files;
+- the allowlisted runtime staged 1,049 files totalling 47,771,427 bytes, with a
+  generated manifest tied to the candidate archive rather than the production
+  archive;
+- the packaged native import closure (35 native files, 106 packaged edges) and
+  launcher/frontend bootstrap boundary passed; and
+- the executable-relative runtime-root probe rejected decoy, missing, and
+  reparse-point runtime roots.
+
+The archive is deliberately recorded as `local-unpublished`. The production
+runtime contract and executable manifest remain unchanged. Pending gates are
+installed acceptance at every required scale and across mixed-DPI monitor
+transitions, followed by review, archive publication/provenance finalisation,
+manifest activation, and candidate installer validation. The activation must
+remain absent until all gates pass.
+
+Initial live PMv2 acceptance on 2026-09-11: partial pass. The isolated client
+was launched through GTK's `GDK_WIN32_PER_MONITOR_HIDPI=1` pre-activation path;
+Windows reported process DPI awareness level 2 (per-monitor). At 300% the
+transcript indentation and configured user-list boundary remained correctly
+separated. Changing the same running process from 300% to 250% and back
+rescaled cleanly without a restart or visible pane drift. The remaining scale,
+window-state, mixed-monitor, input, dialog, and feature matrix is still open.
+
+RC11 extended-test installer on 2026-09-11:
+
+- the branch manifest now declares `true/pm` and
+  `PerMonitorV2,PerMonitor`; published RC10 and the System-DPI release fallback
+  remain unchanged;
+- x64 Release MSI and bootstrapper builds completed with zero warnings and zero
+  errors after normal WiX ICE validation;
+- the MSI contains 2,519 files and no legacy GTK payload;
+- all 1,049 staged GTK runtime files and the generated runtime manifest were
+  verified byte-for-byte against the candidate payload;
+- the bootstrapper has one MSI chain package and its embedded MSI is identical
+  to the standalone MSI;
+- `fabulor.exe` extracted from the MSI contains the expected PMv2 declaration
+  and compatible fallbacks; and
+- the original test artefact SHA-256 values were
+  `707482e730b994edf242f41b19ff3712155aee4e245fc85e6b620c441d5c5b25`
+  for `FabulorSetup.exe` and
+  `892e605a6b3424d176821932d2d72a5c7954e403d4de944a1b9a37d1c99dce26`
+  for both the standalone and embedded `Fabulor.msi`.
+
+Installed testing subsequently exposed `OS: (NULL)` in the About dialog when
+the primary WMI operating-system query returned no result. The Windows sysinfo
+backend now falls back to GLib's native Windows version query and finally the
+literal `Windows`, so both About and `/SYSINFO OS` always receive a valid
+allocated string. The refreshed frontend and native extensions built with zero
+warnings and errors, all 112 GTK4 Python contract tests passed, and the refreshed
+MSI/runtime/bundle validation repeated successfully. The replacement artefact
+SHA-256 values are
+`dca1195dc21843c604fabb74771de0da702157568264fe3984b3f6cb8b3a8ce0`
+for the 136,762,063-byte `FabulorSetup.exe` and
+`802ed965c7863b615a4e9b500bc77702c3344ae18397ad532ec8d2be78c11e94`
+for both the 70,742,820-byte standalone and embedded `Fabulor.msi`. Installed
+acceptance of the corrected About and `/SYSINFO OS` output remains open.
+
+Installed RC11 testing also exposed a GTK4 Ban List filter regression: the
+table could display bans while the Bans checkbox appeared unchecked, and
+toggling Bans, Exempts, or Invites cleared the table without requesting the
+selected mode lists. The dialog was creating `GtkCheckButton` controls but
+still reading and writing their state through the removed GTK3
+`GtkToggleButton` inheritance. It now uses Fabulor's GTK4 check-button helpers
+for initial state, user toggles, and capability sensitisation. A source
+contract rejects any return of the stale toggle-button state API and preserves
+the default Bans request plus the selected-mode refresh path. All 113 GTK4
+Python contract tests pass, the x64 Release frontend and refreshed WiX bundle
+built with zero warnings and errors, and MSI/runtime/bundle validation passed:
+2,519 installed files, no legacy GTK payload, all 1,049 runtime manifest hashes,
+and an embedded MSI identical to the standalone MSI. The replacement artefact
+SHA-256 values are
+`48284732ef8d707bdd5bc865215cc27165d1e6432b868d26972f6cb85b947d40`
+for the 136,759,269-byte `FabulorSetup.exe` and
+`b8ffb9c39e1279fdd23eff66ea42bcc4dfabe3742e383c2dc7927f503e6c1d15`
+for both the 70,738,724-byte standalone and embedded `Fabulor.msi`. Installed
+acceptance on DALnet `#Cherrychapstick` subsequently passed: an SOp session
+retained all three checked filter states and displayed Ban, Exempt, and Invite
+entries together in the refreshed list.
+
+RC11 publication acceptance on 2026-09-19: pass. Extended installed use at
+300% completed without a reported stability, rendering, input, or layout
+regression while exercising multiple GTK4 themes, different background images,
+menus, compact mode, single-line topics, and both Ban and Ignore Lists. Earlier
+testing had already passed startup and live 250%-to-300% transitions without
+pane drift. The remaining scale percentages and mixed-monitor combinations stay
+on the RC11 feedback matrix rather than blocking this release candidate.
+
+The accepted patched runtime was published as the Fabulor-owned prerelease
+`fabulor-gtk4-4.22.4-pmv2.1`. GitHub records the 47,028,696-byte
+`GTK4_Gvsbuild_zoitechat-2.18.1-pmv2.1_x64.zip` asset with SHA-256
+`00792b5cc34d7a8da5b16c4dc6e453a6429d966dae7a18a0a7797e82238e2d4b`,
+matching the locally validated immutable archive. The production dependency
+contract and RC11 CI now consume that exact Fabulor asset; the original
+ZoiteChat/gvsbuild 2.18.1 archive remains unchanged.
+
 ## Stage Completion Rule
 
 A stage can move to complete in `migration-plan.md` only when:

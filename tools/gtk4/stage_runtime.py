@@ -177,7 +177,7 @@ def _sha256(data):
     return hashlib.sha256(data).hexdigest()
 
 
-def stage_runtime(root, output, contract, contract_path):
+def stage_runtime(root, output, contract, contract_path, source_contract_path=None):
     selected = collect_payload(root, contract)
     output = output.absolute()
     if output.exists():
@@ -188,7 +188,10 @@ def stage_runtime(root, output, contract, contract_path):
     if output.exists() and any(output.iterdir()):
         raise StagingError(f"Runtime staging output is not empty: {output}")
 
-    source_contract_path = contract_path.parent / contract["source_contract"]
+    if source_contract_path is None:
+        source_contract_path = contract_path.parent / contract["source_contract"]
+    else:
+        source_contract_path = source_contract_path.resolve(strict=True)
     try:
         source_contract = json.loads(source_contract_path.read_text(encoding="utf-8"))
         source_identity = source_contract["source"]["sha256"]
@@ -232,12 +235,19 @@ def stage_runtime(root, output, contract, contract_path):
 def parse_args(argv):
     parser = argparse.ArgumentParser(description="Stage the allowlisted Fabulor GTK4 runtime")
     parser.add_argument("--contract", type=pathlib.Path, default=DEFAULT_CONTRACT)
+    parser.add_argument(
+        "--source-contract",
+        type=pathlib.Path,
+        help="override the dependency identity recorded in the staged manifest",
+    )
     parser.add_argument("--root", type=pathlib.Path, required=True)
     parser.add_argument("--output", type=pathlib.Path)
     parser.add_argument("--validate-only", action="store_true")
     args = parser.parse_args(argv)
     if args.validate_only == (args.output is not None):
         parser.error("select exactly one of --validate-only or --output")
+    if args.validate_only and args.source_contract is not None:
+        parser.error("--source-contract requires --output")
     return args
 
 
@@ -250,7 +260,13 @@ def main(argv=None):
             selected = collect_payload(args.root, contract)
             print(f"GTK4 runtime payload validated: file_count={len(selected)}")
         else:
-            manifest = stage_runtime(args.root, args.output, contract, contract_path)
+            manifest = stage_runtime(
+                args.root,
+                args.output,
+                contract,
+                contract_path,
+                args.source_contract,
+            )
             print(
                 "GTK4 runtime staged: "
                 f"file_count={manifest['file_count']}, size_bytes={manifest['size_bytes']}, "

@@ -33,6 +33,8 @@
 #include <windows.h>
 #include <wbemidl.h>
 
+#include <glib.h>
+
 #include "../sysinfo.h"
 
 /* Cache */
@@ -102,11 +104,10 @@ sysinfo_get_os (void)
 {
 	if (os_name == NULL)
 		os_name = query_wmi (QUERY_WMI_OS);
-
 	if (os_name == NULL)
-	{
-		return NULL;
-	}
+		os_name = g_get_os_info (G_OS_INFO_KEY_PRETTY_NAME);
+	if (os_name == NULL)
+		os_name = fabulor_strdup ("Windows");
 
 	return fabulor_strdup_printf ("%s (x%d)", os_name, sysinfo_get_cpu_arch ());
 }
