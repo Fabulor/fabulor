@@ -79,6 +79,53 @@ jobs:
           Expand-Archive -LiteralPath $gtk4Archive -DestinationPath $repoGtk4Root -Force
           python tools\gtk4\validate_root.py --root $repoGtk4Root
 
+          $pmv2Contract = Get-Content tools\gtk4\pmv2-candidate-contract.json -Raw | ConvertFrom-Json
+          $gtkSourceArchive = Join-Path 'deps' $pmv2Contract.gtk.source_archive.file_name
+          Download-WithRetry -Url $pmv2Contract.gtk.source_archive.url -OutFile $gtkSourceArchive
+          $sourceFile = Get-Item -LiteralPath $gtkSourceArchive
+          $sourceHash = (Get-FileHash -Algorithm SHA256 -LiteralPath $gtkSourceArchive).Hash.ToLowerInvariant()
+          if ($sourceFile.Length -ne $pmv2Contract.gtk.source_archive.size_bytes -or $sourceHash -ne $pmv2Contract.gtk.source_archive.sha256) {
+            throw "GTK source archive integrity check failed: size=$($sourceFile.Length), SHA256=$sourceHash"
+          }
+          $sourceParent = Join-Path $env:RUNNER_TEMP 'fabulor-gtk-pmv2-source'
+          New-Item -Path $sourceParent -ItemType Directory -Force | Out-Null
+          tar -xf $gtkSourceArchive -C $sourceParent
+          if ($LASTEXITCODE -ne 0) { throw "GTK source extraction failed with exit code $LASTEXITCODE." }
+          $sourceRoot = Join-Path $sourceParent 'gtk-4.22.4'
+          if (-not (Test-Path -LiteralPath $sourceRoot -PathType Container)) { throw "GTK source root was not extracted." }
+          $repoRoot = $env:GITHUB_WORKSPACE
+          Push-Location $sourceRoot
+          try {
+            foreach ($patchName in @('patch', 'test_patch', 'geometry_patch')) {
+              $patchContract = $pmv2Contract.$patchName
+              $patchFile = Join-Path $repoRoot ($patchContract.path.Replace('/', '\'))
+              $patchHash = (Get-FileHash -Algorithm SHA256 -LiteralPath $patchFile).Hash.ToLowerInvariant()
+              if ($patchHash -ne $patchContract.sha256) { throw "GTK $patchName digest mismatch: $patchHash" }
+              git apply --check $patchFile
+              if ($LASTEXITCODE -ne 0) { throw "GTK $patchName did not apply to the pinned source." }
+              git apply $patchFile
+              if ($LASTEXITCODE -ne 0) { throw "GTK $patchName application failed." }
+            }
+          }
+          finally { Pop-Location }
+
+          $nativeTest = $pmv2Contract.native_test_archive
+          $nativeTestArchive = Join-Path 'deps' $nativeTest.file_name
+          Download-WithRetry -Url $nativeTest.url -OutFile $nativeTestArchive
+          $nativeFile = Get-Item -LiteralPath $nativeTestArchive
+          $nativeHash = (Get-FileHash -Algorithm SHA256 -LiteralPath $nativeTestArchive).Hash.ToLowerInvariant()
+          if ($nativeFile.Length -ne $nativeTest.size_bytes -or $nativeHash -ne $nativeTest.sha256) {
+            throw "GTK native test archive integrity check failed: size=$($nativeFile.Length), SHA256=$nativeHash"
+          }
+          $nativeTestRoot = Join-Path $env:RUNNER_TEMP 'fabulor-gtk-pmv2-tests'
+          New-Item -Path $nativeTestRoot -ItemType Directory -Force | Out-Null
+          Expand-Archive -LiteralPath $nativeTestArchive -DestinationPath $nativeTestRoot
+          $nativeTestExe = Join-Path $nativeTestRoot $nativeTest.executable
+          if (-not (Test-Path -LiteralPath $nativeTestExe -PathType Leaf)) { throw "GTK native test executable is missing." }
+          $env:PATH = "$(Join-Path $repoGtk4Root 'bin');$env:PATH"
+          & $nativeTestExe
+          if ($LASTEXITCODE -ne 0) { throw "GTK native PMv2 regression tests failed with exit code $LASTEXITCODE." }
+
           $vcpkg = Join-Path $env:VCPKG_INSTALLATION_ROOT 'vcpkg.exe'
           if (-not (Test-Path $vcpkg)) {
             $vcpkg = 'C:\vcpkg\vcpkg.exe'

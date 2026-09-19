@@ -20,6 +20,8 @@ class Pmv2CandidateTests(unittest.TestCase):
         cls.patch = cls.patch_path.read_text(encoding="utf-8")
         cls.test_patch_path = ROOT / cls.contract["test_patch"]["path"]
         cls.test_patch = cls.test_patch_path.read_text(encoding="utf-8")
+        cls.geometry_patch_path = ROOT / cls.contract["geometry_patch"]["path"]
+        cls.geometry_patch = cls.geometry_patch_path.read_text(encoding="utf-8")
 
     def test_candidate_identity_and_patch_digest(self):
         self.assertEqual(self.contract["schema_version"], 1)
@@ -42,11 +44,19 @@ class Pmv2CandidateTests(unittest.TestCase):
         )
         self.assertRegex(self.contract["gtk"]["source_commit"], r"^[0-9a-f]{40}$")
         self.assertRegex(self.contract["builder"]["base_commit"], r"^[0-9a-f]{40}$")
+        self.assertEqual(
+            self.contract["gtk"]["source_archive"]["sha256"],
+            "51bd9f60c7d23a665a556c7364c21fb2e4e282566b3e7e092455e8f910330893",
+        )
 
         digest = hashlib.sha256(self.patch_path.read_bytes()).hexdigest()
         self.assertEqual(digest, self.contract["patch"]["sha256"])
         test_digest = hashlib.sha256(self.test_patch_path.read_bytes()).hexdigest()
         self.assertEqual(test_digest, self.contract["test_patch"]["sha256"])
+        geometry_digest = hashlib.sha256(
+            self.geometry_patch_path.read_bytes()
+        ).hexdigest()
+        self.assertEqual(geometry_digest, self.contract["geometry_patch"]["sha256"])
 
     def test_fractional_scale_matrix_is_exact(self):
         scales = self.contract["acceptance_scales_percent"]
@@ -77,12 +87,31 @@ class Pmv2CandidateTests(unittest.TestCase):
         )
         self.assertEqual(production_contract["source"], source)
 
+        components = json.loads(
+            (ROOT / "third-party" / "components.json").read_text(encoding="utf-8")
+        )["components"]
+        gtk_component = next(item for item in components if item["id"] == "gtk4")
+        self.assertEqual(gtk_component["distribution_sha256"], archive["sha256"])
+
         local_archive = ROOT / archive["local_path"]
         if local_archive.is_file():
             self.assertEqual(local_archive.stat().st_size, archive["size_bytes"])
             self.assertEqual(
                 hashlib.sha256(local_archive.read_bytes()).hexdigest(),
                 archive["sha256"],
+            )
+
+        native_test = self.contract["native_test_archive"]
+        self.assertEqual(native_test["publication_status"], "published")
+        self.assertEqual(native_test["release_tag"], archive["release_tag"])
+        self.assertTrue(native_test["url"].endswith("/" + native_test["file_name"]))
+        self.assertEqual(native_test["executable"], "win32-fractional-scale.exe")
+        local_test = ROOT / native_test["local_path"]
+        if local_test.is_file():
+            self.assertEqual(local_test.stat().st_size, native_test["size_bytes"])
+            self.assertEqual(
+                hashlib.sha256(local_test.read_bytes()).hexdigest(),
+                native_test["sha256"],
             )
 
     def test_coordinate_round_trips_and_repeated_transitions(self):
@@ -101,14 +130,33 @@ class Pmv2CandidateTests(unittest.TestCase):
                         abs(recovered - logical), 0.5 / scale + 1e-9
                     )
 
-        saved_width = 150
+        saved_width = 150.0
+        current_width = saved_width
         for _ in range(25):
             for scale in scales + list(reversed(scales)):
-                physical = math.floor(saved_width * scale + 0.5)
+                physical = math.floor(current_width * scale + 0.5)
+                current_width = physical / scale
                 self.assertLessEqual(
-                    abs(physical / scale - saved_width), 0.5 / scale + 1e-9
+                    abs(current_width - saved_width), 4.0 / 3.0 + 1e-9
                 )
-            self.assertEqual(saved_width, 150)
+        self.assertEqual(current_width, saved_width)
+
+    def test_monitor_rectangles_use_outward_rounding(self):
+        def logical_rect(left, top, right, bottom, scale):
+            logical_left = math.floor(left / scale)
+            logical_top = math.floor(top / scale)
+            logical_right = math.ceil(right / scale)
+            logical_bottom = math.ceil(bottom / scale)
+            return (
+                logical_left,
+                logical_top,
+                logical_right - logical_left,
+                logical_bottom - logical_top,
+            )
+
+        self.assertEqual(logical_rect(-3840, 0, -1920, 2160, 2.5), (-1536, 0, 768, 864))
+        self.assertEqual(logical_rect(-1919, -1079, -1, -1, 1.25), (-1536, -864, 1536, 864))
+        self.assertEqual(logical_rect(1, 1, 1919, 1079, 1.75), (0, 0, 1097, 617))
 
     def test_patch_covers_win32_fractional_boundaries(self):
         required = (
@@ -150,6 +198,17 @@ class Pmv2CandidateTests(unittest.TestCase):
         for token in required:
             with self.subTest(token=token):
                 self.assertIn(token, self.test_patch)
+
+        geometry_required = (
+            "gdk_win32_physical_rect_to_logical",
+            "floor (left / scale)",
+            "ceil (right / scale)",
+            'g_test_add_func ("/win32/fractional-scale/monitor-rectangles"',
+            "current_logical_width = gdk_win32_physical_to_logical",
+        )
+        for token in geometry_required:
+            with self.subTest(token=token):
+                self.assertIn(token, self.geometry_patch)
 
     def test_fabulor_handles_fractional_surface_notifications(self):
         source = (ROOT / "src" / "fe-gtk" / "maingui.c").read_text(

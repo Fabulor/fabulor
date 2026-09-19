@@ -154,6 +154,22 @@ class StageGtk4RuntimeTests(unittest.TestCase):
             )
         self.assertFalse(output.exists())
 
+    def test_missing_source_contract_override_is_a_staging_error(self):
+        contract = self._save_contract()
+        output = self.base / "output"
+
+        with self.assertRaisesRegex(
+            stage_runtime.StagingError, "Unable to read source dependency identity"
+        ):
+            stage_runtime.stage_runtime(
+                self.root,
+                output,
+                contract,
+                self.contract_path,
+                self.base / "missing-source.json",
+            )
+        self.assertFalse(output.exists())
+
     def test_production_contract_matches_supported_languages_and_trimmed_trees(self):
         repository_root = pathlib.Path(__file__).resolve().parents[2]
         contract = stage_runtime.load_contract(stage_runtime.DEFAULT_CONTRACT)

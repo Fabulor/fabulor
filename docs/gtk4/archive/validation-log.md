@@ -9264,6 +9264,23 @@ matching the locally validated immutable archive. The production dependency
 contract and RC11 CI now consume that exact Fabulor asset; the original
 ZoiteChat/gvsbuild 2.18.1 archive remains unchanged.
 
+Review hardening on 2026-09-19: the corrected Fabulor-owned immutable
+`fabulor-gtk4-4.22.4-pmv2.2` prerelease adds outward-rounded Win32 monitor and
+work-area rectangles, negative-monitor-coordinate regression cases, and
+state-carrying repeated DPI transitions. The exact pinned GTK source accepted
+all three tracked patches. The rebuilt native suite passed all four cases, and
+the root passed GTK 4.22.4/GLib 2.88.0 and x64 validation. GitHub records the
+47,028,971-byte runtime archive SHA-256
+`62a30e534a4126e38868862c943ba39068b6facf2be85a4589fff36b94882f72`
+and the 3,477,495-byte native-test archive SHA-256
+`fde33133e35873e29e83a8c404654a8ef121c86296aaa7b70258de63c59644aa`,
+both matching local artefacts. Windows CI now verifies and applies the exact
+patches and runs that native executable against the pinned runtime before
+building Fabulor. Local validation also passed all 19 Windows lint suites and
+staged the refreshed allowlist as 1,049 files (47,771,939 bytes), with its
+manifest bound to the new runtime SHA-256. Fresh PR checks and final release
+validation remain pending.
+
 ## Stage Completion Rule
 
 A stage can move to complete in `migration-plan.md` only when:

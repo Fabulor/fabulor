@@ -1,0 +1,163 @@
+diff --git a/gdk/win32/gdkdisplay-win32.c b/gdk/win32/gdkdisplay-win32.c
+--- a/gdk/win32/gdkdisplay-win32.c
++++ b/gdk/win32/gdkdisplay-win32.c
+@@ -1263,6 +1263,31 @@ gdk_win32_logical_to_physical (double coordinate,
+   return (int) lround (coordinate * scale);
+ }
+ 
++void
++gdk_win32_physical_rect_to_logical (long          left,
++                                    long          top,
++                                    long          right,
++                                    long          bottom,
++                                    double        scale,
++                                    GdkRectangle *rect)
++{
++  int logical_left;
++  int logical_top;
++  int logical_right;
++  int logical_bottom;
++
++  g_return_if_fail (scale > 0.0);
++  g_return_if_fail (rect != NULL);
++
++  logical_left = floor (left / scale);
++  logical_top = floor (top / scale);
++  logical_right = ceil (right / scale);
++  logical_bottom = ceil (bottom / scale);
++  *rect = (GdkRectangle) { logical_left, logical_top,
++                          logical_right - logical_left,
++                          logical_bottom - logical_top };
++}
++
+ double
+ gdk_win32_display_get_monitor_scale (GdkWin32Display *display_win32,
+                                      GdkSurface      *surface,
+diff --git a/gdk/win32/gdkdisplay-win32.h b/gdk/win32/gdkdisplay-win32.h
+--- a/gdk/win32/gdkdisplay-win32.h
++++ b/gdk/win32/gdkdisplay-win32.h
+@@ -232,4 +232,10 @@ double                  gdk_win32_physical_to_logical                   (double
+ int                     gdk_win32_logical_to_physical                   (double                   coordinate,
+                                                                          double                   scale);
++void                    gdk_win32_physical_rect_to_logical              (long                     left,
++                                                                         long                     top,
++                                                                         long                     right,
++                                                                         long                     bottom,
++                                                                         double                   scale,
++                                                                         GdkRectangle            *rect);
+ 
+ GdkWin32Clipdrop *      gdk_win32_display_get_clipdrop                  (GdkDisplay             *display);
+diff --git a/gdk/win32/gdkmonitor-win32.c b/gdk/win32/gdkmonitor-win32.c
+--- a/gdk/win32/gdkmonitor-win32.c
++++ b/gdk/win32/gdkmonitor-win32.c
+@@ -674,15 +674,18 @@ enum_monitor (HMONITOR hmonitor,
+ 
+           gdk_monitor_set_scale (mon, scale);
+           /* Now apply the scale to the work rectangle */
+-          w32mon->work_rect.x /= scale;
+-          w32mon->work_rect.y /= scale;
+-          w32mon->work_rect.width /= scale;
+-          w32mon->work_rect.height /= scale;
+-
+-          rect.x = monitor_info.rcMonitor.left / scale;
+-          rect.y = monitor_info.rcMonitor.top / scale;
+-          rect.width = (monitor_info.rcMonitor.right - monitor_info.rcMonitor.left) / scale;
+-          rect.height = (monitor_info.rcMonitor.bottom - monitor_info.rcMonitor.top) / scale;
++          gdk_win32_physical_rect_to_logical (monitor_info.rcWork.left,
++                                              monitor_info.rcWork.top,
++                                              monitor_info.rcWork.right,
++                                              monitor_info.rcWork.bottom,
++                                              scale,
++                                              &w32mon->work_rect);
++          gdk_win32_physical_rect_to_logical (monitor_info.rcMonitor.left,
++                                              monitor_info.rcMonitor.top,
++                                              monitor_info.rcMonitor.right,
++                                              monitor_info.rcMonitor.bottom,
++                                              scale,
++                                              &rect);
+           gdk_monitor_set_geometry (mon, &rect);
+ 
+           if (monitor_info.dwFlags & MONITORINFOF_PRIMARY && i != 0)
+diff --git a/testsuite/gdk/win32-fractional-scale.c b/testsuite/gdk/win32-fractional-scale.c
+--- a/testsuite/gdk/win32-fractional-scale.c
++++ b/testsuite/gdk/win32-fractional-scale.c
+@@ -42,9 +42,34 @@ test_coordinate_round_trips (void)
+ }
+ 
+ static void
++test_monitor_rectangles (void)
++{
++  GdkRectangle rect;
++
++  gdk_win32_physical_rect_to_logical (-3840, 0, -1920, 2160, 2.5, &rect);
++  g_assert_cmpint (rect.x, ==, -1536);
++  g_assert_cmpint (rect.y, ==, 0);
++  g_assert_cmpint (rect.width, ==, 768);
++  g_assert_cmpint (rect.height, ==, 864);
++
++  gdk_win32_physical_rect_to_logical (-1919, -1079, -1, -1, 1.25, &rect);
++  g_assert_cmpint (rect.x, ==, -1536);
++  g_assert_cmpint (rect.y, ==, -864);
++  g_assert_cmpint (rect.width, ==, 1536);
++  g_assert_cmpint (rect.height, ==, 864);
++
++  gdk_win32_physical_rect_to_logical (1, 1, 1919, 1079, 1.75, &rect);
++  g_assert_cmpint (rect.x, ==, 0);
++  g_assert_cmpint (rect.y, ==, 0);
++  g_assert_cmpint (rect.width, ==, 1097);
++  g_assert_cmpint (rect.height, ==, 617);
++}
++
++static void
+ test_repeated_scale_transitions (void)
+ {
+   const double saved_logical_width = 150.0;
++  double current_logical_width = saved_logical_width;
+   guint pass, i;
+ 
+   for (pass = 0; pass < 25; pass++)
+@@ -54,27 +79,25 @@ test_repeated_scale_transitions (void)
+       for (i = 0; i < G_N_ELEMENTS (test_dpis); i++)
+         {
+           double scale = gdk_win32_dpi_to_scale (test_dpis[i]);
+-          int physical = gdk_win32_logical_to_physical (saved_logical_width,
++          int physical = gdk_win32_logical_to_physical (current_logical_width,
+                                                          scale);
+-          double recovered = gdk_win32_physical_to_logical (physical, scale);
+-
+-          g_assert_cmpfloat (fabs (recovered - saved_logical_width), <=,
+-                             0.5 / scale + DBL_EPSILON * saved_logical_width);
++          current_logical_width = gdk_win32_physical_to_logical (physical, scale);
++          g_assert_cmpfloat (fabs (current_logical_width - saved_logical_width), <=,
++                             4.0 / 3.0 + DBL_EPSILON * saved_logical_width);
+         }
+ 
+       for (i = G_N_ELEMENTS (test_dpis); i-- > 0; )
+         {
+           double scale = gdk_win32_dpi_to_scale (test_dpis[i]);
+-          int physical = gdk_win32_logical_to_physical (saved_logical_width,
++          int physical = gdk_win32_logical_to_physical (current_logical_width,
+                                                          scale);
+-          double recovered = gdk_win32_physical_to_logical (physical, scale);
+-
+-          g_assert_cmpfloat (fabs (recovered - saved_logical_width), <=,
+-                             0.5 / scale + DBL_EPSILON * saved_logical_width);
++          current_logical_width = gdk_win32_physical_to_logical (physical, scale);
++          g_assert_cmpfloat (fabs (current_logical_width - saved_logical_width), <=,
++                             4.0 / 3.0 + DBL_EPSILON * saved_logical_width);
+         }
+     }
+ 
+-  g_assert_cmpfloat (saved_logical_width, ==, 150.0);
++  g_assert_cmpfloat (current_logical_width, ==, saved_logical_width);
+ }
+ 
+ int
+@@ -87,6 +110,7 @@ main (int argc, char **argv)
+   g_test_init (&argc, &argv, NULL);
+   g_test_add_func ("/win32/fractional-scale/dpi", test_dpi_scales);
+   g_test_add_func ("/win32/fractional-scale/coordinates", test_coordinate_round_trips);
++  g_test_add_func ("/win32/fractional-scale/monitor-rectangles", test_monitor_rectangles);
+   g_test_add_func ("/win32/fractional-scale/transitions", test_repeated_scale_transitions);
+   return g_test_run ();
+ }

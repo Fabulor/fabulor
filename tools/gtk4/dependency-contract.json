@@ -5,10 +5,10 @@
   "gtk_version": "4.22.4",
   "glib_version": "2.88.0",
   "source": {
-    "file_name": "GTK4_Gvsbuild_zoitechat-2.18.1-pmv2.1_x64.zip",
-    "url": "https://github.com/Fabulor/fabulor/releases/download/fabulor-gtk4-4.22.4-pmv2.1/GTK4_Gvsbuild_zoitechat-2.18.1-pmv2.1_x64.zip",
-    "size_bytes": 47028696,
-    "sha256": "00792b5cc34d7a8da5b16c4dc6e453a6429d966dae7a18a0a7797e82238e2d4b"
+    "file_name": "GTK4_Gvsbuild_zoitechat-2.18.1-pmv2.2_x64.zip",
+    "url": "https://github.com/Fabulor/fabulor/releases/download/fabulor-gtk4-4.22.4-pmv2.2/GTK4_Gvsbuild_zoitechat-2.18.1-pmv2.2_x64.zip",
+    "size_bytes": 47028971,
+    "sha256": "62a30e534a4126e38868862c943ba39068b6facf2be85a4589fff36b94882f72"
   },
   "required_files": [
     "bin/cairo-2.dll",

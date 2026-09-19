@@ -190,9 +190,8 @@ def stage_runtime(root, output, contract, contract_path, source_contract_path=No
 
     if source_contract_path is None:
         source_contract_path = contract_path.parent / contract["source_contract"]
-    else:
-        source_contract_path = source_contract_path.resolve(strict=True)
     try:
+        source_contract_path = source_contract_path.resolve(strict=True)
         source_contract = json.loads(source_contract_path.read_text(encoding="utf-8"))
         source_identity = source_contract["source"]["sha256"]
     except (OSError, UnicodeDecodeError, json.JSONDecodeError, KeyError, TypeError) as exc:

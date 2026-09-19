@@ -294,7 +294,7 @@
       "installed_paths": [
         "Runtime/GTK4/bin/gtk-4-1.dll"
       ],
-      "distribution_sha256": "3910a612083c2a155c5a4a2026990701841c0d7f7de28756b2f0865decb161be"
+      "distribution_sha256": "62a30e534a4126e38868862c943ba39068b6facf2be85a4589fff36b94882f72"
     },
     {
       "id": "harfbuzz",

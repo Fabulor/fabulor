@@ -1,7 +1,7 @@
 diff --git a/gdk/win32/gdkdevice-win32.c b/gdk/win32/gdkdevice-win32.c
 --- a/gdk/win32/gdkdevice-win32.c
 +++ b/gdk/win32/gdkdevice-win32.c
-@@ -91,10 +91,10 @@ gdk_device_win32_query_state (GdkDevice        *device,
+@@ -91,9 +91,9 @@ gdk_device_win32_query_state (GdkDevice        *device,
      ScreenToClient (hwnd, &point);
  
    if (win_x)
@@ -12,8 +12,7 @@ diff --git a/gdk/win32/gdkdevice-win32.c b/gdk/win32/gdkdevice-win32.c
 -    *win_y = point.y / scale;
 +    *win_y = gdk_win32_physical_to_logical (point.y, scale);
  
-   if (mask)
-     *mask = get_current_mask (device);
+   if (hwnd && child_surface)
 diff --git a/gdk/win32/gdkdisplay-win32.c b/gdk/win32/gdkdisplay-win32.c
 --- a/gdk/win32/gdkdisplay-win32.c
 +++ b/gdk/win32/gdkdisplay-win32.c

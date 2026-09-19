@@ -26,8 +26,9 @@ models.
 - ZoiteChat/gvsbuild base commit
   `499c9d27fcb061a0fa480488d8bfb71994726b1d` (release tag
   `zoitechat-2.18.1`);
-- the SHA-256 values of the Win32 implementation patch and its GTK-level
-  conversion/transition regression-test patch;
+- the SHA-256 values of the Win32 implementation patch, its GTK-level
+  conversion/transition regression-test patch, and the monitor-geometry
+  correction patch;
 - `cargo-c` 0.10.24+cargo-0.98.0, the last locked release compatible with the
   pinned Rust 1.95 toolchain; and
 - the required 100%, 125%, 150%, 175%, 200%, 225%, 250%, and 300% acceptance
@@ -42,8 +43,9 @@ factor remains its ceiling. The patch uses Windows' suggested
 geometry drift.
 
 The accompanying GTK test covers exact DPI conversion at all eight acceptance
-scales, physical/logical coordinate round trips, and repeated forward/reverse
-DPI transitions without changing a saved logical width. Fabulor's remaining
+scales, physical/logical coordinate round trips, negative-coordinate monitor
+rectangles with outward-rounded boundaries, and repeated forward/reverse DPI
+transitions that carry the current logical width between steps. Fabulor's remaining
 native auto-hidden-taskbar workaround intentionally passes the physical desktop
 pixel rectangle returned by Win32 straight back to `SetWindowPos`; those values
 must not be converted as GTK logical units.
@@ -56,8 +58,10 @@ retain their GTK logical-unit meaning; there is no preference migration.
 
 ## Reproducing The Candidate Runtime
 
-Use the pinned ZoiteChat/gvsbuild revision, add both tracked GTK patches after
-its existing `0001-remove-direct-composition.patch`, pin the compatible
+Use the pinned ZoiteChat/gvsbuild revision as the builder reference, add all
+three Fabulor-tracked GTK patches after its existing
+`0001-remove-direct-composition.patch`, list those patches in the GTK4 project
+recipe in the same order, pin the compatible
 `cargo-c` release recorded in the contract, and build GTK 4.22.4 in an isolated
 x64 Release root. The development command used for this candidate is:
 
@@ -71,14 +75,20 @@ gvsbuild build `
   gtk4
 ```
 
-The accepted isolated build produced
-`GTK4_Gvsbuild_zoitechat-2.18.1-pmv2.1_x64.zip` (47,028,696 bytes, SHA-256
-`00792b5cc34d7a8da5b16c4dc6e453a6429d966dae7a18a0a7797e82238e2d4b`).
+The corrected isolated build produced
+`GTK4_Gvsbuild_zoitechat-2.18.1-pmv2.2_x64.zip` (47,028,971 bytes, SHA-256
+`62a30e534a4126e38868862c943ba39068b6facf2be85a4589fff36b94882f72`).
 `tools/gtk4/pmv2-runtime-dependency-contract.json` records that identity and its
 immutable Fabulor-owned prerelease URL. The build retains the same third-party
 component versions and licence inventory as the pinned production builder, plus
 the Adwaita licence copies shipped in its source archive. The production runtime
 contract now deliberately pins this exact archive for RC11.
+
+The same Fabulor prerelease carries a separate, hash-pinned native regression
+test archive. Windows CI applies all three tracked patches to the exact pinned
+GTK source tarball, then executes that archive's four-case Win32 test against
+the published runtime. ZoiteChat/gvsbuild remains a build-tool source; neither
+the patched runtime nor the release artefacts are published under ZoiteChat.
 
 The allowlisted candidate runtime can be staged without duplicating or
 weakening the production file-selection contract:
