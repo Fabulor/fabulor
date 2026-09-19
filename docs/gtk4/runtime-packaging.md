@@ -202,10 +202,15 @@ sample-add-on probes pass against only the staged root.
 
 ## Sources And Provenance
 
-Windows CI downloads the pinned GTK4 archive from the `ZoiteChat/gvsbuild`
-release `zoitechat-2.18.1`. OpenSSL is resolved from the vcpkg baseline in
-`tools/windows-deps/vcpkg-configuration.json`; no GTK3 or MSYS2 staging archive
-participates in the supported Windows build. The pipeline must:
+Windows CI downloads Fabulor's immutable patched GTK4 runtime from
+`Fabulor/fabulor` release `fabulor-gtk4-4.22.4-pmv2.3`. The runtime uses the
+pinned `ZoiteChat/gvsbuild` `zoitechat-2.18.1` builder as its base; the builder
+is not the distribution location. CI also verifies the pinned GTK source and
+applies Fabulor's three tracked Win32 patches before running the published
+native regression executable against the runtime. OpenSSL is resolved from the
+vcpkg baseline in `tools/windows-deps/vcpkg-configuration.json`; no GTK3 or
+MSYS2 staging archive participates in the supported Windows build. The
+pipeline must:
 
 - pin source URLs and immutable release/package versions
 - verify expected SHA-256 values before extraction
@@ -214,13 +219,18 @@ participates in the supported Windows build. The pipeline must:
 - fail CI on unexpected files or hashes
 - retain enough provenance to reproduce Enchant and other native integrations
 
-The first GTK4 build contract now pins the Windows x64 archive as:
+The original GTK4 build contract pinned the Windows x64 archive as:
 
 - file: `GTK4_Gvsbuild_zoitechat-2.18.1_x64.zip`
 - size: 299,109,782 bytes
 - SHA-256: `3910a612083c2a155c5a4a2026990701841c0d7f7de28756b2f0865decb161be`
 - GTK: 4.22.4
 - GLib: 2.88.0
+
+For RC11, the production contract instead pins Fabulor's patched
+`GTK4_Gvsbuild_zoitechat-2.18.1-pmv2.3_x64.zip` (47,028,845 bytes, SHA-256
+`8f82cae46791aea986057161390a3ce50e81124b08216db7c7c34005e5fb5b00`).
+The test executable is distributed separately under the same Fabulor release.
 
 `tools/gtk4/validate_root.py` verifies the archive before extraction and the
 root after extraction. The root check includes exact header and pkg-config

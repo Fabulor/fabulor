@@ -14,6 +14,12 @@ run `validate_root.py` before compiling. The validator checks:
 - containment of required paths beneath the selected root
 - absence of known GTK3 headers, DLLs, and import libraries
 
+The RC11 Per-Monitor-V2 candidate is documented in
+`docs/gtk4/pmv2-dpi-awareness.md`. Its source patch, immutable source identity,
+acceptance scales, and activation gate are recorded separately in
+`pmv2-candidate-contract.json`; this does not alter the production runtime
+contract or executable manifest before installed acceptance succeeds.
+
 The archive's pkg-config files retain their original build-machine `prefix`.
 The probes therefore use explicit include and library paths beneath the
 validated root. They do not consult process `PATH`, `PKG_CONFIG_PATH`, or a
@@ -97,6 +103,18 @@ python tools\gtk4\test_stage_runtime.py
 python tools\gtk4\stage_runtime.py --root C:\fabulor-master\Runtime\GTK4 --validate-only
 python tools\gtk4\stage_runtime.py --root C:\fabulor-master\Runtime\GTK4 --output C:\fabulor-master\build\gtk4-runtime-production-root\Runtime\GTK4
 ```
+
+An isolated candidate may override only the source dependency identity written
+to that manifest. The selected files and trees still come from the reviewed
+production payload contract:
+
+```powershell
+python tools\gtk4\stage_runtime.py --root C:\path\to\candidate-root --output C:\path\to\candidate-stage\Runtime\GTK4 --source-contract tools\gtk4\pmv2-runtime-dependency-contract.json
+```
+
+The accepted RC11 PMv2 dependency contract identifies the immutable
+Fabulor-owned runtime prerelease. Its version, size, SHA-256, licences, and
+source provenance are locked by the production contract and validation tests.
 
 The output directory must be absent or empty. The normal WiX build consumes this
 staged root and requires its generated manifest; the broad transitional GTK4

@@ -102,6 +102,7 @@ LEGACY_BUILD_GRAPH = (
 GTK4_PROBE_MESON = ROOT / "tools" / "gtk4" / "meson.build"
 GTK4_APPLICATION_SOURCE = ROOT / "src" / "fe-gtk" / "fe-gtk.c"
 GTK4_SERVER_LIST_SOURCE = ROOT / "src" / "fe-gtk" / "servlistgui.c"
+GTK4_BAN_LIST_SOURCE = ROOT / "src" / "fe-gtk" / "banlist.c"
 COMMON_SERVER_LIST_SOURCE = ROOT / "src" / "common" / "servlist.c"
 COMMON_HISTORY_SOURCE = ROOT / "src" / "common" / "history.c"
 COMMON_HISTORY_HEADER = ROOT / "src" / "common" / "history.h"
@@ -935,6 +936,18 @@ class ProductionWixProfileTests(unittest.TestCase):
         self.assertNotRegex(source, r"\bgtk_toggle_button_(?:get|set)_active\b")
         self.assertIn("fabulor_gtk_check_button_get_active", source)
         self.assertIn("fabulor_gtk_check_button_set_active", source)
+
+    def test_ban_list_filters_use_gtk4_check_button_state(self):
+        source = GTK4_BAN_LIST_SOURCE.read_text(encoding="utf-8")
+
+        self.assertNotRegex(source, r"\bgtk_toggle_button_(?:get|set)_active\b")
+        self.assertIn("fabulor_gtk_check_button_get_active", source)
+        self.assertGreaterEqual(
+            source.count("fabulor_gtk_check_button_set_active"), 2
+        )
+        self.assertIn("banl->checked = 1<<MODE_BAN;", source)
+        self.assertIn("banl->pending = banl->checked;", source)
+        self.assertIn('"quote mode %s +%c"', source)
 
     def test_server_credentials_and_client_certificates_are_self_contained(self):
         frontend = GTK4_SERVER_LIST_SOURCE.read_text(encoding="utf-8")

@@ -270,6 +270,9 @@ fabulor_window_state_allow_autohide_taskbar (GtkWindow *window,
 			monitor_info.cbSize = sizeof (monitor_info);
 			if (monitor && GetMonitorInfo (monitor, &monitor_info))
 			{
+				/* Win32 supplies rcMonitor and consumes SetWindowPos geometry in
+				 * physical desktop pixels for a PMv2-aware HWND. Keep this native
+				 * taskbar workaround outside GTK's logical-coordinate model. */
 				work_area = monitor_info.rcMonitor;
 				switch (appbar_data.uEdge)
 				{

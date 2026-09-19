@@ -1,0 +1,70 @@
+{
+  "schema_version": 1,
+  "status": "runtime-published",
+  "activation": "production",
+  "candidate_dpi_awareness": "per-monitor-v2",
+  "release_fallback": "system-dpi-manifest-revert",
+  "gtk": {
+    "version": "4.22.4",
+    "glib_version": "2.88.0",
+    "source_repository": "https://gitlab.gnome.org/GNOME/gtk",
+    "source_commit": "7f99ab1a26408b6499a18f353f081e3c0598ea5c",
+    "source_archive": {
+      "url": "https://github.com/Fabulor/fabulor/releases/download/fabulor-gtk4-4.22.4-source-1/gtk-4.22.4.tar.xz",
+      "upstream_url": "https://download.gnome.org/sources/gtk/4.22/gtk-4.22.4.tar.xz",
+      "file_name": "gtk-4.22.4.tar.xz",
+      "size_bytes": 17006720,
+      "sha256": "51bd9f60c7d23a665a556c7364c21fb2e4e282566b3e7e092455e8f910330893"
+    }
+  },
+  "builder": {
+    "repository": "https://github.com/ZoiteChat/gvsbuild",
+    "release_tag": "zoitechat-2.18.1",
+    "base_commit": "499c9d27fcb061a0fa480488d8bfb71994726b1d",
+    "cargo_c_version": "0.10.24+cargo-0.98.0",
+    "patch_destination": "gvsbuild/patches/gtk4/0002-win32-fractional-dpi.patch",
+    "test_patch_destination": "gvsbuild/patches/gtk4/0003-win32-fractional-scale-tests.patch",
+    "geometry_patch_destination": "gvsbuild/patches/gtk4/0004-win32-monitor-geometry-tests.patch"
+  },
+  "patch": {
+    "path": "tools/gtk4/patches/0001-gdk-win32-fractional-dpi.patch",
+    "sha256": "8d62bfe87f200bc05326f9068c5271314ec426c058508c730a7c13b6b3efcb40"
+  },
+  "test_patch": {
+    "path": "tools/gtk4/patches/0002-gdk-win32-fractional-scale-tests.patch",
+    "sha256": "3582ef6dbd04f98511ed20c83d7e401c1b10d2f7e089870ea75f5f68a111a3bc"
+  },
+  "geometry_patch": {
+    "path": "tools/gtk4/patches/0003-gdk-win32-monitor-geometry-tests.patch",
+    "sha256": "af4ed16b754d616ea47419196dd19997452f58a0466c6d6d105398e40a22c3e8"
+  },
+  "runtime_archive": {
+    "publication_status": "published",
+    "release_tag": "fabulor-gtk4-4.22.4-pmv2.3",
+    "url": "https://github.com/Fabulor/fabulor/releases/download/fabulor-gtk4-4.22.4-pmv2.3/GTK4_Gvsbuild_zoitechat-2.18.1-pmv2.3_x64.zip",
+    "dependency_contract": "tools/gtk4/pmv2-runtime-dependency-contract.json",
+    "local_path": "build/artifacts/GTK4_Gvsbuild_zoitechat-2.18.1-pmv2.3_x64.zip",
+    "size_bytes": 47028845,
+    "sha256": "8f82cae46791aea986057161390a3ce50e81124b08216db7c7c34005e5fb5b00"
+  },
+  "native_test_archive": {
+    "publication_status": "published",
+    "release_tag": "fabulor-gtk4-4.22.4-pmv2.3",
+    "url": "https://github.com/Fabulor/fabulor/releases/download/fabulor-gtk4-4.22.4-pmv2.3/GTK4_Gvsbuild_zoitechat-2.18.1-pmv2.3-tests_x64.zip",
+    "file_name": "GTK4_Gvsbuild_zoitechat-2.18.1-pmv2.3-tests_x64.zip",
+    "local_path": "build/artifacts/GTK4_Gvsbuild_zoitechat-2.18.1-pmv2.3-tests_x64.zip",
+    "executable": "win32-fractional-scale.exe",
+    "size_bytes": 3477560,
+    "sha256": "42922c3ba45fb977f942e64b55c6231ec5e9a46646468d81f87307bef657c032"
+  },
+  "acceptance_scales_percent": [
+    100,
+    125,
+    150,
+    175,
+    200,
+    225,
+    250,
+    300
+  ]
+}

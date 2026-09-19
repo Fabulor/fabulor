@@ -30,6 +30,18 @@ session.
 
 ## Interface
 
+### Windows Display Scaling
+
+RC11 and later Windows clients use Per-Monitor-V2 DPI awareness. Fabulor
+rescales automatically when moved between monitors or when Windows display
+scaling changes while it is running; a restart is not required.
+
+Window, divider, nickname-width, and transcript-indentation settings remain GTK
+logical units. Do not replace them with DPI-specific values when changing the
+Windows display scale. If a release-candidate tester encounters pane drift,
+cumulative window-size changes, or incorrect pointer input, report the exact
+monitor scales and transition sequence.
+
 ### Appearance
 
 Use **Appearance** to control the general presentation of the main window.

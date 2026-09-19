@@ -1,7 +1,7 @@
 <!-- Fabulor production roadmap -->
 # Fabulor Production Roadmap
 
-Last reconciled: 2026-09-10
+Last reconciled: 2026-09-19
 
 ## Current Production Baseline
 
@@ -103,16 +103,24 @@ Last reconciled: 2026-09-10
       correctly, modified features changed as requested, portable data stayed
       self-contained, and installed-mode profile data survived uninstall.
 - [x] Publish `v1.0.6-rc.9` from the reviewed and merged correction source.
-- [ ] Publish `v1.0.6-rc.10`. Focused installed testing at 250% Windows desktop
+- [x] Publish `v1.0.6-rc.10`. Focused installed testing at 250% Windows desktop
       scale has confirmed that a locked user-list divider retains its configured
       width through startup, late layout changes, server/channel switching, and
       long nickname rendering. The main-font chooser also lists installed fonts
       without requiring a filter selection.
-- [ ] Revisit Per-Monitor-V2 DPI awareness as an RC11 candidate. Keep RC10
-      System-DPI-aware: the PMv2 experiment produced disproportionate GTK4
-      scaling at 250% and 300%. Any later implementation must pass high-DPI
-      startup, monitor-transition, window-state, and pane-layout acceptance
-      before activation.
+- [x] Activate and accept Per-Monitor-V2 DPI awareness for RC11. The
+      GTK 4.22.4 Win32 fractional-scale patch, native GTK regression tests,
+      pinned builder, immutable Fabulor runtime archive, staged payload, Fabulor
+      fractional surface-scale redraw handling, and Windows Release build have
+      passed automated validation. Installed testing confirms genuine
+      per-monitor process awareness and clean 300%-to-250%-to-300% rescaling
+      without pane drift. Extended use at 300% also passed with multiple themes,
+      backgrounds, menus, Ban and Ignore Lists, compact mode, and single-line
+      topics without a reported stability or layout regression.
+- [ ] Extend PMv2 acceptance during RC11 feedback across the remaining 100%,
+      125%, 150%, 175%, 200%, and 225% scales and mixed-monitor transitions.
+      Revert the manifest to System-DPI awareness if that broader matrix exposes
+      a rendering, input, geometry, or cumulative-size regression.
 - [ ] Exercise repair and uninstall once against the final signed or
       release-candidate artefacts.
 - [ ] Run a final installed accessibility and keyboard-navigation pass over
@@ -451,6 +459,20 @@ programme.
       click-to-load, preserve transcript selection and scroll position, and
       enforce strict download, decode, redirect, cache, concurrency, and
       private-network access limits before automatic previews are offered.
+- [ ] Design and implement optional post-1.0 display limits for unusually long
+      nicknames and channel-tab names. Default both limits to the first 16
+      Unicode characters followed by a single ellipsis (for example,
+      `Antidisestablish…`) while keeping the nickname and channel controls
+      independently configurable because transcript indentation and channel-tree
+      width are separate layout concerns. Apply nickname shortening in both the
+      transcript and user list, show the complete nickname or channel name in a
+      tooltip only when shortened, and replace the channel tree's older two-dot
+      truncation with the same single Unicode ellipsis. Preserve complete IRC
+      identities for commands, completion, clicks, context actions, highlights,
+      copying, logs, matching, and protocol handling. Retain existing saved
+      channel-tab limits during upgrades, use 16 for clean installations, and
+      implement the feature in the native UI rather than by rewriting events in
+      a plugin.
 - [x] Reassess optional GTK4 locales, icons, schemas, and helper tools after the
       release-candidate feature pass. The locked runtime now retains supported
       translations, Adwaita, schemas, fonts, native dependencies, and spawn
