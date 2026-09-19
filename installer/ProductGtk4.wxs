@@ -13,6 +13,10 @@
       AllowSameVersionUpgrades="yes"
       Schedule="afterInstallInitialize"
       DowngradeErrorMessage="A newer version of Fabulor is already installed." />
+    <!-- Costing otherwise skips bundled files whose versions are below an earlier test build,
+         then the major-upgrade removal deletes those files. Keep the rollback-safe schedule. -->
+    <SetProperty Id="REINSTALLMODE" Value="amus" Before="CostInitialize"
+                 Sequence="execute" Condition="NOT Installed AND WIX_UPGRADE_DETECTED" />
     <MediaTemplate EmbedCab="yes" />
     <Icon Id="FabulorProductIcon" SourceFile="..\data\icons\fabulor.ico" />
     <Property Id="ARPNOMODIFY" Value="1" />

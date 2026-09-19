@@ -436,6 +436,18 @@ class ProductionWixProfileTests(unittest.TestCase):
         self.assertIsNotNone(major_upgrade)
         self.assertEqual(major_upgrade.get("Schedule"), "afterInstallInitialize")
 
+        upgrade_overwrite = root.find(
+            "w:Package/w:SetProperty[@Id='REINSTALLMODE']", WIX_NS
+        )
+        self.assertIsNotNone(upgrade_overwrite)
+        self.assertEqual(upgrade_overwrite.get("Value"), "amus")
+        self.assertEqual(upgrade_overwrite.get("Before"), "CostInitialize")
+        self.assertEqual(upgrade_overwrite.get("Sequence"), "execute")
+        self.assertEqual(
+            upgrade_overwrite.get("Condition"),
+            "NOT Installed AND WIX_UPGRADE_DETECTED",
+        )
+
         bootstrapper = (
             INSTALLER / "UX" / "FabulorBootstrapperApplication.cs"
         ).read_text(encoding="utf-8")
