@@ -121,6 +121,11 @@ Last reconciled: 2026-09-19
       125%, 150%, 175%, 200%, and 225% scales and mixed-monitor transitions.
       Revert the manifest to System-DPI awareness if that broader matrix exposes
       a rendering, input, geometry, or cumulative-size regression.
+- [ ] Validate the corrected major-upgrade installer over the earlier PMv2 test
+      build with Python 3.14.6. Confirm that the selected pinned Python 3.14.3
+      files, including `python314.dll`, are installed without a separate Repair,
+      and that Python add-ons load after the upgrade. The published RC11 upgrade
+      skipped the older-version files before removing the test build.
 - [ ] Exercise repair and uninstall once against the final signed or
       release-candidate artefacts.
 - [ ] Run a final installed accessibility and keyboard-navigation pass over
