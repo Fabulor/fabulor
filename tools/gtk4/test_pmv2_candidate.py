@@ -48,6 +48,14 @@ class Pmv2CandidateTests(unittest.TestCase):
             self.contract["gtk"]["source_archive"]["sha256"],
             "51bd9f60c7d23a665a556c7364c21fb2e4e282566b3e7e092455e8f910330893",
         )
+        self.assertEqual(
+            self.contract["gtk"]["source_archive"]["url"],
+            "https://github.com/Fabulor/fabulor/releases/download/fabulor-gtk4-4.22.4-source-1/gtk-4.22.4.tar.xz",
+        )
+        self.assertEqual(
+            self.contract["gtk"]["source_archive"]["upstream_url"],
+            "https://download.gnome.org/sources/gtk/4.22/gtk-4.22.4.tar.xz",
+        )
 
         digest = hashlib.sha256(self.patch_path.read_bytes()).hexdigest()
         self.assertEqual(digest, self.contract["patch"]["sha256"])

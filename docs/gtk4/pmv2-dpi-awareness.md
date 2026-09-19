@@ -89,6 +89,11 @@ test archive. Windows CI applies all three tracked patches to the exact pinned
 GTK source tarball, then executes that archive's four-case Win32 test against
 the published runtime. ZoiteChat/gvsbuild remains a build-tool source; neither
 the patched runtime nor the release artefacts are published under ZoiteChat.
+For reliable CI retrieval, the contract downloads the unmodified GTK 4.22.4
+tarball from a separate, immutable Fabulor-owned source mirror. It records the
+original GNOME URL and verifies the same 17,006,720-byte archive with SHA-256
+`51bd9f60c7d23a665a556c7364c21fb2e4e282566b3e7e092455e8f910330893`
+before applying any patches.
 The earlier `pmv2.2` archive is superseded: the test patch now explicitly
 includes `<math.h>` in `gdkdisplay-win32.c` for its rounding conversions, and
 the GTK DLL and native test executable were relinked from that corrected source.

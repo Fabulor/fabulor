@@ -9301,6 +9301,16 @@ production WiX profile, and PMv2 contract suites passed 8, 11, 44, and 10
 cases respectively.
 Fresh CI and release validation remain pending.
 
+The PR Windows job subsequently stalled after runtime validation while
+retrieving the unchanged 17,006,720-byte GTK 4.22.4 source tarball from GNOME.
+An exact copy was published as the immutable, Fabulor-owned
+`fabulor-gtk4-4.22.4-source-1` source mirror. GitHub's asset digest and the
+local tarball both match SHA-256
+`51bd9f60c7d23a665a556c7364c21fb2e4e282566b3e7e092455e8f910330893`.
+The candidate contract now downloads from that mirror, retains the GNOME URL
+as provenance, and leaves the size and digest verification unchanged. Fresh CI
+and final release validation remain pending.
+
 ## Stage Completion Rule
 
 A stage can move to complete in `migration-plan.md` only when:
