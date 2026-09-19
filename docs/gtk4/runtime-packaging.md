@@ -203,7 +203,7 @@ sample-add-on probes pass against only the staged root.
 ## Sources And Provenance
 
 Windows CI downloads Fabulor's immutable patched GTK4 runtime from
-`Fabulor/fabulor` release `fabulor-gtk4-4.22.4-pmv2.2`. The runtime uses the
+`Fabulor/fabulor` release `fabulor-gtk4-4.22.4-pmv2.3`. The runtime uses the
 pinned `ZoiteChat/gvsbuild` `zoitechat-2.18.1` builder as its base; the builder
 is not the distribution location. CI also verifies the pinned GTK source and
 applies Fabulor's three tracked Win32 patches before running the published
@@ -228,8 +228,8 @@ The original GTK4 build contract pinned the Windows x64 archive as:
 - GLib: 2.88.0
 
 For RC11, the production contract instead pins Fabulor's patched
-`GTK4_Gvsbuild_zoitechat-2.18.1-pmv2.2_x64.zip` (47,028,971 bytes, SHA-256
-`62a30e534a4126e38868862c943ba39068b6facf2be85a4589fff36b94882f72`).
+`GTK4_Gvsbuild_zoitechat-2.18.1-pmv2.3_x64.zip` (47,028,845 bytes, SHA-256
+`8f82cae46791aea986057161390a3ce50e81124b08216db7c7c34005e5fb5b00`).
 The test executable is distributed separately under the same Fabulor release.
 
 `tools/gtk4/validate_root.py` verifies the archive before extraction and the

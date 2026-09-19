@@ -9281,6 +9281,26 @@ staged the refreshed allowlist as 1,049 files (47,771,939 bytes), with its
 manifest bound to the new runtime SHA-256. Fresh PR checks and final release
 validation remain pending.
 
+Final patch-review correction on 2026-09-19: the pinned GTK source already
+includes `<math.h>` directly in `gdksurface-win32.c`, but
+`gdkdisplay-win32.c` lacked that declaration for its newly added rounding
+calls. The Fabulor test patch now adds the explicit include (patch SHA-256
+`3582ef6dbd04f98511ed20c83d7e401c1b10d2f7e089870ea75f5f68a111a3bc`).
+All three tracked patches applied in order to a fresh copy of the exact GTK
+4.22.4 source tarball. The corrected GTK DLL and native test executable were
+rebuilt, and the four native cases passed against the rebuilt runtime and again
+after both archives were extracted independently. The new Fabulor-owned
+`pmv2.3` runtime archive is 47,028,845 bytes with SHA-256
+`8f82cae46791aea986057161390a3ce50e81124b08216db7c7c34005e5fb5b00`;
+its 3,477,560-byte native-test archive has SHA-256
+`42922c3ba45fb977f942e64b55c6231ec5e9a46646468d81f87307bef657c032`.
+The previous `pmv2.2` archive remains immutable but is superseded for RC11.
+The refreshed allowlist staged and validated 1,049 files (47,772,451 bytes)
+with its manifest bound to the `pmv2.3` runtime SHA-256. Root, staging,
+production WiX profile, and PMv2 contract suites passed 8, 11, 44, and 10
+cases respectively.
+Fresh CI and release validation remain pending.
+
 ## Stage Completion Rule
 
 A stage can move to complete in `migration-plan.md` only when:

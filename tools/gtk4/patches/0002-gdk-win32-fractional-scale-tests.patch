@@ -16,6 +16,15 @@ diff --git a/gdk/win32/gdkdevice-win32.c b/gdk/win32/gdkdevice-win32.c
 diff --git a/gdk/win32/gdkdisplay-win32.c b/gdk/win32/gdkdisplay-win32.c
 --- a/gdk/win32/gdkdisplay-win32.c
 +++ b/gdk/win32/gdkdisplay-win32.c
+@@ -37,7 +37,8 @@
+ #include "gdkvulkancontext-win32.h"
+ 
+ #include <dwmapi.h>
+ #include <shellscalingapi.h>
++#include <math.h>
+ 
+ #ifdef HAVE_EGL
+ # include <epoxy/egl.h>
 @@ -1241,6 +1241,28 @@ gdk_win32_display_get_monitors (GdkDisplay *display)
    return self->monitors;
  }

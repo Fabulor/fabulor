@@ -76,8 +76,8 @@ gvsbuild build `
 ```
 
 The corrected isolated build produced
-`GTK4_Gvsbuild_zoitechat-2.18.1-pmv2.2_x64.zip` (47,028,971 bytes, SHA-256
-`62a30e534a4126e38868862c943ba39068b6facf2be85a4589fff36b94882f72`).
+`GTK4_Gvsbuild_zoitechat-2.18.1-pmv2.3_x64.zip` (47,028,845 bytes, SHA-256
+`8f82cae46791aea986057161390a3ce50e81124b08216db7c7c34005e5fb5b00`).
 `tools/gtk4/pmv2-runtime-dependency-contract.json` records that identity and its
 immutable Fabulor-owned prerelease URL. The build retains the same third-party
 component versions and licence inventory as the pinned production builder, plus
@@ -89,6 +89,9 @@ test archive. Windows CI applies all three tracked patches to the exact pinned
 GTK source tarball, then executes that archive's four-case Win32 test against
 the published runtime. ZoiteChat/gvsbuild remains a build-tool source; neither
 the patched runtime nor the release artefacts are published under ZoiteChat.
+The earlier `pmv2.2` archive is superseded: the test patch now explicitly
+includes `<math.h>` in `gdkdisplay-win32.c` for its rounding conversions, and
+the GTK DLL and native test executable were relinked from that corrected source.
 
 The allowlisted candidate runtime can be staged without duplicating or
 weakening the production file-selection contract:

@@ -31,7 +31,7 @@
   },
   "test_patch": {
     "path": "tools/gtk4/patches/0002-gdk-win32-fractional-scale-tests.patch",
-    "sha256": "bf01ce70184ecbb2823d0a03c8b838dffb01fd29e7174676aef9aa95da18ed65"
+    "sha256": "3582ef6dbd04f98511ed20c83d7e401c1b10d2f7e089870ea75f5f68a111a3bc"
   },
   "geometry_patch": {
     "path": "tools/gtk4/patches/0003-gdk-win32-monitor-geometry-tests.patch",
@@ -39,22 +39,22 @@
   },
   "runtime_archive": {
     "publication_status": "published",
-    "release_tag": "fabulor-gtk4-4.22.4-pmv2.2",
-    "url": "https://github.com/Fabulor/fabulor/releases/download/fabulor-gtk4-4.22.4-pmv2.2/GTK4_Gvsbuild_zoitechat-2.18.1-pmv2.2_x64.zip",
+    "release_tag": "fabulor-gtk4-4.22.4-pmv2.3",
+    "url": "https://github.com/Fabulor/fabulor/releases/download/fabulor-gtk4-4.22.4-pmv2.3/GTK4_Gvsbuild_zoitechat-2.18.1-pmv2.3_x64.zip",
     "dependency_contract": "tools/gtk4/pmv2-runtime-dependency-contract.json",
-    "local_path": "build/artifacts/GTK4_Gvsbuild_zoitechat-2.18.1-pmv2.2_x64.zip",
-    "size_bytes": 47028971,
-    "sha256": "62a30e534a4126e38868862c943ba39068b6facf2be85a4589fff36b94882f72"
+    "local_path": "build/artifacts/GTK4_Gvsbuild_zoitechat-2.18.1-pmv2.3_x64.zip",
+    "size_bytes": 47028845,
+    "sha256": "8f82cae46791aea986057161390a3ce50e81124b08216db7c7c34005e5fb5b00"
   },
   "native_test_archive": {
     "publication_status": "published",
-    "release_tag": "fabulor-gtk4-4.22.4-pmv2.2",
-    "url": "https://github.com/Fabulor/fabulor/releases/download/fabulor-gtk4-4.22.4-pmv2.2/GTK4_Gvsbuild_zoitechat-2.18.1-pmv2.2-tests_x64.zip",
-    "file_name": "GTK4_Gvsbuild_zoitechat-2.18.1-pmv2.2-tests_x64.zip",
-    "local_path": "build/artifacts/GTK4_Gvsbuild_zoitechat-2.18.1-pmv2.2-tests_x64.zip",
+    "release_tag": "fabulor-gtk4-4.22.4-pmv2.3",
+    "url": "https://github.com/Fabulor/fabulor/releases/download/fabulor-gtk4-4.22.4-pmv2.3/GTK4_Gvsbuild_zoitechat-2.18.1-pmv2.3-tests_x64.zip",
+    "file_name": "GTK4_Gvsbuild_zoitechat-2.18.1-pmv2.3-tests_x64.zip",
+    "local_path": "build/artifacts/GTK4_Gvsbuild_zoitechat-2.18.1-pmv2.3-tests_x64.zip",
     "executable": "win32-fractional-scale.exe",
-    "size_bytes": 3477495,
-    "sha256": "fde33133e35873e29e83a8c404654a8ef121c86296aaa7b70258de63c59644aa"
+    "size_bytes": 3477560,
+    "sha256": "42922c3ba45fb977f942e64b55c6231ec5e9a46646468d81f87307bef657c032"
   },
   "acceptance_scales_percent": [
     100,
