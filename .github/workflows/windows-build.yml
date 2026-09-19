@@ -57,10 +57,12 @@ jobs:
             )
             for ($attempt = 1; $attempt -le $MaxAttempts; $attempt++) {
               try {
-                Invoke-WebRequest -Uri $Url -OutFile $OutFile -ErrorAction Stop
+                Write-Host "Downloading $OutFile (attempt $attempt of $MaxAttempts)"
+                Invoke-WebRequest -Uri $Url -OutFile $OutFile -TimeoutSec 180 -ErrorAction Stop
                 return
               }
               catch {
+                Write-Warning "Download attempt $attempt for $OutFile failed: $_"
                 if ($attempt -eq $MaxAttempts) {
                   throw
                 }
@@ -87,6 +89,7 @@ jobs:
           if ($sourceFile.Length -ne $pmv2Contract.gtk.source_archive.size_bytes -or $sourceHash -ne $pmv2Contract.gtk.source_archive.sha256) {
             throw "GTK source archive integrity check failed: size=$($sourceFile.Length), SHA256=$sourceHash"
           }
+          Write-Host "Verified GTK source archive: $sourceHash"
           $sourceParent = Join-Path $env:RUNNER_TEMP 'fabulor-gtk-pmv2-source'
           New-Item -Path $sourceParent -ItemType Directory -Force | Out-Null
           tar -xf $gtkSourceArchive -C $sourceParent
@@ -117,6 +120,7 @@ jobs:
           if ($nativeFile.Length -ne $nativeTest.size_bytes -or $nativeHash -ne $nativeTest.sha256) {
             throw "GTK native test archive integrity check failed: size=$($nativeFile.Length), SHA256=$nativeHash"
           }
+          Write-Host "Verified GTK native test archive: $nativeHash"
           $nativeTestRoot = Join-Path $env:RUNNER_TEMP 'fabulor-gtk-pmv2-tests'
           New-Item -Path $nativeTestRoot -ItemType Directory -Force | Out-Null
           Expand-Archive -LiteralPath $nativeTestArchive -DestinationPath $nativeTestRoot
@@ -132,6 +136,7 @@ jobs:
           }
           if (-not (Test-Path $vcpkg)) { throw "Unable to locate vcpkg.exe." }
           $supportInstallRoot = Join-Path $env:GITHUB_WORKSPACE 'build\vcpkg-installed'
+          Write-Host 'Installing vcpkg support dependencies'
           & $vcpkg install --triplet x64-windows --x-manifest-root="$env:GITHUB_WORKSPACE\tools\windows-deps" --x-install-root="$supportInstallRoot"
           if ($LASTEXITCODE -ne 0) { throw "vcpkg install failed with exit code $LASTEXITCODE." }
           $supportRoot = Join-Path $supportInstallRoot 'x64-windows'
