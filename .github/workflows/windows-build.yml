@@ -92,14 +92,17 @@ jobs:
           Write-Host "Verified GTK source archive: $sourceHash"
           $sourceParent = Join-Path $env:RUNNER_TEMP 'fabulor-gtk-pmv2-source'
           New-Item -Path $sourceParent -ItemType Directory -Force | Out-Null
-          tar -xf $gtkSourceArchive -C $sourceParent
+          Write-Host 'Extracting verified GTK source archive'
+          python -c "import sys, tarfile; tarfile.open(sys.argv[1], 'r:xz').extractall(sys.argv[2], filter='data')" $gtkSourceArchive $sourceParent
           if ($LASTEXITCODE -ne 0) { throw "GTK source extraction failed with exit code $LASTEXITCODE." }
+          Write-Host 'GTK source extraction complete'
           $sourceRoot = Join-Path $sourceParent 'gtk-4.22.4'
           if (-not (Test-Path -LiteralPath $sourceRoot -PathType Container)) { throw "GTK source root was not extracted." }
           $repoRoot = $env:GITHUB_WORKSPACE
           Push-Location $sourceRoot
           try {
             foreach ($patchName in @('patch', 'test_patch', 'geometry_patch')) {
+              Write-Host "Checking and applying GTK $patchName"
               $patchContract = $pmv2Contract.$patchName
               $patchFile = Join-Path $repoRoot ($patchContract.path.Replace('/', '\'))
               $patchHash = (Get-FileHash -Algorithm SHA256 -LiteralPath $patchFile).Hash.ToLowerInvariant()
@@ -108,6 +111,7 @@ jobs:
               if ($LASTEXITCODE -ne 0) { throw "GTK $patchName did not apply to the pinned source." }
               git apply $patchFile
               if ($LASTEXITCODE -ne 0) { throw "GTK $patchName application failed." }
+              Write-Host "Applied GTK $patchName"
             }
           }
           finally { Pop-Location }

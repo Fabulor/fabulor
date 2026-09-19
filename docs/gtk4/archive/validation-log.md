@@ -9311,6 +9311,14 @@ The candidate contract now downloads from that mirror, retains the GNOME URL
 as provenance, and leaves the size and digest verification unchanged. Fresh CI
 and final release validation remain pending.
 
+The next Windows runner downloaded and verified the mirrored tarball in under
+one second, but its monolithic prerequisite step remained active for over 20
+minutes after that marker. Local extraction and three sequential patch checks
+completed in seconds. CI now uses Python's data-filtered tar extraction and
+logs extraction and each patch boundary, allowing the next run to identify or
+clear the runner-specific stall. Publication remains gated on the full Windows
+build and packaged-artefact validation.
+
 ## Stage Completion Rule
 
 A stage can move to complete in `migration-plan.md` only when:
