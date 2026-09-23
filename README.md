@@ -13,6 +13,7 @@
 [![Windows Build](https://github.com/Fabulor/fabulor/actions/workflows/windows-build.yml/badge.svg)](https://github.com/Fabulor/fabulor/actions/workflows/windows-build.yml)
 [![Tests][tests-badge]][tests-link]
 [![Lint][lint-badge]][lint-link]
+[![Latest Release][latest-release-badge]][latest-release-link]
 [![Licence: GPLv3][licence-badge]][licence-link]
 [![.NET 8.0][dot-net-badge]][dot-net-link]
 [![IRCv3 Client][ircv3-badge]][ircv3-link]
