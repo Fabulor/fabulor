@@ -15,6 +15,8 @@
 [![Lint][lint-badge]][lint-link]
 [![Latest Release][latest-release-badge]][latest-release-link]
 [![Licence: GPLv3][licence-badge]][licence-link]
+[![.NET 8.0][dot-net-badge]][dot-net-link]
+[![IRCv3 Client][ircv3-badge]][ircv3-link]
 
 [![Download Latest Release][download-badge]][latest-release-link]
 </div>
@@ -81,5 +83,11 @@ Security review and hardening were assisted by OpenAI Codex through threat analy
 
 [licence-badge]: https://img.shields.io/badge/License-GPLv3-blue.svg
 [licence-link]: https://www.gnu.org/licenses/gpl-3.0.en.html
+
+[dot-net-badge]: https://img.shields.io/badge/-.NET%208.0-blueviolet?logo=dotnet
+[dot-net-link]: https://learn.microsoft.com/en-us/dotnet/core/whats-new/dotnet-8/overview
+
+[ircv3-badge]: https://img.shields.io/badge/IRCv3-client-orange?style=flat-square
+[ircv3-link]: https://ircv3.net/
 
 [download-badge]: https://img.shields.io/badge/Download-Latest%20Release-brightgreen?style=for-the-badge
