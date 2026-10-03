@@ -9371,6 +9371,10 @@ locally outside the sandbox after temporary-directory access was denied in
 the sandbox. The accepted installer's SHA-256 remained unchanged. The hosted
 workflow explicitly bootstraps WinGet 1.29.380 using the matching pinned
 Microsoft.WinGet.Client module rather than assuming the runner includes it.
+PR review also required the workflow to compare each supported release against
+an independently recorded installed-acceptance hash. Version 1.0.6 is bound to
+the accepted installer hash above; unsupported future versions fail closed
+until their acceptance records are reviewed and added.
 
 Uninstall's generated Python bytecode-cache remnant is tracked separately as
 installer housekeeping; it is not marked fixed by the RC12 upgrade correction.

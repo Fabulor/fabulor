@@ -12,9 +12,9 @@ will not pursue SignPath Foundation further, following the maintainer's
 2026-10-04 decision. The historical application audit is retained as evidence.
 
 No signing service or certificate is currently active. Until signing is
-explicitly announced on a release page, published release candidates must be
+explicitly announced on a release page, published Fabulor installers must be
 treated as unsigned even when their hashes are provided. This also applies to
-the final `1.0.6` WiX candidate and planned WinGet distribution. WinGet does not
+the final `1.0.6` WiX installer and planned WinGet distribution. WinGet does not
 add an Authenticode signature to the installer. Windows SmartScreen
 may therefore warn before running them.
 

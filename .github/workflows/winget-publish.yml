@@ -50,6 +50,14 @@ jobs:
             throw 'Only stable vMAJOR.MINOR.PATCH release tags are supported.'
           }
           $version = $Matches[1]
+          # Independent installed-acceptance record, not supplied by the release.
+          # Add future versions only after their exact installer passes acceptance.
+          $acceptedHashes = @{
+            '1.0.6' = 'AB88A58D2196D734945D2CFBC77258A97C8EBE48F00D1ABDE9028FC74B94E65C'
+          }
+          if (-not $acceptedHashes.ContainsKey($version)) {
+            throw 'No reviewed installed-acceptance hash exists for this version.'
+          }
           $releaseJson = gh api "repos/Fabulor/fabulor/releases/tags/$env:RELEASE_TAG"
           if ($LASTEXITCODE -ne 0) { throw 'Cannot read the published release.' }
           $release = $releaseJson | ConvertFrom-Json
@@ -69,6 +77,7 @@ jobs:
             throw 'Invalid release checksum file.'
           }
           $hash = $Matches[1].ToUpperInvariant()
+          if ($hash -cne $acceptedHashes[$version]) { throw 'Release does not match the accepted installer.' }
           if ((Get-FileHash $name -Algorithm SHA256).Hash -ne $hash) { throw 'Installer hash mismatch.' }
           if ($assets[0].digest -and $assets[0].digest -ne "sha256:$($hash.ToLowerInvariant())") {
             throw 'GitHub asset digest mismatch.'

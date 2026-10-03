@@ -109,7 +109,7 @@ installation. See [Add-ons](addons.md), [Commands](commands.md), and the
 - Produce a bundled-component licence inventory and CycloneDX software bill
   of materials with installer builds.
 
-Release candidates are currently unsigned and can trigger a Windows
+Current Fabulor installers are unsigned and can trigger a Windows
 SmartScreen warning. Verify the official download and published SHA-256 hash
 before following the procedure in
 [Getting started](getting-started.md#windows-smartscreen-and-unsigned-installers).
