@@ -8,11 +8,14 @@ Fabulor's initial SignPath Foundation application was not approved because the
 new public project had not yet established the community adoption and
 independent visibility required by the Foundation program. This was not a
 finding against the project's code, security controls, or licensing. Fabulor
-intends to reapply after building those public trust signals.
+will not pursue SignPath Foundation further, following the maintainer's
+2026-10-04 decision. The historical application audit is retained as evidence.
 
 No signing service or certificate is currently active. Until signing is
-explicitly announced on a release page, published release candidates must be
-treated as unsigned even when their hashes are provided. Windows SmartScreen
+explicitly announced on a release page, published Fabulor installers must be
+treated as unsigned even when their hashes are provided. This also applies to
+the final `1.0.6` WiX installer and planned WinGet distribution. WinGet does not
+add an Authenticode signature to the installer. Windows SmartScreen
 may therefore warn before running them.
 
 ## Team Roles
@@ -30,8 +33,8 @@ name them explicitly.
 
 Every person participating in source access, review, release preparation, or
 signing must use a secure multi-factor authentication method for GitHub and
-SignPath. Role changes require repository-owner approval and a reviewed update
-to this policy.
+any future signing service. Role changes require repository-owner approval and
+a reviewed update to this policy.
 
 ## Review Rules
 
@@ -56,8 +59,9 @@ The initial signing scope is restricted to Fabulor-owned artifacts:
 - `FabulorSetup.exe`.
 
 The exact paths, metadata restrictions, nesting order, and exclusions are
-defined in the
+recorded for the former SignPath proposal in the
 [SignPath artifact and metadata contract](docs/security/signpath-artifact-metadata.md).
+Any future integration must review that contract before activation.
 Third-party runtime and library files bundled by Fabulor are not eligible for
 the Fabulor signing identity.
 
@@ -71,7 +75,7 @@ Before approving a signing request, the signing approver must verify that:
    provenance evidence identify the same build;
 3. all required tests, security checks, legal-inventory checks, and metadata
    checks passed;
-4. the SignPath artifact configuration matched only the allowlisted files;
+4. the signing configuration matched only the allowlisted files;
 5. the release notes identify the version, supported Windows platform, known
    limitations, privacy policy, and this Code signing policy; and
 6. no unresolved security or release-blocking defect remains.
@@ -84,13 +88,12 @@ Only those verified outputs may be promoted to a public release.
 
 A suspected signing-policy violation, unauthorized artifact, compromised
 account, or incorrect signature stops release promotion immediately. The
-maintainer must preserve the evidence, notify SignPath when its service or
-certificate may be affected, investigate the source and build boundary, and
+maintainer must preserve the evidence, notify the signing provider when its
+service or certificate may be affected, investigate the source and build boundary, and
 request revocation when appropriate.
 
-Security reports must follow [SECURITY.md](SECURITY.md). Concerns that a file
-signed with a SignPath Foundation certificate violates SignPath's policy may
-also be reported to `support@signpath.io` with concise supporting evidence.
+Security reports must follow [SECURITY.md](SECURITY.md). Provider-specific
+reporting contacts will be documented if a signing service is activated.
 
 ## Related Policies
 

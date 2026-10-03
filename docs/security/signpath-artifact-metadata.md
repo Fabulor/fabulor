@@ -1,9 +1,13 @@
 # SignPath Artifact And Metadata Contract
 
-This document defines the metadata and signing boundary for Fabulor's Windows
-release artifacts. It is the source contract for the future SignPath artifact
-configurations; provisioning those configurations remains a separate release
-gate.
+Status as of 2026-10-04: the SignPath integration proposal is retired. Keep the
+canonical product metadata and Fabulor-owned signing boundary as reference for
+any future signing route. No SignPath configuration is being provisioned.
+
+This document defined the metadata and signing boundary proposed for Fabulor's
+Windows release artefacts under SignPath. It was the source contract for the
+proposed SignPath configurations. That integration and its provisioning gate
+are retired; any future signing route requires a separately reviewed contract.
 
 ## Canonical Metadata
 
@@ -26,8 +30,8 @@ checks the MSI and Burn registration metadata.
 
 ## Signing Allowlist
 
-The initial SignPath configurations must sign only these Fabulor-owned
-artifacts:
+The retired proposal limited SignPath configurations to these Fabulor-owned
+artefacts:
 
 | Artifact | Required restrictions |
 | --- | --- |

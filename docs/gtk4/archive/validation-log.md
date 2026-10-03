@@ -9319,6 +9319,66 @@ logs extraction and each patch boundary, allowing the next run to identify or
 clear the runner-specific stall. Publication remains gated on the full Windows
 build and packaged-artefact validation.
 
+## Final 1.0.6 Preparation — 2026-10-04
+
+The maintainer confirmed that RC12 passed multi-monitor and detached-window
+testing, with no reported regressions during the public testing soak. The
+report does not enumerate each monitor's scale, so no additional individual
+scale percentages are claimed as tested.
+
+The previously accepted Python 3.14.6-to-3.14.3 in-place upgrade passed without
+Repair and loaded Python add-ons. PR #322 merged as
+`fcfc856fe297733f14916167e828a8f55e724cec`. Published RC12 retains installer
+SHA-256 `188b7b0f41cdb0064587da49e7d0460ff633ae69a0ce918e99e02efee45e9a94`.
+
+Current protected `main` is `5ae6c3f592fa315a51583707e8f95d24dcfcae86`.
+Its only source-tree difference from RC12 is eight README badge lines. Windows
+Installer Build run `35840929543`, Tests, Lint, and Code Quality passed for
+this revision. The final local candidate uses the unchanged compiled outputs
+from that successful build, rather than combining files from local runtime
+staging trees.
+
+The 136,279,565-byte bootstrapper has SHA-256
+`ab88a58d2196d734945d2cfbc77258a97c8ebe48f00d1abde9028fc74b94e65c`.
+The 70,259,508-byte MSI has SHA-256
+`0fb12ecd6e12a74eb76a922fbc214eae8222405babe8ba90ce274f73bd1f29b4`.
+Local production validators passed: identity `Fabulor`, version `1.0.6`,
+2,519 installed files, no legacy GTK files, one chain package, and embedded MSI
+equality. All 44 production WiX contract tests passed.
+
+The maintainer selected WinGet distribution and retired the planned SignPath
+Foundation integration. The candidate remains unsigned. The local WinGet
+manifest passed validation. WinGet v1.29.380 downloaded the candidate from a
+loopback-only server, verified its installer hash, and completed installation.
+Burn offered an in-place upgrade over RC12; the maintainer confirmed plugins,
+settings, and connections remained intact. Subsequent uninstall and clean
+installation were also accepted on 2026-10-04. Repair coverage is not claimed.
+The observed SmartScreen warning identifies an unrecognised application and
+Unknown publisher; WinGet distribution does not sign the installer.
+
+The WinGet workflow prepares three community-format manifests for published
+stable releases and retains them for review. Submission is restricted to an
+explicit manual run with `submit` selected, using `WINGET_PUBLISH_TOKEN` only
+in the submission step. Installer checksums and the available GitHub asset
+digest are verified before manifest generation. Microsoft WingetCreate
+1.12.13.0 is pinned by URL and SHA-256. The generated 1.0.6 manifests passed
+local `winget validate` without warnings; workflow YAML and PowerShell syntax
+passed local checks. Hosted execution and authenticated submission remain
+untested. No release or manifest submission has been made.
+
+Before publication, all repository Lint workflow validation suites passed
+locally outside the sandbox after temporary-directory access was denied in
+the sandbox. The accepted installer's SHA-256 remained unchanged. The hosted
+workflow explicitly bootstraps WinGet 1.29.380 using the matching pinned
+Microsoft.WinGet.Client module rather than assuming the runner includes it.
+PR review also required the workflow to compare each supported release against
+an independently recorded installed-acceptance hash. Version 1.0.6 is bound to
+the accepted installer hash above; unsupported future versions fail closed
+until their acceptance records are reviewed and added.
+
+Uninstall's generated Python bytecode-cache remnant is tracked separately as
+installer housekeeping; it is not marked fixed by the RC12 upgrade correction.
+
 ## Stage Completion Rule
 
 A stage can move to complete in `migration-plan.md` only when:

@@ -1,0 +1,175 @@
+name: Publish to WinGet
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      release-tag:
+        description: 'Published stable release tag (for example v1.0.6)'
+        required: true
+        type: string
+      submit:
+        description: 'Submit the validated manifests to microsoft/winget-pkgs'
+        default: false
+        type: boolean
+
+# Release events prepare reviewable manifests only. Submission is a separate
+# manual run with submit selected, after the release and artefacts are reviewed.
+permissions:
+  contents: read
+
+concurrency:
+  group: winget-publish
+  cancel-in-progress: false
+
+jobs:
+  winget:
+    if: github.repository == 'Fabulor/fabulor' && (github.event_name == 'workflow_dispatch' || !github.event.release.prerelease)
+    runs-on: windows-2025
+    timeout-minutes: 15
+    steps:
+      - name: Install pinned WinGet validation client
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          Install-Module Microsoft.WinGet.Client -RequiredVersion 1.29.380 -Repository PSGallery -Scope CurrentUser -Force
+          Import-Module Microsoft.WinGet.Client -RequiredVersion 1.29.380
+          Repair-WinGetPackageManager -Version 1.29.380 -Force
+          winget --version
+          if ($LASTEXITCODE -ne 0) { throw 'WinGet client bootstrap failed.' }
+
+      - name: Verify release and prepare manifests
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ inputs.release-tag || github.event.release.tag_name }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          if ($env:RELEASE_TAG -cnotmatch '^v([0-9]+\.[0-9]+\.[0-9]+)$') {
+            throw 'Only stable vMAJOR.MINOR.PATCH release tags are supported.'
+          }
+          $version = $Matches[1]
+          # Independent installed-acceptance record, not supplied by the release.
+          # Add future versions only after their exact installer passes acceptance.
+          $acceptedHashes = @{
+            '1.0.6' = 'AB88A58D2196D734945D2CFBC77258A97C8EBE48F00D1ABDE9028FC74B94E65C'
+          }
+          if (-not $acceptedHashes.ContainsKey($version)) {
+            throw 'No reviewed installed-acceptance hash exists for this version.'
+          }
+          $releaseJson = gh api "repos/Fabulor/fabulor/releases/tags/$env:RELEASE_TAG"
+          if ($LASTEXITCODE -ne 0) { throw 'Cannot read the published release.' }
+          $release = $releaseJson | ConvertFrom-Json
+          if ($release.draft -or $release.prerelease) { throw 'Release must be published and stable.' }
+          $name = "FabulorSetup-v$version.exe"
+          $assets = @($release.assets | Where-Object name -CEQ $name)
+          $checksums = @($release.assets | Where-Object name -CEQ "$name.sha256")
+          if ($assets.Count -ne 1 -or $checksums.Count -ne 1) {
+            throw "Exactly one $name and $name.sha256 are required."
+          }
+          $url = "https://github.com/Fabulor/fabulor/releases/download/$env:RELEASE_TAG/$name"
+          if ($assets[0].browser_download_url -cne $url) { throw 'Unexpected installer URL.' }
+          Invoke-WebRequest $url -OutFile $name
+          Invoke-WebRequest "$url.sha256" -OutFile "$name.sha256"
+          $checksum = (Get-Content "$name.sha256" -Raw).Trim()
+          if ($checksum -notmatch ('^([A-Fa-f0-9]{64})(?:\s+\*?' + [regex]::Escape($name) + ')?$')) {
+            throw 'Invalid release checksum file.'
+          }
+          $hash = $Matches[1].ToUpperInvariant()
+          if ($hash -cne $acceptedHashes[$version]) { throw 'Release does not match the accepted installer.' }
+          if ((Get-FileHash $name -Algorithm SHA256).Hash -ne $hash) { throw 'Installer hash mismatch.' }
+          if ($assets[0].digest -and $assets[0].digest -ne "sha256:$($hash.ToLowerInvariant())") {
+            throw 'GitHub asset digest mismatch.'
+          }
+          $folder = 'winget-manifests'
+          New-Item $folder -ItemType Directory | Out-Null
+          @"
+          # yaml-language-server: `$schema=https://aka.ms/winget-manifest.version.1.10.0.schema.json
+          PackageIdentifier: Fabulor.Fabulor
+          PackageVersion: $version
+          DefaultLocale: en-GB
+          ManifestType: version
+          ManifestVersion: 1.10.0
+          "@ | Set-Content "$folder/Fabulor.Fabulor.yaml" -Encoding utf8
+          @"
+          # yaml-language-server: `$schema=https://aka.ms/winget-manifest.defaultLocale.1.10.0.schema.json
+          PackageIdentifier: Fabulor.Fabulor
+          PackageVersion: $version
+          PackageLocale: en-GB
+          Publisher: Fabulor
+          PublisherUrl: https://github.com/Fabulor
+          PackageName: Fabulor
+          PackageUrl: https://github.com/Fabulor/fabulor
+          License: GPL-3.0-only
+          LicenseUrl: https://github.com/Fabulor/fabulor/blob/main/Licence.md
+          ShortDescription: A modern GTK4 IRC client for Windows 11 with Python, Tcl and C# add-ons.
+          Moniker: fabulor
+          Tags:
+            - irc
+            - chat
+            - gtk4
+          ReleaseNotesUrl: https://github.com/Fabulor/fabulor/releases/tag/$env:RELEASE_TAG
+          ManifestType: defaultLocale
+          ManifestVersion: 1.10.0
+          "@ | Set-Content "$folder/Fabulor.Fabulor.locale.en-GB.yaml" -Encoding utf8
+          @"
+          # yaml-language-server: `$schema=https://aka.ms/winget-manifest.installer.1.10.0.schema.json
+          PackageIdentifier: Fabulor.Fabulor
+          PackageVersion: $version
+          Installers:
+            - Architecture: x64
+              InstallerType: burn
+              Scope: machine
+              MinimumOSVersion: 10.0.22000.0
+              InstallerUrl: $url
+              InstallerSha256: $hash
+              InstallModes:
+                - interactive
+                - silent
+                - silentWithProgress
+              InstallerSwitches:
+                Interactive: /install /norestart
+                Silent: /install /quiet /norestart
+                SilentWithProgress: /install /passive /norestart
+              UpgradeBehavior: install
+              AppsAndFeaturesEntries:
+                - DisplayName: Fabulor Setup
+                  Publisher: Fabulor
+                  DisplayVersion: $version
+                  UpgradeCode: '{D9F4A5C2-7F3B-4F9E-9A21-3C8F6B7E4A10}'
+                  InstallerType: burn
+          ManifestType: installer
+          ManifestVersion: 1.10.0
+          "@ | Set-Content "$folder/Fabulor.Fabulor.installer.yaml" -Encoding utf8
+          winget validate --manifest $folder --disable-interactivity
+          if ($LASTEXITCODE -ne 0) { throw 'WinGet manifest validation failed.' }
+          "Prepared Fabulor $version; SHA-256: $hash. Submission requires a manual run with submit selected." >> $env:GITHUB_STEP_SUMMARY
+
+      - name: Retain manifests for review
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: winget-manifests
+          path: winget-manifests/*.yaml
+          if-no-files-found: error
+
+      - name: Download pinned Microsoft WingetCreate
+        if: github.event_name == 'workflow_dispatch' && inputs.submit
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          Invoke-WebRequest 'https://github.com/microsoft/winget-create/releases/download/v1.12.13.0/wingetcreate.exe' -OutFile wingetcreate.exe
+          $expected = '24042bd37915805615e6cf969ac57c6439124c3fe85823327f5f3fb24bd9ffea'
+          if ((Get-FileHash wingetcreate.exe -Algorithm SHA256).Hash -ne $expected) {
+            throw 'WingetCreate hash mismatch.'
+          }
+
+      - name: Submit manifests to Microsoft community repository
+        if: github.event_name == 'workflow_dispatch' && inputs.submit
+        shell: pwsh
+        env:
+          WINGET_CREATE_GITHUB_TOKEN: ${{ secrets.WINGET_PUBLISH_TOKEN }}
+        run: |
+          if (-not $env:WINGET_CREATE_GITHUB_TOKEN) { throw 'WINGET_PUBLISH_TOKEN is not configured.' }
+          ./wingetcreate.exe submit --no-open winget-manifests
+          if ($LASTEXITCODE -ne 0) { throw 'WinGet submission failed; review output before retrying.' }

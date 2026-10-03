@@ -1,5 +1,10 @@
 # SignPath Foundation Eligibility Audit
 
+Status as of 2026-10-04: historical. The maintainer has decided not to pursue
+SignPath Foundation further. Distribution preparation now targets WinGet;
+Microsoft Store packaging is deferred. The assessment below records the
+earlier application and does not describe an active signing integration.
+
 Audit date: 2026-08-09
 
 Repository state reviewed: `95e0eb08d00f74d0f66b38b230d64ce6d95446ff`

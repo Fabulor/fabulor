@@ -19,12 +19,17 @@ You need:
 Close Fabulor before installing an upgrade, changing installed features, or
 uninstalling it.
 
-## Windows SmartScreen And Unsigned Release Candidates
+## Windows SmartScreen And Unsigned Installers
 
-Current Fabulor release candidates are not Authenticode-signed. Windows
+Current Fabulor installers, including `1.0.6`, are not
+Authenticode-signed. WinGet distribution does not sign these files. Windows
 SmartScreen can therefore show **Windows protected your PC** or an
 **Unknown publisher** warning even when the installer is an authentic Fabulor
 release.
+
+A matching SHA-256 confirms that the downloaded file matches the expected
+installer. It does not verify the publisher's identity, prove the file is safe,
+or replace a code-signing certificate.
 
 Proceed only when all of the following are true:
 
@@ -36,7 +41,7 @@ Proceed only when all of the following are true:
 Open PowerShell in the folder containing the download and calculate its hash:
 
 ```powershell
-Get-FileHash -Algorithm SHA256 .\FabulorSetup-v1.0.6-rc8.exe
+Get-FileHash -Algorithm SHA256 .\FabulorSetup-v1.0.6.exe
 ```
 
 Compare the complete `Hash` value, not just its beginning or end. If the
@@ -51,6 +56,10 @@ or other unverified location. A future signed release will be identified
 explicitly on its release page.
 
 ## Install Fabulor
+
+WinGet distribution is being prepared and is not yet announced as available.
+Until the manifest is accepted, use the official GitHub release installer.
+Microsoft Store packaging is a separate future task.
 
 1. Start `FabulorSetup.exe`.
 2. Approve the Windows administrator prompt.

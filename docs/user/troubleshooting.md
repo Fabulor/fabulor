@@ -74,9 +74,9 @@ bootstrapper is available.
 
 ### Setup Does Not Start Or Complete
 
-Current release candidates are unsigned and can produce a Windows SmartScreen
+Current Fabulor installers are unsigned and can produce a Windows SmartScreen
 **Unknown publisher** warning. Follow the verification procedure in
-[Getting started](getting-started.md#windows-smartscreen-and-unsigned-release-candidates)
+[Getting started](getting-started.md#windows-smartscreen-and-unsigned-installers)
 before choosing **More info > Run anyway**. A SmartScreen reputation warning
 is not permission to ignore a hash mismatch, malware detection, quarantine, or
 an installer obtained outside the official project release page.

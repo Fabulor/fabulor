@@ -1,7 +1,7 @@
 <!-- Fabulor production roadmap -->
 # Fabulor Production Roadmap
 
-Last reconciled: 2026-09-19
+Last reconciled: 2026-10-04
 
 ## Current Production Baseline
 
@@ -117,15 +117,26 @@ Last reconciled: 2026-09-19
       without pane drift. Extended use at 300% also passed with multiple themes,
       backgrounds, menus, Ban and Ignore Lists, compact mode, and single-line
       topics without a reported stability or layout regression.
-- [ ] Extend PMv2 acceptance during RC11 feedback across the remaining 100%,
-      125%, 150%, 175%, 200%, and 225% scales and mixed-monitor transitions.
+- [x] Confirm RC12 multi-monitor and detached-window acceptance. The maintainer
+      reported successful tester results on 2026-10-04 and no regressions during
+      the public testing soak.
+- [ ] Record explicit coverage of the remaining 100%, 125%, 150%, 175%, 200%,
+      and 225% scales; the successful multi-monitor report did not specify
+      the exact scales tested.
       Revert the manifest to System-DPI awareness if that broader matrix exposes
       a rendering, input, geometry, or cumulative-size regression.
-- [ ] Validate the corrected major-upgrade installer over the earlier PMv2 test
+- [x] Validate the corrected major-upgrade installer over the earlier PMv2 test
       build with Python 3.14.6. Confirm that the selected pinned Python 3.14.3
       files, including `python314.dll`, are installed without a separate Repair,
       and that Python add-ons load after the upgrade. The published RC11 upgrade
-      skipped the older-version files before removing the test build.
+      skipped the older-version files before removing the test build. Installed
+      acceptance passed: Python 3.14.3 replaced 3.14.6 and add-ons loaded without
+      Repair. PR #322 is merged and the tested RC12 installer is published.
+- [x] Validate the final `1.0.6` WiX candidate with the maintainer's local
+      WinGet manifest before publishing source changes, release assets, or a
+      manifest submission. Installation, RC12 upgrade, optional runtimes,
+      uninstall and clean reinstallation passed. Burn detected the existing
+      install; public WinGet package detection and Repair remain separate checks.
 - [ ] Exercise repair and uninstall once against the final signed or
       release-candidate artefacts.
 - [ ] Run a final installed accessibility and keyboard-navigation pass over
@@ -221,10 +232,11 @@ Last reconciled: 2026-09-19
 - [ ] Perform a final documentation review against the final installed release
       candidate and ensure all screenshots exclude personal or sensitive data.
 
-## Post-1.0 Signing And Adoption
+## Distribution And Future Signing
 
-These tasks depend on external adoption and SignPath Foundation acceptance.
-They are tracked separately from the engineering acceptance gate for `1.0.6`.
+On 2026-10-04 the maintainer selected WinGet as the next distribution route,
+with Microsoft Store packaging deferred. Fabulor will not pursue SignPath
+Foundation. The WiX candidate remains unsigned; WinGet does not sign it.
 
 - [x] Complete a SignPath Foundation eligibility audit covering repository
       visibility, GPLv3 and bundled-component licensing, release status,
@@ -257,15 +269,21 @@ They are tracked separately from the engineering acceptance gate for `1.0.6`.
         application because the newly public project does not yet have enough
         community adoption and independent visibility; no engineering,
         security-control, or licensing defect was identified.
-- [ ] Build genuine public adoption, independent references, contributor
-      activity, and sustained engagement, then reapply to SignPath Foundation.
-- [ ] After acceptance, adapt the protected GitHub release workflow so
-      SignPath can verify the production build provenance, attest the unsigned
-      artefacts, promote only those exact artefacts, and manually approve
-      signing of the Fabulor MSI and bootstrapper.
-- [ ] Obtain signing approval, verify the Authenticode signatures and RFC 3161
-      timestamps, and run installed acceptance against the signed artefacts.
-- [ ] Add the signed-release disclosure to the first signed release page.
+- [x] Validate `Fabulor.yaml` against the final candidate and test through
+      WinGet locally before publication. On 2026-10-04 the maintainer accepted
+      the RC12 in-place upgrade and subsequent clean installation, with plugins
+      loading and no reported regressions. Separate Repair coverage remains open.
+- [x] Prepare `.github/workflows/winget-publish.yml` using Microsoft
+      WingetCreate, the `WINGET_PUBLISH_TOKEN` repository secret, verified
+      versioned release assets, and multi-file manifests. Stable release events
+      prepare review artefacts only; submission requires a manual run with
+      `submit` selected. Hosted execution remains to be verified after merge.
+- [ ] After acceptance and publication of immutable release assets, submit the
+      manifest to `microsoft/winget-pkgs` and verify its published install path.
+- [ ] Consider Microsoft Store packaging separately after WinGet distribution.
+- [ ] If signing is selected later, review build provenance and approval
+      controls, verify Authenticode and RFC 3161 timestamps, test the signed
+      packages, and update the disclosure before publication.
 - [x] Design a Fabulor-owned, authenticated, and signed update feed in
       [`docs/security/signed-update-feed-design.md`](docs/security/signed-update-feed-design.md).
 - [ ] Provision the update signing identities, metadata origin, bounded TUF
@@ -359,6 +377,11 @@ The GTK4 migration is complete. Further UI work is ordinary product
 maintenance and must be tracked as contained follow-up fixes.
 
 ## Installer And Runtime
+
+- [ ] Clean up only Fabulor-generated `python/__pycache__/*.pyc` on uninstall.
+      RC11 left these files beneath the install directory. This is separate
+      from the accepted RC12 runtime-upgrade fix; preserve user-authored files
+      and profile data.
 
 - [x] Install the core executable, native plugins, GTK4 runtime, Python 3.14,
       Tcl 8.6, .NET host, configuration assets, palettes, emoji, fonts, and
