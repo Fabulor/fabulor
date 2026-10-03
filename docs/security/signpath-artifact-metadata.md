@@ -1,5 +1,9 @@
 # SignPath Artifact And Metadata Contract
 
+Status as of 2026-10-04: the SignPath integration proposal is retired. Keep the
+canonical product metadata and Fabulor-owned signing boundary as reference for
+any future signing route. No SignPath configuration is being provisioned.
+
 This document defines the metadata and signing boundary for Fabulor's Windows
 release artifacts. It is the source contract for the future SignPath artifact
 configurations; provisioning those configurations remains a separate release

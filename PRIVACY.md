@@ -63,11 +63,15 @@ GitHub hosts the source repository, issue tracker, workflow records, and
 release downloads. Users who choose to visit those services are subject to
 [GitHub's privacy statement](https://docs.github.com/en/site-policy/privacy-policies/github-general-privacy-statement).
 
-SignPath.io and SignPath Foundation will be used to verify and sign approved
-Fabulor release artifacts after signing is activated. Build provenance,
-release artifacts, and signing records are processed for that purpose; Fabulor
-user profiles and IRC content are not part of the signing submission. See the
-[Code signing policy](CODE_SIGNING_POLICY.md).
+Fabulor is preparing WinGet distribution and may consider Microsoft Store
+packaging later. Users who invoke WinGet or visit Microsoft services are
+subject to [Microsoft's privacy statement](https://privacy.microsoft.com/privacystatement).
+Fabulor itself does not contact those services to check for updates.
+
+No signing provider is active. Fabulor is no longer pursuing SignPath
+Foundation and does not submit release artefacts or user data to that service.
+Any future provider and its data handling will be documented before activation.
+See the [Code signing policy](CODE_SIGNING_POLICY.md).
 
 ## Changes To This Policy
 

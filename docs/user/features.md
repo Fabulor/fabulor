@@ -112,7 +112,7 @@ installation. See [Add-ons](addons.md), [Commands](commands.md), and the
 Release candidates are currently unsigned and can trigger a Windows
 SmartScreen warning. Verify the official download and published SHA-256 hash
 before following the procedure in
-[Getting started](getting-started.md#windows-smartscreen-and-unsigned-release-candidates).
+[Getting started](getting-started.md#windows-smartscreen-and-unsigned-installers).
 Consult the
 [security and privacy guide](security-and-privacy.md), the project
 [security policy](../../SECURITY.md), and the

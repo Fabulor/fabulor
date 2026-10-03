@@ -8,6 +8,27 @@ release history.
 Fabulor 1.0.6 release candidates are published as GitHub prereleases. The
 history below describes the cumulative work toward the first stable release.
 
+## 1.0.6 — 2026-10-04
+
+- Promotes the accepted RC12 client and installer payload to the first stable
+  release for Windows 11+ x64, without additional client changes.
+- Includes Per-Monitor-V2 DPI awareness, GTK4 themes and background images,
+  persistent pane and list layouts, corrected Ban List filters, and the pinned
+  Python runtime upgrade correction described below.
+- Passed external multi-monitor and detached-window testing, plus local WinGet
+  in-place upgrade and clean-install acceptance with working plugin hosts.
+- Adds reviewed-manifest preparation and manually gated WinGet submission.
+  WinGet availability follows Microsoft's acceptance of the first manifest;
+  Microsoft Store packaging remains a separate future task.
+- Remains unsigned. Installer SHA-256 verification confirms file integrity,
+  not publisher identity; Windows SmartScreen may still warn. The maintainer
+  has chosen not to pursue SignPath Foundation integration.
+
+Known follow-up: unusually long transcript nicknames can overlap timestamps;
+  optional nickname and channel-name display limits are planned. Generated
+  Python bytecode-cache remnants may remain after uninstall. Neither changes
+  IRC identities or removes the user's retained profile.
+
 ## 1.0.6 Release Candidate Series
 
 ### Added

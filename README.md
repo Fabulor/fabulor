@@ -58,12 +58,12 @@ Fabulor is licensed under the GNU General Public License version 3.0 only. The c
 scope, accountable team roles, review requirements, and manual release
 approval boundary.
 
-Fabulor intends to reapply for SignPath Foundation signing after the public
-project has established the required community adoption and independent
-visibility. No signing service or certificate is currently active. Release
-pages will identify signed artifacts explicitly if signing is activated;
-current release candidates remain unsigned and can trigger a Windows
-SmartScreen warning.
+Fabulor is preparing WinGet distribution, with Microsoft Store packaging
+planned for later consideration. Availability will be announced after local
+installer testing and acceptance of the manifest. No signing service or
+certificate is active, and Fabulor is no longer pursuing SignPath Foundation.
+The WiX installer remains unsigned and can trigger a Windows SmartScreen
+warning. WinGet distribution does not sign the installer.
 
 ## Acknowledgements
 
