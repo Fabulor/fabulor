@@ -30,6 +30,7 @@
 #include "gtk-compat.h"
 #include "chanview.h"
 #include "channel-model.h"
+#include "clipped-label.h"
 #include "theme/theme-manager.h"
 #include "theme/theme-access.h"
 
@@ -167,17 +168,8 @@ chanview_theme_changed (const ThemeChangedEvent *event, gpointer userdata)
 static char *
 truncate_tab_name (char *name, int max)
 {
-	char *buf;
-
-	if (max > 2 && g_utf8_strlen (name, -1) > max)
-	{
-		/* truncate long channel names */
-		buf = g_malloc (strlen (name) + 4);
-		g_utf8_strncpy (buf, name, max);
-		strcat (buf, "..");
-		return buf;
-	}
-
+	/* Names remain complete; the view ellipsises its allocated width. */
+	(void) max;
 	return name;
 }
 

@@ -9,6 +9,41 @@
 #include <gdk/win32/gdkwin32.h>
 #endif
 
+#ifdef G_OS_WIN32
+static void
+fabulor_tooltip_metrics_changed (GtkSettings *settings, GParamSpec *pspec,
+	gpointer data)
+{
+	typedef int (WINAPI *MetricsForDpiFunc) (int, UINT);
+	MetricsForDpiFunc metrics_for_dpi = (MetricsForDpiFunc)
+		GetProcAddress (GetModuleHandleW (L"user32.dll"), "GetSystemMetricsForDpi");
+	gint current;
+	gint physical = GetSystemMetrics (SM_CXCURSOR);
+	gint logical = metrics_for_dpi ? metrics_for_dpi (SM_CXCURSOR, 96) : 0;
+	(void) pspec;
+	(void) data;
+	g_object_get (settings, "gtk-cursor-theme-size", &current, NULL);
+	/* GTK's Win32 setting is physical, but tooltip anchors are logical.
+	 * Win32 still loads the actual cursor at the system's physical size. */
+	if (logical > 0 && current == physical && current != logical)
+		g_object_set (settings, "gtk-cursor-theme-size", logical, NULL);
+}
+#endif
+
+void
+fabulor_window_configure_tooltip_metrics (void)
+{
+#ifdef G_OS_WIN32
+	GtkSettings *settings = gtk_settings_get_default ();
+	if (!settings || g_object_get_data (G_OBJECT (settings), "fabulor-tooltip-metrics"))
+		return;
+	g_object_set_data (G_OBJECT (settings), "fabulor-tooltip-metrics", GINT_TO_POINTER (1));
+	g_signal_connect (settings, "notify::gtk-cursor-theme-size",
+		G_CALLBACK (fabulor_tooltip_metrics_changed), NULL);
+	fabulor_tooltip_metrics_changed (settings, NULL, NULL);
+#endif
+}
+
 typedef struct
 {
 	GtkWindow *window;

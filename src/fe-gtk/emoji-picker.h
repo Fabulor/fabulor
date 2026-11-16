@@ -21,6 +21,10 @@ gboolean fabulor_emoji_picker_flag_matches (const gchar *code,
 void fabulor_emoji_picker_viewport_size (gint root_width, gint root_height,
 	gint *width, gint *height);
 
+/* Both icon activation and GtkText's existing emoji action use this chooser. */
+gboolean fabulor_emoji_picker_native_popup (GtkEntry *entry);
+void fabulor_emoji_picker_bind_entry (GtkEntry *entry);
+
 GtkPopover *fabulor_emoji_picker_popover_get (GtkEntry *entry);
 GtkPopover *fabulor_emoji_picker_popover_ensure (GtkEntry *entry);
 

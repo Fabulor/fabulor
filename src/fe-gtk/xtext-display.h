@@ -31,10 +31,15 @@ gboolean fabulor_xtext_inline_image_size (gint line_height,
 gboolean fabulor_xtext_device_to_logical (gint device_pixels,
 	gint scale_factor, gint *logical_pixels);
 gint fabulor_xtext_scale_factor (gint scale_factor);
+gint fabulor_xtext_auto_indent (gint requested, gint minimum,
+	gint maximum, gint space_width);
 gint fabulor_xtext_layout_text_width (PangoLayout *layout,
 	const gchar *text, gint length);
 gint fabulor_xtext_layout_index_at_x (PangoLayout *layout,
 	const gchar *text, gint length, gint x);
+gint fabulor_xtext_fit_prefix (const gchar *text, gint available,
+	gint ellipsis_width, gint (*measure) (gint byte_end, gpointer data),
+	gpointer data, gint *fitted_width);
 void fabulor_xtext_decoration_positions (gint baseline, gint ascent,
 	gint line_height, gint *strike_y, gint *underline_y);
 

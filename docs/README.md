@@ -46,6 +46,8 @@ Current architecture and runtime guidance:
 - [Runtime and packaging](gtk4/runtime-packaging.md)
 - [Theme architecture](gtk4/theme-architecture.md)
 - [Transcript rendering architecture](gtk4/transcript-rendering-architecture.md)
+- [Local v1.0.7 development and validation](gtk4/local-1.0.7-validation.md)
+- [Local v1.0.7 consolidation and publication handoff](gtk4/local-1.0.7-publication-handoff.md)
 - [Spell and input architecture](gtk4/spell-input-architecture.md)
 - [Tray architecture](gtk4/tray-architecture.md)
 - [Notification architecture](gtk4/notification-architecture.md)

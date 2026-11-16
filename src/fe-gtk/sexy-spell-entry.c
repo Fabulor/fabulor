@@ -28,6 +28,7 @@
 #include "spell-entry-style.h"
 #include "spell-entry-widget.h"
 #include "spell-entry-words.h"
+#include "spell-entry-autocorrect.h"
 #include <string.h>
 #include <fcntl.h>
 #include <stdlib.h>
@@ -144,6 +145,7 @@ struct _SexySpellEntryPriv
 	FabulorSpellWords    *words;
 	guint                 theme_listener_id;
 	gboolean              checked;
+	gboolean              autocorrect;
 	gboolean              parseattr;
 	gboolean              context_click_pending;
 	GSimpleActionGroup    *menu_actions;
@@ -179,6 +181,94 @@ static void       sexy_spell_entry_refresh_words              (SexySpellEntry   
 static void       sexy_spell_entry_update_menu                (SexySpellEntry       *entry);
 static gboolean   sexy_spell_entry_context_click_finished     (gpointer              user_data);
 
+enum
+{
+	WORD_CHECK,
+	LAST_SIGNAL
+};
+static guint signals[LAST_SIGNAL] = {0};
+
+static gboolean
+autocorrect_original_allowed (GtkEntry *widget, const char *original)
+{
+	SexySpellEntry *entry = SEXY_SPELL_ENTRY (widget);
+	GSList *li;
+	gboolean misspelled = FALSE;
+	const char *text = gtk_editable_get_text (GTK_EDITABLE (widget));
+	if (!have_enchant || !entry->priv->checked || !entry->priv->autocorrect)
+		return FALSE;
+	while (g_ascii_isspace (*text)) text++;
+	if (*text == prefs.hex_input_command_char[0]) return FALSE;
+	/* Existing word-check vetoes include personal/session dictionaries and
+	 * the frontend's known-nickname/URL exclusions, across all active languages. */
+	g_signal_emit (entry, signals[WORD_CHECK], 0, original, &misspelled);
+	if (!misspelled || !entry->priv->dict_list) return FALSE;
+	/* A backend error is not permission to change the user's word. */
+	for (li = entry->priv->dict_list; li; li = li->next)
+		if (enchant_dict_check (li->data, original, -1) != 1)
+			return FALSE;
+	return TRUE;
+}
+
+static void
+autocorrect_dictionary_info (const char *lang, const char *provider,
+	const char *description, const char *file, void *data)
+{
+	gboolean *supported = data;
+	(void) description; (void) file;
+	*supported = lang && provider && !strcmp (provider, "winspell") &&
+		!g_ascii_strncasecmp (lang, "en", 2) &&
+		(!lang[2] || lang[2] == '_' || lang[2] == '-');
+}
+
+static struct EnchantDict *
+autocorrect_dictionary (SexySpellEntry *entry)
+{
+	GSList *li;
+	/* Configured language order, not hash iteration or alphabetical ranking. */
+	for (li = entry->priv->dict_list; li; li = li->next)
+	{
+		gboolean supported = FALSE;
+		enchant_dict_describe (li->data, autocorrect_dictionary_info, &supported);
+		if (supported) return li->data;
+	}
+	return NULL;
+}
+
+static char *
+suggest_autocorrect (GtkEntry *widget, const char *original, gpointer data)
+{
+	struct EnchantDict *dictionary;
+	char **suggestions;
+	char *result = NULL;
+	size_t count = 0;
+	(void) data;
+	if (!autocorrect_original_allowed (widget, original)) return NULL;
+	dictionary = autocorrect_dictionary (SEXY_SPELL_ENTRY (widget));
+	if (!dictionary) return NULL;
+	/* WinSpell calls ISpellChecker::Suggest; Enchant preserves provider order
+	 * while filtering excluded suggestions. Do not invent/rank our own words,
+	 * train replacements, or fall through to a lower-ranked candidate. */
+	suggestions = enchant_dict_suggest (dictionary, original, -1, &count);
+	if (suggestions && count &&
+		fabulor_spell_autocorrect_valid_replacement (suggestions[0]) &&
+		enchant_dict_check (dictionary, suggestions[0], -1) == 0)
+		result = g_strdup (suggestions[0]);
+	if (suggestions) enchant_dict_free_suggestions (dictionary, suggestions);
+	return result;
+}
+
+static gboolean
+approve_autocorrect (GtkEntry *widget, const char *original,
+	const char *replacement, gpointer data)
+{
+	struct EnchantDict *dictionary;
+	(void) data;
+	if (!autocorrect_original_allowed (widget, original)) return FALSE;
+	dictionary = autocorrect_dictionary (SEXY_SPELL_ENTRY (widget));
+	return dictionary && enchant_dict_check (dictionary, replacement, -1) == 0;
+}
+
 static GtkEntryClass *parent_class = NULL;
 
 #ifdef HAVE_ISO_CODES
@@ -192,13 +282,6 @@ sexy_spell_entry_get_text (SexySpellEntry *entry)
 {
 	return gtk_editable_get_text (GTK_EDITABLE (entry));
 }
-
-enum
-{
-	WORD_CHECK,
-	LAST_SIGNAL
-};
-static guint signals[LAST_SIGNAL] = {0};
 
 #ifdef G_OS_WIN32
 static GModule *
@@ -788,6 +871,8 @@ sexy_spell_entry_init(SexySpellEntry *entry)
 	entry->priv->theme_listener_id = theme_listener_register (
 		"spell-entry", sexy_spell_entry_theme_changed, entry);
 	sexy_spell_entry_apply_caret_style (entry);
+	fabulor_spell_autocorrect_bind (GTK_ENTRY (entry), approve_autocorrect,
+		suggest_autocorrect, NULL);
 }
 
 static void
@@ -837,6 +922,7 @@ sexy_spell_entry_destroy(GObject *obj)
 {
 	SexySpellEntry *entry = SEXY_SPELL_ENTRY (obj);
 
+	fabulor_spell_autocorrect_reset (GTK_ENTRY (entry));
 	if (entry->priv->theme_listener_id)
 	{
 		theme_listener_unregister (entry->priv->theme_listener_id);
@@ -1393,6 +1479,8 @@ sexy_spell_entry_set_checked(SexySpellEntry *entry, gboolean checked)
 		return;
 
 	entry->priv->checked = checked;
+	fabulor_spell_autocorrect_set_enabled (GTK_ENTRY (entry),
+		checked && entry->priv->autocorrect);
 	widget = GTK_WIDGET(entry);
 
 	{
@@ -1416,6 +1504,14 @@ sexy_spell_entry_set_checked(SexySpellEntry *entry, gboolean checked)
 	}
 
 	sexy_spell_entry_update_menu (entry);
+}
+
+void
+sexy_spell_entry_set_autocorrect (SexySpellEntry *entry, gboolean enabled)
+{
+	entry->priv->autocorrect = enabled;
+	fabulor_spell_autocorrect_set_enabled (GTK_ENTRY (entry),
+		enabled && entry->priv->checked);
 }
 
 /**

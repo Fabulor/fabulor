@@ -8,6 +8,7 @@
  */
 
 #include "channel-tree-view.h"
+#include "clipped-label.h"
 #include "gtk-compat.h"
 
 #define FABULOR_CHANNEL_TREE_VIEW_DATA "fabulor-channel-tree-view-data"
@@ -112,9 +113,7 @@ channel_tree_item_update (FabulorChannelTreeItemBinding *binding)
 
 	channel_tree_item_set_icon (binding,
 		fabulor_channel_model_get_item_icon (binding->item));
-	gtk_label_set_text (GTK_LABEL (binding->label), name);
-	gtk_widget_set_tooltip_text (binding->label,
-		g_strcmp0 (name, tooltip) == 0 ? NULL : tooltip);
+	gtk_label_set_text (GTK_LABEL (binding->label), tooltip ? tooltip : name);
 	if (underline != PANGO_UNDERLINE_NONE)
 	{
 		if (!attributes)
@@ -159,7 +158,7 @@ channel_tree_factory_setup (GtkSignalListItemFactory *factory,
 	gtk_image_set_pixel_size (GTK_IMAGE (binding->icon), 16);
 	gtk_widget_set_valign (binding->label, GTK_ALIGN_CENTER);
 	gtk_label_set_xalign (GTK_LABEL (binding->label), 0.0f);
-	gtk_label_set_ellipsize (GTK_LABEL (binding->label), PANGO_ELLIPSIZE_END);
+	fabulor_clipped_label_init (binding->label);
 	gtk_widget_set_hexpand (binding->label, TRUE);
 	channel_tree_ensure_css ();
 	if (owner->use_icons)
@@ -214,7 +213,7 @@ channel_tree_factory_unbind (GtkSignalListItemFactory *factory,
 	binding->item = NULL;
 	gtk_widget_remove_css_class (binding->label,
 		"fabulor-channel-network");
-	gtk_widget_set_tooltip_text (binding->label, NULL);
+	gtk_label_set_text (GTK_LABEL (binding->label), "");
 	binding->icon_source = NULL;
 	binding->notify_id = 0;
 	gtk_tree_expander_set_list_row (GTK_TREE_EXPANDER (binding->expander),

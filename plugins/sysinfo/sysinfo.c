@@ -120,6 +120,10 @@ print_info (char *info, gboolean announce)
 {
 	int i;
 
+	/* Keep the documented RAM spelling and the existing MEMORY command. */
+	if (!g_ascii_strcasecmp (info, "ram"))
+		info = "memory";
+
 	for (i = 0; hwinfos[i].name != NULL; i++)
 	{
 		if (!g_ascii_strcasecmp (info, hwinfos[i].name))
@@ -132,7 +136,8 @@ print_info (char *info, gboolean announce)
 				g_free (str);
 			}
 			else
-				fabulor_print (ph, _("Sysinfo: Failed to get info. Either not supported or error."));
+				fabulor_printf (ph, _("Sysinfo: %s information is unavailable (no supported device reported or query failed)."),
+								hwinfos[i].title);
 			return;
 		}
 	}

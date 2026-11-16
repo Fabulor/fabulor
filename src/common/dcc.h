@@ -52,6 +52,7 @@ struct DCC
 	int fp;							/* file pointer */
 	int sok;
 	int iotag;						/* reading io tag */
+	int send_watch_flags;            /* unified active sender readiness */
 	int wiotag;						/* writing/sending io tag */
 	int port;
 	int pasvid;						/* mIRC's passive DCC id */

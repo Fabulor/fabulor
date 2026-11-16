@@ -5,8 +5,131 @@ continuation of XChat, HexChat, and ZoiteChat; inherited history remains
 available through the Git repository rather than being presented as Fabulor
 release history.
 
-Fabulor 1.0.6 release candidates are published as GitHub prereleases. The
-history below describes the cumulative work toward the first stable release.
+Unreleased entries describe local development, not published release assets.
+The first stable release and its preceding release-candidate series are
+recorded separately below.
+
+## 1.0.7 — Unreleased
+
+### Added
+
+- Added an optional native GTK4 panel API for trusted Python add-ons, with
+  feature discovery, owner-bound callbacks and automatic cleanup on unload.
+  Panels can present pages, fields, status indicators and buttons without
+  changing the standard Preferences window. The client does not bundle Aegis
+  or an OpenAI SDK; external moderation is configured separately by the add-on.
+- Added optional **Auto-correct while typing** under Input box preferences,
+  disabled by default. Fully typed misspellings use Windows' preferred spelling
+  suggestion on Space, via Enchant's WinSpell provider, only when all active
+  dictionaries reject the original and the selected English Windows dictionary
+  accepts the replacement. Windows' ordering, case and Unicode spelling are
+  preserved; no fixed typo table or Fabulor ranking model is used. Immediate Backspace restores the word
+  and removes the space without instantly reapplying the correction. Known
+  nicknames, commands, links, pasted/history text, formatted/code-shaped
+  tokens and active input-method composition are excluded. No persistent
+  automatic training or send-time Enter correction. The maintainer accepted
+  the earlier `teh` session-isolation fix, then reported that the fixed table
+  was too limited and approved using Windows' preferred suggestion even when
+  alternatives exist. On 2026-10-30 the maintainer reported improved behaviour
+  with the Windows-suggestion candidate; individual example/undo checks and
+  broader keyboard/IME, accessibility and preference coverage remain separate.
+- Implemented Windows `/SYSINFO SOUND`, `ETHERNET` and `CHIPSET` queries.
+  Ethernet reports physical adapter names only; chipset reports matching
+  system-controller names rather than inferring a marketing chipset model.
+  Added `RAM` as an alias for `MEMORY` without changing summary/announcement
+  preferences. The maintainer accepted the installed candidate on 2026-10-29.
+- Added a DALnet-only **DCC Permissions** nickname-menu submenu for allowing
+  files from a user, revoking that permission and listing permissions. Network
+  recognition includes the server-advertised identity for renamed/bouncer
+  connections. Permission commands remain bound to the original live session,
+  reject unsafe nickname tokens and do not alter file auto-accept settings or
+  existing custom menus. The maintainer accepted the installed DALnet feature
+  as working as expected on 2026-10-23.
+- Added a **Testers** section to the About dialog credits, acknowledging
+  PickleRick83 and MrBenC.
+- Unified the input-box smiley icon and Ctrl+;/Ctrl+. shortcuts on one cached
+  GTK emoji chooser per entry. A chooser-scoped Fontconfig/FreeType font map
+  and colour-font styling select the bundled Noto font, retaining GTK's layout
+  and catalogue. The first CSS-only candidate still showed letter-pair flags
+  in installed testing; the follow-up explicitly selects the private-font-capable
+  backend without changing transcript or input rendering.
+  Native tests cover all 259 country-flag sequences and shared entry points;
+  local comparison confirms coverage of all 253 legacy picker country codes.
+  A maintainer-supplied screenshot on 2026-10-23 confirms graphical rendering
+  of the visible country flags, followed by maintainer acceptance that the
+  picker works well. The reported issue is closed; exhaustive release-matrix
+  coverage remains separate.
+
+### Fixed
+
+- Ignore echoed outgoing non-ACTION CTCP requests addressed to other users
+  before flood/DCC parsing or automatic replies. Explicit self-queries and
+  ACTION echoes remain supported. VERSION/system strings omit CPU brackets
+  when CPU information is unavailable or empty instead of ending at an unmatched
+  opening bracket. Sixteen native cases and six source contracts pass. On
+  2026-11-08 the maintainer supplied successful direct-EYErc VERSION results in
+  both directions, with a complete Fabulor OS/CPU reply and no extra self-VERSION
+  lines in the supplied exchange. Broader interaction coverage remains separate.
+- Corrected outgoing DCC socket readiness handling. Active and passive senders
+  now share one read/write watch instead of competing Windows socket event
+  registrations; ACK reads remain active while throttled and after the last
+  file byte is sent. Split four-byte acknowledgements append correctly, and
+  reads stop at the announced file size. Localhost sender regressions include
+  the complete reported ZIP, partial I/O, slow send, resume, throttle recovery,
+  cancellation and peer disconnect. The maintainer reported a successful DCC
+  retry on 2026-11-08 following separate address/bind configuration guidance;
+  the successful direction/file/mode were not separately specified. Broader
+  external acceptance remains open. The code fix does not alter NAT/address
+  discovery or port-forwarding settings.
+- Aligned message hit-testing with rendering after a clipped sender prefix.
+  In Services-style dialogue tabs, starting a selection at the visible message
+  end could land earlier in the source text, requiring extra rightward movement
+  to copy the suffix. First-line body hits now start from the actual message
+  column and skip the hidden prefix; clipping, full sender identity, wrapped
+  lines and ordinary channel/server paths remain intact. Native widget and
+  source regressions pass. On 2026-11-07 the maintainer reported that the fix
+  appears to have resolved the installed issue; broader interaction coverage
+  remains separate.
+- Corrected the bundled WinSpell provider's session hooks, which could persist
+  session-only ignored words in Windows' shared custom dictionary and thereby
+  suppress auto-correction. Enchant now owns session state without those
+  Windows-global hooks. Build smoke tests preflight the provider and isolate
+  personal-word tests explicitly; real-key/full-spell-entry probes cover the
+  reported `teh dayz` case. The maintainer accepted the replacement installed
+  candidate with "Perfect 💯"; individual retest steps were not separately
+  reported.
+- Count completely full disks in `/SYSINFO STORAGE`; reject invalid, missing
+  and overflowing capacity data instead of treating them as valid zeroes.
+  Hardened WMI enumeration cleanup, limited rows/output and per-enumeration
+  waits, and stripped controls from provider strings before IRC formatting.
+  Unavailable queries now identify the requested information category.
+- Excluded timestamp-only paints from nickname-prefix clipping. Timestamp
+  copying temporarily reuses a message entry with its original prefix length;
+  treating that short timestamp as a nickname could measure beyond the stamp
+  and draw it in the prefix column. This addresses the Services-tab overlap
+  reported on 2026-10-29. The maintainer subsequently reported that the
+  correction appears to have worked; exhaustive interaction coverage remains
+  separate.
+- Restored the private v1.0.7 width-aware nickname and channel-label clipping
+  omitted by the subsequent main-checkout rebuild. Long transcript prefixes
+  use an ellipsis without entering the timestamp column; clipped labels show
+  full-name tooltips while retaining complete identities. This restores
+  available-width clipping, not a fixed 16-character limit. The maintainer
+  confirmed the reported regression was fixed in the combined local build on
+  2026-10-23.
+- Retained the private tooltip-positioning, automatic-indent cap and stable
+  background-colour corrections alongside the cache and divider fixes.
+- Reused the scaled transcript background image between paints instead of
+  rebuilding it every frame. Image, viewport, positioning, dimming and
+  background-colour changes still invalidate the cache.
+- Corrected the user-list divider measurement during tab switching so pending
+  pane positions cannot be combined with stale child allocations and briefly
+  squeeze the transcript to an incorrect width.
+
+The maintainer accepted the reported tab-switching and background-image
+redraw issue as fixed after local installed testing on 2026-10-22. See the
+[focused validation record](docs/gtk4/local-1.0.7-validation.md) for evidence
+and scope; this does not establish general v1.0.7 release readiness.
 
 ## 1.0.6 — 2026-10-04
 

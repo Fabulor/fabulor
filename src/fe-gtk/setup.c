@@ -230,6 +230,8 @@ static const setting inputbox_settings[] =
         {ST_TOGGLE, N_("Show nick box"), P_OFFINTNL(hex_gui_input_nick),0,0,1},
         {ST_TOGGLE, N_("Show user mode icon in nick box"), P_OFFINTNL(hex_gui_input_icon),0,0,0},
         {ST_TOGGLE, N_("Spell checking"), P_OFFINTNL(hex_gui_input_spell),0,0,1},
+        {ST_TOGGLE, N_("Auto-correct while typing"), P_OFFINTNL(hex_gui_input_autocorrect),0,0,0},
+        {ST_LABEL, N_("Correct common English typos on Space. Requires spell checking and an active English dictionary.\nPress Backspace immediately to restore the original word.")},
         {ST_ENTRY,      N_("Dictionaries to use:"), P_OFFSETNL(hex_text_spell_langs),0,0,sizeof prefs.hex_text_spell_langs},
 #ifdef WIN32
         {ST_LABEL,      N_("Use language codes (as in \"%LOCALAPPDATA%\\enchant\\myspell\\dicts\").\nSeparate multiple entries with commas.")},
@@ -360,7 +362,7 @@ static const setting tabs_settings[] =
         {ST_MENU,       N_("Focus new tabs:"), P_OFFINTNL(hex_gui_tab_newtofront), 0, focusnewtabsmenu, 0},
         {ST_MENU,       N_("Placement of notices:"), P_OFFINTNL(hex_irc_notice_pos), 0, noticeposmenu, 0},
         {ST_MENU,       N_("Show channel switcher at:"), P_OFFINTNL(hex_gui_tab_pos), 0, cspos, 1},
-        {ST_NUMBER,     N_("Shorten tab labels to:"), P_OFFINTNL(hex_gui_tab_trunc), 0, (const char **)N_("letters."), 99},
+        {ST_NUMBER,     N_("Tab label width:"), P_OFFINTNL(hex_gui_tab_trunc), 0, (const char **)N_("character widths."), 99},
 
         {ST_HEADER,     N_("Tabs or Windows"),0,0,0},
         {ST_MENU,       N_("Open channels in:"), P_OFFINTNL(hex_gui_tab_chans), 0, tabwin, 0},
@@ -2119,6 +2121,7 @@ setup_apply_to_sess (session_gui *gui)
         sexy_spell_entry_activate_default_languages((SexySpellEntry *)gui->input_box);
 
         sexy_spell_entry_set_checked ((SexySpellEntry *)gui->input_box, prefs.hex_gui_input_spell);
+        sexy_spell_entry_set_autocorrect ((SexySpellEntry *)gui->input_box, prefs.hex_gui_input_autocorrect);
         sexy_spell_entry_set_parse_attributes ((SexySpellEntry *)gui->input_box, prefs.hex_gui_input_attr);
 }
 

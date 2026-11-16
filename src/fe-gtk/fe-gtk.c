@@ -60,6 +60,7 @@
 #include "theme/theme-application.h"
 #include "preferences-persistence.h"
 #include "window-state.h"
+#include "window-geometry.h"
 #include "application-main-loop.h"
 
 #ifdef USE_LIBCANBERRA
@@ -798,6 +799,7 @@ fe_args (int argc, char *argv[])
 	gdk_set_program_class (desktop_id);
 #endif
 	gtk_init ();
+	fabulor_window_configure_tooltip_metrics ();
 
 #ifdef WIN32
 	win32_configure_icon_theme ();

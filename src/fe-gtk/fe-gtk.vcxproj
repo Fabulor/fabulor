@@ -94,6 +94,8 @@ FOR %%I IN ("$(FabulorLib)fabulor-frontend.rc") DO IF %%~zI EQU 0 (
     <ClInclude Include="gtk4-list-models.h" />
     <ClInclude Include="file-chooser-path.h" />
     <ClInclude Include="gtkutil.h" />
+    <ClInclude Include="addon-panel.h" />
+    <ClInclude Include="oper-login.h" />
     <ClInclude Include="icon-resolver.h" />
     <ClInclude Include="ignore-list.h" />
     <ClInclude Include="joind.h" />
@@ -119,6 +121,7 @@ FOR %%I IN ("$(FabulorLib)fabulor-frontend.rc") DO IF %%~zI EQU 0 (
 	<ClInclude Include="spell-entry-menu.h" />
 	<ClInclude Include="spell-entry-widget.h" />
     <ClInclude Include="spell-entry-words.h" />
+    <ClInclude Include="spell-entry-autocorrect.h" />
     <ClInclude Include="textgui.h" />
     <ClInclude Include="urlgrab.h" />
     <ClInclude Include="url-list.h" />
@@ -179,6 +182,8 @@ FOR %%I IN ("$(FabulorLib)fabulor-frontend.rc") DO IF %%~zI EQU 0 (
     <ClCompile Include="fkeys.c" />
     <ClCompile Include="file-chooser-path.c" />
     <ClCompile Include="gtkutil.c" />
+    <ClCompile Include="addon-panel.c" />
+    <ClCompile Include="oper-login.c" />
     <ClCompile Include="gtk4-list-models.c" />
     <ClCompile Include="icon-resolver.c" />
     <ClCompile Include="ignore-list.c" />
@@ -217,6 +222,7 @@ FOR %%I IN ("$(FabulorLib)fabulor-frontend.rc") DO IF %%~zI EQU 0 (
 	<ClCompile Include="spell-entry-menu.c" />
 	<ClCompile Include="spell-entry-widget.c" />
     <ClCompile Include="spell-entry-words.c" />
+    <ClCompile Include="spell-entry-autocorrect.c" />
     <ClCompile Include="textgui.c" />
     <ClCompile Include="urlgrab.c" />
     <ClCompile Include="url-list.c" />

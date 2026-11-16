@@ -1,6 +1,10 @@
 # GTK4 Transcript Rendering Architecture
 
-Status: Stage 6 pass 12 rendering, widget-class, input, selection, frame, background, decoration, hit-test, accessibility, display-scale, accessible-text, and performance contracts
+Status: Stage 6 pass 12 migration contracts, with local v1.0.7 background-cache
+and pane-geometry corrections accepted on 2026-10-22.
+
+GTK4 is the sole production frontend. GTK3 descriptions below retain migration
+history; they do not describe a supported alternative frontend.
 
 ## Purpose
 
@@ -115,17 +119,40 @@ APIs.
 
 ## Background Composition
 
-`src/fe-gtk/xtext-background.c` owns the optional Cairo source surface and its
-frame-local viewport cache. Image surfaces are aspect-fitted and centred over
-a black letterbox. Other Cairo surface types repeat from the supplied tile
-offset. An absent, invalid, oversized, or failed source falls back to the
-current transcript palette colour.
+`src/fe-gtk/xtext-background.c` owns the optional Cairo source surface and one
+retained viewport cache. Image surfaces preserve their aspect ratio and are
+centred and cropped to fill the viewport. Other Cairo surface types repeat
+from the supplied tile offset. An absent or invalid source, an invalid or
+oversized viewport, or cache-creation failure falls back to the current
+transcript palette colour. Dimming blends the image towards that colour.
 
-The owner clears its cache at both frame boundaries and whenever the source is
-replaced. It retains its own source reference, releases the previous source and
-cache exactly once, and limits cache dimensions to 8192 pixels per axis.
-`GtkXText` now asks only whether a source exists and requests region painting;
-it does not retain cache geometry, tile coordinates, or render-cycle state.
+The cache survives frame boundaries. A paint reuses it only when viewport
+width/height, tile offsets, dimming percentage and all fallback-colour channels
+match. A changed key rebuilds it; setting, replacing or removing the source
+clears it, and freeing the owner releases it. The owner retains its own source
+reference and limits cache dimensions to 8192 pixels per axis. Only one size is
+retained, so switching between differently sized layouts still rebuilds the
+cache; a multi-size cache has not been implemented.
+
+`GtkXText` asks only whether a source exists and requests region painting; it
+does not retain cache geometry or tile coordinates.
+
+## Pane Geometry During Tab Switching
+
+The user-list pane restoration in `src/fe-gtk/maingui.c` obtains divider
+thickness through `fabulor_gtk_paned_get_handle_size()` in `gtk-compat.h`.
+The helper measures GTK4's separator CSS child in the pane's orientation,
+respecting themed sizing. It must not subtract a newly requested pane position
+from an end child's previous allocation: the two can belong to different
+layout states. A native regression test reproduced an actual 1-pixel divider
+being reported as 151 pixels by the old calculation.
+
+The corrected helper prevents that erroneous thickness feeding back into pane
+restoration. It does not remove the intentional viewport change when a tab
+shows or hides the user list and topic bar.
+
+The [local v1.0.7 validation record](local-1.0.7-validation.md) separates native
+regression coverage, installed timing observations and maintainer acceptance.
 
 ## Markers And Highlights
 
@@ -158,6 +185,49 @@ URL, nickname, channel, or email menu. It neither reclassifies the scratch word
 through global last-match state nor writes a terminator into that buffer.
 Plain-word middle menus, dialog nickname menus, selection, timestamp regions,
 wrapped lines, and empty clicks retain their existing behavior.
+
+## Width-Aware Name Clipping
+
+The local private v1.0.7 implementation keeps complete transcript prefixes in
+scrollback and clips only their presentation. `gtk_xtext_prefix_geometry()`
+reserves the timestamp column, measures a grapheme-safe prefix with space for
+an ellipsis, and shares its geometry with rendering, hit testing and full-name
+tooltips. `fabulor_xtext_fit_prefix()` and `fabulor_xtext_auto_indent()` in
+`xtext-display.c` provide the fitting and bounded automatic-indent helpers.
+This is allocated-width clipping, not a fixed 16-character nickname limit.
+
+First-line message hit-testing after a clipped prefix must restart at the
+message column (`buffer->indent`) and raw byte `left_len + 1`, not walk the full
+hidden prefix from the entry's stored indent. Appending an entry clamps that
+indent to `MARGIN`, whereas later width recalculation can leave it negative;
+the renderer already resets the clipped message to its column in both states.
+The 2026-11-07 correction makes `find_x()` accept a subline-bounded starting
+offset and applies that body origin only to the clipped first-line path.
+Visible-prefix/ellipsis hits still map to the complete original sender, and
+wrapped/unclipped paths retain their existing origins. Nine native widget
+cases cover both selection directions and in-memory copy extraction, including
+colour/bold, Unicode, normal channel/server text and post-recalculation geometry.
+The original widget reproduction fails before this fix. On 2026-11-07 the
+maintainer reported that the candidate appears to have fixed the installed
+selection issue. This is focused positive feedback, not separately reported
+physical-mouse/clipboard results for every scenario. No clipboard publication
+is performed by the automated tests.
+
+Timestamp-only (`left_only`) render passes must bypass prefix geometry. When
+copying timestamps, `gtk_xtext_render_stamp()` temporarily points the entry at
+the short timestamp while retaining the message's original prefix length;
+measuring that temporary string as a nickname is invalid. The 2026-10-29 guard
+and source contracts cover that boundary. The maintainer subsequently
+reported that the Services-tab correction appears to have worked in installed
+use; exhaustive interaction coverage remains separate.
+
+`clipped-label.h` provides the corresponding live ellipsis and full-name
+hover policy for user-list, channel-tree and horizontal-tab labels. Recycled
+rows clear their old label content. The restored implementation is covered by
+the native GTK probe and source-integration contracts. The maintainer accepted
+the reported regression as fixed in the combined build on 2026-10-23; this is
+not acceptance of every display-scale and interaction scenario. See
+[local v1.0.7 validation](local-1.0.7-validation.md).
 
 ## Accessibility And Display Scale
 
@@ -235,12 +305,12 @@ measurement after the complete widget is connected.
 - Native-window scroll capture is a GTK3 optimization, never a GTK4 rendering
   prerequisite.
 - GTK4 without native capture always reaches full snapshot rendering.
-- Background source references and frame caches are owned and released by one
-  Cairo-only boundary.
+- Background source references and the retained viewport cache are owned and
+  released by one Cairo-only boundary.
 - Background composition failure always produces the palette fallback rather
   than an unpainted region.
-- A background cache cannot survive its frame or exceed the viewport safety
-  bound.
+- A background cache may survive frames, but cannot be reused with changed
+  inputs or exceed the viewport safety bound.
 - Marker placement depends only on entry identity and validated line metrics.
 - Search range classification preserves adjacent-match and current-match
   precedence.
@@ -303,7 +373,7 @@ The strict GTK4 probe verifies:
   identify exposed damage; and
 - unavailable or full-height capture falls back to complete rendering.
 - an absent background source paints the exact palette fallback;
-- a fitted image produces exact centred content and black letterboxing; and
+- an image scaled to fill paints the viewport edges without letterboxing; and
 - source replacement and removal update surface-presence state safely.
 - marker placement before an entry and after its predecessor is deterministic;
 - search ranges classify start, middle, end, current, and adjacent boundaries;
@@ -333,5 +403,14 @@ The strict GTK4 probe verifies:
   retention permits and always preserves the newest entry; and
 - one million refresh decisions execute as a reported, non-gating diagnostic.
 
-Manual transcript output and latency checks remain required when the GTK4
-widget class is connected to this boundary.
+Additional native regression tests in `tools/gtk4/meson.build` verify:
+
+- `test-xtext-background-cache.c`: reuse across frames and independent
+  invalidation of every cache-key field, source reset and removal; and
+- `test-paned-handle-size.c`: stable divider measurements across pending
+  position changes, actual allocated gaps, hide/show and restored end-child
+  sizes for horizontal/vertical panes with normal/wide dividers.
+
+These tests verify behaviour, not elapsed-time targets. Focused installed
+latency acceptance for the local v1.0.7 fixes is recorded separately; it does
+not replace broader rendering, accessibility or display-scale validation.

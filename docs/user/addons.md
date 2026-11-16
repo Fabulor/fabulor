@@ -251,6 +251,33 @@ Use `/HELP <command>` for the syntax supplied by the version currently loaded.
 These installed components are not personal add-on folders and should be
 managed through the installer rather than deleted from `Program Files`.
 
+### Sysinfo Hardware Queries
+
+The local v1.0.7 candidate adds Windows queries for `SOUND`, `ETHERNET` and
+`CHIPSET`, and accepts `RAM` as an alias for the existing `MEMORY` command.
+The maintainer accepted the installed candidate on 2026-10-29. Use `-e` to
+display results locally, for example:
+
+```text
+/SYSINFO -e SOUND
+/SYSINFO -e ETHERNET
+/SYSINFO -e CHIPSET
+/SYSINFO -e RAM
+/SYSINFO -e STORAGE
+```
+
+`SOUND` reports Windows sound-device names. `ETHERNET` reports physical network
+adapter names, which can include Wi-Fi; it does not collect IP or MAC addresses.
+`CHIPSET` reports system-controller names containing chipset, SMBus, host bridge,
+LPC or ISA bridge terms. This depends on driver naming and is not a definitive
+chipset-model detector. No matching device or a Windows query failure produces
+an information-unavailable message naming the requested category.
+
+Without `-e`, output may be sent to the current channel or dialogue according
+to the existing announcement setting. Hardware names can reveal system details;
+review locally before sharing. The new categories remain hidden from the
+summary by default unless their existing `hide_*` preferences enable them.
+
 ## Troubleshooting
 
 ### Nothing Appears To Load

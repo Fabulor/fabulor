@@ -39,13 +39,13 @@ static char *get_memory_info (void);
 char *
 sysinfo_backend_get_sound (void)
 {
-	return NULL;
+	return sysinfo_get_sound ();
 }
 
 char *
 sysinfo_backend_get_network (void)
 {
-	return NULL;
+	return sysinfo_get_network ();
 }
 
 char *
@@ -92,7 +92,7 @@ sysinfo_backend_get_gpu (void)
 char *
 sysinfo_backend_get_chipset (void)
 {
-	return NULL;
+	return sysinfo_get_chipset ();
 }
 
 char *

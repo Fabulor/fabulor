@@ -1881,24 +1881,26 @@ fabulor_gtk_paned_get_handle_size (GtkPaned *paned)
 {
 	g_return_val_if_fail (GTK_IS_PANED (paned), 0);
 
-	GtkWidget *end_child = gtk_paned_get_end_child (paned);
-	gint handle_size;
+	GtkWidget *child;
+	GtkOrientation orientation = gtk_orientable_get_orientation (
+		GTK_ORIENTABLE (paned));
 
-	if (!end_child)
-		return 0;
-
-	if (gtk_orientable_get_orientation (GTK_ORIENTABLE (paned)) ==
-		GTK_ORIENTATION_HORIZONTAL)
+	/* A requested position can change before the children are allocated.
+	 * Subtracting it from their old sizes invents an oversized handle and
+	 * feeds that error back into pane restoration. Measure GTK4's documented
+	 * separator CSS child instead, including its themed sizing. */
+	for (child = gtk_widget_get_first_child (GTK_WIDGET (paned)); child;
+		child = gtk_widget_get_next_sibling (child))
 	{
-		handle_size = gtk_widget_get_width (GTK_WIDGET (paned)) -
-			gtk_paned_get_position (paned) - gtk_widget_get_width (end_child);
+		if (g_strcmp0 (gtk_widget_get_css_name (child), "separator") == 0)
+		{
+			gint minimum, natural;
+			gtk_widget_measure (child, orientation, -1, &minimum, &natural,
+				NULL, NULL);
+			return MAX (minimum, natural);
+		}
 	}
-	else
-	{
-		handle_size = gtk_widget_get_height (GTK_WIDGET (paned)) -
-			gtk_paned_get_position (paned) - gtk_widget_get_height (end_child);
-	}
-	return MAX (handle_size, 0);
+	return 0;
 }
 
 static inline gint

@@ -1,12 +1,13 @@
 <!-- Fabulor production roadmap -->
 # Fabulor Production Roadmap
 
-Last reconciled: 2026-10-04
+Last reconciled: 2026-11-08 (local consolidation inventory and handoff gates)
 
 ## Current Production Baseline
 
 - [x] Fabulor targets Windows 11+ x64 with an MSVC-built GTK4 frontend.
-- [x] The product version is `1.0.6`.
+- [x] The stable release baseline is `1.0.6`; the local development version is
+      `1.0.7`.
 - [x] WiX v4 produces the supported MSI and bootstrapper artefacts.
 - [x] GTK4 is the sole production frontend, CI, staging, runtime, MSI, and
       bootstrapper profile.
@@ -24,6 +25,198 @@ Last reconciled: 2026-10-04
       appcast offered ZoiteChat packages as Fabulor updates.
 - [x] Inno Setup, GTK3 packaging, Lua, Perl, and bundled user add-ons are
       retired from the supported product.
+
+## Local 1.0.7 Development
+
+- [x] Correct CTCP own-echo handling before flood/DCC parsing and in the
+      handler, preserving ACTION display and deliberate self-queries. Omit
+      unavailable/empty CPU brackets from cached system strings. Sixteen native
+      cases and six source contracts pass; both original defects fail the same
+      tests against preserved pre-fix source. Local installer built/validated.
+- [x] Record focused installed CTCP success on direct EYErc (2026-11-08):
+      supplied output shows MossIRC's normal reply to Alchera and a complete
+      Fabulor OS/CPU reply to Barry. No extra self-VERSION lines appear in the
+      supplied exchange; the away notice is normal network feedback.
+- [ ] Keep broader installed CTCP coverage separate: explicit self-query,
+      CPU-unavailable fallback, ACTION/DCC/custom-reply interactions and other
+      network/capability combinations. Exact original duplicate wire sequence
+      remains unconfirmed; no further code change is indicated by this retest.
+
+- [x] Inventory registered local worktrees and compare private preparation
+      changes with main; record the initial source/test/document inventory in
+      [the consolidation handoff](docs/gtk4/local-1.0.7-publication-handoff.md).
+      Two worktrees are clean; main and the private preparation tree are dirty.
+- [ ] Complete the handoff's semantic reconciliation, add-on/OPER reviews,
+      missing CI wiring and integrated source-to-installer validation before
+      requesting commit/publication approval. Existing candidates are evidence,
+      not automatically the final GitHub assets. Preserve private worktrees,
+      previous candidates and user profiles; exclude session/private build data.
+
+- [x] Reconcile this work's local feature/acceptance records with supporting
+      user/architecture/runtime guidance and the documentation index. Replace
+      stale blanket pending wording with scoped installed feedback; distinguish
+      published 1.0.6 stable from local unpublished 1.0.7 in README/SECURITY.
+      Add DCC bind/address troubleshooting without publishing personal IPs.
+      Unrelated add-on/OPER work and broad release acceptance remain separate.
+
+- [x] Correct competing outgoing DCC read/write watches on Windows, preserve
+      ACK reads through throttling/final completion, append fragmented ACKs
+      correctly and cap reads at the announced file size. Eight native sender
+      loopback cases and six source contracts pass, including the full reported
+      ZIP with matching received SHA-256. Both active/passive entry points use
+      the unified helper; handshakes/UI/accounting are not full-client tested.
+- [x] Record focused installed DCC success: after further connection/bind
+      failures and guidance to clear the public address from Bind to and put
+      the WAN address in DCC IP address, the maintainer reported "It succeeded
+      this time" (2026-11-08). Direction, file and active/passive mode were not
+      separately specified for that successful retry.
+- [ ] Complete broader external DCC acceptance: ordinary/passive transfers
+      where supported, both directions, full reported ZIP, progress/completion
+      and cancel. Distinguish local bind failures, connection timeouts and
+      ACTIVE data stalls. Network settings were changed manually by the
+      maintainer, not by the code fix or automated tests.
+
+- [x] Correct message hit-testing after a clipped sender prefix. Newly appended
+      entries can clamp their stored indent while rendering resets the body to
+      the separator column; selection previously counted the full hidden prefix.
+      Nine native widget cases and three source contracts cover the correction,
+      both selection directions, colour/bold/Unicode text, ordinary channel/
+      server entries, wrapped lines, recalculated indents and prefix identity.
+- [x] Record focused installed acceptance of the selection fix. After receiving
+      the candidate and right-to-left selection/copy checks, the maintainer
+      reported: "That seems to have fixed that. TY. 👍" (2026-11-07). This closes
+      the reported mismatch; individual clipboard, direction and channel/server
+      checks were not separately reported. Broader interaction/platform coverage
+      remains separate from this focused feedback.
+
+- [x] Implement the initial opt-in spell auto-correct for a conservative English
+      typo list on Space (superseded by Windows suggestions below), with active-dictionary validation, known-nickname
+      vetoes and immediate Backspace undo. Preserve commands, pasted/history
+      text, links, code-shaped tokens, formatting and active IME composition;
+      never trigger correction on Enter. Default off, no automatic learned-pair
+      persistence. Eleven native policy/widget cases, six source integration
+      checks and an Australian English dictionary smoke probe pass.
+- [x] Diagnose the initial installed `teh` failure: the agent's session-ignore
+      probe hit upstream WinSpell's persistent Windows Add hook. Recover only
+      that test-added word, verify every other dictionary entry is preserved,
+      disable both provider session hooks in the reproducible build recipe,
+      and isolate/guard future word tests. Real Windows keys in the actual
+      spell entry now correct `teh dayz ` to `the dayz `, and Ignore stays local
+      to the dictionary. Extracted MSI provider hashes match the rebuilt stage.
+- [x] Record installed acceptance of the replacement auto-correct candidate.
+      After receiving the session-isolation fix and correction/undo retest
+      instructions, the maintainer confirmed: "Perfect 💯". This accepts the
+      reported correction fix; individual checks were not separately reported.
+      The first candidate was not accepted.
+- [x] Replace the fixed typo table with the first available Windows/WinSpell
+      suggestion, preserving its order, case and Unicode spelling. The maintainer
+      approved preferred suggestions despite alternatives after reporting missed
+      `sleke`, `btter` and `turkey`/`Turkey`. Fourteen native cases, six source
+      integration contracts and real Windows keys in the production spell entry
+      cover broader corrections and Unicode Backspace undo. The earlier positive
+      feedback did not establish general typo coverage.
+- [x] Record focused positive installed feedback for the Windows-suggestion
+      candidate: "This seems to working mopre appropriately. 👍" (2026-10-30).
+      This supports improved correction behaviour, not separately reported
+      results for every example or undo sequence.
+- [ ] Separately confirm the reported examples and undo in the installed
+      Windows-suggestion candidate: `sleke` → `sleek`, `btter` → `better`,
+      and the current Windows `Türkiye` suggestion.
+- [ ] Complete the broader auto-correct matrix: off-by-default/persistence,
+      Preferences enable/disable, Space and immediate Backspace, dictionary/
+      session-ignore behaviour, nicknames, commands, URL/paste/history/emoji,
+      tab changes, real Windows keyboard/IME and accessibility interactions.
+      Automated controller emissions are not installed platform acceptance.
+
+- [x] Implement Windows Sysinfo sound-device, physical network-adapter and
+      matching chipset-controller name queries; add RAM/MEMORY alias handling,
+      count full disks correctly and harden WMI value parsing/cleanup. Native
+      synthetic tests, source contracts and a local availability-only WMI smoke
+      probe passed. No IP/MAC collection or announcement-default change.
+- [x] Record installed acceptance of the Sysinfo candidate. After receiving
+      the installer and local-output command checks, the maintainer confirmed:
+      "Perfect 💯". This accepts the requested Sysinfo improvements; separate
+      coverage of every command, summary preference and driver configuration
+      was not reported. Chipset naming remains driver-dependent.
+
+- [x] Guard timestamp-only paints from nickname-prefix clipping when timestamp
+      copying reuses a message entry. The regression source contract fails
+      before the fix and passes afterwards; builds/package checks passed.
+- [x] Record focused installed feedback for the 2026-10-29 Services timestamp
+      candidate. The maintainer reported: "That seems to have worked. :)"
+      The reported overlap appears resolved; exhaustive blank/help-line,
+      selection/redraw and ordinary nickname-clipping coverage was not
+      separately reported.
+- [ ] Investigate the intermittent Win32 emoji-probe failure observed during
+      parallel and serial validation runs. Full-suite passes and failed
+      repetitions are retained, including in the 2026-10-29 Sysinfo evidence;
+      serial execution alone does not eliminate it. Cause not yet established.
+
+- [x] Add DALnet-only DCC permission actions to the nickname menu without
+      replacing `popup.conf`. Recognise the configured/network-advertised
+      DALnet identity or a `dal.net` server hostname; bind permission actions
+      to the original session/server ID, recheck live connection and network,
+      validate nickname tokens and leave auto-accept settings untouched.
+      Native policy/model tests and source-integration checks pass.
+- [x] Record installed acceptance of the DALnet DCC menu candidate. On
+      2026-10-23 the maintainer confirmed: "It works as expected. :)" after
+      being asked to check DALnet/ZNC visibility, absence on other networks
+      and allow/list/revoke server responses. This accepts the requested
+      feature; exhaustive disconnect/origin-close, multi-selection and
+      tab-switch scenarios were not separately reported.
+
+- [x] Build a local unified GTK emoji chooser candidate for the smiley icon and
+      Ctrl+;/Ctrl+. shortcuts, selecting the bundled colour-emoji font only
+      inside that chooser. The first CSS-only candidate failed installed flag
+      rendering; a follow-up explicitly assigns a chooser-only FreeType font
+      map and checks actual label fonts under both Win32 and Fontconfig default
+      backends. The maintainer's 2026-10-23 screenshot confirms graphical
+      rendering of the visible country flags in the follow-up. The maintainer
+      subsequently accepted the picker as working well; the broader release
+      display-scale matrix remains separate.
+      Native tests cover shared ownership, shortcut
+      routing, selection replacement, cursor position, read-only input and all
+      259 country-flag sequences; all 253 legacy country codes are represented.
+      No GTK-private widget restructuring or production catalogue parsing.
+- [x] Record installed acceptance of the unified emoji picker. On 2026-10-23,
+      after graphical flag evidence and a request to check insertion, search
+      and Escape, the maintainer confirmed: "Yes. All works well. Very well in
+      fact." This closes the reported picker issue, not explicit coverage of
+      every flag, variant, theme or 250%/300% scenario. The candidate uses
+      bundled font glyphs, not PNG substitution.
+- [ ] Retire the superseded custom emoji builder and reconcile its legacy tests
+      and packaging claims in a separate, contained cleanup after acceptance.
+
+- [x] Reconcile the private name-layout implementation from the separate
+      `a199` worktree into the main checkout, retaining width-aware transcript,
+      user-list and channel-label clipping, full-name tooltips, indent bounds,
+      tooltip positioning and the background-colour correction alongside the
+      accepted cache/divider fixes. Native and package checks passed locally.
+      This is available-width clipping, not the fixed 16-character feature
+      proposed below.
+- [x] Record installed acceptance of the restored private name-layout feature.
+      On 2026-10-23 the maintainer confirmed the rebuilt candidate fixed the
+      reported regression. This closes that report, not explicit coverage of
+      every hover/click/copy, background or 250%/300% tooltip scenario.
+      See [local v1.0.7 validation](docs/gtk4/local-1.0.7-validation.md).
+
+- [x] Credit PickleRick83 and MrBenC in About → Credits → Testers. The
+      maintainer confirmed the local upgrade and displayed credits on
+      2026-10-22.
+- [x] Fix repeated background-image scaling during transcript paints and
+      incorrect divider-size calculations during server/channel tab switches.
+      Native regression tests cover cache reuse/invalidation and pane
+      positioning, including hide/show and normal/wide dividers in both
+      orientations.
+- [x] Record focused installed-client acceptance of the reported tab-switching
+      and background-image redraw issue. On 2026-10-22 the maintainer reported
+      a definite improvement and subsequently accepted the issue as fixed.
+      See [local v1.0.7 validation](docs/gtk4/local-1.0.7-validation.md).
+
+This closes the reported issue, not the broader performance soak or release
+validation matrix below. The fixes and rebuilt unsigned installers remain
+local and uncommitted; no v1.0.7 release has been published. The v1.0.6 WinGet
+acceptance track remains separate, with Microsoft Store publication to follow.
 
 ## 1.0 Release Gate
 

@@ -20,6 +20,7 @@ struct _FabulorXTextBackground
 	gint cache_tile_x;
 	gint cache_tile_y;
 	gint cache_dim_percent;
+	XTextColor cache_fallback;
 };
 
 static void
@@ -64,7 +65,11 @@ fabulor_xtext_background_build_cache (FabulorXTextBackground *background,
 		background->cache_height == height &&
 		background->cache_tile_x == tile_x &&
 		background->cache_tile_y == tile_y &&
-		background->cache_dim_percent == dim_percent)
+		background->cache_dim_percent == dim_percent &&
+		background->cache_fallback.red == fallback->red &&
+		background->cache_fallback.green == fallback->green &&
+		background->cache_fallback.blue == fallback->blue &&
+		background->cache_fallback.alpha == fallback->alpha)
 		return TRUE;
 
 	fabulor_xtext_background_clear_cache (background);
@@ -147,6 +152,7 @@ fabulor_xtext_background_build_cache (FabulorXTextBackground *background,
 	background->cache_tile_x = tile_x;
 	background->cache_tile_y = tile_y;
 	background->cache_dim_percent = dim_percent;
+	background->cache_fallback = *fallback;
 	return TRUE;
 }
 
@@ -190,14 +196,13 @@ void
 fabulor_xtext_background_begin_frame (FabulorXTextBackground *background)
 {
 	g_return_if_fail (background != NULL);
-	fabulor_xtext_background_clear_cache (background);
+	/* Keep the scaled image across frames; paint checks all cache inputs. */
 }
 
 void
 fabulor_xtext_background_end_frame (FabulorXTextBackground *background)
 {
 	g_return_if_fail (background != NULL);
-	fabulor_xtext_background_clear_cache (background);
 }
 
 void

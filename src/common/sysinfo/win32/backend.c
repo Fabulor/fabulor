@@ -50,6 +50,9 @@ typedef enum
 	QUERY_WMI_CPU,
 	QUERY_WMI_VGA,
 	QUERY_WMI_HDD,
+	QUERY_WMI_SOUND,
+	QUERY_WMI_NETWORK,
+	QUERY_WMI_CHIPSET,
 } QueryWmiType;
 
 static char *query_wmi (QueryWmiType mode);
@@ -62,7 +65,7 @@ static uint64_t hdd_free_space;
 static char *read_hdd_info (IWbemClassObject *object);
 
 static char *bstr_to_utf8 (BSTR bstr);
-static uint64_t variant_to_uint64 (VARIANT *variant);
+static bool variant_to_uint64 (VARIANT *variant, uint64_t *value);
 static char *fabulor_strdup (const char *value);
 static char *fabulor_strdup_printf (const char *format, ...);
 static char *fabulor_strchomp (char *value);
@@ -167,6 +170,21 @@ sysinfo_get_gpu (void)
 	return fabulor_strdup (vga_name);
 }
 
+char *sysinfo_get_sound (void)
+{
+	return query_wmi (QUERY_WMI_SOUND);
+}
+
+char *sysinfo_get_network (void)
+{
+	return query_wmi (QUERY_WMI_NETWORK);
+}
+
+char *sysinfo_get_chipset (void)
+{
+	return query_wmi (QUERY_WMI_CHIPSET);
+}
+
 void
 sysinfo_get_hdd_info (uint64_t *hdd_capacity_out, uint64_t *hdd_free_space_out)
 {
@@ -184,13 +202,15 @@ sysinfo_get_hdd_info (uint64_t *hdd_capacity_out, uint64_t *hdd_free_space_out)
 
 	*hdd_capacity_out = hdd_capacity;
 	*hdd_free_space_out = hdd_free_space;
+	free (hdd_info);
 }
 
 /* https://msdn.microsoft.com/en-us/library/aa390423 */
 static char *query_wmi (QueryWmiType type)
 {
-	StringBuilder result;
+	StringBuilder result = { 0 };
 	bool result_initialized = false;
+	bool query_ok = false;
 	HRESULT hr;
 
 	IWbemLocator *locator = NULL;
@@ -210,6 +230,8 @@ static char *query_wmi (QueryWmiType type)
 	}
 
 	namespaceName = SysAllocString (L"root\\CIMV2");
+	if (!namespaceName)
+		goto release_locator;
 
 	hr = locator->lpVtbl->ConnectServer (locator, namespaceName, NULL, NULL, NULL, 0, NULL, NULL, &namespace);
 	if (FAILED (hr))
@@ -230,6 +252,8 @@ static char *query_wmi (QueryWmiType type)
 	}
 
 	queryLanguageName = SysAllocString (L"WQL");
+	if (!queryLanguageName)
+		goto release_namespaceUnknown;
 
 	switch (type)
 	{
@@ -241,6 +265,18 @@ static char *query_wmi (QueryWmiType type)
 		break;
 	case QUERY_WMI_VGA:
 		query = SysAllocString (L"SELECT Name FROM Win32_VideoController");
+		break;
+	case QUERY_WMI_SOUND:
+		query = SysAllocString (L"SELECT Name FROM Win32_SoundDevice");
+		break;
+	case QUERY_WMI_NETWORK:
+		/* Device names only: never request addresses, identifiers or configuration. */
+		query = SysAllocString (L"SELECT Name FROM Win32_NetworkAdapter WHERE PhysicalAdapter = TRUE");
+		break;
+	case QUERY_WMI_CHIPSET:
+		/* Report named system controllers, not an inferred motherboard/chipset model.
+		 * Driver naming varies; absence of a match is a legitimate unavailable result. */
+		query = SysAllocString (L"SELECT Name FROM Win32_PnPEntity WHERE PNPClass = 'System' AND (Name LIKE '%Chipset%' OR Name LIKE '%SMBus%' OR Name LIKE '%Host Bridge%' OR Name LIKE '%LPC%' OR Name LIKE '%ISA Bridge%')");
 		break;
 	case QUERY_WMI_HDD:
 		/*
@@ -257,7 +293,11 @@ static char *query_wmi (QueryWmiType type)
 		goto release_queryLanguageName;
 	}
 
-	hr = namespace->lpVtbl->ExecQuery (namespace, queryLanguageName, query, WBEM_FLAG_FORWARD_ONLY, NULL, &enumerator);
+	if (!query)
+		goto release_queryLanguageName;
+
+	hr = namespace->lpVtbl->ExecQuery (namespace, queryLanguageName, query,
+		WBEM_FLAG_FORWARD_ONLY | WBEM_FLAG_RETURN_IMMEDIATELY, NULL, &enumerator);
 	if (FAILED (hr))
 	{
 		goto release_query;
@@ -269,17 +309,18 @@ static char *query_wmi (QueryWmiType type)
 	}
 	result_initialized = true;
 
-	for (i = 0;; i++)
+	/* Bound provider output and stop on a stalled enumeration. */
+	for (i = 0; i < 64; i++)
 	{
 		ULONG numReturned = 0;
 		IWbemClassObject *object;
 		char *line;
 
-		hr = enumerator->lpVtbl->Next (enumerator, WBEM_INFINITE, 1, &object, &numReturned);
-		if (FAILED (hr) || numReturned == 0)
-		{
+		hr = enumerator->lpVtbl->Next (enumerator, 2000, 1, &object, &numReturned);
+		if (FAILED (hr) || hr == WBEM_S_TIMEDOUT)
+			goto release_query;
+		if (numReturned == 0)
 			break;
-		}
 
 		switch (type)
 		{
@@ -292,6 +333,9 @@ static char *query_wmi (QueryWmiType type)
 				break;
 
 			case QUERY_WMI_VGA:
+			case QUERY_WMI_SOUND:
+			case QUERY_WMI_NETWORK:
+			case QUERY_WMI_CHIPSET:
 				line = read_vga_name (object);
 				break;
 
@@ -300,12 +344,13 @@ static char *query_wmi (QueryWmiType type)
 				break;
 
 			default:
+				line = NULL;
 				break;
 		}
 
 		object->lpVtbl->Release (object);
 
-		if (line != NULL)
+		if (line != NULL && line[0] && result.len + strlen (line) < 4096)
 		{
 			if (atleast_one_appended)
 			{
@@ -326,11 +371,14 @@ static char *query_wmi (QueryWmiType type)
 
 			atleast_one_appended = true;
 		}
+		else
+			free (line);
 	}
-
-	enumerator->lpVtbl->Release (enumerator);
+	query_ok = true;
 
 release_query:
+	if (enumerator)
+		enumerator->lpVtbl->Release (enumerator);
 	SysFreeString (query);
 
 release_queryLanguageName:
@@ -347,8 +395,10 @@ release_locator:
 	SysFreeString (namespaceName);
 
 exit:
-	if (!result_initialized || result.data == NULL)
+	if (!query_ok || !result_initialized || result.data == NULL ||
+		(type != QUERY_WMI_HDD && !atleast_one_appended))
 	{
+		string_builder_free (&result);
 		return NULL;
 	}
 
@@ -445,7 +495,8 @@ static char *read_vga_name (IWbemClassObject *object)
 		return NULL;
 	}
 
-	name_utf8 = bstr_to_utf8 (name_variant.bstrVal);
+	name_utf8 = V_VT (&name_variant) == VT_BSTR ?
+		bstr_to_utf8 (name_variant.bstrVal) : NULL;
 
 	VariantClear (&name_variant);
 
@@ -474,6 +525,11 @@ static char *read_hdd_info (IWbemClassObject *object)
 		return NULL;
 	}
 
+	if (V_VT (&name_variant) != VT_BSTR || !name_variant.bstrVal)
+	{
+		VariantClear (&name_variant);
+		return NULL;
+	}
 	name_bstr = name_variant.bstrVal;
 	name_len = SysStringLen (name_variant.bstrVal);
 
@@ -492,11 +548,11 @@ static char *read_hdd_info (IWbemClassObject *object)
 		return NULL;
 	}
 
-	capacity = variant_to_uint64 (&capacity_variant);
+	bool capacity_valid = variant_to_uint64 (&capacity_variant, &capacity);
 
 	VariantClear (&capacity_variant);
 
-	if (capacity == 0)
+	if (!capacity_valid || capacity == 0)
 	{
 		return NULL;
 	}
@@ -507,11 +563,14 @@ static char *read_hdd_info (IWbemClassObject *object)
 		return NULL;
 	}
 
-	free_space = variant_to_uint64 (&free_space_variant);
+	bool free_space_valid = variant_to_uint64 (&free_space_variant, &free_space);
 
 	VariantClear (&free_space_variant);
 
-	if (free_space == 0)
+	/* A full disk is valid; reject only inconsistent provider data. */
+	if (!free_space_valid || free_space > capacity ||
+		UINT64_MAX - hdd_capacity < capacity ||
+		UINT64_MAX - hdd_free_space < free_space)
 	{
 		return NULL;
 	}
@@ -553,22 +612,50 @@ static char *bstr_to_utf8 (BSTR bstr)
 	}
 
 	utf8[utf8_len] = '\0';
+	/* WMI strings are local provider data, not trusted IRC command text.
+	 * Keep UTF-8 names but remove controls/newlines before SAY/ECHO formatting. */
+	{
+		char *read = utf8, *write = utf8;
+		while (*read)
+		{
+			unsigned char ch = (unsigned char) *read++;
+			if (ch >= 32 && ch != 127)
+				*write++ = (char) ch;
+		}
+		*write = '\0';
+	}
 
 	return utf8;
 }
 
-static uint64_t variant_to_uint64 (VARIANT *variant)
+static bool variant_to_uint64 (VARIANT *variant, uint64_t *value)
 {
 	switch (V_VT (variant))
 	{
 	case VT_UI8:
-		return variant->ullVal;
-
+		*value = variant->ullVal;
+		return true;
+	case VT_UI4:
+		*value = variant->ulVal;
+		return true;
 	case VT_BSTR:
-		return wcstoull (variant->bstrVal, NULL, 10);
-
+	{
+		const wchar_t *p = variant->bstrVal;
+		uint64_t number = 0;
+		if (!p || !*p)
+			return false;
+		for (; *p; p++)
+		{
+			if (*p < L'0' || *p > L'9' ||
+				number > (UINT64_MAX - (*p - L'0')) / 10)
+				return false;
+			number = number * 10 + (*p - L'0');
+		}
+		*value = number;
+		return true;
+	}
 	default:
-		return 0;
+		return false;
 	}
 }
 

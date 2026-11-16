@@ -63,6 +63,8 @@
 #include "window-geometry.h"
 #include "fkeys.h"
 #include "userlistgui.h"
+#include "../common/userlist.h"
+#include "spell-entry-autocorrect.h"
 #include "user-list-model.h"
 #include "user-list-view.h"
 #include "chanview.h"
@@ -867,6 +869,24 @@ mg_inputbox_cb (GtkWidget *igad, session_gui *gui)
 static gboolean
 mg_spellcheck_cb (SexySpellEntry *entry, gchar *word, gpointer data)
 {
+        session *origin = NULL;
+        GSList *list;
+        (void) entry;
+        if (current_tab && current_tab->gui == data)
+                origin = current_tab;
+        else
+                for (list = sess_list; list; list = list->next)
+                {
+                        session *candidate = list->data;
+                        if (candidate->gui == data) { origin = candidate; break; }
+                }
+        if (!origin)
+                return FALSE;
+        if (origin->server->p_cmp (origin->server->nick, word) == 0 ||
+                (origin->type == SESS_DIALOG &&
+                 origin->server->p_cmp (origin->channel, word) == 0) ||
+                userlist_find_global (origin->server, word))
+                return FALSE;
         /* This can cause freezes on long words, nicks arn't very long anyway. */
         if (strlen (word) > 20)
                 return FALSE;
@@ -1348,6 +1368,7 @@ mg_restore_entry (GtkWidget *entry, char **text)
 static void
 mg_restore_speller (GtkWidget *entry, char **text)
 {
+        fabulor_spell_autocorrect_reset (GTK_ENTRY (entry));
         if (*text)
         {
                 SPELL_ENTRY_SET_TEXT (entry, *text);
@@ -5474,6 +5495,14 @@ mg_show_emoji_popover (GtkEntry *entry)
         gchar *name;
         int i;
 
+        if (!gtk_editable_get_editable (GTK_EDITABLE (entry)))
+                return;
+
+        /* Prefer the shared GTK chooser; retain the legacy builder as a
+         * fallback while the local candidate undergoes installed acceptance. */
+        if (fabulor_emoji_picker_native_popup (entry))
+                return;
+
         popover = GTK_WIDGET (fabulor_emoji_picker_popover_get (entry));
         if (popover)
         {
@@ -5982,6 +6011,7 @@ mg_create_entry (session *sess, GtkWidget *box)
 
         gui->input_box = entry = sexy_spell_entry_new ();
         sexy_spell_entry_set_checked ((SexySpellEntry *)entry, prefs.hex_gui_input_spell);
+        sexy_spell_entry_set_autocorrect ((SexySpellEntry *)entry, prefs.hex_gui_input_autocorrect);
         sexy_spell_entry_set_parse_attributes ((SexySpellEntry *)entry, prefs.hex_gui_input_attr);
 
         gtk_entry_set_max_length (GTK_ENTRY (gui->input_box), 0);
@@ -5997,7 +6027,7 @@ mg_create_entry (session *sess, GtkWidget *box)
         g_signal_connect (G_OBJECT (entry), "icon-release",
                                                         G_CALLBACK (mg_inputbox_icon_release_cb), NULL);
         g_signal_connect (G_OBJECT (entry), "word-check",
-                                                        G_CALLBACK (mg_spellcheck_cb), NULL);
+                                                        G_CALLBACK (mg_spellcheck_cb), gui);
         gtk_widget_grab_focus (entry);
 
         if (prefs.hex_gui_input_style)
@@ -6005,6 +6035,7 @@ mg_create_entry (session *sess, GtkWidget *box)
         mg_apply_entry_scroll_artifact_fix (entry);
 
         g_object_set (G_OBJECT (entry), "show-emoji-icon", FALSE, NULL);
+        fabulor_emoji_picker_bind_entry (GTK_ENTRY (entry));
 
         emoji_fallback_icon_name = mg_find_available_icon_name (emoji_fallback_icon_names);
         gtk_entry_set_icon_activatable (GTK_ENTRY (entry), GTK_ENTRY_ICON_SECONDARY, TRUE);

@@ -106,6 +106,7 @@ available. Common names include:
 | Name | Result |
 | --- | --- |
 | `nick` | Current nickname. |
+| `id` | Stable connection identifier as a string (new bridge-capable builds; older builds expose it through `get_prefs('id')` and channel-list `id`). |
 | `channel` | Current channel or dialogue name. |
 | `server` | Connected server name. |
 | `network` | Configured network name. |
@@ -349,6 +350,102 @@ Plugin preferences are stored under the current add-on's identity.
 | `get_pluginpref(name)` | Return a string, integer, or `None`. | `preferences.read` |
 | `del_pluginpref(name)` | Delete a value; return success. | `preferences.write` |
 | `list_pluginpref()` | Return stored preference names. | `preferences.read` |
+
+## Optional Native Control Panels
+
+Bridge-capable builds expose `ui_available()` and `ui_open(schema, callback,
+userdata=None)` through the **trusted full Python API**, not the isolated
+manifest interface. Both the frontend and Python host must be updated. Feature
+detection must use `getattr(fabulor, 'ui_available', lambda: False)()`; do not
+infer support from an installed GTK DLL or a compatibility window pointer.
+
+The facility uses Fabulor's existing GTK4 frontend. No PyGObject, Qt, Tkinter,
+OpenAI dependency or public native-plugin vtable change is required. No window,
+UI timer or native panel registry is created merely by loading an add-on or
+querying availability; Python keeps only empty owner bookkeeping until use. The host's regular Preferences window is unchanged.
+
+- `ui_available()` discovers protocol 1, requiring `ui.write` and `session.read`
+  on capability-bound full-API paths.
+- `ui_features()` returns an immutable set of additive features supported by both
+  wrapper and frontend, with the same discovery permissions/thread checks. Use
+  `getattr(fabulor, 'ui_features', lambda: ())()` for older wrappers. Currently
+  `page_buttons` enables a page's optional `buttons` list of `{id, label}` objects.
+  Unsupported page-button opens are rejected before creating a handle/window.
+  Global-button schemas retain their existing behaviour.
+- `ui_open(...)` additionally requires `events.command` and `commands.execute`.
+  All panel operations must be on the main thread.
+- The returned handle supports `present()`, `close()` and `update(values)`.
+- `callback(panel, event, values, userdata)` receives a button ID or `closed`.
+  Input values are typed booleans, integers or strings. Bind the callback through
+  the add-on entry module, retaining loader ownership, as with native hooks.
+- Controls are **drafts**. The bridge does not apply/save add-on settings.
+  Explicit button callbacks implement those operations. Closing does not roll
+  back changes an add-on already applied.
+- `update()` accepts existing readonly `label`/`status` fields only, never
+  overwriting editable drafts. A status update supplies `{value, state}`.
+- User-close callbacks receive a handle already marked closed. Owner unload
+  closes panels before hooks are removed. No callback values are routed to IRC.
+  If the captured IRC context is gone, unsafe close-event delivery is skipped;
+  stale handles are reclaimed on the next UI operation or owner unload.
+
+Example schema (see `samples/plugins/simple-python-ui/simple-python-ui.py`):
+
+```python
+schema = {
+    'title': 'Example settings',
+    'context': 'A clearly identified target',
+    'pages': [{'id': 'overview', 'title': 'Overview', 'fields': [
+        {'id': 'health', 'type': 'status', 'label': 'State',
+         'value': 'Waiting', 'state': 'waiting'},
+        {'id': 'enabled', 'type': 'check', 'label': 'Enabled', 'value': False},
+    ]}],
+    'buttons': [{'id': 'apply', 'label': 'Apply temporarily'}],
+}
+```
+
+Supported field types: `label`, `status`, `check`, `text`, `int` and `choice`.
+All have `id`, `type`, `label` and `value`; `status` adds a state from `off`,
+`waiting`, `running`, `error`; `int` needs inclusive integer `min`/`max`;
+`choice` needs a `choices` list containing its string value. Identifiers are
+unique across the whole panel, 1-64 ASCII letters/digits/underscores. Limits:
+four panels per Python add-on, eight native panels globally, eight pages,
+64 fields, six global custom buttons and (with `page_buttons`) six per page,
+16 choices, integer bounds within +/-1,000,000,
+and 32 KiB of decoded schema/event data. Schema string byte limits and text
+input length are checked. Unknown fields/types and invalid events are rejected.
+Page/global button IDs share the panel-wide identifier namespace with fields and
+pages. All actions deliver the same complete editable snapshot, regardless of
+which page contains the button. Readonly UPDATE cannot add/change buttons.
+For a backwards-compatible example, see the demo's optional feature check.
+
+The internal `ADDONUI` command transports bounded base64 GMarkup; it is not a
+user-facing configuration file or general widget scripting language. There are
+no arbitrary GTK pointers, markup, scripts, file paths, browser widgets or
+command templates in schemas. Registered event hooks are dispatched directly;
+no unknown-command/IRC fallback is used for button values. Python handles check
+add-on ownership. Trusted add-ons remain trusted local code, not a sandbox;
+raw native commands are not an isolation/security boundary between such scripts.
+Do not put credentials in panel schemas or text inputs.
+
+Development Windows/TLS hosts may advertise the additional `oper_login` feature.
+Only when both wrapper and frontend support it, an owned panel handle offers
+`oper_login()` and `oper_login_status()`. The first opens a separate host-owned
+masked IRC OPER window; the second returns non-secret status. No password/name
+arguments or secret results cross this API. The native window owns credential
+input, optional purpose/profile/peer/oper-name-scoped Windows Credential Manager
+storage and explicit login/forget confirmation. It sends no request merely by
+opening. No automatic login/retry, no input-history/generic-hook secret exposure,
+no password in schemas/events/settings. Existing full-API capability, owner and
+main-thread checks apply; no isolated manifest API expansion. See the native
+bridge document for TLS/bouncer, status, lifecycle and memory/trust limitations.
+
+The opening native session/connection/channel is captured for dispatch. A panel
+must not assume it is editing whichever tab later becomes active. Add-ons must
+also validate their own policy snapshots and reconnect lifecycle before applying
+changes. Availability/health lamps describe operation, not whether IRC content
+is safe. The bridge itself does no network I/O, persistence or health polling.
+
+Developer build and validation details: [Native add-on panel bridge](native-ui-bridge.md).
 
 ## Compatibility Notes
 

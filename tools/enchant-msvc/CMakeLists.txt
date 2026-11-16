@@ -63,7 +63,28 @@ target_include_directories(enchant_core PRIVATE
 target_link_directories(enchant_core PRIVATE "${GTK_ROOT}/lib")
 target_link_libraries(enchant_core PRIVATE glib-2.0 gobject-2.0 gmodule-2.0 gio-2.0)
 
-add_library(enchant_winspell SHARED "${ENCHANT_SOURCE_DIR}/providers/enchant_winspell.cpp")
+# Enchant 2.8.19's WinSpell session hooks call Windows Add/Remove, which
+# modify the persistent Windows user dictionary. Enchant core already owns
+# session_include/session_exclude tables; leave these optional hooks unset.
+# Patch a build-local copy, fail closed on source drift, and retain upstream.
+file(READ "${ENCHANT_SOURCE_DIR}/providers/enchant_winspell.cpp" winspell_source)
+foreach(method IN ITEMS add_to_session remove_from_session)
+  set(anchor "dict->${method} = winspell_dict_${method};")
+  string(LENGTH "${winspell_source}" before_length)
+  string(REPLACE "${anchor}" "" stripped_source "${winspell_source}")
+  string(LENGTH "${stripped_source}" after_length)
+  string(LENGTH "${anchor}" anchor_length)
+  math(EXPR removed_length "${before_length} - ${after_length}")
+  if(NOT removed_length EQUAL anchor_length)
+    message(FATAL_ERROR "WinSpell ${method} no longer matches the reviewed session-local patch")
+  endif()
+  string(REPLACE "${anchor}"
+    "dict->${method} = nullptr; /* Enchant core owns session state. */"
+    winspell_source "${winspell_source}")
+endforeach()
+set(winspell_patched_source "${CMAKE_CURRENT_BINARY_DIR}/winspell-session-local.cpp")
+file(WRITE "${winspell_patched_source}" "${winspell_source}")
+add_library(enchant_winspell SHARED "${winspell_patched_source}")
 set_target_properties(enchant_winspell PROPERTIES PREFIX "")
 target_compile_features(enchant_winspell PRIVATE cxx_std_17)
 target_compile_options(enchant_winspell PRIVATE /FI"${CMAKE_CURRENT_LIST_DIR}/compat/config.h")
@@ -82,6 +103,8 @@ install(FILES "${CMAKE_CURRENT_LIST_DIR}/enchant.ordering" DESTINATION share/enc
 
 add_executable(enchant_smoke "${CMAKE_CURRENT_LIST_DIR}/smoke.c")
 target_compile_options(enchant_smoke PRIVATE /FI"${CMAKE_CURRENT_LIST_DIR}/compat/config.h")
-target_include_directories(enchant_smoke PRIVATE "${CMAKE_CURRENT_LIST_DIR}/compat" "${ENCHANT_SOURCE_DIR}/lib")
-target_link_libraries(enchant_smoke PRIVATE enchant_core)
+target_include_directories(enchant_smoke PRIVATE "${CMAKE_CURRENT_LIST_DIR}/compat" "${ENCHANT_SOURCE_DIR}/lib"
+  "${GTK_ROOT}/include/glib-2.0" "${GTK_ROOT}/lib/glib-2.0/include")
+target_link_directories(enchant_smoke PRIVATE "${GTK_ROOT}/lib")
+target_link_libraries(enchant_smoke PRIVATE enchant_core gmodule-2.0 glib-2.0 gobject-2.0)
 install(TARGETS enchant_smoke RUNTIME DESTINATION .)

@@ -14,6 +14,7 @@ __all__ = [
     'hook_print', 'hook_print_attrs', 'hook_server', 'hook_server_attrs',
     'hook_timer', 'hook_unload', 'list_pluginpref', 'nickcmp', 'prnt',
     'register_callback', 'send_message', 'set_pluginpref', 'strip', 'unhook',
+    'ui_available', 'ui_features', 'ui_open',
 ]
 
 __doc__ = 'Fabulor Python Scripting Interface'
@@ -568,3 +569,273 @@ def find_context(server=None, channel=None):
         return None
 
     return Context(ctx)
+
+
+# Optional native UI bridge. Imports and native resources are lazy. Only the
+# trusted, full Python API exposes these functions; no manifest API expansion.
+def _ui_thread():
+    import threading
+    if threading.current_thread() is not threading.main_thread():
+        raise RuntimeError('Native UI operations require the main thread.')
+
+
+def _ui_owner():
+    _ui_thread()
+    return __require_capability('ui.write')
+
+
+def ui_available():
+    """Discover native panel protocol 1 without creating UI or timers."""
+    owner = _ui_owner()
+    return hasattr(owner, 'ui_panels') and get_info('addon_ui') == '1'
+
+
+def ui_features():
+    """Return optional features supported by both this wrapper and frontend."""
+    return frozenset({'page_buttons', 'oper_login'} & set((get_info('addon_ui_features') or '').split())) if ui_available() else frozenset()
+
+
+def _ui_document(schema):
+    import base64
+    import re
+    import xml.etree.ElementTree as ET
+    if not isinstance(schema, dict) or set(schema) - {'title', 'context', 'pages', 'buttons'}:
+        raise ValueError('Invalid panel schema.')
+    def text(value, maximum):
+        if not isinstance(value, str) or len(value.encode('utf-8')) > maximum or any(ord(c) < 32 for c in value):
+            raise ValueError('Invalid panel text.')
+        return value
+    ids = set()
+    def identifier(value):
+        if not isinstance(value, str) or not re.fullmatch(r'[A-Za-z0-9_]{1,64}', value) or value in ids:
+            raise ValueError('Invalid or duplicate panel identifier.')
+        ids.add(value)
+        return value
+    root = ET.Element('panel', title=text(schema.get('title'), 128), context=text(schema.get('context', ''), 256))
+    pages = schema.get('pages')
+    buttons = schema.get('buttons', [])
+    if not isinstance(pages, list) or not 1 <= len(pages) <= 8 or not isinstance(buttons, list) or len(buttons) > 6:
+        raise ValueError('Panel page/button limit exceeded.')
+    fields = {}
+    def add_buttons(parent, items):
+        if not isinstance(items, list) or len(items) > 6:
+            raise ValueError('Panel button limit exceeded.')
+        for button in items:
+            if not isinstance(button, dict) or set(button) != {'id', 'label'} or button['id'] == 'closed':
+                raise ValueError('Invalid panel button.')
+            ET.SubElement(parent, 'button', id=identifier(button['id']), label=text(button['label'], 128))
+    for page in pages:
+        if not isinstance(page, dict) or set(page) - {'id', 'title', 'fields', 'buttons'}:
+            raise ValueError('Invalid panel page.')
+        node = ET.SubElement(root, 'page', id=identifier(page.get('id')), title=text(page.get('title'), 128))
+        if not isinstance(page.get('fields'), list):
+            raise ValueError('Panel fields must be a list.')
+        for field in page['fields']:
+            if not isinstance(field, dict) or set(field) - {'id', 'type', 'label', 'value', 'state', 'choices', 'min', 'max'}:
+                raise ValueError('Invalid panel field.')
+            name = identifier(field.get('id'))
+            kind = field.get('type', 'label')
+            if kind not in ('label', 'status', 'check', 'text', 'int', 'choice') or len(fields) >= 64:
+                raise ValueError('Invalid field type or field limit exceeded.')
+            value = field.get('value', '')
+            attrs = {'id': name, 'type': kind, 'label': text(field.get('label', ''), 256)}
+            if kind == 'check':
+                if type(value) is not bool:
+                    raise ValueError('Checkbox values must be boolean.')
+                attrs['value'] = 'true' if value else 'false'
+            elif kind == 'int':
+                low, high = field.get('min'), field.get('max')
+                if any(type(n) is not int for n in (low, high, value)) or not -1000000 <= low <= value <= high <= 1000000:
+                    raise ValueError('Invalid integer field range/value.')
+                attrs.update(value=str(value), min=str(low), max=str(high))
+            else:
+                attrs['value'] = text(value, 512)
+            if kind == 'status':
+                if field.get('state') not in ('off', 'waiting', 'running', 'error'):
+                    raise ValueError('Invalid status state.')
+                attrs['state'] = field['state']
+            if kind == 'choice':
+                choices = field.get('choices')
+                if not isinstance(choices, list) or not 1 <= len(choices) <= 16:
+                    raise ValueError('Invalid choices.')
+                choices = [text(choice, 64) for choice in choices]
+                if any(not choice or '|' in choice for choice in choices) or value not in choices:
+                    raise ValueError('Invalid choice value.')
+                attrs['choices'] = '|'.join(choices)
+            ET.SubElement(node, 'field', attrs)
+            fields[name] = dict(field, type=kind)
+        add_buttons(node, page.get('buttons', []))
+    add_buttons(root, buttons)
+    wire = ET.tostring(root, encoding='utf-8')
+    if len(wire) > 32768:
+        raise ValueError('Panel schema exceeds 32 KiB.')
+    return base64.b64encode(wire).decode('ascii'), fields
+
+
+class _UiPanel:
+    def __init__(self, owner, token, callback, userdata, schema, fields):
+        self.owner, self.token, self.callback, self.userdata = owner, token, callback, userdata
+        self.schema, self.fields, self.hook = schema, fields, None
+        self.closed = False
+
+    def _check(self):
+        if _ui_owner() != self.owner:
+            raise PermissionError('Panel belongs to another add-on.')
+        if self.closed:
+            raise RuntimeError('Panel is closed.')
+        if get_info('addon_ui:' + self.token) != 'open':
+            self._dispose(False)
+            raise RuntimeError('Native panel no longer exists.')
+
+    def _dispose(self, native=True):
+        # Internal owner cleanup, not a public identity/capability override.
+        if self.closed:
+            return
+        self.closed = True
+        if native:
+            lib.fabulor_command(lib.ph, ('ADDONUI CLOSE ' + self.token).encode('ascii'))
+        try:
+            if self.hook is not None:
+                self.owner.remove_hook(self.hook)
+                self.hook = None
+            self.owner.ui_panels.discard(self)
+        except ReferenceError:
+            self.hook = None
+
+    def close(self):
+        self._check()
+        self._dispose()
+
+    def present(self):
+        self._check()
+        command('ADDONUI PRESENT ' + self.token)
+
+    def oper_login(self):
+        """Open the host-owned masked OPER dialog; no secret enters Python."""
+        self._check()
+        if 'oper_login' not in ui_features():
+            raise RuntimeError('Host credentialed OPER login is unavailable.')
+        command('ADDONUI OPERLOGIN ' + self.token)
+
+    def oper_login_status(self):
+        """Read non-secret native login status, not service/channel privileges."""
+        self._check()
+        if 'oper_login' not in ui_features():
+            raise RuntimeError('Host credentialed OPER login is unavailable.')
+        return get_info('addon_oper:' + self.token) or 'OPER login unavailable.'
+
+    def update(self, values):
+        """Update readonly label/status fields only; never overwrite drafts."""
+        self._check()
+        if not isinstance(values, dict) or not values:
+            raise ValueError('Expected readonly field updates.')
+        fields = []
+        for name, value in values.items():
+            if name not in self.fields or self.fields[name]['type'] not in ('label', 'status'):
+                raise ValueError('Only known readonly fields can be updated.')
+            field = dict(self.fields[name])
+            if field['type'] == 'status':
+                if not isinstance(value, dict) or set(value) != {'value', 'state'}:
+                    raise ValueError('Status update needs value and state.')
+                field.update(value)
+            else:
+                field['value'] = value
+            fields.append(field)
+        wire, _ = _ui_document({'title': 'Update', 'context': '', 'pages': [{'id': self.schema['pages'][0]['id'], 'title': 'Update', 'fields': fields}]})
+        command('ADDONUI UPDATE ' + self.token + ' ' + wire)
+        self.fields.update({field['id']: field for field in fields})
+
+    def _event(self, words, word_eol, userdata):
+        # Native dispatch enters here without an add-on frame. No protected
+        # public API is called until the supplied entry-point callback runs.
+        if len(words) < 2 or words[1] != self.token or self.closed:
+            return EAT_NONE
+        import base64
+        import xml.etree.ElementTree as ET
+        if len(words) != 4 or len(words[3]) > 65536:
+            return EAT_ALL
+        event = words[2]
+        allowed = {button['id'] for button in self.schema.get('buttons', [])} | {'closed'}
+        allowed.update(button['id'] for page in self.schema['pages'] for button in page.get('buttons', []))
+        if event not in allowed:
+            return EAT_ALL
+        try:
+            _require_plugin_capability(self.owner, 'ui.write')
+            _require_plugin_capability(self.owner, 'events.command')
+            if self not in self.owner.ui_panels:
+                return EAT_ALL
+        except (PermissionError, ReferenceError):
+            self._dispose()
+            return EAT_ALL
+        try:
+            wire = base64.b64decode(words[3], validate=True)
+            if len(wire) > 32768 or b'<!DOCTYPE' in wire or b'<!ENTITY' in wire:
+                return EAT_ALL
+            root = ET.fromstring(wire)
+            if root.tag != 'values' or root.attrib:
+                raise ValueError('Invalid panel event.')
+            values = {}
+            for node in root:
+                if node.tag != 'field' or set(node.attrib) != {'id', 'value'} or len(node):
+                    raise ValueError('Invalid panel value.')
+                name, value = node.attrib['id'], node.attrib['value']
+                field = self.fields.get(name)
+                if name in values or field is None or field['type'] in ('label', 'status') or len(value) > 512:
+                    raise ValueError('Invalid panel field.')
+                if field['type'] == 'check':
+                    if value not in ('true', 'false'):
+                        raise ValueError('Invalid checkbox.')
+                    value = value == 'true'
+                elif field['type'] == 'int':
+                    value = int(value)
+                    if not field['min'] <= value <= field['max']:
+                        raise ValueError('Invalid integer.')
+                elif field['type'] == 'choice' and value not in field['choices']:
+                    raise ValueError('Invalid choice.')
+                values[name] = value
+            expected = {name for name, field in self.fields.items() if field['type'] not in ('label', 'status')}
+            if event != 'closed' and set(values) != expected:
+                raise ValueError('Incomplete panel event.')
+        except (ValueError, TypeError, ET.ParseError):
+            return EAT_ALL
+        if event == 'closed':
+            self._dispose(native=False)
+        self.callback(self, event, values, self.userdata)
+        return EAT_ALL
+
+
+def ui_open(schema, callback, userdata=None):
+    """Open a native panel; callback(panel,event,values,userdata) stays main-thread.
+
+    Bind callback through the add-on entry point, as with other native hooks.
+    Native controls are drafts until an explicit button callback applies them.
+    """
+    import copy
+    import secrets
+    owner = _ui_owner()
+    __require_capability('commands.execute')
+    __require_capability('events.command')
+    if not callable(callback) or not ui_available():
+        raise RuntimeError('Native UI bridge unavailable or callback invalid.')
+    # Invalid IRC contexts cannot safely deliver native parent-close events.
+    # Reclaim their ownership on the next explicit UI operation, not a timer.
+    for stale in list(owner.ui_panels):
+        if get_info('addon_ui:' + stale.token) != 'open':
+            stale._dispose(False)
+    if len(owner.ui_panels) >= 4:
+        raise RuntimeError('Per-add-on panel limit reached.')
+    schema = copy.deepcopy(schema)
+    wire, fields = _ui_document(schema)
+    if any(page.get('buttons') for page in schema['pages']) and 'page_buttons' not in ui_features():
+        raise RuntimeError('Native frontend does not support page buttons.')
+    panel = _UiPanel(owner, secrets.token_hex(16), callback, userdata, schema, fields)
+    panel.hook = hook_command('_FABULOR_UI_EVENT', panel._event)
+    owner.ui_panels.add(panel)
+    try:
+        command('ADDONUI OPEN ' + panel.token + ' ' + wire)
+        if get_info('addon_ui:' + panel.token) != 'open':
+            raise RuntimeError('Native panel creation rejected.')
+    except Exception:
+        panel._dispose()
+        raise
+    return panel

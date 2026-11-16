@@ -1,0 +1,26 @@
+Fabulor downstream Enchant / WinSpell modification
+2026-10-29
+
+Based on Enchant 2.8.19:
+https://github.com/rrthomas/enchant/tree/v2.8.19
+Source archive SHA-256:
+c8d70991d544ee39274b96bd01d2858a009fe732ff43f2aaf605fd61ecd06f60
+
+Fabulor's component inventory identifies this distribution as
+2.8.19+fabulor-session-local.1. The core's upstream version string remains
+2.8.19. This is not a new upstream release.
+
+The build recipe at tools/enchant-msvc/CMakeLists.txt creates a build-local
+copy of the upstream WinSpell provider. It leaves the optional add_to_session
+and remove_from_session hooks unset, rather than using Windows' persistent
+user-dictionary Add/Remove operations for session-only API requests. Enchant
+core already maintains session include/exclude tables. Explicit personal-word
+persistence continues through Enchant's personal word files.
+
+The original upstream source archive/file and upstream licence text are
+unchanged. The recipe also retains the documented MSVC compatibility rewrite
+for generated composite.c and the Windows compatibility shims under
+tools/enchant-msvc/compat. These build recipes and shims are included in the
+Fabulor source tree; the pinned upstream archive supplies the remaining source.
+
+This notice supplements, and does not replace, enchant-COPYING.LIB.

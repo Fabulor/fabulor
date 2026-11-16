@@ -42,6 +42,7 @@ gtk4_includes = include_directories(
 gtk4_library_dir = join_paths(gtk4_root, 'lib')
 gtk4_library = cc.find_library('gtk-4', dirs: gtk4_library_dir, required: true)
 pango_library = cc.find_library('pango-1.0', dirs: gtk4_library_dir, required: true)
+pangocairo_library = cc.find_library('pangocairo-1.0', dirs: gtk4_library_dir, required: true)
 gdk_pixbuf_library = cc.find_library('gdk_pixbuf-2.0', dirs: gtk4_library_dir, required: true)
 cairo_library = cc.find_library('cairo', dirs: gtk4_library_dir, required: true)
 graphene_library = cc.find_library('graphene-1.0', dirs: gtk4_library_dir, required: true)
@@ -49,7 +50,7 @@ gio_library = cc.find_library('gio-2.0', dirs: gtk4_library_dir, required: true)
 gobject_library = cc.find_library('gobject-2.0', dirs: gtk4_library_dir, required: true)
 glib_library = cc.find_library('glib-2.0', dirs: gtk4_library_dir, required: true)
 intl_library = cc.find_library('intl', dirs: gtk4_library_dir, required: true)
-probe_dependencies = [gtk4_library, pango_library, gdk_pixbuf_library, cairo_library, graphene_library, gio_library, gobject_library, glib_library, intl_library]
+probe_dependencies = [gtk4_library, pango_library, pangocairo_library, gdk_pixbuf_library, cairo_library, graphene_library, gio_library, gobject_library, glib_library, intl_library]
 
 if host_machine.system() == 'windows'
   probe_dependencies += [cc.find_library('comctl32', required: true)]
@@ -124,3 +125,98 @@ probe = executable(
 probe_environment = environment()
 probe_environment.prepend('PATH', join_paths(gtk4_root, 'bin'))
 test('GTK4 dependency probe', probe, env: probe_environment)
+
+background_cache_test = executable(
+  'test-xtext-background-cache',
+  'test-xtext-background-cache.c',
+  include_directories: gtk4_includes,
+  dependencies: probe_dependencies,
+)
+test('XText background cache', background_cache_test, env: probe_environment)
+
+if host_machine.system() == 'windows'
+  xtext_selection_test = executable(
+    'test-xtext-selection',
+    'test-xtext-selection.c',
+    '../../src/fe-gtk/xtext-accessible.c',
+    '../../src/fe-gtk/xtext-background.c',
+    '../../src/fe-gtk/xtext-decoration.c',
+    '../../src/fe-gtk/xtext-display.c',
+    '../../src/fe-gtk/xtext-geometry.c',
+    '../../src/fe-gtk/xtext-hit-test.c',
+    '../../src/fe-gtk/xtext-input.c',
+    '../../src/fe-gtk/xtext-performance.c',
+    '../../src/fe-gtk/xtext-render-target.c',
+    '../../src/fe-gtk/xtext-scroll-copy.c',
+    '../../src/fe-gtk/xtext-selection.c',
+    '../../src/fe-gtk/xtext-widget-class.c',
+    include_directories: [include_directories('xtext-test-support'), gtk4_includes],
+    dependencies: probe_dependencies,
+    c_args: ['-DWIN32'],
+    override_options: ['warning_level=2'],
+  )
+  test('XText clipped-prefix selection', xtext_selection_test, env: probe_environment)
+endif
+
+paned_handle_test = executable(
+  'test-paned-handle-size',
+  'test-paned-handle-size.c',
+  include_directories: gtk4_includes,
+  dependencies: probe_dependencies,
+)
+test('Paned handle size', paned_handle_test, env: probe_environment)
+
+native_emoji_flags_test = executable(
+  'test-native-emoji-flags',
+  'test-native-emoji-flags.c',
+  '../../src/fe-gtk/emoji-picker.c',
+  include_directories: gtk4_includes,
+  dependencies: probe_dependencies,
+)
+emoji_font_config = configuration_data()
+emoji_font_config.set('GTK4_ROOT', gtk4_root.replace('\\', '/'))
+emoji_font_config.set('EMOJI_FONT_ROOT', join_paths(meson.current_source_dir(), '../../data/fonts').replace('\\', '/'))
+emoji_fonts = configure_file(
+  input: 'test-emoji-fonts.conf.in',
+  output: 'test-emoji-fonts.conf',
+  configuration: emoji_font_config,
+)
+emoji_environment = environment()
+emoji_environment.prepend('PATH', join_paths(gtk4_root, 'bin'))
+emoji_environment.set('PANGOCAIRO_BACKEND', 'fc')
+emoji_environment.set('FONTCONFIG_FILE', join_paths(meson.current_build_dir(), 'test-emoji-fonts.conf'))
+test('Native emoji flags and shared actions', native_emoji_flags_test, env: emoji_environment)
+emoji_win32_environment = environment()
+emoji_win32_environment.prepend('PATH', join_paths(gtk4_root, 'bin'))
+emoji_win32_environment.set('PANGOCAIRO_BACKEND', 'win32')
+emoji_win32_environment.set('FONTCONFIG_FILE', join_paths(meson.current_build_dir(), 'test-emoji-fonts.conf'))
+test('Native emoji flags with Win32 default font map', native_emoji_flags_test, env: emoji_win32_environment)
+
+dalnet_permissions_test = executable(
+  'test-dalnet-dcc-permissions',
+  'test-dalnet-dcc-permissions.c',
+  '../../src/fe-gtk/nick-context-menu-model.c',
+  include_directories: gtk4_includes,
+  dependencies: probe_dependencies,
+)
+test('DALnet DCC permissions', dalnet_permissions_test, env: probe_environment)
+
+spell_autocorrect_test = executable(
+  'test-spell-autocorrect',
+  'test-spell-autocorrect.c',
+  '../../src/fe-gtk/spell-entry-autocorrect.c',
+  include_directories: gtk4_includes,
+  dependencies: probe_dependencies + (host_machine.system() == 'windows' ? [cc.find_library('user32')] : []),
+)
+test('Spell auto-correct', spell_autocorrect_test, env: probe_environment)
+
+if host_machine.system() == 'windows'
+  sysinfo_test = executable(
+    'test-sysinfo-win32',
+    'test-sysinfo-win32.c',
+    include_directories: gtk4_includes,
+    dependencies: [glib_library, cc.find_library('ole32'),
+      cc.find_library('oleaut32'), cc.find_library('wbemuuid')],
+  )
+  test('Windows Sysinfo backend', sysinfo_test, env: probe_environment)
+endif

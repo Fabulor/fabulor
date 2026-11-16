@@ -181,17 +181,64 @@ Links are excluded from ordinary spelling-word handling. Spell-checking
 languages are selected under **Settings > Preferences > Interface > Input
 box** using language codes separated by commas.
 
+### Optional Auto-correct
+
+The local v1.0.7 candidate adds **Auto-correct while typing** on that same
+Preferences page. It is **off by default** and requires spell checking plus
+an active English Windows/WinSpell dictionary (for example, `en_AU`). The
+maintainer reported improved behaviour with this candidate on 2026-10-30;
+that focused feedback does not establish every example, undo or platform check.
+
+When enabled, type a misspelling such as `sleke` or `btter`, then press **Space**.
+Fabulor uses the first available Windows spelling suggestion, in Windows' order,
+through the bundled Enchant WinSpell provider. It no longer uses a fixed typo
+list or a separate Fabulor ranking model. Every active dictionary must reject
+the original, and the selected English Windows dictionary must accept the
+replacement. If no suitable suggestion is available, the word stays unchanged.
+
+Windows' preferred suggestion can be wrong: `btter` can mean “better” or
+“butter”. Use immediate Backspace undo when it chooses the wrong word. Windows
+controls the proposed spelling, case and diacritics; for example, the tested
+`en_AU` checker offers `Türkiye` for `turkey`/`Turkey`. That is not a universal
+Fabulor country-name substitution rule. Personal/session dictionary words and
+known nicknames are left alone. A typo already accepted by Windows' custom dictionary is also left
+alone, rather than overriding a deliberate dictionary entry.
+
+The local follow-up fixes a WinSpell provider bug that could make session-only
+ignores persistent in Windows. New session ignores stay local to Enchant's
+dictionary lifetime; existing custom words are not automatically deleted.
+
+Press **Backspace immediately** after a correction to restore the original
+word and remove the triggering space. Pressing Space again does not instantly
+reapply that correction. The special undo expires when you continue editing,
+move the cursor, click, change tabs or leave the input box.
+
+Only fully keyboard-typed, lower-case or initial-capital ASCII-letter tokens
+(up to 64 letters) are eligible; replacements support Unicode and ordinary
+multiword suggestions. Pasted/history text, links, email addresses, channel/mention
+names, path/code-shaped tokens, acronyms, emoji and lines containing IRC
+formatting controls are not automatically corrected. Slash-command lines and
+lines beginning with the configured command character are excluded. Words
+ending in punctuation are left for manual suggestions. Active input-method
+composition is excluded; **Enter never triggers a correction**. Other languages
+continue to use ordinary spell checking. No automatic corrections are saved as
+learned word pairs.
+
 ## Emoji And Flags
 
-Select the emoji icon at the right of the input box to open the picker. Choose
-a category, then select an item to insert it at the current cursor position.
-Use the close button or `Escape` to dismiss the picker without inserting an
-item.
+In the local v1.0.7 candidate, select the emoji icon at the right of the input
+box or press `Ctrl+;` (also `Ctrl+.`) to open the same GTK emoji chooser. Use
+its search box or category buttons, then select an item to insert it at the
+cursor or replace selected text. Press `Escape` to dismiss the picker.
+The maintainer accepted this local interface on 2026-10-23 after confirming
+that the graphical flags and picker operation work well.
 
-The **Flags** category shows installed flag artwork and inserts the
-corresponding Unicode regional-indicator sequence. Search accepts a country
-name or two-letter country code. The artwork is part of the installed Fabulor
-runtime; it is not copied into the user profile.
+The **Flags** category uses Fabulor's bundled colour-emoji font to display
+country flags graphically and inserts their Unicode regional-indicator
+sequences, not image data. GTK provides the search terms and catalogue; do not
+assume every two-letter country code is a searchable alias. The preceding
+custom picker and its bundled PNG artwork remain available in the source as a
+fallback during local testing.
 
 Emoji appearance can vary with the active font and Windows font support.
 Fabulor supplies fallback font configuration so ordinary emoji and installed
@@ -227,6 +274,28 @@ channel privileges, it can provide:
 - ignore controls;
 - channel-operator actions; and
 - reply handling.
+
+In the local v1.0.7 candidate, recognised DALnet connections also show
+**DCC Permissions (DALnet)**:
+
+- **Allow Files from This User** requests `/quote DCCALLOW +nickname`.
+- **Revoke File Permission** requests `/quote DCCALLOW -nickname`.
+- **Show DCC Allow List** requests `/quote DCCALLOW LIST`.
+
+Recognition uses an exact configured DALnet name, a server-reported `dal.net`
+hostname, or the server's advertised `NETWORK=DALnet` identity. This supports
+renamed/bouncer connections when that identity is retained; a generic bouncer
+that hides all those identifiers cannot be recognised automatically. Actions
+stay bound to the menu's original live connection. Allow/revoke require one
+nickname; list remains available with multiple selected users. Existing custom
+menu entries are preserved. The maintainer accepted the installed feature as
+working as expected on 2026-10-23.
+
+These permissions allow a sender's otherwise-blocked file types; they do not
+make an executable safe or change Fabulor's automatic file-acceptance settings.
+DALnet clears your list on disconnect and removes an entry when that user
+changes nickname or disconnects. No permission state is inferred or shown as a
+checkmark. See [DALnet's DCCallow documentation](https://docs.dal.net/docs/misc.html#3).
 
 The information submenu displays only information currently known to the IRC
 client. Fields such as account, country, away message, and last-message time

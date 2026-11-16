@@ -120,6 +120,7 @@ struct fabulorprefs
 	unsigned int hex_gui_focus_omitalerts;
 	unsigned int hex_gui_hide_menu;
 	unsigned int hex_gui_input_attr;
+	unsigned int hex_gui_input_autocorrect;
 	unsigned int hex_gui_input_icon;
 	unsigned int hex_gui_input_nick;
 	unsigned int hex_gui_input_spell;
@@ -528,6 +529,9 @@ typedef struct server
 	int proxy_sok4;
 	int proxy_sok6;
 	int id;					/* unique ID number (for plugin API) */
+	gboolean oper_auth_tls_verified;
+	guint64 oper_auth_generation; /* Invalidate credential dialogs on transport cleanup. */
+	gint64 oper_auth_next_attempt; /* Shared cooldown, no credentials. */
 
 	/* dcc_ip moved from fabulorprefs to make it per-server */
 	guint32 dcc_ip;

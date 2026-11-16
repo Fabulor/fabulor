@@ -27,7 +27,7 @@ class LegalBundleTests(unittest.TestCase):
 
         first = self.test_root / "first"
         second = self.test_root / "second"
-        legal.generate(manifest, version_props, licences, first)
+        version, _, _, sbom_name = legal.generate(manifest, version_props, licences, first)
         legal.generate(manifest, version_props, licences, second)
         first_files = {
             path.relative_to(first): path.read_bytes()
@@ -39,10 +39,11 @@ class LegalBundleTests(unittest.TestCase):
         }
         self.assertEqual(first_files, second_files)
 
-        sbom_path = first / "Fabulor-1.0.6.cdx.json"
+        sbom_path = first / sbom_name
         sbom = json.loads(sbom_path.read_text(encoding="utf-8"))
         self.assertEqual(sbom["bomFormat"], "CycloneDX")
         self.assertEqual(sbom["specVersion"], "1.6")
+        self.assertEqual(sbom["metadata"]["component"]["version"], version)
         self.assertEqual(len(sbom["components"]), 41)
         self.assertNotIn("timestamp", sbom["metadata"])
 

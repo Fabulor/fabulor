@@ -9,6 +9,50 @@
 
 #include "xtext-display.h"
 
+gint
+fabulor_xtext_auto_indent (gint requested, gint minimum,
+	gint maximum, gint space_width)
+{
+	gint64 rounded = MAX (requested, minimum);
+	if (space_width > 0)
+		rounded = ((rounded + space_width - 1) / space_width) * space_width;
+	/* A non-aligned cap is preferable to rounding beyond the saved limit.
+	 * Only the timestamp safety minimum may exceed a very small cap. */
+	return (gint) MAX (minimum, MIN (rounded, MAX (maximum, 0)));
+}
+
+gint
+fabulor_xtext_fit_prefix (const gchar *text, gint available,
+	gint ellipsis_width, gint (*measure) (gint byte_end, gpointer data),
+	gpointer data, gint *fitted_width)
+{
+	PangoLogAttr *attrs;
+	gint count, character, fitted = 0;
+	const gchar *position = text;
+	*fitted_width = 0;
+	if (!text || !measure || !g_utf8_validate (text, -1, NULL) ||
+		available <= 0 || ellipsis_width < 0 || available < ellipsis_width)
+		return 0;
+	count = (gint) g_utf8_strlen (text, -1);
+	attrs = g_new0 (PangoLogAttr, count + 1);
+	pango_get_log_attrs (text, -1, -1, NULL, attrs, count + 1);
+	for (character = 1; character <= count; character++)
+	{
+		gint width, byte_end;
+		position = g_utf8_next_char (position);
+		if (!attrs[character].is_cursor_position)
+			continue;
+		byte_end = (gint) (position - text);
+		width = measure (byte_end, data);
+		if (width < 0 || width > available - ellipsis_width)
+			break;
+		fitted = byte_end;
+		*fitted_width = width;
+	}
+	g_free (attrs);
+	return fitted;
+}
+
 gboolean
 fabulor_xtext_font_metrics_init (gint pango_ascent, gint pango_descent,
 	gint pango_height, gint pango_scale, gboolean prefer_ink_height,

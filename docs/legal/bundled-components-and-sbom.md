@@ -94,6 +94,22 @@ Enchant source archive are checksum-controlled. OpenSSL is resolved through
 the repository's fixed vcpkg baseline. The .NET runtime is fixed by the plugin
 host contract and CFFI is fixed by the workflow requirement.
 
+## Local v1.0.7 Enchant Downstream Patch
+
+The local follow-up identifies Enchant as
+`2.8.19+fabulor-session-local.1` in the component inventory/SBOM and ships
+`enchant-fabulor-patch-NOTICE.txt` alongside the unchanged upstream LGPL text.
+This is a distribution label, not a new upstream release; the core version API
+still reports `2.8.19`. The pinned source archive/hash remains unchanged.
+
+`tools/enchant-msvc/CMakeLists.txt` generates a build-local WinSpell source copy
+with the two optional session hooks unset. Enchant's own session tables replace
+the upstream provider's inappropriate Windows-global Add/Remove side effects.
+The source tree retains the reproducible recipe, source-drift guards and
+existing MSVC compatibility shims. The local legal bundle is regenerated with
+the patched component metadata and notice before the follow-up installer is
+built; installed feature acceptance remains separate.
+
 ## Maintenance Rule
 
 Any change to an installed third-party DLL, runtime, font, icon set, data set,

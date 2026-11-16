@@ -66,7 +66,7 @@ plugins/example.tcl.greeter/plugin.tcl
 
 The current runtime discovers manifest plugins from these roots when they exist:
 
-1. Bundled `Plugins\` under the installed plugin library directory.
+1. Bundled `Plugins\` under the installation root, beside `fabulor.exe`.
 2. User `plugins\` under the profile/config directory.
 
 For repository examples and validation assets, see `samples\plugins\`. Those samples are intentionally outside the runtime discovery roots used by the live application.
@@ -182,25 +182,31 @@ The current runtime already enforces these checks:
 4. `requires_api_version` must not exceed the host API version.
 5. Every declared dependency must be discoverable.
 6. Duplicate plugin ids are rejected.
-7. Dependency cycles are detected during load-order resolution.
+7. Dependency cycles are detected during load-order resolution and stop the entire manifest autoload batch, including unrelated valid plugins.
 8. Safe mode and blacklist decisions are logged as diagnostics.
 9. An invalid manifest is skipped without blocking unrelated valid plugins.
 10. Plugins that depend directly or transitively on an invalid, incompatible, disabled, or blacklisted plugin are also skipped with a diagnostic.
 
 Manifest capabilities are deny-by-default and enforced across C#, Python, and Tcl. Unknown or duplicate capability names reject the manifest during validation. A plugin that calls an operation without declaring its capability is denied at runtime and receives a plugin-specific error or diagnostic.
 
-API version 2 adds language-neutral callback consumption and event-session
-binding. Tcl and C# plugins that consume callbacks must require version `2`.
-Version 1 plugins remain loadable and their existing non-consuming callbacks
-continue unchanged; their callback return values are never interpreted as
-consumption requests.
+API version 2 adds callback consumption and event-session binding to the native
+registry used by Tcl and C#. Tcl and C# plugins that consume callbacks must
+require version `2`. Version 1 plugins remain loadable, but the native registry
+ignores their callback return values. Consumption on this registry affects
+commands only; server, message, and print callbacks remain observational.
+
+Python manifest callbacks instead use the Python bridge's legacy native hooks.
+Their integer consumption values apply to command, server, message, and print
+hooks and are not gated on API version 2. See
+[Callback Architecture](plugin-architecture.md#callback-architecture) for the
+separate registration paths and limits.
 
 Supported capabilities:
 
 | Capability | Grants |
 | --- | --- |
 | `messages.write` | Send a message through the shared message API. |
-| `session.read` | Read active session, user, context, and list information. |
+| `session.read` | Read the user count and user/session identity through `get_user_count` and `get_user_info`. |
 | `events.message` | Register incoming IRC `PRIVMSG` callbacks. Locally entered channel text is an outgoing `command:SAY` event unless the server echoes it back. |
 | `events.server` | Register generic or named server callbacks. |
 | `events.print` | Register print-event callbacks. |

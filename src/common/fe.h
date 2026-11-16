@@ -52,6 +52,11 @@ typedef struct
 	gboolean theme_failed;
 } fe_preferences_save_result;
 
+/* Optional native add-on panels; no resources until explicitly opened. */
+int fe_addon_panel_command (struct session *sess, const char *action, const char *token, const char *payload);
+int fe_addon_panel_exists (const char *token);
+const char *fe_addon_oper_status (const char *token);
+void fe_oper_login_reply (struct server *serv, int numeric);
 int fe_args (int argc, char *argv[]);
 void fe_init (void);
 void fe_main (void);

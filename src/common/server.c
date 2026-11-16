@@ -55,6 +55,7 @@
 #include "proxy-policy.h"
 #include "servlist.h"
 #include "server.h"
+#include "oper-auth.h"
 #include "ircv3-batch.h"
 #include "ircv3-chathistory.h"
 #include "socks5-protocol.h"
@@ -190,6 +191,8 @@ tcp_send_real (void *ssl, int sok, GIConv write_converter, char *buf, int len)
 #else
 	ret = send (sok, buf_encoded, encoded_len, 0);
 #endif
+	if (len>=5 && !g_ascii_strncasecmp(buf,"OPER ",5))
+		oper_auth_clear(buf_encoded,buf_encoded_len);
 	g_free (buf_encoded);
 
 	return ret;
@@ -255,6 +258,7 @@ tcp_send_queue (server *serv)
 
 				buf--;
 				serv->outbound_queue = g_slist_remove (serv->outbound_queue, buf);
+				if (len>=5 && !g_ascii_strncasecmp(buf+1,"OPER ",5)) oper_auth_clear(buf,len+2);
 				g_free (buf);
 				list = serv->outbound_queue;
 			} else
@@ -775,8 +779,10 @@ ssl_do_connect (server * serv)
 		case X509_V_OK:
 			{
 				X509 *cert = SSL_get_peer_certificate (serv->ssl);
-				int hostname_err;
-				if ((hostname_err = _SSL_check_hostname(cert, serv->hostname)) != 0)
+				int hostname_err = cert ? _SSL_check_hostname(cert, serv->hostname) : -1;
+				serv->oper_auth_tls_verified = hostname_err == 0 && !serv->accept_invalid_cert;
+				X509_free (cert);
+				if (hostname_err != 0)
 				{
 					g_snprintf (buf, sizeof (buf), "* Verify E: Failed to validate hostname (%d)",
 							 hostname_err);
@@ -908,6 +914,13 @@ auto_reconnect (server *serv, int send_quit, int err)
 static void
 server_flush_queue (server *serv)
 {
+	GSList *item;
+	for (item = serv->outbound_queue; item; item = item->next)
+	{
+		char *queued = item->data;
+		if (!g_ascii_strncasecmp (queued + 1, "OPER ", 5))
+			oper_auth_clear (queued, strlen (queued + 1) + 2);
+	}
 	list_free (&serv->outbound_queue);
 	serv->sendq_len = 0;
 	fe_set_throttle (serv);
@@ -1051,6 +1064,9 @@ server_read_child (GIOChannel *source, GIOCondition condition, server *serv)
 static int
 server_cleanup (server * serv)
 {
+	serv->oper_auth_tls_verified = FALSE;
+	serv->oper_auth_generation++;
+	serv->oper_auth_next_attempt=0;
 	fe_set_lag (serv, 0);
 	g_slist_free_full (serv->requested_joins, g_free);
 	serv->requested_joins = NULL;

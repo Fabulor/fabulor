@@ -16,6 +16,26 @@ reviewed non-GTK root files required by the application and Python host.
 The old GTK3 copy project remains only as inactive cleanup work; it is absent
 from the supported solution, CI build, and WiX graph.
 
+## Local v1.0.7 WinSpell Session Patch
+
+The 2026-10-29 follow-up rebuilds Enchant 2.8.19 with a downstream patch in
+`tools/enchant-msvc/CMakeLists.txt`. The recipe validates and copies the upstream
+provider source, leaving its two optional session hooks unset so Enchant's
+in-memory include/exclude tables handle them. Upstream WinSpell mapped those
+hooks to persistent Windows user-dictionary Add/Remove operations. The pinned
+source archive and extracted upstream file remain unchanged; the provider
+binary is not represented as pristine upstream behaviour.
+
+Build smoke tests preflight the actual provider hooks, reject an unpatched
+provider before word-changing tests, and use a fresh explicit
+`ENCHANT_CONFIG_DIR` for personal-word persistence tests. XDG_CONFIG_HOME alone
+is not sufficient on Windows. Real dictionary-file hashes and explicit MSI
+extraction/hash comparison validate the local follow-up. See
+[local v1.0.7 validation](local-1.0.7-validation.md) for the test side effect,
+exact-word recovery, artefact hashes and the maintainer's focused acceptance
+of the session-isolation fix. Broader input/platform acceptance remains separate.
+Installer identity, optional features and the GTK runtime allowlist are unchanged.
+
 ## Repository Runtime Baseline
 
 The current `Runtime/GTK4` tree reports:
