@@ -1,13 +1,13 @@
 <!-- Fabulor production roadmap -->
 # Fabulor Production Roadmap
 
-Last reconciled: 2026-11-16 (1.0.7 picker upgrade acceptance)
+Last reconciled: 2026-11-16 (1.0.7 release)
 
 ## Current Production Baseline
 
 - [x] Fabulor targets Windows 11+ x64 with an MSVC-built GTK4 frontend.
-- [x] The stable release baseline is `1.0.6`. Version `1.0.7` is under release
-      review.
+- [x] The [latest stable release](https://github.com/Fabulor/fabulor/releases/latest)
+      defines the supported production baseline.
 - [x] WiX v4 produces the supported MSI and bootstrapper artefacts.
 - [x] GTK4 is the sole production frontend, CI, staging, runtime, MSI, and
       bootstrapper profile.
@@ -26,7 +26,7 @@ Last reconciled: 2026-11-16 (1.0.7 picker upgrade acceptance)
 - [x] Inno Setup, GTK3 packaging, Lua, Perl, and bundled user add-ons are
       retired from the supported product.
 
-## 1.0.7 Development And Release Review
+## 1.0.7 Development And Release
 
 - [x] Correct CTCP own-echo handling before flood/DCC parsing and in the
       handler, preserving ACTION display and deliberate self-queries. Omit
@@ -46,11 +46,10 @@ Last reconciled: 2026-11-16 (1.0.7 picker upgrade acceptance)
       changes with main; record the initial source/test/document inventory in
       [the consolidation handoff](docs/gtk4/local-1.0.7-publication-handoff.md).
       Two worktrees are clean; main and the private preparation tree are dirty.
-- [ ] Complete the handoff's semantic reconciliation, add-on/OPER reviews,
-      missing CI wiring and integrated source-to-installer validation before
-      requesting commit/publication approval. Existing candidates are evidence,
-      not automatically the final GitHub assets. Preserve private worktrees,
-      previous candidates and user profiles; exclude session/private build data.
+- [x] Reconcile the 1.0.7 client, review the add-on bridge and OPER changes,
+      wire the new CI checks, and validate the integrated installer.
+      The maintainer confirmed the corrected installer before publication.
+      See [PR #328](https://github.com/Fabulor/fabulor/pull/328).
 
 - [x] Reconcile this work's local feature/acceptance records with supporting
       user/architecture/runtime guidance and the documentation index. Replace
@@ -218,8 +217,9 @@ Last reconciled: 2026-11-16 (1.0.7 picker upgrade acceptance)
       a definite improvement and subsequently accepted the issue as fixed.
       See [local v1.0.7 validation](docs/gtk4/local-1.0.7-validation.md).
 
-Broader performance soak and release coverage are tracked below. The unsigned
-1.0.7 candidate is under [release review](https://github.com/Fabulor/fabulor/pull/328).
+Broader performance soak and release coverage are tracked below. The
+[1.0.7 release](https://github.com/Fabulor/fabulor/releases/tag/v1.0.7)
+uses the unsigned installer accepted during the 250% picker retest.
 The WinGet acceptance and Microsoft Store tracks are separate.
 
 ## 1.0 Release Gate

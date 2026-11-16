@@ -54,6 +54,7 @@ jobs:
           # Add future versions only after their exact installer passes acceptance.
           $acceptedHashes = @{
             '1.0.6' = 'AB88A58D2196D734945D2CFBC77258A97C8EBE48F00D1ABDE9028FC74B94E65C'
+            '1.0.7' = '4F335CB4B96ECEEDFA609E6363C2EC410F0F430B8D205CFDBA0B651A39D45D0F'
           }
           if (-not $acceptedHashes.ContainsKey($version)) {
             throw 'No reviewed installed-acceptance hash exists for this version.'
