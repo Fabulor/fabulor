@@ -1916,6 +1916,28 @@ fabulor_get_info (fabulor_plugin *ph, const char *id)
 	session *sess;
 	guint32 hash;
 
+	/* Session-independent, additive UI discovery; no plugin ABI change. */
+	if (!strcmp (id, "addon_ui_features"))
+#if defined(WIN32) && defined(USE_OPENSSL)
+		return "page_buttons oper_login";
+#else
+		return "page_buttons";
+#endif
+	if (!strncmp (id, "addon_oper:", 11))
+		return fe_addon_oper_status (id + 11);
+	if (!strcmp (id, "addon_ui"))
+		return "1";
+	if (!strncmp (id, "addon_ui:", 9))
+		return fe_addon_panel_exists (id + 9) ? "open" : NULL;
+	/* Stable connection identity also usable through Context.get_info(). */
+	if (!strcmp (id, "id"))
+	{
+		static char connection_id[32];
+		if (!is_session (ph->context)) return NULL;
+		g_snprintf (connection_id, sizeof connection_id, "%d", ph->context->server->id);
+		return connection_id;
+	}
+
 	/*                 1234567890 */
 	if (!strncmp (id, "event_text", 10))
 	{

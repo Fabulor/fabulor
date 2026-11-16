@@ -2,19 +2,17 @@
 
 ## Supported Versions
 
-Fabulor is currently preparing its first production release. Security fixes
-are provided for the latest published `1.0.6` release candidate and the current
-release branch only.
+Security fixes are provided for the latest published `1.0.6` stable release
+and the current development branch only. `1.0.7` is under release review.
 
 | Version | Supported |
 | --- | --- |
-| Latest `1.0.6` release candidate | Yes |
-| Current release branch | Yes |
-| Older release candidates | No |
+| Latest `1.0.6` stable release | Yes |
+| Current development branch (`1.0.7`) | Yes |
+| Older releases and release candidates | No |
 | ZoiteChat, HexChat, and XChat | No |
 
-When a production version is released, this table will be updated to identify
-the maintained release line explicitly.
+This table will be updated when a new maintained release line is published.
 
 ## Reporting A Vulnerability
 

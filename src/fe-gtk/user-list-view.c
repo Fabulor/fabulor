@@ -8,6 +8,7 @@
  */
 
 #include "user-list-view.h"
+#include "clipped-label.h"
 
 
 #define FABULOR_USER_LIST_VIEW_DATA "fabulor-user-list-view-data"
@@ -131,10 +132,9 @@ user_list_factory_setup (GtkSignalListItemFactory *factory,
 	binding->nick = gtk_label_new (NULL);
 	gtk_label_set_xalign (GTK_LABEL (binding->prefix), 0.0f);
 	gtk_label_set_xalign (GTK_LABEL (binding->nick), 0.0f);
-	gtk_label_set_ellipsize (GTK_LABEL (binding->nick), PANGO_ELLIPSIZE_END);
+	fabulor_clipped_label_init (binding->nick);
 	gtk_widget_set_hexpand (binding->nick, TRUE);
-	if (owner->nick_width && *owner->nick_width > 0)
-		gtk_widget_set_size_request (binding->nick, *owner->nick_width, -1);
+	/* The pane owns its width; a nickname must never enlarge that pane. */
 	gtk_box_append (GTK_BOX (binding->box), binding->icon);
 	gtk_box_append (GTK_BOX (binding->box), binding->prefix);
 	gtk_box_append (GTK_BOX (binding->box), binding->nick);
@@ -185,6 +185,7 @@ user_list_factory_unbind (GtkSignalListItemFactory *factory,
 	binding->item = NULL;
 	binding->icon_source = NULL;
 	binding->notify_id = 0;
+	gtk_label_set_text (GTK_LABEL (binding->nick), "");
 	g_object_set_qdata (G_OBJECT (binding->box), user_list_item_quark (), NULL);
 }
 

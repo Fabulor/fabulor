@@ -8,7 +8,8 @@ typedef enum
 {
 	FABULOR_NICK_CONTEXT_REPLY,
 	FABULOR_NICK_CONTEXT_COMMAND,
-	FABULOR_NICK_CONTEXT_COPY_INFO
+	FABULOR_NICK_CONTEXT_COPY_INFO,
+	FABULOR_NICK_CONTEXT_DCC_PERMISSION
 } FabulorNickContextAction;
 
 typedef void (*FabulorNickContextDispatch) (FabulorNickContextAction action,
@@ -21,7 +22,8 @@ typedef enum
 	FABULOR_NICK_HANDLER_TOGGLE,
 	FABULOR_NICK_HANDLER_SEPARATOR,
 	FABULOR_NICK_HANDLER_SUBMENU_BEGIN,
-	FABULOR_NICK_HANDLER_SUBMENU_END
+	FABULOR_NICK_HANDLER_SUBMENU_END,
+	FABULOR_NICK_HANDLER_DCC_PERMISSION
 } FabulorNickHandlerKind;
 
 typedef struct
@@ -41,6 +43,11 @@ typedef struct
 } FabulorNickInfoItem;
 
 typedef struct _FabulorNickContextMenuModel FabulorNickContextMenuModel;
+
+/* Recognition is a UI hint, not an authenticated network identity. */
+gboolean fabulor_nick_context_is_dalnet (const char *network, const char *server_name);
+/* Returns one validated raw IRC command, without CR/LF, or NULL. */
+char *fabulor_nick_context_dccallow_command (const char *operation, const char *nick);
 
 FabulorNickContextMenuModel *fabulor_nick_context_menu_model_new (
 	const char *nick, const char *heading, gboolean show_reply,

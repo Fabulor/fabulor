@@ -91,12 +91,13 @@
     {
       "id": "enchant",
       "name": "Enchant",
-      "version": "2.8.19",
+      "version": "2.8.19+fabulor-session-local.1",
       "type": "library",
       "scope": "required",
       "licence": "LGPL-2.1-or-later",
       "licence_files": [
-        "enchant-COPYING.LIB"
+        "enchant-COPYING.LIB",
+        "enchant-fabulor-patch-NOTICE.txt"
       ],
       "source": "https://github.com/rrthomas/enchant/tree/v2.8.19",
       "installed_paths": [

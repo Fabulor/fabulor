@@ -1,6 +1,39 @@
 /* Copyright (C) 2026 Fabulor contributors */
 #include "nick-context-menu-model.h"
 #include "menu-action-namespaces.h"
+#include <string.h>
+
+gboolean
+fabulor_nick_context_is_dalnet (const char *network, const char *server_name)
+{
+	gsize length;
+	if (network && g_ascii_strcasecmp (network, "DALnet") == 0)
+		return TRUE;
+	if (!server_name)
+		return FALSE;
+	length = strlen (server_name);
+	return g_ascii_strcasecmp (server_name, "dal.net") == 0 ||
+		(length > 8 && g_ascii_strcasecmp (server_name + length - 8, ".dal.net") == 0);
+}
+
+char *
+fabulor_nick_context_dccallow_command (const char *operation, const char *nick)
+{
+	const guchar *p;
+	if (!operation)
+		return NULL;
+	if (strcmp (operation, "list") == 0)
+		return g_strdup ("DCCALLOW LIST");
+	if (strcmp (operation, "allow") != 0 && strcmp (operation, "revoke") != 0)
+		return NULL;
+	if (!nick || !*nick || strlen (nick) > 128 || !g_utf8_validate (nick, -1, NULL) ||
+		*nick == '+' || *nick == '-')
+		return NULL;
+	for (p = (const guchar *) nick; *p; p++)
+		if (*p <= 32 || *p == 127 || *p == ',' || *p == ':' || *p == '%')
+			return NULL;
+	return g_strdup_printf ("DCCALLOW %c%s", strcmp (operation, "allow") == 0 ? '+' : '-', nick);
+}
 
 typedef struct
 {
@@ -114,14 +147,17 @@ nick_handler_model_new (FabulorNickContextMenuModel *owner,
 			continue;
 		}
 		if ((handler->kind == FABULOR_NICK_HANDLER_COMMAND ||
-			handler->kind == FABULOR_NICK_HANDLER_TOGGLE) && handler->label &&
+			handler->kind == FABULOR_NICK_HANDLER_TOGGLE ||
+			handler->kind == FABULOR_NICK_HANDLER_DCC_PERMISSION) && handler->label &&
 			handler->command)
 		{
 			GMenuItem *item;
 			char *name = g_strdup_printf ("command-%u", (*action_index)++);
 			char *detailed = g_strconcat (FABULOR_CONTEXT_ACTION_NAMESPACE,
 				".", name, NULL);
-			nick_action_add (owner, name, FABULOR_NICK_CONTEXT_COMMAND,
+			nick_action_add (owner, name,
+				handler->kind == FABULOR_NICK_HANDLER_DCC_PERMISSION ?
+				FABULOR_NICK_CONTEXT_DCC_PERMISSION : FABULOR_NICK_CONTEXT_COMMAND,
 				handler->command, handler->enabled,
 				handler->kind == FABULOR_NICK_HANDLER_TOGGLE, handler->active,
 				handler->kind == FABULOR_NICK_HANDLER_COMMAND &&

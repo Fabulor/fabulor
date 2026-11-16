@@ -528,6 +528,9 @@ cv_tabs_add (chanview *cv, chan *ch, char *name, chan *parent)
 	gtk_widget_set_size_request (item->tab, -1, 14);
 	hbox = gtk_box_new (GTK_ORIENTATION_HORIZONTAL, 2);
 	item->label = gtk_label_new (name);
+	fabulor_clipped_label_init (item->label);
+	gtk_label_set_max_width_chars (GTK_LABEL (item->label),
+		cv->trunc_len > 2 ? cv->trunc_len : 20);
 	item->close_button = gtk_button_new ();
 	fabulor_gtk_button_set_flat (GTK_BUTTON (item->close_button));
 	close_icon = fabulor_gtk_image_new_from_icon_name (
@@ -723,6 +726,8 @@ cv_tabs_rename (chan *ch, char *name)
 		pango_attr_list_ref (attr);
 
 	gtk_label_set_text (GTK_LABEL (item->label), name);
+	gtk_label_set_max_width_chars (GTK_LABEL (item->label),
+		ch->cv->trunc_len > 2 ? ch->cv->trunc_len : 20);
 	gtk_widget_queue_resize (gtk_widget_get_parent (gtk_widget_get_parent (
 		gtk_widget_get_parent (item->tab))));
 

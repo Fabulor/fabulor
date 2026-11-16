@@ -89,6 +89,9 @@
     <ClInclude Include="secretstore.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="oper-auth.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
     <ClInclude Include="socks5-protocol.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -206,6 +209,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="secretstore.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="oper-auth.c">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="ssl.c">

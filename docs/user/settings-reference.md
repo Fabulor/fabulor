@@ -94,6 +94,15 @@ syntax.
 | `dcc_stall_timeout` | Integer | Seconds without transfer progress before a DCC send is considered stalled. |
 | `dcc_timeout` | Integer | Seconds an unaccepted DCC offer remains pending. |
 
+**Bind to** (`net_bind_host`) is a local binding setting, not the public address
+to advertise. Normally leave it blank and use **DCC IP address** (`dcc_ip`) for
+a manually configured public IPv4 address, with server discovery off. Behind
+NAT, the router forwards the chosen TCP range to the PC's LAN address. ZNC and
+passive DCC change which address/endpoint matters; see
+[DCC troubleshooting](troubleshooting.md#dcc-file-transfers) before changing
+firewall or router settings. Restart Fabulor after correcting Bind to, because
+the previous local address can remain cached across IRC reconnects.
+
 ## Flood Protection
 
 | Setting | Type | Purpose |
@@ -133,6 +142,7 @@ dimensions, selected rows, or window state are normally maintained by Fabulor.
 | `gui_ignore_height` | Integer | Saved Ignore List window height. |
 | `gui_ignore_width` | Integer | Saved Ignore List window width. |
 | `gui_input_attr` | Boolean | Enable IRC formatting attributes in the input box. |
+| `gui_input_autocorrect` | Boolean | Local v1.0.7: opt into Windows' preferred spelling suggestion on Space, including ambiguous suggestions. Off by default; requires spell checking and an active English WinSpell dictionary. Immediate Backspace undoes a correction. Use Preferences to apply it to open input boxes. |
 | `gui_input_icon` | Boolean | Show the current user-mode icon beside the input box. |
 | `gui_input_nick` | Boolean | Show the current nickname beside the input box. |
 | `gui_input_spell` | Boolean | Enable input-box spell checking. |
@@ -165,7 +175,7 @@ dimensions, selected rows, or window state are normally maintained by Fabulor.
 | `gui_tab_server` | Boolean | Keep a separate server tab for server messages. |
 | `gui_tab_small` | Integer | Use the smaller channel-switcher text presentation. |
 | `gui_tab_sort` | Boolean | Sort channel-switcher entries. |
-| `gui_tab_trunc` | Integer | Maximum switcher-label length before truncation. |
+| `gui_tab_trunc` | Integer | Natural width hint for tab labels, measured in character widths. Names are clipped to available space, not shortened in storage; the tree uses its allocated pane width. |
 | `gui_tab_utils` | Boolean | Include utility windows in the channel switcher. |
 | `gui_throttlemeter` | Integer | Send-throttle meter presentation: off, graph, text, or both. |
 | `gui_topicbar` | Boolean | Show the topic bar. |
@@ -272,7 +282,7 @@ Server-time capabilities are negotiated automatically and therefore have no
 | Setting | Type | Purpose |
 | --- | --- | --- |
 | `net_auto_reconnect` | Boolean | Reconnect automatically after an unexpected disconnect. |
-| `net_bind_host` | Text | Local address or interface name to bind for outgoing connections. |
+| `net_bind_host` | Text | Local address or resolvable hostname to bind; normally blank. Not the router's public DCC address. |
 | `net_keepalive_count` | Integer | Number of failed TCP keepalive probes before the connection is considered dead. |
 | `net_keepalive_idle` | Integer | Idle seconds before TCP keepalive probing begins. |
 | `net_keepalive_interval` | Integer | Seconds between TCP keepalive probes. |
@@ -312,13 +322,13 @@ Server-time capabilities are negotiated automatically and therefore have no
 | `text_autocopy_stamp` | Boolean | Include timestamps when automatically copying selected text. |
 | `text_autocopy_text` | Boolean | Copy a completed transcript selection to the clipboard automatically. |
 | `text_background` | Text | Background-image path used by the transcript; the image is centred and cropped proportionally to fill the available area. |
-| `text_background_dim` | Integer | Background-image dimming from 0 (original image) to 100 (fully blended into the transcript background). |
+| `text_background_dim` | Integer | Background-image dimming from 0 (original image) to 100 (fully blended into the normal transcript background). IRC topic/message background colours do not affect this blend. |
 | `text_color_nicks` | Boolean | Assign different transcript colours to nicknames. |
 | `text_font` | Text | Compatibility transcript font setting used outside the Windows-specific font path. |
 | `text_font_alternative` | Text | Comma-separated fallback fonts for missing glyphs. |
 | `text_font_main` | Text | Main transcript font used by the Windows build. |
 | `text_indent` | Boolean | Right-align nicknames against the transcript separator. |
-| `text_max_indent` | Integer | Maximum width reserved for nickname indentation. |
+| `text_max_indent` | Integer | Maximum automatic logical width from the transcript's left edge to the message column, including timestamps and nickname space. Replayed messages can grow the column up to this limit; a manually dragged divider is not saved across restarts. Rounding does not exceed the limit, except where the timestamp safety minimum needs more room. Long prefixes are clipped with an ellipsis; hover reveals the full prefix. |
 | `text_max_lines` | Integer | Maximum transcript lines retained in memory for a context. |
 | `text_replay` | Boolean | Restore recent logged text when opening a context. |
 | `text_search_case_match` | Boolean | Make transcript search case-sensitive. |

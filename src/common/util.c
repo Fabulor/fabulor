@@ -387,7 +387,11 @@ get_sys_str (int with_cpu)
 	{
 		char *os = sysinfo_get_os ();
 		char *cpu = sysinfo_get_cpu ();
-		with_cpu_buffer = g_strconcat (os, " [", cpu, "]", NULL);
+		/* CPU lookup may fail. NULL would terminate g_strconcat before the
+		 * closing bracket; an empty result is not useful hardware information. */
+		with_cpu_buffer = (cpu && cpu[0])
+			? g_strconcat (os, " [", cpu, "]", NULL)
+			: g_strdup (os);
 		g_free (cpu);
 		g_free (os);
 	}

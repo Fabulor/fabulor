@@ -256,6 +256,54 @@ configuration and error categories.
   alter the address repeatedly merely to bypass validation.
 - Portable mode deliberately has no Windows protocol registration.
 
+## DCC File Transfers
+
+### Address And Listener Settings
+
+Under **Network Setup**, distinguish the local bind address from the address
+advertised to the recipient:
+
+| Field | Purpose |
+| --- | --- |
+| **Bind to** | A local address belonging to this PC; normally leave blank. Do not enter the router's public WAN address here. |
+| **DCC IP address** | The reachable IPv4 address advertised for DCC; behind a home router, normally its public WAN IPv4 address. |
+| **Get my address from the IRC server** | Server-based discovery; through ZNC it may discover the bouncer's address rather than the PC's public address. Turn it off when explicitly configuring the WAN address. |
+| **First/last DCC listen ports** | A small fixed TCP range if manual forwarding is needed; for example, `50000` and `50004`. This example is not a product default. |
+
+For manual NAT forwarding, map the same external and internal TCP range to the
+PC's **LAN** address, not its public address. A DHCP reservation keeps that LAN
+address stable. Allow the installed Fabulor application through Windows Firewall
+on the appropriate profile. Do not disable the firewall or put the PC in DMZ.
+A private or carrier-grade-NAT WAN address can require upstream changes; a local
+forwarding rule alone does not guarantee reachability. A ZNC/vhost address is not
+normally a DCC relay for the PC.
+
+After correcting **Bind to**, apply settings, fully exit and restart Fabulor to
+clear the cached local address, then create a fresh offer. Merely reconnecting
+may retain the cached value. See [DCC settings](settings-reference.md#dcc-and-file-transfers).
+
+### Distinguish The Failure Stage
+
+- **Failed to bind to any address or port:** a local listener could not be
+  opened. Check Bind to and whether the configured ports are available before
+  changing router rules. A public address entered in Bind to is one possible
+  cause, not the only one.
+- **Connection timed out:** the connecting side could not reach the advertised
+  listener. Ordinary active send has the recipient connect to the sender;
+  passive send reverses those connection roles. Receiving a passive offer can
+  therefore require opening a local listener, and a SEND connect timeout can
+  concern the recipient's listener rather than the sender's router.
+- **ACTIVE with bytes transferred, then stalled:** investigate data/ACK handling,
+  peer disconnection and rate limits separately from initial reachability.
+
+The local v1.0.7 candidate corrects competing Windows sender watches and
+fragmented acknowledgements. Focused successful installed DCC feedback is
+recorded in the [local validation record](../gtk4/local-1.0.7-validation.md#2026-11-07--outgoing-dcc-sender);
+it does not establish every direction, mode or network configuration. A transfer
+between clients on the same PC/LAN does not by itself verify Internet forwarding.
+A displayed remote checksum alone is not proof of completed receipt; compare
+hashes of the actual completed files when verifying integrity.
+
 ## Channels, Messages, And Commands
 
 ### A Channel Cannot Be Joined

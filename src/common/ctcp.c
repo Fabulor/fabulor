@@ -83,6 +83,15 @@ ctcp_check (session *sess, char *nick, char *word[], char *word_eol[],
 	return ret;
 }
 
+gboolean
+ctcp_is_own_echo (server *serv, const char *to, const char *nick, const char *msg)
+{
+	/* ACTION still needs display; explicit self-queries are real requests. */
+	return serv->have_echo_message && !serv->p_cmp (nick, serv->nick) &&
+		serv->p_cmp (to, serv->nick) &&
+		g_ascii_strncasecmp (msg, "ACTION ", 7) != 0;
+}
+
 void
 ctcp_handle (session *sess, char *to, char *nick, char *ip,
 				 char *msg, char *word[], char *word_eol[], int id,
@@ -93,6 +102,12 @@ ctcp_handle (session *sess, char *to, char *nick, char *ip,
 	server *serv = sess->server;
 	char outbuf[1024];
 	int ctcp_offset = 2;
+
+	/* echo-message repeats our outgoing request with our own prefix. It is
+	 * not a new request to answer (or a DCC offer to accept). Keep ACTION
+	 * echoes for display and allow deliberate requests addressed to ourselves. */
+	if (ctcp_is_own_echo (serv, to, nick, msg))
+		return;
 
 	/* consider DCC to be different from other CTCPs */
 	if (!g_ascii_strncasecmp (msg, "DCC", 3))

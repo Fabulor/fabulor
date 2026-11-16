@@ -1362,6 +1362,10 @@ process_named_msg (session *sess, char *type, char *word[], char *word_eol[],
 							text[len - 1] = 0;
 						}
 						text++;
+						/* Do not count our echoed CTCPs as floods or reparse our
+						 * outgoing DCC offers as offers received from ourselves. */
+						if (ctcp_is_own_echo (serv, to, nick, text))
+							return;
 						if (g_ascii_strncasecmp (text, "ACTION", 6) != 0)
 							flood_check (nick, ip, serv, sess, 0);
 						if (g_ascii_strncasecmp (text, "DCC ", 4) == 0)
@@ -1728,6 +1732,12 @@ irc_inline (server *serv, char *buf, int len)
 		/* for server messages, the 2nd word is the "message type" */
 		type = word[2];
 
+		/* Observe only server-origin numerics for our nick, before generic hooks.
+		 * No raw body/password is retained by the credentialed login tracker. */
+		if (strlen(type)==3 && g_ascii_isdigit(type[0]) && g_ascii_isdigit(type[1])
+		    && g_ascii_isdigit(type[2]) && !serv->p_cmp(word[3],serv->nick)
+		    && !g_ascii_strcasecmp(word[1]+1,serv->servername))
+			fe_oper_login_reply(serv,atoi(type));
 		word[0] = type;
 		word_eol[1] = buf;	/* keep the ":" for plugins */
 

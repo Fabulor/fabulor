@@ -41,6 +41,7 @@
 #include "theme/theme-manager.h"
 #include "maingui.h"
 #include "rawlog.h"
+#include "../common/oper-auth.h"
 #include "xtext.h"
 #include "fkeys.h"
 
@@ -217,13 +218,15 @@ fe_add_rawlog (server *serv, char *text, int len, int outbound)
 			break;
 
 		if (outbound)
-			new_text = g_strconcat ("\0034<<\017 ", split_text[i], NULL);
+			new_text = g_strconcat ("\0034<<\017 ", oper_auth_log_line(split_text[i]), NULL);
 		else
 			new_text = g_strconcat ("\0033>>\017 ", split_text[i], NULL);
 
 		gtk_xtext_append (GTK_XTEXT (serv->gui->rawlog_textlist)->buffer, new_text, strlen (new_text), 0);
 
 		g_free (new_text);
+		if (outbound && oper_auth_log_line(split_text[i]) != split_text[i])
+			oper_auth_clear(split_text[i], strlen(split_text[i]));
 	}
 
 	g_strfreev (split_text);

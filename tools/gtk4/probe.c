@@ -3,8 +3,12 @@
 
 #include <stdio.h>
 #include <string.h>
+#ifdef G_OS_WIN32
+#include <windows.h>
+#endif
 
 #include "../../src/fe-gtk/gtk-compat.h"
+#include "../../src/fe-gtk/clipped-label.h"
 #include "../../src/fe-gtk/file-chooser-path.h"
 #include "../../src/fe-gtk/gtk4-list-models.h"
 #include "../../src/common/gtk4-theme-discovery.h"
@@ -2796,6 +2800,28 @@ check_xtext_background_policy (void)
 		valid = valid && pixel == 0xff00ff00U;
 		if (pixel != 0xff00ff00U)
 			fprintf (stderr, "fitted image pixel: 0x%08x\n", pixel);
+		/* Paint separate wrapped-line regions with the transcript background,
+		 * not the message's active pink/red background. Exercise frame rebuilds. */
+		{
+			XTextColor transcript_bg = { 0.0, 0.0, 0.0, 1.0 };
+			int frame, row;
+			for (frame = 0; frame < 3; frame++)
+			{
+				fabulor_xtext_background_begin_frame (background);
+				for (row = 0; row < 4; row++)
+					fabulor_xtext_background_paint (background, context, &transcript_bg,
+						&geometry, 0, row, 4, 1, 0, 0, 35);
+				fabulor_xtext_background_end_frame (background);
+				cairo_surface_flush (output);
+				for (row = 0; row < 4; row++)
+				{
+					memcpy (&pixel, cairo_image_surface_get_data (output) +
+						row * cairo_image_surface_get_stride (output), sizeof pixel);
+					valid = valid && (pixel & 0xffff00ffU) == 0xff000000U &&
+						((pixel >> 8) & 0xffU) >= 165 && ((pixel >> 8) & 0xffU) <= 166;
+				}
+			}
+		}
 		fabulor_xtext_background_set_surface (background, NULL);
 		valid = valid && !fabulor_xtext_background_has_surface (background);
 	}
@@ -5765,11 +5791,129 @@ check_application_main_loop (void)
 	return passed;
 }
 
+typedef struct
+{
+	PangoLayout *layout;
+	const char *text;
+} PrefixProbe;
+
+static gint
+prefix_probe_measure (gint byte_end, gpointer data)
+{
+	PrefixProbe *probe = data;
+	return fabulor_xtext_layout_text_width (probe->layout, probe->text, byte_end);
+}
+
+static gboolean
+check_width_aware_names (gboolean gtk_ready)
+{
+	const char *names[] = { "Antidisestablishmentarianism",
+		"#VeryLongChannelNameForWidthTesting", "Ae\314\201BCDEFGHIJKLMN",
+		"A\360\237\221\251\342\200\215\360\237\222\273BCDEFGHIJKLMN" };
+	GtkWidget *label;
+	PangoLayout *layout;
+	GdkRectangle area;
+	gboolean passed = TRUE;
+	guint n;
+	int size, budget;
+	int minimum, natural;
+	if (!gtk_ready)
+		return FALSE;
+	/* Replay and font rounding must not push an automatic divider past its cap. */
+	for (size = 1; size <= 20; size++)
+	{
+		passed = passed && fabulor_xtext_auto_indent (199, 90, 200, size) <= 200 &&
+			fabulor_xtext_auto_indent (500, 90, 240, size) == 240 &&
+			fabulor_xtext_auto_indent (40, 90, 20, size) == 90;
+	}
+	fabulor_window_configure_tooltip_metrics ();
+#ifdef G_OS_WIN32
+	{
+		typedef int (WINAPI *MetricsForDpiFunc) (int, UINT);
+		MetricsForDpiFunc metrics_for_dpi = (MetricsForDpiFunc)
+			GetProcAddress (GetModuleHandleW (L"user32.dll"), "GetSystemMetricsForDpi");
+		GtkSettings *settings = gtk_settings_get_default ();
+		gint cursor_size;
+		gint physical = GetSystemMetrics (SM_CXCURSOR);
+		gint logical = metrics_for_dpi ? metrics_for_dpi (SM_CXCURSOR, 96) : physical;
+		g_object_set (settings, "gtk-cursor-theme-size", physical, NULL);
+		g_object_get (settings, "gtk-cursor-theme-size", &cursor_size, NULL);
+		passed = passed && cursor_size == logical && cursor_size > 0;
+		/* Reinitialising must not add another settings observer. */
+		fabulor_window_configure_tooltip_metrics ();
+		g_object_set (settings, "gtk-cursor-theme-size", physical, NULL);
+		g_object_get (settings, "gtk-cursor-theme-size", &cursor_size, NULL);
+		passed = passed && cursor_size == logical;
+	}
+#endif
+	label = gtk_label_new (names[0]);
+	g_object_ref_sink (label);
+	fabulor_clipped_label_init (label);
+	layout = gtk_widget_create_pango_layout (label, NULL);
+	for (size = 8; size <= 16; size += 4)
+	{
+		PangoFontDescription *font = pango_font_description_new ();
+		pango_font_description_set_family (font, "Segoe UI");
+		pango_font_description_set_size (font, size * PANGO_SCALE);
+		pango_layout_set_font_description (layout, font);
+		pango_font_description_free (font);
+		for (n = 0; n < G_N_ELEMENTS (names); n++)
+		{
+			PrefixProbe probe = { layout, names[n] };
+			int ellipsis = fabulor_xtext_layout_text_width (layout, "\342\200\246", 3);
+			for (budget = 0; budget <= 256; budget += 4)
+			{
+				int width, bytes = fabulor_xtext_fit_prefix (names[n], budget,
+					ellipsis, prefix_probe_measure, &probe, &width);
+				PangoLogAttr *attrs;
+				int count = (int) g_utf8_strlen (names[n], -1);
+				int chars = (int) g_utf8_strlen (names[n], bytes);
+				attrs = g_new0 (PangoLogAttr, count + 1);
+				pango_get_log_attrs (names[n], -1, -1, NULL, attrs, count + 1);
+				passed = passed && g_utf8_validate (names[n], bytes, NULL) &&
+					attrs[chars].is_cursor_position && width <= budget &&
+					(bytes == 0 || width + ellipsis <= budget);
+				g_free (attrs);
+			}
+		}
+	}
+	gtk_widget_measure (label, GTK_ORIENTATION_HORIZONTAL, -1, &minimum, &natural, NULL, NULL);
+	gtk_widget_measure (label, GTK_ORIENTATION_VERTICAL, 65, &minimum, &natural, NULL, NULL);
+	gtk_widget_allocate (label, 65, 40, -1, NULL);
+	passed = passed && fabulor_clipped_label_tip_area (label, 0, 0, TRUE, &area);
+	passed = passed && fabulor_clipped_label_tip_area (label,
+		area.x, area.y, FALSE, &area);
+	passed = passed && !fabulor_clipped_label_tip_area (label, -1, area.y, FALSE, &area);
+	passed = passed && !fabulor_clipped_label_tip_area (label,
+		area.x + area.width, area.y, FALSE, &area);
+	gtk_widget_allocate (label, 800, 40, -1, NULL);
+	passed = passed && !fabulor_clipped_label_tip_area (label, 0, 0, TRUE, &area);
+	gtk_label_set_text (GTK_LABEL (label), names[1]);
+	gtk_widget_measure (label, GTK_ORIENTATION_HORIZONTAL, -1, &minimum, &natural, NULL, NULL);
+	gtk_widget_measure (label, GTK_ORIENTATION_VERTICAL, 65, &minimum, &natural, NULL, NULL);
+	gtk_widget_allocate (label, 65, 40, -1, NULL);
+	passed = passed && fabulor_clipped_label_tip_area (label, 0, 0, TRUE, &area) &&
+		strcmp (gtk_label_get_text (GTK_LABEL (label)), names[1]) == 0;
+	gtk_label_set_text (GTK_LABEL (label), "Ben");
+	gtk_widget_measure (label, GTK_ORIENTATION_HORIZONTAL, -1, &minimum, &natural, NULL, NULL);
+	gtk_widget_measure (label, GTK_ORIENTATION_VERTICAL, 65, &minimum, &natural, NULL, NULL);
+	gtk_widget_allocate (label, 65, 40, -1, NULL);
+	passed = passed && !fabulor_clipped_label_tip_area (label, 0, 0, TRUE, &area);
+	g_object_unref (layout);
+	g_object_unref (label);
+	return passed;
+}
+
 int
 main (void)
 {
 	gboolean gtk_ready = gtk_init_check ();
 	g_log_set_always_fatal (G_LOG_LEVEL_ERROR | G_LOG_LEVEL_CRITICAL);
+	if (!check_width_aware_names (gtk_ready))
+	{
+		fprintf (stderr, "Width-aware name clipping or tooltip bounds mismatch\n");
+		return 1;
+	}
 
 	check_compatibility_helper_signatures ();
 	check_user_list_view_signatures ();

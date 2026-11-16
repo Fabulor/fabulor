@@ -221,6 +221,9 @@ struct _GtkXText
 
 	int clip_x;			/* clipping (x directions) */
 	int clip_x2;		/* from x to x2 */
+	gboolean prefix_clip;
+	int prefix_clip_left;
+	int prefix_clip_width;
 
 	int clip_y;			/* clipping (y directions) */
 	int clip_y2;		/* from y to y2 */

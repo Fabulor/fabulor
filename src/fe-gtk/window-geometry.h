@@ -16,6 +16,8 @@ typedef struct
 typedef void (*FabulorWindowGeometryCallback) (GtkWindow *window,
 	const FabulorWindowGeometry *geometry, gpointer user_data);
 
+void fabulor_window_configure_tooltip_metrics (void);
+
 void fabulor_window_geometry_get (GtkWindow *window,
 	FabulorWindowGeometry *geometry);
 void fabulor_window_geometry_watch (GtkWindow *window,

@@ -50,7 +50,8 @@ This is a self-contained Meson project because the repository currently has
 only legacy Meson fragments and no top-level Meson project:
 
 ```powershell
-python -m mesonbuild.mesonmain setup --buildtype=release build\gtk4-probe-meson tools\gtk4 -Dgtk4_root=C:\fabulor-master\Runtime\GTK4
+python tools\gtk4\stage_runtime.py --root C:\fabulor-master\Runtime\GTK4 --output C:\fabulor-master\build\gtk4-staged
+python -m mesonbuild.mesonmain setup --buildtype=release build\gtk4-probe-meson tools\gtk4 -Dgtk4_root=C:\fabulor-master\Runtime\GTK4 -Dgtk4_staged_root=C:\fabulor-master\build\gtk4-staged
 python -m mesonbuild.mesonmain compile -C build\gtk4-probe-meson
 python -m mesonbuild.mesonmain test -C build\gtk4-probe-meson --print-errorlogs
 ```

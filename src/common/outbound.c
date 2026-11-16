@@ -1234,6 +1234,15 @@ menu_add (char *path, char *label, char *cmd, char *ucmd, int pos, int state, in
 }
 
 static int
+cmd_addonui (struct session *sess, char *tbuf, char *word[], char *word_eol[])
+{
+	(void)tbuf; (void)word_eol;
+	if (!fe_addon_panel_command (sess, word[2], word[3], word[4]))
+		PrintText (sess, "Add-on panel request rejected (schema, size, context or resource limit).");
+	return TRUE;
+}
+
+static int
 cmd_menu (struct session *sess, char *tbuf, char *word[], char *word_eol[])
 {
 	int idx = 2;
@@ -4224,6 +4233,7 @@ cmd_voice (struct session *sess, char *tbuf, char *word[], char *word_eol[])
 const struct commands xc_cmds[] = {
 	{"ADDBUTTON", cmd_addbutton, 0, 0, 1,
 	 N_("ADDBUTTON <name> <action>, adds a button under the user-list")},
+	{"ADDONUI", cmd_addonui, 0, 0, 1, "ADDONUI OPEN|UPDATE|PRESENT|CLOSE <token> [payload] (local add-on UI bridge)"},
 	{"ADDSERVER", cmd_addserver, 0, 0, 1, N_("ADDSERVER <NewNetwork> <hostname/port>, adds a new network with a new server to the network list")},
 	{"ALLCHAN", cmd_allchannels, 0, 0, 1,
 	 N_("ALLCHAN <cmd>, sends a command to all channels you're in")},

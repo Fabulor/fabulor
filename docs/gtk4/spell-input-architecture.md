@@ -1,6 +1,6 @@
 # GTK4 Spell Input Architecture
 
-Status: Stage 6 spell-input pass 6 emoji-picker ownership and lifecycle boundary
+Status: GTK4 input ownership with local v1.0.7 optional auto-correct candidate
 
 ## Purpose
 
@@ -105,41 +105,159 @@ table at activation time. Replacing a menu model therefore cannot leave an
 action holding a stale dictionary or native menu item.
 
 Models rebuild only immediately before a secondary-click or keyboard context
-menu. Enchant suggestion generation is not part of text-change or cursor-change
-processing, preserving the edit-box latency boundary. GTK3 retains its existing
+menu. Suggestion queries do not run inside text-change or cursor-change
+handlers. Opt-in auto-correct separately queries the preferred suggestion at
+an eligible Space boundary, after native insertion has settled. GTK3 retains its existing
 `populate-popup` implementation behind an explicit version guard until final
 GTK3 removal. GTK4 formatting actions insert directly into the owning editable,
 including replacing the current selection, without using global session state.
 
+## Optional Auto-correct Ownership (Local v1.0.7)
+
+`spell-entry-autocorrect.c` owns opt-in, per-entry typing provenance, deferred
+Space correction and immediate Backspace undo. `gui_input_autocorrect` defaults
+to zero, persists through the existing preference schema and is applied to open
+entries by Preferences. Spell checking must also remain enabled.
+
+The initial curated typo table was too narrow; the maintainer subsequently
+approved using Windows' preferred suggestion even when alternatives exist.
+Only fully keyboard-typed ASCII-letter tokens (1–64 letters) in lower case or
+initial-capital form are eligible. The original must pass the existing
+word-check signal's misspelling decision, and every active dictionary must
+explicitly return misspelled, not an error. The first active English dictionary
+backed by `winspell`, in configured language order, supplies the suggestion.
+
+`enchant_dict_suggest()` delegates to WinSpell's `ISpellChecker::Suggest`;
+Enchant preserves provider order while filtering excluded suggestions. Only
+the first remaining suggestion is considered, with no Fabulor reranking, typo
+map or fallback to a lower-ranked word. The same dictionary must accept it.
+Other-language valid words, personal/session words, unavailable English WinSpell
+dictionaries and backend errors veto correction. Windows chooses case and
+Unicode spelling. Replacements are limited to 64 Unicode characters/256 bytes,
+letters/combining marks with internal single spaces, apostrophes or hyphens;
+controls, commands, URLs and arbitrary replacement text are rejected.
+
+This is ranked preference, not a confidence guarantee: `btter` may mean better,
+batter, bitter or butter. Immediate undo is important. Ordinary dictionary-valid
+Australian spellings are not rewritten, and automatic edits do not call
+Enchant's replacement-training API.
+
+The frontend's word-check veto resolves the session belonging to this input
+box, not an unrelated globally focused session. It excludes the connection's
+own nickname, the dialogue peer and nicknames known on that connection. It
+also applies to underlines. Unknown nickname-shaped ordinary words cannot be
+identified reliably; the opt-in preference and immediate undo remain important.
+
+A captured key only arms an expected one-character insertion; it does not
+consume Space or bypass native text/IME handling. The changed signal must see
+that exact edit before tracking typing provenance. Paste, history restoration,
+emoji insertion and other programmatic edits invalidate provenance. A queued
+correction runs after GTK updates the cursor, verifying text, selection,
+editability, visibility, length limits and dictionary approval again. It edits
+only the word range using Unicode character coordinates, preserving surrounding
+text and native editable behaviour. A pending correction is cancelled rather
+than flushed by Return/keypad Enter. A subsequent ordinary key can flush the
+already-triggered Space correction before processing that key.
+
+The IME delegate's public `preedit-changed` signal invalidates pending edits
+and suppresses composition correction; without that guard the feature stays
+inactive. Slash/configured-command lines, non-letter token shapes (including
+URLs, email, mentions, channels, paths and quoted/punctuated/code tokens), all
+caps/mixed case, and lines with IRC controls are excluded. Ordinary spell
+checking/suggestions remain unchanged except for known-nickname exclusions.
+
+Undo requires an exact corrected snapshot and cursor match. Immediate unmodified
+Backspace restores the original word and removes the triggering space. Typing
+provenance is then cleared so another Space does not immediately reapply the
+same correction. Cursor movement, clicking, focus loss, edits and tab restoration
+invalidate this special undo. `mg_restore_speller()` explicitly clears pending
+state even if the new context's draft happens to contain identical text.
+
+All snapshots are temporary per-entry memory; no new word log, persistent
+learned-pair store, subprocess or network call is introduced. Disposal cancels
+idle work; controller/delegate signals are weakly bound to the entry. Native
+tests cover retained controllers and detached/destroyed entries as well as
+text/cursor guards. Fourteen policy/widget cases and six source-integration
+contracts pass. The initial dictionary probe's claim of a read-only/session-only
+test was incorrect: upstream WinSpell's session hook called persistent Windows
+`Add`, teaching Windows the test word `teh` and causing the installed correction
+to veto it. The exact agent-added word was subsequently removed through Windows'
+spell-check API, with hashes confirming all other dictionary entries preserved.
+
+The local follow-up recipe disables WinSpell's optional add/remove session hooks
+in a build-local copy of Enchant 2.8.19; Enchant core's own include/exclude tables
+already implement that scope. Explicit personal words still persist in Enchant's
+personal files, not through these Windows-global hooks. No historical custom
+words are bulk-deleted. Build smoke tests require an explicit isolated
+`ENCHANT_CONFIG_DIR` (XDG_CONFIG_HOME alone is insufficient on Windows), preflight
+the actual provider's null hooks before any word-changing test, and verify
+session additions/exclusions against fresh dictionaries. The unsafe earlier
+local probes are retired.
+
+An additional integration probe links the actual production spell-entry objects,
+uses inert theme services and no IRC session, and delivers real Windows keys
+only to its verified foreground window. The initial probe corrected `teh dayz `
+to `the dayz ` under the old table. The updated probe corrects
+`teh sleke btter turkey ` to `the sleek better Türkiye `, checks real Backspace
+undo and no immediate reapplication, and invokes the real Ignore action,
+confirming that a fresh entry still rejects
+the ignored typo. Windows and Enchant dictionary-file hashes remain unchanged
+by the guarded tests. This is stronger than synthetic controller/editable tests.
+The maintainer subsequently accepted the replacement installed candidate with
+"Perfect 💯" after receiving correction/undo retest instructions. This closes
+the reported correction issue, not exhaustive real IME, preference persistence,
+context or accessibility acceptance; individual steps were not separately
+reported. Later feedback reopened general correction coverage; the maintainer
+approved Windows-preferred suggestions and reported on 2026-10-30:
+"This seems to working mopre appropriately. 👍" This is focused positive installed
+feedback, not separately confirmed results for every example, undo sequence or
+platform interaction. Results vary with Windows language dictionaries and user
+word state; `Türkiye` is not a hard-coded country substitution.
+
 ## Emoji Picker Ownership
 
-`emoji-picker.c` owns lazy-page state, Unicode sequence construction, and the
-popover reference attached to each edit box. A page can claim its contents
-exactly once, so stack visibility notifications cannot duplicate hundreds of
-buttons or their callbacks. Category item arrays remain immutable borrowed
-data and are released independently from the page owner.
+The local v1.0.7 candidate uses a shared `GtkEmojiChooser` owned by
+`emoji-picker.c`. Both the input-box smiley icon and captured Ctrl+;/Ctrl+.
+shortcuts open the same cached chooser for that entry. GTK 4.22's shortcut
+action invokes its implementation directly, so capturing the shortcuts before
+the editable delegate is necessary; intercepting only `insert-emoji` is not
+sufficient. Direct emissions of that signal are also routed to the shared
+chooser. The entry is bound once, and teardown releases the chooser even if
+it has already been unparented. The picker measures the current monitor in
+GTK logical units and caps the existing scroll viewport through
+`GtkScrolledWindow`. GTK owns the layout and catalogue.
 
-The edit box owns one popover through object data with an explicit destructor.
-GTK4 parents the popover to the entry and unparents it before dropping the
-owned reference; GTK3 retains its relative-widget constructor and destroy
-path. Reopening an existing picker reuses that owner instead of connecting an
-additional entry-destroy handler.
+The first CSS-only candidate still displayed letter-pair flags in installed
+testing. The follow-up sets a Fontconfig/FreeType font map on the chooser using
+`gtk_widget_set_font_map()`, so it can discover the private bundled Noto font
+even when the application's default Pango backend is Win32. Scoped CSS
+selects the bundled colour font for emoji labels and a UI font for the
+controls. Runtime staging enables the bundled bitmap scaling rule so glyphs
+fit their tiles at high DPI. The maintainer's 2026-10-23 screenshot confirms graphical
+rendering of the visible country flags, followed by acceptance of the picker's
+operation. Exhaustive release-matrix coverage remains separate. Search, category navigation, recent items and
+variants remain GTK-owned. Picking an item replaces selected text or inserts
+at the cursor, restores entry focus without selecting all text, and preserves
+the resulting Unicode cursor position. Read-only input is not modified.
 
-`GtkStack` and `GtkStackSwitcher` replace the removed notebook path on both
-toolkits. Only the visible category is populated, preserving startup and
-first-input latency. GTK4 uses paintables for flag images and shared child and
-reveal adapters; GTK3 retains pixbuf images and its native emoji signal until
-cutover. Flag codes must contain exactly two ASCII letters and Unicode scalar
-values are validated before insertion text is allocated.
+The native regression test uses the pinned GTK catalogue as a test-only
+fixture: all 259 country-flag sequences are present in the populated chooser,
+and their actual label layouts select Noto Color Emoji and shape one supported
+glyph. The test uses the staged Fontconfig configuration, bounds the flag
+glyph dimensions and runs with both Win32 and Fontconfig default backends.
+It allows frame-clock style updates after idle population. A local comparison found all 253 codes
+from the legacy custom picker in that catalogue. This does not promise that
+all country codes are searchable aliases in GTK, nor that every bundled PNG
+is offered: the artwork directory also contains subdivision assets that the
+legacy country-code picker did not expose.
 
-The flags page includes a GTK4 search entry that filters its existing flow-box
-children without rebuilding buttons or reloading images. Matching is
-case-insensitive across the two-letter code and the localized ISO 3166 country
-name. Ascension Island, the European Union, the United Nations, and Kosovo have
-explicit labels because their picker codes are outside the packaged ISO table.
-The ISO table is reference counted so picker construction cannot invalidate
-spell-check language names. Selecting a flag continues to insert the native
-Windows regional-indicator sequence rather than custom inline image data.
+The legacy lazy-page helpers and custom builder remain as a fallback during
+local acceptance; normal editable icon/shortcut use selects the native chooser.
+Bundled PNG flag assets are unchanged. This candidate uses colour-font glyphs,
+not those PNGs, for its graphical country flags. The visible flags have
+installed screenshot evidence and the maintainer accepted the picker as working
+well. The legacy builder can now be retired in a separate cleanup; exhaustive
+release validation remains separate.
 
 ## Invariants
 
@@ -216,5 +334,6 @@ The strict GTK4 probe verifies:
 - the GTK3/GTK4 popover ownership implementations compile against their
   respective toolkit headers.
 
-Production Enchant behavior remains a manual GTK3 regression check until the
-complete GTK4 input widget is connected.
+Production GTK4 Enchant/input behaviour still requires installed acceptance
+for each new input feature; native policy/widget and dictionary probes alone
+do not establish the full platform keyboard, IME or accessibility matrix.

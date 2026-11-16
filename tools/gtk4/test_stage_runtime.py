@@ -78,6 +78,30 @@ class StageGtk4RuntimeTests(unittest.TestCase):
         with self.assertRaisesRegex(stage_runtime.StagingError, "Missing runtime"):
             stage_runtime.collect_payload(self.root, contract)
 
+    def test_staged_fontconfig_activates_bitmap_rule_from_pinned_runtime(self):
+        self.contract["trees"][:0] = ["etc/fonts", "share/fontconfig"]
+        self._write("etc/fonts/fonts.conf", b"<include>conf.d</include>")
+        rule = b"bitmap scaling rule"
+        self._write(stage_runtime.BITMAP_FONT_RULE, rule)
+        contract = self._save_contract()
+        output = self.base / "output"
+
+        manifest = stage_runtime.stage_runtime(
+            self.root, output, contract, self.contract_path
+        )
+
+        active = output / stage_runtime.ACTIVE_BITMAP_FONT_RULE
+        self.assertEqual(active.read_bytes(), rule)
+        hashes = {entry["path"]: entry["sha256"] for entry in manifest["files"]}
+        self.assertEqual(
+            hashes[stage_runtime.ACTIVE_BITMAP_FONT_RULE],
+            hashes[stage_runtime.BITMAP_FONT_RULE],
+        )
+
+        self._write(stage_runtime.ACTIVE_BITMAP_FONT_RULE, b"unexpected rule")
+        with self.assertRaisesRegex(stage_runtime.StagingError, "differs from source"):
+            stage_runtime.collect_payload(self.root, contract)
+
     def test_forbidden_tree_file_is_rejected(self):
         self._write("share/icons/debug.pdb", b"debug")
         contract = self._save_contract()

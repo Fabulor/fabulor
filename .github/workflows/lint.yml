@@ -219,6 +219,8 @@ jobs:
 
           python plugins/python/test_capabilities.py
           python plugins/python/test_manifest_isolation.py
+          python plugins/python/test_native_ui.py
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           python tools/gtk4/test_stage_runtime.py
           python tools/gtk4/test_validate_runtime_msi.py
           python tools/gtk4/test_validate_production_bundle.py
@@ -234,6 +236,24 @@ jobs:
           python tools/test_tcl_api_contract.py
           python tools/test_pane_drag_contract.py
           python tools/test_list_window_geometry_contract.py
+          python tools/test_transcript_background_contract.py
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          $featureContracts = @(
+            'test_ctcp_integration.py'
+            'test_dalnet_menu_integration.py'
+            'test_dcc_sender_integration.py'
+            'test_enchant_session_isolation.py'
+            'test_private_name_layout_integration.py'
+            'test_spell_autocorrect_integration.py'
+            'test_sysinfo_integration.py'
+            'test_ui_performance_profile.py'
+            'test_xtext_selection_integration.py'
+            'test_xtext_timestamp_prefix_guard.py'
+          )
+          foreach ($contract in $featureContracts) {
+            python (Join-Path 'tools/gtk4' $contract)
+            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          }
           python tools/validate_theme_contract.py
           python tools/test_validate_theme_contract.py
         shell: powershell

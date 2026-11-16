@@ -42,6 +42,7 @@
 #include "../common/url.h"
 #include "gtkutil.h"
 #include "gtk-compat.h"
+#include "emoji-picker.h"
 #include "maingui.h"
 #include "pixmaps.h"
 #include "chanlist.h"
@@ -60,6 +61,7 @@
 #include "theme/theme-application.h"
 #include "preferences-persistence.h"
 #include "window-state.h"
+#include "window-geometry.h"
 #include "application-main-loop.h"
 
 #ifdef USE_LIBCANBERRA
@@ -228,6 +230,8 @@ win32_configure_font_rendering (void)
 
 	system_fonts_conf = g_build_filename (base_path, "Runtime", "GTK4", "etc", "fonts", "fonts.conf", NULL);
 	emoji_font = g_build_filename (base_path, "share", "fonts", "NotoColorEmoji.ttf", NULL);
+	if (g_file_test (emoji_font, G_FILE_TEST_IS_REGULAR))
+		fabulor_emoji_picker_set_font_file (emoji_font);
 	if (!g_file_test (system_fonts_conf, G_FILE_TEST_IS_REGULAR) ||
 	    !g_file_test (emoji_font, G_FILE_TEST_IS_REGULAR))
 		goto cleanup_base;
@@ -798,6 +802,7 @@ fe_args (int argc, char *argv[])
 	gdk_set_program_class (desktop_id);
 #endif
 	gtk_init ();
+	fabulor_window_configure_tooltip_metrics ();
 
 #ifdef WIN32
 	win32_configure_icon_theme ();

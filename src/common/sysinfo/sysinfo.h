@@ -9,5 +9,8 @@ char *sysinfo_get_cpu (void);
 char *sysinfo_get_os (void);
 void sysinfo_get_hdd_info (uint64_t *hdd_capacity_out, uint64_t *hdd_free_space_out);
 char *sysinfo_get_gpu (void);
+char *sysinfo_get_sound (void);
+char *sysinfo_get_network (void);
+char *sysinfo_get_chipset (void);
 
 #endif

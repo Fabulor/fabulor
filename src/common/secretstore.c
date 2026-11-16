@@ -1,6 +1,7 @@
 #include "fabulor.h"
 #include "cfgfiles.h"
 #include "secretstore.h"
+#include "oper-auth.h"
 
 #include <string.h>
 
@@ -174,6 +175,7 @@ int secretstore_delete_network_password (const char *network_name)
 int secretstore_require_unlock (const char *network_name)
 {
 #ifdef WIN32
+	(void)network_name;
 	return TRUE;
 #elif defined(HAVE_LIBSECRET)
 	{
@@ -199,5 +201,73 @@ int secretstore_require_unlock (const char *network_name)
 	}
 #else
 	return TRUE;
+#endif
+}
+
+#ifdef WIN32
+static WCHAR *oper_credential_target (const char *scope, const char *name)
+{
+ char *a, *b, *target; WCHAR *wide;
+ if (!scope || !*scope || strlen(scope)>2048 || !g_utf8_validate(scope,-1,NULL)
+     || !oper_auth_name_valid(name)) return NULL;
+ /* WinCred target names are case-insensitive. Hash each component separately
+  * so distinct case-sensitive IRC accounts/profiles cannot alias a record. */
+ a=g_compute_checksum_for_string(G_CHECKSUM_SHA256,scope,-1);
+ b=g_compute_checksum_for_string(G_CHECKSUM_SHA256,name,-1);
+ target=g_strdup_printf("fabulor/irc-oper/%s/%s",a,b);
+ wide=(WCHAR *)g_utf8_to_utf16(target,-1,NULL,NULL,NULL);
+ g_free(a); g_free(b); g_free(target); return wide;
+}
+#endif
+
+char *secretstore_get_oper_password (const char *scope, const char *name)
+{
+#ifdef WIN32
+ WCHAR *target=oper_credential_target(scope,name); PCREDENTIALW credential=NULL;
+ char *password=NULL;
+ if (!target) return NULL;
+ if (CredReadW(target,CRED_TYPE_GENERIC,0,&credential)) {
+  if (credential->CredentialBlobSize>0 && credential->CredentialBlobSize<=400
+      && !memchr(credential->CredentialBlob,0,credential->CredentialBlobSize)) {
+   password=g_strndup((const char *)credential->CredentialBlob,credential->CredentialBlobSize);
+   if (!oper_auth_password_valid(password)) {
+    SecureZeroMemory(password,strlen(password)); g_clear_pointer(&password,g_free);
+   }
+  }
+  if (credential->CredentialBlob) SecureZeroMemory(credential->CredentialBlob,credential->CredentialBlobSize);
+  CredFree(credential);
+ }
+ g_free(target); return password;
+#else
+ (void)scope; (void)name; return NULL;
+#endif
+}
+int secretstore_set_oper_password (const char *scope, const char *name, const char *password)
+{
+#ifdef WIN32
+ WCHAR *target, *user; CREDENTIALW credential={0}; int ok;
+ if (!oper_auth_password_valid(password)) return FALSE;
+ target=oper_credential_target(scope,name); if (!target) return FALSE;
+ user=(WCHAR *)g_utf8_to_utf16(name,-1,NULL,NULL,NULL);
+ credential.Type=CRED_TYPE_GENERIC; credential.TargetName=target;
+ credential.UserName=user; credential.CredentialBlob=(LPBYTE)password;
+ credential.CredentialBlobSize=(DWORD)strlen(password);
+ /* Persist for this Windows user across logons; not a machine-wide shared secret. */
+ credential.Persist=CRED_PERSIST_LOCAL_MACHINE;
+ ok=CredWriteW(&credential,0); g_free(user); g_free(target); return ok;
+#else
+ (void)scope; (void)name; (void)password; return FALSE;
+#endif
+}
+int secretstore_delete_oper_password (const char *scope, const char *name)
+{
+#ifdef WIN32
+ WCHAR *target=oper_credential_target(scope,name); int ok;
+ if (!target) return FALSE;
+ ok=CredDeleteW(target,CRED_TYPE_GENERIC,0);
+ if (!ok && GetLastError()==ERROR_NOT_FOUND) ok=TRUE;
+ g_free(target); return ok;
+#else
+ (void)scope; (void)name; return FALSE;
 #endif
 }

@@ -502,6 +502,19 @@ class ProductionWixProfileTests(unittest.TestCase):
         self.assertIn('Name="Licence.md"', share)
         self.assertNotIn(r"..\..\COPYING", share)
 
+    def test_about_credits_include_testers(self):
+        menu = (ROOT / "src" / "fe-gtk" / "menu.c").read_text(encoding="utf-8")
+        testers = menu.split('static const gchar *testers[] = {', 1)[1].split(
+            '};', 1
+        )[0]
+        self.assertIn('"PickleRick83"', testers)
+        self.assertIn('"MrBenC"', testers)
+        self.assertIn('NULL', testers)
+        self.assertIn(
+            'gtk_about_dialog_add_credit_section (dialog, _("Testers"), testers);',
+            menu,
+        )
+
     def test_production_product_has_no_legacy_gtk_payload(self):
         source = (INSTALLER / "ProductGtk4.wxs").read_text(encoding="utf-8")
 

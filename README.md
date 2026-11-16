@@ -42,6 +42,11 @@ A GTK4 IRC client for Windows 11+, inspired by [XChat](https://xchat.org/) | [
 
 Fabulor targets Windows 11 x64. Windows 10 use remains best-effort and unsupported.
 
+The published stable baseline is **1.0.6**. **1.0.7 is under release
+review**. Its changes and test results are recorded in the
+[change log](ChangeLog.md) and
+[local development validation](docs/gtk4/local-1.0.7-validation.md).
+
 ---
 X-Chat ("xchat") Copyright (c) 1998-2010 by Peter Zelezny.\
 HexChat ("hexchat") Copyright (c) 2009-2014 by Berke Viktor.\

@@ -1,6 +1,7 @@
 #include "emoji-picker.h"
 
 #include <string.h>
+#include <pango/pangocairo.h>
 
 #define FABULOR_EMOJI_POPOVER_DATA "fabulor-emoji-popover"
 #define FABULOR_EMOJI_VIEWPORT_COMPACT_WIDTH 320
@@ -9,6 +10,15 @@
 #define FABULOR_EMOJI_VIEWPORT_MAX_HEIGHT 320
 #define FABULOR_EMOJI_VIEWPORT_HORIZONTAL_INSET 48
 #define FABULOR_EMOJI_VIEWPORT_VERTICAL_INSET 140
+
+static char *native_emoji_font_file;
+
+void
+fabulor_emoji_picker_set_font_file (const char *filename)
+{
+	g_free (native_emoji_font_file);
+	native_emoji_font_file = g_strdup (filename);
+}
 
 struct _FabulorEmojiPickerPage
 {
@@ -143,6 +153,184 @@ fabulor_emoji_picker_popover_free (GtkPopover *popover)
 	if (gtk_widget_get_parent (GTK_WIDGET (popover)))
 		gtk_widget_unparent (GTK_WIDGET (popover));
 	g_object_unref (popover);
+}
+
+static void
+fabulor_emoji_native_picked (GtkEmojiChooser *chooser, const gchar *text,
+	GtkEntry *entry)
+{
+	GtkEditable *editable = GTK_EDITABLE (entry);
+	gint start, end, position;
+	if (!gtk_editable_get_editable (editable))
+		return;
+	if (gtk_editable_get_selection_bounds (editable, &start, &end))
+		gtk_editable_delete_text (editable, start, end);
+	position = gtk_editable_get_position (editable);
+	gtk_editable_insert_text (editable, text, -1, &position);
+	gtk_popover_popdown (GTK_POPOVER (chooser));
+	gtk_entry_grab_focus_without_selecting (entry);
+	gtk_editable_set_position (editable, position);
+}
+
+static void
+fabulor_emoji_native_entry_unrealize (GtkWidget *entry, GtkWidget *chooser)
+{
+	if (g_object_get_data (G_OBJECT (entry), "fabulor-native-emoji-chooser") == chooser)
+	{
+		gtk_popover_popdown (GTK_POPOVER (chooser));
+		g_object_set_data (G_OBJECT (entry), "fabulor-native-emoji-chooser", NULL);
+	}
+}
+
+static void
+fabulor_emoji_native_style (GdkDisplay *display)
+{
+	GtkCssProvider *provider;
+	if (g_object_get_data (G_OBJECT (display), "fabulor-emoji-native-style"))
+		return;
+	provider = gtk_css_provider_new ();
+	/* The colour font belongs to the glyph labels, not the search or
+	 * toolbar. Using its bitmap metrics for controls can inflate the entire
+	 * popup. GTK applies its own glyph scale relative to this base size. */
+	gtk_css_provider_load_from_string (provider,
+		".fabulor-emoji-chooser, .fabulor-emoji-chooser * { font-family: \"Segoe UI\", sans-serif; font-size: 13px; }"
+		".fabulor-emoji-chooser emoji > label { font-family: \"Noto Color Emoji\", \"Segoe UI Emoji\", sans-serif; }"
+		".fabulor-emoji-compact .emoji-searchbar, .fabulor-emoji-compact .emoji-toolbar { padding: 4px; border-spacing: 4px; }"
+		".fabulor-emoji-compact button.emoji-section { min-width: 24px; min-height: 24px; padding: 2px 0 0; }");
+	gtk_style_context_add_provider_for_display (display,
+		GTK_STYLE_PROVIDER (provider), GTK_STYLE_PROVIDER_PRIORITY_USER + 1);
+	g_object_set_data_full (G_OBJECT (display), "fabulor-emoji-native-style",
+		provider, g_object_unref);
+}
+
+static void
+fabulor_emoji_native_size (GtkWidget *chooser, GtkEntry *entry)
+{
+	GtkRoot *root = gtk_widget_get_root (GTK_WIDGET (entry));
+	int height = root ? gtk_widget_get_height (GTK_WIDGET (root)) : 0;
+	GdkSurface *surface = GTK_IS_NATIVE (root) ? gtk_native_get_surface (GTK_NATIVE (root)) : NULL;
+	GObject *viewport = gtk_widget_get_template_child (chooser,
+		GTK_TYPE_EMOJI_CHOOSER, "scrolled_window");
+
+	/* Work in GTK logical pixels. A monitor's usable logical room changes
+	 * with its scale even when its physical resolution stays the same. */
+	if (surface)
+	{
+		GdkMonitor *monitor = gdk_display_get_monitor_at_surface (
+			gdk_surface_get_display (surface), surface);
+		if (monitor)
+		{
+			GdkRectangle geometry;
+			gdk_monitor_get_geometry (monitor, &geometry);
+			if (geometry.height > 0)
+				height = height > 0 ? MIN (height, geometry.height) : geometry.height;
+		}
+	}
+	if (height > 0 && height <= 960)
+		gtk_widget_add_css_class (chooser, "fabulor-emoji-compact");
+	else
+		gtk_widget_remove_css_class (chooser, "fabulor-emoji-compact");
+
+	/* Bound the scrolling grid; leave GTK's search, insertion and catalogue
+	 * alone. If its template changes, fall back to the toolkit's viewport. */
+	if (GTK_IS_SCROLLED_WINDOW (viewport))
+		gtk_scrolled_window_set_max_content_height (GTK_SCROLLED_WINDOW (viewport),
+			height > 0 ? CLAMP (height / 5, 116, 220) : 172);
+}
+
+gboolean
+fabulor_emoji_picker_native_popup (GtkEntry *entry)
+{
+	GtkWidget *chooser;
+	if (!GTK_IS_ENTRY (entry) ||
+		!gtk_editable_get_editable (GTK_EDITABLE (entry)))
+		return FALSE;
+	chooser = g_object_get_data (G_OBJECT (entry), "fabulor-native-emoji-chooser");
+	if (!chooser)
+	{
+		fabulor_emoji_native_style (gtk_widget_get_display (GTK_WIDGET (entry)));
+		PangoFontMap *font_map;
+		chooser = gtk_emoji_chooser_new ();
+		/* A Win32 font map cannot discover the private bundled Noto font.
+		 * Select the packaged Fontconfig/FreeType backend only for this
+		 * chooser; CSS alone cannot change the backend's font inventory. */
+		font_map = pango_cairo_font_map_new_for_font_type (CAIRO_FONT_TYPE_FT);
+		if (font_map)
+		{
+			GError *error = NULL;
+			/* Do not depend on global Fontconfig directory scans or caches
+			 * to discover this font. Register it on this map only. */
+			if (native_emoji_font_file &&
+				!pango_font_map_add_font_file (font_map, native_emoji_font_file, &error))
+			{
+				g_warning ("Emoji chooser: cannot load bundled font: %s",
+					error ? error->message : "unknown error");
+				g_clear_error (&error);
+			}
+			gtk_widget_set_font_map (chooser, font_map);
+			g_object_unref (font_map);
+		}
+		else
+			g_warning ("Emoji chooser: packaged FreeType font map is unavailable");
+		gtk_widget_add_css_class (chooser, "fabulor-emoji-chooser");
+		gtk_widget_set_parent (chooser, GTK_WIDGET (entry));
+		/* The cache owns a reference independently of the widget parent. */
+		g_object_ref_sink (chooser);
+		gtk_popover_set_autohide (GTK_POPOVER (chooser), TRUE);
+		gtk_popover_set_position (GTK_POPOVER (chooser), GTK_POS_TOP);
+		g_signal_connect_object (chooser, "emoji-picked",
+			G_CALLBACK (fabulor_emoji_native_picked), entry, 0);
+		g_object_set_data_full (G_OBJECT (entry), "fabulor-native-emoji-chooser",
+			chooser, (GDestroyNotify) fabulor_emoji_picker_popover_free);
+		g_signal_connect_object (entry, "unrealize",
+			G_CALLBACK (fabulor_emoji_native_entry_unrealize), chooser, 0);
+	}
+	fabulor_emoji_native_size (chooser, entry);
+	gtk_popover_popup (GTK_POPOVER (chooser));
+	return TRUE;
+}
+
+static void
+fabulor_emoji_native_action (GtkWidget *delegate, GtkEntry *entry)
+{
+	/* Also handle callers which emit the legacy action signal directly. */
+	g_signal_stop_emission_by_name (delegate, "insert-emoji");
+	fabulor_emoji_picker_native_popup (entry);
+}
+
+static gboolean
+fabulor_emoji_native_key (GtkEventControllerKey *controller, guint keyval,
+	guint keycode, GdkModifierType state, GtkEntry *entry)
+{
+	(void) controller;
+	(void) keycode;
+	if ((state & gtk_accelerator_get_default_mod_mask ()) != GDK_CONTROL_MASK ||
+		(keyval != GDK_KEY_semicolon && keyval != GDK_KEY_period))
+		return FALSE;
+	return fabulor_emoji_picker_native_popup (entry);
+}
+
+void
+fabulor_emoji_picker_bind_entry (GtkEntry *entry)
+{
+	GtkEditable *delegate;
+	GtkEventController *keys;
+	if (!GTK_IS_ENTRY (entry) ||
+		g_object_get_data (G_OBJECT (entry), "fabulor-emoji-action-bound"))
+		return;
+	delegate = gtk_editable_get_delegate (GTK_EDITABLE (entry));
+	if (!delegate || !g_signal_lookup ("insert-emoji", G_OBJECT_TYPE (delegate)))
+		return;
+	g_signal_connect_object (delegate, "insert-emoji",
+		G_CALLBACK (fabulor_emoji_native_action), entry, 0);
+	/* GTK 4.22's keyboard action calls its implementation directly, not
+	 * the legacy signal, so capture both shortcuts before the delegate. */
+	keys = gtk_event_controller_key_new ();
+	gtk_event_controller_set_propagation_phase (keys, GTK_PHASE_CAPTURE);
+	g_signal_connect_object (keys, "key-pressed",
+		G_CALLBACK (fabulor_emoji_native_key), entry, 0);
+	gtk_widget_add_controller (GTK_WIDGET (entry), keys);
+	g_object_set_data (G_OBJECT (entry), "fabulor-emoji-action-bound", keys);
 }
 
 GtkPopover *

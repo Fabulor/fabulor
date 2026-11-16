@@ -87,6 +87,7 @@ static void dcc_close (struct DCC *dcc, enum dcc_state dccstat, int destroy);
 static gboolean dcc_send_data (GIOChannel *, GIOCondition, struct DCC *);
 static gboolean dcc_read (GIOChannel *, GIOCondition, struct DCC *);
 static gboolean dcc_read_ack (GIOChannel *source, GIOCondition condition, struct DCC *dcc);
+static void dcc_send_watch_update (struct DCC *dcc);
 static int dcc_check_timeouts (void);
 
 static int new_id(void)
@@ -370,6 +371,7 @@ dcc_connect_sok (struct DCC *dcc)
 static void
 dcc_close (struct DCC *dcc, enum dcc_state dccstat, int destroy)
 {
+	dcc->send_watch_flags = 0;
 	if (dcc->wiotag)
 	{
 		fe_input_remove (dcc->wiotag);
@@ -856,9 +858,7 @@ dcc_connect_finished (GIOChannel *source, GIOCondition condition, struct DCC *dc
 	case TYPE_SEND:
 		/* passive send */
 		dcc->fastsend = prefs.hex_dcc_fast_send;
-		if (dcc->fastsend)
-			dcc->wiotag = fe_input_add (dcc->sok, FIA_WRITE, dcc_send_data, dcc);
-		dcc->iotag = fe_input_add (dcc->sok, FIA_READ|FIA_EX, dcc_read_ack, dcc);
+		dcc_send_watch_update (dcc);
 		dcc_send_data (NULL, 0, (gpointer)dcc);
 		EMIT_SIGNAL (XP_TE_DCCCONSEND, dcc->serv->front_session,
 						 dcc->nick, host, dcc->file, NULL, 0);
@@ -1389,6 +1389,37 @@ dcc_connect (struct DCC *dcc)
 	fe_dcc_update (dcc);
 }
 
+/* A Windows socket has one WSA event association: never split its ACK
+ * and data readiness across competing GIO channels. */
+static gboolean
+dcc_send_ready (GIOChannel *source, GIOCondition condition, struct DCC *dcc)
+{
+	/* Drain ACKs on writable wakes too: GLib's Windows socket source can
+	 * remain writable without reporting a simultaneous read notification. */
+	if (condition & (G_IO_IN | G_IO_OUT | G_IO_HUP | G_IO_ERR))
+		dcc_read_ack (source, condition, dcc);
+	if (dcc->dccstat == STAT_ACTIVE && (condition & G_IO_OUT))
+		dcc_send_data (source, condition, dcc);
+	return TRUE;
+}
+
+static void
+dcc_send_watch_update (struct DCC *dcc)
+{
+	int flags = FIA_READ | FIA_EX;
+	if (dcc->dccstat != STAT_ACTIVE || dcc->type != TYPE_SEND)
+		return;
+	if (!dcc->throttled && dcc->pos < dcc->size &&
+		(dcc->fastsend || dcc->ack >= (dcc->pos & 0xffffffff)))
+		flags |= FIA_WRITE;
+	if (dcc->iotag && dcc->send_watch_flags == flags)
+		return;
+	if (dcc->iotag)
+		fe_input_remove (dcc->iotag);
+	dcc->send_watch_flags = flags;
+	dcc->iotag = fe_input_add (dcc->sok, flags, dcc_send_ready, dcc);
+}
+
 static gboolean
 dcc_send_data (GIOChannel *source, GIOCondition condition, struct DCC *dcc)
 {
@@ -1401,25 +1432,21 @@ dcc_send_data (GIOChannel *source, GIOCondition condition, struct DCC *dcc)
 	if (prefs.hex_dcc_blocksize > 102400)	/* this is too much! */
 		prefs.hex_dcc_blocksize = 102400;
 
-	if (dcc->throttled)
-	{
-		fe_input_remove (dcc->wiotag);
-		dcc->wiotag = 0;
-		return FALSE;
-	}
+	dcc_send_watch_update (dcc);
+	if (dcc->throttled || dcc->pos >= dcc->size)
+		return TRUE;
 
 	if (!dcc->fastsend)
 	{
 		if (dcc->ack < (dcc->pos & 0xFFFFFFFF))
 			return TRUE;
 	}
-	else if (!dcc->wiotag)
-		dcc->wiotag = fe_input_add (sok, FIA_WRITE, dcc_send_data, dcc);
 
 	buf = g_malloc (prefs.hex_dcc_blocksize);
 
 	lseek (dcc->fp, dcc->pos, SEEK_SET);
-	len = read (dcc->fp, buf, prefs.hex_dcc_blocksize);
+	len = read (dcc->fp, buf, (int) MIN ((guint64) prefs.hex_dcc_blocksize,
+											 dcc->size - dcc->pos));
 	if (len < 1)
 		goto abortit;
 	sent = send (sok, buf, len, 0);
@@ -1440,16 +1467,8 @@ abortit:
 		dcc->lasttime = time (0);
 	}
 
-	/* have we sent it all yet? */
-	if (dcc->pos >= dcc->size)
-	{
-		/* it's all sent now, so remove the WRITE/SEND handler */
-		if (dcc->wiotag)
-		{
-			fe_input_remove (dcc->wiotag);
-			dcc->wiotag = 0;
-		}
-	}
+	/* Retain ACK reads when throttled, awaiting a slow-send ACK, or at EOF. */
+	dcc_send_watch_update (dcc);
 
 	g_free (buf);
 
@@ -1509,7 +1528,7 @@ dcc_read_ack (GIOChannel *source, GIOCondition condition, struct DCC *dcc)
 	while (1)
 	{
 		/* try to fill up 4 bytes */
-		len = recv (dcc->sok, dcc->ack_buf, 4 - dcc->ack_pos, 0);
+		len = recv (dcc->sok, dcc->ack_buf + dcc->ack_pos, 4 - dcc->ack_pos, 0);
 		if (len < 1)
 		{
 			if (len < 0)
@@ -1570,9 +1589,7 @@ dcc_accept (GIOChannel *source, GIOCondition condition, struct DCC *dcc)
 	switch (dcc->type)
 	{
 	case TYPE_SEND:
-		if (dcc->fastsend)
-			dcc->wiotag = fe_input_add (sok, FIA_WRITE, dcc_send_data, dcc);
-		dcc->iotag = fe_input_add (sok, FIA_READ|FIA_EX, dcc_read_ack, dcc);
+		dcc_send_watch_update (dcc);
 		dcc_send_data (NULL, 0, (gpointer)dcc);
 		EMIT_SIGNAL (XP_TE_DCCCONSEND, dcc->serv->front_session,
 						 dcc->nick, host, dcc->file, NULL, 0);

@@ -65,16 +65,23 @@ Copy-Item -Force -LiteralPath (Join-Path $install 'libenchant-2-2.dll') -Destina
 Copy-Item -Force -LiteralPath (Join-Path $install 'lib\enchant-2\enchant_winspell.dll') -Destination (Join-Path $StageRoot 'lib\enchant-2')
 Copy-Item -Force -LiteralPath (Join-Path $install 'share\enchant-2\enchant.ordering') -Destination (Join-Path $StageRoot 'share\enchant-2')
 
-$smokeConfig = Join-Path $WorkRoot 'smoke-config'
+$smokeConfig = Join-Path $WorkRoot ("smoke-config-" + [Guid]::NewGuid().ToString('N'))
 New-Item -ItemType Directory -Force -Path $smokeConfig | Out-Null
-$env:XDG_CONFIG_HOME = $smokeConfig
 $originalPath = $env:PATH
+$originalXdgConfig = $env:XDG_CONFIG_HOME
+$originalEnchantConfig = $env:ENCHANT_CONFIG_DIR
 try {
+    # GLib's Windows config location does not use XDG_CONFIG_HOME. Enchant's
+    # explicit override isolates personal-word tests on every platform.
+    $env:XDG_CONFIG_HOME = $smokeConfig
+    $env:ENCHANT_CONFIG_DIR = $smokeConfig
     $env:PATH = "$StageRoot;$(Join-Path $GtkRoot 'bin');$originalPath"
-    & (Join-Path $install 'enchant_smoke.exe')
+    & (Join-Path $install 'enchant_smoke.exe') (Join-Path $install 'lib\enchant-2\enchant_winspell.dll')
     if ($LASTEXITCODE -ne 0) { throw "Enchant smoke test failed with exit code $LASTEXITCODE." }
 } finally {
     $env:PATH = $originalPath
+    $env:XDG_CONFIG_HOME = $originalXdgConfig
+    $env:ENCHANT_CONFIG_DIR = $originalEnchantConfig
 }
 
 Get-FileHash -Algorithm SHA256 -LiteralPath `

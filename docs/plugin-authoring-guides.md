@@ -4,13 +4,14 @@
 
 This page is the entry point for plugin authoring documentation.
 
-1. [Simple Add-ons](plugins/simple-addons.md)
-2. [C# Plugin Guide](plugins/csharp-plugin-guide.md)
-3. [Python Plugin Guide](plugins/python-plugin-guide.md)
-4. [Python API Reference](plugins/python-api-reference.md)
-5. [Tcl Plugin Guide](plugins/tcl-plugin-guide.md)
-6. [Plugin Schema, Compatibility, and Troubleshooting](plugins/plugin-schema-and-troubleshooting.md)
-7. Simple and manifest samples under `samples\plugins\`
+1. [Plugin Architecture](plugins/plugin-architecture.md)
+2. [Simple Add-ons](plugins/simple-addons.md)
+3. [C# Plugin Guide](plugins/csharp-plugin-guide.md)
+4. [Python Plugin Guide](plugins/python-plugin-guide.md)
+5. [Python API Reference](plugins/python-api-reference.md)
+6. [Tcl Plugin Guide](plugins/tcl-plugin-guide.md)
+7. [Plugin Schema, Compatibility, and Troubleshooting](plugins/plugin-schema-and-troubleshooting.md)
+8. Simple and manifest samples under `samples\plugins\`
 
 For personal scripts and aliases, prefer the simple add-on layout:
 

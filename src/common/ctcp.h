@@ -20,6 +20,8 @@
 #ifndef FABULOR_CTCP_H
 #define FABULOR_CTCP_H
 
+gboolean ctcp_is_own_echo (server *serv, const char *to, const char *nick, const char *msg);
+
 void ctcp_handle (session *sess, char *to, char *nick, char *ip, char *msg,
 						char *word[], char *word_eol[], int id,
 						const message_tags_data *tags_data);

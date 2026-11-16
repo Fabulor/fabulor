@@ -425,9 +425,23 @@ typedef struct
 	FabulorContextMenuPresenterGtk4 *presenter;
 	char *nick;
 	char *network_name;
+	session *session;
+	int server_id;
+	guint64 connection_generation;
 	int num_sel;
 	GWeakRef origin;
 } FabulorNickContextPopup;
+
+static gboolean
+menu_nick_server_is_dalnet (server *serv)
+{
+	/* NETWORK= is retained on the server session even when a configured
+	 * network name or bouncer endpoint has a user-chosen label. */
+	return fabulor_nick_context_is_dalnet (server_get_network (serv, FALSE),
+		serv->servername) || (serv->server_session &&
+		serv->server_session->type == SESS_SERVER &&
+		fabulor_nick_context_is_dalnet (serv->server_session->channel, NULL));
+}
 
 static GWeakRef *
 menu_nick_context_origin_ref (void)
@@ -471,6 +485,28 @@ menu_nick_context_dispatch (FabulorNickContextAction action,
 	FabulorNickContextPopup *popup = user_data;
 	session *sess;
 
+	if (action == FABULOR_NICK_CONTEXT_DCC_PERMISSION)
+	{
+		char *raw;
+		/* Never resolve this trust-changing operation through current_sess. */
+		sess = popup->session;
+		if (!is_session (sess) || sess->server->id != popup->server_id ||
+			sess->server->oper_auth_generation != popup->connection_generation ||
+			!sess->server->connected ||
+			!menu_nick_server_is_dalnet (sess->server))
+			return;
+		if (popup->num_sel > 1 && g_strcmp0 (command, "list") != 0)
+			return;
+		raw = fabulor_nick_context_dccallow_command (command, nick);
+		if (!raw)
+			return;
+		/* A validated single IRC line bypasses local command interpolation. */
+		sess->server->p_raw (sess->server, raw);
+		g_free (raw);
+		if (g_strcmp0 (command, "allow") == 0)
+			PrintText (sess, _("DALnet DCC permission requested. This permits otherwise blocked file types; it does not make files safe or enable automatic acceptance. Permission is removed on disconnect, or when that user changes nickname or disconnects.\n"));
+		return;
+	}
 	if (action == FABULOR_NICK_CONTEXT_COPY_INFO)
 	{
 		if (command)
@@ -669,6 +705,25 @@ menu_nick_context_model_snapshot (FabulorNickContextPopup *popup,
 	else if (user)
 		heading_text = popup->nick;
 	handlers = menu_nick_handlers_snapshot (sess, command_target);
+	if (menu_nick_server_is_dalnet (sess->server))
+	{
+		FabulorNickHandler permissions[] = {
+			{ FABULOR_NICK_HANDLER_SEPARATOR, NULL, NULL, NULL, FALSE, FALSE },
+			{ FABULOR_NICK_HANDLER_SUBMENU_BEGIN, NULL, NULL, NULL, FALSE, FALSE },
+			{ FABULOR_NICK_HANDLER_DCC_PERMISSION, NULL, "allow", NULL, FALSE, FALSE },
+			{ FABULOR_NICK_HANDLER_DCC_PERMISSION, NULL, "revoke", NULL, FALSE, FALSE },
+			{ FABULOR_NICK_HANDLER_DCC_PERMISSION, NULL, "list", NULL, FALSE, FALSE },
+			{ FABULOR_NICK_HANDLER_SUBMENU_END, NULL, NULL, NULL, FALSE, FALSE }
+		};
+		permissions[1].label = g_strdup (_("DCC Permissions (DALnet)"));
+		permissions[2].label = g_strdup (_("Allow Files from This User"));
+		permissions[3].label = g_strdup (_("Revoke File Permission"));
+		permissions[4].label = g_strdup (_("Show DCC Allow List"));
+		permissions[2].enabled = permissions[3].enabled =
+			sess->server->connected && popup->num_sel <= 1;
+		permissions[4].enabled = sess->server->connected;
+		g_array_append_vals (handlers, permissions, G_N_ELEMENTS (permissions));
+	}
 	info_items = menu_nick_info_snapshot (sess, user, &needs_refresh);
 	model = fabulor_nick_context_menu_model_new_with_details (popup->nick,
 		heading_text, popup->num_sel <= 1, _("Reply"), popup->num_sel > 1,
@@ -716,7 +771,9 @@ fe_userlist_update (session *sess, struct User *user)
 		return;
 	popup = g_object_get_data (origin, FABULOR_NICK_CONTEXT_POPUP);
 	network_name = server_get_network (sess->server, TRUE);
-	if (popup && popup->num_sel <= 1 &&
+	if (popup && popup->session == sess && popup->server_id == sess->server->id &&
+		popup->connection_generation == sess->server->oper_auth_generation &&
+		popup->num_sel <= 1 &&
 		!sess->server->p_cmp (user->nick, popup->nick) &&
 		!g_strcmp0 (network_name, popup->network_name))
 		menu_nick_context_refresh (popup, sess, GTK_WIDGET (origin), user);
@@ -753,6 +810,9 @@ menu_nickmenu_gtk4 (session *sess, GtkWidget *origin, gdouble x, gdouble y,
 	plugin_actions = menu_plugin_context_actions (G_OBJECT (origin));
 	popup = g_new0 (FabulorNickContextPopup, 1);
 	popup->nick = g_strdup (nick);
+	popup->session = sess;
+	popup->server_id = sess->server->id;
+	popup->connection_generation = sess->server->oper_auth_generation;
 	popup->network_name = g_strdup (server_get_network (sess->server, TRUE));
 	popup->num_sel = num_sel;
 	g_weak_ref_init (&popup->origin, G_OBJECT (origin));
@@ -1843,6 +1903,11 @@ menu_about (GtkWidget *wid, gpointer sess)
 		"ZoiteChat - deepend and contributors",
 		NULL
 	};
+	static const gchar *testers[] = {
+		"PickleRick83",
+		"MrBenC",
+		NULL
+	};
 	static const gchar *security[] = {
 		"OpenAI Codex - threat analysis, targeted code review, remediation, test design, and security-tool orchestration",
 		"Automated scanning - GitHub CodeQL and Gitleaks",
@@ -1870,6 +1935,7 @@ menu_about (GtkWidget *wid, gpointer sess)
 	gtk_about_dialog_set_version (dialog, PACKAGE_VERSION);
 	gtk_about_dialog_set_authors (dialog, authors);
 	gtk_about_dialog_set_documenters (dialog, documenters);
+	gtk_about_dialog_add_credit_section (dialog, _("Testers"), testers);
 	gtk_about_dialog_add_credit_section (dialog, _("Project lineage"), lineage);
 	gtk_about_dialog_add_credit_section (dialog, _("Security review and hardening"), security);
 	gtk_about_dialog_set_website (dialog, FABULOR_WEBSITE_URL);

@@ -180,6 +180,21 @@ static gboolean gtk_xtext_scroll (GtkWidget *widget, gdouble dx,
 	gdouble dy, gpointer user_data);
 static void gtk_xtext_focus_changed (GtkWidget *widget, gpointer user_data);
 static void gtk_xtext_accessible_schedule (GtkXText *xtext);
+static int gtk_xtext_text_width (GtkXText *xtext, unsigned char *text, int len);
+
+typedef struct
+{
+	int left;
+	int right;
+	int visible_width;
+	int visible_bytes;
+	int ellipsis_width;
+} XTextPrefix;
+
+static gboolean gtk_xtext_prefix_geometry (GtkXText *xtext,
+	textentry *ent, XTextPrefix *prefix);
+static gboolean gtk_xtext_query_tooltip (GtkWidget *widget, gint x, gint y,
+	gboolean keyboard, GtkTooltip *tooltip, gpointer data);
 
 
 static gchar *
@@ -395,6 +410,12 @@ static inline void
 xtext_draw_line (GtkXText *xtext, cairo_t *cr, const XTextColor *color, int x1, int y1, int x2, int y2)
 {
 	cairo_save (cr);
+	if (xtext->prefix_clip)
+	{
+		cairo_rectangle (cr, xtext->prefix_clip_left, MIN (y1, y2) - 2,
+			xtext->prefix_clip_width, abs (y2 - y1) + 5);
+		cairo_clip (cr);
+	}
 
 	/* Disable antialiasing for crispy 1-pixel lines */
 	cairo_set_antialias (cr, CAIRO_ANTIALIAS_NONE);
@@ -418,7 +439,9 @@ xtext_draw_bg_offset (GtkXText *xtext, int x, int y, int width, int height, int 
 	if (!xtext_begin_draw (xtext, &cr))
 		return;
 	if (fabulor_xtext_geometry_from_widget (GTK_WIDGET (xtext), &geometry))
-		fabulor_xtext_background_paint (xtext->background, cr, &xtext->bgc,
+		/* Message colours can remain active when a wrapped line starts the
+		 * frame. Image dimming must always use the transcript background. */
+		fabulor_xtext_background_paint (xtext->background, cr, &xtext->palette[XTEXT_BG],
 			&geometry, x, y, width, height, tile_x, tile_y,
 			prefs.hex_text_background_dim);
 
@@ -810,6 +833,13 @@ backend_draw_text_emph (GtkXText *xtext, gboolean dofill, int x, int y,
 		return;
 
 	pango_layout_set_attributes (xtext->layout, attr_lists[emphasis]);
+	cairo_save (cr);
+	if (xtext->prefix_clip)
+	{
+		cairo_rectangle (cr, xtext->prefix_clip_left, y - xtext->font->ascent,
+			xtext->prefix_clip_width, xtext->fontsize);
+		cairo_clip (cr);
+	}
 
 	if (dofill)
 	{
@@ -819,7 +849,6 @@ backend_draw_text_emph (GtkXText *xtext, gboolean dofill, int x, int y,
 
 	xtext_set_source_color (cr, &xtext->fgc, 1.0);
 
-	cairo_save (cr);
 	segment = str;
 	segment_len = 0;
 	p = str;
@@ -972,6 +1001,9 @@ gtk_xtext_init (GtkXText * xtext)
 	xtext->hadj = NULL;
 	xtext->hscroll_policy = GTK_SCROLL_MINIMUM;
 	xtext->vscroll_policy = GTK_SCROLL_MINIMUM;
+	gtk_widget_set_has_tooltip (GTK_WIDGET (xtext), TRUE);
+	g_signal_connect (xtext, "query-tooltip",
+		G_CALLBACK (gtk_xtext_query_tooltip), NULL);
 	gtk_xtext_scroll_adjustments (xtext, NULL, NULL);
 	fabulor_gtk_widget_on_pointer_motion_with_state (GTK_WIDGET (xtext),
 		gtk_xtext_pointer_motion, gtk_xtext_pointer_leave, NULL);
@@ -1074,6 +1106,7 @@ gtk_xtext_adjustment_changed (GtkAdjustment * adj, GtkXText * xtext)
 		}
 	}
 	xtext->buffer->old_value = xtext_adj_get_value (adj);
+	gtk_widget_trigger_tooltip_query (GTK_WIDGET (xtext));
 }
 
 static void
@@ -1333,6 +1366,7 @@ gtk_xtext_allocate (GtkWidget *widget,
 			xtext_adj_set_value (xtext->adj,
 				xtext_adj_get_upper (xtext->adj) -
 				xtext_adj_get_page_size (xtext->adj));
+		gtk_widget_trigger_tooltip_query (widget);
 	}
 }
 
@@ -1358,7 +1392,8 @@ gtk_xtext_selection_clear (xtext_buffer *buf)
 }
 
 static int
-find_x (GtkXText *xtext, textentry *ent, int x, int subline, int indent)
+find_x (GtkXText *xtext, textentry *ent, int x, int subline, int indent,
+	int start_offset)
 {
 	int line_start;
 	int line_end;
@@ -1371,6 +1406,7 @@ find_x (GtkXText *xtext, textentry *ent, int x, int subline, int indent)
 		g_slist_nth_data (ent->sublines, subline));
 	if (line_end <= line_start || line_end > ent->str_len)
 		line_end = ent->str_len;
+	line_start = MIN (line_end, MAX (line_start, start_offset));
 	target_x = x - indent;
 	if (target_x <= 0)
 		return line_start;
@@ -1454,6 +1490,7 @@ gtk_xtext_find_x (GtkXText * xtext, int x, textentry * ent, int subline,
 {
 	int indent;
 	unsigned char *str;
+	XTextPrefix prefix;
 
 	if (subline < 1)
 		indent = ent->indent;
@@ -1478,8 +1515,27 @@ gtk_xtext_find_x (GtkXText * xtext, int x, textentry * ent, int subline,
 	}
 
 	*out_of_bounds = 0;
+	if (subline == 0 && gtk_xtext_prefix_geometry (xtext, ent, &prefix))
+	{
+		/* The renderer resets to the message column after a clipped prefix.
+		 * Newly appended entries may have their original indent clamped to
+		 * MARGIN, so walking the full hidden prefix displaces every body hit. */
+		if (x >= xtext->buffer->indent)
+			return find_x (xtext, ent, x, subline, xtext->buffer->indent,
+				ent->left_len + 1);
+		if (x < prefix.left || x >= prefix.right)
+		{
+			*out_of_bounds = 1;
+			return 0;
+		}
+		/* The ellipsis belongs to the complete prefix, never the message. */
+		if (x >= prefix.left + prefix.visible_width)
+			return (int) (g_utf8_find_prev_char ((char *) ent->str,
+				(char *) ent->str + ent->left_len) - (char *) ent->str);
+		x = ent->indent + x - prefix.left;
+	}
 
-	return find_x (xtext, ent, x, subline, indent);
+	return find_x (xtext, ent, x, subline, indent, 0);
 }
 
 static textentry *
@@ -1506,6 +1562,64 @@ gtk_xtext_find_char (GtkXText * xtext, int x, int y, int *off, int *out_of_bound
 		*out_of_bounds = outofbounds;
 
 	return ent;
+}
+
+static gboolean
+gtk_xtext_query_tooltip (GtkWidget *widget, gint x, gint y,
+	gboolean keyboard, GtkTooltip *tooltip, gpointer data)
+{
+	GtkXText *xtext = GTK_XTEXT (widget);
+	textentry *ent;
+	XTextPrefix prefix;
+	int line, subline;
+	GdkRectangle area;
+	char text[128];
+
+	(void) data;
+	if (keyboard || !xtext->buffer || !xtext->font ||
+		!fabulor_xtext_hit_test_line (y, xtext->pixel_offset, xtext->fontsize,
+			(gint) xtext_adj_get_value (xtext->adj), &line))
+		return FALSE;
+	ent = gtk_xtext_nth (xtext, line, &subline);
+	if (!ent)
+		return FALSE;
+	area.y = (line - (gint) xtext_adj_get_value (xtext->adj)) *
+		xtext->fontsize - xtext->pixel_offset;
+	area.height = xtext->fontsize;
+	if (subline == 0 && gtk_xtext_prefix_geometry (xtext, ent, &prefix) &&
+		x >= prefix.left && x < prefix.right)
+	{
+		unsigned char *full = gtk_xtext_strip_color (ent->str, ent->left_len,
+			NULL, NULL, NULL, TRUE);
+		gtk_tooltip_set_text (tooltip, (const char *) full);
+		g_free (full);
+		area.x = prefix.left;
+		area.width = prefix.right - prefix.left;
+	}
+	else if (subline == 0 && xtext->buffer->time_stamp && x >= 0 && x < xtext->stamp_width)
+	{
+		strftime_utf8 (text, sizeof (text), "%Y-%m-%d", ent->stamp);
+		gtk_tooltip_set_text (tooltip, text);
+		area.x = 0;
+		area.width = xtext->stamp_width;
+	}
+	else if (!xtext->buffer->time_stamp && ent->stamp &&
+		x >= xtext->buffer->indent)
+	{
+		char date[64];
+		char *stamp;
+		strftime_utf8 (date, sizeof (date), "%Y-%m-%d", ent->stamp);
+		xtext_get_stamp_str (ent->stamp, &stamp);
+		g_snprintf (text, sizeof (text), "%s %s", date, stamp);
+		g_free (stamp);
+		gtk_tooltip_set_text (tooltip, text);
+		area.x = xtext->buffer->indent;
+		area.width = gtk_widget_get_width (widget) - area.x;
+	}
+	else
+		return FALSE;
+	gtk_tooltip_set_tip_area (tooltip, &area);
+	return TRUE;
 }
 
 static void
@@ -1597,6 +1711,8 @@ gtk_xtext_render (GtkWidget *widget, const GdkRectangle *area, cairo_t *cr)
 	textentry *ent_start, *ent_end;
 	int x, y;
 	GtkAllocation allocation;
+	gint64 started = fabulor_ui_profile_enabled () ?
+		g_get_monotonic_time () : 0;
 	cairo_t *old_cr = fabulor_xtext_render_target_exchange_context (
 		xtext->render_target, cr);
 
@@ -1665,6 +1781,14 @@ xit:
 done:
 	fabulor_xtext_background_end_frame (xtext->background);
 	fabulor_xtext_render_target_exchange_context (xtext->render_target, old_cr);
+	if (started)
+		fabulor_ui_profile_log ("transcript-paint",
+			"total_us=%" G_GINT64_FORMAT
+			" width=%d height=%d area=%d,%d,%d,%d lines=%d",
+			g_get_monotonic_time () - started,
+			allocation.width, allocation.height,
+			area->x, area->y, area->width, area->height,
+			xtext->buffer->num_lines);
 }
 
 static void
@@ -2608,44 +2732,7 @@ gtk_xtext_motion (GtkWidget *widget, gdouble event_x, gdouble event_y,
 	}
 
 tooltip_check:
-	if (xtext->buffer->time_stamp && xtext->buffer->indent > 0 && x >= 0 && x < xtext->stamp_width)
-	{
-		textentry *ent = gtk_xtext_find_char (xtext, x, y, NULL, NULL);
-		if (ent && (!xtext->tooltip_stamp_set || xtext->tooltip_stamp != ent->stamp))
-		{
-			char tooltip[96];
-			strftime_utf8 (tooltip, sizeof (tooltip), "%Y-%m-%d", ent->stamp);
-			gtk_widget_set_tooltip_text (widget, tooltip);
-			xtext->tooltip_stamp = ent->stamp;
-			xtext->tooltip_stamp_set = TRUE;
-		}
-		if (ent)
-			return FALSE;
-	}
-	else if (!xtext->buffer->time_stamp && x >= xtext->buffer->indent)
-	{
-		textentry *ent = gtk_xtext_find_char (xtext, x, y, NULL, NULL);
-		if (ent && ent->stamp && (!xtext->tooltip_stamp_set || xtext->tooltip_stamp != ent->stamp))
-		{
-			char tooltip[128];
-			char date[64];
-			char *stamp_text;
-			strftime_utf8 (date, sizeof (date), "%Y-%m-%d", ent->stamp);
-			xtext_get_stamp_str (ent->stamp, &stamp_text);
-			g_snprintf (tooltip, sizeof (tooltip), "%s %s", date, stamp_text);
-			gtk_widget_set_tooltip_text (widget, tooltip);
-			g_free (stamp_text);
-			xtext->tooltip_stamp = ent->stamp;
-			xtext->tooltip_stamp_set = TRUE;
-		}
-		if (ent)
-			return FALSE;
-	}
-	else if (xtext->tooltip_stamp_set)
-	{
-		gtk_widget_set_tooltip_text (widget, NULL);
-		xtext->tooltip_stamp_set = FALSE;
-	}
+	/* query-tooltip resolves the current row and geometry on demand. */
 
 	gtk_xtext_leave (widget);
 	gtk_xtext_set_pointer_cursor (xtext, "text");
@@ -3400,6 +3487,78 @@ gtk_xtext_text_width (GtkXText *xtext, unsigned char *text, int len)
 	return width;
 }
 
+typedef struct
+{
+	GtkXText *xtext;
+	textentry *ent;
+	GSList *runs;
+} XTextPrefixMeasure;
+
+static int
+gtk_xtext_prefix_raw_end (GSList *runs, int plain_end)
+{
+	int consumed = 0;
+	if (plain_end <= 0)
+		return 0;
+	for (; runs; runs = runs->next)
+	{
+		offlen_t *run = runs->data;
+		if (consumed + run->len >= plain_end)
+			return run->off + plain_end - consumed;
+		consumed += run->len;
+	}
+	return 0;
+}
+
+static gint
+gtk_xtext_prefix_measure (gint plain_end, gpointer data)
+{
+	XTextPrefixMeasure *measure = data;
+	return gtk_xtext_text_width (measure->xtext, measure->ent->str,
+		gtk_xtext_prefix_raw_end (measure->runs, plain_end));
+}
+
+/* Measure complete graphemes, including the prefix's IRC emphasis. The
+ * source stays untouched: clipping is a rendering and hit-test decision. */
+static gboolean
+gtk_xtext_prefix_geometry (GtkXText *xtext, textentry *ent, XTextPrefix *prefix)
+{
+	unsigned char *plain;
+	GSList *runs = NULL;
+	XTextPrefixMeasure measure;
+	int plain_end;
+	int budget;
+
+	if (!xtext->auto_indent || ent->left_len <= 0)
+		return FALSE;
+	prefix->left = MARGIN + (xtext->buffer->time_stamp ? xtext->stamp_width : 0);
+	if (ent->indent >= prefix->left)
+		return FALSE;
+	prefix->right = MAX (prefix->left, xtext->buffer->indent - xtext->space_width);
+	budget = prefix->right - prefix->left;
+	if (gtk_xtext_text_width (xtext, ent->str, ent->left_len) <= budget)
+		return FALSE;
+	prefix->visible_width = 0;
+	prefix->visible_bytes = 0;
+	prefix->ellipsis_width = backend_get_text_width_emph (xtext,
+		(unsigned char *) "\342\200\246", 3, 0);
+	plain = gtk_xtext_strip_color (ent->str, ent->left_len, NULL,
+		NULL, &runs, !xtext->ignore_hidden);
+	measure.xtext = xtext;
+	measure.ent = ent;
+	measure.runs = runs;
+	plain_end = fabulor_xtext_fit_prefix ((char *) plain, budget,
+		prefix->ellipsis_width, gtk_xtext_prefix_measure, &measure,
+		&prefix->visible_width);
+	prefix->visible_bytes = gtk_xtext_prefix_raw_end (runs, plain_end);
+	/* Tooltip and click bounds cover the drawn name, not the column gap. */
+	prefix->right = prefix->left + MIN (budget,
+		prefix->visible_width + prefix->ellipsis_width);
+	g_free (plain);
+	g_slist_free_full (runs, g_free);
+	return TRUE;
+}
+
 /* actually draw text to screen (one run with the same color/attribs) */
 
 static int
@@ -3553,10 +3712,23 @@ gtk_xtext_render_str (GtkXText * xtext, int y, textentry * ent,
 	int srch_underline = FALSE;
 	int srch_mark = FALSE;
 	GSList *slp_cache = ent->slp;
+	XTextPrefix prefix;
+	gboolean clipped_prefix;
 
 	fabulor_xtext_decoration_set_hover_inside (xtext->decoration, FALSE);
 
 	offset = str - ent->str;
+	/* Timestamp-copy paints temporarily replace ent->str but retain the
+	 * message's left_len. Never measure that short stamp as a nick prefix. */
+	clipped_prefix = !left_only && offset == 0 &&
+		gtk_xtext_prefix_geometry (xtext, ent, &prefix);
+	if (clipped_prefix)
+	{
+		x = indent = prefix.left;
+		xtext->prefix_clip = TRUE;
+		xtext->prefix_clip_left = prefix.left;
+		xtext->prefix_clip_width = prefix.visible_width;
+	}
 
 	if (ent->mark_start != -1 &&
 		 ent->mark_start <= i + offset && ent->mark_end > i + offset)
@@ -3827,6 +3999,18 @@ gtk_xtext_render_str (GtkXText * xtext, int y, textentry * ent,
 			if ((pstr-str)+j == ent->left_len)
 			{
 				RENDER_FLUSH;
+				if (clipped_prefix)
+				{
+					xtext->prefix_clip_width = prefix.right - prefix.left;
+					if (!xtext->dont_render && !xtext->dont_render2)
+					{
+						backend_draw_text_emph (xtext, xtext->backcolor,
+							prefix.left + prefix.visible_width, y,
+							"\342\200\246", 3, prefix.ellipsis_width, 0);
+					}
+					xtext->prefix_clip = FALSE;
+					x = xtext->buffer->indent - xtext->space_width;
+				}
 				pstr += j;
 				j = 0;
 			}
@@ -3908,6 +4092,7 @@ gtk_xtext_render_str (GtkXText * xtext, int y, textentry * ent,
 
 	if (j)
 		RENDER_FLUSH;
+	xtext->prefix_clip = FALSE;
 
 	if (mark || srch_mark)
 	{
@@ -4045,7 +4230,12 @@ find_next_wrap (GtkXText * xtext, textentry * ent, unsigned char *str,
 						char_width = backend_get_text_width_emph (xtext, str, mbl, emphasis);
 					}
 				}
-				if (!hidden) str_width += char_width;
+				/* A prefix never wraps or consumes message-column space. */
+				if (orig_str == ent->str && xtext->auto_indent &&
+					ent->left_len >= 0 && str - ent->str <= ent->left_len)
+					str_width = xtext->buffer->indent;
+				else if (!hidden)
+					str_width += char_width;
 				if (str_width > win_width)
 				{
 					if (xtext->wordwrap)
@@ -4279,6 +4469,12 @@ static void
 gtk_xtext_fix_indent (xtext_buffer *buf)
 {
 	int j;
+	gboolean bounded = buf->xtext->auto_indent &&
+		buf->indent <= buf->xtext->max_auto_indent;
+	if (buf->xtext->auto_indent && buf->indent)
+		buf->indent = MAX (buf->indent, MARGIN +
+			(buf->time_stamp ? buf->xtext->stamp_width : 0) +
+			2 * buf->xtext->space_width);
 
 	/* make indent a multiple of the space width */
 	if (buf->indent && buf->xtext->space_width)
@@ -4290,6 +4486,11 @@ gtk_xtext_fix_indent (xtext_buffer *buf)
 		}
 		buf->indent = j;
 	}
+	if (bounded && buf->indent)
+		buf->indent = fabulor_xtext_auto_indent (buf->indent, MARGIN +
+			(buf->time_stamp ? buf->xtext->stamp_width : 0) +
+			2 * buf->xtext->space_width, buf->xtext->max_auto_indent,
+			buf->xtext->space_width);
 
 	dontscroll (buf);	/* force scrolling off */
 }
@@ -4314,8 +4515,6 @@ gtk_xtext_recalc_widths (xtext_buffer *buf, int do_str_width)
 												 ent->left_len + 1);
 			ent->indent =
 				(buf->indent - prefix_width);
-			if (ent->indent < MARGIN)
-				ent->indent = MARGIN;
 		}
 		ent = ent->next;
 	}
@@ -5575,12 +5774,13 @@ gtk_xtext_append_indent (xtext_buffer *buf,
 		if (tempindent > buf->indent + buf->xtext->space_width)
 			buf->indent = tempindent;
 
-		if (buf->indent > buf->xtext->max_auto_indent)
-			buf->indent = buf->xtext->max_auto_indent;
+		buf->indent = fabulor_xtext_auto_indent (buf->indent,
+			min_indent + 2 * buf->xtext->space_width,
+			buf->xtext->max_auto_indent, buf->xtext->space_width);
 
 		if (buf->indent > ent->indent + prefix_width)
 		{
-			gtk_xtext_fix_indent (buf);
+			dontscroll (buf);
 			gtk_xtext_recalc_widths (buf, FALSE);
 
 			ent->indent = buf->indent - prefix_width;
@@ -5893,6 +6093,7 @@ gtk_xtext_buffer_show (GtkXText *xtext, xtext_buffer *buf, int render)
 	/* now change to the new buffer */
 	xtext->buffer = buf;
 	gtk_xtext_accessible_schedule (xtext);
+	gtk_widget_trigger_tooltip_query (GTK_WIDGET (xtext));
 	dontscroll (buf);	/* force scrolling off */
 	{
 		gdouble lower = 0;

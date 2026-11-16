@@ -140,6 +140,7 @@ class Plugin:
         self.manifest_id = manifest_id
         self.capabilities = frozenset(capabilities or ())
         self.hooks = set()
+        self.ui_panels = set()
         self.callback_registrations = set()
         self.globals = {
             '__plugin': weakref.proxy(self),
@@ -202,6 +203,12 @@ class Plugin:
 
     def __del__(self):
         log('unloading', self.filename)
+        # Panels must disappear before callbacks/hooks can outlive their owner.
+        for panel in list(self.ui_panels):
+            try:
+                panel._dispose()
+            except Exception:
+                log('Failed to close an owned native panel')
         for hook in list(self.hooks):
             if hook.is_unload is True:
                 try:
