@@ -2,17 +2,15 @@
 
 ## Supported Versions
 
-Security fixes are provided for the latest published `1.0.6` stable release
-and the current development branch only. `1.0.7` is under release review.
+Security fixes are provided for the latest published stable release and the
+current development branch only.
 
 | Version | Supported |
 | --- | --- |
-| Latest `1.0.6` stable release | Yes |
-| Current development branch (`1.0.7`) | Yes |
+| [Latest stable release](https://github.com/Fabulor/fabulor/releases/latest) | Yes |
+| Current development branch | Yes |
 | Older releases and release candidates | No |
 | ZoiteChat, HexChat, and XChat | No |
-
-This table will be updated when a new maintained release line is published.
 
 ## Reporting A Vulnerability
 

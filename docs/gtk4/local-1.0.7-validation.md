@@ -2,8 +2,10 @@
 
 Initial record: 2026-10-22. Last reconciled: 2026-11-16.
 
-Status: 1.0.7 release candidate under review. Individual sections distinguish
-automated checks, focused installed feedback and broader acceptance.
+This record covers development and validation for
+[Fabulor 1.0.7](https://github.com/Fabulor/fabulor/releases/tag/v1.0.7).
+Individual sections distinguish automated checks, focused installed feedback
+and broader acceptance.
 
 ## Scope And Evidence Labels
 

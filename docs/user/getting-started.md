@@ -21,7 +21,7 @@ uninstalling it.
 
 ## Windows SmartScreen And Unsigned Installers
 
-Current Fabulor installers, including `1.0.6`, are not
+Current Fabulor installers, including `1.0.7`, are not
 Authenticode-signed. WinGet distribution does not sign these files. Windows
 SmartScreen can therefore show **Windows protected your PC** or an
 **Unknown publisher** warning even when the installer is an authentic Fabulor
@@ -41,7 +41,7 @@ Proceed only when all of the following are true:
 Open PowerShell in the folder containing the download and calculate its hash:
 
 ```powershell
-Get-FileHash -Algorithm SHA256 .\FabulorSetup-v1.0.6.exe
+Get-FileHash -Algorithm SHA256 .\FabulorSetup-v1.0.7.exe
 ```
 
 Compare the complete `Hash` value, not just its beginning or end. If the
@@ -61,7 +61,7 @@ WinGet distribution is being prepared and is not yet announced as available.
 Until the manifest is accepted, use the official GitHub release installer.
 Microsoft Store packaging is a separate future task.
 
-1. Start `FabulorSetup.exe`.
+1. Start the versioned setup program you downloaded, such as `FabulorSetup-v1.0.7.exe`.
 2. Approve the Windows administrator prompt.
 3. Keep the default install folder unless you have a specific reason to change
    it.
