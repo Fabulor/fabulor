@@ -41,6 +41,28 @@ find_label (GtkWidget *widget, const gchar *text)
 	return NULL;
 }
 
+static void
+check_attached_chooser_teardown (void)
+{
+	GtkWidget *window = gtk_window_new ();
+	GtkWidget *entry = gtk_entry_new ();
+	GtkWidget *chooser;
+
+	gtk_window_set_child (GTK_WINDOW (window), entry);
+	gtk_window_present (GTK_WINDOW (window));
+	g_assert_true (fabulor_emoji_picker_native_popup (GTK_ENTRY (entry)));
+	chooser = g_object_get_data (G_OBJECT (entry), "fabulor-native-emoji-chooser");
+	g_assert_true (gtk_widget_get_parent (chooser) == entry);
+	g_object_ref (chooser);
+	g_object_ref (entry);
+	gtk_window_destroy (GTK_WINDOW (window));
+	while (g_main_context_iteration (NULL, FALSE)) {}
+	g_assert_null (g_object_get_data (G_OBJECT (entry), "fabulor-native-emoji-chooser"));
+	g_assert_null (gtk_widget_get_parent (chooser));
+	g_object_unref (chooser);
+	g_object_unref (entry);
+}
+
 int main (int argc, char **argv)
 {
 	GtkWidget *chooser, *window, *entry;
@@ -52,8 +74,8 @@ int main (int argc, char **argv)
 	GVariant *catalogue, *item;
 	GVariantIter iter;
 	guint flags = 0, failures = 0;
-	(void) argc;
-	(void) argv;
+	g_assert_cmpint (argc, ==, 2);
+	fabulor_emoji_picker_set_font_file (argv[1]);
 	gtk_init ();
 	/* Themes may set a font on the emoji label itself. An inherited font on
 	 * the popover does not override that, regardless of provider priority. */
@@ -75,6 +97,8 @@ int main (int argc, char **argv)
 	g_signal_emit_by_name (delegate, "insert-emoji");
 	chooser = g_object_get_data (G_OBJECT (entry), "fabulor-native-emoji-chooser");
 	g_assert_true (GTK_IS_EMOJI_CHOOSER (chooser));
+	g_assert_nonnull (pango_font_map_get_family (gtk_widget_get_font_map (chooser),
+		"Noto Color Emoji"));
 	g_assert_true (fabulor_emoji_picker_native_popup (GTK_ENTRY (entry)));
 	g_assert_true (chooser == g_object_get_data (G_OBJECT (entry), "fabulor-native-emoji-chooser"));
 	keys = g_object_get_data (G_OBJECT (entry), "fabulor-emoji-action-bound");
@@ -139,6 +163,8 @@ int main (int argc, char **argv)
 				g_assert_nonnull (flag_label);
 				/* Inspect the rendered label, not its ancestor's font context. */
 				flag_layout = gtk_label_get_layout (GTK_LABEL (flag_label));
+				g_assert_true (pango_context_get_font_map (pango_layout_get_context (flag_layout)) ==
+					gtk_widget_get_font_map (chooser));
 				runs = pango_layout_get_iter (flag_layout);
 				do {
 					PangoLayoutRun *run = pango_layout_iter_get_run_readonly (runs);
@@ -171,7 +197,18 @@ int main (int argc, char **argv)
 	g_assert_cmpuint (flags, >=, 253);
 	g_variant_unref (catalogue);
 	g_bytes_unref (bytes);
+	/* The cache still owns the chooser if it loses its widget parent.
+	 * Unrealizing the entry must clear the cache and release that reference. */
+	g_object_add_weak_pointer (G_OBJECT (chooser), (gpointer *) &chooser);
+	gtk_popover_popdown (GTK_POPOVER (chooser));
+	gtk_widget_unparent (chooser);
+	g_assert_nonnull (chooser);
+	g_object_ref (entry);
 	gtk_window_destroy (GTK_WINDOW (window));
 	while (g_main_context_iteration (NULL, FALSE)) {}
+	g_assert_null (g_object_get_data (G_OBJECT (entry), "fabulor-native-emoji-chooser"));
+	g_assert_null (chooser);
+	g_object_unref (entry);
+	check_attached_chooser_teardown ();
 	return flags == 0 || failures != 0;
 }

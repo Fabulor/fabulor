@@ -175,7 +175,7 @@ native_emoji_flags_test = executable(
 )
 emoji_font_config = configuration_data()
 emoji_font_config.set('GTK4_ROOT', gtk4_root.replace('\\', '/'))
-emoji_font_config.set('EMOJI_FONT_ROOT', join_paths(meson.current_source_dir(), '../../data/fonts').replace('\\', '/'))
+emoji_font_file = files('../../data/fonts/NotoColorEmoji.ttf')
 emoji_fonts = configure_file(
   input: 'test-emoji-fonts.conf.in',
   output: 'test-emoji-fonts.conf',
@@ -185,12 +185,12 @@ emoji_environment = environment()
 emoji_environment.prepend('PATH', join_paths(gtk4_root, 'bin'))
 emoji_environment.set('PANGOCAIRO_BACKEND', 'fc')
 emoji_environment.set('FONTCONFIG_FILE', join_paths(meson.current_build_dir(), 'test-emoji-fonts.conf'))
-test('Native emoji flags and shared actions', native_emoji_flags_test, env: emoji_environment)
+test('Native emoji flags and shared actions', native_emoji_flags_test, env: emoji_environment, args: emoji_font_file)
 emoji_win32_environment = environment()
 emoji_win32_environment.prepend('PATH', join_paths(gtk4_root, 'bin'))
 emoji_win32_environment.set('PANGOCAIRO_BACKEND', 'win32')
 emoji_win32_environment.set('FONTCONFIG_FILE', join_paths(meson.current_build_dir(), 'test-emoji-fonts.conf'))
-test('Native emoji flags with Win32 default font map', native_emoji_flags_test, env: emoji_win32_environment)
+test('Native emoji flags with Win32 default font map', native_emoji_flags_test, env: emoji_win32_environment, args: emoji_font_file)
 
 dalnet_permissions_test = executable(
   'test-dalnet-dcc-permissions',

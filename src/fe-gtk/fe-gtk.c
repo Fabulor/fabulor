@@ -42,6 +42,7 @@
 #include "../common/url.h"
 #include "gtkutil.h"
 #include "gtk-compat.h"
+#include "emoji-picker.h"
 #include "maingui.h"
 #include "pixmaps.h"
 #include "chanlist.h"
@@ -229,6 +230,8 @@ win32_configure_font_rendering (void)
 
 	system_fonts_conf = g_build_filename (base_path, "Runtime", "GTK4", "etc", "fonts", "fonts.conf", NULL);
 	emoji_font = g_build_filename (base_path, "share", "fonts", "NotoColorEmoji.ttf", NULL);
+	if (g_file_test (emoji_font, G_FILE_TEST_IS_REGULAR))
+		fabulor_emoji_picker_set_font_file (emoji_font);
 	if (!g_file_test (system_fonts_conf, G_FILE_TEST_IS_REGULAR) ||
 	    !g_file_test (emoji_font, G_FILE_TEST_IS_REGULAR))
 		goto cleanup_base;

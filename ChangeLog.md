@@ -41,7 +41,8 @@ recorded separately below.
 - Added a DALnet-only **DCC Permissions** nickname-menu submenu for allowing
   files from a user, revoking that permission and listing permissions. Network
   recognition includes the server-advertised identity for renamed/bouncer
-  connections. Permission commands remain bound to the original live session,
+  connections. Permission commands remain bound to the original live connection,
+  and a stale menu cannot grant permissions after reconnecting. The commands
   reject unsafe nickname tokens and do not alter file auto-accept settings or
   existing custom menus. The maintainer accepted the installed DALnet feature
   as working as expected on 2026-10-23.
@@ -52,7 +53,9 @@ recorded separately below.
   and colour-font styling select the bundled Noto font, retaining GTK's layout
   and catalogue. The first CSS-only candidate still showed letter-pair flags
   in installed testing; the follow-up explicitly selects the private-font-capable
-  backend without changing transcript or input rendering.
+  backend and registers the bundled font with the chooser's own font map without
+  changing transcript or input rendering. The chooser releases its cache when
+  the input widget is torn down.
   Native tests cover all 259 country-flag sequences and shared entry points;
   local comparison confirms coverage of all 253 legacy picker country codes.
   A maintainer-supplied screenshot on 2026-10-23 confirms graphical rendering

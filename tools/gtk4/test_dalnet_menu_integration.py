@@ -28,6 +28,17 @@ class DalnetMenuIntegration(unittest.TestCase):
         self.assertIn("serv->server_session->channel", policy)
         self.assertIn("serv->server_session->type == SESS_SERVER", policy)
 
+    def test_permission_popup_cannot_survive_reconnect(self):
+        source = (ROOT / "src/fe-gtk/menu.c").read_text(encoding="utf-8")
+        server = (ROOT / "src/common/server.c").read_text(encoding="utf-8")
+        dispatch = source.split("if (action == FABULOR_NICK_CONTEXT_DCC_PERMISSION)", 1)[1]
+        before_send = dispatch.split("sess->server->p_raw", 1)[0]
+        self.assertIn("sess->server->oper_auth_generation != popup->connection_generation", before_send)
+        self.assertIn("popup->connection_generation = sess->server->oper_auth_generation;", source)
+        self.assertIn("popup->connection_generation == sess->server->oper_auth_generation", source)
+        self.assertIn("serv->oper_auth_generation++;",
+                      server.split("\nserver_cleanup (server * serv)\n{", 1)[1].split("\n}", 1)[0])
+
     def test_existing_popup_configuration_is_not_replaced(self):
         source = (ROOT / "src/fe-gtk/menu.c").read_text(encoding="utf-8")
         self.assertIn("for (list = popup_list; list; list = list->next)", source)

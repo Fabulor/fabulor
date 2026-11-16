@@ -427,6 +427,7 @@ typedef struct
 	char *network_name;
 	session *session;
 	int server_id;
+	guint64 connection_generation;
 	int num_sel;
 	GWeakRef origin;
 } FabulorNickContextPopup;
@@ -490,6 +491,7 @@ menu_nick_context_dispatch (FabulorNickContextAction action,
 		/* Never resolve this trust-changing operation through current_sess. */
 		sess = popup->session;
 		if (!is_session (sess) || sess->server->id != popup->server_id ||
+			sess->server->oper_auth_generation != popup->connection_generation ||
 			!sess->server->connected ||
 			!menu_nick_server_is_dalnet (sess->server))
 			return;
@@ -770,6 +772,7 @@ fe_userlist_update (session *sess, struct User *user)
 	popup = g_object_get_data (origin, FABULOR_NICK_CONTEXT_POPUP);
 	network_name = server_get_network (sess->server, TRUE);
 	if (popup && popup->session == sess && popup->server_id == sess->server->id &&
+		popup->connection_generation == sess->server->oper_auth_generation &&
 		popup->num_sel <= 1 &&
 		!sess->server->p_cmp (user->nick, popup->nick) &&
 		!g_strcmp0 (network_name, popup->network_name))
@@ -809,6 +812,7 @@ menu_nickmenu_gtk4 (session *sess, GtkWidget *origin, gdouble x, gdouble y,
 	popup->nick = g_strdup (nick);
 	popup->session = sess;
 	popup->server_id = sess->server->id;
+	popup->connection_generation = sess->server->oper_auth_generation;
 	popup->network_name = g_strdup (server_get_network (sess->server, TRUE));
 	popup->num_sel = num_sel;
 	g_weak_ref_init (&popup->origin, G_OBJECT (origin));

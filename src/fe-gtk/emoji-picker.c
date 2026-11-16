@@ -11,6 +11,15 @@
 #define FABULOR_EMOJI_VIEWPORT_HORIZONTAL_INSET 48
 #define FABULOR_EMOJI_VIEWPORT_VERTICAL_INSET 140
 
+static char *native_emoji_font_file;
+
+void
+fabulor_emoji_picker_set_font_file (const char *filename)
+{
+	g_free (native_emoji_font_file);
+	native_emoji_font_file = g_strdup (filename);
+}
+
 struct _FabulorEmojiPickerPage
 {
 	const gunichar *items;
@@ -164,6 +173,16 @@ fabulor_emoji_native_picked (GtkEmojiChooser *chooser, const gchar *text,
 }
 
 static void
+fabulor_emoji_native_entry_unrealize (GtkWidget *entry, GtkWidget *chooser)
+{
+	if (g_object_get_data (G_OBJECT (entry), "fabulor-native-emoji-chooser") == chooser)
+	{
+		gtk_popover_popdown (GTK_POPOVER (chooser));
+		g_object_set_data (G_OBJECT (entry), "fabulor-native-emoji-chooser", NULL);
+	}
+}
+
+static void
 fabulor_emoji_native_style (GdkDisplay *display)
 {
 	GtkCssProvider *provider;
@@ -200,6 +219,16 @@ fabulor_emoji_picker_native_popup (GtkEntry *entry)
 		font_map = pango_cairo_font_map_new_for_font_type (CAIRO_FONT_TYPE_FT);
 		if (font_map)
 		{
+			GError *error = NULL;
+			/* Do not depend on global Fontconfig directory scans or caches
+			 * to discover this font. Register it on this map only. */
+			if (native_emoji_font_file &&
+				!pango_font_map_add_font_file (font_map, native_emoji_font_file, &error))
+			{
+				g_warning ("Emoji chooser: cannot load bundled font: %s",
+					error ? error->message : "unknown error");
+				g_clear_error (&error);
+			}
 			gtk_widget_set_font_map (chooser, font_map);
 			g_object_unref (font_map);
 		}
@@ -207,12 +236,16 @@ fabulor_emoji_picker_native_popup (GtkEntry *entry)
 			g_warning ("Emoji chooser: packaged FreeType font map is unavailable");
 		gtk_widget_add_css_class (chooser, "fabulor-emoji-chooser");
 		gtk_widget_set_parent (chooser, GTK_WIDGET (entry));
+		/* The cache owns a reference independently of the widget parent. */
+		g_object_ref_sink (chooser);
 		gtk_popover_set_autohide (GTK_POPOVER (chooser), TRUE);
 		gtk_popover_set_position (GTK_POPOVER (chooser), GTK_POS_TOP);
 		g_signal_connect_object (chooser, "emoji-picked",
 			G_CALLBACK (fabulor_emoji_native_picked), entry, 0);
 		g_object_set_data_full (G_OBJECT (entry), "fabulor-native-emoji-chooser",
 			chooser, (GDestroyNotify) fabulor_emoji_picker_popover_free);
+		g_signal_connect_object (entry, "unrealize",
+			G_CALLBACK (fabulor_emoji_native_entry_unrealize), chooser, 0);
 	}
 	gtk_popover_popup (GTK_POPOVER (chooser));
 	return TRUE;

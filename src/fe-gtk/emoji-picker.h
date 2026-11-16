@@ -22,6 +22,7 @@ void fabulor_emoji_picker_viewport_size (gint root_width, gint root_height,
 	gint *width, gint *height);
 
 /* Both icon activation and GtkText's existing emoji action use this chooser. */
+void fabulor_emoji_picker_set_font_file (const char *filename);
 gboolean fabulor_emoji_picker_native_popup (GtkEntry *entry);
 void fabulor_emoji_picker_bind_entry (GtkEntry *entry);
 

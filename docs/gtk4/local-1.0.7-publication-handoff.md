@@ -130,6 +130,14 @@ confirming the installed GTK4 panel and Python callback path without contacting
 IRC or OpenAI. This is focused upgrade acceptance, not verification of every
 installer mode, live OPER transport or external moderation.
 
+PR review follow-up: the emoji chooser now registers the bundled font on its
+own map and drops its cached reference when the input widget is unrealised.
+The pinned-runtime fixtures render all 259 country flags under both font
+backends and cover chooser teardown with and without a widget parent. The
+DALnet menu now checks the original connection generation before dispatching
+permissions. These changes postdate the private installer above; retest the
+corrected installer and verify CI on the new revision before publication.
+
 ### 1. Reconcile Source And Build Wiring
 
 Aegis remains a separate workstream under testing by maintainer confirmation.
