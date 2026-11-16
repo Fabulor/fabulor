@@ -189,15 +189,53 @@ fabulor_emoji_native_style (GdkDisplay *display)
 	if (g_object_get_data (G_OBJECT (display), "fabulor-emoji-native-style"))
 		return;
 	provider = gtk_css_provider_new ();
-	/* Scope the bundled font to the chooser, not the transcript or input.
-	 * Segoe's regional indicators can otherwise appear as two letters and
-	 * GTK can discard wider fallback sequences during catalogue population. */
+	/* The colour font belongs to the glyph labels, not the search or
+	 * toolbar. Using its bitmap metrics for controls can inflate the entire
+	 * popup. GTK applies its own glyph scale relative to this base size. */
 	gtk_css_provider_load_from_string (provider,
-		".fabulor-emoji-chooser, .fabulor-emoji-chooser * { font-family: \"Noto Color Emoji\", \"Segoe UI\", sans-serif; }");
+		".fabulor-emoji-chooser, .fabulor-emoji-chooser * { font-family: \"Segoe UI\", sans-serif; font-size: 13px; }"
+		".fabulor-emoji-chooser emoji > label { font-family: \"Noto Color Emoji\", \"Segoe UI Emoji\", sans-serif; }"
+		".fabulor-emoji-compact .emoji-searchbar, .fabulor-emoji-compact .emoji-toolbar { padding: 4px; border-spacing: 4px; }"
+		".fabulor-emoji-compact button.emoji-section { min-width: 24px; min-height: 24px; padding: 2px 0 0; }");
 	gtk_style_context_add_provider_for_display (display,
 		GTK_STYLE_PROVIDER (provider), GTK_STYLE_PROVIDER_PRIORITY_USER + 1);
 	g_object_set_data_full (G_OBJECT (display), "fabulor-emoji-native-style",
 		provider, g_object_unref);
+}
+
+static void
+fabulor_emoji_native_size (GtkWidget *chooser, GtkEntry *entry)
+{
+	GtkRoot *root = gtk_widget_get_root (GTK_WIDGET (entry));
+	int height = root ? gtk_widget_get_height (GTK_WIDGET (root)) : 0;
+	GdkSurface *surface = GTK_IS_NATIVE (root) ? gtk_native_get_surface (GTK_NATIVE (root)) : NULL;
+	GObject *viewport = gtk_widget_get_template_child (chooser,
+		GTK_TYPE_EMOJI_CHOOSER, "scrolled_window");
+
+	/* Work in GTK logical pixels. A monitor's usable logical room changes
+	 * with its scale even when its physical resolution stays the same. */
+	if (surface)
+	{
+		GdkMonitor *monitor = gdk_display_get_monitor_at_surface (
+			gdk_surface_get_display (surface), surface);
+		if (monitor)
+		{
+			GdkRectangle geometry;
+			gdk_monitor_get_geometry (monitor, &geometry);
+			if (geometry.height > 0)
+				height = height > 0 ? MIN (height, geometry.height) : geometry.height;
+		}
+	}
+	if (height > 0 && height <= 960)
+		gtk_widget_add_css_class (chooser, "fabulor-emoji-compact");
+	else
+		gtk_widget_remove_css_class (chooser, "fabulor-emoji-compact");
+
+	/* Bound the scrolling grid; leave GTK's search, insertion and catalogue
+	 * alone. If its template changes, fall back to the toolkit's viewport. */
+	if (GTK_IS_SCROLLED_WINDOW (viewport))
+		gtk_scrolled_window_set_max_content_height (GTK_SCROLLED_WINDOW (viewport),
+			height > 0 ? CLAMP (height / 5, 116, 220) : 172);
 }
 
 gboolean
@@ -247,6 +285,7 @@ fabulor_emoji_picker_native_popup (GtkEntry *entry)
 		g_signal_connect_object (entry, "unrealize",
 			G_CALLBACK (fabulor_emoji_native_entry_unrealize), chooser, 0);
 	}
+	fabulor_emoji_native_size (chooser, entry);
 	gtk_popover_popup (GTK_POPOVER (chooser));
 	return TRUE;
 }

@@ -97,6 +97,13 @@ requirements rather than startup success alone.
 broad locale, icon, or GTK data trees. Normal MSI validation still requires the
 installed runtime to match the generated manifest exactly.
 
+For the 1.0.7 native emoji chooser, staging copies
+`share/fontconfig/conf.avail/10-scale-bitmap-fonts.conf` to
+`etc/fonts/conf.d/10-scale-bitmap-fonts.conf`. Fontconfig reads the enabled
+copy when matching the bundled bitmap emoji font. The enabled copy is
+byte-identical to the pinned archive's rule and is covered by the runtime
+manifest and MSI content checks.
+
 Stage 8 pass 2 adds an opt-in `GtkRuntimeCandidate=true` WiX composition. It
 selects `Components/GTK4Candidate.wxs`, requires the generated runtime manifest,
 and builds an MSI in an isolated output tree with bootstrapper generation

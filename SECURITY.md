@@ -3,13 +3,12 @@
 ## Supported Versions
 
 Security fixes are provided for the latest published `1.0.6` stable release
-and the current development branch only. Local `1.0.7` development builds are
-unpublished test candidates, not a new stable release.
+and the current development branch only. `1.0.7` is under release review.
 
 | Version | Supported |
 | --- | --- |
 | Latest `1.0.6` stable release | Yes |
-| Current development branch (local `1.0.7`) | Yes |
+| Current development branch (`1.0.7`) | Yes |
 | Older releases and release candidates | No |
 | ZoiteChat, HexChat, and XChat | No |
 

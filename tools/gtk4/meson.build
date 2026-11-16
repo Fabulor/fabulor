@@ -8,9 +8,13 @@ project(
 cc = meson.get_compiler('c')
 python = find_program('python3', 'python')
 gtk4_root = get_option('gtk4_root')
+gtk4_staged_root = get_option('gtk4_staged_root')
 
 if gtk4_root == ''
   error('Set -Dgtk4_root to the absolute Fabulor GTK4 dependency root.')
+endif
+if gtk4_staged_root == ''
+  error('Run stage_runtime.py and set -Dgtk4_staged_root to its output directory.')
 endif
 
 validator = join_paths(meson.current_source_dir(), 'validate_root.py')
@@ -174,7 +178,8 @@ native_emoji_flags_test = executable(
   dependencies: probe_dependencies,
 )
 emoji_font_config = configuration_data()
-emoji_font_config.set('GTK4_ROOT', gtk4_root.replace('\\', '/'))
+emoji_font_config.set('GTK4_STAGED_ROOT', gtk4_staged_root.replace('\\', '/'))
+emoji_font_config.set('EMOJI_FONT_DIR', join_paths(meson.project_source_root(), '..', '..', 'data', 'fonts').replace('\\', '/'))
 emoji_font_file = files('../../data/fonts/NotoColorEmoji.ttf')
 emoji_fonts = configure_file(
   input: 'test-emoji-fonts.conf.in',
@@ -182,14 +187,16 @@ emoji_fonts = configure_file(
   configuration: emoji_font_config,
 )
 emoji_environment = environment()
-emoji_environment.prepend('PATH', join_paths(gtk4_root, 'bin'))
+emoji_environment.prepend('PATH', join_paths(gtk4_staged_root, 'bin'))
 emoji_environment.set('PANGOCAIRO_BACKEND', 'fc')
 emoji_environment.set('FONTCONFIG_FILE', join_paths(meson.current_build_dir(), 'test-emoji-fonts.conf'))
+emoji_environment.set('FONTCONFIG_PATH', join_paths(gtk4_staged_root, 'etc', 'fonts'))
 test('Native emoji flags and shared actions', native_emoji_flags_test, env: emoji_environment, args: emoji_font_file)
 emoji_win32_environment = environment()
-emoji_win32_environment.prepend('PATH', join_paths(gtk4_root, 'bin'))
+emoji_win32_environment.prepend('PATH', join_paths(gtk4_staged_root, 'bin'))
 emoji_win32_environment.set('PANGOCAIRO_BACKEND', 'win32')
 emoji_win32_environment.set('FONTCONFIG_FILE', join_paths(meson.current_build_dir(), 'test-emoji-fonts.conf'))
+emoji_win32_environment.set('FONTCONFIG_PATH', join_paths(gtk4_staged_root, 'etc', 'fonts'))
 test('Native emoji flags with Win32 default font map', native_emoji_flags_test, env: emoji_win32_environment, args: emoji_font_file)
 
 dalnet_permissions_test = executable(

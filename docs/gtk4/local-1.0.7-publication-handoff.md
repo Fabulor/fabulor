@@ -3,7 +3,7 @@
 Date: 2026-11-08
 
 Status: **inventory started; not publication approval or a completed release-readiness review**.
-Published baseline: 1.0.6. Intended next version: local, unpublished 1.0.7.
+Published baseline during this handoff: 1.0.6. Release under review: 1.0.7.
 No commit, push, tag, installation or GitHub release is authorised by this plan.
 
 ## Initial Inventory
@@ -120,7 +120,7 @@ Python 3.14.3 imported CFFI without the OpenAI SDK. Local package metadata,
 MSI production identity and payload, GTK runtime file hashes and setup/MSI
 byte equality passed. The tested files and their SHA-256 values are retained
 under `build/private-candidate-1.0.7/test-installers/`. This is an unsigned
-local candidate; CI on the approved release revision is still pending.
+local candidate from before the emoji sizing fix.
 
 The maintainer backed up the existing profile, reported that the 1.0.6 →
 1.0.7 upgrade went as expected, and confirmed that the existing Aegis add-on
@@ -135,8 +135,13 @@ own map and drops its cached reference when the input widget is unrealised.
 The pinned-runtime fixtures render all 259 country flags under both font
 backends and cover chooser teardown with and without a widget parent. The
 DALnet menu now checks the original connection generation before dispatching
-permissions. These changes postdate the private installer above; retest the
-corrected installer and verify CI on the new revision before publication.
+permissions. These changes postdate the private installer above.
+
+The next build enabled the bundled bitmap-font rule and restored normal picker
+sizing. The maintainer confirmed the corrected installer and picker at 250%
+scaling on 2026-11-16. The
+[validation record](local-1.0.7-validation.md#oversized-emoji-picker-at-250)
+identifies the tested build and records the separate Aegis load result.
 
 ### 1. Reconcile Source And Build Wiring
 

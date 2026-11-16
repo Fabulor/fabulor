@@ -222,17 +222,18 @@ shortcuts open the same cached chooser for that entry. GTK 4.22's shortcut
 action invokes its implementation directly, so capturing the shortcuts before
 the editable delegate is necessary; intercepting only `insert-emoji` is not
 sufficient. Direct emissions of that signal are also routed to the shared
-chooser. The entry is bound once, and its object-data destructor unparents the
-chooser during teardown. Production code does not rearrange GTK's private
-chooser children or parse its private catalogue format.
+chooser. The entry is bound once, and teardown releases the chooser even if
+it has already been unparented. The picker measures the current monitor in
+GTK logical units and caps the existing scroll viewport through
+`GtkScrolledWindow`. GTK owns the layout and catalogue.
 
 The first CSS-only candidate still displayed letter-pair flags in installed
 testing. The follow-up sets a Fontconfig/FreeType font map on the chooser using
 `gtk_widget_set_font_map()`, so it can discover the private bundled Noto font
-even when the application's default Pango backend is Win32. Scoped CSS sets
-the colour-font family on the chooser and descendants above Fabulor's user-level
-palette rules. Neither change alters transcript/input font maps or replaces
-GTK's interface. The maintainer's 2026-10-23 screenshot confirms graphical
+even when the application's default Pango backend is Win32. Scoped CSS
+selects the bundled colour font for emoji labels and a UI font for the
+controls. Runtime staging enables the bundled bitmap scaling rule so glyphs
+fit their tiles at high DPI. The maintainer's 2026-10-23 screenshot confirms graphical
 rendering of the visible country flags, followed by acceptance of the picker's
 operation. Exhaustive release-matrix coverage remains separate. Search, category navigation, recent items and
 variants remain GTK-owned. Picking an item replaces selected text or inserts
@@ -242,8 +243,9 @@ the resulting Unicode cursor position. Read-only input is not modified.
 The native regression test uses the pinned GTK catalogue as a test-only
 fixture: all 259 country-flag sequences are present in the populated chooser,
 and their actual label layouts select Noto Color Emoji and shape one supported
-glyph. The test runs with both Win32 and Fontconfig default backends and allows
-frame-clock style updates after idle population. A local comparison found all 253 codes
+glyph. The test uses the staged Fontconfig configuration, bounds the flag
+glyph dimensions and runs with both Win32 and Fontconfig default backends.
+It allows frame-clock style updates after idle population. A local comparison found all 253 codes
 from the legacy custom picker in that catalogue. This does not promise that
 all country codes are searchable aliases in GTK, nor that every bundled PNG
 is offered: the artwork directory also contains subdivision assets that the

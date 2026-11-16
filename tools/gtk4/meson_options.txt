@@ -4,3 +4,10 @@ option(
   value: '',
   description: 'Absolute path to the pinned Fabulor GTK4 dependency root',
 )
+
+option(
+  'gtk4_staged_root',
+  type: 'string',
+  value: '',
+  description: 'Absolute path to the staged GTK4 runtime used by the emoji tests',
+)

@@ -74,6 +74,7 @@ int main (int argc, char **argv)
 	GVariant *catalogue, *item;
 	GVariantIter iter;
 	guint flags = 0, failures = 0;
+	gint largest_ink_width = 0, largest_ink_height = 0;
 	g_assert_cmpint (argc, ==, 2);
 	fabulor_emoji_picker_set_font_file (argv[1]);
 	gtk_init ();
@@ -82,13 +83,15 @@ int main (int argc, char **argv)
 	{
 		GtkCssProvider *theme = gtk_css_provider_new ();
 		gtk_css_provider_load_from_string (theme,
-			"* { font-family: \"JetBrainsMono Nerd Font Mono\", \"Segoe UI Emoji\"; }");
+			"* { font-family: \"JetBrainsMono Nerd Font Mono\", \"Segoe UI Emoji\"; }"
+			".emoji-size-stress, .emoji-size-stress * { font-size: 32px; }");
 		gtk_style_context_add_provider_for_display (gdk_display_get_default (),
 			GTK_STYLE_PROVIDER (theme), GTK_STYLE_PROVIDER_PRIORITY_USER);
 		g_object_unref (theme);
 	}
 	window = gtk_window_new ();
 	entry = gtk_entry_new ();
+	gtk_widget_add_css_class (entry, "emoji-size-stress");
 	gtk_window_set_child (GTK_WINDOW (window), entry);
 	gtk_window_present (GTK_WINDOW (window));
 	fabulor_emoji_picker_bind_entry (GTK_ENTRY (entry));
@@ -134,6 +137,22 @@ int main (int argc, char **argv)
 			g_usleep (10000);
 		}
 	}
+	/* The pinned template must retain a short scrolling viewport even
+	 * when the input entry's theme uses oversized text. */
+	{
+		GObject *viewport = gtk_widget_get_template_child (chooser,
+			GTK_TYPE_EMOJI_CHOOSER, "scrolled_window");
+		GdkSurface *surface = gtk_native_get_surface (GTK_NATIVE (chooser));
+		g_assert_true (GTK_IS_SCROLLED_WINDOW (viewport));
+		g_assert_cmpint (gtk_scrolled_window_get_max_content_height (
+			GTK_SCROLLED_WINDOW (viewport)), <=, 220);
+		g_assert_cmpint (gtk_widget_get_height (chooser), >, 0);
+		g_assert_cmpint (gtk_widget_get_height (chooser), <=, 480);
+		g_assert_nonnull (surface);
+		printf ("chooser size: %d x %d logical pixels, surface %.2f, widget scale %d\n",
+			gtk_widget_get_width (chooser), gtk_widget_get_height (chooser),
+			gdk_surface_get_scale (surface), gtk_widget_get_scale_factor (chooser));
+	}
 	/* Inspect each country label's own layout and selected font below. */
 	bytes = g_resources_lookup_data ("/org/gtk/libgtk/emoji/en.data", 0, NULL);
 	if (!bytes) return 2;
@@ -157,6 +176,7 @@ int main (int argc, char **argv)
 				gint glyphs = 0;
 				GtkWidget *flag_label;
 				PangoLayout *flag_layout;
+				PangoRectangle ink;
 				length += g_unichar_to_utf8 (b, text + length);
 				text[length] = 0;
 				flag_label = find_label (chooser, text);
@@ -165,6 +185,11 @@ int main (int argc, char **argv)
 				flag_layout = gtk_label_get_layout (GTK_LABEL (flag_label));
 				g_assert_true (pango_context_get_font_map (pango_layout_get_context (flag_layout)) ==
 					gtk_widget_get_font_map (chooser));
+				pango_layout_get_pixel_extents (flag_layout, &ink, NULL);
+				largest_ink_width = MAX (largest_ink_width, ink.width);
+				largest_ink_height = MAX (largest_ink_height, ink.height);
+				if (ink.width <= 0 || ink.height <= 0 || ink.width > 48 || ink.height > 48)
+					failures++;
 				runs = pango_layout_get_iter (flag_layout);
 				do {
 					PangoLayoutRun *run = pango_layout_iter_get_run_readonly (runs);
@@ -191,8 +216,8 @@ int main (int argc, char **argv)
 		g_variant_unref (codes);
 		g_variant_unref (item);
 	}
-	printf ("flags=%u failures=%u visible_country_labels=%u\n", flags, failures,
-		count_country_labels (chooser));
+	printf ("flags=%u failures=%u visible_country_labels=%u max ink=%dx%d logical pixels\n",
+		flags, failures, count_country_labels (chooser), largest_ink_width, largest_ink_height);
 	g_assert_cmpuint (count_country_labels (chooser), >=, flags);
 	g_assert_cmpuint (flags, >=, 253);
 	g_variant_unref (catalogue);

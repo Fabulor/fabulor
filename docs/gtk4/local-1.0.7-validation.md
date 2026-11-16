@@ -1,10 +1,9 @@
 # Local v1.0.7 Development And Validation
 
-Initial record: 2026-10-22. Last reconciled: 2026-11-08.
+Initial record: 2026-10-22. Last reconciled: 2026-11-16.
 
-Status: local development only, not a published v1.0.7 release. Individual
-sections distinguish source/automated evidence, focused installed feedback and
-broader acceptance still outstanding.
+Status: 1.0.7 release candidate under review. Individual sections distinguish
+automated checks, focused installed feedback and broader acceptance.
 
 ## Scope And Evidence Labels
 
@@ -24,8 +23,8 @@ add-on/OPER development or general release acceptance.
 - **Source-verified:** implementation and automated regression coverage.
 - **Installed-verified:** maintainer reports and supplied timing captures from
   the locally rebuilt, installed v1.0.7 client.
-- Automated package checks are not installed-client acceptance. The agent did
-  not perform the manual upgrade or GUI tests.
+- Package checks verify the installer contents. The maintainer performed the
+  upgrade, and the extracted portable client was tested independently.
 
 ## Corrections
 
@@ -1089,10 +1088,39 @@ information does not prove the earlier WMI failure's cause or permanent recovery
 the fallback was exercised offline. No further source or installer changes were
 made in response to these results.
 
+## Oversized Emoji Picker At 250%
+
+On 2026-11-16 the integrated 1.0.7 client displayed oversized emoji at 250%
+Windows scaling. A comparison with the last pre-handoff client isolated the
+difference to the GTK runtime configuration. The pinned archive contained
+`10-scale-bitmap-fonts.conf` in `conf.avail` only. Enabling that exact file in
+`conf.d` restored a seven-column picker. Runtime staging now copies and hashes
+the enabled file, and the chooser bounds its scrolling area in GTK logical units.
+
+All 12 staging tests and nine Windows GTK suites passed. The fixture on the
+250% display measured all 259 country-flag glyphs under both default font
+backends. Maximum ink was 24 × 23 logical pixels with the fix and 136 × 129
+with the original runtime. MSI validation verified all 1,050 staged runtime
+files and the manifest. WiX bundle validation matched the exact embedded MSI.
+
+The extracted MSI client displayed the compact picker using the smiley button
+and `Ctrl+;`. It inserted a selected emoji. A country flag appeared as regional
+letters in the Consolas input box after selection.
+
+**Installed feedback (2026-11-16):** The maintainer confirmed that the rebuilt
+installer worked as expected, the picker returned to normal size at 250% and
+the separately installed Aegis preview loaded. The provider was awaiting
+channel input, so this verifies add-on loading only.
+
+Tested unsigned setup SHA-256:
+`4f335cb4b96eceedfa609e6363c2ec410f0f430b8d205cfdba0b651a39d45d0f`.
+Embedded MSI SHA-256:
+`28a9cdf57f148c22c6924b345fde703a729b19db75ce1df81fd1d3f4011077c3`.
+
 ## Boundaries
 
-- No v1.0.7 installer or source changes were committed, pushed or published as
-  part of this work. The installers remain unsigned.
+- Client source is tracked in the 1.0.7 release PR. The installers used for
+  local acceptance are unsigned.
 - The v1.0.6 WinGet acceptance and subsequent Microsoft Store track are
   separate from this local v1.0.7 acceptance.
 - This closes the specific reported performance/layout issue. It does not

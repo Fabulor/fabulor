@@ -226,12 +226,11 @@ learned word pairs.
 
 ## Emoji And Flags
 
-In the local v1.0.7 candidate, select the emoji icon at the right of the input
+In Fabulor 1.0.7, select the emoji icon at the right of the input
 box or press `Ctrl+;` (also `Ctrl+.`) to open the same GTK emoji chooser. Use
 its search box or category buttons, then select an item to insert it at the
 cursor or replace selected text. Press `Escape` to dismiss the picker.
-The maintainer accepted this local interface on 2026-10-23 after confirming
-that the graphical flags and picker operation work well.
+The chooser limits the height of its scrolling grid to suit the display.
 
 The **Flags** category uses Fabulor's bundled colour-emoji font to display
 country flags graphically and inserts their Unicode regional-indicator
@@ -240,9 +239,8 @@ assume every two-letter country code is a searchable alias. The preceding
 custom picker and its bundled PNG artwork remain available in the source as a
 fallback during local testing.
 
-Emoji appearance can vary with the active font and Windows font support.
-Fabulor supplies fallback font configuration so ordinary emoji and installed
-flags remain usable with the supported runtime.
+The appearance of inserted emoji and flags depends on the font and fallback
+fonts available to the input box, transcript or receiving IRC client.
 
 ## User List
 

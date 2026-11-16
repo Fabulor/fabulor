@@ -5,7 +5,7 @@ continuation of XChat, HexChat, and ZoiteChat; inherited history remains
 available through the Git repository rather than being presented as Fabulor
 release history.
 
-Unreleased entries describe local development, not published release assets.
+Unreleased entries describe changes under development or release review.
 The first stable release and its preceding release-candidate series are
 recorded separately below.
 
@@ -64,6 +64,12 @@ recorded separately below.
   coverage remains separate.
 
 ### Fixed
+
+- Restored normal sizing of the native GTK emoji picker on high-DPI Windows
+  displays. The packaged runtime now activates Fontconfig's bundled
+  bitmap-font scaling rule, and the chooser limits its scrolling area to suit
+  the display. The rebuilt installer passed the maintainer's upgrade and
+  picker retest at 250% scaling.
 
 - Ignore echoed outgoing non-ACTION CTCP requests addressed to other users
   before flood/DCC parsing or automatic replies. Explicit self-queries and

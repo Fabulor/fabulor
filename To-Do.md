@@ -1,13 +1,13 @@
 <!-- Fabulor production roadmap -->
 # Fabulor Production Roadmap
 
-Last reconciled: 2026-11-08 (local consolidation inventory and handoff gates)
+Last reconciled: 2026-11-16 (1.0.7 picker upgrade acceptance)
 
 ## Current Production Baseline
 
 - [x] Fabulor targets Windows 11+ x64 with an MSVC-built GTK4 frontend.
-- [x] The stable release baseline is `1.0.6`; the local development version is
-      `1.0.7`.
+- [x] The stable release baseline is `1.0.6`. Version `1.0.7` is under release
+      review.
 - [x] WiX v4 produces the supported MSI and bootstrapper artefacts.
 - [x] GTK4 is the sole production frontend, CI, staging, runtime, MSI, and
       bootstrapper profile.
@@ -26,7 +26,7 @@ Last reconciled: 2026-11-08 (local consolidation inventory and handoff gates)
 - [x] Inno Setup, GTK3 packaging, Lua, Perl, and bundled user add-ons are
       retired from the supported product.
 
-## Local 1.0.7 Development
+## 1.0.7 Development And Release Review
 
 - [x] Correct CTCP own-echo handling before flood/DCC parsing and in the
       handler, preserving ACTION display and deliberate self-queries. Omit
@@ -184,6 +184,11 @@ Last reconciled: 2026-11-08 (local consolidation inventory and handoff gates)
       fact." This closes the reported picker issue, not explicit coverage of
       every flag, variant, theme or 250%/300% scenario. The candidate uses
       bundled font glyphs, not PNG substitution.
+- [x] Correct the oversized emoji picker in the integrated 1.0.7 installer.
+      Activate the bundled bitmap-font rule during GTK4 runtime staging and
+      verify the installed rule and rendered glyph size. On 2026-11-16 the
+      maintainer confirmed a successful upgrade and normal picker sizing at
+      250%. See the [validation record](docs/gtk4/local-1.0.7-validation.md#oversized-emoji-picker-at-250).
 - [ ] Retire the superseded custom emoji builder and reconcile its legacy tests
       and packaging claims in a separate, contained cleanup after acceptance.
 
@@ -213,10 +218,9 @@ Last reconciled: 2026-11-08 (local consolidation inventory and handoff gates)
       a definite improvement and subsequently accepted the issue as fixed.
       See [local v1.0.7 validation](docs/gtk4/local-1.0.7-validation.md).
 
-This closes the reported issue, not the broader performance soak or release
-validation matrix below. The fixes and rebuilt unsigned installers remain
-local and uncommitted; no v1.0.7 release has been published. The v1.0.6 WinGet
-acceptance track remains separate, with Microsoft Store publication to follow.
+Broader performance soak and release coverage are tracked below. The unsigned
+1.0.7 candidate is under [release review](https://github.com/Fabulor/fabulor/pull/328).
+The WinGet acceptance and Microsoft Store tracks are separate.
 
 ## 1.0 Release Gate
 

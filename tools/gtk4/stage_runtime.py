@@ -13,6 +13,8 @@ import sys
 DEFAULT_CONTRACT = pathlib.Path(__file__).with_name("runtime-payload-contract.json")
 MANIFEST_NAME = "runtime-manifest.json"
 REPARSE_POINT_ATTRIBUTE = getattr(stat, "FILE_ATTRIBUTE_REPARSE_POINT", 0x400)
+BITMAP_FONT_RULE = "share/fontconfig/conf.avail/10-scale-bitmap-fonts.conf"
+ACTIVE_BITMAP_FONT_RULE = "etc/fonts/conf.d/10-scale-bitmap-fonts.conf"
 
 
 class StagingError(Exception):
@@ -144,6 +146,19 @@ def collect_payload(root, contract):
                     raise StagingError(f"Runtime payload path selected more than once: {relative}")
                 selected[relative] = source
                 selected_casefold.add(relative.casefold())
+
+    if {"etc/fonts", "share/fontconfig"}.issubset(contract["trees"]):
+        # Fontconfig reads conf.d. The pinned archive ships this rule only
+        # in conf.avail, leaving bitmap emoji at their strike size.
+        rule = selected.get(BITMAP_FONT_RULE)
+        if rule is None:
+            raise StagingError(f"Missing runtime payload path: {BITMAP_FONT_RULE}")
+        active = selected.get(ACTIVE_BITMAP_FONT_RULE)
+        if active is None and ACTIVE_BITMAP_FONT_RULE.casefold() in selected_casefold:
+            raise StagingError(f"Unexpected case for active Fontconfig rule: {ACTIVE_BITMAP_FONT_RULE}")
+        if active is not None and active.read_bytes() != rule.read_bytes():
+            raise StagingError(f"Active Fontconfig rule differs from source: {ACTIVE_BITMAP_FONT_RULE}")
+        selected[ACTIVE_BITMAP_FONT_RULE] = rule
 
     forbidden = tuple(value.casefold() for value in contract["forbidden_suffixes"])
     rejected = [relative for relative in selected if relative.casefold().endswith(forbidden)]
