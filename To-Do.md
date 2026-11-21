@@ -317,11 +317,9 @@ The WinGet acceptance and Microsoft Store tracks are separate.
 - [x] Confirm RC12 multi-monitor and detached-window acceptance. The maintainer
       reported successful tester results on 2026-10-04 and no regressions during
       the public testing soak.
-- [ ] Record explicit coverage of the remaining 100%, 125%, 150%, 175%, 200%,
-      and 225% scales; the successful multi-monitor report did not specify
-      the exact scales tested.
-      Revert the manifest to System-DPI awareness if that broader matrix exposes
-      a rendering, input, geometry, or cumulative-size regression.
+- [x] Record multi-monitor testing at 100%, 125%, 150%, 175%, 200%, and 225%.
+      On 2026-11-22 the maintainer confirmed that the tester passed all six
+      scales. The 250% and 300% results are recorded in the RC11 entry above.
 - [x] Validate the corrected major-upgrade installer over the earlier PMv2 test
       build with Python 3.14.6. Confirm that the selected pinned Python 3.14.3
       files, including `python314.dll`, are installed without a separate Repair,
