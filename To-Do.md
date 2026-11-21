@@ -191,13 +191,13 @@ Last reconciled: 2026-11-16 (1.0.7 release)
 - [ ] Retire the superseded custom emoji builder and reconcile its legacy tests
       and packaging claims in a separate, contained cleanup after acceptance.
 
-- [x] Reconcile the private name-layout implementation from the separate
-      `a199` worktree into the main checkout, retaining width-aware transcript,
-      user-list and channel-label clipping, full-name tooltips, indent bounds,
-      tooltip positioning and the background-colour correction alongside the
-      accepted cache/divider fixes. Native and package checks passed locally.
-      This is available-width clipping, not the fixed 16-character feature
-      proposed below.
+- [x] Ship long nickname and channel-name handling in 1.0.7. Nicknames clip
+      to the available width in the transcript and user list. Channel names
+      clip to the available width in the channel tree and tabs. Full-name
+      tooltips expose the complete name. This incorporates the private
+      `a199` worktree changes for indent bounds, tooltip positioning and
+      background colour alongside the accepted cache and divider fixes.
+      Native and package checks passed locally.
 - [x] Record installed acceptance of the restored private name-layout feature.
       On 2026-10-23 the maintainer confirmed the rebuilt candidate fixed the
       reported regression. This closes that report, not explicit coverage of
@@ -682,8 +682,9 @@ programme.
       click-to-load, preserve transcript selection and scroll position, and
       enforce strict download, decode, redirect, cache, concurrency, and
       private-network access limits before automatic previews are offered.
-- [ ] Design and implement optional post-1.0 display limits for unusually long
-      nicknames and channel-tab names. Default both limits to the first 16
+- [ ] Deferred proposal: add optional fixed character limits for nicknames
+      and channel-tab names. If selected for a future
+      release, default both fixed limits to the first 16
       Unicode characters followed by a single ellipsis (for example,
       `Antidisestablish…`) while keeping the nickname and channel controls
       independently configurable because transcript indentation and channel-tree
