@@ -18,12 +18,16 @@ G_BEGIN_DECLS
 
 typedef void (*FabulorChannelTreeSelectionFunc) (GtkWidget *view,
 	gpointer identity, gpointer user_data);
+typedef void (*FabulorChannelTreeExpandedFunc) (gpointer identity,
+	gboolean collapsed);
 
 GtkWidget *fabulor_channel_tree_view_new (FabulorChannelModel *model,
 	gboolean use_icons, gboolean compact, gboolean show_tree_lines,
 	gboolean unindent_children);
 void fabulor_channel_tree_view_set_selection_callback (GtkWidget *view,
 	FabulorChannelTreeSelectionFunc callback, gpointer user_data);
+void fabulor_channel_tree_view_set_expanded_callback (GtkWidget *view,
+	FabulorChannelTreeExpandedFunc callback);
 
 gpointer fabulor_channel_tree_view_get_identity_at_position (GtkWidget *view,
 	gdouble x, gdouble y);

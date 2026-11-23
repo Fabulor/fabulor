@@ -53,6 +53,12 @@ fabulor_clipped_label_set_full (GtkWidget *label, const char *full)
 	if (g_strcmp0 (previous, full) == 0)
 		return;
 	g_object_set_data_full (G_OBJECT (label), "fabulor-full-label", g_strdup (full), g_free);
+	if (full)
+		gtk_accessible_update_property (GTK_ACCESSIBLE (label),
+			GTK_ACCESSIBLE_PROPERTY_LABEL, full, -1);
+	else
+		gtk_accessible_reset_property (GTK_ACCESSIBLE (label),
+			GTK_ACCESSIBLE_PROPERTY_LABEL);
 	gtk_widget_trigger_tooltip_query (label);
 }
 

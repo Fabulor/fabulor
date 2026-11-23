@@ -18,17 +18,20 @@ recorded separately below.
   and the latest unread highlight's sender and text. **Highlights only**
   filters the list, and **Mark as Read** clears a context without opening it.
 - Added unread badges to the tree and tab layouts. A collapsed network
-  shows unread activity from its children. The selected context can accrue
+  shows unread activity from its children and updates its colour when
+  expanded or collapsed. The selected context can accrue
   unread activity while its window is out of focus, minimised or in the tray.
 - Added saved per-context activity policies through the switcher context menu
-  and `/ACTIVITY`. **Activity Rules** in Preferences supports exact and
+  and `/ACTIVITY`. Policies follow the channel when a tab is reused.
+  **Activity Rules** in Preferences supports exact and
   wildcard context rules and can apply them to open contexts on request.
   Noisy-nick rules can lower or mute unread activity while preserving
   highlights and leaving messages visible in the transcript.
 - Added independent channel-name and nickname display limits under
   **Channel switcher** preferences. Shortened names reveal their full text
-  on hover. An existing profile's tab-label width seeds the channel limit
-  when no separate limit has been saved.
+  on hover, and screen readers and nickname actions use the full names.
+  An existing profile's tab-label width seeds the channel limit when no
+  separate limit has been saved.
 
 ### Fixed
 

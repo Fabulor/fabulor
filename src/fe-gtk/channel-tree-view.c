@@ -39,6 +39,7 @@ typedef struct
 	GtkWidget *view;
 	FabulorChannelModel *model;
 	FabulorChannelTreeSelectionFunc selection_callback;
+	FabulorChannelTreeExpandedFunc expanded_callback;
 	gpointer selection_data;
 	gpointer notified_identity;
 	gulong selection_id;
@@ -76,6 +77,7 @@ typedef struct
 	GtkWidget *unread_label;
 	GtkListItem *list_item;
 	GtkTreeListRow *tree_row;
+	FabulorChannelTreeView *owner;
 	gpointer item;
 	GdkPixbuf *icon_source;
 	gulong notify_id;
@@ -158,9 +160,16 @@ static void
 channel_tree_item_expanded_changed (GObject *row, GParamSpec *pspec,
 	gpointer user_data)
 {
+	FabulorChannelTreeItemBinding *binding = user_data;
+
 	(void) row;
 	(void) pspec;
-	channel_tree_item_update_unread (user_data);
+	channel_tree_item_update_unread (binding);
+	if (binding->owner->expanded_callback &&
+		gtk_tree_list_row_get_depth (binding->tree_row) == 0)
+		binding->owner->expanded_callback (
+			fabulor_channel_model_get_item_identity (binding->item),
+			!gtk_tree_list_row_get_expanded (binding->tree_row));
 }
 
 static void
@@ -182,6 +191,7 @@ channel_tree_factory_setup (GtkSignalListItemFactory *factory,
 	gint spacing = owner->compact ? 1 : 3;
 
 	(void) factory;
+	binding->owner = owner;
 	binding->expander = gtk_tree_expander_new ();
 	binding->box = gtk_box_new (GTK_ORIENTATION_HORIZONTAL, spacing);
 	binding->icon = gtk_image_new ();
@@ -242,7 +252,7 @@ channel_tree_factory_bind (GtkSignalListItemFactory *factory,
 	g_object_set_qdata (G_OBJECT (binding->expander),
 		channel_tree_item_quark (), list_item);
 	channel_tree_item_update (binding);
-	channel_tree_item_update_unread (binding);
+	channel_tree_item_expanded_changed (G_OBJECT (tree_row), NULL, binding);
 }
 
 static void
@@ -401,6 +411,16 @@ fabulor_channel_tree_view_set_selection_callback (GtkWidget *view,
 		return;
 	owner->selection_callback = callback;
 	owner->selection_data = user_data;
+}
+
+void
+fabulor_channel_tree_view_set_expanded_callback (GtkWidget *view,
+	FabulorChannelTreeExpandedFunc callback)
+{
+	FabulorChannelTreeView *owner = channel_tree_view_data (view);
+
+	if (owner)
+		owner->expanded_callback = callback;
 }
 
 gpointer

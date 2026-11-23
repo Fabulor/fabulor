@@ -37,6 +37,7 @@ void mg_bring_tofront (GtkWidget *vbox);
 void mg_bring_tofront_sess (session *sess);
 void mg_activity_list_open (void);
 void mg_activity_list_close (void);
+void mg_activity_set_group_colour (gpointer identity, gboolean collapsed);
 void mg_decide_userlist (session *sess, gboolean switch_to_current);
 void mg_set_topic_tip (session *sess);
 GtkWidget *mg_create_generic_tab (char *name, char *title, int force_toplevel, int link_buttons, GDestroyNotify close_callback, gpointer userdata, int width, int height, GtkWidget **vbox_ret, void *family);

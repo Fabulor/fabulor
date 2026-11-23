@@ -117,6 +117,12 @@ xtext_entry_original (textentry *ent)
 }
 
 static int
+xtext_entry_original_length (textentry *ent)
+{
+	return ent->nickname ? ent->nickname->original_length : ent->str_len;
+}
+
+static int
 xtext_offset_to_original (textentry *ent, int offset)
 {
 	XTextNickname *nick = ent->nickname;
@@ -267,7 +273,7 @@ gtk_xtext_accessible_build (GtkXText *xtext)
 		return g_string_free (snapshot, FALSE);
 	for (ent = xtext->buffer->text_last; ent; ent = ent->prev)
 	{
-		gsize entry_bytes = (gsize) ent->str_len + 129;
+		gsize entry_bytes = (gsize) xtext_entry_original_length (ent) + 129;
 
 		if (first && estimated_bytes + entry_bytes >
 			FABULOR_XTEXT_ACCESSIBLE_MAX_BYTES)
@@ -292,8 +298,8 @@ gtk_xtext_accessible_build (GtkXText *xtext)
 				g_string_append_len (snapshot, stamp, stamp_length);
 			g_free (stamp);
 		}
-		stripped = (gchar *) gtk_xtext_strip_color (ent->str, ent->str_len,
-			NULL, &stripped_length, NULL, TRUE);
+		stripped = (gchar *) gtk_xtext_strip_color (xtext_entry_original (ent),
+			xtext_entry_original_length (ent), NULL, &stripped_length, NULL, TRUE);
 		g_string_append_len (snapshot, stripped, stripped_length);
 		g_free (stripped);
 	}
@@ -2460,15 +2466,16 @@ gtk_xtext_get_word (GtkXText * xtext, int x, int y, textentry ** ret_ent,
 
 	if (xtext_hit_shortened_nickname (ent, offset))
 	{
+		XTextNickname *nick = ent->nickname;
+
 		if (ret_ent)
 			*ret_ent = ent;
 		if (ret_off)
-			*ret_off = ent->nickname->nick_start;
+			*ret_off = nick->nick_start;
 		if (ret_len)
-			*ret_len = ent->nickname->ellipsis + XTEXT_NAME_ELLIPSIS_LEN - ent->nickname->nick_start;
-		if (slp)
-			*slp = NULL;
-		return (char *) xtext_full_nickname (ent, xtext->scratch_buffer);
+			*ret_len = nick->ellipsis + XTEXT_NAME_ELLIPSIS_LEN - nick->nick_start;
+		return (char *) gtk_xtext_strip_color (nick->original + nick->nick_start,
+			nick->original_end - nick->nick_start, xtext->scratch_buffer, NULL, slp, TRUE);
 	}
 
 	word = ent->str + offset;
@@ -2693,10 +2700,22 @@ gtk_xtext_get_word_adjust (GtkXText *xtext, int x, int y, textentry **word_ent, 
 		word_type = xtext->urlcheck_function (GTK_WIDGET (xtext), word);
 		if (word_type > 0)
 		{
+			textentry *ent = *word_ent;
+			gboolean shortened = xtext_hit_shortened_nickname (ent, *offset);
+			int span = shortened ? ent->nickname->original_end - *offset : *len;
+
 			if (!url_last (&laststart, &lastend) ||
 				!fabulor_xtext_hit_test_adjust_match (slp, laststart, lastend,
-					offset, len))
+					offset, &span))
 				word_type = 0;
+			else if (shortened)
+			{
+				int end = xtext_offset_to_display (ent, *offset + span, TRUE);
+				*offset = xtext_offset_to_display (ent, *offset, FALSE);
+				*len = end - *offset;
+			}
+			else
+				*len = span;
 		}
 	}
 	g_slist_free_full (slp, g_free);
@@ -4731,7 +4750,7 @@ gtk_xtext_save (GtkXText * xtext, int fh)
 	while (ent)
 	{
 		buf = gtk_xtext_strip_color (xtext_entry_original (ent),
-			ent->nickname ? ent->nickname->original_length : ent->str_len, NULL,
+			xtext_entry_original_length (ent), NULL,
 											  &newlen, NULL, FALSE);
 		write (fh, buf, newlen);
 		write (fh, "\n", 1);
@@ -5385,7 +5404,7 @@ gtk_xtext_search_textentry (xtext_buffer *buf, textentry *ent)
 	GList *gl = NULL;
 	GSList *slp;
 	gint lstr;
-	int original_length = ent->nickname ? ent->nickname->original_length : ent->str_len;
+	int original_length = xtext_entry_original_length (ent);
 
 	if (buf->search_text == NULL)
 	{

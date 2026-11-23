@@ -167,6 +167,10 @@ On 2026-11-22, the maintainer confirmed that live testing of the
     and the Aegis SDK still imported.
 - [x] Verify a clean 1.0.8 install with the existing user profile. The
       maintainer reported that the install completed with their data intact.
+- [x] Retest the installer rebuilt after release review. An ordinary upgrade
+      from the published 1.0.7 left one 1.0.8 Setup entry. The installed
+      binaries and existing profile settings matched their expected SHA-256
+      hashes, and the add-on directory remained present.
 - [x] Verify repair with the final 1.0.8 installer. The elevated Repair
       ran the 1.0.8 MSI repair and returned success. The installed client
       binaries matched the candidate. The profile configuration files were

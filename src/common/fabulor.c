@@ -317,9 +317,11 @@ activity_context_name (session *sess)
 {
 	if (sess->type == SESS_SERVER ||
 		(sess->type == SESS_CHANNEL && sess == sess->server->server_session &&
-		 !sess->channel[0] && !sess->session_name[0]))
+		 !sess->channel[0] && !sess->waitchannel[0]))
 		return "@server";
-	if (sess->type == SESS_CHANNEL || sess->type == SESS_DIALOG)
+	if (sess->type == SESS_CHANNEL)
+		return sess->channel[0] ? sess->channel : sess->waitchannel;
+	if (sess->type == SESS_DIALOG)
 		return sess->session_name[0] ? sess->session_name : sess->channel;
 	return NULL;
 }

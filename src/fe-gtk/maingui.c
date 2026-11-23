@@ -718,6 +718,32 @@ mg_activity_list_close (void)
 }
 
 void
+mg_activity_set_group_colour (gpointer identity, gboolean collapsed)
+{
+        chan *server_tab = identity;
+        session *root;
+        tab_state_flags state;
+
+        if (fabulor_is_quitting || chan_get_tag (server_tab) != TAG_IRC)
+                return;
+        root = chan_get_userdata (server_tab);
+        state = root->tab_state;
+
+        /* Child activity colours the collapsed server row for display only. */
+        if (collapsed)
+        {
+                ActivityClass child = activity_aggregate_highest (&root->server->child_activity);
+                if (child == ACTIVITY_HIGHLIGHT)
+                        state = MAX (state, TAB_STATE_NEW_HILIGHT);
+                else if (child >= ACTIVITY_MESSAGE)
+                        state = MAX (state, TAB_STATE_NEW_MSG);
+                else if (child == ACTIVITY_OTHER)
+                        state = MAX (state, TAB_STATE_NEW_DATA);
+        }
+        chan_set_color (server_tab, mg_tab_activity_color (state));
+}
+
+void
 fe_activity_changed (session *sess, gboolean closing, gboolean colour_changed)
 {
         session *server_sess = sess->server->server_session;
@@ -761,7 +787,6 @@ fe_activity_changed (session *sess, gboolean closing, gboolean colour_changed)
         {
                 session *root = chan_get_userdata (server_tab);
                 guint64 own_count = 0, child_count = 0;
-                tab_state_flags state = root->tab_state;
 
                 for (int i = ACTIVITY_OTHER; i < ACTIVITY_CLASS_COUNT; ++i)
                 {
@@ -776,21 +801,9 @@ fe_activity_changed (session *sess, gboolean closing, gboolean colour_changed)
                 }
                 chan_set_unread (server_tab, own_count, child_count);
 
-                if (!colour_changed)
-                        return;
-
-                /* Child activity colours the collapsed server row for display only. */
-                if (!chan_get_parent (server_tab) && chan_is_collapsed (server_tab))
-                {
-                        ActivityClass child = activity_aggregate_highest (&sess->server->child_activity);
-                        if (child == ACTIVITY_HIGHLIGHT)
-                                state = MAX (state, TAB_STATE_NEW_HILIGHT);
-                        else if (child >= ACTIVITY_MESSAGE)
-                                state = MAX (state, TAB_STATE_NEW_MSG);
-                        else if (child == ACTIVITY_OTHER)
-                                state = MAX (state, TAB_STATE_NEW_DATA);
-                }
-                chan_set_color (server_tab, mg_tab_activity_color (state));
+                if (colour_changed)
+                        mg_activity_set_group_colour (server_tab,
+                                !chan_get_parent (server_tab) && chan_is_collapsed (server_tab));
         }
 }
 
