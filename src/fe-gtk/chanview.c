@@ -30,7 +30,9 @@
 #include "gtk-compat.h"
 #include "chanview.h"
 #include "channel-model.h"
+#include "channel-unread-label.h"
 #include "clipped-label.h"
+#include "display-name.h"
 #include "theme/theme-manager.h"
 #include "theme/theme-access.h"
 
@@ -88,6 +90,9 @@ struct _chan
 	char *full_name;
 	PangoAttrList *attributes;
 	PangoUnderline underline;
+	guint unread_source;
+	guint64 unread;
+	guint64 child_unread;
 	short allow_closure;	/* allow it to be closed when it still has children? */
 	short tag;
 };
@@ -166,11 +171,25 @@ chanview_theme_changed (const ThemeChangedEvent *event, gpointer userdata)
 }
 
 static char *
-truncate_tab_name (char *name, int max)
+truncate_tab_name (const char *name, gpointer family, gpointer data, int tag)
 {
-	/* Names remain complete; the view ellipsises its allocated width. */
-	(void) max;
-	return name;
+	session *sess = data;
+
+	if (tag != 0 || !family || !sess || sess->type != SESS_CHANNEL)
+		return NULL;
+	if (name[0] == '(' && !sess->channel[0] && sess->waitchannel[0])
+	{
+		char *short_name = fabulor_display_name_shorten (sess->waitchannel,
+			prefs.hex_gui_tab_name_limit);
+		if (short_name)
+		{
+			char *label = g_strdup_printf ("(%s)", short_name);
+			g_free (short_name);
+			return label;
+		}
+		return NULL;
+	}
+	return fabulor_display_name_shorten (name, prefs.hex_gui_tab_name_limit);
 }
 
 static void
@@ -252,6 +271,7 @@ chanview_set_impl (chanview *cv, int type)
 static void
 chanview_free_ch (chan *ch)
 {
+	g_clear_handle_id (&ch->unread_source, g_source_remove);
 	g_free (ch->name);
 	g_free (ch->full_name);
 	if (ch->attributes)
@@ -423,13 +443,12 @@ chanview_add (chanview *cv, char *name, void *family, void *userdata, gboolean a
 	char *new_name;
 	chan *ret;
 
-	new_name = truncate_tab_name (name, cv->trunc_len);
+	new_name = truncate_tab_name (name, family, userdata, tag);
 
-	ret = chanview_add_real (cv, new_name, name, family, userdata,
+	ret = chanview_add_real (cv, new_name ? new_name : name, name, family, userdata,
 		allow_closure, tag, icon, NULL, NULL);
 
-	if (new_name != name)
-		g_free (new_name);
+	g_free (new_name);
 
 	return ret;
 }
@@ -514,9 +533,35 @@ chanview_update_model_row (chan *ch)
 	g_warn_if_fail (fabulor_channel_model_update (ch->cv->model, &row));
 }
 
+static gboolean
+chan_flush_unread (gpointer data)
+{
+	chan *ch = data;
+
+	ch->unread_source = 0;
+	fabulor_channel_model_set_unread (ch->cv->model, ch, ch->unread, ch->child_unread);
+	if (ch->cv->func_add == cv_tabs_add)
+		cv_tabs_set_unread (ch);
+	return G_SOURCE_REMOVE;
+}
+
+void
+chan_set_unread (chan *ch, guint64 unread, guint64 child_unread)
+{
+	if (ch->unread == unread && ch->child_unread == child_unread)
+		return;
+
+	ch->unread = unread;
+	ch->child_unread = child_unread;
+	if (!ch->unread_source)
+		ch->unread_source = g_idle_add (chan_flush_unread, ch);
+}
+
 void
 chan_set_color (chan *ch, PangoAttrList *list)
 {
+	if (ch->attributes == list)
+		return;
 	if (list)
 		pango_attr_list_ref (list);
 	if (ch->attributes)
@@ -531,18 +576,15 @@ chan_rename (chan *ch, char *name, int trunc_len)
 {
 	char *new_name;
 
-	new_name = truncate_tab_name (name, trunc_len);
+	new_name = truncate_tab_name (name, ch->family, ch->userdata, ch->tag);
 
 	g_free (ch->name);
-	ch->name = g_strdup (new_name);
+	ch->name = new_name ? new_name : g_strdup (name);
 	g_free (ch->full_name);
 	ch->full_name = g_strdup (name);
 	chanview_update_model_row (ch);
-	ch->cv->func_rename (ch, new_name);
 	ch->cv->trunc_len = trunc_len;
-
-	if (new_name != name)
-		g_free (new_name);
+	ch->cv->func_rename (ch, ch->name);
 }
 
 /* this thing is overly complicated */

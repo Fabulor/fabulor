@@ -111,6 +111,8 @@ cv_tree_init (chanview *cv)
 	}
 	fabulor_channel_tree_view_set_selection_callback (view,
 		cv_tree_selection_changed, cv);
+	fabulor_channel_tree_view_set_expanded_callback (view,
+		mg_activity_set_group_colour);
 	fabulor_gtk_scrolled_window_set_child (GTK_SCROLLED_WINDOW (win), view);
 	fabulor_gtk_widget_on_multi_click (view, cv_tree_click_cb, cv);
 	fabulor_gtk_widget_on_scroll (view, cv_tree_scroll_cb, NULL);
@@ -222,6 +224,6 @@ cv_tree_is_collapsed (chan *ch)
 {
 	chan *parent = cv_tree_get_parent (ch);
 
-	return parent && !fabulor_channel_tree_view_is_expanded (
-		((treeview *) ch->cv)->tree, parent);
+	return !fabulor_channel_tree_view_is_expanded (
+		((treeview *) ch->cv)->tree, parent ? parent : ch);
 }

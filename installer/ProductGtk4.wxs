@@ -73,7 +73,9 @@
           <Directory Id="CONFIGSOUNDDIR" Name="sounds" />
         </Directory>
         <Directory Id="PLUGINDIR" Name="Plugins" />
-        <Directory Id="PYTHONAPIDIR" Name="python" />
+        <Directory Id="PYTHONAPIDIR" Name="python">
+          <Directory Id="PYTHONAPICACHEDIR" Name="__pycache__" />
+        </Directory>
         <Directory Id="RUNTIMEDIR" Name="Runtime">
           <Directory Id="DOTNETDIR" Name="DotNet">
             <Directory Id="DOTNETHOSTDIR" Name="host">

@@ -1,7 +1,8 @@
 # Main Window
 
-Status: source-verified draft with an installed-client main-window screenshot;
-final release-candidate verification is still required.
+The main-window screenshot shows the installed client. Live portable
+testing covered the 1.0.8 Activity List and name limits. The
+[release roadmap](../../To-Do.md#108-release) records the installer checks.
 
 Fabulor keeps each IRC network, server tab, channel, and private conversation
 in a single main window by default. The layout can be adjusted without losing
@@ -49,9 +50,11 @@ Right-click an entry for context-specific commands such as auto-connect,
 autojoin, detach, or close. The exact choices depend on whether the entry is a
 server, channel, or private conversation.
 
-The switcher uses text, icons, and theme colours to distinguish selected and
-inactive entries with activity. Do not rely on colour alone: the entry label
-and its position beneath the owning server also identify the context.
+The switcher uses text, icons and theme colours to distinguish selected and
+unread entries. In 1.0.8, the tree and tabs show unread counts. Counts above
+999 appear as `999+`. A collapsed network entry includes unread activity
+from its channels and private conversations. Opening the server tab clears
+its own activity. Open or mark the individual rows as read to clear theirs.
 
 Tree rows use compact, consistently aligned icons and spacing. Network headings
 use a restrained semibold weight. Long channel names remain shortened; hover
@@ -62,6 +65,75 @@ The channel-switcher layout can be configured under **Settings > Preferences
 sorting, icons, label length, close buttons, mouse-wheel switching, and whether
 new channels, private conversations, and utility views open as tabs or
 windows.
+
+From 1.0.8, **Channel name limit** applies to the tree and tabs, and
+**Nickname limit** applies to sender names in live transcript events and
+to the user list. New profiles start at 16 characters for each setting.
+Set either one to 0 to use available-width clipping alone. Restart Fabulor
+after changing the limits. Hover over a shortened name to see it in full.
+
+## Activity List
+
+In 1.0.8, **View > Activity List** shows one row per unread server tab,
+channel or private conversation. The list sorts by activity priority and
+then by recency. The selected context can accumulate unread activity while
+its window is out of focus, minimised or in the tray.
+
+![Activity List showing unread message counts for the same channel name on different networks.](images/activity-list.png)
+
+Turn on **Highlights only** to show rows with an unread highlight. Hidden
+rows continue accumulating unread counts. Double-click a row or select it
+and press `Enter` to open it. Right-click a row or press `Shift+F10` on the
+selected row and choose **Mark as Read** to clear it without opening it.
+
+Each highlighted row shows the sender and text of its latest unread
+highlight. Hover over the preview to read more of a long line. Opening the
+context or marking it as read clears the preview.
+
+![Highlights only selected, showing a sample channel with its latest highlight preview and unread count breakdown.](images/activity-list-highlights.jpg)
+
+### Activity Policies And Rules
+
+To choose which events count as unread, right-click a server, channel or
+private conversation in the channel switcher and open **Settings > Activity
+Policy**. **Automatic** uses the first matching rule or counts all activity
+if no rule matches. An explicit choice overrides the automatic rule.
+
+![Activity Policy dialog with Automatic selected and Cancel and Save buttons.](images/activity-policy-rtclk-tabs.png)
+
+Open **Settings > Preferences > Interface > Channel switcher > Activity
+Rules** to edit the rules. An exact context rule has four fields in this
+order: `exact | network | context | policy`. Use spaces around each `|`.
+
+![Activity Rules editor showing channel and server-tab rules with separate Save and Save and Apply buttons.](images/activity-rules.png)
+
+```text
+exact | FreshChat | @server | all
+wildcard | * | @server | muted
+exact | Libera.Chat | #announcements | highlights
+wildcard | * | #project-* | messages
+nick | UpdatesBot | muted
+```
+
+Use the Network List name, or the connection hostname for direct connections.
+Put `@server` in the third field to target the server tab. The first two
+rules together count all activity on the FreshChat server tab and mute
+unread counts on other server tabs. Put exceptions above broader rules.
+Ordinary server notices use the **Other** category even if they mention
+your nickname.
+
+Noisy-nick rules match an exact nickname across networks. Use `other` to
+lower it to the lowest activity priority, or `muted` to omit its ordinary
+events from unread counts. Both pass genuine highlights through the
+context's policy. Activity rules leave transcript messages, logs and alerts
+intact.
+
+**Save** updates noisy-nick rules immediately and uses automatic policies for
+new contexts. Choose **Save and Apply to Open Contexts** to update automatic
+policies in open contexts too. Changes affect future events. The rules file
+supports up to 64 context rules and 128 noisy-nick rules, within 32 KiB total.
+Use `/ACTIVITY` in an open tab to check its effective policy. For example,
+`auto (muted)` means the tab is following an automatic mute rule.
 
 ## Server Tabs
 
@@ -398,9 +470,9 @@ and `Escape` to close a menu or popover. Standard Windows focus indicators
 show the current keyboard target according to the active GTK4 desktop theme.
 
 Fabulor exposes labels for primary controls, menu commands, list entries, and
-emoji actions. Theme colours should not be the only signal for selection,
-rank, or activity. The final manual screenshots and accessibility wording will
-be confirmed during the installed release-candidate keyboard pass.
+emoji actions. In 1.0.8, Activity List rows also expose the network, context,
+unread counts, priority and any highlight preview to assistive technology.
+Final installed keyboard and accessibility verification is pending.
 
 ## If The Layout Looks Wrong
 

@@ -156,6 +156,7 @@ FOR %%I IN ("$(FabulorLib)fabulor-frontend.rc") DO IF %%~zI EQU 0 (
     <ClInclude Include="theme\theme-preferences.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="activity-list.c" />
     <ClCompile Include="addon-list.c" />
     <ClCompile Include="ascii.c" />
     <ClCompile Include="ban-list.c" />

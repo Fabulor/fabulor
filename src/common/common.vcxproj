@@ -61,6 +61,7 @@
     <ClInclude Include="util.h" />
     <ClInclude Include="fabulor-plugin.h" />
     <ClInclude Include="fabulor.h" />
+    <ClInclude Include="activity.h" />
     <ClInclude Include="fabulorc.h" />
     <ClInclude Include="theme-service.h" />
     <ClInclude Include="theme-archive-reader.h" />
@@ -110,6 +111,7 @@
     <ClCompile Include="userlist.c" />
     <ClCompile Include="util.c" />
     <ClCompile Include="fabulor.c" />
+    <ClCompile Include="activity.c" />
     <ClCompile Include="theme-service.c" />
     <ClCompile Include="theme-archive-reader.c" />
     <ClCompile Include="gtk4-theme-discovery.c" />

@@ -25,6 +25,8 @@ struct _FabulorChannelRecord
 	PangoAttrList *attributes;
 	GdkPixbuf *icon;
 	PangoUnderline underline;
+	guint64 unread;
+	guint64 child_unread;
 	GListStore *child_store;
 };
 
@@ -52,6 +54,7 @@ enum
 };
 
 static GParamSpec *channel_record_properties[N_CHANNEL_RECORD_PROPERTIES];
+static guint unread_changed_signal;
 
 #define FABULOR_TYPE_CHANNEL_RECORD (fabulor_channel_record_get_type ())
 #define FABULOR_CHANNEL_RECORD(object) (G_TYPE_CHECK_INSTANCE_CAST ((object), \
@@ -125,6 +128,9 @@ fabulor_channel_record_class_init (FabulorChannelRecordClass *klass)
 		PANGO_UNDERLINE_NONE, G_PARAM_READABLE | G_PARAM_STATIC_STRINGS);
 	g_object_class_install_properties (object_class,
 		N_CHANNEL_RECORD_PROPERTIES, channel_record_properties);
+	unread_changed_signal = g_signal_new ("unread-changed",
+		G_TYPE_FROM_CLASS (klass), G_SIGNAL_RUN_LAST, 0,
+		NULL, NULL, NULL, G_TYPE_NONE, 0);
 }
 
 static void
@@ -374,6 +380,21 @@ fabulor_channel_model_update (FabulorChannelModel *model,
 		return FALSE;
 	channel_record_update (record, row);
 	return TRUE;
+}
+
+void
+fabulor_channel_model_set_unread (FabulorChannelModel *model,
+	gpointer identity, guint64 unread, guint64 child_unread)
+{
+	FabulorChannelRecord *record = channel_record_lookup (model, identity);
+
+	g_return_if_fail (record != NULL);
+	if (record->unread == unread && record->child_unread == child_unread)
+		return;
+
+	record->unread = unread;
+	record->child_unread = child_unread;
+	g_signal_emit (record, unread_changed_signal, 0);
 }
 
 gboolean
@@ -647,4 +668,17 @@ fabulor_channel_model_get_item_underline (gpointer item)
 	g_return_val_if_fail (G_TYPE_CHECK_INSTANCE_TYPE ((GTypeInstance *) item,
 		FABULOR_TYPE_CHANNEL_RECORD), PANGO_UNDERLINE_NONE);
 	return FABULOR_CHANNEL_RECORD (item)->underline;
+}
+
+guint64
+fabulor_channel_model_get_item_unread (gpointer item, gboolean include_children)
+{
+	FabulorChannelRecord *record;
+
+	g_return_val_if_fail (G_TYPE_CHECK_INSTANCE_TYPE ((GTypeInstance *) item,
+		FABULOR_TYPE_CHANNEL_RECORD), 0);
+	record = FABULOR_CHANNEL_RECORD (item);
+	if (!include_children)
+		return record->unread;
+	return record->unread + MIN (record->child_unread, G_MAXUINT64 - record->unread);
 }

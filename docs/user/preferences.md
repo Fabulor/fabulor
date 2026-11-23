@@ -162,12 +162,18 @@ The page controls:
 - mouse-wheel tab changes, close buttons, and middle-click closing;
 - when newly opened tabs receive focus;
 - where notices are displayed;
-- switcher placement and shortened labels; and
+- switcher placement and tab-label width;
+- from 1.0.8, separate **Channel name limit** and **Nickname limit** settings;
+- in 1.0.8, **Activity Rules** for unread activity; and
 - whether channels, private messages, and utility views open in tabs or
   separate windows.
 
 The **View > Channel Switcher** menu provides quick access to the main layout
 choice. Preferences contains the full set of switcher options.
+
+In 1.0.8, **Activity Rules** opens the editor for automatic context policies
+and noisy-nick rules. See [Activity List](main-window.md#activity-list) for
+rule examples and the choices for applying them to open tabs.
 
 ## Chatting
 

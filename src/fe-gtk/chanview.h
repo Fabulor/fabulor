@@ -48,6 +48,7 @@ void *chan_get_userdata (chan *ch);
 void chan_focus (chan *ch);
 void chan_move (chan *ch, int delta);
 void chan_move_family (chan *ch, int delta);
+void chan_set_unread (chan *ch, guint64 unread, guint64 child_unread);
 void chan_set_color (chan *ch, PangoAttrList *list);
 void chan_rename (chan *ch, char *new_name, int trunc_len);
 gboolean chan_remove (chan *ch, gboolean force);

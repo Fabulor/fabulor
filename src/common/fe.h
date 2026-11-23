@@ -17,6 +17,7 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301, USA
  */
 
+#include "activity.h"
 #include "userlist.h"
 #include "dcc.h"
 
@@ -93,6 +94,9 @@ typedef enum
 	FE_COLOR_FLAG_NOOVERRIDE = 8,
 } tabcolor;
 #define FE_COLOR_ALLFLAGS (FE_COLOR_FLAG_NOOVERRIDE)
+ActivityView fe_activity_view (struct session *sess);
+void fe_activity_changed (struct session *sess, gboolean closing,
+						  gboolean colour_changed);
 void fe_set_tab_color (struct session *sess, tabcolor col);
 void fe_flash_window (struct session *sess);
 void fe_update_mode_buttons (struct session *sess, char mode, char sign);
@@ -111,7 +115,7 @@ void fe_close_window (struct session *sess);
 void fe_progressbar_start (struct session *sess);
 void fe_progressbar_end (struct server *serv);
 void fe_print_text (struct session *sess, char *text, time_t stamp,
-					gboolean no_activity);
+					int nick_start, int nick_length);
 void fe_userlist_insert (struct session *sess, struct User *newuser, gboolean sel);
 int fe_userlist_remove (struct session *sess, struct User *user);
 void fe_userlist_rehash (struct session *sess, struct User *user);

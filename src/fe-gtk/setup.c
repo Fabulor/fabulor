@@ -363,6 +363,8 @@ static const setting tabs_settings[] =
         {ST_MENU,       N_("Placement of notices:"), P_OFFINTNL(hex_irc_notice_pos), 0, noticeposmenu, 0},
         {ST_MENU,       N_("Show channel switcher at:"), P_OFFINTNL(hex_gui_tab_pos), 0, cspos, 1},
         {ST_NUMBER,     N_("Tab label width:"), P_OFFINTNL(hex_gui_tab_trunc), 0, (const char **)N_("character widths."), 99},
+        {ST_NUMBER,     N_("Channel name limit:"), P_OFFINTNL(hex_gui_tab_name_limit), 0, (const char **)N_("characters (0 for no fixed limit)."), 99},
+        {ST_NUMBER,     N_("Nickname limit:"), P_OFFINTNL(hex_gui_nick_name_limit), 0, (const char **)N_("characters (0 for no fixed limit)."), 99},
 
         {ST_HEADER,     N_("Tabs or Windows"),0,0,0},
         {ST_MENU,       N_("Open channels in:"), P_OFFINTNL(hex_gui_tab_chans), 0, tabwin, 0},
@@ -1555,6 +1557,89 @@ setup_create_button (GtkWidget *table, int row, char *label, GCallback callback)
         g_signal_connect (G_OBJECT (but), "clicked", callback, NULL);
 }
 
+static void
+setup_activity_rules_response (GtkDialog *dialog, int response, gpointer data)
+{
+	GtkTextBuffer *buffer = data;
+	GtkTextIter start, end;
+	GError *error = NULL;
+	char *text;
+
+	if (response != GTK_RESPONSE_OK && response != GTK_RESPONSE_APPLY)
+	{
+		gtk_window_destroy (GTK_WINDOW (dialog));
+		return;
+	}
+	gtk_text_buffer_get_bounds (buffer, &start, &end);
+	text = gtk_text_buffer_get_text (buffer, &start, &end, TRUE);
+	if (!fabulor_activity_rules_save (text, response == GTK_RESPONSE_APPLY, &error))
+	{
+		GtkLabel *message = g_object_get_data (G_OBJECT (dialog), "activity-rules-error");
+		gtk_label_set_text (message, error->message);
+		gtk_widget_set_visible (GTK_WIDGET (message), TRUE);
+		g_clear_error (&error);
+	}
+	else
+		gtk_window_destroy (GTK_WINDOW (dialog));
+	g_free (text);
+}
+
+static void
+setup_activity_rules_open (GtkWidget *button, gpointer data)
+{
+	GtkWidget *dialog = gtk_dialog_new_with_buttons (_("Activity Rules"),
+		GTK_WINDOW (setup_window), GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT,
+		_("_Cancel"), GTK_RESPONSE_CANCEL, _("Save and Apply to _Open Contexts"),
+		GTK_RESPONSE_APPLY, _("_Save"), GTK_RESPONSE_OK, NULL);
+	GtkWidget *content = gtk_dialog_get_content_area (GTK_DIALOG (dialog));
+	GtkWidget *scroll = gtk_scrolled_window_new ();
+	GtkWidget *editor = gtk_text_view_new ();
+	GtkTextBuffer *buffer = gtk_text_view_get_buffer (GTK_TEXT_VIEW (editor));
+	GtkWidget *error = gtk_label_new (NULL);
+	GtkWidget *help = gtk_label_new (_(
+		"Context rules use: exact | network | context | policy\n"
+		"Use one rule per line with spaces around each |.\n"
+		"Use the name shown in the Network List, or the hostname for a direct connection. "
+		"Use @server in the context field to target the server tab. The first matching rule wins.\n\n"
+		"exact | FreshChat | @server | all\n"
+		"exact | Libera.Chat | #example | highlights\n"
+		"wildcard | * | #project-* | messages\n"
+		"nick | UpdatesBot | other\n\n"
+		"Context policies: all, messages, private, highlights, muted. "
+		"Noisy-nick rules accept other or muted and preserve highlights.\n\n"
+		"Save starts using noisy-nick rules immediately and automatic policies for new contexts. "
+		"Choose Save and Apply to Open Contexts to update their automatic policies too."));
+
+	(void) button;
+	(void) data;
+	theme_manager_attach_window (dialog);
+	gtk_window_set_default_size (GTK_WINDOW (dialog), 640, 440);
+	gtk_widget_set_margin_start (content, 12);
+	gtk_widget_set_margin_end (content, 12);
+	gtk_widget_set_margin_top (content, 12);
+	gtk_widget_set_margin_bottom (content, 12);
+	gtk_box_set_spacing (GTK_BOX (content), 8);
+	gtk_label_set_xalign (GTK_LABEL (help), 0);
+	gtk_label_set_wrap (GTK_LABEL (help), TRUE);
+	gtk_label_set_xalign (GTK_LABEL (error), 0);
+	gtk_label_set_wrap (GTK_LABEL (error), TRUE);
+	gtk_widget_add_css_class (error, "error");
+	gtk_widget_set_visible (error, FALSE);
+	gtk_widget_set_vexpand (scroll, TRUE);
+	gtk_text_view_set_monospace (GTK_TEXT_VIEW (editor), TRUE);
+	gtk_text_view_set_wrap_mode (GTK_TEXT_VIEW (editor), GTK_WRAP_WORD_CHAR);
+	gtk_accessible_update_property (GTK_ACCESSIBLE (editor),
+		GTK_ACCESSIBLE_PROPERTY_LABEL, _("Activity rules"), -1);
+	gtk_text_buffer_set_text (buffer, fabulor_activity_rules_text (), -1);
+	gtk_scrolled_window_set_child (GTK_SCROLLED_WINDOW (scroll), editor);
+	gtk_box_append (GTK_BOX (content), help);
+	gtk_box_append (GTK_BOX (content), scroll);
+	gtk_box_append (GTK_BOX (content), error);
+	g_object_set_data (G_OBJECT (dialog), "activity-rules-error", error);
+	g_signal_connect (dialog, "response", G_CALLBACK (setup_activity_rules_response), buffer);
+	gtk_window_present (GTK_WINDOW (dialog));
+}
+
 static GtkWidget *
 setup_create_frame (void)
 {
@@ -1650,6 +1735,11 @@ setup_create_page (const setting *set)
         if (set == logging_settings)
         {
                 setup_create_button (tab, row, _("Open Data Folder"), G_CALLBACK(open_data_cb));
+        }
+        else if (set == tabs_settings)
+        {
+                setup_create_button (tab, row, _("Activity Rules…"),
+                        G_CALLBACK (setup_activity_rules_open));
         }
 
         return tab;
@@ -2238,7 +2328,8 @@ setup_apply (struct fabulorprefs *pr)
                 noapply = TRUE;
         if (DIFF (hex_gui_tab_sort))
                 noapply = TRUE;
-        if (DIFF (hex_gui_tab_trunc))
+        if (DIFF (hex_gui_tab_trunc) || DIFF (hex_gui_tab_name_limit) ||
+            DIFF (hex_gui_nick_name_limit))
                 noapply = TRUE;
         if (DIFF (hex_gui_throttlemeter))
                 noapply = TRUE;

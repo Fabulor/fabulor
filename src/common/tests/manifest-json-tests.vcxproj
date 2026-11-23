@@ -13,6 +13,8 @@
   <ItemGroup>
     <ClCompile Include="test-fabulor-plugin-manifest-json.c" />
     <ClCompile Include="test-service-message.c" />
+    <ClCompile Include="test-activity.c" />
+    <ClCompile Include="..\activity.c" />
     <ClCompile Include="test-theme-archive-reader.c" />
     <ClCompile Include="test-irc-uri.c" />
     <ClCompile Include="test-win32-ipc.c" />

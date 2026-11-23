@@ -192,9 +192,15 @@ reply_context_print (session *sess, const message_tags_data *tags_data)
 
 	item = reply_cache_find (sess, tags_data->reply);
 	if (item)
-		PrintTextTimeStampf (sess, tags_data->timestamp, "\00314│ ↪ %s: %.180s\017\n", item->nick, item->text);
+	{
+		char *preview = g_strdup_printf ("\00314│ ↪ %s: %.180s\017\n",
+										 item->nick, item->text);
+		text_print_with_activity (sess, preview, tags_data->timestamp, ACTIVITY_NONE);
+		g_free (preview);
+	}
 	else
-		PrintTextTimeStamp (sess, "\00314│ ↪ Original message unavailable\017\n", tags_data->timestamp);
+		text_print_with_activity (sess, "\00314│ ↪ Original message unavailable\017\n",
+								  tags_data->timestamp, ACTIVITY_NONE);
 }
 #include "ctcp.h"
 #include "fabulorc.h"
@@ -515,7 +521,7 @@ alert_match_text (char *text, char *masks)
 }
 
 static int
-is_hilight (char *from, char *text, session *sess, server *serv)
+is_hilight (char *from, char *text, server *serv)
 {
 	if (alert_match_word (from, prefs.hex_irc_no_hilight))
 		return 0;
@@ -527,11 +533,6 @@ is_hilight (char *from, char *text, session *sess, server *serv)
 		 alert_match_word (from, prefs.hex_irc_nick_hilight))
 	{
 		g_free (text);
-		if (sess != current_tab)
-		{
-			sess->tab_state |= TAB_STATE_NEW_HILIGHT;
-			lastact_update (sess);
-		}
 		return 1;
 	}
 
@@ -583,15 +584,6 @@ inbound_action (session *sess, char *chan, char *from, char *ip, char *text,
 	if (!sess)
 		sess = def;
 
-	if (sess != current_tab)
-	{
-		if (fromme)
-			sess->tab_state |= TAB_STATE_NEW_DATA;
-		else
-			sess->tab_state |= TAB_STATE_NEW_MSG;
-		lastact_update (sess);
-	}
-
 	user = userlist_find (sess, from);
 	if (user)
 	{
@@ -610,7 +602,7 @@ inbound_action (session *sess, char *chan, char *from, char *ip, char *text,
 
 	if (!fromme && !privaction)
 	{
-		if (is_hilight (from, text, sess, serv))
+		if (is_hilight (from, text, serv))
 		{
 			EMIT_SIGNAL_TIMESTAMP (XP_TE_HCHANACTION, sess, from, text, nickchar,
 										  idtext, 0, tags_data->timestamp);
@@ -625,8 +617,9 @@ inbound_action (session *sess, char *chan, char *from, char *ip, char *text,
 		EMIT_SIGNAL_TIMESTAMP (XP_TE_CHANACTION, sess, from, text, nickchar,
 									  idtext, 0, tags_data->timestamp);
 	else if (sess->type == SESS_DIALOG)
-		EMIT_SIGNAL_TIMESTAMP (XP_TE_DPRIVACTION, sess, from, text, idtext, NULL,
-									  0, tags_data->timestamp);
+		text_emit_with_activity (XP_TE_DPRIVACTION, sess, from, text, idtext, NULL,
+								 tags_data->timestamp, is_hilight (from, text, serv)
+								 ? ACTIVITY_HIGHLIGHT : ACTIVITY_PRIVATE);
 	else
 		EMIT_SIGNAL_TIMESTAMP (XP_TE_PRIVACTION, sess, from, text, idtext, NULL, 0,
 									  tags_data->timestamp);
@@ -657,12 +650,6 @@ inbound_chanmsg (server *serv, session *sess, char *chan, char *from,
 			return;
 	}
 
-	if (sess != current_tab)
-	{
-		sess->tab_state |= TAB_STATE_NEW_MSG;
-		lastact_update (sess);
-	}
-
 	user = userlist_find (sess, from);
 	if (user)
 	{
@@ -690,14 +677,14 @@ inbound_chanmsg (server *serv, session *sess, char *chan, char *from,
 
 	inbound_make_idtext (serv, idtext, sizeof (idtext), id);
 
-	if (is_hilight (from, text, sess, serv))
-		hilight = TRUE;
+	hilight = is_hilight (from, text, serv);
 
 	reply_context_print (sess, tags_data);
 
 	if (sess->type == SESS_DIALOG)
-		EMIT_SIGNAL_TIMESTAMP (XP_TE_DPRIVMSG, sess, from, text, idtext, NULL, 0,
-									  tags_data->timestamp);
+		text_emit_with_activity (XP_TE_DPRIVMSG, sess, from, text, idtext, NULL,
+								 tags_data->timestamp,
+								 hilight ? ACTIVITY_HIGHLIGHT : ACTIVITY_PRIVATE);
 	else if (hilight)
 		EMIT_SIGNAL_TIMESTAMP (XP_TE_HCHANMSG, sess, from, text, nickchar, idtext,
 									  0, tags_data->timestamp);
@@ -822,6 +809,7 @@ inbound_ujoin (server *serv, char *chan, char *nick, char *ip,
 	}
 
 	safe_strcpy (sess->channel, chan, CHANLEN);
+	session_activity_resolve (sess);
 	if (found_unused)
 	{
 		chanopt_load (sess);

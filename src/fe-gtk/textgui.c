@@ -61,13 +61,16 @@ xtext_get_stamp_str (time_t tim, char **ret)
 }
 
 static void
-PrintTextLine (xtext_buffer *xtbuf, unsigned char *text, int len, int indent, time_t timet)
+PrintTextLine (xtext_buffer *xtbuf, unsigned char *text, int len, int indent,
+			   time_t timet, int nick_start, int nick_length)
 {
 	unsigned char *tab, *new_text;
-	int leftlen;
 
 	if (len == 0)
 		len = 1;
+
+	if (nick_start < 0 || nick_start + nick_length > len)
+		nick_length = 0;
 
 	if (!indent)
 	{
@@ -84,27 +87,26 @@ PrintTextLine (xtext_buffer *xtbuf, unsigned char *text, int len, int indent, ti
 			memcpy (new_text, stamp, stamp_size);
 			g_free (stamp);
 			memcpy (new_text + stamp_size, text, len);
-			gtk_xtext_append (xtbuf, new_text, len + stamp_size, timet);
+			gtk_xtext_append_nick (xtbuf, new_text, len + stamp_size, -1, timet,
+				nick_start + stamp_size, nick_length, prefs.hex_gui_nick_name_limit);
 			g_free (new_text);
 		} else
-			gtk_xtext_append (xtbuf, text, len, timet);
+			gtk_xtext_append_nick (xtbuf, text, len, -1, timet,
+				nick_start, nick_length, prefs.hex_gui_nick_name_limit);
 		return;
 	}
 
-	tab = strchr (text, '\t');
-	if (tab && tab < (text + len))
-	{
-		leftlen = tab - text;
-		gtk_xtext_append_indent (xtbuf,
-										 text, leftlen, tab + 1, len - (leftlen + 1), timet);
-	} else
-		gtk_xtext_append_indent (xtbuf, 0, 0, text, len, timet);
+	tab = memchr (text, '\t', len);
+	gtk_xtext_append_nick (xtbuf, text, len, tab ? (int) (tab - text) + 1 : 0,
+		timet, nick_start, nick_length, prefs.hex_gui_nick_name_limit);
 }
 
 void
-PrintTextRaw (void *xtbuf, unsigned char *text, int indent, time_t stamp)
+PrintTextRawWithNick (void *xtbuf, unsigned char *text, int indent, time_t stamp,
+					 int nick_start, int nick_length)
 {
-	char *last_text = text;
+	unsigned char *last_text = text;
+	unsigned char *start = text;
 	int len = 0;
 	int beep_done = FALSE;
 
@@ -114,10 +116,12 @@ PrintTextRaw (void *xtbuf, unsigned char *text, int indent, time_t stamp)
 		switch (*text)
 		{
 		case 0:
-			PrintTextLine (xtbuf, last_text, len, indent, stamp);
+			PrintTextLine (xtbuf, last_text, len, indent, stamp,
+				nick_start - (int) (last_text - start), nick_length);
 			return;
 		case '\n':
-			PrintTextLine (xtbuf, last_text, len, indent, stamp);
+			PrintTextLine (xtbuf, last_text, len, indent, stamp,
+				nick_start - (int) (last_text - start), nick_length);
 			text++;
 			if (*text == 0)
 				return;
@@ -137,6 +141,12 @@ PrintTextRaw (void *xtbuf, unsigned char *text, int indent, time_t stamp)
 			len++;
 		}
 	}
+}
+
+void
+PrintTextRaw (void *xtbuf, unsigned char *text, int indent, time_t stamp)
+{
+	PrintTextRawWithNick (xtbuf, text, indent, stamp, 0, 0);
 }
 
 static void

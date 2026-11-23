@@ -2,9 +2,9 @@
 
 Status: verified against the current Windows `/SET` preference registry.
 
-The verification compared all 226 live Windows setting names and value types
-with this reference. It found no missing, obsolete, duplicated, or incorrectly
-typed entries. Final release-candidate smoke testing is still required.
+The 1.0.7 verification compared all 226 live Windows setting names and value
+types with this reference. The 1.0.8 additions are documented from source and
+the accepted portable candidate.
 
 This page lists every setting exposed by `/SET` in the Windows build of
 Fabulor. It is a Fabulor-specific inventory, not a compatibility copy of an
@@ -33,6 +33,14 @@ names.
 Changes are saved to the active profile. A misspelled or retired name reports
 `No such variable.` See [Commands](commands.md) for the complete `/SET`
 syntax.
+
+## Activity Settings
+
+In 1.0.8, `/ACTIVITY` and the tab's **Activity Policy** menu manage saved
+per-context overrides in the active profile's `chanopt.conf`. The
+**Activity Rules** editor saves automatic and noisy-nick rules in
+`activity-rules.conf`. See the [Activity List guide](main-window.md#activity-list)
+for syntax and when rules take effect.
 
 ## Important Cautions
 
@@ -152,6 +160,7 @@ dimensions, selected rows, or window state are normally maintained by Fabulor.
 | `gui_lang` | Integer | Selected packaged interface language. Use Preferences to change it. |
 | `gui_manifest_plugins` | Boolean | Enable discovered manifest plugins after explicit user opt-in. |
 | `gui_mouse_scroll_speed` | Integer | Number of transcript lines moved by a mouse-wheel step. |
+| `gui_nick_name_limit` | Integer | Since 1.0.8, the maximum number of characters shown for sender nicknames in live transcript events and in the user list. Defaults to 16. Use 0 for available-width clipping alone. |
 | `gui_pane_divider_position` | Integer | Saved divider position in the main conversation layout. |
 | `gui_pane_left_size` | Integer | Saved width of the channel-switcher pane. |
 | `gui_pane_right_size` | Integer | Saved width of the user-list pane. |
@@ -169,6 +178,7 @@ dimensions, selected rows, or window state are normally maintained by Fabulor.
 | `gui_tab_icons` | Boolean | Show context icons in the channel switcher. |
 | `gui_tab_layout` | Integer | Channel-switcher layout: `0` tabs or `2` tree. |
 | `gui_tab_middleclose` | Boolean | Close a context by middle-clicking its switcher item. |
+| `gui_tab_name_limit` | Integer | Since 1.0.8, the maximum number of channel-name characters shown in the tree and tabs. Defaults to 16 on a new profile. An existing profile's saved `gui_tab_trunc` seeds this limit when the new setting is absent. Use 0 for available-width clipping alone. |
 | `gui_tab_newtofront` | Integer | Decide when newly created contexts receive focus. |
 | `gui_tab_pos` | Integer | Position of the channel switcher around the main window. |
 | `gui_tab_scrollchans` | Boolean | Use mouse-wheel scrolling to change channel contexts. |

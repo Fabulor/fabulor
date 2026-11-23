@@ -160,7 +160,8 @@ int main (int argc, char **argv)
 	catalogue = g_variant_ref_sink (g_variant_new_from_bytes (
 		G_VARIANT_TYPE ("a(aussasasu)"), bytes, FALSE));
 	g_variant_iter_init (&iter, catalogue);
-	while ((item = g_variant_iter_next_value (&iter)))
+	for (item = g_variant_iter_next_value (&iter); item;
+		 item = g_variant_iter_next_value (&iter))
 	{
 		GVariant *codes = g_variant_get_child_value (item, 0);
 		guint32 a, b;

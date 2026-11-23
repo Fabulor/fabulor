@@ -462,6 +462,37 @@ class ProductionWixProfileTests(unittest.TestCase):
         self.assertIn("this.RemoveDetectedRelatedBundleCaches(preservedBundlePath);", bootstrapper)
         self.assertIn("!Guid.TryParse(cacheDirectoryName, out _)", bootstrapper)
 
+    def test_upgrade_removes_only_the_published_107_setup_entry(self):
+        root = ET.parse(INSTALLER / "Components" / "InstalledMode.wxs").getroot()
+        old_bundle = "{656AE58B-7162-48D0-8895-D091BC63C9F8}"
+        old_product = "{504E5953-1796-4142-AB4C-71A159FA4853}"
+        key = rf"Software\Microsoft\Windows\CurrentVersion\Uninstall\{old_bundle}"
+        provider = "FABULOR_PUBLISHED_107_BUNDLE_PROVIDER"
+        search = root.find(f".//w:Property[@Id='{provider}']/w:RegistrySearch", WIX_NS)
+        self.assertIsNotNone(search)
+        self.assertEqual(search.get("Root"), "HKLM")
+        self.assertEqual(search.get("Key"), key)
+        self.assertEqual(search.get("Name"), "BundleProviderKey")
+        self.assertEqual(search.get("Bitness"), "always64")
+
+        component = root.find(
+            ".//w:ComponentGroup[@Id='InstalledModeCoreComponents']"
+            "/w:Component[@Id='RemovePublished107SetupEntry']",
+            WIX_NS,
+        )
+        self.assertIsNotNone(component)
+        self.assertEqual(component.get("Bitness"), "always64")
+        self.assertEqual(
+            component.get("Condition"),
+            f'NOT FABULOR_PORTABLE AND NOT Installed AND '
+            f'(WIX_UPGRADE_DETECTED >< "{old_product}") AND {provider} = "{old_bundle}"',
+        )
+        removals = component.findall("w:RemoveRegistryKey", WIX_NS)
+        self.assertEqual(len(removals), 1)
+        self.assertEqual(removals[0].get("Root"), "HKLM")
+        self.assertEqual(removals[0].get("Key"), key)
+        self.assertEqual(removals[0].get("Action"), "removeOnInstall")
+
     def test_python_runtime_payload_keeps_loader_dlls(self):
         project = (INSTALLER / "Fabulor.wixproj").read_text(encoding="utf-8")
         components = (

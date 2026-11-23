@@ -42,6 +42,7 @@
 #include "theme/theme-access.h"
 #include "user-list-model.h"
 #include "user-list-view.h"
+#include "display-name.h"
 #include "userlistgui.h"
 #include "fkeys.h"
 
@@ -60,11 +61,14 @@ userlist_typing_suffix (session *sess, struct User *user)
 }
 
 static char *
-userlist_nick_markup (session *sess, struct User *user)
+userlist_nick_markup (session *sess, struct User *user, const char **tooltip)
 {
-	char *nick = g_markup_escape_text (user->nick, -1);
+	char *short_name = fabulor_display_name_shorten (user->nick, prefs.hex_gui_nick_name_limit);
+	char *nick = g_markup_escape_text (short_name ? short_name : user->nick, -1);
 	const char *typing = userlist_typing_suffix (sess, user);
 
+	*tooltip = short_name ? user->nick : NULL;
+	g_free (short_name);
 	if (*typing)
 	{
 		char *marked = g_strdup_printf ("%s%s", nick, typing);
@@ -168,7 +172,7 @@ userlist_build_row (session *sess, struct User *user,
 	memset (built, 0, sizeof (*built));
 	built->row.user = user;
 	built->row.icon = get_user_icon (sess->server, user);
-	built->nick_markup = userlist_nick_markup (sess, user);
+	built->nick_markup = userlist_nick_markup (sess, user, &built->row.nick_tooltip);
 	built->row.nick_markup = built->nick_markup;
 	built->row.hostname = user->hostname;
 

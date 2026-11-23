@@ -34,6 +34,7 @@ typedef void (*fabulor_theme_post_apply_callback) (void);
 void fabulor_set_theme_post_apply_callback (fabulor_theme_post_apply_callback callback);
 void fabulor_run_theme_post_apply_callback (void);
 
+#include "activity.h"
 #include "history.h"
 #include "tree.h"
 
@@ -256,6 +257,7 @@ struct fabulorprefs
 	int hex_gui_ignore_width;
 	int hex_gui_lagometer;
 	int hex_gui_lang;
+	int hex_gui_nick_name_limit;
 	int hex_gui_pane_divider_position;
 	int hex_gui_pane_left_size;
 	int hex_gui_pane_right_size;
@@ -267,6 +269,7 @@ struct fabulorprefs
 	int hex_gui_tab_middleclose;
 	int hex_gui_mouse_scroll_speed;
 	int hex_gui_tab_newtofront;
+	int hex_gui_tab_name_limit;
 	int hex_gui_tab_pos;
 	int hex_gui_tab_small;
 	int hex_gui_tab_trunc;
@@ -464,7 +467,13 @@ typedef struct session
 	int done_away_check:1;	/* done checking for away status changes */
 	int cycle_pending:1;	/* rejoin after the server confirms our PART */
 	tab_state_flags tab_state;
-	tab_state_flags last_tab_state; /* before event is handled */
+	GList *lastact_link;
+	ActivityState activity;
+	char *activity_highlight_preview;
+	ActivityPolicy activity_policy;
+	ActivityPolicy activity_default_policy;
+	char *activity_network;
+	char *activity_context;
 	gtk_xtext_search_flags lastlog_flags;
 	void (*scrollback_replay_marklast) (struct session *sess);
 } session;
@@ -580,6 +589,7 @@ typedef struct server
 
 	struct session *front_session;	/* front-most window/tab */
 	struct session *server_session;	/* server window/tab */
+	ActivityAggregate child_activity;
 
 	struct server_gui *gui;		  /* initialized by fe_new_server */
 

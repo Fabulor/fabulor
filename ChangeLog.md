@@ -9,6 +9,44 @@ Unreleased entries describe changes under development or release review.
 The first stable release and its preceding release-candidate series are
 recorded separately below.
 
+## 1.0.8 — 2026-11-23
+
+### Added
+
+- Added **View > Activity List** to review unread server tabs, channels and
+  private conversations across networks. The pop-out shows a count breakdown
+  and the latest unread highlight's sender and text. **Highlights only**
+  filters the list, and **Mark as Read** clears a context without opening it.
+- Added unread badges to the tree and tab layouts. A collapsed network
+  shows unread activity from its children and updates its colour when
+  expanded or collapsed. The selected context can accrue
+  unread activity while its window is out of focus, minimised or in the tray.
+- Added saved per-context activity policies through the switcher context menu
+  and `/ACTIVITY`. Policies follow the channel when a tab is reused.
+  **Activity Rules** in Preferences supports exact and
+  wildcard context rules and can apply them to open contexts on request.
+  Noisy-nick rules can lower or mute unread activity while preserving
+  highlights and leaving messages visible in the transcript.
+- Added independent channel-name and nickname display limits under
+  **Channel switcher** preferences. Shortened names reveal their full text
+  on hover, and screen readers and nickname actions use the full names.
+  An existing profile's tab-label width seeds the channel limit when no
+  separate limit has been saved.
+
+### Fixed
+
+- Corrected command lookup ordering for `/TYPING` in the built-in command
+  table.
+- Updated Windows Setup to remove the three known Fabulor Python API cache
+  files when the Python feature is uninstalled. Setup also removes the
+  corresponding directories when empty.
+- Removed the stale **Fabulor Setup 1.0.7** entry from Windows Installed apps
+  when upgrading from the published 1.0.7 installer.
+
+See the [Activity List guide](docs/user/main-window.md#activity-list) for
+usage and the [1.0.8 roadmap](To-Do.md#108-release) for portable acceptance
+and installer validation.
+
 ## 1.0.7 — 2026-11-16
 
 ### Added

@@ -1776,12 +1776,13 @@ server_connect (server *serv, char *hostname, int port, int no_login)
 
 	fe_progressbar_start (sess);
 
-	EMIT_SIGNAL (XP_TE_SERVERLOOKUP, sess, hostname, NULL, NULL, NULL, 0);
-
 	safe_strcpy (serv->servername, hostname, sizeof (serv->servername));
 	/* overlap illegal in strncpy */
 	if (hostname != serv->hostname)
 		safe_strcpy (serv->hostname, hostname, sizeof (serv->hostname));
+	if (serv->server_session)
+		session_activity_resolve (serv->server_session);
+	EMIT_SIGNAL (XP_TE_SERVERLOOKUP, sess, hostname, NULL, NULL, NULL, 0);
 
 #ifdef USE_OPENSSL
 	if (serv->use_ssl)

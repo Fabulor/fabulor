@@ -190,6 +190,7 @@ typedef struct
 	char *network;
 	char *channel;
 
+	ActivityPolicy activity_policy;
 } chanopt_in_memory;
 
 
@@ -249,7 +250,7 @@ static void
 chanopt_load_all (void)
 {
 	int fh;
-	char buf[256];
+	char buf[CHANLEN + 64];
 	char *eq;
 	char *network = NULL;
 	chanopt_in_memory *current = NULL;
@@ -259,33 +260,87 @@ chanopt_load_all (void)
 	{
 		while (waitline (fh, buf, sizeof buf, FALSE) != -1)
 		{
+			char *value;
 			eq = strchr (buf, '=');
 			if (!eq)
 				continue;
-			eq[0] = 0;
-
-			if (eq != buf && eq[-1] == ' ')
-				eq[-1] = 0;
+			*eq = 0;
+			g_strstrip (buf);
+			value = g_strstrip (eq + 1);
 
 			if (!strcmp (buf, "network"))
 			{
 				g_free (network);
-				network = g_strdup (eq + 2);
+				network = g_strdup (value);
+				current = NULL;
 			}
 			else if (!strcmp (buf, "channel"))
 			{
-				current = chanopt_find (network, eq + 2, TRUE);
-				chanopt_changed = FALSE;
+				current = network && *network && *value ?
+					chanopt_find (network, value, TRUE) : NULL;
 			}
 			else
 			{
-				if (current)
-					chanopt_add_opt (current, buf, str_to_chanopt (eq + 2));
+				if (current && !strcmp (buf, "activity_policy"))
+				{
+					ActivityPolicy parsed;
+					if (activity_policy_parse (value, &parsed))
+						current->activity_policy = parsed;
+				}
+				else if (current)
+					chanopt_add_opt (current, buf, str_to_chanopt (value));
 			}
 
 		}
 		close (fh);
 		g_free (network);
+		chanopt_changed = FALSE;
+	}
+}
+
+void
+chanopt_initialise (void)
+{
+	if (!chanopt_open)
+	{
+		chanopt_open = TRUE;
+		chanopt_load_all ();
+	}
+}
+
+static chanopt_in_memory *
+chanopt_activity_find (session *sess, const char *network, const char *context)
+{
+	for (GSList *entry = chanopt_list; entry; entry = entry->next)
+	{
+		chanopt_in_memory *co = entry->data;
+		if (!g_ascii_strcasecmp (co->network, network) &&
+			!sess->server->p_cmp (co->channel, context))
+			return co;
+	}
+	return NULL;
+}
+
+ActivityPolicy
+chanopt_activity_get (session *sess, const char *network, const char *context)
+{
+	chanopt_in_memory *co = chanopt_activity_find (sess, network, context);
+
+	return co ? co->activity_policy : ACTIVITY_POLICY_AUTO;
+}
+
+void
+chanopt_activity_set (session *sess, const char *network, const char *context,
+					 ActivityPolicy policy)
+{
+	chanopt_in_memory *co = chanopt_activity_find (sess, network, context);
+
+	if (!co && policy != ACTIVITY_POLICY_AUTO)
+		co = chanopt_find ((char *) network, (char *) context, TRUE);
+	if (co && co->activity_policy != policy)
+	{
+		co->activity_policy = policy;
+		chanopt_changed = TRUE;
 	}
 }
 
@@ -304,11 +359,7 @@ chanopt_load (session *sess)
 	if (!network)
 		return;
 
-	if (!chanopt_open)
-	{
-		chanopt_open = TRUE;
-		chanopt_load_all ();
-	}
+	chanopt_initialise ();
 
 	co = chanopt_find (network, sess->session_name, FALSE);
 	if (!co)
@@ -358,90 +409,59 @@ chanopt_save (session *sess)
 }
 
 static void
-chanopt_save_one_channel (chanopt_in_memory *co, int fh)
+chanopt_append_channel (chanopt_in_memory *co, GString *data)
 {
-	int i;
-	char buf[256];
-	guint8 val;
+	gboolean has_settings = co->activity_policy != ACTIVITY_POLICY_AUTO;
+	for (guint i = 0; i < G_N_ELEMENTS (chanopt) && !has_settings; ++i)
+		has_settings = G_STRUCT_MEMBER (guint8, co, chanopt[i].offset) != SET_DEFAULT;
+	if (!has_settings)
+		return;
 
-	g_snprintf (buf, sizeof (buf), "%s = %s\n", "network", co->network);
-	write (fh, buf, strlen (buf));
-
-	g_snprintf (buf, sizeof (buf), "%s = %s\n", "channel", co->channel);
-	write (fh, buf, strlen (buf));
-
-	i = 0;
-	while (i < sizeof (chanopt) / sizeof (channel_options))
+	if (data->len)
+		g_string_append_c (data, '\n');
+	g_string_append_printf (data, "network = %s\nchannel = %s\n", co->network, co->channel);
+	if (co->activity_policy != ACTIVITY_POLICY_AUTO)
+		g_string_append_printf (data, "activity_policy = %s\n",
+			activity_policy_name (co->activity_policy));
+	for (guint i = 0; i < G_N_ELEMENTS (chanopt); ++i)
 	{
-		val = G_STRUCT_MEMBER (guint8, co, chanopt[i].offset);
+		guint8 val = G_STRUCT_MEMBER (guint8, co, chanopt[i].offset);
 		if (val != SET_DEFAULT)
-		{
-			g_snprintf (buf, sizeof (buf), "%s = %d\n", chanopt[i].name, val);
-			write (fh, buf, strlen (buf));
-		}
-		i++;
+			g_string_append_printf (data, "%s = %d\n", chanopt[i].name, val);
 	}
 }
 
-void
+gboolean
 chanopt_save_all (gboolean flush)
 {
-	int i;
-	int num_saved;
-	int fh;
-	GSList *list;
-	chanopt_in_memory *co;
-	guint8 val;
-
-	if (!chanopt_list || !chanopt_changed)
+	if (chanopt_changed)
 	{
-		return;
+		GString *data = g_string_new (NULL);
+		char *path = g_build_filename (get_xdir (), "chanopt.conf", NULL);
+		gboolean saved;
+		for (GSList *item = chanopt_list; item; item = item->next)
+			chanopt_append_channel (item->data, data);
+		saved = g_file_set_contents_full (path, data->str, data->len,
+			G_FILE_SET_CONTENTS_CONSISTENT, 0600, NULL);
+		g_string_free (data, TRUE);
+		g_free (path);
+		if (!saved)
+			return FALSE;
+		chanopt_changed = FALSE;
 	}
 
-	fh = fabulor_open_file ("chanopt.conf", O_TRUNC | O_WRONLY | O_CREAT, 0600, XOF_DOMODE);
-	if (fh == -1)
+	if (flush)
 	{
-		return;
-	}
-
-	for (num_saved = 0, list = chanopt_list; list; list = list->next)
-	{
-		co = list->data;
-
-		i = 0;
-		while (i < sizeof (chanopt) / sizeof (channel_options))
+		for (GSList *item = chanopt_list; item; item = item->next)
 		{
-			val = G_STRUCT_MEMBER (guint8, co, chanopt[i].offset);
-			/* not using global/default setting, must save */
-			if (val != SET_DEFAULT)
-			{
-				if (num_saved != 0)
-					write (fh, "\n", 1);
-
-				chanopt_save_one_channel (co, fh);
-				num_saved++;
-				goto cont;
-			}
-			i++;
-		}
-
-cont:
-		if (flush)
-		{
+			chanopt_in_memory *co = item->data;
 			g_free (co->network);
 			g_free (co->channel);
 			g_free (co);
 		}
-	}
-
-	close (fh);
-
-	if (flush)
-	{
 		g_slist_free (chanopt_list);
 		chanopt_list = NULL;
+		chanopt_open = FALSE;
 	}
-
-	chanopt_open = FALSE;
-	chanopt_changed = FALSE;
+	return TRUE;
 }

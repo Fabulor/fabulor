@@ -8,6 +8,7 @@
  */
 
 #include "channel-tree-view.h"
+#include "channel-unread-label.h"
 #include "clipped-label.h"
 #include "gtk-compat.h"
 
@@ -38,6 +39,7 @@ typedef struct
 	GtkWidget *view;
 	FabulorChannelModel *model;
 	FabulorChannelTreeSelectionFunc selection_callback;
+	FabulorChannelTreeExpandedFunc expanded_callback;
 	gpointer selection_data;
 	gpointer notified_identity;
 	gulong selection_id;
@@ -72,9 +74,15 @@ typedef struct
 	GtkWidget *box;
 	GtkWidget *icon;
 	GtkWidget *label;
+	GtkWidget *unread_label;
+	GtkListItem *list_item;
+	GtkTreeListRow *tree_row;
+	FabulorChannelTreeView *owner;
 	gpointer item;
 	GdkPixbuf *icon_source;
 	gulong notify_id;
+	gulong unread_id;
+	gulong expanded_id;
 } FabulorChannelTreeItemBinding;
 
 static GQuark
@@ -113,7 +121,9 @@ channel_tree_item_update (FabulorChannelTreeItemBinding *binding)
 
 	channel_tree_item_set_icon (binding,
 		fabulor_channel_model_get_item_icon (binding->item));
-	gtk_label_set_text (GTK_LABEL (binding->label), tooltip ? tooltip : name);
+	gtk_label_set_text (GTK_LABEL (binding->label), name);
+	fabulor_clipped_label_set_full (binding->label,
+		g_strcmp0 (tooltip, name) != 0 ? tooltip : NULL);
 	if (underline != PANGO_UNDERLINE_NONE)
 	{
 		if (!attributes)
@@ -124,6 +134,42 @@ channel_tree_item_update (FabulorChannelTreeItemBinding *binding)
 	gtk_label_set_attributes (GTK_LABEL (binding->label), attributes);
 	if (attributes)
 		pango_attr_list_unref (attributes);
+}
+
+static void
+channel_tree_item_update_unread (FabulorChannelTreeItemBinding *binding)
+{
+	guint64 count = fabulor_channel_model_get_item_unread (binding->item,
+		gtk_tree_list_row_get_depth (binding->tree_row) == 0 &&
+		!gtk_tree_list_row_get_expanded (binding->tree_row));
+	char *description = channel_unread_description (count);
+
+	channel_unread_label_set (binding->unread_label, count);
+	gtk_list_item_set_accessible_description (binding->list_item, description);
+	g_free (description);
+}
+
+static void
+channel_tree_item_unread_changed (GObject *item, gpointer user_data)
+{
+	(void) item;
+	channel_tree_item_update_unread (user_data);
+}
+
+static void
+channel_tree_item_expanded_changed (GObject *row, GParamSpec *pspec,
+	gpointer user_data)
+{
+	FabulorChannelTreeItemBinding *binding = user_data;
+
+	(void) row;
+	(void) pspec;
+	channel_tree_item_update_unread (binding);
+	if (binding->owner->expanded_callback &&
+		gtk_tree_list_row_get_depth (binding->tree_row) == 0)
+		binding->owner->expanded_callback (
+			fabulor_channel_model_get_item_identity (binding->item),
+			!gtk_tree_list_row_get_expanded (binding->tree_row));
 }
 
 static void
@@ -145,10 +191,13 @@ channel_tree_factory_setup (GtkSignalListItemFactory *factory,
 	gint spacing = owner->compact ? 1 : 3;
 
 	(void) factory;
+	binding->owner = owner;
 	binding->expander = gtk_tree_expander_new ();
 	binding->box = gtk_box_new (GTK_ORIENTATION_HORIZONTAL, spacing);
 	binding->icon = gtk_image_new ();
 	binding->label = gtk_label_new (NULL);
+	binding->unread_label = channel_unread_label_new ();
+	binding->list_item = list_item;
 	gtk_tree_expander_set_indent_for_icon (
 		GTK_TREE_EXPANDER (binding->expander), FALSE);
 	gtk_widget_set_size_request (binding->box, -1,
@@ -164,6 +213,7 @@ channel_tree_factory_setup (GtkSignalListItemFactory *factory,
 	if (owner->use_icons)
 		gtk_box_append (GTK_BOX (binding->box), binding->icon);
 	gtk_box_append (GTK_BOX (binding->box), binding->label);
+	gtk_box_append (GTK_BOX (binding->box), binding->unread_label);
 	gtk_tree_expander_set_child (GTK_TREE_EXPANDER (binding->expander),
 		binding->box);
 	gtk_list_item_set_child (list_item, binding->expander);
@@ -181,6 +231,7 @@ channel_tree_factory_bind (GtkSignalListItemFactory *factory,
 
 	(void) factory;
 	(void) user_data;
+	binding->tree_row = tree_row;
 	binding->item = gtk_tree_list_row_get_item (tree_row);
 	if (gtk_tree_list_row_get_depth (tree_row) == 0)
 		gtk_widget_add_css_class (binding->label,
@@ -190,6 +241,10 @@ channel_tree_factory_bind (GtkSignalListItemFactory *factory,
 			"fabulor-channel-network");
 	binding->notify_id = g_signal_connect (binding->item, "notify",
 		G_CALLBACK (channel_tree_item_notify), binding);
+	binding->unread_id = g_signal_connect (binding->item, "unread-changed",
+		G_CALLBACK (channel_tree_item_unread_changed), binding);
+	binding->expanded_id = g_signal_connect (tree_row, "notify::expanded",
+		G_CALLBACK (channel_tree_item_expanded_changed), binding);
 	gtk_tree_expander_set_list_row (GTK_TREE_EXPANDER (binding->expander),
 		tree_row);
 	g_object_set_qdata (G_OBJECT (binding->box), channel_tree_item_quark (),
@@ -197,6 +252,7 @@ channel_tree_factory_bind (GtkSignalListItemFactory *factory,
 	g_object_set_qdata (G_OBJECT (binding->expander),
 		channel_tree_item_quark (), list_item);
 	channel_tree_item_update (binding);
+	channel_tree_item_expanded_changed (G_OBJECT (tree_row), NULL, binding);
 }
 
 static void
@@ -210,10 +266,16 @@ channel_tree_factory_unbind (GtkSignalListItemFactory *factory,
 	(void) user_data;
 	if (binding->item && binding->notify_id)
 		g_signal_handler_disconnect (binding->item, binding->notify_id);
-	binding->item = NULL;
+	g_clear_signal_handler (&binding->unread_id, binding->item);
+	g_clear_signal_handler (&binding->expanded_id, binding->tree_row);
+	g_clear_object (&binding->item);
+	binding->tree_row = NULL;
+	channel_unread_label_set (binding->unread_label, 0);
+	gtk_list_item_set_accessible_description (list_item, NULL);
 	gtk_widget_remove_css_class (binding->label,
 		"fabulor-channel-network");
 	gtk_label_set_text (GTK_LABEL (binding->label), "");
+	fabulor_clipped_label_set_full (binding->label, NULL);
 	binding->icon_source = NULL;
 	binding->notify_id = 0;
 	gtk_tree_expander_set_list_row (GTK_TREE_EXPANDER (binding->expander),
@@ -349,6 +411,16 @@ fabulor_channel_tree_view_set_selection_callback (GtkWidget *view,
 		return;
 	owner->selection_callback = callback;
 	owner->selection_data = user_data;
+}
+
+void
+fabulor_channel_tree_view_set_expanded_callback (GtkWidget *view,
+	FabulorChannelTreeExpandedFunc callback)
+{
+	FabulorChannelTreeView *owner = channel_tree_view_data (view);
+
+	if (owner)
+		owner->expanded_callback = callback;
 }
 
 gpointer

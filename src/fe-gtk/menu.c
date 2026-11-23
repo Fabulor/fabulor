@@ -138,6 +138,7 @@ typedef enum
 	MENU_ACTION_USER_LIST_TOGGLE,
 	MENU_ACTION_USER_LIST_BUTTONS_TOGGLE,
 	MENU_ACTION_FULLSCREEN_TOGGLE,
+	MENU_ACTION_ACTIVITY_LIST,
 	MENU_ACTION_CHANNEL_SWITCHER,
 	MENU_ACTION_NETWORK_METERS,
 	MENU_ACTION_DISCONNECT,
@@ -2030,8 +2031,11 @@ static struct mymenu mymenu[] = {
 #define FULLSCREEN_OFFSET (33)
 	{N_ ("_Fullscreen"), menu_fullscreen_toggle, 0, M_MENUTOG, MENU_ID_FULLSCREEN, 0, 1, 0,
 		"fullscreen-toggle", MENU_ACTION_FULLSCREEN_TOGGLE},
+#define ACTIVITY_LIST_OFFSET (FULLSCREEN_OFFSET + 1)
+	{N_("_Activity List"), 0, 0, M_MENUITEM, 0, 0, 1, 0,
+		"activity-list", MENU_ACTION_ACTIVITY_LIST},
 
-#define SERVER_OFFSET (34)
+#define SERVER_OFFSET (ACTIVITY_LIST_OFFSET + 1)
 #define SERVER_ACTION_COUNT (4)
 	{N_("_Server"), 0, 0, M_NEWMENU, 0, 0, 1},
 	{N_("_Disconnect"), menu_disconnect, 0, M_MENUITEM, MENU_ID_DISCONNECT, 0, 1, 0,
@@ -2043,19 +2047,19 @@ static struct mymenu mymenu[] = {
 	{N_("Channel _List"), menu_chanlist, 0, M_MENUITEM, 0, 0, 1, 0,
 		"channel-list", MENU_ACTION_CHANNEL_LIST},
 	{0, 0, 0, M_SEP, 0, 0, 0},
-#define AWAY_OFFSET (40)
+#define AWAY_OFFSET (SERVER_OFFSET + 6)
 	{N_("Marked _Away"), menu_away_toggle, 0, M_MENUITEM, MENU_ID_AWAY, 0, 1, 0,
 		"away-toggle", MENU_ACTION_AWAY_TOGGLE},
 
 	{N_("_Usermenu"), 0, 0, M_NEWMENU, MENU_ID_USERMENU, 0, 1},	/* 41 */
 
-#define SETTINGS_OFFSET (42)
+#define SETTINGS_OFFSET (AWAY_OFFSET + 2)
 #define SETTINGS_PREFERENCES_ACTION_COUNT (1)
 	{N_("S_ettings"), 0, 0, M_NEWMENU, 0, 0, 1},
 	{N_("_Preferences"), menu_settings, 0, M_MENUITEM, 0, 0, 1, 0,
 		"preferences", MENU_ACTION_PREFERENCES},
 	{0, 0, 0, M_SEP, 0, 0, 0},
-#define SETTINGS_EDITOR_OFFSET (45)
+#define SETTINGS_EDITOR_OFFSET (SETTINGS_OFFSET + 3)
 #define SETTINGS_EDITOR_ACTION_COUNT (9)
 	{N_("Auto Replace"), menu_rpopup, 0, M_MENUITEM, 0, 0, 1, 0,
 		"auto-replace", MENU_ACTION_AUTO_REPLACE},
@@ -2225,6 +2229,9 @@ menu_key_action (const char *name, guint keyval, GdkModifierType state)
 	case MENU_ACTION_FULLSCREEN_TOGGLE:
 		menu_fullscreen_toggle (NULL, NULL);
 		break;
+	case MENU_ACTION_ACTIVITY_LIST:
+		mg_activity_list_open ();
+		break;
 	case MENU_ACTION_DISCONNECT:
 		menu_disconnect (NULL, NULL);
 		break;
@@ -2354,6 +2361,7 @@ menu_action_is_stateless (menu_action_id id)
 	case MENU_ACTION_NEW_CHANNEL_WINDOW:
 	case MENU_ACTION_CLOSE:
 	case MENU_ACTION_QUIT:
+	case MENU_ACTION_ACTIVITY_LIST:
 	case MENU_ACTION_DISCONNECT:
 	case MENU_ACTION_RECONNECT:
 	case MENU_ACTION_JOIN_CHANNEL:
@@ -2657,6 +2665,7 @@ menu_view_action_model_new (GMenuModel *channel_switcher,
 						 channel_switcher);
 	g_menu_append_submenu (selection, _(mymenu[NETWORK_METERS_OFFSET].text),
 						 network_meters);
+	menu_action_model_append_range (selection, ACTIVITY_LIST_OFFSET, 1);
 	menu_action_model_append_range (fullscreen, FULLSCREEN_OFFSET, 1);
 	g_menu_freeze (toggles);
 	g_menu_freeze (selection);

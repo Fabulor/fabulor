@@ -53,7 +53,7 @@ an integrated review after the groups are reconciled.
 | Group | Source and supporting material to retain | Current evidence boundary |
 | --- | --- | --- |
 | Transcript/performance/layout | XText background/display/widget files; channel/user-list/window geometry; clipped-label helper; source/native probes | Focused installed feedback and local automated evidence; broader soak/scaling/accessibility separate |
-| Emoji | Shared native chooser, isolated font map, entry/menu wiring, flags resources/tests | Maintainer accepted reported behaviour; intermittent Win32 probe reliability still open |
+| Emoji | Shared native chooser, isolated font map, entry/menu wiring, flags resources/tests | Maintainer accepted reported behaviour; investigation deferred on 2026-11-21 after 36 passing repetitions, with font-fallback warnings retained in the evidence |
 | DALnet DCC permissions | Nick context model/menu, origin revalidation, tests and user guidance | Focused installed acceptance; no auto-accept or custom-menu replacement |
 | Services timestamp and selection | Timestamp guard, clipped-prefix hit mapping, real-widget fixture/support headers | Focused installed feedback; broader interaction matrix separate |
 | Sysinfo | Both Windows backend paths, headers/command aliases and WMI tests | Focused installed acceptance; driver-specific breadth separate |

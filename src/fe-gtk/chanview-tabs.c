@@ -48,6 +48,7 @@ struct _tab_item
 {
 	GtkWidget *tab;
 	GtkWidget *label;
+	GtkWidget *unread_label;
 	GtkWidget *close_button;
 };
 
@@ -515,6 +516,23 @@ tab_close_leave_cb (GtkWidget *wid, gpointer user_data)
 	fabulor_gtk_widget_set_pointing_cursor (wid, FALSE);
 }
 
+static void
+cv_tabs_set_unread (chan *ch)
+{
+	tabview *tabs = (tabview *) ch->cv;
+	tab_item *item = g_hash_table_lookup (tabs->state->items, ch);
+
+	if (item && item->unread_label)
+	{
+		char *description = channel_unread_description (ch->unread);
+
+		channel_unread_label_set (item->unread_label, ch->unread);
+		gtk_accessible_update_property (GTK_ACCESSIBLE (item->tab),
+			GTK_ACCESSIBLE_PROPERTY_DESCRIPTION, description, -1);
+		g_free (description);
+	}
+}
+
 static void *
 cv_tabs_add (chanview *cv, chan *ch, char *name, chan *parent)
 {
@@ -529,6 +547,8 @@ cv_tabs_add (chanview *cv, chan *ch, char *name, chan *parent)
 	hbox = gtk_box_new (GTK_ORIENTATION_HORIZONTAL, 2);
 	item->label = gtk_label_new (name);
 	fabulor_clipped_label_init (item->label);
+	fabulor_clipped_label_set_full (item->label,
+		g_strcmp0 (name, ch->full_name) != 0 ? ch->full_name : NULL);
 	gtk_label_set_max_width_chars (GTK_LABEL (item->label),
 		cv->trunc_len > 2 ? cv->trunc_len : 20);
 	item->close_button = gtk_button_new ();
@@ -541,9 +561,15 @@ cv_tabs_add (chanview *cv, chan *ch, char *name, chan *parent)
 	gtk_widget_set_can_focus (item->close_button, FALSE);
 	fabulor_gtk_button_set_child (GTK_BUTTON (item->close_button), close_icon);
 	fabulor_gtk_box_append (GTK_BOX (hbox), item->label, TRUE, TRUE, 0);
+	if (ch->family)
+	{
+		item->unread_label = channel_unread_label_new ();
+		fabulor_gtk_box_append (GTK_BOX (hbox), item->unread_label, FALSE, FALSE, 0);
+	}
 	fabulor_gtk_box_append (GTK_BOX (hbox), item->close_button, FALSE, FALSE, 0);
 	fabulor_gtk_button_set_child (GTK_BUTTON (item->tab), hbox);
 	g_hash_table_insert (tabs->state->items, ch, item);
+	cv_tabs_set_unread (ch);
 	/* used for close-button hit testing and context actions */
 	fabulor_gtk_widget_on_multi_click (item->tab, tab_click_cb, ch);
 	fabulor_gtk_widget_on_scroll (item->tab, tab_scroll_cb, cv);
@@ -726,6 +752,8 @@ cv_tabs_rename (chan *ch, char *name)
 		pango_attr_list_ref (attr);
 
 	gtk_label_set_text (GTK_LABEL (item->label), name);
+	fabulor_clipped_label_set_full (item->label,
+		g_strcmp0 (name, ch->full_name) != 0 ? ch->full_name : NULL);
 	gtk_label_set_max_width_chars (GTK_LABEL (item->label),
 		ch->cv->trunc_len > 2 ? ch->cv->trunc_len : 20);
 	gtk_widget_queue_resize (gtk_widget_get_parent (gtk_widget_get_parent (
@@ -747,5 +775,5 @@ cv_tabs_is_collapsed (chan *ch)
 static chan *
 cv_tabs_get_parent (chan *ch)
 {
-	return NULL;
+	return fabulor_channel_model_get_parent (ch->cv->model, ch);
 }

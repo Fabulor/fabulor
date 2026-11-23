@@ -579,6 +579,33 @@ cmd_unban (struct session *sess, char *tbuf, char *word[], char *word_eol[])
 }
 
 static int
+cmd_activity (struct session *sess, char *tbuf, char *word[], char *word_eol[])
+{
+	ActivityPolicy policy;
+
+	(void) tbuf;
+	(void) word_eol;
+	if (word[2][0])
+	{
+		if (word[3][0] || !activity_policy_parse (word[2], &policy))
+			return FALSE;
+		if (!session_activity_set_policy (sess, policy))
+		{
+			PrintText (sess, _("Could not save an activity policy for this context.\n"));
+			return TRUE;
+		}
+	}
+	if (sess->activity_policy == ACTIVITY_POLICY_AUTO)
+	{
+		policy = sess->activity_default_policy ? sess->activity_default_policy : ACTIVITY_POLICY_ALL;
+		PrintTextf (sess, _("Activity policy: auto (%s)\n"), activity_policy_name (policy));
+	}
+	else
+		PrintTextf (sess, _("Activity policy: %s\n"), activity_policy_name (sess->activity_policy));
+	return TRUE;
+}
+
+static int
 cmd_chanopt (struct session *sess, char *tbuf, char *word[], char *word_eol[])
 {
 	int ret;
@@ -4231,6 +4258,7 @@ cmd_voice (struct session *sess, char *tbuf, char *word[], char *word_eol[])
 
 /* *MUST* be kept perfectly sorted for the bsearch to work */
 const struct commands xc_cmds[] = {
+	{"ACTIVITY", cmd_activity, 0, 0, 1, N_("ACTIVITY [auto|all|messages|private|highlights|muted]")},
 	{"ADDBUTTON", cmd_addbutton, 0, 0, 1,
 	 N_("ADDBUTTON <name> <action>, adds a button under the user-list")},
 	{"ADDONUI", cmd_addonui, 0, 0, 1, "ADDONUI OPEN|UPDATE|PRESENT|CLOSE <token> [payload] (local add-on UI bridge)"},
@@ -4395,7 +4423,6 @@ const struct commands xc_cmds[] = {
 	{"SAY", cmd_say, 0, 0, 1,
 	 N_("SAY <text>, sends the text to the object in the current window")},
 	{"SEND", cmd_send, 0, 0, 1, N_("SEND <nick> [<file>]")},
-	{"TYPING", cmd_typing, 0, 0, 1, N_("TYPING [active|paused|done] [target], sends a typing notification")},
 #ifdef USE_OPENSSL
 	{"SERVCHAN", cmd_servchan, 0, 0, 1,
 	 N_("SERVCHAN [-noproxy] [-insecure|-ssl|-ssl-noverify] <host> <port> <channel>, connects and joins a channel using ssl unless otherwise specified")},
@@ -4424,6 +4451,7 @@ const struct commands xc_cmds[] = {
 			"TRAY -t <text>                      Set the tray tooltip.\n"
 			"TRAY -b <title> <text>              Set the tray balloon."
 			)},
+	{"TYPING", cmd_typing, 0, 0, 1, N_("TYPING [active|paused|done] [target], sends a typing notification")},
 	{"UNBAN", cmd_unban, 1, 1, 1,
 	 N_("UNBAN <mask> [<mask>...], unbans the specified masks.")},
 	{"UNIGNORE", cmd_unignore, 0, 0, 1, N_("UNIGNORE <mask> [QUIET]")},

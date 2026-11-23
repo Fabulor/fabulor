@@ -362,7 +362,7 @@ scrollback_load (session *sess)
 						text = strip_color (text + 1, -1, STRIP_COLOR);
 					}
 
-					fe_print_text (sess, text, stamp, TRUE);
+					fe_print_text (sess, text, stamp, 0, 0);
 
 					if (prefs.hex_text_stripcolor_replay)
 					{
@@ -371,15 +371,15 @@ scrollback_load (session *sess)
 				}
 				else
 				{
-					fe_print_text (sess, "  ", stamp, TRUE);
+					fe_print_text (sess, "  ", stamp, 0, 0);
 				}
 			}
 			else
 			{
 				if (strlen (buf))
-					fe_print_text (sess, buf, 0, TRUE);
+					fe_print_text (sess, buf, 0, 0, 0);
 				else
-					fe_print_text (sess, "  ", 0, TRUE);
+					fe_print_text (sess, "  ", 0, 0, 0);
 			}
 			lines++;
 
@@ -413,7 +413,7 @@ scrollback_load (session *sess)
 	{
 		text = ctime (&stamp);
 		buf = g_strdup_printf ("\n*\t%s %s\n", _("Loaded log from"), text);
-		fe_print_text (sess, buf, 0, TRUE);
+		fe_print_text (sess, buf, 0, 0, 0);
 		g_free (buf);
 		/*EMIT_SIGNAL (XP_TE_GENMSG, sess, "*", buf, NULL, NULL, NULL, 0);*/
 	}
@@ -987,8 +987,9 @@ G_GNUC_END_IGNORE_DEPRECATIONS
 #endif
 }
 
-void
-PrintTextTimeStamp (session *sess, char *text, time_t timestamp)
+static void
+text_print (session *sess, char *text, time_t timestamp,
+			ActivityClass activity, int nick_start, int nick_length, char **event_args)
 {
 	if (!sess)
 	{
@@ -996,6 +997,9 @@ PrintTextTimeStamp (session *sess, char *text, time_t timestamp)
 			return;
 		sess = (session *) sess_list->data;
 	}
+
+	if (nick_length && !g_utf8_validate (text, -1, NULL))
+		nick_length = 0;
 
 	/* make sure it's valid utf8 */
 	if (text[0] == '\0')
@@ -1009,8 +1013,23 @@ PrintTextTimeStamp (session *sess, char *text, time_t timestamp)
 
 	log_write (sess, text, timestamp);
 	scrollback_save (sess, text, timestamp);
-	fe_print_text (sess, text, timestamp, FALSE);
+	fe_print_text (sess, text, timestamp, nick_start, nick_length);
+	session_activity_record (sess, activity, timestamp,
+		event_args ? event_args[1] : NULL, event_args ? event_args[2] : NULL);
 	g_free (text);
+}
+
+void
+text_print_with_activity (session *sess, char *text, time_t timestamp,
+						  ActivityClass activity)
+{
+	text_print (sess, text, timestamp, activity, 0, 0, NULL);
+}
+
+void
+PrintTextTimeStamp (session *sess, char *text, time_t timestamp)
+{
+	text_print_with_activity (sess, text, timestamp, ACTIVITY_OTHER);
 }
 
 void
@@ -1881,8 +1900,37 @@ load_text_events ()
 */
 #define ARG_FLAG(argn) (1 << (argn))
 
-void
-format_event (session *sess, int index, char **args, char *o, gsize sizeofo, unsigned int stripcolor_args)
+static gboolean
+text_event_has_sender (int event)
+{
+	switch (event)
+	{
+	case XP_TE_CHANACTION:
+	case XP_TE_HCHANACTION:
+	case XP_TE_CHANMSG:
+	case XP_TE_HCHANMSG:
+	case XP_TE_CHANNOTICE:
+	case XP_TE_JOIN:
+	case XP_TE_PART:
+	case XP_TE_PARTREASON:
+	case XP_TE_QUIT:
+	case XP_TE_NOTICE:
+	case XP_TE_DPRIVACTION:
+	case XP_TE_PRIVACTION:
+	case XP_TE_DPRIVMSG:
+	case XP_TE_PRIVMSG:
+	case XP_TE_UACTION:
+	case XP_TE_UCHANMSG:
+	case XP_TE_WALLOPS:
+		return TRUE;
+	default:
+		return FALSE;
+	}
+}
+
+static void
+format_event (int index, char **args, char *o, gsize sizeofo,
+			  unsigned int stripcolor_args, int *nick_start, int *nick_length)
 {
 	int len, ii, numargs;
 	gsize oi;
@@ -1892,6 +1940,7 @@ format_event (session *sess, int index, char **args, char *o, gsize sizeofo, uns
 	numargs = te[index].num_args & 0x7f;
 
 	oi = ii = len = d = a = 0;
+	*nick_start = *nick_length = 0;
 	o[0] = 0;
 
 	if (i == NULL)
@@ -1934,6 +1983,11 @@ format_event (session *sess, int index, char **args, char *o, gsize sizeofo, uns
 					ar[sizeofo - oi - 4] = 0;	/* Avoid buffer overflow */
 				if (stripcolor_args & ARG_FLAG(a + 1)) len = strip_color2 (ar, -1, &o[oi], STRIP_ALL);
 				else len = strip_hidden_attribute (ar, &o[oi]);
+				if (a == 0 && !*nick_length && text_event_has_sender (index))
+				{
+					*nick_start = (int) oi;
+					*nick_length = len;
+				}
 				oi += len;
 			}
 			break;
@@ -1993,36 +2047,62 @@ text_event_without_hostmask_format (const char *format, int host_arg)
 	return out;
 }
 
+static ActivityClass
+text_event_activity (int event)
+{
+	switch (event)
+	{
+	case XP_TE_HCHANMSG:
+	case XP_TE_HCHANACTION:
+		return ACTIVITY_HIGHLIGHT;
+	case XP_TE_DPRIVMSG:
+	case XP_TE_DPRIVACTION:
+		return ACTIVITY_PRIVATE;
+	case XP_TE_CHANMSG:
+	case XP_TE_CHANACTION:
+		return ACTIVITY_MESSAGE;
+	case XP_TE_UCHANMSG:
+	case XP_TE_UACTION:
+		return ACTIVITY_NONE;
+	default:
+		return ACTIVITY_OTHER;
+	}
+}
+
 static void
 display_event_string (session *sess, int event, char **args, char *format,
-						  unsigned int stripcolor_args, time_t timestamp)
+						  unsigned int stripcolor_args, time_t timestamp,
+						  ActivityClass activity)
 {
 	char *compiled;
 	char *saved;
 	char o[4096];
 	int max_arg;
+	int nick_start, nick_length;
 
 	if (pevt_build_string (format, &compiled, &max_arg) != 0)
 		return;
 
 	saved = pntevts[event];
 	pntevts[event] = compiled;
-	format_event (sess, event, args, o, sizeof (o), stripcolor_args);
+	format_event (event, args, o, sizeof (o), stripcolor_args, &nick_start, &nick_length);
 	pntevts[event] = saved;
 	g_free (compiled);
 
 	if (o[0])
-		PrintTextTimeStamp (sess, o, timestamp);
+		text_print (sess, o, timestamp, activity, nick_start, nick_length, args);
 }
 
 static void
 display_event (session *sess, int event, char **args, 
-					unsigned int stripcolor_args, time_t timestamp)
+					unsigned int stripcolor_args, time_t timestamp,
+					ActivityClass activity)
 {
 	char o[4096];
 	char *format;
 	char *host;
 	int host_arg;
+	int nick_start, nick_length;
 
 	if (prefs.hex_irc_hide_join_part_hostmask &&
 		(event == XP_TE_JOIN || event == XP_TE_PART || event == XP_TE_PARTREASON))
@@ -2031,23 +2111,24 @@ display_event (session *sess, int event, char **args,
 		format = text_event_without_hostmask_format (pntevts_text[event], host_arg);
 		if (format)
 		{
-			display_event_string (sess, event, args, format, stripcolor_args, timestamp);
+			display_event_string (sess, event, args, format, stripcolor_args,
+								  timestamp, activity);
 			g_free (format);
 			return;
 		}
 
 		host = args[host_arg];
 		args[host_arg] = "";
-		format_event (sess, event, args, o, sizeof (o), stripcolor_args);
+		format_event (event, args, o, sizeof (o), stripcolor_args, &nick_start, &nick_length);
 		args[host_arg] = host;
 	}
 	else
 	{
-		format_event (sess, event, args, o, sizeof (o), stripcolor_args);
+		format_event (event, args, o, sizeof (o), stripcolor_args, &nick_start, &nick_length);
 	}
 
 	if (o[0])
-		PrintTextTimeStamp (sess, o, timestamp);
+		text_print (sess, o, timestamp, activity, nick_start, nick_length, args);
 }
 
 int
@@ -2263,13 +2344,12 @@ text_color_of (char *name)
 /* called by EMIT_SIGNAL macro */
 
 void
-text_emit (int index, session *sess, char *a, char *b, char *c, char *d,
-			  time_t timestamp)
+text_emit_with_activity (int index, session *sess, char *a, char *b, char *c,
+						 char *d, time_t timestamp, ActivityClass activity)
 {
+	const char *sender = a;
 	char *word[PDIWORDS];
 	int i;
-	tab_state_flags current_state = sess->tab_state;
-	tab_state_flags plugin_state = sess->last_tab_state;
 	unsigned int stripcolor_args = (chanopt_is_set (prefs.hex_text_stripcolor_msg, sess->text_strip) ? 0xFFFFFFFF : 0);
 	char tbuf[NICKLEN + 4];
 
@@ -2288,17 +2368,8 @@ text_emit (int index, session *sess, char *a, char *b, char *c, char *d,
 	for (i = 5; i < PDIWORDS; i++)
 		word[i] = "\000";
 
-	/* We want to ignore the tab state if the plugin emits new events
-	 * and restore it if it doesn't eat the current one */
-	sess->tab_state = plugin_state;
 	if (plugin_emit_print (sess, word, timestamp))
 		return;
-
-	/* The plugin may have changed the state which we should respect.
-	 * If the state is NEW_DATA we don't actually know if that was on
-	 * purpose though as print() sets it, so for now we ignore that. FIXME */
-	if (sess->tab_state == plugin_state || sess->tab_state == TAB_STATE_NEW_DATA)
-		sess->tab_state = current_state;
 
 	/* If a plugin's callback executes "/close", 'sess' may be invalid */
 	if (!is_session (sess))
@@ -2360,7 +2431,17 @@ text_emit (int index, session *sess, char *a, char *b, char *c, char *d,
 
 	if (!prefs.hex_away_omit_alerts || !sess->server->is_away)
 		sound_play_event (index);
-	display_event (sess, index, word, stripcolor_args, timestamp);
+	if (text_event_has_sender (index))
+		activity = session_activity_filter_nick (sess, sender, activity);
+	display_event (sess, index, word, stripcolor_args, timestamp, activity);
+}
+
+void
+text_emit (int index, session *sess, char *a, char *b, char *c, char *d,
+		   time_t timestamp)
+{
+	text_emit_with_activity (index, sess, a, b, c, d, timestamp,
+							 text_event_activity (index));
 }
 
 char *
