@@ -30,6 +30,14 @@
 
     <ComponentGroup Id="PythonApiComponents" Directory="PYTHONAPIDIR">
       <Files Include="$(var.Gtk4PluginHostRoot)\python\**" />
+      <Component Id="PythonApiCacheCleanup" Guid="4486414A-56DC-4A1C-BB56-58F0C619135C" KeyPath="yes">
+        <CreateFolder />
+        <RemoveFile Id="RemoveFabulorInternalCache" Directory="PYTHONAPICACHEDIR" Name="_fabulor.cpython-314.pyc" On="uninstall" />
+        <RemoveFile Id="RemoveFabulorPublicCache" Directory="PYTHONAPICACHEDIR" Name="fabulor.cpython-314.pyc" On="uninstall" />
+        <RemoveFile Id="RemoveHexchatCompatibilityCache" Directory="PYTHONAPICACHEDIR" Name="hexchat.cpython-314.pyc" On="uninstall" />
+        <RemoveFolder Id="RemoveEmptyPythonApiCacheFolder" Directory="PYTHONAPICACHEDIR" On="uninstall" />
+        <RemoveFolder Id="RemoveEmptyPythonApiFolder" On="uninstall" />
+      </Component>
     </ComponentGroup>
 
     <ComponentGroup Id="SysinfoPluginComponents" Directory="PLUGINDIR">

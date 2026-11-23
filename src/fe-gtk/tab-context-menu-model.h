@@ -12,7 +12,8 @@ typedef enum
 	FABULOR_TAB_CONTEXT_DETACH,
 	FABULOR_TAB_CONTEXT_CLOSE,
 	FABULOR_TAB_CONTEXT_COMMAND,
-	FABULOR_TAB_CONTEXT_TOGGLE
+	FABULOR_TAB_CONTEXT_TOGGLE,
+	FABULOR_TAB_CONTEXT_ACTIVITY_POLICY
 } FabulorTabContextAction;
 
 typedef enum
@@ -62,6 +63,7 @@ typedef struct
 	const char *autoconnect;
 	const char *detach;
 	const char *close;
+	const char *activity_policy;
 } FabulorTabContextLabels;
 
 typedef struct
@@ -73,6 +75,7 @@ typedef struct
 	gboolean autojoin;
 	gboolean autoconnect;
 	gboolean options[FABULOR_TAB_OPTION_COUNT];
+	gboolean has_activity_context;
 } FabulorTabContextState;
 
 typedef void (*FabulorTabContextDispatch) (FabulorTabContextAction action,

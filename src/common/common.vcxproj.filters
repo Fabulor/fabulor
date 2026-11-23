@@ -122,6 +122,9 @@
     <ClInclude Include="fabulor.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="activity.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
     <ClInclude Include="fabulorc.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -236,6 +239,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="fabulor.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="activity.c">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="$(FabulorLib)marshal.c">

@@ -1,7 +1,7 @@
 <!-- Fabulor production roadmap -->
 # Fabulor Production Roadmap
 
-Last reconciled: 2026-11-16 (1.0.7 release)
+Last reconciled: 2026-11-23 (1.0.8 release preparation)
 
 ## Current Production Baseline
 
@@ -25,6 +25,153 @@ Last reconciled: 2026-11-16 (1.0.7 release)
       appcast offered ZoiteChat packages as Fabulor updates.
 - [x] Inno Setup, GTK3 packaging, Lua, Perl, and bundled user add-ons are
       retired from the supported product.
+
+## 1.0.8 Release
+
+On 2026-11-23, the maintainer reported no known open bugs in the 1.0.8
+portable candidate and accepted the Activity List enhancement as complete.
+The right-click menu and the tooltips that show full channel names and
+nicknames when shortened received positive feedback.
+Emoji picker investigation and cleanup are deferred beyond 1.0.8. Revisit
+the intermittent probe if a test fails again or a visible issue returns.
+Aegis remains in development as a separate add-on.
+
+- [x] Verify the Python API cache cleanup for 1.0.8. A full uninstall of the
+      local test bundle removed all three target cache files and the installation
+      directory. See [Installer And Runtime](#installer-and-runtime) for scope
+      and [the validation record](docs/gtk4/local-1.0.7-validation.md#follow-up-after-maintainer-run-uninstall)
+      for the test result.
+- [x] Implement and validate the Activity List and unread counts for 1.0.8.
+      The local portable candidate completes the first three stages of the
+      [Activity List design](docs/product/activity-list-design.md#staged-delivery).
+      These cover the core unread model and focus rules, channel-switcher
+      counts, and a navigable Activity List.
+  - Stage 1 portable test across six networks: the maintainer reported
+    expected channel-switcher colours, including green for ZNC buffextras
+    activity involving their nickname, a yellow highlight while testing
+    with Borg, and blue for new server-tab data. The maintainer also
+    reported that unread channels kept their marks through minimising and
+    restoring, while channels they read cleared and stayed clear. The
+    maintainer confirmed that a new message reached the selected channel
+    while Fabulor was minimised.
+  - Stage 2 portable candidate: Release x64 build, the GTK4 dependency
+    probe and local IRC smoke tests in tree and tab layouts passed. The
+    probe checked in-place count updates, stable label dimensions and an
+    exact accessibility description above the visual 999+ limit.
+    The maintainer confirmed the real-world channel-switcher check:
+    collapsed network totals reflected unread activity in two channels,
+    and opening one cleared its count while the other remained unread.
+  - Stage 3 portable candidate adds View > Activity List with one row per
+    unread server tab, channel or private dialog. Release x64, the 59-case
+    native suite, the GTK4 dependency probe and local IRC smoke tests
+    passed. GTK checks covered priority and recency, in-place row updates,
+    duplicate names on different networks, activation by row identity,
+    row removal, the empty state and rendered accessible count descriptions.
+    On 2026-11-22, the maintainer reported “All tests pass” after the
+    Activity List navigation and focus check. The check covered opening
+    an unread context, including in a detached window, and clearing only
+    its row.
+  - The follow-up Activity List menu adds **Mark as Read**. It clears the
+    chosen row and its channel-switcher count without opening the context.
+    The maintainer reported that choosing the action had no effect. GTK
+    could dismiss the menu before dispatching the action, which discarded
+    the target. The fix retains the target through dismissal. The GTK
+    probe verifies this order, including a change in row position. A
+    Windows portable test verified right-click clearing in the list and
+    channel tree, and clearing the selected row with Shift+F10 and Enter.
+    On 2026-11-22, the maintainer confirmed the corrected portable build
+    worked as expected.
+- [x] Add a **Highlights only** toggle to the Activity List. Filtering leaves
+      unread counts running for hidden rows. The GTK probe verified
+      promotion into the filtered list and restoration of hidden rows. The
+      Windows portable check confirmed that hidden channels kept their counts.
+- [x] Show the sender and latest unread highlight text in the Activity List.
+      The Windows portable check confirmed that a later ordinary message
+      leaves the preview in place and opening the context clears it.
+      The maintainer confirmed that the preview looked good and worked as
+      expected in live testing.
+- [x] Implement persistent activity policies, automatic context rules and
+      noisy-nick filtering in the follow-up 1.0.8 portable candidate. See
+      the [Activity List guide](docs/user/main-window.md#activity-list).
+  - Release x64, all 63 native cases and both GTK tests passed. In the
+    local IRC test, an automatic mute kept the channel out of the Activity
+    List. A muted nick's ordinary message and action stayed in the log,
+    and its direct highlight appeared in the list. `/ACTIVITY all` saved
+    an explicit override for the muted channel.
+  - The maintainer confirmed that activity policies set through the tab
+    context menu stayed selected during live portable use.
+  - The maintainer verified **Save and Apply to Open Contexts** on the
+    already-open ChatLounge ZNC server tab. Its `/ACTIVITY` output changed
+    from `auto (muted)` to `auto (all)` after applying an exact rule for
+    `ChatLounge ZNC` above the wildcard server-tab mute.
+- [x] Check the new activity rules on live networks and a busy bot channel.
+  - In a live RSS feed channel, the maintainer confirmed that **Highlights
+    only** keeps ordinary feed posts visible in the transcript without
+    adding to the unread counter.
+  - The maintainer initially reported missing feed posts. After setting the
+    channel to **Automatic** and adding `nick | clu | muted`, feed posts
+    appeared in the transcript without incrementing the unread counter.
+    The earlier behaviour did not recur in this retest.
+  - The maintainer reported no noticeable lag while using the portable
+    candidate with default UI settings in the busy `#news-rss` channel.
+- [x] Add optional, independent nickname and channel-name display limits.
+      Clean profiles default to 16 Unicode characters followed by an
+      ellipsis when shortened. Existing profiles keep their saved tab-width
+      setting, which seeds the channel cap when no cap has been saved.
+      The GTK and transcript tests cover Unicode clipping and retaining
+      complete names for interaction, copying and searching. Windows
+      portable checks covered both switcher layouts, the user list, live
+      transcript events and migration of a saved tab-width value.
+
+On 2026-11-22, the maintainer confirmed that live testing of the
+**Highlights only** toggle and the name limits passed in the combined
+1.0.8 portable build.
+
+- [x] Add [Activity List screenshots](docs/user/main-window.md#activity-list)
+      to the user guide. The highlight preview uses sample IRC messages.
+- [x] Build the Windows x64 `FabulorSetup-v1.0.8.exe` candidate. Product
+      metadata, the production MSI and GTK4 runtime contents passed validation.
+      The bundle contains the same MSI verified independently by SHA-256.
+- [x] Test the final 1.0.8 installer as an in-place upgrade from released
+      1.0.7 and verify profile and add-on preservation.
+  - The maintainer confirmed **Help > About** shows 1.0.8 after the upgrade.
+    The installed launcher and GTK4 frontend matched the candidate binaries
+    by SHA-256.
+  - The maintainer confirmed that networks, preferences and add-ons carried
+    over and that `%APPDATA%\Fabulor` was backed up as a precaution.
+- [x] Verify that uninstall removes the 1.0.8 MSI payload and preserves
+      `%APPDATA%\Fabulor`. Windows Installer reported successful removal.
+      The launcher, frontend, bundled Python and the three targeted API
+      cache files were absent after uninstall. All 1,920 files left under
+      `Runtime\Python314` matched the manually installed OpenAI SDK and
+      its dependencies by SHA-256.
+  - After manually removing the old 1.0.7 Setup entry, the maintainer
+    reinstalled and uninstalled 1.0.8 successfully. The follow-up check found
+    zero Fabulor uninstall registrations. The installed executable was gone
+    and the installed-mode profile was still present.
+- [x] Resolve the stale 1.0.7 Setup entry left after the 1.0.8 upgrade and
+      uninstall. Both Burn logs show that the bootstrapper skipped
+      post-apply registry cleanup because it was not elevated.
+  - The maintainer removed the old 1.0.7 Setup entry manually. A follow-up
+    registry check found zero Fabulor uninstall registrations, and the
+    installed-mode profile was still present.
+  - A repeat upgrade from the hash-verified published 1.0.7 installer
+    reproduced the duplicate Setup entries. Running 1.0.8 Repair with the
+    bootstrapper launched as administrator removed the stale entry. Only
+    the 1.0.8 Setup registration and its MSI remained.
+  - The revised MSI removes the published 1.0.7 Setup registration when it
+    detects an upgrade from that MSI and finds the matching bundle provider.
+    An ordinary upgrade from the hash-verified published installer passed.
+    The MSI log confirmed removal of the old key. Windows listed a single
+    1.0.8 Setup entry, the installed binaries matched the revised candidate,
+    and the Aegis SDK still imported.
+- [x] Verify a clean 1.0.8 install with the existing user profile. The
+      maintainer reported that the install completed with their data intact.
+- [x] Verify repair with the final 1.0.8 installer. The elevated Repair
+      ran the 1.0.8 MSI repair and returned success. The installed client
+      binaries matched the candidate. The profile configuration files were
+      unchanged by SHA-256, the add-on directory remained present, and the
+      separately installed OpenAI SDK still imported.
 
 ## 1.0.7 Development And Release
 
@@ -146,10 +293,18 @@ Last reconciled: 2026-11-16 (1.0.7 release)
       The reported overlap appears resolved; exhaustive blank/help-line,
       selection/redraw and ordinary nickname-clipping coverage was not
       separately reported.
-- [ ] Investigate the intermittent Win32 emoji-probe failure observed during
+- [ ] Deferred (maintainer decision, 2026-11-21): investigate the intermittent
+      Win32 emoji-probe failure observed during
       parallel and serial validation runs. Full-suite passes and failed
       repetitions are retained, including in the 2026-10-29 Sysinfo evidence;
-      serial execution alone does not eliminate it. Cause not yet established.
+      serial execution alone does not eliminate it. On 2026-11-21 the released
+      source passed 24 serial and 12 parallel repetitions, with all 259 flags
+      verified each time. Win32 font-fallback warnings still occur. The earlier
+      source reproduces the teardown warning, which the release code avoids.
+      The historical non-zero exit remains unreproduced in this investigation.
+      The maintainer and testers report normal behaviour with the fixed picker.
+      Resume investigation if a test fails again or a visible problem is reported.
+      See the [follow-up evidence](docs/gtk4/local-1.0.7-validation.md#2026-11-21--intermittent-emoji-probe-follow-up).
 
 - [x] Add DALnet-only DCC permission actions to the nickname menu without
       replacing `popup.conf`. Recognise the configured/network-advertised
@@ -191,13 +346,13 @@ Last reconciled: 2026-11-16 (1.0.7 release)
 - [ ] Retire the superseded custom emoji builder and reconcile its legacy tests
       and packaging claims in a separate, contained cleanup after acceptance.
 
-- [x] Reconcile the private name-layout implementation from the separate
-      `a199` worktree into the main checkout, retaining width-aware transcript,
-      user-list and channel-label clipping, full-name tooltips, indent bounds,
-      tooltip positioning and the background-colour correction alongside the
-      accepted cache/divider fixes. Native and package checks passed locally.
-      This is available-width clipping, not the fixed 16-character feature
-      proposed below.
+- [x] Ship long nickname and channel-name handling in 1.0.7. Nicknames clip
+      to the available width in the transcript and user list. Channel names
+      clip to the available width in the channel tree and tabs. Full-name
+      tooltips expose the complete name. This incorporates the private
+      `a199` worktree changes for indent bounds, tooltip positioning and
+      background colour alongside the accepted cache and divider fixes.
+      Native and package checks passed locally.
 - [x] Record installed acceptance of the restored private name-layout feature.
       On 2026-10-23 the maintainer confirmed the rebuilt candidate fixed the
       reported regression. This closes that report, not explicit coverage of
@@ -358,6 +513,8 @@ The WinGet acceptance and Microsoft Store tracks are separate.
 - [ ] Monitor the one-time duplicated channel-switcher tree report. Keep it as
       a roadmap note unless it recurs with a screenshot or reproducible
       channel-switch sequence; only then promote it to a tracked issue.
+      On 2026-11-21 the maintainer confirmed no known recurrence or further
+      reports.
 
 ## User Documentation
 
@@ -573,10 +730,25 @@ maintenance and must be tracked as contained follow-up fixes.
 
 ## Installer And Runtime
 
-- [ ] Clean up only Fabulor-generated `python/__pycache__/*.pyc` on uninstall.
-      RC11 left these files beneath the install directory. This is separate
-      from the accepted RC12 runtime-upgrade fix; preserve user-authored files
-      and profile data.
+- [x] Verify Python cache ownership and uninstall behaviour against 1.0.7,
+      then address any confirmed Fabulor-generated leftovers while preserving
+      user-authored files and profile data. RC11 left
+      `python/__pycache__/*.pyc` beneath the install directory.
+      On 2026-11-21 the maintainer reported a recent uninstall, an initial quick
+      look that found no cache files, and one Fabulor Setup entry in Installed
+      apps. A subsequent recursive scan of the current installation found
+      three `.pyc` files in `python/__pycache__` and another 1,788 under
+      `Runtime/Python314`, totalling 11.0 MB. Two runtime folders denied access,
+      so these are minimum counts. Cache presence in the current installation
+      was followed by a maintainer-run uninstall and another scan. All 1,791
+      visible cache files remained, including the three under
+      `python/__pycache__`; no Fabulor uninstall registrations were found.
+      The published MSI's file table did not include any of the 3,710
+      accessible leftovers. The local installer fix targets the three
+      Fabulor API caches by name. A full uninstall of the local test bundle
+      removed all three caches and the installation directory.
+      The additional runtime files include packages installed outside the MSI.
+      See the [scan evidence](docs/gtk4/local-1.0.7-validation.md#2026-11-21--installed-python-cache-observations).
 
 - [x] Install the core executable, native plugins, GTK4 runtime, Python 3.14,
       Tcl 8.6, .NET host, configuration assets, palettes, emoji, fonts, and
@@ -674,28 +846,13 @@ programme.
 - [x] Define the optional post-1.0 Activity List, unread-counter, per-context
       policy, automatic-policy, and noisy-nick design in
       [`docs/product/activity-list-design.md`](docs/product/activity-list-design.md).
-- [ ] Implement the Activity List in the contained, acceptance-gated stages
-      defined by its design, beginning with the core activity model only after
-      the `1.0` release.
 - [ ] Design and implement post-1.0 inline image previews for direct image
       URLs. Keep loading asynchronous and acceptance-gated; default to
       click-to-load, preserve transcript selection and scroll position, and
       enforce strict download, decode, redirect, cache, concurrency, and
       private-network access limits before automatic previews are offered.
-- [ ] Design and implement optional post-1.0 display limits for unusually long
-      nicknames and channel-tab names. Default both limits to the first 16
-      Unicode characters followed by a single ellipsis (for example,
-      `Antidisestablish…`) while keeping the nickname and channel controls
-      independently configurable because transcript indentation and channel-tree
-      width are separate layout concerns. Apply nickname shortening in both the
-      transcript and user list, show the complete nickname or channel name in a
-      tooltip only when shortened, and replace the channel tree's older two-dot
-      truncation with the same single Unicode ellipsis. Preserve complete IRC
-      identities for commands, completion, clicks, context actions, highlights,
-      copying, logs, matching, and protocol handling. Retain existing saved
-      channel-tab limits during upgrades, use 16 for clean installations, and
-      implement the feature in the native UI rather than by rewriting events in
-      a plugin.
+- [x] Implement the fixed nickname and channel-name limits in the
+      [1.0.8 release](#108-release).
 - [x] Reassess optional GTK4 locales, icons, schemas, and helper tools after the
       release-candidate feature pass. The locked runtime now retains supported
       translations, Adwaita, schemas, fonts, native dependencies, and spawn

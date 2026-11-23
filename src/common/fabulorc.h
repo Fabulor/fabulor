@@ -51,7 +51,16 @@ session * find_channel (server *serv, char *chan);
 session * find_dialog (server *serv, char *nick);
 session * new_ircwindow (server *serv, char *name, int type, int focus);
 void fabulor_reinit_timers (void);
-void lastact_update (session * sess);
+void session_set_tab_state (session *sess, tab_state_flags state);
+void session_activity_record (session *sess, ActivityClass activity, time_t timestamp,
+	const char *sender, const char *message);
+void session_activity_read (session *sess);
+void session_activity_mark_read (session *sess);
+void session_activity_resolve (session *sess);
+gboolean session_activity_set_policy (session *sess, ActivityPolicy policy);
+ActivityClass session_activity_filter_nick (session *sess, const char *nick, ActivityClass activity);
+const char *fabulor_activity_rules_text (void);
+gboolean fabulor_activity_rules_save (const char *text, gboolean apply_open, GError **error);
 session * lastact_getfirst (int (*filter) (session *sess));
 int is_session (session * sess);
 void session_free (session *killsess);

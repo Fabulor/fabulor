@@ -139,6 +139,7 @@ enabled features and use, the profile can contain:
 - imported client certificates and private keys;
 - saved input history and conversation logs;
 - notify and ignore lists, aliases, replacements, and event configuration;
+- automatic activity rules and per-context activity policies;
 - captured URLs, sounds, colour choices, and theme files;
 - add-ons and data maintained by those add-ons; and
 - optional performance diagnostics.
@@ -241,6 +242,11 @@ Log, configuration file, crash dump, or performance log:
 3. remove or obscure IP addresses, hostmasks, account names, private channel
    names, and unrelated conversations; and
 4. check the result again after redaction.
+
+In 1.0.8, check the [Activity List](main-window.md#activity-list) too. Its
+latest-highlight previews can show text from private conversations. The
+previews are held in memory as part of unread activity. Transcript logging
+and scrollback follow their own settings.
 
 A public issue is not an appropriate place for an undisclosed vulnerability,
 working exploit, private key, or live credential. Contact the project

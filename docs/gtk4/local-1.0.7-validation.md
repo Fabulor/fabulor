@@ -1,6 +1,6 @@
 # Local v1.0.7 Development And Validation
 
-Initial record: 2026-10-22. Last reconciled: 2026-11-16.
+Initial record: 2026-10-22. Last reconciled: 2026-11-21.
 
 This record covers development and validation for
 [Fabulor 1.0.7](https://github.com/Fabulor/fabulor/releases/tag/v1.0.7).
@@ -1118,6 +1118,116 @@ Tested unsigned setup SHA-256:
 `4f335cb4b96eceedfa609e6363c2ec410f0f430b8d205cfdba0b651a39d45d0f`.
 Embedded MSI SHA-256:
 `28a9cdf57f148c22c6924b345fde703a729b19db75ce1df81fd1d3f4011077c3`.
+
+## 2026-11-21 — Intermittent Emoji Probe Follow-Up
+
+The maintainer selected investigation of the intermittent automated test failure.
+The investigation used release commit `29786917`, the validated GTK 4.22.4 root,
+and a fresh runtime staged with the current staging script. MSVC built the
+existing native emoji fixture successfully.
+
+Both font backends passed 12 serial repetitions each, followed by six
+repetitions each with four test processes. All 36 runs verified 259 country
+flags, zero flag failures and maximum glyph ink of 24 × 23 GTK logical pixels.
+The serial run used the existing test settings backend. Parallel tests used
+`GSETTINGS_BACKEND=memory` to isolate recent-emoji settings. Test output still
+contained Pango font-fallback warnings on the Win32 backend. An additional
+Win32 run outside the Codex sandbox also passed with those warnings.
+
+The pre-review source and fixture at `877924f7` were built separately against
+the same runtime. Eight serial Win32 repetitions passed their flag checks,
+but each emitted the GtkEntry-with-children warning and an invalid
+`g_object_unref` critical during teardown. The release fixture emitted no
+teardown critical in the 36 repetitions. Commit `d85b9e02` already added
+explicit font registration, cache ownership and unrealise-time cleanup before
+publication.
+
+Inspection of the pinned upstream `gtk/gtkemojichooser.c` shows that
+`add_emoji()` measures a new label before parenting it into the chooser. Its
+initial font selection therefore precedes inheritance of Fabulor's chooser
+font map. The chooser also measures an emoji during construction, before
+Fabulor assigns that map. These paths explain why chooser-scoped font setup
+can coexist with fallback warnings. This is a source-based explanation of the
+warnings. The historical non-zero test exit did not recur in these runs, so
+its relationship to these paths still needs a failing reproduction.
+
+Local evidence is under `build/emoji-investigation/`. Serial JSON output is
+retained as `serial-testlog.json`, parallel output as
+`meson-logs/testlog.json`, the unrestricted run as `win32-unsandboxed.log`,
+and historical comparisons as `legacy-repeat-1.log` through
+`legacy-repeat-8.log`. The downloaded upstream source is retained there too.
+On 2026-11-21 the maintainer deferred further investigation. The maintainer
+and testers have noticed no problem with the fixed picker. Resume if a test
+fails again or a visible problem is reported. This investigation made
+documentation changes and built isolated test executables.
+
+## 2026-11-21 — Installed Python Cache Observations
+
+The maintainer reported a recent uninstall, an initial quick look in
+`C:\Program Files\Fabulor` that found no Python cache files, and a single
+Fabulor Setup entry in Windows Installed apps. The maintainer subsequently
+requested a recursive scan of that directory.
+
+The read-only scan found 117 `__pycache__` directories and 1,791 compiled
+Python cache files, totalling 11,044,563 bytes (11.0 MB). Three files were in
+`python/__pycache__`:
+
+- `_fabulor.cpython-314.pyc`
+- `fabulor.cpython-314.pyc`
+- `hexchat.cpython-314.pyc`
+
+The other 1,788 files were beneath `Runtime/Python314`. Access to
+`Runtime/Python314/bin` and `Runtime/Python314/__pycache__` was denied in both
+the initial and unrestricted scans, so the totals are minimum counts.
+
+This scan establishes cache presence in the current installation. The sequence
+of installation, execution and the earlier uninstall was not recorded, and
+installer ownership of these files has not yet been checked. The single
+Installed apps entry records the registration count observed by the maintainer.
+Current uninstall leftovers remain unverified. The earlier RC11 leftover
+report remains historical evidence.
+
+### Follow-Up After Maintainer-Run Uninstall
+
+The maintainer then ran Fabulor Setup to uninstall and reported completion.
+A second read-only scan found 3,710 files still beneath the installation
+directory, including the same visible count of 1,791 cache files totalling
+11,044,563 bytes and 117 cache directories. The same two runtime directories
+denied access. The root contained `python` and `Runtime` directories.
+
+The `python` directory contained only the three cache files listed above.
+No Fabulor registrations were found in the machine 64-bit, machine 32-bit or
+current-user Windows uninstall registry locations.
+
+Other remaining files included Python package sources and distribution
+metadata beneath `Runtime/Python314`. The inspected
+`annotated_types-0.8.0.dist-info/INSTALLER` file contained `pip`. Package
+ownership and origin still need checking before deciding their cleanup policy.
+
+The embedded MSI from the hash-verified 1.0.7 release listed five files in
+`python` and 37 in `Runtime/Python314`. None of those paths matched the
+3,710 accessible leftovers. The local WiX change removes the three named
+Fabulor API cache files when the Python feature is removed. Windows Installer
+removes empty API and cache directories and preserves directories containing
+other files. The additional runtime packages fall outside the cleanup rule.
+
+The local Release x64 MSI built and passed WiX validation. Decompiling it
+confirmed that the Python feature references the cleanup component and that all
+three file removals are uninstall-only. A disposable per-user MSI using the
+same component removed all three synthetic caches in two uninstall tests.
+It removed empty Python directories and preserved a synthetic user script
+and an unrelated cache.
+
+The local test bundle reuses the published bootstrapper application. Its MSI
+contains the same 2,521 payload paths and SHA-256 file hashes as the published
+1.0.7 MSI. The bundle validator matched its embedded MSI to the rebuilt MSI.
+The maintainer installed the local test bundle with Python support enabled.
+The registered MSI contained the three uninstall-only file rules, and all
+three target caches were present before uninstall. Setup reported
+`0x80070652` during one attempt. Windows Installer subsequently recorded
+successful removal of the candidate MSI (status 0) at 23:51 AEDT on
+2026-11-21. The follow-up scan found the installation directory and Fabulor
+uninstall registration absent.
 
 ## Boundaries
 

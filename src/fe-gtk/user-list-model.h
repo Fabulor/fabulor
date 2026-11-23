@@ -27,6 +27,7 @@ typedef struct
 	const gchar *nick_markup;
 	const gchar *hostname;
 	const GdkRGBA *foreground;
+	const gchar *nick_tooltip;
 } FabulorUserListRow;
 
 enum
@@ -65,6 +66,7 @@ gpointer fabulor_user_list_model_get_item_user (gpointer item);
 GdkPixbuf *fabulor_user_list_model_get_item_icon (gpointer item);
 const gchar *fabulor_user_list_model_get_item_prefix (gpointer item);
 const gchar *fabulor_user_list_model_get_item_nick (gpointer item);
+const gchar *fabulor_user_list_model_get_item_nick_tooltip (gpointer item);
 const gchar *fabulor_user_list_model_get_item_host (gpointer item);
 const GdkRGBA *fabulor_user_list_model_get_item_foreground (gpointer item);
 

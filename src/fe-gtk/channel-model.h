@@ -44,6 +44,8 @@ gboolean fabulor_channel_model_insert (FabulorChannelModel *model,
 	guint position);
 gboolean fabulor_channel_model_update (FabulorChannelModel *model,
 	const FabulorChannelModelRow *row);
+void fabulor_channel_model_set_unread (FabulorChannelModel *model,
+	gpointer identity, guint64 unread, guint64 child_unread);
 gboolean fabulor_channel_model_remove (FabulorChannelModel *model,
 	gpointer identity);
 gboolean fabulor_channel_model_reparent (FabulorChannelModel *model,
@@ -85,6 +87,9 @@ const gchar *fabulor_channel_model_get_item_tooltip (gpointer item);
 PangoAttrList *fabulor_channel_model_get_item_attributes (gpointer item);
 GdkPixbuf *fabulor_channel_model_get_item_icon (gpointer item);
 PangoUnderline fabulor_channel_model_get_item_underline (gpointer item);
+
+guint64 fabulor_channel_model_get_item_unread (gpointer item,
+	gboolean include_children);
 
 G_END_DECLS
 

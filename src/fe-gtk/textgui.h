@@ -21,6 +21,8 @@
 #define FABULOR_TEXTGUI_H
 
 void PrintTextRaw (void *xtbuf, unsigned char *text, int indent, time_t stamp);
+void PrintTextRawWithNick (void *xtbuf, unsigned char *text, int indent,
+	time_t stamp, int nick_start, int nick_length);
 void pevent_dialog_show (void);
 
 #endif

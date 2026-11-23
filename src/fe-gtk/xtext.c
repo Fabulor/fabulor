@@ -47,6 +47,7 @@
 #include "fe-gtk.h"
 #include "gtk-compat.h"
 #include "xtext.h"
+#include "display-name.h"
 #include "xtext-geometry.h"
 #include "xtext-performance.h"
 #include "xtext-scroll-copy.h"
@@ -75,6 +76,18 @@
 /* force scrolling off */
 #define dontscroll(buf) (buf)->last_pixel_pos = 0x7fffffff
 
+typedef struct
+{
+	int nick_start;
+	int ellipsis;
+	int original_end;
+	int original_length;
+	int limit;
+	unsigned char original[];
+} XTextNickname;
+
+enum { XTEXT_NAME_ELLIPSIS_LEN = sizeof (FABULOR_NAME_ELLIPSIS) - 1 };
+
 struct textentry
 {
 	struct textentry *next;
@@ -94,7 +107,43 @@ struct textentry
 	guchar pad1;
 	guchar pad2;
 	GList *marks;	/* List of found strings */
+	XTextNickname *nickname;
 };
+
+static unsigned char *
+xtext_entry_original (textentry *ent)
+{
+	return ent->nickname ? ent->nickname->original : ent->str;
+}
+
+static int
+xtext_offset_to_original (textentry *ent, int offset)
+{
+	XTextNickname *nick = ent->nickname;
+
+	if (!nick || offset <= nick->ellipsis)
+		return offset;
+	return nick->original_end + MAX (0, offset - nick->ellipsis - XTEXT_NAME_ELLIPSIS_LEN);
+}
+
+static int
+xtext_offset_to_display (textentry *ent, int offset, gboolean end)
+{
+	XTextNickname *nick = ent->nickname;
+
+	if (!nick || offset <= nick->ellipsis)
+		return offset;
+	if (offset < nick->original_end)
+		return nick->ellipsis + (end ? XTEXT_NAME_ELLIPSIS_LEN : 0);
+	return nick->ellipsis + XTEXT_NAME_ELLIPSIS_LEN + offset - nick->original_end;
+}
+
+static gboolean
+xtext_hit_shortened_nickname (textentry *ent, int offset)
+{
+	return ent->nickname && offset >= ent->nickname->nick_start &&
+		offset < ent->nickname->ellipsis + XTEXT_NAME_ELLIPSIS_LEN;
+}
 
 enum
 {
@@ -147,6 +196,14 @@ static int gtk_xtext_find_subline (GtkXText *xtext, textentry *ent, int line);
 static unsigned char *
 gtk_xtext_strip_color (unsigned char *text, int len, unsigned char *outbuf,
 							  int *newlen, GSList **slp, int strip_hidden);
+static unsigned char *
+xtext_full_nickname (textentry *ent, unsigned char *buffer)
+{
+	XTextNickname *nick = ent->nickname;
+
+	return gtk_xtext_strip_color (nick->original + nick->nick_start,
+		nick->original_end - nick->nick_start, buffer, NULL, NULL, TRUE);
+}
 static gboolean gtk_xtext_check_ent_visibility (GtkXText * xtext, textentry *find_ent, int add);
 static int gtk_xtext_render_page_timeout (GtkXText * xtext);
 static GList * gtk_xtext_search_textentry (xtext_buffer *, textentry *);
@@ -1530,8 +1587,12 @@ gtk_xtext_find_x (GtkXText * xtext, int x, textentry * ent, int subline,
 		}
 		/* The ellipsis belongs to the complete prefix, never the message. */
 		if (x >= prefix.left + prefix.visible_width)
+		{
+			if (ent->nickname && ent->nickname->nick_start < ent->left_len)
+				return ent->nickname->ellipsis;
 			return (int) (g_utf8_find_prev_char ((char *) ent->str,
 				(char *) ent->str + ent->left_len) - (char *) ent->str);
+		}
 		x = ent->indent + x - prefix.left;
 	}
 
@@ -1572,6 +1633,7 @@ gtk_xtext_query_tooltip (GtkWidget *widget, gint x, gint y,
 	textentry *ent;
 	XTextPrefix prefix;
 	int line, subline;
+	int offset = 0, out = 1;
 	GdkRectangle area;
 	char text[128];
 
@@ -1586,15 +1648,35 @@ gtk_xtext_query_tooltip (GtkWidget *widget, gint x, gint y,
 	area.y = (line - (gint) xtext_adj_get_value (xtext->adj)) *
 		xtext->fontsize - xtext->pixel_offset;
 	area.height = xtext->fontsize;
+	if (ent->nickname)
+		offset = gtk_xtext_find_x (xtext, x, ent, subline,
+			line - (int) xtext_adj_get_value (xtext->adj), &out);
 	if (subline == 0 && gtk_xtext_prefix_geometry (xtext, ent, &prefix) &&
 		x >= prefix.left && x < prefix.right)
 	{
 		unsigned char *full = gtk_xtext_strip_color (ent->str, ent->left_len,
 			NULL, NULL, NULL, TRUE);
+		if (ent->nickname && ent->nickname->nick_start < ent->left_len)
+		{
+			g_free (full);
+			full = xtext_full_nickname (ent, NULL);
+		}
 		gtk_tooltip_set_text (tooltip, (const char *) full);
 		g_free (full);
 		area.x = prefix.left;
 		area.width = prefix.right - prefix.left;
+	}
+	else if (!out && xtext_hit_shortened_nickname (ent, offset))
+	{
+		int start = MAX (ent->nickname->nick_start, gtk_xtext_find_subline (xtext, ent, subline));
+		int end = MIN (ent->nickname->ellipsis + XTEXT_NAME_ELLIPSIS_LEN,
+			gtk_xtext_find_subline (xtext, ent, subline + 1));
+		unsigned char *full = xtext_full_nickname (ent, NULL);
+		area.x = MAX (0, (int) x - gtk_xtext_text_width (xtext, ent->str + start, offset - start));
+		area.width = MAX (1, MIN (gtk_widget_get_width (widget) - area.x,
+			gtk_xtext_text_width (xtext, ent->str + start, end - start)));
+		gtk_tooltip_set_text (tooltip, (const char *) full);
+		g_free (full);
 	}
 	else if (subline == 0 && xtext->buffer->time_stamp && x >= 0 && x < xtext->stamp_width)
 	{
@@ -2376,6 +2458,19 @@ gtk_xtext_get_word (GtkXText * xtext, int x, int y, textentry ** ret_ent,
 	if (ent == NULL || out_of_bounds || offset < 0 || offset >= ent->str_len)
 		return NULL;
 
+	if (xtext_hit_shortened_nickname (ent, offset))
+	{
+		if (ret_ent)
+			*ret_ent = ent;
+		if (ret_off)
+			*ret_off = ent->nickname->nick_start;
+		if (ret_len)
+			*ret_len = ent->nickname->ellipsis + XTEXT_NAME_ELLIPSIS_LEN - ent->nickname->nick_start;
+		if (slp)
+			*slp = NULL;
+		return (char *) xtext_full_nickname (ent, xtext->scratch_buffer);
+	}
+
 	word = ent->str + offset;
 	while ((word = g_utf8_find_prev_char (ent->str, word)))
 	{
@@ -2453,12 +2548,23 @@ static gboolean
 gtk_xtext_get_word_select_range (GtkXText *xtext, int x, int y, textentry **ret_ent, int *ret_off, int *ret_len)
 {
 	textentry *ent;
-	int offset;
+	int offset, out;
 	unsigned char *start, *end;
 
-	ent = gtk_xtext_find_char (xtext, x, y, &offset, NULL);
+	ent = gtk_xtext_find_char (xtext, x, y, &offset, &out);
 	if (!ent || offset < 0 || offset >= ent->str_len)
 		return FALSE;
+
+	if (!out && xtext_hit_shortened_nickname (ent, offset))
+	{
+		if (ret_ent)
+			*ret_ent = ent;
+		if (ret_off)
+			*ret_off = ent->nickname->nick_start;
+		if (ret_len)
+			*ret_len = ent->nickname->ellipsis + XTEXT_NAME_ELLIPSIS_LEN - ent->nickname->nick_start;
+		return TRUE;
+	}
 
 	start = ent->str + offset;
 	end = g_utf8_find_next_char (start, ent->str + ent->str_len);
@@ -3120,7 +3226,8 @@ gtk_xtext_selection_get_text (GtkXText *xtext, int *len_ret)
 			}
 
 			if (ent->mark_end - ent->mark_start > 0)
-				len += (ent->mark_end - ent->mark_start) + 1;
+				len += xtext_offset_to_original (ent, ent->mark_end) -
+					xtext_offset_to_original (ent, ent->mark_start) + 1;
 			else
 				len++;
 		}
@@ -3147,6 +3254,9 @@ gtk_xtext_selection_get_text (GtkXText *xtext, int *len_ret)
 			first = FALSE;
 			if (ent->mark_end - ent->mark_start > 0)
 			{
+				int start = xtext_offset_to_original (ent, ent->mark_start);
+				int end = xtext_offset_to_original (ent, ent->mark_end);
+
 				/* include timestamp? */
 				if (ent->mark_start == 0 && xtext->mark_stamp)
 				{
@@ -3157,9 +3267,8 @@ gtk_xtext_selection_get_text (GtkXText *xtext, int *len_ret)
 					pos += stamp_size;
 				}
 
-				memcpy (pos, ent->str + ent->mark_start,
-						  ent->mark_end - ent->mark_start);
-				pos += ent->mark_end - ent->mark_start;
+				memcpy (pos, xtext_entry_original (ent) + start, end - start);
+				pos += end - start;
 			}
 		}
 		if (ent == buf->last_ent_end)
@@ -3508,6 +3617,53 @@ gtk_xtext_prefix_raw_end (GSList *runs, int plain_end)
 		consumed += run->len;
 	}
 	return 0;
+}
+
+/* Only the widget's layout text is shortened. Selection, matching and
+ * exporting map across the ellipsis to the original IRC text. */
+static void
+xtext_project_nickname (textentry *ent, int start, int length, int limit,
+						gsize text_capacity)
+{
+	GSList *runs = NULL;
+	unsigned char *plain;
+	const char *cut;
+	int end, ellipsis, delta;
+
+	ent->nickname = NULL;
+	if (limit <= 0 || length <= limit || start < 0 ||
+		start > ent->str_len || length > ent->str_len - start)
+		return;
+
+	end = start + length;
+	if (start <= ent->left_len && end > ent->left_len)
+		return;
+	plain = gtk_xtext_strip_color (ent->str + start, length, NULL, NULL, &runs, TRUE);
+	cut = fabulor_display_name_cut ((const char *) plain, limit);
+	ellipsis = cut ? start + gtk_xtext_prefix_raw_end (runs, (int) (cut - (char *) plain)) : start;
+	g_free (plain);
+	g_slist_free_full (runs, g_free);
+	if (ellipsis <= start || ellipsis >= end)
+		return;
+
+	delta = ellipsis + XTEXT_NAME_ELLIPSIS_LEN - end;
+	if ((gsize) (ent->str_len + delta) >= text_capacity)
+		return;
+
+	ent->nickname = g_malloc (sizeof (XTextNickname) + ent->str_len + 1);
+	ent->nickname->nick_start = start;
+	ent->nickname->ellipsis = ellipsis;
+	ent->nickname->original_end = end;
+	ent->nickname->original_length = ent->str_len;
+	ent->nickname->limit = limit;
+	memcpy (ent->nickname->original, ent->str, ent->str_len + 1);
+
+	memmove (ent->str + ellipsis + XTEXT_NAME_ELLIPSIS_LEN, ent->str + end,
+		ent->str_len - end + 1);
+	memcpy (ent->str + ellipsis, FABULOR_NAME_ELLIPSIS, XTEXT_NAME_ELLIPSIS_LEN);
+	ent->str_len += delta;
+	if (end <= ent->left_len)
+		ent->left_len += delta;
 }
 
 static gint
@@ -4574,7 +4730,8 @@ gtk_xtext_save (GtkXText * xtext, int fh)
 	ent = xtext->buffer->text_first;
 	while (ent)
 	{
-		buf = gtk_xtext_strip_color (ent->str, ent->str_len, NULL,
+		buf = gtk_xtext_strip_color (xtext_entry_original (ent),
+			ent->nickname ? ent->nickname->original_length : ent->str_len, NULL,
 											  &newlen, NULL, FALSE);
 		write (fh, buf, newlen);
 		write (fh, "\n", 1);
@@ -4955,6 +5112,7 @@ gtk_xtext_kill_ent (xtext_buffer *buffer, textentry *ent)
 	ent->sublines = NULL;
 	ent->subline_count = 0;
 
+	g_free (ent->nickname);
 	g_free (ent);
 	return visible;
 }
@@ -5102,6 +5260,7 @@ gtk_xtext_clear (xtext_buffer *buf, int lines)
 		while (buf->text_first)
 		{
 			next = buf->text_first->next;
+			g_free (buf->text_first->nickname);
 			g_free (buf->text_first);
 			buf->text_first = next;
 		}
@@ -5226,13 +5385,14 @@ gtk_xtext_search_textentry (xtext_buffer *buf, textentry *ent)
 	GList *gl = NULL;
 	GSList *slp;
 	gint lstr;
+	int original_length = ent->nickname ? ent->nickname->original_length : ent->str_len;
 
 	if (buf->search_text == NULL)
 	{
 		return gl;
 	}
 
-	str = gtk_xtext_strip_color (ent->str, ent->str_len, buf->xtext->scratch_buffer,
+	str = gtk_xtext_strip_color (xtext_entry_original (ent), original_length, buf->xtext->scratch_buffer,
 										  &lstr, &slp, !buf->xtext->ignore_hidden);
 
 	/* Regular-expression matching --- */
@@ -5249,7 +5409,7 @@ gtk_xtext_search_textentry (xtext_buffer *buf, textentry *ent)
 		while (g_match_info_matches (gmi))
 		{
 			g_match_info_fetch_pos (gmi, 0,  &start, &end);
-			gtk_xtext_unstrip_color (start, end, slp, &gl, ent->str_len);
+			gtk_xtext_unstrip_color (start, end, slp, &gl, original_length);
 			g_match_info_next (gmi, NULL);
 		}
 		g_match_info_free (gmi);
@@ -5273,7 +5433,7 @@ gtk_xtext_search_textentry (xtext_buffer *buf, textentry *ent)
 			}
 			off = str - hay;
 			gtk_xtext_unstrip_color (off, off + buf->search_lnee,
-											 slp, &gl, ent->str_len);
+											 slp, &gl, original_length);
 		}
 
 		g_free (hay);
@@ -5281,6 +5441,17 @@ gtk_xtext_search_textentry (xtext_buffer *buf, textentry *ent)
 
 	/* Common processing --- */
 	g_slist_free_full (slp, g_free);
+	if (ent->nickname)
+	{
+		for (GList *match = gl; match; match = match->next)
+		{
+			offsets_t offsets;
+			offsets.u = GPOINTER_TO_UINT (match->data);
+			offsets.o.start = xtext_offset_to_display (ent, offsets.o.start, FALSE);
+			offsets.o.end = xtext_offset_to_display (ent, offsets.o.end, TRUE);
+			match->data = GUINT_TO_POINTER (offsets.u);
+		}
+	}
 	return gl;
 }
 
@@ -5709,11 +5880,11 @@ gtk_xtext_append_entry (xtext_buffer *buf, textentry * ent, time_t stamp)
 
 /* the main two public functions */
 
-void
-gtk_xtext_append_indent (xtext_buffer *buf,
+static void
+xtext_append_indented (xtext_buffer *buf,
 								 unsigned char *left_text, int left_len,
 								 unsigned char *right_text, int right_len,
-								 time_t stamp)
+								 time_t stamp, int nick_start, int nick_length, int limit)
 {
 	textentry *ent;
 	unsigned char *str;
@@ -5731,10 +5902,11 @@ gtk_xtext_append_indent (xtext_buffer *buf,
 	if (left_len + right_len + 2 >= sizeof (buf->xtext->scratch_buffer))
 		right_len = sizeof (buf->xtext->scratch_buffer) - left_len - 2;
 
-	if (right_text[right_len-1] == '\n')
+	if (right_len > 0 && right_text[right_len-1] == '\n')
 		right_len--;
 
-	ent = g_malloc (left_len + right_len + 2 + sizeof (textentry));
+	ent = g_malloc (left_len + right_len + 2 + sizeof (textentry) +
+		(nick_length ? XTEXT_NAME_ELLIPSIS_LEN : 0));
 	str = (unsigned char *) ent + sizeof (textentry);
 
 	if (left_len)
@@ -5744,11 +5916,12 @@ gtk_xtext_append_indent (xtext_buffer *buf,
 		memcpy (str + left_len + 1, right_text, right_len);
 	str[left_len + 1 + right_len] = 0;
 
-	prefix_width = gtk_xtext_text_width (buf->xtext, str, left_len + 1);
-
 	ent->left_len = left_len;
 	ent->str = str;
 	ent->str_len = left_len + 1 + right_len;
+	xtext_project_nickname (ent, nick_start, nick_length, limit,
+		sizeof (buf->xtext->scratch_buffer));
+	prefix_width = gtk_xtext_text_width (buf->xtext, str, ent->left_len + 1);
 	ent->indent = buf->indent - prefix_width;
 
 	/* This is copied into the scratch buffer later, double check math */
@@ -5791,8 +5964,9 @@ gtk_xtext_append_indent (xtext_buffer *buf,
 	gtk_xtext_append_entry (buf, ent, stamp);
 }
 
-void
-gtk_xtext_append (xtext_buffer *buf, unsigned char *text, int len, time_t stamp)
+static void
+xtext_append_plain (xtext_buffer *buf, unsigned char *text, int len, time_t stamp,
+					int nick_start, int nick_length, int limit)
 {
 	textentry *ent;
 	gboolean truncate = FALSE;
@@ -5800,7 +5974,7 @@ gtk_xtext_append (xtext_buffer *buf, unsigned char *text, int len, time_t stamp)
 	if (len == -1)
 		len = strlen (text);
 
-	if (text[len-1] == '\n')
+	if (len > 0 && text[len-1] == '\n')
 		len--;
 
 	if (len >= sizeof (buf->xtext->scratch_buffer))
@@ -5809,9 +5983,11 @@ gtk_xtext_append (xtext_buffer *buf, unsigned char *text, int len, time_t stamp)
 		truncate = TRUE;
 	}
 
-	ent = g_malloc (len + 1 + sizeof (textentry));
+	ent = g_malloc (len + 1 + sizeof (textentry) +
+		(nick_length ? XTEXT_NAME_ELLIPSIS_LEN : 0));
 	ent->str = (unsigned char *) ent + sizeof (textentry);
 	ent->str_len = len;
+	ent->str[0] = '\0';
 	if (len)
 	{
 		if (!truncate)
@@ -5827,8 +6003,36 @@ gtk_xtext_append (xtext_buffer *buf, unsigned char *text, int len, time_t stamp)
 	}
 	ent->indent = 0;
 	ent->left_len = -1;
+	xtext_project_nickname (ent, nick_start, nick_length, limit,
+		sizeof (buf->xtext->scratch_buffer));
 
 	gtk_xtext_append_entry (buf, ent, stamp);
+}
+
+void
+gtk_xtext_append (xtext_buffer *buf, unsigned char *text, int len, time_t stamp)
+{
+	xtext_append_plain (buf, text, len, stamp, 0, 0, 0);
+}
+
+void
+gtk_xtext_append_indent (xtext_buffer *buf,
+						unsigned char *left_text, int left_len,
+						unsigned char *right_text, int right_len, time_t stamp)
+{
+	xtext_append_indented (buf, left_text, left_len, right_text, right_len, stamp, 0, 0, 0);
+}
+
+void
+gtk_xtext_append_nick (xtext_buffer *buf, unsigned char *text, int len,
+					  int body_offset, time_t stamp, int nick_start, int nick_length, int limit)
+{
+	if (body_offset < 0)
+		xtext_append_plain (buf, text, len, stamp, nick_start, nick_length, limit);
+	else
+		xtext_append_indented (buf, text, MAX (0, body_offset - 1),
+			text + body_offset, len - body_offset, stamp,
+			nick_start + (body_offset == 0), nick_length, limit);
 }
 
 gboolean
@@ -5855,7 +6059,20 @@ gtk_xtext_lastlog (xtext_buffer *out, xtext_buffer *search_area)
 		{
 			matches++;
 			/* copy the text over */
-			if (search_area->xtext->auto_indent)
+			if (ent->nickname)
+			{
+				XTextNickname *nick = ent->nickname;
+				int left_len = ent->left_len < 0 ? -1 :
+					xtext_offset_to_original (ent, ent->left_len);
+				if (left_len >= 0)
+					xtext_append_indented (out, nick->original, left_len,
+						nick->original + left_len + 1, nick->original_length - left_len - 1,
+						0, nick->nick_start, nick->original_end - nick->nick_start, nick->limit);
+				else
+					xtext_append_plain (out, nick->original, nick->original_length, 0,
+						nick->nick_start, nick->original_end - nick->nick_start, nick->limit);
+			}
+			else if (search_area->xtext->auto_indent && ent->left_len >= 0)
 			{
 				gtk_xtext_append_indent (out, ent->str, ent->left_len,
 												 ent->str + ent->left_len + 1,
@@ -5886,7 +6103,7 @@ gtk_xtext_foreach (xtext_buffer *buf, GtkXTextForeach func, void *data)
 
 	while (ent)
 	{
-		(*func) (buf->xtext, ent->str, data);
+		(*func) (buf->xtext, xtext_entry_original (ent), data);
 		ent = ent->next;
 	}
 }
@@ -6222,6 +6439,7 @@ gtk_xtext_buffer_free (xtext_buffer *buf)
 	while (ent)
 	{
 		next = ent->next;
+		g_free (ent->nickname);
 		g_free (ent);
 		ent = next;
 	}

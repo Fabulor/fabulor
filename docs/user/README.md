@@ -28,11 +28,11 @@ authoritative.
 - [Migrating from XChat or HexChat](migration-from-xchat-and-hexchat.md)
 - [Glossary](glossary.md)
 
-## Planned
+## Release Verification
 
-All planned source drafts and the privacy-safe screenshot set are now
-available. Installed release-candidate verification and final editorial review
-remain before the user manual is complete.
+The 1.0.8 instructions for the [Activity List](main-window.md#activity-list)
+and shortened names reflect the accepted Windows portable candidate. The
+[1.0.8 roadmap](../../To-Do.md#108-release) records installer verification.
 
 Plugin authors should use the separate
 [plugin authoring guides](../plugin-authoring-guides.md).

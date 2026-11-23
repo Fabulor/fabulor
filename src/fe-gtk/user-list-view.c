@@ -91,6 +91,8 @@ user_list_item_update (FabulorUserListItemBinding *binding)
 	gtk_label_set_markup (GTK_LABEL (binding->nick),
 		fabulor_user_list_model_get_item_nick (binding->item) ?
 		fabulor_user_list_model_get_item_nick (binding->item) : "");
+	fabulor_clipped_label_set_full (binding->nick,
+		fabulor_user_list_model_get_item_nick_tooltip (binding->item));
 	if (binding->host)
 		gtk_label_set_text (GTK_LABEL (binding->host),
 			fabulor_user_list_model_get_item_host (binding->item) ?
@@ -186,6 +188,7 @@ user_list_factory_unbind (GtkSignalListItemFactory *factory,
 	binding->icon_source = NULL;
 	binding->notify_id = 0;
 	gtk_label_set_text (GTK_LABEL (binding->nick), "");
+	fabulor_clipped_label_set_full (binding->nick, NULL);
 	g_object_set_qdata (G_OBJECT (binding->box), user_list_item_quark (), NULL);
 }
 

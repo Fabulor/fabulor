@@ -445,6 +445,7 @@ const struct prefs vars[] =
 	{"gui_manifest_plugins", P_OFFINT (hex_gui_manifest_plugins), TYPE_BOOL},
 	{"gui_pane_divider_position", P_OFFINT (hex_gui_pane_divider_position), TYPE_INT},
 	{"gui_pane_left_size", P_OFFINT (hex_gui_pane_left_size), TYPE_INT},
+	{"gui_nick_name_limit", P_OFFINT (hex_gui_nick_name_limit), TYPE_INT},
 	{"gui_pane_right_size", P_OFFINT (hex_gui_pane_right_size), TYPE_INT},
 	{"gui_pane_right_size_min", P_OFFINT (hex_gui_pane_right_size_min), TYPE_INT},
 	{"gui_quit_dialog", P_OFFINT (hex_gui_quit_dialog), TYPE_BOOL},
@@ -465,6 +466,7 @@ const struct prefs vars[] =
 	{"gui_tab_middleclose", P_OFFINT (hex_gui_tab_middleclose), TYPE_BOOL},
 	{"gui_mouse_scroll_speed", P_OFFINT (hex_gui_mouse_scroll_speed), TYPE_INT},
 	{"gui_tab_newtofront", P_OFFINT (hex_gui_tab_newtofront), TYPE_INT},
+	{"gui_tab_name_limit", P_OFFINT (hex_gui_tab_name_limit), TYPE_INT},
 	{"gui_tab_pos", P_OFFINT (hex_gui_tab_pos), TYPE_INT},
 	{"gui_tab_scrollchans", P_OFFINT (hex_gui_tab_scrollchans), TYPE_BOOL},
 	{"gui_tab_server", P_OFFINT (hex_gui_tab_server), TYPE_BOOL},
@@ -872,6 +874,8 @@ load_default_config(void)
 	prefs.hex_gui_tab_newtofront = 2;
 	prefs.hex_gui_tab_pos = 1;
 	prefs.hex_gui_tab_trunc = 20;
+	prefs.hex_gui_tab_name_limit = 16;
+	prefs.hex_gui_nick_name_limit = 16;
 	prefs.hex_gui_throttlemeter = 1;
 	prefs.hex_gui_ulist_pos = 3;
 	prefs.hex_gui_ulist_nick_width = 0;
@@ -1076,6 +1080,17 @@ load_config (void)
 		i++;
 	}
 	while (vars[i].name);
+
+	/* Keep a prior profile's saved tab limit when the fixed cap is absent. */
+	cfg_get_int_with_result (cfg, "gui_tab_name_limit", &res);
+	if (!res)
+	{
+		val = cfg_get_int_with_result (cfg, "gui_tab_trunc", &res);
+		if (res)
+			prefs.hex_gui_tab_name_limit = val;
+	}
+	prefs.hex_gui_tab_name_limit = CLAMP (prefs.hex_gui_tab_name_limit, 0, 99);
+	prefs.hex_gui_nick_name_limit = CLAMP (prefs.hex_gui_nick_name_limit, 0, 99);
 
 	g_free (cfg);
 	normalize_proxy_type ();

@@ -60,6 +60,7 @@
 #include "menu.h"
 #include "preferences-persistence.h"
 #include "window-state.h"
+#include "activity-list.h"
 #include "window-geometry.h"
 #include "fkeys.h"
 #include "userlistgui.h"
@@ -520,70 +521,302 @@ fe_flash_window (session *sess)
                 flash_window (sess->gui->window);
 }
 
-/* set a tab plain, red, light-red, or blue */
+ActivityView
+fe_activity_view (session *sess)
+{
+        session_gui *gui = sess->gui;
+        FabulorWindowState state = { 0 };
+        ActivityView view = { 0 };
+
+        if (!gui || !gui->window)
+                return view;
+
+        view.selected = !gui->is_tab ||
+                (sess == current_tab && sess->res->tab && sess->res->tab == active_tab &&
+                 gui->note_book &&
+                 gtk_notebook_get_current_page (GTK_NOTEBOOK (gui->note_book)) == 0);
+        if (view.selected)
+        {
+                fabulor_window_state_get (GTK_WINDOW (gui->window), &state);
+                view.focused = gtk_window_is_active (GTK_WINDOW (gui->window));
+                view.visible = state.visible;
+                view.minimized = state.minimized;
+        }
+        return view;
+}
+
+static PangoAttrList *
+mg_tab_activity_color (tab_state_flags state)
+{
+        switch (state)
+        {
+        case TAB_STATE_NEW_HILIGHT: return nickseen_list;
+        case TAB_STATE_NEW_MSG: return newmsg_list;
+        case TAB_STATE_NEW_DATA: return newdata_list;
+        default: return plain_list;
+        }
+}
+
+static GtkWindow *activity_window;
+static FabulorActivityList *activity_list;
+static GHashTable *activity_dirty;
+static guint activity_idle;
+
+static gboolean
+mg_activity_context_supported (session *sess)
+{
+        return sess->type == SESS_SERVER || sess->type == SESS_CHANNEL ||
+                sess->type == SESS_DIALOG;
+}
+
+static void
+mg_activity_list_update (session *sess)
+{
+        server *serv = sess->server;
+        const char *network = NULL;
+        const char *context = sess->channel;
+
+        if (sess->activity.highest == ACTIVITY_NONE)
+        {
+                fabulor_activity_list_remove (activity_list, sess);
+                return;
+        }
+
+        if (serv->network || (serv->server_session && serv->server_session->type == SESS_SERVER))
+                network = server_get_network (serv, TRUE);
+        if (!network || !*network)
+                network = *serv->servername ? serv->servername : serv->hostname;
+        if (!*network)
+                network = _("Unknown network");
+
+        if (sess->type == SESS_SERVER)
+                context = _("Server");
+        else if (!*context)
+                context = *sess->waitchannel ? sess->waitchannel : _("Channel");
+
+        fabulor_activity_list_update (activity_list, sess, context, network, &sess->activity,
+                sess->activity_highlight_preview);
+}
+
+static gboolean
+mg_activity_list_flush (gpointer data)
+{
+        GHashTableIter iter;
+        gpointer identity;
+
+        (void) data;
+        activity_idle = 0;
+        g_hash_table_iter_init (&iter, activity_dirty);
+        while (g_hash_table_iter_next (&iter, &identity, NULL))
+        {
+                g_hash_table_iter_remove (&iter);
+                mg_activity_list_update (identity);
+        }
+        return G_SOURCE_REMOVE;
+}
+
+static void
+mg_activity_list_queue (session *sess)
+{
+        if (!activity_list || !mg_activity_context_supported (sess))
+                return;
+
+        g_hash_table_add (activity_dirty, sess);
+        if (!activity_idle)
+                activity_idle = g_idle_add (mg_activity_list_flush, NULL);
+}
+
+static void
+mg_activity_list_activate (gpointer identity, gpointer data)
+{
+        session *sess = identity;
+        GtkWindow *window;
+
+        (void) data;
+        if (!is_session (sess) || !sess->gui || !sess->gui->window)
+                return;
+
+        window = g_object_ref (GTK_WINDOW (sess->gui->window));
+        if (sess->gui->is_tab && sess->res->tab)
+                mg_bring_tofront_sess (sess);
+        if (is_session (sess) && sess->gui && GTK_WINDOW (sess->gui->window) == window)
+                fabulor_window_present (window);
+        g_object_unref (window);
+}
+
+static void
+mg_activity_list_mark_read (gpointer identity, gpointer data)
+{
+        session *sess = identity;
+
+        (void) data;
+        if (is_session (sess))
+                session_activity_mark_read (sess);
+}
+
+static void
+mg_activity_list_destroy_cb (GtkWidget *window, gpointer data)
+{
+        (void) window;
+        (void) data;
+        activity_window = NULL;
+        g_clear_handle_id (&activity_idle, g_source_remove);
+        g_clear_pointer (&activity_dirty, g_hash_table_unref);
+        g_clear_pointer (&activity_list, fabulor_activity_list_free);
+}
+
+static gboolean
+mg_activity_list_key_cb (GtkEventControllerKey *controller, guint keyval,
+                         guint keycode, GdkModifierType state, gpointer data)
+{
+        (void) controller;
+        (void) keycode;
+        (void) state;
+        if (keyval != GDK_KEY_Escape)
+                return FALSE;
+        gtk_window_close (GTK_WINDOW (data));
+        return TRUE;
+}
 
 void
-fe_set_tab_color (struct session *sess, tabcolor col)
+mg_activity_list_open (void)
 {
-        struct session *server_sess = sess->server->server_session;
-        int col_noflags = (col & ~FE_COLOR_ALLFLAGS);
-        int col_shouldoverride = !(col & FE_COLOR_FLAG_NOOVERRIDE);
-
-        if (sess->res->tab && sess->gui->is_tab && (col == 0 || sess != current_tab))
+        if (!activity_window)
         {
-                switch (col_noflags)
+                GtkEventController *keys = gtk_event_controller_key_new ();
+
+                activity_window = GTK_WINDOW (gtkutil_window_new (
+                        _("Activity List"), "activity-list", 480, 360, 0));
+                activity_list = fabulor_activity_list_new (
+                        mg_activity_list_activate, mg_activity_list_mark_read, NULL);
+                activity_dirty = g_hash_table_new (g_direct_hash, g_direct_equal);
+                gtk_window_set_child (activity_window,
+                        fabulor_activity_list_get_widget (activity_list));
+                g_signal_connect (activity_window, "destroy",
+                        G_CALLBACK (mg_activity_list_destroy_cb), NULL);
+                g_signal_connect (keys, "key-pressed", G_CALLBACK (mg_activity_list_key_cb),
+                        activity_window);
+                gtk_widget_add_controller (GTK_WIDGET (activity_window), keys);
+
+                for (GSList *item = sess_list; item; item = item->next)
                 {
-                case 0: /* no particular color (theme default) */
-                        sess->tab_state = TAB_STATE_NONE;
-                        chan_set_color (sess->res->tab, plain_list);
-                        break;
-                case 1: /* new data has been displayed (dark red) */
-                        if (col_shouldoverride || !((sess->tab_state & TAB_STATE_NEW_MSG)
-                                                                                || (sess->tab_state & TAB_STATE_NEW_HILIGHT))) {
-                                sess->tab_state = TAB_STATE_NEW_DATA;
-                                chan_set_color (sess->res->tab, newdata_list);
-                        }
-
-                        if (chan_is_collapsed (sess->res->tab)
-                                && !((server_sess->tab_state & TAB_STATE_NEW_MSG)
-                                         || (server_sess->tab_state & TAB_STATE_NEW_HILIGHT))
-                                && !(server_sess == current_tab))
-                        {
-                                server_sess->tab_state = TAB_STATE_NEW_DATA;
-                                chan_set_color (chan_get_parent (sess->res->tab), newdata_list);
-                        }
-
-                        break;
-                case 2: /* new message arrived in channel (light red) */
-                        if (col_shouldoverride || !(sess->tab_state & TAB_STATE_NEW_HILIGHT)) {
-                                sess->tab_state = TAB_STATE_NEW_MSG;
-                                chan_set_color (sess->res->tab, newmsg_list);
-                        }
-
-                        if (chan_is_collapsed (sess->res->tab)
-                                && !(server_sess->tab_state & TAB_STATE_NEW_HILIGHT)
-                                && !(server_sess == current_tab))
-                        {
-                                server_sess->tab_state = TAB_STATE_NEW_MSG;
-                                chan_set_color (chan_get_parent (sess->res->tab), newmsg_list);
-                        }
-
-                        break;
-                case 3: /* your nick has been seen (blue) */
-                        sess->tab_state = TAB_STATE_NEW_HILIGHT;
-                        chan_set_color (sess->res->tab, nickseen_list);
-
-                        if (chan_is_collapsed (sess->res->tab) && !(server_sess == current_tab))
-                        {
-                                server_sess->tab_state = TAB_STATE_NEW_MSG;
-                                chan_set_color (chan_get_parent (sess->res->tab), nickseen_list);
-                        }
-
-                        break;
+                        session *sess = item->data;
+                        if (mg_activity_context_supported (sess) && sess->activity.highest != ACTIVITY_NONE)
+                                mg_activity_list_update (sess);
                 }
-                lastact_update (sess);
-                sess->last_tab_state = sess->tab_state; /* For plugins handling future prints */
         }
+
+        fabulor_activity_list_focus (activity_list);
+        fabulor_window_present (activity_window);
+}
+
+void
+mg_activity_list_close (void)
+{
+        if (activity_window)
+                gtk_window_destroy (activity_window);
+}
+
+void
+fe_activity_changed (session *sess, gboolean closing, gboolean colour_changed)
+{
+        session *server_sess = sess->server->server_session;
+        chan *tab = !closing && sess->gui && sess->gui->is_tab ? sess->res->tab : NULL;
+        chan *group_tab = tab;
+        chan *server_tab = NULL;
+
+        if (closing && activity_list)
+        {
+                g_hash_table_remove (activity_dirty, sess);
+                fabulor_activity_list_remove (activity_list, sess);
+        }
+        else if (!closing)
+                mg_activity_list_queue (sess);
+
+        if (!fabulor_is_quitting)
+        {
+                if (server_sess && (!closing || server_sess != sess) &&
+                    server_sess->gui && server_sess->gui->is_tab && server_sess->res->tab)
+                        group_tab = server_sess->res->tab;
+                if (group_tab)
+                {
+                        server_tab = chan_get_parent (group_tab);
+                        if (!server_tab)
+                                server_tab = group_tab;
+                }
+        }
+
+        if (tab && tab != server_tab)
+        {
+                guint64 count = 0;
+
+                for (int i = ACTIVITY_OTHER; i < ACTIVITY_CLASS_COUNT; ++i)
+                        count += sess->activity.unread[i];
+                chan_set_unread (tab, count, 0);
+                if (colour_changed)
+                        chan_set_color (tab, mg_tab_activity_color (sess->tab_state));
+        }
+
+        if (server_tab)
+        {
+                session *root = chan_get_userdata (server_tab);
+                guint64 own_count = 0, child_count = 0;
+                tab_state_flags state = root->tab_state;
+
+                for (int i = ACTIVITY_OTHER; i < ACTIVITY_CLASS_COUNT; ++i)
+                {
+                        guint64 child = sess->server->child_activity.unread[i];
+                        guint own = root->activity.unread[i];
+
+                        /* Without a dedicated server tab the first child is the root. */
+                        if (root->type != SESS_SERVER)
+                                child -= own;
+                        own_count += own;
+                        child_count += MIN (child, G_MAXUINT64 - child_count);
+                }
+                chan_set_unread (server_tab, own_count, child_count);
+
+                if (!colour_changed)
+                        return;
+
+                /* Child activity colours the collapsed server row for display only. */
+                if (!chan_get_parent (server_tab) && chan_is_collapsed (server_tab))
+                {
+                        ActivityClass child = activity_aggregate_highest (&sess->server->child_activity);
+                        if (child == ACTIVITY_HIGHLIGHT)
+                                state = MAX (state, TAB_STATE_NEW_HILIGHT);
+                        else if (child >= ACTIVITY_MESSAGE)
+                                state = MAX (state, TAB_STATE_NEW_MSG);
+                        else if (child == ACTIVITY_OTHER)
+                                state = MAX (state, TAB_STATE_NEW_DATA);
+                }
+                chan_set_color (server_tab, mg_tab_activity_color (state));
+        }
+}
+
+/* Explicit GUI COLOR requests change the indication without counting a print. */
+void
+fe_set_tab_color (session *sess, tabcolor col)
+{
+        int base = col & ~FE_COLOR_ALLFLAGS;
+        tab_state_flags state;
+
+        if (!sess->res->tab || !sess->gui->is_tab || (col != 0 && sess == current_tab))
+                return;
+
+        switch (base)
+        {
+        case FE_COLOR_NONE: state = TAB_STATE_NONE; break;
+        case FE_COLOR_NEW_DATA: state = TAB_STATE_NEW_DATA; break;
+        case FE_COLOR_NEW_MSG: state = TAB_STATE_NEW_MSG; break;
+        case FE_COLOR_NEW_HILIGHT: state = TAB_STATE_NEW_HILIGHT; break;
+        default: return;
+        }
+
+        if (base != FE_COLOR_NONE && (col & FE_COLOR_FLAG_NOOVERRIDE))
+                state = MAX (sess->tab_state, state);
+        session_set_tab_state (sess, state);
+        fe_activity_changed (sess, FALSE, TRUE);
 }
 
 static void
@@ -923,6 +1156,8 @@ fe_set_title (session *sess)
         char tbuf[512];
         int type;
 
+        if (sess->activity.highest != ACTIVITY_NONE)
+                mg_activity_list_queue (sess);
         if (sess->gui->is_tab && sess != current_tab)
                 return;
 
@@ -1240,10 +1475,7 @@ mg_focus (session *sess)
                 sess->server->server_session = sess;
         }
 
-        /* when called via mg_changui_new, is_tab might be true, but
-                sess->res->tab is still NULL. */
-        if (sess->res->tab)
-                fe_set_tab_color (sess, FE_COLOR_NONE);
+        session_activity_read (sess);
 }
 
 static int
@@ -2251,6 +2483,56 @@ mg_tab_option_setting (session *sess, FabulorTabOption option)
 }
 
 static void
+mg_activity_policy_response (GtkDialog *dialog, int response, gpointer data)
+{
+	session *sess = data;
+	GtkDropDown *choices = g_object_get_data (G_OBJECT (dialog), "activity-policy-choices");
+
+	if (response == GTK_RESPONSE_OK && is_session (sess) &&
+		g_strcmp0 (sess->activity_network, g_object_get_data (G_OBJECT (dialog), "activity-network")) == 0 &&
+		g_strcmp0 (sess->activity_context, g_object_get_data (G_OBJECT (dialog), "activity-context")) == 0 &&
+		!session_activity_set_policy (sess, (ActivityPolicy) gtk_drop_down_get_selected (choices)))
+	{
+		fe_message (_("Could not save an activity policy for this context."), FE_MSG_ERROR);
+		return;
+	}
+	gtk_window_destroy (GTK_WINDOW (dialog));
+}
+
+static void
+mg_activity_policy_dialog (session *sess)
+{
+	const char *labels[] = {
+		_("Automatic"), _("All activity"), _("Messages and above"),
+		_("Private messages and highlights"), _("Highlights only"), _("Muted"), NULL
+	};
+	GtkWidget *dialog = gtk_dialog_new_with_buttons (_("Activity Policy"),
+		GTK_WINDOW (sess->gui->window), GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT,
+		_("_Cancel"), GTK_RESPONSE_CANCEL, _("_Save"), GTK_RESPONSE_OK, NULL);
+	GtkWidget *content = gtk_dialog_get_content_area (GTK_DIALOG (dialog));
+	GtkWidget *choices = gtk_drop_down_new_from_strings (labels);
+	GtkWidget *hint = gtk_label_new (_("Applies to future unread activity in this context."));
+
+	gtk_widget_set_margin_start (content, 12);
+	gtk_widget_set_margin_end (content, 12);
+	gtk_widget_set_margin_top (content, 12);
+	gtk_widget_set_margin_bottom (content, 12);
+	gtk_box_set_spacing (GTK_BOX (content), 8);
+	gtk_label_set_wrap (GTK_LABEL (hint), TRUE);
+	gtk_label_set_xalign (GTK_LABEL (hint), 0);
+	gtk_accessible_update_property (GTK_ACCESSIBLE (choices),
+		GTK_ACCESSIBLE_PROPERTY_LABEL, _("Activity policy"), -1);
+	gtk_drop_down_set_selected (GTK_DROP_DOWN (choices), sess->activity_policy);
+	gtk_box_append (GTK_BOX (content), choices);
+	gtk_box_append (GTK_BOX (content), hint);
+	g_object_set_data (G_OBJECT (dialog), "activity-policy-choices", choices);
+	g_object_set_data_full (G_OBJECT (dialog), "activity-network", g_strdup (sess->activity_network), g_free);
+	g_object_set_data_full (G_OBJECT (dialog), "activity-context", g_strdup (sess->activity_context), g_free);
+	g_signal_connect (dialog, "response", G_CALLBACK (mg_activity_policy_response), sess);
+	gtk_window_present (GTK_WINDOW (dialog));
+}
+
+static void
 mg_tab_context_dispatch (FabulorTabContextAction action,
 	FabulorTabOption option, gboolean state, const char *command,
 	gpointer user_data)
@@ -2270,6 +2552,11 @@ mg_tab_context_dispatch (FabulorTabContextAction action,
 	}
 	if (!sess)
 		return;
+	if (action == FABULOR_TAB_CONTEXT_ACTIVITY_POLICY)
+	{
+		mg_activity_policy_dialog (sess);
+		return;
+	}
 	if (action == FABULOR_TAB_CONTEXT_OPTION)
 	{
 		guint8 *setting = mg_tab_option_setting (sess, option);
@@ -2421,7 +2708,7 @@ mg_create_tabmenu (session *sess, GtkWidget *source, chan *ch,
 		_("Blink Task _Bar"), _("_Log to Disk"),
 		_("_Reload Scrollback"), _("Strip _Colors"),
 		_("_Hide Join/Part Messages"), _("_Autojoin"),
-		_("_Auto-Connect"), _("_Detach"), _("_Close")
+		_("_Auto-Connect"), _("_Detach"), _("_Close"), _("Activity _Policy…")
 	};
 	FabulorTabContextPopup *popup;
 	FabulorTabContextState state;
@@ -2431,6 +2718,7 @@ mg_create_tabmenu (session *sess, GtkWidget *source, chan *ch,
 	const char *heading = NULL;
 
 	mg_tab_context_state_snapshot (sess, &state);
+	state.has_activity_context = sess && sess->activity_context != NULL;
 	configured = sess ? mg_tab_configured_snapshot () :
 		g_array_new (FALSE, FALSE, sizeof (FabulorTabConfiguredItem));
 	if (sess)
@@ -2589,7 +2877,7 @@ mg_add_chan (session *sess)
         if (plain_list == NULL)
                 mg_create_tab_colors ();
 
-        chan_set_color (sess->res->tab, plain_list);
+        fe_activity_changed (sess, FALSE, TRUE);
 }
 
 static void
@@ -6119,6 +6407,26 @@ mg_create_tabs (session_gui *gui)
 }
 
 static void
+mg_activity_active_cb (GObject *window, GParamSpec *pspec, gpointer data)
+{
+        session *sess = data ? data : current_tab;
+
+        (void) pspec;
+        if (sess && sess->gui && G_OBJECT (sess->gui->window) == window)
+                session_activity_read (sess);
+}
+
+static void
+mg_activity_window_state_cb (GtkWindow *window, const FabulorWindowState *state,
+                             gpointer data)
+{
+        if (state->changed & (FABULOR_WINDOW_STATE_FOCUSED |
+                              FABULOR_WINDOW_STATE_MINIMIZED |
+                              FABULOR_WINDOW_STATE_VISIBLE))
+                mg_activity_active_cb (G_OBJECT (window), NULL, data);
+}
+
+static void
 mg_tabwin_focus_cb (GtkWidget *win, gpointer user_data)
 {
         (void) user_data;
@@ -6194,6 +6502,8 @@ mg_create_topwindow (session *sess)
         gtk_widget_set_opacity (win, (prefs.hex_gui_transparency / 255.));
 
         fabulor_gtk_widget_on_focus_enter (win, mg_topwin_focus_cb, sess);
+        g_signal_connect (win, "notify::is-active", G_CALLBACK (mg_activity_active_cb), sess);
+        fabulor_window_state_watch (GTK_WINDOW (win), mg_activity_window_state_cb, sess);
 	fabulor_window_geometry_watch (GTK_WINDOW (win), mg_geometry_cb, sess);
 
 
@@ -6421,6 +6731,8 @@ mg_create_tabwindow (session *sess)
         g_signal_connect (G_OBJECT (win), "close-request",
                           G_CALLBACK (mg_tabwindow_close_request_cb), NULL);
         fabulor_gtk_widget_on_focus_enter (win, mg_tabwin_focus_cb, NULL);
+        g_signal_connect (win, "notify::is-active", G_CALLBACK (mg_activity_active_cb), NULL);
+        fabulor_window_state_watch (GTK_WINDOW (win), mg_activity_window_state_cb, NULL);
 	fabulor_window_geometry_watch (GTK_WINDOW (win), mg_geometry_cb, NULL);
 		fabulor_window_state_watch (GTK_WINDOW (win), mg_windowstate_cb, NULL);
 
@@ -6539,17 +6851,7 @@ fe_clear_channel (session *sess)
         {
                 if (sess->waitchannel[0])
                 {
-                        if (prefs.hex_gui_tab_trunc > 2 && g_utf8_strlen (sess->waitchannel, -1) > prefs.hex_gui_tab_trunc)
-                        {
-                                /* truncate long channel names */
-                                tbuf[0] = '(';
-                                strcpy (tbuf + 1, sess->waitchannel);
-                                g_utf8_offset_to_pointer(tbuf, prefs.hex_gui_tab_trunc)[0] = 0;
-                                strcat (tbuf, "..)");
-                        } else
-                        {
-                                sprintf (tbuf, "(%s)", sess->waitchannel);
-                        }
+                        g_snprintf (tbuf, sizeof (tbuf), "(%s)", sess->waitchannel);
                 }
                 else
                         strcpy (tbuf, _("<none>"));
@@ -6675,6 +6977,8 @@ fe_set_away (server *serv)
 void
 fe_set_channel (session *sess)
 {
+        if (sess->activity.highest != ACTIVITY_NONE)
+                mg_activity_list_queue (sess);
         if (sess->res->tab != NULL)
                 chan_rename (sess->res->tab, sess->channel, prefs.hex_gui_tab_trunc);
 }

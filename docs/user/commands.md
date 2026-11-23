@@ -264,6 +264,15 @@ it validates ranges and explains related options together.
 See the [Fabulor settings reference](settings-reference.md) for the complete
 Windows `/SET` inventory, value types, and concise descriptions.
 
+## Unread Activity With `/ACTIVITY`
+
+Use `/ACTIVITY` to show the current context's policy. To override it, use
+`/ACTIVITY all`, `/ACTIVITY messages`, `/ACTIVITY private`,
+`/ACTIVITY highlights` or `/ACTIVITY muted`. Use `/ACTIVITY auto` to follow
+the first matching automatic rule, with all activity as the fallback.
+`/ACTIVITY` displays an automatic tab's effective policy in parentheses.
+See [Activity List](main-window.md#activity-list) for rule settings.
+
 ## Per-Context Options With `/CHANOPT`
 
 `/CHANOPT` reads or overrides settings for the current network and channel or

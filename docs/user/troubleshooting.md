@@ -21,6 +21,15 @@ Do not begin by deleting the profile, copying random DLLs into the installation
 directory, disabling TLS verification, or repeatedly changing unrelated
 settings.
 
+## Activity Rule Does Not Match
+
+Run `/ACTIVITY` in the affected tab. If it shows an explicit policy, set the
+tab to **Automatic** to use rules. For an exact rule, use the name shown in
+the Network List, including any suffix such as `ZNC`. A server-tab rule uses
+`@server` as the context field. Keep specific rules above broader matches
+and choose **Save and Apply to Open Contexts** for tabs that are already
+open. See [Activity Policies And Rules](main-window.md#activity-policies-and-rules).
+
 ## Safe Mode
 
 If the Start menu shortcut was installed, open **Fabulor Safe Mode**. It starts

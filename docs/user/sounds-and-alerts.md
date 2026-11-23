@@ -127,6 +127,9 @@ Tray blinking stops and its counts reset when the main window receives focus.
 Highlight state takes priority over ordinary message state while both are
 pending.
 
+In 1.0.8, the [Activity List](main-window.md#activity-list) and switcher
+badges track unread activity independently of these sounds and alerts.
+
 ## Per-Tab Alert Overrides
 
 Global Preferences are defaults. A channel or private-message tab can override

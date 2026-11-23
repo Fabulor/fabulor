@@ -59,10 +59,15 @@ See [Getting started](getting-started.md),
 
 ## Appearance And Input
 
+- In 1.0.8, track unread counts across networks in the channel switcher and
+  [Activity List](main-window.md#activity-list). Review the latest unread
+  highlight and set per-context activity policies for busy channels and bots.
 - Select the system desktop theme or import compatible GTK4 themes.
 - Import `.hct` IRC colour themes or customise individual chat colours.
 - Configure fonts, timestamps, channel-switcher layout, user-list width,
   topic display, and other interface preferences.
+- In 1.0.8, set independent channel-name and nickname display limits and
+  hover over shortened names to see the full text.
 - Use spell checking with suggestions and a persistent personal dictionary.
 - Insert Unicode emoji and search the flag picker by country name or code.
 - Select and automatically copy transcript text, and open detected links in

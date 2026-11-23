@@ -951,6 +951,7 @@ fe_main (void)
 void
 fe_cleanup (void)
 {
+	mg_activity_list_close ();
 	mg_win32_message_filter_shutdown ();
 	theme_manager_shutdown ();
 }
@@ -1294,21 +1295,10 @@ fe_progressbar_end (server *serv)
 
 void
 fe_print_text (struct session *sess, char *text, time_t stamp,
-			   gboolean no_activity)
+			   int nick_start, int nick_length)
 {
-	PrintTextRaw (sess->res->buffer, (unsigned char *)text, prefs.hex_text_indent, stamp);
-
-	if (no_activity || !sess->gui->is_tab)
-		return;
-
-	if (sess == current_tab)
-		fe_set_tab_color (sess, FE_COLOR_NONE);
-	else if (sess->tab_state & TAB_STATE_NEW_HILIGHT)
-		fe_set_tab_color (sess, FE_COLOR_NEW_HILIGHT);
-	else if (sess->tab_state & TAB_STATE_NEW_MSG)
-		fe_set_tab_color (sess, FE_COLOR_NEW_MSG);
-	else
-		fe_set_tab_color (sess, FE_COLOR_NEW_DATA);
+	PrintTextRawWithNick (sess->res->buffer, (unsigned char *)text,
+		prefs.hex_text_indent, stamp, nick_start, nick_length);
 }
 
 void

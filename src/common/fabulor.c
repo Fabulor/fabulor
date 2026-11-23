@@ -215,8 +215,21 @@ fabulor_run_theme_post_apply_callback (void)
  * Update the priority queue of the "interesting sessions"
  * (sess_list_by_lastact).
  */
-void
-lastact_update(session *sess)
+static void
+lastact_remove (session *sess)
+{
+	if (sess->lastact_link)
+	{
+		int index = sess->lastact_idx;
+		sess_list_by_lastact[index] = g_list_delete_link (
+			sess_list_by_lastact[index], sess->lastact_link);
+		sess->lastact_link = NULL;
+		sess->lastact_idx = LACT_NONE;
+	}
+}
+
+static void
+lastact_update (session *sess)
 {
 	int oldidx = sess->lastact_idx;
 	int newidx = LACT_NONE;
@@ -230,16 +243,260 @@ lastact_update(session *sess)
 		newidx = dia? LACT_QUERY: LACT_CHAN_DATA;
 
 	if (oldidx == newidx &&
-		 (newidx == LACT_NONE || g_list_index(sess_list_by_lastact[newidx], sess) == 0))
+		 (newidx == LACT_NONE || sess_list_by_lastact[newidx] == sess->lastact_link))
 		return;
 
-	if (oldidx != LACT_NONE)
-		sess_list_by_lastact[oldidx] = g_list_remove(sess_list_by_lastact[oldidx], sess);
-
-	sess->lastact_idx = newidx;
+	lastact_remove (sess);
 	if (newidx != LACT_NONE)
-		sess_list_by_lastact[newidx] = g_list_prepend(sess_list_by_lastact[newidx], sess);
-	return;
+	{
+		sess_list_by_lastact[newidx] = g_list_prepend (sess_list_by_lastact[newidx], sess);
+		sess->lastact_idx = newidx;
+		sess->lastact_link = sess_list_by_lastact[newidx];
+	}
+}
+
+void
+session_set_tab_state (session *sess, tab_state_flags state)
+{
+	sess->tab_state = state;
+	lastact_update (sess);
+}
+
+static ActivityAggregate *
+session_parent_activity (session *sess)
+{
+	return sess->type == SESS_SERVER ? NULL : &sess->server->child_activity;
+}
+
+static ActivityRules *profile_activity_rules;
+static char *profile_activity_text;
+
+static char *
+activity_rules_path (void)
+{
+	return g_build_filename (get_xdir (), "activity-rules.conf", NULL);
+}
+
+static void
+activity_rules_load (void)
+{
+	char *path = activity_rules_path ();
+	FILE *file = g_fopen (path, "rb");
+
+	g_free (path);
+	if (file)
+	{
+		char *data = g_malloc (ACTIVITY_RULES_MAX_BYTES + 1);
+		gsize size = fread (data, 1, ACTIVITY_RULES_MAX_BYTES + 1, file);
+		if (!ferror (file) && size <= ACTIVITY_RULES_MAX_BYTES &&
+			!memchr (data, 0, size) && g_utf8_validate (data, size, NULL))
+		{
+			data[size] = 0;
+			profile_activity_text = g_steal_pointer (&data);
+			profile_activity_rules = activity_rules_parse (profile_activity_text, NULL);
+		}
+		g_free (data);
+		fclose (file);
+	}
+}
+
+const char *
+fabulor_activity_rules_text (void)
+{
+	return profile_activity_text ? profile_activity_text : "";
+}
+
+static gboolean
+activity_uses_rfc1459 (session *sess)
+{
+	return sess->server->p_cmp == rfc_casecmp;
+}
+
+static const char *
+activity_context_name (session *sess)
+{
+	if (sess->type == SESS_SERVER ||
+		(sess->type == SESS_CHANNEL && sess == sess->server->server_session &&
+		 !sess->channel[0] && !sess->session_name[0]))
+		return "@server";
+	if (sess->type == SESS_CHANNEL || sess->type == SESS_DIALOG)
+		return sess->session_name[0] ? sess->session_name : sess->channel;
+	return NULL;
+}
+
+static void
+activity_resolve_context (session *sess, gboolean apply_open)
+{
+	const char *network = sess->server->network ?
+		server_get_network (sess->server, FALSE) : sess->server->hostname;
+	const char *context = activity_context_name (sess);
+
+	if (!network || !*network || !context || !*context ||
+		strlen (network) > 255 || strpbrk (network, "\r\n") || strpbrk (context, "\r\n"))
+		return;
+	if (!apply_open && g_strcmp0 (sess->activity_network, network) == 0 &&
+		g_strcmp0 (sess->activity_context, context) == 0)
+		return;
+
+	g_free (sess->activity_network);
+	g_free (sess->activity_context);
+	sess->activity_network = g_strdup (network);
+	sess->activity_context = g_strdup (context);
+	sess->activity_policy = chanopt_activity_get (sess, network, context);
+	sess->activity_default_policy = activity_rules_policy (profile_activity_rules,
+		network, context, activity_uses_rfc1459 (sess));
+}
+
+void
+session_activity_resolve (session *sess)
+{
+	activity_resolve_context (sess, FALSE);
+}
+
+gboolean
+session_activity_set_policy (session *sess, ActivityPolicy policy)
+{
+	ActivityPolicy previous;
+
+	if (!activity_policy_name (policy))
+		return FALSE;
+	session_activity_resolve (sess);
+	if (!sess->activity_network)
+		return FALSE;
+
+	previous = sess->activity_policy;
+	chanopt_activity_set (sess, sess->activity_network, sess->activity_context, policy);
+	if (!chanopt_save_all (FALSE))
+	{
+		chanopt_activity_set (sess, sess->activity_network, sess->activity_context, previous);
+		return FALSE;
+	}
+	sess->activity_policy = policy;
+	return TRUE;
+}
+
+gboolean
+fabulor_activity_rules_save (const char *text, gboolean apply_open, GError **error)
+{
+	ActivityRules *parsed = activity_rules_parse (text, error);
+	char *path;
+	gboolean saved;
+
+	if (!parsed)
+		return FALSE;
+	path = activity_rules_path ();
+	saved = g_file_set_contents_full (path, text, -1, G_FILE_SET_CONTENTS_CONSISTENT,
+		0600, error);
+	g_free (path);
+	if (!saved)
+	{
+		activity_rules_free (parsed);
+		return FALSE;
+	}
+
+	g_clear_pointer (&profile_activity_rules, activity_rules_free);
+	char *copy = g_strdup (text);
+	g_free (profile_activity_text);
+	profile_activity_rules = parsed;
+	profile_activity_text = copy;
+	if (apply_open)
+	{
+		for (GSList *item = sess_list; item; item = item->next)
+			activity_resolve_context (item->data, TRUE);
+	}
+	return TRUE;
+}
+
+ActivityClass
+session_activity_filter_nick (session *sess, const char *nick, ActivityClass activity)
+{
+	return activity_rules_filter_nick (profile_activity_rules, nick,
+		activity_uses_rfc1459 (sess), activity);
+}
+
+static char *
+activity_highlight_preview (const char *sender, const char *message)
+{
+	const guint limit = 240;
+	char *line = g_strconcat (sender, ": ", message, NULL);
+	char *plain = strip_color (line, -1, STRIP_ALL);
+	char *valid = g_utf8_make_valid (plain, -1);
+	const char *p = valid;
+	GString *preview = g_string_sized_new (limit);
+
+	for (guint count = 0; *p && count < limit; ++count, p = g_utf8_next_char (p))
+	{
+		gunichar ch = g_utf8_get_char (p);
+		if (g_unichar_isspace (ch) || g_unichar_type (ch) == G_UNICODE_CONTROL)
+			ch = ' ';
+		g_string_append_unichar (preview, ch);
+	}
+	if (*p)
+		g_string_append (preview, "…");
+	g_free (valid);
+	g_free (plain);
+	g_free (line);
+	return g_string_free (preview, FALSE);
+}
+
+void
+session_activity_record (session *sess, ActivityClass activity, time_t timestamp,
+						 const char *sender, const char *message)
+{
+	static guint64 sequence;
+	tab_state_flags previous_state = sess->tab_state;
+	ActivityAggregate *aggregate;
+	ActivityClass previous_child;
+	tab_state_flags state;
+
+	ActivityPolicy policy = sess->activity_policy == ACTIVITY_POLICY_AUTO ?
+		sess->activity_default_policy : sess->activity_policy;
+
+	if (!activity_policy_allows (policy, activity))
+		return;
+
+	aggregate = session_parent_activity (sess);
+	previous_child = aggregate ? activity_aggregate_highest (aggregate) : ACTIVITY_NONE;
+	if (!activity_record (&sess->activity, aggregate, activity, fe_activity_view (sess),
+						  timestamp ? timestamp : time (NULL), &sequence))
+		return;
+
+	if (sess->activity.highest == ACTIVITY_HIGHLIGHT)
+		state = TAB_STATE_NEW_HILIGHT;
+	else if (sess->activity.highest >= ACTIVITY_MESSAGE)
+		state = TAB_STATE_NEW_MSG;
+	else
+		state = TAB_STATE_NEW_DATA;
+	if (activity == ACTIVITY_HIGHLIGHT)
+	{
+		g_free (sess->activity_highlight_preview);
+		sess->activity_highlight_preview = sender && *sender && message && *message ?
+			activity_highlight_preview (sender, message) : NULL;
+	}
+
+	/* An explicit GUI COLOR can promote the existing indication. */
+	session_set_tab_state (sess, MAX (sess->tab_state, state));
+	fe_activity_changed (sess, FALSE, previous_state != sess->tab_state ||
+		(aggregate && previous_child != activity_aggregate_highest (aggregate)));
+}
+
+void
+session_activity_read (session *sess)
+{
+	if (activity_view_is_read (fe_activity_view (sess)))
+		session_activity_mark_read (sess);
+}
+
+void
+session_activity_mark_read (session *sess)
+{
+	gboolean had_activity = activity_clear (&sess->activity, session_parent_activity (sess));
+	g_clear_pointer (&sess->activity_highlight_preview, g_free);
+	if (had_activity || sess->tab_state != TAB_STATE_NONE)
+	{
+		session_set_tab_state (sess, TAB_STATE_NONE);
+		fe_activity_changed (sess, FALSE, TRUE);
+	}
 }
 
 /*
@@ -272,8 +529,7 @@ lastact_getfirst(int (*filter) (session *sess))
 
 		if (sess)
 		{
-			sess_list_by_lastact[i] = g_list_remove(sess_list_by_lastact[i], sess);
-			sess->lastact_idx = LACT_NONE;
+			lastact_remove (sess);
 		}
 	}
 	
@@ -633,6 +889,7 @@ new_ircwindow (server *serv, char *name, int type, int focus)
 
 	irc_init (sess);
 	chanopt_load (sess);
+	session_activity_resolve (sess);
 	scrollback_load (sess);
 	if (sess->scrollwritten && sess->scrollback_replay_marklast)
 		sess->scrollback_replay_marklast (sess);
@@ -721,9 +978,12 @@ session_free (session *killsess)
 	server *killserv = killsess->server;
 	session *sess;
 	GSList *list;
-	int oldidx;
 
 	plugin_emit_dummy_print (killsess, "Close Context");
+
+	gboolean had_activity = activity_clear (&killsess->activity,
+											 session_parent_activity (killsess));
+	fe_activity_changed (killsess, TRUE, had_activity);
 
 	if (current_tab == killsess)
 		current_tab = NULL;
@@ -762,9 +1022,7 @@ session_free (session *killsess)
 	if (killsess->type == SESS_CHANNEL)
 		userlist_free (killsess);
 
-	oldidx = killsess->lastact_idx;
-	if (oldidx != LACT_NONE)
-		sess_list_by_lastact[oldidx] = g_list_remove(sess_list_by_lastact[oldidx], killsess);
+	lastact_remove (killsess);
 
 	exec_notify_kill (killsess);
 
@@ -784,6 +1042,9 @@ session_free (session *killsess)
 	g_free (killsess->topic);
 	g_free (killsess->topic_formatted);
 	g_free (killsess->current_modes);
+	g_free (killsess->activity_network);
+	g_free (killsess->activity_context);
+	g_free (killsess->activity_highlight_preview);
 
 	fe_session_callback (killsess);
 
@@ -1110,6 +1371,8 @@ fabulor_exit (void)
 	sts_cleanup ();
 	free_sessions ();
 	chanopt_save_all (TRUE);
+	g_clear_pointer (&profile_activity_rules, activity_rules_free);
+	g_clear_pointer (&profile_activity_text, g_free);
 	servlist_cleanup ();
 	fe_exit ();
 }
@@ -1220,6 +1483,8 @@ main (int argc, char *argv[])
 	}
 #endif
 
+	chanopt_initialise ();
+	activity_rules_load ();
 	fe_init ();
 
 	/* This is done here because cfgfiles.c is too early in

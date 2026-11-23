@@ -213,6 +213,13 @@ fabulor_tab_context_menu_model_new (const char *heading,
 			labels->logging, state->options[FABULOR_TAB_OPTION_LOGGING]);
 		tab_option_append (result, settings, FABULOR_TAB_OPTION_SCROLLBACK,
 			labels->scrollback, state->options[FABULOR_TAB_OPTION_SCROLLBACK]);
+		if (state->has_activity_context && labels->activity_policy)
+		{
+			tab_action_add (result, "activity-policy", FABULOR_TAB_CONTEXT_ACTIVITY_POLICY,
+				FABULOR_TAB_OPTION_COUNT, NULL, FALSE, FALSE);
+			g_menu_append (settings, labels->activity_policy,
+				FABULOR_CONTEXT_ACTION_NAMESPACE ".activity-policy");
+		}
 		if (state->is_channel)
 		{
 			tab_option_append (result, settings, FABULOR_TAB_OPTION_STRIP_COLORS,

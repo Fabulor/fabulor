@@ -32,6 +32,7 @@ struct _FabulorUserListRowObject
 	GdkPixbuf *icon;
 	gchar *prefix_markup;
 	gchar *nick_markup;
+	gchar *nick_tooltip;
 	gchar *hostname;
 	GdkRGBA foreground;
 	gboolean has_foreground;
@@ -48,6 +49,7 @@ enum
 	PROP_USER_ROW_ICON,
 	PROP_USER_ROW_PREFIX,
 	PROP_USER_ROW_NICK,
+	PROP_USER_ROW_NICK_TOOLTIP,
 	PROP_USER_ROW_HOST,
 	PROP_USER_ROW_FOREGROUND,
 	N_USER_ROW_PROPERTIES
@@ -81,6 +83,9 @@ fabulor_user_list_row_object_get_property (GObject *object, guint property_id,
 	case PROP_USER_ROW_NICK:
 		g_value_set_string (value, row->nick_markup);
 		break;
+	case PROP_USER_ROW_NICK_TOOLTIP:
+		g_value_set_string (value, row->nick_tooltip);
+		break;
 	case PROP_USER_ROW_HOST:
 		g_value_set_string (value, row->hostname);
 		break;
@@ -101,6 +106,7 @@ fabulor_user_list_row_object_finalize (GObject *object)
 	g_clear_object (&row->icon);
 	g_free (row->prefix_markup);
 	g_free (row->nick_markup);
+	g_free (row->nick_tooltip);
 	g_free (row->hostname);
 	G_OBJECT_CLASS (fabulor_user_list_row_object_parent_class)->finalize (object);
 }
@@ -121,6 +127,9 @@ fabulor_user_list_row_object_class_init (
 		G_PARAM_READABLE | G_PARAM_STATIC_STRINGS);
 	user_row_properties[PROP_USER_ROW_NICK] = g_param_spec_string (
 		"nick-markup", "Nick markup", "User nickname markup", NULL,
+		G_PARAM_READABLE | G_PARAM_STATIC_STRINGS);
+	user_row_properties[PROP_USER_ROW_NICK_TOOLTIP] = g_param_spec_string (
+		"nick-tooltip", "Nick tooltip", "Complete nickname", NULL,
 		G_PARAM_READABLE | G_PARAM_STATIC_STRINGS);
 	user_row_properties[PROP_USER_ROW_HOST] = g_param_spec_string (
 		"hostname", "Hostname", "User hostname", NULL,
@@ -158,6 +167,8 @@ user_row_object_update (FabulorUserListRowObject *target,
 		g_strcmp0 (target->prefix_markup, source->prefix_markup) != 0;
 	gboolean nick_changed =
 		g_strcmp0 (target->nick_markup, source->nick_markup) != 0;
+	gboolean nick_tooltip_changed =
+		g_strcmp0 (target->nick_tooltip, source->nick_tooltip) != 0;
 	gboolean host_changed = g_strcmp0 (target->hostname, source->hostname) != 0;
 	gboolean foreground_changed = rgba_changed (target, source);
 
@@ -172,6 +183,11 @@ user_row_object_update (FabulorUserListRowObject *target,
 	{
 		g_free (target->nick_markup);
 		target->nick_markup = g_strdup (source->nick_markup);
+	}
+	if (nick_tooltip_changed)
+	{
+		g_free (target->nick_tooltip);
+		target->nick_tooltip = g_strdup (source->nick_tooltip);
 	}
 	if (host_changed)
 	{
@@ -194,6 +210,9 @@ user_row_object_update (FabulorUserListRowObject *target,
 	if (nick_changed)
 		g_object_notify_by_pspec (G_OBJECT (target),
 			user_row_properties[PROP_USER_ROW_NICK]);
+	if (nick_tooltip_changed)
+		g_object_notify_by_pspec (G_OBJECT (target),
+			user_row_properties[PROP_USER_ROW_NICK_TOOLTIP]);
 	if (host_changed)
 		g_object_notify_by_pspec (G_OBJECT (target),
 			user_row_properties[PROP_USER_ROW_HOST]);
@@ -404,6 +423,14 @@ fabulor_user_list_model_get_item_nick (gpointer item)
 	g_return_val_if_fail (G_TYPE_CHECK_INSTANCE_TYPE ((GTypeInstance *) item,
 		FABULOR_TYPE_USER_LIST_ROW_OBJECT), NULL);
 	return FABULOR_USER_LIST_ROW_OBJECT (item)->nick_markup;
+}
+
+const gchar *
+fabulor_user_list_model_get_item_nick_tooltip (gpointer item)
+{
+	g_return_val_if_fail (G_TYPE_CHECK_INSTANCE_TYPE ((GTypeInstance *) item,
+		FABULOR_TYPE_USER_LIST_ROW_OBJECT), NULL);
+	return FABULOR_USER_LIST_ROW_OBJECT (item)->nick_tooltip;
 }
 
 const gchar *

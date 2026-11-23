@@ -1,6 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">
   <Fragment>
+    <!-- The published 1.0.7 bundle is left behind when the MSI owns the
+         upgrade and Burn suppresses the older bundle's separate uninstall. -->
+    <Property Id="FABULOR_PUBLISHED_107_BUNDLE_PROVIDER" Secure="yes">
+      <RegistrySearch Id="Published107BundleProviderSearch"
+                      Root="HKLM"
+                      Key="Software\Microsoft\Windows\CurrentVersion\Uninstall\{656AE58B-7162-48D0-8895-D091BC63C9F8}"
+                      Name="BundleProviderKey"
+                      Type="raw"
+                      Bitness="always64" />
+    </Property>
     <Property Id="IRC_PROTOCOL_HANDLER">
       <RegistrySearch Id="IrcProtocolHandlerSearch"
                       Root="HKLM"
@@ -16,6 +26,20 @@
                       Bitness="always64" />
     </Property>
     <ComponentGroup Id="InstalledModeCoreComponents">
+      <Component Id="RemovePublished107SetupEntry" Guid="3857A576-E60F-4F04-99A0-41CBCFEF06E0"
+                 Directory="INSTALLFOLDER" Bitness="always64"
+                 Condition='NOT FABULOR_PORTABLE AND NOT Installed AND (WIX_UPGRADE_DETECTED &gt;&lt; "{504E5953-1796-4142-AB4C-71A159FA4853}") AND FABULOR_PUBLISHED_107_BUNDLE_PROVIDER = "{656AE58B-7162-48D0-8895-D091BC63C9F8}"'>
+        <RemoveRegistryKey Id="RemovePublished107BundleRegistration"
+                           Root="HKLM"
+                           Key="Software\Microsoft\Windows\CurrentVersion\Uninstall\{656AE58B-7162-48D0-8895-D091BC63C9F8}"
+                           Action="removeOnInstall" />
+        <RegistryValue Root="HKLM"
+                       Key="Software\Fabulor\Installer"
+                       Name="RemovedPublished107SetupEntry"
+                       Type="integer"
+                       Value="1"
+                       KeyPath="yes" />
+      </Component>
       <Component Id="InstalledModeCleanup" Guid="0A54F269-9BDB-4D60-9FD7-E5F9D4B6A1E8" Directory="INSTALLFOLDER" Condition="NOT FABULOR_PORTABLE">
         <RemoveFile Id="RemoveInstalledStartMenuShortcut"
                     Directory="ApplicationProgramsFolder"

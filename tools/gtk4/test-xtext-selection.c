@@ -179,6 +179,63 @@ static void test_wrapped (void)
  g_assert_cmpint (hit (&f, ent, f.text->buffer->indent, 1), ==, start);
  finish (&f);
 }
+
+static void test_fixed_nickname (void)
+{
+ Fixture f = fixture (FALSE);
+ unsigned char line[] = "<\00304Caf\303\251Long\017>\tHello there";
+ const char *full = "Caf\303\251Long";
+ textentry *ent;
+ char *copy, *word;
+ GList *matches;
+ offsets_t result;
+ int x, end;
+
+ gtk_xtext_append_nick (f.text->buffer, line, sizeof line - 1,
+  (int) (strchr ((char *) line, '\t') - (char *) line + 1),
+  1, 1, 3 + (int) strlen (full), 4);
+ ent = f.text->buffer->text_last;
+ g_assert_nonnull (ent->nickname);
+ g_assert_cmpstr ((char *) ent->str, ==, "<\00304Caf\303\251" FABULOR_NAME_ELLIPSIS "\017> Hello there");
+ end = ent->nickname->ellipsis + XTEXT_NAME_ELLIPSIS_LEN;
+ copy = selected (&f, ent, 0, ent->str_len, TRUE);
+ g_assert_cmpstr (copy, ==, "<Caf\303\251Long> Hello there");
+ g_free (copy);
+ copy = selected (&f, ent, ent->nickname->nick_start, end, FALSE);
+ g_assert_cmpstr (copy, ==, full);
+ g_free (copy);
+ x = ent->indent + gtk_xtext_text_width (f.text, ent->str, ent->nickname->ellipsis) + 1;
+ word = gtk_xtext_get_word (f.text, x, 1, NULL, NULL, NULL, NULL);
+ g_assert_cmpstr (word, ==, full);
+ gtk_xtext_search_init (f.text->buffer, "Long", case_match, NULL);
+ matches = gtk_xtext_search_textentry (f.text->buffer, ent);
+ g_assert_nonnull (matches);
+ result.u = GPOINTER_TO_UINT (matches->data);
+ g_assert_cmpint (result.o.start, ==, ent->nickname->ellipsis);
+ g_assert_cmpint (result.o.end, ==, end + 1); /* Includes the trailing IRC reset. */
+ g_list_free (matches);
+ finish (&f);
+}
+
+static void test_fixed_action_and_disabled_limit (void)
+{
+ Fixture f = fixture (FALSE);
+ unsigned char line[] = "*\tNickname waved";
+ textentry *ent;
+ char *copy;
+
+ gtk_xtext_append_nick (f.text->buffer, line, sizeof line - 1, 2, 1, 2, 8, 4);
+ ent = f.text->buffer->text_last;
+ g_assert_cmpstr ((char *) ent->str, ==, "* Nick" FABULOR_NAME_ELLIPSIS " waved");
+ copy = selected (&f, ent, 0, ent->str_len, FALSE);
+ g_assert_cmpstr (copy, ==, "* Nickname waved");
+ g_free (copy);
+ gtk_xtext_append_nick (f.text->buffer, line, sizeof line - 1, 2, 1, 2, 8, 0);
+ ent = f.text->buffer->text_last;
+ g_assert_null (ent->nickname);
+ g_assert_cmpstr ((char *) ent->str, ==, "* Nickname waved");
+ finish (&f);
+}
 int main (int argc, char **argv)
 {
  gtk_init ();
@@ -192,5 +249,7 @@ int main (int argc, char **argv)
  g_test_add_func ("/xtext/selection/formatted-body", test_formatted_body);
  g_test_add_func ("/xtext/selection/prefix-identity", test_prefix_identity);
  g_test_add_func ("/xtext/selection/wrapped-line", test_wrapped);
+ g_test_add_func ("/xtext/nickname/fixed-limit-identity", test_fixed_nickname);
+ g_test_add_func ("/xtext/nickname/action-and-disabled-limit", test_fixed_action_and_disabled_limit);
  return g_test_run ();
 }

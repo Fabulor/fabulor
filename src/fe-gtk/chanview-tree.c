@@ -222,6 +222,6 @@ cv_tree_is_collapsed (chan *ch)
 {
 	chan *parent = cv_tree_get_parent (ch);
 
-	return parent && !fabulor_channel_tree_view_is_expanded (
-		((treeview *) ch->cv)->tree, parent);
+	return !fabulor_channel_tree_view_is_expanded (
+		((treeview *) ch->cv)->tree, parent ? parent : ch);
 }

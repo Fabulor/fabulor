@@ -63,8 +63,11 @@
 #include "../../src/fe-gtk/xtext-selection.h"
 #include "../../src/fe-gtk/xtext-widget-class.h"
 #include "../../src/fe-gtk/addon-list.h"
+#include "../../src/fe-gtk/activity-list.h"
 #include "../../src/fe-gtk/channel-model.h"
 #include "../../src/fe-gtk/channel-tree-view.h"
+#include "../../src/fe-gtk/channel-unread-label.h"
+#include "../../src/fe-gtk/display-name.h"
 #include "../../src/fe-gtk/notify-list.h"
 #include "../../src/fe-gtk/user-list-model.h"
 #include "../../src/fe-gtk/user-list-view.h"
@@ -1476,6 +1479,273 @@ check_channel_model (void)
 			GTK_IS_SINGLE_SELECTION (selection);
 	}
 	fabulor_channel_model_free (model);
+	return valid;
+}
+
+typedef struct
+{
+	FabulorActivityList *list;
+	GtkWidget *server_row;
+	gpointer activated;
+	gpointer marked;
+} ProbeActivity;
+
+static void
+probe_activity_activated (gpointer identity, gpointer data)
+{
+	((ProbeActivity *) data)->activated = identity;
+}
+
+static void
+probe_activity_marked (gpointer identity, gpointer data)
+{
+	ProbeActivity *probe = data;
+
+	probe->marked = identity;
+	fabulor_activity_list_remove (probe->list, identity);
+}
+
+static void
+probe_activity_binding (GtkSignalListItemFactory *factory, GtkListItem *item,
+	gpointer data)
+{
+	ProbeActivity *probe = data;
+	const char *label = gtk_list_item_get_accessible_label (item);
+	const char *description = gtk_list_item_get_accessible_description (item);
+	GtkWidget *row = gtk_list_item_get_child (item);
+	GtkWidget *box = gtk_widget_get_first_child (row);
+	GtkWidget *preview = gtk_widget_get_next_sibling (gtk_widget_get_first_child (box));
+
+	(void) factory;
+	if (g_strcmp0 (label, "Server on Two") == 0 && description &&
+		strstr (description, "Highlight priority") && strstr (description, "3 unread") &&
+		strstr (description, "1 highlight") && strstr (description, "2 other events") &&
+		strstr (description, "Barry: How does it look <so far>?") &&
+		gtk_widget_get_visible (preview) &&
+		g_strcmp0 (gtk_label_get_text (GTK_LABEL (preview)), "Barry: How does it look <so far>?") == 0)
+		g_set_object (&probe->server_row, row);
+}
+
+static gboolean
+probe_activity_context_click (GtkWidget *view, GtkWidget *row)
+{
+	GListModel *controllers = gtk_widget_observe_controllers (view);
+	graphene_point_t point = GRAPHENE_POINT_INIT (
+		gtk_widget_get_width (row) / 2.0f, gtk_widget_get_height (row) / 2.0f);
+	gboolean emitted = FALSE;
+
+	if (gtk_widget_compute_point (row, view, &point, &point))
+	{
+		for (guint i = 0; i < g_list_model_get_n_items (controllers); ++i)
+		{
+			GtkEventController *controller = g_list_model_get_item (controllers, i);
+			if (GTK_IS_GESTURE_CLICK (controller) &&
+				gtk_gesture_single_get_button (GTK_GESTURE_SINGLE (controller)) == GDK_BUTTON_SECONDARY)
+			{
+				g_signal_emit_by_name (controller, "pressed", 1, (double) point.x, (double) point.y);
+				emitted = TRUE;
+			}
+			g_object_unref (controller);
+		}
+	}
+	g_object_unref (controllers);
+	return emitted;
+}
+
+static gboolean
+check_activity_list (void)
+{
+	int server, alpha, beta, dialog;
+	ProbeActivity probe = { 0 };
+	FabulorActivityList *list = fabulor_activity_list_new (
+		probe_activity_activated, probe_activity_marked, &probe);
+	GtkWidget *content = fabulor_activity_list_get_widget (list);
+	GtkCheckButton *highlights = GTK_CHECK_BUTTON (gtk_widget_get_first_child (content));
+	GtkStack *stack = GTK_STACK (gtk_widget_get_last_child (content));
+	GtkScrolledWindow *scroll = GTK_SCROLLED_WINDOW (
+		gtk_stack_get_child_by_name (stack, "unread"));
+	GtkListView *view = GTK_LIST_VIEW (gtk_scrolled_window_get_child (scroll));
+	GtkSingleSelection *selection = GTK_SINGLE_SELECTION (gtk_list_view_get_model (view));
+	GListModel *items = G_LIST_MODEL (selection);
+	GtkWindow *window = GTK_WINDOW (gtk_window_new ());
+	ActivityState message = { .highest = ACTIVITY_MESSAGE, .latest_sequence = 2 };
+	ActivityState highlight = { .highest = ACTIVITY_HIGHLIGHT, .latest_sequence = 1 };
+	ActivityState private_message = { .highest = ACTIVITY_PRIVATE, .latest_sequence = 4 };
+	const ActivityState read = { 0 };
+	GObject *original;
+	gboolean valid = g_strcmp0 (gtk_stack_get_visible_child_name (stack), "empty") == 0;
+
+	probe.list = list;
+	message.unread[ACTIVITY_MESSAGE] = 1;
+	highlight.unread[ACTIVITY_HIGHLIGHT] = 1;
+	highlight.unread[ACTIVITY_OTHER] = 2;
+	private_message.unread[ACTIVITY_PRIVATE] = 2;
+	fabulor_activity_list_update (list, &alpha, "#same", "One", &message, NULL);
+	message.latest_sequence = 3;
+	fabulor_activity_list_update (list, &beta, "#same", "Two", &message, NULL);
+	fabulor_activity_list_update (list, &server, "Server", "Two", &highlight, "Barry: How does it look <so far>?");
+	fabulor_activity_list_update (list, &dialog, "Someone", "Three", &private_message, NULL);
+	g_signal_connect_after (gtk_list_view_get_factory (view), "bind",
+		G_CALLBACK (probe_activity_binding), &probe);
+	gtk_window_set_default_size (window, 460, 320);
+	gtk_window_set_child (window, content);
+	gtk_window_present (window);
+	for (guint i = 0; i < 100 &&
+		(!probe.server_row || gtk_widget_get_height (probe.server_row) == 0); ++i)
+	{
+		while (g_main_context_iteration (NULL, FALSE))
+			;
+		g_usleep (1000);
+	}
+	valid = valid && probe.server_row;
+	valid = valid && g_strcmp0 (gtk_stack_get_visible_child_name (stack), "unread") == 0 &&
+		g_list_model_get_n_items (items) == 4;
+
+	g_signal_emit_by_name (view, "activate", 0u);
+	valid = valid && probe.activated == &server;
+	g_signal_emit_by_name (view, "activate", 1u);
+	valid = valid && probe.activated == &dialog;
+	g_signal_emit_by_name (view, "activate", 2u);
+	valid = valid && probe.activated == &beta;
+	g_signal_emit_by_name (view, "activate", 3u);
+	valid = valid && probe.activated == &alpha;
+
+	gtk_single_selection_set_selected (selection, 3);
+	original = g_object_ref (gtk_single_selection_get_selected_item (selection));
+	message.latest_sequence = 5;
+	message.unread[ACTIVITY_MESSAGE] = 2;
+	fabulor_activity_list_update (list, &alpha, "#same", "One", &message, NULL);
+	valid = valid && gtk_single_selection_get_selected (selection) == 2 &&
+		gtk_single_selection_get_selected_item (selection) == original;
+	g_signal_emit_by_name (view, "activate", 2u);
+	valid = valid && probe.activated == &alpha;
+
+	/* Open the menu on a different row, then change its sorted position. */
+	if (probe.server_row && probe_activity_context_click (GTK_WIDGET (view), probe.server_row))
+	{
+		GtkWidget *popover = gtk_widget_get_first_child (GTK_WIDGET (view));
+		gboolean action_invoked;
+
+		while (popover && !GTK_IS_POPOVER_MENU (popover))
+			popover = gtk_widget_get_next_sibling (popover);
+
+		highlight.latest_sequence = 6;
+		fabulor_activity_list_update (list, &beta, "#same", "Two", &highlight, "Ann: Another highlight");
+		/* GTK dismisses the menu before dispatching the selected action. */
+		if (popover)
+			gtk_popover_popdown (GTK_POPOVER (popover));
+		action_invoked = popover && gtk_widget_activate_action (popover, "activity.mark-read", NULL);
+		if (!action_invoked || probe.marked != &server)
+			fprintf (stderr, "Activity List context action missed the clicked row (menu=%d, action=%d)\n",
+				popover != NULL, action_invoked);
+		valid = valid && action_invoked && probe.marked == &server && probe.activated == &alpha &&
+			gtk_single_selection_get_selected_item (selection) == original &&
+			g_list_model_get_n_items (items) == 3;
+	}
+	else
+		valid = FALSE;
+	g_object_unref (original);
+
+	fabulor_activity_list_remove (list, &beta);
+	g_signal_emit_by_name (view, "activate", 0u);
+	valid = valid && probe.activated == &dialog && g_list_model_get_n_items (items) == 2;
+	gtk_check_button_set_active (highlights, TRUE);
+	valid = valid && g_list_model_get_n_items (items) == 0 &&
+		g_strcmp0 (gtk_stack_get_visible_child_name (stack), "no-highlights") == 0;
+	message.latest_sequence = 7;
+	++message.unread[ACTIVITY_MESSAGE];
+	fabulor_activity_list_update (list, &alpha, "#same", "One", &message, NULL);
+	valid = valid && g_list_model_get_n_items (items) == 0;
+	highlight.latest_sequence = 8;
+	highlight.unread[ACTIVITY_MESSAGE] = message.unread[ACTIVITY_MESSAGE];
+	fabulor_activity_list_update (list, &alpha, "#same", "One", &highlight, "Ben: A newer highlight");
+	valid = valid && g_list_model_get_n_items (items) == 1;
+	g_signal_emit_by_name (view, "activate", 0u);
+	valid = valid && probe.activated == &alpha;
+	gtk_check_button_set_active (highlights, FALSE);
+	valid = valid && g_list_model_get_n_items (items) == 2;
+	fabulor_activity_list_update (list, &alpha, "#same", "One", &read, NULL);
+	fabulor_activity_list_remove (list, &dialog);
+	probe.activated = NULL;
+	g_signal_emit_by_name (view, "activate", 0u);
+	valid = valid && probe.activated == NULL && g_list_model_get_n_items (items) == 0 &&
+		g_strcmp0 (gtk_stack_get_visible_child_name (stack), "empty") == 0;
+
+	gtk_window_destroy (window);
+	fabulor_activity_list_free (list);
+	g_clear_object (&probe.server_row);
+	return valid;
+}
+
+static void
+probe_channel_unread_changed (GObject *item, gpointer user_data)
+{
+	guint *changes = user_data;
+
+	(void) item;
+	++*changes;
+}
+
+static gboolean
+check_channel_unread (void)
+{
+	gint identity;
+	FabulorChannelModel *model = fabulor_channel_model_new ();
+	FabulorChannelModelRow row = { .identity = &identity, .name = "Network" };
+	GtkTreeListRow *tree_row;
+	GObject *item;
+	guint changes = 0;
+	gboolean valid;
+
+	if (!fabulor_channel_model_insert (model, &row, NULL, 0))
+	{
+		fabulor_channel_model_free (model);
+		return FALSE;
+	}
+	tree_row = gtk_tree_list_model_get_row (fabulor_channel_model_get_tree (model), 0);
+	item = gtk_tree_list_row_get_item (tree_row);
+	g_signal_connect (item, "unread-changed", G_CALLBACK (probe_channel_unread_changed),
+		&changes);
+	fabulor_channel_model_set_unread (model, &identity, 2, 1);
+	fabulor_channel_model_set_unread (model, &identity, 2, 1);
+	fabulor_channel_model_set_unread (model, &identity, 2, 3);
+	valid = changes == 2 &&
+		fabulor_channel_model_get_item_unread (item, FALSE) == 2 &&
+		fabulor_channel_model_get_item_unread (item, TRUE) == 5;
+	fabulor_channel_model_set_unread (model, &identity, 0, 0);
+	valid = valid && changes == 3 &&
+		fabulor_channel_model_get_item_unread (item, TRUE) == 0;
+	g_object_unref (item);
+	g_object_unref (tree_row);
+	fabulor_channel_model_free (model);
+	return valid;
+}
+
+static gboolean
+check_channel_unread_label (void)
+{
+	GtkWidget *label = g_object_ref_sink (channel_unread_label_new ());
+	const guint64 counts[] = { 0, 1, 9, 10, 999, 1000, G_MAXUINT64 };
+	const char *expected[] = { "    ", "   1", "   9", "  10", " 999", "999+", "999+" };
+	int initial_width, initial_height, width, height;
+	char *description;
+	gboolean valid = TRUE;
+
+	channel_unread_label_set (label, 0);
+	gtk_widget_measure (label, GTK_ORIENTATION_HORIZONTAL, -1, NULL, &initial_width, NULL, NULL);
+	gtk_widget_measure (label, GTK_ORIENTATION_VERTICAL, -1, NULL, &initial_height, NULL, NULL);
+	for (guint i = 0; i < G_N_ELEMENTS (counts); ++i)
+	{
+		channel_unread_label_set (label, counts[i]);
+		gtk_widget_measure (label, GTK_ORIENTATION_HORIZONTAL, -1, NULL, &width, NULL, NULL);
+		gtk_widget_measure (label, GTK_ORIENTATION_VERTICAL, -1, NULL, &height, NULL, NULL);
+		valid = valid && g_str_equal (gtk_label_get_text (GTK_LABEL (label)), expected[i]) &&
+			width == initial_width && height == initial_height;
+	}
+	description = channel_unread_description (G_MAXUINT64);
+	valid = valid && description && strstr (description, "18446744073709551615");
+	g_free (description);
+	g_object_unref (label);
 	return valid;
 }
 
@@ -4792,7 +5062,7 @@ check_nick_context_menu_model (void)
 
 typedef struct
 {
-	guint counts[7];
+	guint counts[FABULOR_TAB_CONTEXT_ACTIVITY_POLICY + 1];
 	FabulorTabOption last_option;
 	gboolean last_state;
 	const char *last_command;
@@ -4817,7 +5087,7 @@ check_tab_context_menu_model (void)
 	FabulorTabContextLabels labels = {
 		"Alerts", "Settings", "Notify", "Beep", "Tray", "Taskbar",
 		"Logging", "Scrollback", "Strip colors", "Hide joins",
-		"Autojoin", "Auto-connect", "Detach", "Close"
+		"Autojoin", "Auto-connect", "Detach", "Close", "Activity Policy"
 	};
 	FabulorTabContextState state = { 0 };
 	FabulorTabConfiguredItem configured[] = {
@@ -4842,6 +5112,7 @@ check_tab_context_menu_model (void)
 	state.has_session = TRUE;
 	state.is_channel = TRUE;
 	state.has_network = TRUE;
+	state.has_activity_context = TRUE;
 	state.autojoin = FALSE;
 	state.options[FABULOR_TAB_OPTION_NOTIFICATION] = TRUE;
 	state.options[FABULOR_TAB_OPTION_LOGGING] = TRUE;
@@ -4863,6 +5134,7 @@ check_tab_context_menu_model (void)
 		g_menu_model_get_item_attribute (alerts, 0, G_MENU_ATTRIBUTE_LABEL,
 			"s", &label) && g_strcmp0 (label, "Notify") == 0 &&
 		g_action_group_has_action (actions, "option-0") &&
+		g_action_group_has_action (actions, "activity-policy") &&
 		g_action_group_has_action (actions, "autojoin") &&
 		g_action_group_has_action (actions, "detach") &&
 		g_action_group_has_action (actions, "close") &&
@@ -4890,6 +5162,8 @@ check_tab_context_menu_model (void)
 	g_action_group_activate_action (actions, "configured-1", NULL);
 	passed = passed && probe.counts[FABULOR_TAB_CONTEXT_TOGGLE] == 1 &&
 		!probe.last_state && g_strcmp0 (probe.last_command, "quiet") == 0;
+	g_action_group_activate_action (actions, "activity-policy", NULL);
+	passed = passed && probe.counts[FABULOR_TAB_CONTEXT_ACTIVITY_POLICY] == 1;
 	fabulor_tab_context_menu_model_free (model);
 
 	memset (&state, 0, sizeof (state));
@@ -5888,6 +6162,18 @@ check_width_aware_names (gboolean gtk_ready)
 		area.x + area.width, area.y, FALSE, &area);
 	gtk_widget_allocate (label, 800, 40, -1, NULL);
 	passed = passed && !fabulor_clipped_label_tip_area (label, 0, 0, TRUE, &area);
+	{
+		char *shortened = fabulor_display_name_shorten ("Caf\303\251Long", 4);
+		passed = passed && g_strcmp0 (shortened, "Caf\303\251" FABULOR_NAME_ELLIPSIS) == 0 &&
+			fabulor_display_name_cut (names[0], 0) == NULL &&
+			fabulor_display_name_cut ("Caf\303\251", 4) == NULL;
+		gtk_label_set_text (GTK_LABEL (label), shortened);
+		fabulor_clipped_label_set_full (label, "Caf\303\251Long");
+		gtk_widget_allocate (label, 800, 40, -1, NULL);
+		passed = passed && fabulor_clipped_label_tip_area (label, 0, 0, TRUE, &area);
+		fabulor_clipped_label_set_full (label, NULL);
+		g_free (shortened);
+	}
 	gtk_label_set_text (GTK_LABEL (label), names[1]);
 	gtk_widget_measure (label, GTK_ORIENTATION_HORIZONTAL, -1, &minimum, &natural, NULL, NULL);
 	gtk_widget_measure (label, GTK_ORIENTATION_VERTICAL, 65, &minimum, &natural, NULL, NULL);
@@ -6041,6 +6327,16 @@ main (void)
 	if (!check_channel_model ())
 	{
 		fprintf (stderr, "GTK4 channel hierarchy model contract mismatch\n");
+		return 1;
+	}
+	if (!check_channel_unread () || (gtk_ready && !check_channel_unread_label ()))
+	{
+		fprintf (stderr, "GTK4 channel unread count contract mismatch\n");
+		return 1;
+	}
+	if (gtk_ready && !check_activity_list ())
+	{
+		fprintf (stderr, "GTK4 activity list priority, selection or lifetime contract mismatch\n");
 		return 1;
 	}
 	if (gtk_ready && !check_channel_tree_view ())
