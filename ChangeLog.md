@@ -9,6 +9,15 @@ Unreleased entries describe changes under development or release review.
 The first stable release and its preceding release-candidate series are
 recorded separately below.
 
+## 1.0.9 — 2026-11-25
+
+### Fixed
+
+- Keep channels' activity colours independent when collapsing or expanding
+  a network in the channel tree ([#333](https://github.com/Fabulor/fabulor/issues/333)).
+- Remove the stale **Fabulor Setup 1.0.8** entry from Windows Installed apps
+  when upgrading from the published 1.0.8 installer.
+
 ## 1.0.8 — 2026-11-23
 
 ### Added

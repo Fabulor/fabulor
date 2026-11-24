@@ -1776,6 +1776,12 @@ typedef struct
 	guint changes;
 } ProbeChannelSelection;
 
+typedef struct
+{
+	guint calls;
+	gboolean collapsed;
+} ProbeChannelExpansion;
+
 static void
 probe_channel_selection_changed (GtkWidget *view, gpointer identity,
 	gpointer user_data)
@@ -1787,12 +1793,19 @@ probe_channel_selection_changed (GtkWidget *view, gpointer identity,
 	selection->changes++;
 }
 
+static void
+probe_channel_expansion_changed (gpointer identity, gboolean collapsed)
+{
+	ProbeChannelExpansion *row = identity;
+
+	row->calls++;
+	row->collapsed = collapsed;
+}
+
 static gboolean
 check_channel_tree_view (void)
 {
-	gint server;
-	gint alpha;
-	gint beta;
+	ProbeChannelExpansion server = { 0 }, alpha = { 0 }, beta = { 0 };
 	FabulorChannelModel *model = fabulor_channel_model_new ();
 	FabulorChannelModelRow server_row = {
 		&server, "Server", NULL, NULL, PANGO_UNDERLINE_NONE
@@ -1815,15 +1828,33 @@ check_channel_tree_view (void)
 		FALSE) : NULL;
 	if (valid)
 	{
+		GtkWidget *window = gtk_window_new ();
+		GtkTreeListRow *root = gtk_tree_list_model_get_row (
+			fabulor_channel_model_get_tree (model), 0);
+
 		valid = GTK_IS_LIST_VIEW (view);
 		g_object_ref_sink (view);
 		fabulor_channel_tree_view_set_selection_callback (view,
 			probe_channel_selection_changed, &selection);
+		fabulor_channel_tree_view_set_expanded_callback (view,
+			probe_channel_expansion_changed);
+		gtk_window_set_child (GTK_WINDOW (window), view);
+		gtk_widget_realize (window);
 		fabulor_channel_tree_view_expand_all (view);
+		gtk_widget_allocate (window, 320, 240, -1, NULL);
 		valid = valid && fabulor_channel_tree_view_is_expanded (view, &server) &&
 			fabulor_channel_tree_view_focus_identity (view, &alpha) &&
 			fabulor_channel_model_get_selected_identity (model) == &alpha &&
 			selection.identity == &alpha && selection.changes == 1;
+
+		/* Detaching children on collapse also emits notify::expanded. */
+		gtk_tree_list_row_set_expanded (root, FALSE);
+		valid = valid && server.calls > 0 && server.collapsed &&
+			alpha.calls == 0 && beta.calls == 0;
+		gtk_tree_list_row_set_expanded (root, TRUE);
+		valid = valid && !server.collapsed && alpha.calls == 0 && beta.calls == 0;
+		g_object_unref (root);
+		gtk_window_destroy (GTK_WINDOW (window));
 		g_object_unref (view);
 		valid = valid && fabulor_channel_model_select_identity (model, &beta);
 	}

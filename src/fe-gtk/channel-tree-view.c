@@ -165,8 +165,9 @@ channel_tree_item_expanded_changed (GObject *row, GParamSpec *pspec,
 	(void) row;
 	(void) pspec;
 	channel_tree_item_update_unread (binding);
+	/* GTK reports depth zero for detached children during collapse. */
 	if (binding->owner->expanded_callback &&
-		gtk_tree_list_row_get_depth (binding->tree_row) == 0)
+		gtk_tree_list_row_is_expandable (binding->tree_row))
 		binding->owner->expanded_callback (
 			fabulor_channel_model_get_item_identity (binding->item),
 			!gtk_tree_list_row_get_expanded (binding->tree_row));

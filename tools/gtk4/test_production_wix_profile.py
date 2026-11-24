@@ -462,12 +462,22 @@ class ProductionWixProfileTests(unittest.TestCase):
         self.assertIn("this.RemoveDetectedRelatedBundleCaches(preservedBundlePath);", bootstrapper)
         self.assertIn("!Guid.TryParse(cacheDirectoryName, out _)", bootstrapper)
 
-    def test_upgrade_removes_only_the_published_107_setup_entry(self):
+    def test_upgrade_removes_only_published_setup_entries(self):
         root = ET.parse(INSTALLER / "Components" / "InstalledMode.wxs").getroot()
-        old_bundle = "{656AE58B-7162-48D0-8895-D091BC63C9F8}"
-        old_product = "{504E5953-1796-4142-AB4C-71A159FA4853}"
+        published = {
+            "107": ("{656AE58B-7162-48D0-8895-D091BC63C9F8}",
+                    "{504E5953-1796-4142-AB4C-71A159FA4853}"),
+            "108": ("{024C5249-B7B6-46D3-A28A-2988A70FA132}",
+                    "{29CFD3A2-ED65-4D20-9DC8-5FFB84A715FD}"),
+        }
+        self.assertEqual(len(root.findall(".//w:RemoveRegistryKey", WIX_NS)), len(published))
+        for release, (old_bundle, old_product) in published.items():
+            with self.subTest(release=release):
+                self.assert_setup_entry_cleanup(root, release, old_bundle, old_product)
+
+    def assert_setup_entry_cleanup(self, root, release, old_bundle, old_product):
         key = rf"Software\Microsoft\Windows\CurrentVersion\Uninstall\{old_bundle}"
-        provider = "FABULOR_PUBLISHED_107_BUNDLE_PROVIDER"
+        provider = f"FABULOR_PUBLISHED_{release}_BUNDLE_PROVIDER"
         search = root.find(f".//w:Property[@Id='{provider}']/w:RegistrySearch", WIX_NS)
         self.assertIsNotNone(search)
         self.assertEqual(search.get("Root"), "HKLM")
@@ -477,7 +487,7 @@ class ProductionWixProfileTests(unittest.TestCase):
 
         component = root.find(
             ".//w:ComponentGroup[@Id='InstalledModeCoreComponents']"
-            "/w:Component[@Id='RemovePublished107SetupEntry']",
+            f"/w:Component[@Id='RemovePublished{release}SetupEntry']",
             WIX_NS,
         )
         self.assertIsNotNone(component)

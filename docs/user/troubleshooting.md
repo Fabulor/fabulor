@@ -30,6 +30,13 @@ the Network List, including any suffix such as `ZNC`. A server-tab rule uses
 and choose **Save and Apply to Open Contexts** for tabs that are already
 open. See [Activity Policies And Rules](main-window.md#activity-policies-and-rules).
 
+## Channel Colours Do Not Match The Activity List
+
+In 1.0.8, collapsing a network in the channel tree could apply its activity
+colour to channels that had already been read. The unread badges and Activity
+List still showed the correct counts. Version 1.0.9 fixes this display issue.
+See [#333](https://github.com/Fabulor/fabulor/issues/333).
+
 ## Safe Mode
 
 If the Start menu shortcut was installed, open **Fabulor Safe Mode**. It starts
