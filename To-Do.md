@@ -1,7 +1,7 @@
 <!-- Fabulor production roadmap -->
 # Fabulor Production Roadmap
 
-Last reconciled: 2026-11-23 (1.0.8 release preparation)
+Last reconciled: 2026-11-25 (1.0.9 patch preparation)
 
 ## Current Production Baseline
 
@@ -25,6 +25,19 @@ Last reconciled: 2026-11-23 (1.0.8 release preparation)
       appcast offered ZoiteChat packages as Fabulor updates.
 - [x] Inno Setup, GTK3 packaging, Lua, Perl, and bundled user add-ons are
       retired from the supported product.
+
+## 1.0.9 Patch
+
+- [x] Fix [#333](https://github.com/Fabulor/fabulor/issues/333), where
+      collapsing a network could apply its activity colour to channel rows.
+      The regression test failed on 1.0.8 and passed with the fix.
+- [x] Verify the Windows x64 build, all nine GTK test suites and portable
+      startup and shutdown. The maintainer confirmed the live portable test
+      passed.
+- [x] Test the rebuilt Setup as an in-place upgrade from published 1.0.8.
+      The MSI removed the stale 1.0.8 Setup entry. The installed binaries,
+      profile configuration and add-on files matched their expected SHA-256
+      hashes.
 
 ## 1.0.8 Release
 

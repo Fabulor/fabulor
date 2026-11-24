@@ -1,12 +1,20 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">
   <Fragment>
-    <!-- The published 1.0.7 bundle is left behind when the MSI owns the
-         upgrade and Burn suppresses the older bundle's separate uninstall. -->
+    <!-- Published bundles can be left behind when the MSI owns the upgrade
+         and Burn suppresses the older bundle's separate uninstall. -->
     <Property Id="FABULOR_PUBLISHED_107_BUNDLE_PROVIDER" Secure="yes">
       <RegistrySearch Id="Published107BundleProviderSearch"
                       Root="HKLM"
                       Key="Software\Microsoft\Windows\CurrentVersion\Uninstall\{656AE58B-7162-48D0-8895-D091BC63C9F8}"
+                      Name="BundleProviderKey"
+                      Type="raw"
+                      Bitness="always64" />
+    </Property>
+    <Property Id="FABULOR_PUBLISHED_108_BUNDLE_PROVIDER" Secure="yes">
+      <RegistrySearch Id="Published108BundleProviderSearch"
+                      Root="HKLM"
+                      Key="Software\Microsoft\Windows\CurrentVersion\Uninstall\{024C5249-B7B6-46D3-A28A-2988A70FA132}"
                       Name="BundleProviderKey"
                       Type="raw"
                       Bitness="always64" />
@@ -36,6 +44,20 @@
         <RegistryValue Root="HKLM"
                        Key="Software\Fabulor\Installer"
                        Name="RemovedPublished107SetupEntry"
+                       Type="integer"
+                       Value="1"
+                       KeyPath="yes" />
+      </Component>
+      <Component Id="RemovePublished108SetupEntry" Guid="9D5296EF-7828-494F-A511-AE1F39903E16"
+                 Directory="INSTALLFOLDER" Bitness="always64"
+                 Condition='NOT FABULOR_PORTABLE AND NOT Installed AND (WIX_UPGRADE_DETECTED &gt;&lt; "{29CFD3A2-ED65-4D20-9DC8-5FFB84A715FD}") AND FABULOR_PUBLISHED_108_BUNDLE_PROVIDER = "{024C5249-B7B6-46D3-A28A-2988A70FA132}"'>
+        <RemoveRegistryKey Id="RemovePublished108BundleRegistration"
+                           Root="HKLM"
+                           Key="Software\Microsoft\Windows\CurrentVersion\Uninstall\{024C5249-B7B6-46D3-A28A-2988A70FA132}"
+                           Action="removeOnInstall" />
+        <RegistryValue Root="HKLM"
+                       Key="Software\Fabulor\Installer"
+                       Name="RemovedPublished108SetupEntry"
                        Type="integer"
                        Value="1"
                        KeyPath="yes" />
