@@ -1,7 +1,7 @@
 <!-- Fabulor production roadmap -->
 # Fabulor Production Roadmap
 
-Last reconciled: 2026-11-25 (1.0.9 patch preparation)
+Last reconciled: 2026-11-25 (1.0.9 release)
 
 ## Current Production Baseline
 
@@ -38,6 +38,9 @@ Last reconciled: 2026-11-25 (1.0.9 patch preparation)
       The MSI removed the stale 1.0.8 Setup entry. The installed binaries,
       profile configuration and add-on files matched their expected SHA-256
       hashes.
+- [x] Confirm the installed client shows 1.0.9 in **Help > About Fabulor**.
+      The maintainer verified the channel-tree activity colours in the
+      installed build.
 
 ## 1.0.8 Release
 

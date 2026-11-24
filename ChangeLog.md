@@ -9,7 +9,7 @@ Unreleased entries describe changes under development or release review.
 The first stable release and its preceding release-candidate series are
 recorded separately below.
 
-## 1.0.9 — Unreleased
+## 1.0.9 — 2026-11-25
 
 ### Fixed
 
