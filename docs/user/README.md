@@ -30,9 +30,12 @@ authoritative.
 
 ## Release Verification
 
-The 1.0.8 instructions for the [Activity List](main-window.md#activity-list)
-and shortened names reflect the accepted Windows portable candidate. The
-[1.0.8 roadmap](../../To-Do.md#108-release) records installer verification.
+The [Activity List](main-window.md#activity-list) and shortened-name guidance
+reflect the accepted 1.0.8 portable build. The
+[1.0.9 patch record](../../To-Do.md#109-patch) covers the in-place upgrade and
+the maintainer's installed check of channel-tree activity colours. The
+[User Documentation checklist](../../To-Do.md#user-documentation) records the
+completed screenshot privacy review and remaining installed walkthroughs.
 
 Plugin authors should use the separate
 [plugin authoring guides](../plugin-authoring-guides.md).
@@ -50,8 +53,8 @@ Plugin authors should use the separate
   code remains.
 - Add screenshots only when they clarify a workflow that text cannot explain
   efficiently.
-- Keep screenshots under `docs/user/images` and exclude personal servers,
-  nicknames, credentials, IP addresses, and private conversations.
+- Keep screenshots under `docs/user/images`. Use a demo profile with sample IRC
+  data, capture only the relevant window, and strip embedded text metadata.
 - Link to existing technical documentation instead of duplicating it.
 - Record unsupported or retired behaviour explicitly where users migrating
   from XChat or HexChat are likely to expect it.

@@ -1,7 +1,7 @@
 # Main Window
 
-The main-window screenshot shows the installed client. Live portable
-testing covered the 1.0.8 Activity List and name limits. The
+The main-window screenshot uses a demo IRC network and sample conversations.
+Live portable testing covered the 1.0.8 Activity List and name limits. The
 [release roadmap](../../To-Do.md#108-release) records the installer checks.
 
 Fabulor keeps each IRC network, server tab, channel, and private conversation
@@ -22,7 +22,7 @@ The normal tree layout contains:
 Some items are meaningful only in a channel. A server tab has no channel user
 list, and a private conversation does not have channel mode controls.
 
-![Fabulor showing a public IRC channel with the channel switcher, topic bar,
+![Fabulor showing an example IRC channel with the channel switcher, topic bar,
 transcript, user list, nickname box, input box, and network meters visible.](images/main-window-channel.png)
 
 Use **View** to show or hide the menu bar, topic bar, user list, and user-list
@@ -79,7 +79,7 @@ channel or private conversation. The list sorts by activity priority and
 then by recency. The selected context can accumulate unread activity while
 its window is out of focus, minimised or in the tray.
 
-![Activity List showing unread message counts for the same channel name on different networks.](images/activity-list.png)
+![Activity List showing unread counts and event types for three example channels.](images/activity-list.png)
 
 Turn on **Highlights only** to show rows with an unread highlight. Hidden
 rows continue accumulating unread counts. Double-click a row or select it
@@ -90,7 +90,7 @@ Each highlighted row shows the sender and text of its latest unread
 highlight. Hover over the preview to read more of a long line. Opening the
 context or marking it as read clears the preview.
 
-![Highlights only selected, showing a sample channel with its latest highlight preview and unread count breakdown.](images/activity-list-highlights.jpg)
+![Highlights only selected, showing a sample channel with its latest highlight preview and unread count breakdown.](images/activity-list-highlights.png)
 
 ### Activity Policies And Rules
 
