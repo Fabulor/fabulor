@@ -31,7 +31,7 @@ writing original text. XChat documentation is a secondary historical reference.
 | Settings: Network List | Rewrite | `networks-and-connections.md` | Cover current identity, server, SASL, TLS, ZNC, auto-connect, autojoin, and ordering behaviour. |
 | Settings: Channel Options | Verify | `preferences.md` | Confirm the surviving per-channel options and their UI before publication. |
 | Settings: Preferences | Rewrite | `preferences.md` | Source inventory drafted; installed release-candidate verification remains. Retired settings and legacy GTK paths are omitted. |
-| Settings: Keyboard Shortcuts | Verify | `main-window.md` | Document only shortcuts present and tested in Fabulor. |
+| Settings: Keyboard Shortcuts | Verify | `keyboard-shortcuts.md` | Defaults and editor steps are documented from Fabulor's source. Installed verification remains. |
 | Settings: URL Handlers | Rewrite | `networks-and-connections.md` | Fabulor validates `irc` and `ircs` addresses, uses a typed existing-instance handoff, and publishes both schemes through Windows Registered Applications without forcing the default choice. |
 | Settings: Auto Replace | Verify | `preferences.md` | Confirm the editor and persistence path before retaining this topic. |
 | Settings: CTCP Replies | Verify | `preferences.md` | Confirm the current menu surface and substitution behaviour. |
