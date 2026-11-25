@@ -99,9 +99,10 @@ the filter. With focus in the list:
    text calls for them.
 4. Select **Save**. Use **Cancel** to discard edits before saving.
 
-To remove a binding, select its row and choose **Delete**, then **Save**.
-**Reset** restores the built-in bindings while keeping custom rows. Select
-**Save** to apply the reset.
+To remove a custom binding, select its row and choose **Delete**, then
+**Save**. For built-in bindings, use the **Key** cell to assign a different
+combination. **Reset** restores the default keys for built-in bindings while
+keeping custom rows. Select **Save** to apply the reset.
 
 If a shortcut behaves differently, first check which control has focus, then
 look for the binding in **Settings > Keyboard Shortcuts**. The emoji picker and
