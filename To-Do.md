@@ -545,26 +545,36 @@ The WinGet acceptance and Microsoft Store tracks are separate.
       List, TLS, SASL, ZNC, SOCKS5, auto-connect, and autojoin guidance.
   - [x] Write the source-verified `getting-started.md` and
         `networks-and-connections.md` drafts.
-  - [ ] Verify both pages against the final installed release candidate before
-        marking this stage complete.
+  - [x] Record Windows clean-install and portable-mode testing, direct IRC
+        and ZNC connections, TLS, SOCKS5, reconnect and multi-network startup
+        in the [release gate](#10-release-gate). The
+        [1.0.9 upgrade](#109-patch) also preserved the existing profile and
+        add-ons.
+  - [ ] Walk through both guides on the installed build. Confirm the published
+        first-start, first-connection and Network List steps, including SASL,
+        auto-connect and autojoin.
 - [ ] Write and verify the main-window, transcript, input, user-list, menu,
       tray, emoji, flag, clipboard, accessibility, and keyboard guidance.
   - [x] Write the source-verified `main-window.md` draft.
   - [x] Add privacy-safe screenshots where they materially clarify the layout.
-  - [ ] Verify the page through the final installed release-candidate keyboard
-        and accessibility pass before marking this stage complete.
+  - [x] Record installed navigation, transcript selection, clipboard, tray,
+        emoji and flag tests in the [release gate](#10-release-gate) and
+        [1.0.7 validation](#107-development-and-release). The maintainer also
+        verified the 1.0.9 channel-tree activity fix in the installed client.
+  - [ ] Walk through the main-window guide on the installed build, including
+        keyboard navigation and accessibility.
 - [ ] Write and verify the built-in command, Preferences, themes, colours,
       sounds, alerts, saved history, and logging guidance.
-    - [x] Write the source-verified `commands.md` draft.
-    - [ ] Verify the published command syntax and context requirements against
-          an installed release candidate.
-      - [x] Verify the optional Exec plugin with `/EXEC ping google.com` in the
-            installed client.
-    - [x] Write the source-derived `settings-reference.md` draft covering every
-          live Windows `/SET` key, its value type, and its purpose.
-    - [x] Compare all 226 live Windows `/SET` registry entries with the settings
-          reference and verify names, value types, numeric-choice guidance,
-          sensitive-value warnings, retired-name guidance, and duplicates.
+  - [x] Write the source-verified `commands.md` draft.
+  - [x] Verify the optional Exec plugin with `/EXEC ping google.com` in the
+        installed client.
+  - [ ] Verify the other published command examples and context requirements
+        against the installed client.
+  - [x] Write the source-derived `settings-reference.md` draft covering every
+        live Windows `/SET` key, its value type, and its purpose.
+  - [x] Compare all 226 live Windows `/SET` registry entries with the settings
+        reference and verify names, value types, numeric-choice guidance,
+        sensitive-value warnings, retired-name guidance, and duplicates.
   - [x] Write the source-verified `preferences.md` draft.
   - [ ] Verify the Preferences page inventory, save/cancel behaviour, and
         restart-required settings against an installed release candidate.
@@ -576,9 +586,14 @@ The WinGet acceptance and Microsoft Store tracks are separate.
   - [ ] Verify Windows notifications, tray and taskbar attention, global and
         per-tab suppression, event-sound assignment, and persistence against
         an installed release candidate.
+  - [x] Write [Input History and Conversation Logs](docs/user/history-and-logs.md).
+  - [ ] Verify saved history and log paths, persistence and the scope of
+        `/CLEAR HISTORY` and `/CLEAR LOG` in an isolated installed profile.
 - [ ] Write and verify add-on installation, capability, safe-mode,
       troubleshooting, security, privacy, migration, and glossary guidance.
   - [x] Write the source-verified `addons.md` draft.
+  - [x] Record simple C#, Python and Tcl loading in the
+        [release gate](#10-release-gate).
   - [ ] Verify simple C#, Python, and Tcl installation, startup reporting,
         manual loading, manifest opt-in, blacklist handling, and
         `--no-plugins` recovery against an installed release candidate.
@@ -587,22 +602,25 @@ The WinGet acceptance and Microsoft Store tracks are separate.
         profile storage, client-certificate removal, local-data paths,
         diagnostic redaction, and retired updater status against an installed
         release candidate.
-    - [x] Write the source-verified `troubleshooting.md` draft.
-    - [ ] Verify safe mode, temporary-profile isolation, repair, connection and
-          proxy diagnosis, spell checking, theme and sound recovery, UI
-          profiling, and bug-report collection against an installed release
-          candidate.
-    - [x] Write the source-verified `migration-from-xchat-and-hexchat.md` draft.
-    - [ ] Verify selective profile migration, network recreation, retained
-          Python compatibility imports, current Tcl and C# contracts, theme and
-          sound transfer, and retired-feature guidance against an installed
-          release candidate.
-    - [x] Write the source-verified `glossary.md` draft.
-    - [ ] Verify glossary terminology against the final manual and installed
-          release candidate, removing implementation terms that ordinary users
-          do not need.
-- [ ] Perform a final documentation review against the final installed release
-      candidate and ensure all screenshots exclude personal or sensitive data.
+  - [x] Write the source-verified `troubleshooting.md` draft.
+  - [x] Record [1.0.8 repair testing](#108-release) and installed spell-checking
+        tests in the [release gate](#10-release-gate).
+  - [ ] Walk through safe mode, temporary-profile isolation, repair, connection
+        and proxy diagnosis, spell checking, theme and sound recovery, UI
+        profiling, and bug-report collection on the installed build.
+  - [x] Write the source-verified `migration-from-xchat-and-hexchat.md` draft.
+  - [ ] Verify selective profile migration, network recreation, retained
+        Python compatibility imports, current Tcl and C# contracts, theme and
+        sound transfer, and retired-feature guidance against an installed
+        release candidate.
+  - [x] Write the source-verified `glossary.md` draft.
+  - [ ] Verify glossary terminology against the final manual and installed
+        release candidate, removing implementation terms that ordinary users
+        do not need.
+- [x] Review all 10 user-guide screenshots for visible personal or sensitive
+      details and embedded metadata. Replace four captures with demo data and
+      remove text metadata from the five retained images that contained it.
+- [ ] Review the full user guide against the final installed release candidate.
 
 ## Distribution And Future Signing
 
