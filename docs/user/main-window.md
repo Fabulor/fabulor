@@ -432,35 +432,8 @@ alert settings.
 
 ## Default Keyboard Shortcuts
 
-The following defaults are useful for main-window navigation:
-
-| Shortcut | Action |
-| --- | --- |
-| `Ctrl+Page Up` / `Ctrl+Page Down` | Select the previous or next context |
-| `Alt+1` through `Alt+9` | Select a numbered context |
-| `Page Up` / `Page Down` | Scroll the transcript |
-| `Ctrl+Home` / `Ctrl+End` | Move to the top or bottom of the transcript |
-| `Up` / `Down` | Move through input history |
-| `Tab` / `Shift+Tab` | Complete a nickname or command |
-| `Ctrl+S` | Open the Network List |
-| `Ctrl+W` | Close the current context |
-| `F7` | Show or hide the user list |
-| `Ctrl+F9` | Show or hide the menu bar |
-| `F11` | Enter or leave full-screen mode |
-| `Alt+A` | Toggle away status |
-| `Ctrl+M` | Reset the marker line |
-| `Ctrl+Shift+M` | Move to the marker line |
-| `Ctrl+Shift+C` | Copy the transcript selection |
-| `Ctrl+F` | Search the transcript |
-| `Ctrl+G` / `Ctrl+Shift+G` | Find the next or previous match |
-| `Ctrl+Shift+T` | Reopen the most recently closed channel tab |
-| `F1` | Open the manual |
-
-`Ctrl+Q` quits only when **Enable Ctrl+Q to quit** is enabled under
-**Settings > Preferences > Chatting > General**.
-
-Shortcuts can be inspected and changed under **Settings > Keyboard
-Shortcuts**. A customised installation may therefore differ from this table.
+See [Keyboard Shortcuts](keyboard-shortcuts.md) for the Windows defaults and
+how to change them.
 
 ## Keyboard And Accessibility
 

@@ -556,6 +556,8 @@ The WinGet acceptance and Microsoft Store tracks are separate.
 - [ ] Write and verify the main-window, transcript, input, user-list, menu,
       tray, emoji, flag, clipboard, accessibility, and keyboard guidance.
   - [x] Write the source-verified `main-window.md` draft.
+  - [x] Write the source-verified
+        [Keyboard Shortcuts](docs/user/keyboard-shortcuts.md) reference.
   - [x] Add privacy-safe screenshots where they materially clarify the layout.
   - [x] Record installed navigation, transcript selection, clipboard, tray,
         emoji and flag tests in the [release gate](#10-release-gate) and

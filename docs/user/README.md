@@ -16,6 +16,7 @@ authoritative.
 - [Getting started](getting-started.md)
 - [Networks and connections](networks-and-connections.md)
 - [Main window](main-window.md)
+- [Keyboard shortcuts](keyboard-shortcuts.md)
 - [Commands](commands.md)
 - [Settings reference](settings-reference.md)
 - [Preferences](preferences.md)
