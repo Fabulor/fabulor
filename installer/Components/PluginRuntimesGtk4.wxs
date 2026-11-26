@@ -9,6 +9,10 @@
       <Files Include="$(var.Gtk4PluginHostRoot)\Runtime\Python314\**" />
     </ComponentGroup>
 
+    <ComponentGroup Id="OpenAiSdkComponents" Directory="OPENAISDKDIR">
+      <Files Include="$(var.FabulorOpenAiSdkRoot)\Runtime\Python314\openai-sdk\**" />
+    </ComponentGroup>
+
     <ComponentGroup Id="TclBinComponents" Directory="TCLBINDIR">
       <Files Include="$(var.Gtk4PluginHostRoot)\Runtime\Tcl\bin\**" />
     </ComponentGroup>

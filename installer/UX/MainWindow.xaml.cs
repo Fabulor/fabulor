@@ -57,6 +57,8 @@ public partial class MainWindow : Window
     {
         IncludeDotNetPluginHost = this.DotNetPluginHostCheckBox.IsChecked == true,
         IncludePythonRuntime = this.PythonRuntimeCheckBox.IsChecked == true,
+        IncludeOpenAiSdk = this.PythonRuntimeCheckBox.IsChecked == true
+            && this.OpenAiSdkCheckBox.IsChecked == true,
         IncludeTclRuntime = this.TclRuntimeCheckBox.IsChecked == true,
         IncludeStartMenuShortcuts = this.StartMenuShortcutsCheckBox.IsChecked == true,
         IncludeDesktopShortcut = this.DesktopShortcutCheckBox.IsChecked is true,
@@ -96,6 +98,8 @@ public partial class MainWindow : Window
 
         this.DotNetPluginHostCheckBox.IsChecked = selection.IncludeDotNetPluginHost;
         this.PythonRuntimeCheckBox.IsChecked = selection.IncludePythonRuntime;
+        this.OpenAiSdkCheckBox.IsChecked = selection.IncludeOpenAiSdk;
+        this.UpdateOpenAiSdkAvailability();
         this.TclRuntimeCheckBox.IsChecked = selection.IncludeTclRuntime;
         this.StartMenuShortcutsCheckBox.IsChecked = selection.IncludeStartMenuShortcuts;
         this.DesktopShortcutCheckBox.IsChecked = selection.IncludeDesktopShortcut;
@@ -172,6 +176,7 @@ public partial class MainWindow : Window
         this.BrowseInstallFolderButton.IsEnabled = !isBusy && !this.isMaintenanceMode;
         this.DotNetPluginHostCheckBox.IsEnabled = !isBusy;
         this.PythonRuntimeCheckBox.IsEnabled = !isBusy;
+        this.UpdateOpenAiSdkAvailability();
         this.TclRuntimeCheckBox.IsEnabled = !isBusy;
         this.TranslationsCheckBox.IsEnabled = !isBusy;
         this.ChecksumPluginCheckBox.IsEnabled = !isBusy;
@@ -376,6 +381,17 @@ public partial class MainWindow : Window
     private void RepairButton_OnClick(object sender, RoutedEventArgs e) => this.bootstrapper.RequestRepair();
 
     private void UninstallButton_OnClick(object sender, RoutedEventArgs e) => this.bootstrapper.RequestUninstall();
+
+    private void UpdateOpenAiSdkAvailability()
+    {
+        if (this.OpenAiSdkCheckBox is not null)
+        {
+            this.OpenAiSdkCheckBox.IsEnabled = !this.isBusy && this.PythonRuntimeCheckBox.IsChecked == true;
+        }
+    }
+
+    private void PythonRuntimeCheckBox_OnChanged(object sender, RoutedEventArgs e) =>
+        this.UpdateOpenAiSdkAvailability();
 
     private void PortableModeCheckBox_OnChanged(object sender, RoutedEventArgs e)
     {

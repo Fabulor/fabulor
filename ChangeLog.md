@@ -9,6 +9,29 @@ Unreleased entries describe changes under development or release review.
 The first stable release and its preceding release-candidate series are
 recorded separately below.
 
+## 1.1.0 — 2026-11-26
+
+### Added
+
+- Offer the OpenAI SDK and its pinned Windows x64 dependencies as a separate,
+  unchecked Setup option for Python add-ons. Portable users can add the
+  matching SDK archive. Add-ons can use the usual `import openai`.
+- Add ChatLounge, EYErc and SystemHalt to the built-in Network List for new
+  profiles, using TLS on port 6697.
+
+### Fixed
+
+- Restore the Windows keyboard shortcuts for formatting, tab navigation,
+  reopening channels, away status, transcript scrolling, search and completion.
+  Reopening a channel works when the switcher retains focus after a mouse close
+  ([#337](https://github.com/Fabulor/fabulor/issues/337)).
+- Make Setup Repair restore missing files for installed features while
+  respecting the current selection of optional features.
+- Remove the stale **Fabulor Setup 1.0.9** entry from Windows Installed apps
+  when upgrading from the published 1.0.9 installer.
+- Record which Setup bundle owns the installed MSI so a future upgrade can
+  retire that Setup entry during the Windows Installer transaction.
+
 ## 1.0.9 — 2026-11-25
 
 ### Fixed

@@ -482,11 +482,31 @@ key_modifier_get_valid (GdkModifierType mod)
 	return mod & (STATE_SHIFT | STATE_CTRL | STATE_ALT);
 }
 
+static guint
+key_normalize_keyval (guint keyval, GdkModifierType modifiers)
+{
+	/* GTK backends use both key values for Shift+Tab. */
+	if (keyval == GDK_KEY_ISO_Left_Tab && (modifiers & STATE_SHIFT))
+		return GDK_KEY_Tab;
+
+	return gdk_keyval_to_lower (keyval);
+}
+
+static gboolean
+key_binding_matches (const struct key_binding *kb, guint shortcut_key,
+					 GdkModifierType modifiers)
+{
+	return kb->mod == modifiers &&
+		key_normalize_keyval (kb->keyval, kb->mod) == shortcut_key;
+}
+
 gboolean
 key_handle_key_press (GtkWidget *wid, guint keyval, GdkModifierType state,
 					  gpointer user_data)
 {
 	FabulorKeyInput key = { keyval, state };
+	GdkModifierType modifiers = key_modifier_get_valid (state);
+	guint shortcut_key = key_normalize_keyval (keyval, modifiers);
 	struct key_binding *kb;
 	session *sess = user_data;
 	int n;
@@ -521,8 +541,7 @@ key_handle_key_press (GtkWidget *wid, guint keyval, GdkModifierType state,
 	{
 		kb = (struct key_binding*)list->data;
 
-		if (kb->keyval == key.keyval &&
-			kb->mod == key_modifier_get_valid (key.state))
+		if (key_binding_matches (kb, shortcut_key, modifiers))
 		{
 			if (kb->action < 0 || kb->action > KEY_MAX_ACTIONS)
 				return 0;
@@ -552,25 +571,45 @@ key_handle_key_press (GtkWidget *wid, guint keyval, GdkModifierType state,
 }
 
 gboolean
-key_get_menu_accel (const char *name, guint *keyval, GdkModifierType *mod)
+key_handle_reopen_tab (GtkWidget *widget, guint keyval, GdkModifierType state,
+					  gpointer user_data)
 {
-	struct key_binding *kb;
+	GdkModifierType modifiers = key_modifier_get_valid (state);
+	guint shortcut_key = key_normalize_keyval (keyval, modifiers);
 	GSList *list;
 
-	if (!name)
-		return FALSE;
-
-	list = keybind_list;
-	while (list)
+	for (list = keybind_list; list; list = list->next)
 	{
-		kb = (struct key_binding*)list->data;
-		if (kb->action >= 0 && kb->action <= KEY_MAX_ACTIONS && kb->keyval != 0 && !strcmp (key_actions[kb->action].name, "Menu Shortcut") && kb->data1 && !strcmp (kb->data1, name))
+		const struct key_binding *kb = list->data;
+
+		if (key_binding_matches (kb, shortcut_key, modifiers) &&
+			kb->action >= 0 && kb->action <= KEY_MAX_ACTIONS &&
+			key_actions[kb->action].handler == key_action_reopen_closed_tab)
 		{
-			*keyval = kb->keyval;
-			*mod = kb->mod;
+			mg_reopen_closed_channel_tab ();
 			return TRUE;
 		}
-		list = g_slist_next (list);
+	}
+
+	return FALSE;
+}
+
+gboolean
+key_matches_menu_shortcut (const char *name, guint keyval, GdkModifierType state)
+{
+	GdkModifierType modifiers = key_modifier_get_valid (state);
+	guint shortcut_key = key_normalize_keyval (keyval, modifiers);
+	GSList *list;
+
+	for (list = keybind_list; list; list = list->next)
+	{
+		const struct key_binding *kb = list->data;
+
+		if (key_binding_matches (kb, shortcut_key, modifiers) &&
+			kb->action >= 0 && kb->action <= KEY_MAX_ACTIONS &&
+			!strcmp (key_actions[kb->action].name, "Menu Shortcut") &&
+			g_strcmp0 (kb->data1, name) == 0)
+			return TRUE;
 	}
 
 	return FALSE;
@@ -1257,15 +1296,10 @@ key_action_page_switch (GtkWidget *wid, const FabulorKeyInput *key, char *d1,
 		if (!sess->gui->is_tab)
 			return 1;
 
-		newsess = lastact_getfirst(session_check_is_tab);
-
+		newsess = lastact_getfirst (session_check_is_tab);
 		if (newsess)
-		{
-			mg_bring_tofront_sess(newsess);
-			return 0;
-		}
-		else
-			return 1;
+			mg_bring_tofront_sess (newsess);
+		return 0;
 	}
 
 	for (i = 0; i < len; i++)
@@ -1359,7 +1393,7 @@ key_action_scroll_page (GtkWidget *wid, const FabulorKeyInput *key, char *d1,
 	if (!sess)
 		return 0;
 
-	adj = gtk_range_get_adjustment (GTK_RANGE (sess->gui->vscrollbar));
+	adj = gtk_scrollbar_get_adjustment (GTK_SCROLLBAR (sess->gui->vscrollbar));
 	end = gtk_adjustment_get_upper (adj) - gtk_adjustment_get_lower (adj) - gtk_adjustment_get_page_size (adj);
 
 	switch (type)

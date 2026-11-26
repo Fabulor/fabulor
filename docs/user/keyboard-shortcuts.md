@@ -5,18 +5,10 @@ actions. Start with focus in the chat input box for the main-window shortcuts.
 When focus is in a list, menu or dialog, the keys may act on that control
 instead. To see your profile's bindings, open **Settings > Keyboard Shortcuts**.
 
-## Known Issues In 1.0.9
+Fabulor 1.1.0 fixes the Windows shortcut issues reported against 1.0.9.
+See [issue #337](https://github.com/Fabulor/fabulor/issues/337).
 
-- `Ctrl+U` can delete text to the left of the cursor. Use a disposable draft
-  if you test it.
-- `Alt+1` through `Alt+9` and Alt + backtick can type the corresponding
-  characters into the chat input box.
-- Other reported failures affect `Ctrl+Shift+T`, `Alt+A`, `Page Up`,
-  `Page Down`, `Shift+Up`, `Shift+Down`, `Ctrl+Home`, `Ctrl+End`,
-  `Ctrl+Shift+M`, `Ctrl+G`, `Ctrl+Shift+G`, and the chat-input completion
-  bindings `Shift+Page Down`, `Shift+Tab`, `Ctrl+Tab` and `Shift+Page Up`.
-
-If you find another shortcut that behaves differently, include your Fabulor
+If you find a shortcut that behaves differently, include your Fabulor
 version, the control that had focus, the key combination, and what happened
 in a [GitHub bug report](https://github.com/Fabulor/fabulor/issues/new?template=bug-report.yml).
 
@@ -32,7 +24,7 @@ in a [GitHub bug report](https://github.com/Fabulor/fabulor/issues/new?template=
 | `Ctrl+S` | Open the Network List. |
 | `Ctrl+T` / `Ctrl+N` | Open a new server tab or a new server window. |
 | `Ctrl+W` | Close the current tab or window. |
-| `Ctrl+Shift+T` | Reopen the most recently closed channel tab. |
+| `Ctrl+Shift+T` | Reopen the most recently closed channel tab. Close a channel tab first, then press the shortcut. |
 | `Ctrl+Q` | Quit Fabulor when **Enable Ctrl+Q to quit** is on under **Settings > Preferences > Chatting > General**. |
 | `F7` | Show or hide the user list. |
 | `Ctrl+F9` | Show or hide the menu bar. |

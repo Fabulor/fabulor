@@ -181,7 +181,12 @@
 
                                 <TextBlock Margin="0,4,0,3" FontWeight="SemiBold" Text="Plugin runtimes" />
                                 <CheckBox x:Name="DotNetPluginHostCheckBox" Content="_C# plugin host and .NET runtime" />
-                                <CheckBox x:Name="PythonRuntimeCheckBox" Content="_Python plugin runtime (3.14)" />
+                                <CheckBox x:Name="PythonRuntimeCheckBox"
+                                          Checked="PythonRuntimeCheckBox_OnChanged"
+                                          Unchecked="PythonRuntimeCheckBox_OnChanged"
+                                          Content="_Python plugin runtime (3.14)" />
+                                <CheckBox x:Name="OpenAiSdkCheckBox" Margin="18,0,0,0"
+                                          Content="_OpenAI SDK for Python add-ons" />
                                 <CheckBox x:Name="TclRuntimeCheckBox" Content="_Tcl plugin runtime (8.6)" />
 
                                 <TextBlock Margin="0,10,0,3" FontWeight="SemiBold" Text="Optional components" />

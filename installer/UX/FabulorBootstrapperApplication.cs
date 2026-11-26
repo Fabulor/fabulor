@@ -27,6 +27,7 @@ public sealed class FabulorBootstrapperApplication : BootstrapperApplication
     private const string MainFeatureId = "MainFeature";
     private const string DotNetRuntimeFeatureId = "DotNetRuntimeFeature";
     private const string PythonRuntimeFeatureId = "PythonRuntimeFeature";
+    private const string OpenAiSdkFeatureId = "OpenAiSdkFeature";
     private const string TclRuntimeFeatureId = "TclRuntimeFeature";
     private const string ThemeAssetFeatureId = "ThemeAssetFeature";
     private const string Gtk4RuntimeFeatureId = "Gtk4RuntimeFeature";
@@ -310,7 +311,7 @@ public sealed class FabulorBootstrapperApplication : BootstrapperApplication
         this.window.SetProgress(0);
         this.window.SetStatus(statusText + "…");
         this.window.AppendLog(this.DescribePlannedAction(action, statusText));
-        this.window.AppendLog($"Feature snapshot: dotnet={this.currentPlanFeatureSelection.IncludeDotNetPluginHost}, python={this.currentPlanFeatureSelection.IncludePythonRuntime}, tcl={this.currentPlanFeatureSelection.IncludeTclRuntime}, themeAssets=fixed, gtk4=fixed, startMenu={this.currentPlanFeatureSelection.IncludeStartMenuShortcuts}, desktop={this.currentPlanFeatureSelection.IncludeDesktopShortcut}, shellIntegration={this.currentPlanFeatureSelection.IncludeShellIntegration}, translations={this.currentPlanFeatureSelection.IncludeTranslations}, checksum={this.currentPlanFeatureSelection.IncludeChecksumPlugin}, exec={this.currentPlanFeatureSelection.IncludeExecPlugin}, fishlim={this.currentPlanFeatureSelection.IncludeFishlimPlugin}, sysinfo={this.currentPlanFeatureSelection.IncludeSysinfoPlugin}, portable={this.currentPlanPortable}.");
+        this.window.AppendLog($"Feature snapshot: dotnet={this.currentPlanFeatureSelection.IncludeDotNetPluginHost}, python={this.currentPlanFeatureSelection.IncludePythonRuntime}, openAiSdk={this.currentPlanFeatureSelection.IncludeOpenAiSdk}, tcl={this.currentPlanFeatureSelection.IncludeTclRuntime}, themeAssets=fixed, gtk4=fixed, startMenu={this.currentPlanFeatureSelection.IncludeStartMenuShortcuts}, desktop={this.currentPlanFeatureSelection.IncludeDesktopShortcut}, shellIntegration={this.currentPlanFeatureSelection.IncludeShellIntegration}, translations={this.currentPlanFeatureSelection.IncludeTranslations}, checksum={this.currentPlanFeatureSelection.IncludeChecksumPlugin}, exec={this.currentPlanFeatureSelection.IncludeExecPlugin}, fishlim={this.currentPlanFeatureSelection.IncludeFishlimPlugin}, sysinfo={this.currentPlanFeatureSelection.IncludeSysinfoPlugin}, portable={this.currentPlanPortable}.");
         if (this.isFabulorMsiInstalled && (action == LaunchAction.Repair || action == LaunchAction.Uninstall))
         {
             this.window.AppendLog("Maintenance action is using the detected installed mode and feature state, not any pending UI edits.");
@@ -518,6 +519,8 @@ public sealed class FabulorBootstrapperApplication : BootstrapperApplication
             IncludeDotNetPluginHost = System.IO.File.Exists(System.IO.Path.Combine(installFolder, "Runtime", "DotNet", "Fabulor.PluginHost.dll"))
                 && System.IO.Directory.Exists(System.IO.Path.Combine(installFolder, "Runtime", "DotNet", "host")),
             IncludePythonRuntime = System.IO.File.Exists(System.IO.Path.Combine(installFolder, "Runtime", "Python314", "python314.dll")),
+            IncludeOpenAiSdk = System.IO.File.Exists(System.IO.Path.Combine(
+                installFolder, "Runtime", "Python314", "openai-sdk", "fabulor-openai-sdk.json")),
             IncludeTclRuntime = System.IO.File.Exists(System.IO.Path.Combine(installFolder, "Runtime", "Tcl", "bin", "tcl86t.dll")),
             IncludeStartMenuShortcuts = !isPortable
                 && (this.RegistryValueExists(Registry.LocalMachine, @"Software\Fabulor\Installer", "StartMenuShortcuts")
@@ -543,6 +546,7 @@ public sealed class FabulorBootstrapperApplication : BootstrapperApplication
         var selection = this.DetectInstalledFeatureSelection(installFolder, isPortable);
         this.ApplyDetectedFeatureState(selection, DotNetRuntimeFeatureId, value => selection.IncludeDotNetPluginHost = value);
         this.ApplyDetectedFeatureState(selection, PythonRuntimeFeatureId, value => selection.IncludePythonRuntime = value);
+        this.ApplyDetectedFeatureState(selection, OpenAiSdkFeatureId, value => selection.IncludeOpenAiSdk = value);
         this.ApplyDetectedFeatureState(selection, TclRuntimeFeatureId, value => selection.IncludeTclRuntime = value);
         this.ApplyDetectedFeatureState(selection, StartMenuFeatureId, value => selection.IncludeStartMenuShortcuts = value);
         this.ApplyDetectedFeatureState(selection, DesktopShortcutFeatureId, value => selection.IncludeDesktopShortcut = value);
@@ -618,6 +622,8 @@ public sealed class FabulorBootstrapperApplication : BootstrapperApplication
             MainFeatureId => FeatureState.Local,
             DotNetRuntimeFeatureId => selection.IncludeDotNetPluginHost ? FeatureState.Local : FeatureState.Absent,
             PythonRuntimeFeatureId => selection.IncludePythonRuntime ? FeatureState.Local : FeatureState.Absent,
+            OpenAiSdkFeatureId => selection.IncludePythonRuntime && selection.IncludeOpenAiSdk
+                ? FeatureState.Local : FeatureState.Absent,
             TclRuntimeFeatureId => selection.IncludeTclRuntime ? FeatureState.Local : FeatureState.Absent,
             ThemeAssetFeatureId => FeatureState.Local,
             Gtk4RuntimeFeatureId => FeatureState.Local,

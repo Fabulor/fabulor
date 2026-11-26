@@ -21,7 +21,7 @@ uninstalling it.
 
 ## Windows SmartScreen And Unsigned Installers
 
-Current Fabulor installers, including `1.0.7`, are not
+Current Fabulor installers, including `1.1.0`, are not
 Authenticode-signed. WinGet distribution does not sign these files. Windows
 SmartScreen can therefore show **Windows protected your PC** or an
 **Unknown publisher** warning even when the installer is an authentic Fabulor
@@ -41,7 +41,7 @@ Proceed only when all of the following are true:
 Open PowerShell in the folder containing the download and calculate its hash:
 
 ```powershell
-Get-FileHash -Algorithm SHA256 .\FabulorSetup-v1.0.7.exe
+Get-FileHash -Algorithm SHA256 .\FabulorSetup-v1.1.0.exe
 ```
 
 Compare the complete `Hash` value, not just its beginning or end. If the
@@ -61,7 +61,7 @@ WinGet distribution is being prepared and is not yet announced as available.
 Until the manifest is accepted, use the official GitHub release installer.
 Microsoft Store packaging is a separate future task.
 
-1. Start the versioned setup program you downloaded, such as `FabulorSetup-v1.0.7.exe`.
+1. Start the versioned setup program you downloaded, such as `FabulorSetup-v1.1.0.exe`.
 2. Approve the Windows administrator prompt.
 3. Keep the default install folder unless you have a specific reason to change
    it.
@@ -72,6 +72,11 @@ Microsoft Store packaging is a separate future task.
 6. Select **Install** and wait for setup to report completion.
 7. Select **Launch Fabulor** to start the installed client, or **Close** to
    leave setup without launching it.
+
+From version 1.1.0, **Advanced options** offers **OpenAI SDK for Python
+add-ons** under the Python runtime. Select it if an add-on requires the SDK.
+The option is off by default. Enter any API credentials in the add-on's own
+configuration.
 
 Installed mode normally places the application under:
 
@@ -142,6 +147,19 @@ Setup displays a warning and does not begin installation when such a location
 is selected. Choose another ordinary user-writable folder when a different
 location is needed. Do not run the portable client as administrator to work
 around folder permissions.
+
+### Add The OpenAI SDK To The Portable Archive
+
+If a Python add-on needs the SDK, download
+`Fabulor-OpenAI-SDK-v1.1.0-Portable-x64.zip` from the same release as your
+portable Fabulor archive. Extract the portable Fabulor archive first. Close
+Fabulor if it is running, then set the SDK ZIP's extraction destination to
+the folder containing `fabulor.exe`. The SDK ZIP already contains the
+`Runtime` folder structure.
+
+After extraction, `Runtime\Python314\openai-sdk\openai\__init__.py` should
+be present beneath the folder containing `fabulor.exe`. Restart Fabulor and
+configure any API credentials in the add-on that uses them.
 
 ## First Start
 

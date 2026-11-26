@@ -17,6 +17,9 @@
          then the major-upgrade removal deletes those files. Keep the rollback-safe schedule. -->
     <SetProperty Id="REINSTALLMODE" Value="amus" Before="CostInitialize"
                  Sequence="execute" Condition="NOT Installed AND WIX_UPGRADE_DETECTED" />
+    <!-- Burn can send the repair mode without a feature list when feature selection is enabled. -->
+    <SetProperty Id="REINSTALL" Value="ALL" Before="CostInitialize"
+                 Sequence="execute" Condition="Installed AND BURNMSIREPAIR AND NOT REINSTALL" />
     <MediaTemplate EmbedCab="yes" />
     <Icon Id="FabulorProductIcon" SourceFile="..\data\icons\fabulor.ico" />
     <Property Id="ARPNOMODIFY" Value="1" />
@@ -108,7 +111,9 @@
               <Directory Id="GTK4SHAREXMLDIR" Name="xml" />
             </Directory>
           </Directory>
-          <Directory Id="PYDIR" Name="$(var.PythonRuntimeFolderName)" />
+          <Directory Id="PYDIR" Name="$(var.PythonRuntimeFolderName)">
+            <Directory Id="OPENAISDKDIR" Name="openai-sdk" />
+          </Directory>
           <Directory Id="TCLDIR" Name="Tcl">
             <Directory Id="TCLBINDIR" Name="bin" />
             <Directory Id="TCLLIBDIR" Name="lib" />
@@ -167,6 +172,10 @@
         <ComponentGroupRef Id="PythonRuntimeComponents" />
         <ComponentGroupRef Id="PythonHostComponents" />
         <ComponentGroupRef Id="PythonApiComponents" />
+        <Feature Id="OpenAiSdkFeature" Title="OpenAI SDK for Python add-ons" Level="2">
+          <ComponentGroupRef Id="OpenAiSdkComponents" />
+          <ComponentRef Id="OpenAiSdkCacheCleanup" />
+        </Feature>
       </Feature>
       <Feature Id="TclRuntimeFeature" Title="Tcl plugin runtime (8.6)" Level="1">
         <ComponentGroupRef Id="TclBinComponents" />

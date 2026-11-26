@@ -1,8 +1,49 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">
   <Fragment>
+    <Property Id="FABULOR_SETUP_BUNDLE" Secure="yes" />
+    <Property Id="FABULOR_SETUP_PROVIDER">
+      <RegistrySearch Id="SetupProviderSearch" Root="HKLM" Bitness="always64"
+                      Key="Software\Microsoft\Windows\CurrentVersion\Uninstall\[FABULOR_SETUP_BUNDLE]"
+                      Name="BundleProviderKey" Type="raw" />
+    </Property>
+    <Property Id="FABULOR_SETUP_TAG">
+      <RegistrySearch Id="SetupTagSearch" Root="HKLM" Bitness="always64"
+                      Key="Software\Microsoft\Windows\CurrentVersion\Uninstall\[FABULOR_SETUP_BUNDLE]"
+                      Name="BundleTag" Type="raw" />
+    </Property>
+    <Property Id="FABULOR_PREVIOUS_SETUP_BUNDLE">
+      <RegistrySearch Id="PreviousSetupBundleSearch" Root="HKLM" Bitness="always64"
+                      Key="Software\Fabulor\Installer\SetupOwner"
+                      Name="BundleCode" Type="raw" />
+    </Property>
+    <Property Id="FABULOR_PREVIOUS_SETUP_PRODUCT">
+      <RegistrySearch Id="PreviousSetupProductSearch" Root="HKLM" Bitness="always64"
+                      Key="Software\Fabulor\Installer\SetupOwner"
+                      Name="ProductCode" Type="raw" />
+    </Property>
+    <!-- Clear caller-supplied search results before reading the machine registry. -->
+    <InstallUISequence>
+      <AppSearch Suppress="yes" />
+    </InstallUISequence>
+    <SetProperty Id="FABULOR_SETUP_PROVIDER" Value="[FabulorUnsetSetupProperty]"
+                 Before="AppSearch" Sequence="execute" />
+    <SetProperty Id="FABULOR_SETUP_TAG" Value="[FabulorUnsetSetupProperty]"
+                 Before="AppSearch" Sequence="execute" />
+    <SetProperty Id="FABULOR_PREVIOUS_SETUP_BUNDLE" Value="[FabulorUnsetSetupProperty]"
+                 Before="AppSearch" Sequence="execute" />
+    <SetProperty Id="FABULOR_PREVIOUS_SETUP_PRODUCT" Value="[FabulorUnsetSetupProperty]"
+                 Before="AppSearch" Sequence="execute" />
+    <SetProperty Id="FABULOR_SETUP_BUNDLE" Value="[FABULOR_PREVIOUS_SETUP_BUNDLE]"
+                 After="AppSearch" Sequence="execute"
+                 Condition="Installed AND NOT FABULOR_SETUP_BUNDLE AND FABULOR_PREVIOUS_SETUP_PRODUCT ~= ProductCode" />
+    <SetProperty Id="FabulorRemovableSetupBundle" Value="[FABULOR_PREVIOUS_SETUP_BUNDLE]"
+                 After="AppSearch" Sequence="execute"
+                 Condition='(FABULOR_PREVIOUS_SETUP_BUNDLE &lt;&lt; "{") AND (FABULOR_PREVIOUS_SETUP_BUNDLE &gt;&gt; "}") AND NOT (FABULOR_PREVIOUS_SETUP_BUNDLE &gt;&lt; "\") AND NOT (FABULOR_PREVIOUS_SETUP_BUNDLE ~= FABULOR_SETUP_BUNDLE)' />
+
     <!-- Published bundles can be left behind when the MSI owns the upgrade
-         and Burn suppresses the older bundle's separate uninstall. -->
+         and Burn suppresses the older bundle's separate uninstall.
+         These releases predate the Setup ownership record. -->
     <Property Id="FABULOR_PUBLISHED_107_BUNDLE_PROVIDER" Secure="yes">
       <RegistrySearch Id="Published107BundleProviderSearch"
                       Root="HKLM"
@@ -15,6 +56,14 @@
       <RegistrySearch Id="Published108BundleProviderSearch"
                       Root="HKLM"
                       Key="Software\Microsoft\Windows\CurrentVersion\Uninstall\{024C5249-B7B6-46D3-A28A-2988A70FA132}"
+                      Name="BundleProviderKey"
+                      Type="raw"
+                      Bitness="always64" />
+    </Property>
+    <Property Id="FABULOR_PUBLISHED_109_BUNDLE_PROVIDER" Secure="yes">
+      <RegistrySearch Id="Published109BundleProviderSearch"
+                      Root="HKLM"
+                      Key="Software\Microsoft\Windows\CurrentVersion\Uninstall\{A14F00B5-E3CD-4B52-B7CE-5AB6E125841D}"
                       Name="BundleProviderKey"
                       Type="raw"
                       Bitness="always64" />
@@ -34,6 +83,25 @@
                       Bitness="always64" />
     </Property>
     <ComponentGroup Id="InstalledModeCoreComponents">
+      <!-- Bind the Setup registration to the exact MSI product that owns it. -->
+      <Component Id="TrackSetupOwner" Guid="CA5CE992-C45A-47E8-87E8-4EC6599CB33E"
+                 Directory="INSTALLFOLDER" Bitness="always64"
+                 Condition='NOT FABULOR_PORTABLE AND FABULOR_SETUP_BUNDLE AND (FABULOR_SETUP_BUNDLE &lt;&lt; "{") AND (FABULOR_SETUP_BUNDLE &gt;&gt; "}") AND NOT (FABULOR_SETUP_BUNDLE &gt;&lt; "\") AND FABULOR_SETUP_PROVIDER ~= FABULOR_SETUP_BUNDLE AND FABULOR_SETUP_TAG = "Fabulor.Setup.Owner"'>
+        <RegistryValue Root="HKLM" Key="Software\Fabulor\Installer\SetupOwner"
+                       Name="BundleCode" Type="string" Value="[FABULOR_SETUP_BUNDLE]" />
+        <RegistryValue Root="HKLM" Key="Software\Fabulor\Installer\SetupOwner"
+                       Name="ProductCode" Type="string" Value="[ProductCode]" KeyPath="yes" />
+      </Component>
+      <Component Id="RemovePreviousSetupEntry" Guid="6F64E511-8965-47F0-88D5-88978E887CCF"
+                 Directory="INSTALLFOLDER" Bitness="always64"
+                 Condition='NOT FABULOR_PORTABLE AND NOT Installed AND FabulorRemovableSetupBundle AND FABULOR_PREVIOUS_SETUP_PRODUCT AND (WIX_UPGRADE_DETECTED &gt;&lt; FABULOR_PREVIOUS_SETUP_PRODUCT)'>
+        <RemoveRegistryKey Id="RemovePreviousBundleRegistration"
+                           Root="HKLM"
+                           Key="Software\Microsoft\Windows\CurrentVersion\Uninstall\[FabulorRemovableSetupBundle]"
+                           Action="removeOnInstall" />
+        <RegistryValue Root="HKLM" Key="Software\Fabulor\Installer"
+                       Name="RemovedPreviousSetupEntry" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
       <Component Id="RemovePublished107SetupEntry" Guid="3857A576-E60F-4F04-99A0-41CBCFEF06E0"
                  Directory="INSTALLFOLDER" Bitness="always64"
                  Condition='NOT FABULOR_PORTABLE AND NOT Installed AND (WIX_UPGRADE_DETECTED &gt;&lt; "{504E5953-1796-4142-AB4C-71A159FA4853}") AND FABULOR_PUBLISHED_107_BUNDLE_PROVIDER = "{656AE58B-7162-48D0-8895-D091BC63C9F8}"'>
@@ -58,6 +126,20 @@
         <RegistryValue Root="HKLM"
                        Key="Software\Fabulor\Installer"
                        Name="RemovedPublished108SetupEntry"
+                       Type="integer"
+                       Value="1"
+                       KeyPath="yes" />
+      </Component>
+      <Component Id="RemovePublished109SetupEntry" Guid="6C3BDC17-4624-42F7-A619-9767BFB4ABD8"
+                 Directory="INSTALLFOLDER" Bitness="always64"
+                 Condition='NOT FABULOR_PORTABLE AND NOT Installed AND (WIX_UPGRADE_DETECTED &gt;&lt; "{4FA55D87-8925-4718-9956-6FACD1DBB9B3}") AND FABULOR_PUBLISHED_109_BUNDLE_PROVIDER = "{A14F00B5-E3CD-4B52-B7CE-5AB6E125841D}"'>
+        <RemoveRegistryKey Id="RemovePublished109BundleRegistration"
+                           Root="HKLM"
+                           Key="Software\Microsoft\Windows\CurrentVersion\Uninstall\{A14F00B5-E3CD-4B52-B7CE-5AB6E125841D}"
+                           Action="removeOnInstall" />
+        <RegistryValue Root="HKLM"
+                       Key="Software\Fabulor\Installer"
+                       Name="RemovedPublished109SetupEntry"
                        Type="integer"
                        Value="1"
                        KeyPath="yes" />

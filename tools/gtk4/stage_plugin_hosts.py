@@ -15,6 +15,8 @@ DEFAULT_CONTRACT = pathlib.Path(__file__).with_name(
 )
 MANIFEST_RELATIVE = "Runtime/plugin-host-manifest.json"
 PYTHON_API_WRAPPER = "python/_fabulor.py"
+PYTHON_SEARCH_PATH = "Runtime/Python314/python314._pth"
+OPENAI_SDK_DIRECTORY = "Runtime/Python314/openai-sdk"
 RETIRED_PYTHON_API_MARKERS = (
     "lib.zoitechat_",
     "zoitechat_context",
@@ -184,6 +186,8 @@ def collect_payload(roots, contract):
 
     def add(destination, source):
         key = destination.casefold()
+        if key.startswith(OPENAI_SDK_DIRECTORY.casefold() + "/"):
+            raise PluginHostStagingError("Stage the OpenAI SDK separately from the Python runtime")
         if key == MANIFEST_RELATIVE.casefold():
             raise PluginHostStagingError(
                 "Plugin-host payload collides with its generated manifest"
@@ -257,7 +261,15 @@ def stage_plugin_hosts(roots, output, contract):
         for relative, source in selected.items():
             destination = output.joinpath(*pathlib.PurePosixPath(relative).parts)
             destination.parent.mkdir(parents=True, exist_ok=True)
-            shutil.copyfile(source, destination)
+            if relative == PYTHON_SEARCH_PATH:
+                search_path = source.read_text(encoding="utf-8").splitlines()
+                if "openai-sdk" not in search_path:
+                    # Keep the standard library first, followed by the bundled dependency set.
+                    runtime_index = search_path.index(".") if "." in search_path else len(search_path)
+                    search_path.insert(runtime_index, "openai-sdk")
+                destination.write_text("\n".join(search_path) + "\n", encoding="utf-8")
+            else:
+                shutil.copyfile(source, destination)
             entries.append(_file_record(destination, relative))
         manifest = {
             "schema_version": 1,

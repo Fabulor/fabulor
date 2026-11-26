@@ -5,7 +5,7 @@
     <FabulorPublisher>Fabulor</FabulorPublisher>
     <FabulorApplicationDescription>Fabulor IRC Client</FabulorApplicationDescription>
     <FabulorSetupDescription>Fabulor Setup</FabulorSetupDescription>
-    <FabulorSemVer>1.0.9</FabulorSemVer>
+    <FabulorSemVer>1.1.0</FabulorSemVer>
     <FabulorBinaryVersion>$(FabulorSemVer).0</FabulorBinaryVersion>
     <Version>$(FabulorSemVer)</Version>
     <AssemblyVersion>$(FabulorBinaryVersion)</AssemblyVersion>

@@ -86,6 +86,22 @@ class StagePluginHostsTests(unittest.TestCase):
         self.assertEqual(recorded["file_count"], len(files))
         self.assertIn("Runtime/Tcl/lib/init.tcl", files)
 
+    def test_sdk_search_path_is_staged_without_the_optional_payload(self):
+        self._write("python", "python314._pth", b"python314.zip\r\n.\r\n#import site\r\n")
+        output = self.base / "output"
+        hosts.stage_plugin_hosts(self.roots, output, self._load_contract())
+        python_root = output / "Runtime" / "Python314"
+        self.assertEqual(
+            (python_root / "python314._pth").read_text(encoding="utf-8").splitlines(),
+            ["python314.zip", "openai-sdk", ".", "#import site"],
+        )
+        self.assertFalse((python_root / "openai-sdk").exists())
+
+    def test_sdk_payload_cannot_be_staged_as_part_of_the_python_runtime(self):
+        self._write("python", "openai-sdk/openai/__init__.py", b"")
+        with self.assertRaisesRegex(hosts.PluginHostStagingError, "separately"):
+            hosts.collect_payload(self.roots, self._load_contract())
+
     def test_single_glob_requires_exactly_one_file(self):
         self._write("payload", "_cffi_backend.other.pyd", b"duplicate")
         with self.assertRaisesRegex(hosts.PluginHostStagingError, "Expected one"):

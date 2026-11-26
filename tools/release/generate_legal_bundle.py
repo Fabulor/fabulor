@@ -47,7 +47,10 @@ def _read_json(path):
 
 
 def load_manifest(path):
-    manifest = _read_json(path)
+    return validate_manifest(_read_json(path))
+
+
+def validate_manifest(manifest):
     if not isinstance(manifest, dict) or set(manifest) != {
         "schema_version", "product", "components"
     }:
@@ -242,12 +245,26 @@ def build_notices(manifest, product_version, manifest_digest, evidence):
     return "\n".join(lines)
 
 
-def generate(manifest_path, version_props, licence_root, output):
+def generate(manifest_path, version_props, licence_root, output, sdk_root=None):
     manifest_bytes = manifest_path.read_bytes()
     manifest_digest = hashlib.sha256(manifest_bytes).hexdigest()
     manifest = load_manifest(manifest_path)
     version = read_version(version_props)
     evidence = validate_licences(manifest, licence_root)
+    if sdk_root is not None:
+        python_root = sdk_root / "Runtime" / "Python314"
+        sdk_inventory = python_root / "openai-sdk" / "fabulor-openai-sdk.json"
+        sdk_manifest = validate_manifest({
+            **manifest, "components": _read_json(sdk_inventory),
+        })
+        evidence.update(validate_licences(sdk_manifest, python_root))
+        manifest["components"] = sorted(
+            manifest["components"] + sdk_manifest["components"], key=lambda component: component["id"],
+        )
+        validate_manifest(manifest)
+        manifest_digest = hashlib.sha256(
+            json.dumps(manifest, sort_keys=True).encode("utf-8")
+        ).hexdigest()
 
     output = output.resolve()
     build_root = BUILD_ROOT.resolve()
@@ -289,6 +306,7 @@ def parse_args(argv):
     parser.add_argument("--manifest", type=pathlib.Path, default=DEFAULT_MANIFEST)
     parser.add_argument("--version-props", type=pathlib.Path, default=DEFAULT_VERSION_PROPS)
     parser.add_argument("--licence-root", type=pathlib.Path)
+    parser.add_argument("--sdk-root", type=pathlib.Path)
     parser.add_argument("--output", type=pathlib.Path, required=True)
     args = parser.parse_args(argv)
     if args.licence_root is None:
@@ -304,6 +322,7 @@ def main(argv=None):
             args.version_props.resolve(strict=True),
             args.licence_root,
             args.output,
+            args.sdk_root,
         )
         print(
             f"Legal bundle generated: version={version}, components={components}, "
