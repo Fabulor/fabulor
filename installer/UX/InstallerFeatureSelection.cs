@@ -5,6 +5,7 @@ public sealed class InstallerFeatureSelection
     public bool IncludeDotNetPluginHost { get; set; } = true;
 
     public bool IncludePythonRuntime { get; set; } = true;
+    public bool IncludeOpenAiSdk { get; set; }
 
     public bool IncludeTclRuntime { get; set; } = true;
 
@@ -30,6 +31,7 @@ public sealed class InstallerFeatureSelection
         {
             IncludeDotNetPluginHost = this.IncludeDotNetPluginHost,
             IncludePythonRuntime = this.IncludePythonRuntime,
+            IncludeOpenAiSdk = this.IncludeOpenAiSdk,
             IncludeTclRuntime = this.IncludeTclRuntime,
             IncludeStartMenuShortcuts = this.IncludeStartMenuShortcuts,
             IncludeDesktopShortcut = this.IncludeDesktopShortcut,

@@ -257,6 +257,7 @@ class ProductionWixProfileTests(unittest.TestCase):
         self.assertIn('Targets="Restore;Publish"', setup_project)
 
         bundle = ET.parse(INSTALLER / "Bootstrapper" / "Bundle.wxs").getroot()
+        self.assertEqual(bundle.find("w:Bundle", WIX_NS).get("Tag"), "Fabulor.Setup.Owner")
         application = bundle.find(".//w:BootstrapperApplication", WIX_NS)
         self.assertIsNotNone(application)
         self.assertEqual(
@@ -419,6 +420,15 @@ class ProductionWixProfileTests(unittest.TestCase):
         self.assertIn("RegexOptions.IgnoreCase | RegexOptions.CultureInvariant", bootstrapper)
         self.assertIn(r'--url=""%1""', bootstrapper)
 
+    def test_burn_repair_reinstalls_previously_installed_features(self):
+        root = ET.parse(INSTALLER / "ProductGtk4.wxs").getroot()
+        repair = root.find("w:Package/w:SetProperty[@Id='REINSTALL']", WIX_NS)
+        self.assertIsNotNone(repair)
+        self.assertEqual(repair.get("Value"), "ALL")
+        self.assertEqual(repair.get("Before"), "CostInitialize")
+        self.assertEqual(repair.get("Sequence"), "execute")
+        self.assertEqual(repair.get("Condition"), "Installed AND BURNMSIREPAIR AND NOT REINSTALL")
+
     def test_production_product_keeps_upgrade_identity(self):
         root = ET.parse(INSTALLER / "ProductGtk4.wxs").getroot()
         package = root.find("w:Package", WIX_NS)
@@ -462,15 +472,57 @@ class ProductionWixProfileTests(unittest.TestCase):
         self.assertIn("this.RemoveDetectedRelatedBundleCaches(preservedBundlePath);", bootstrapper)
         self.assertIn("!Guid.TryParse(cacheDirectoryName, out _)", bootstrapper)
 
-    def test_upgrade_removes_only_published_setup_entries(self):
+    def test_upgrade_matches_the_setup_owner_to_the_outgoing_msi(self):
+        bundle = ET.parse(INSTALLER / "Bootstrapper" / "Bundle.wxs").getroot()
+        owner_property = bundle.find(".//w:MsiProperty[@Name='FABULOR_SETUP_BUNDLE']", WIX_NS)
+        self.assertIsNotNone(owner_property)
+        self.assertEqual(owner_property.get("Value"), "[WixBundleProviderKey]")
+
+        root = ET.parse(INSTALLER / "Components" / "InstalledMode.wxs").getroot()
+        ui_search = root.find(".//w:InstallUISequence/w:AppSearch", WIX_NS)
+        self.assertEqual(ui_search.get("Suppress"), "yes")
+        for name in ("FABULOR_SETUP_PROVIDER", "FABULOR_SETUP_TAG",
+                     "FABULOR_PREVIOUS_SETUP_BUNDLE", "FABULOR_PREVIOUS_SETUP_PRODUCT"):
+            reset = root.find(f".//w:SetProperty[@Id='{name}']", WIX_NS)
+            self.assertEqual(reset.get("Before"), "AppSearch")
+            self.assertEqual(reset.get("Sequence"), "execute")
+            self.assertEqual(reset.get("Value"), "[FabulorUnsetSetupProperty]")
+        owner = root.find(".//w:Component[@Id='TrackSetupOwner']", WIX_NS)
+        self.assertIsNotNone(owner)
+        self.assertIn("FABULOR_SETUP_PROVIDER ~= FABULOR_SETUP_BUNDLE", owner.get("Condition"))
+        self.assertIn('FABULOR_SETUP_TAG = "Fabulor.Setup.Owner"', owner.get("Condition"))
+        product = owner.find("w:RegistryValue[@Name='ProductCode']", WIX_NS)
+        self.assertEqual(product.get("Value"), "[ProductCode]")
+        cleanup = root.find(".//w:Component[@Id='RemovePreviousSetupEntry']", WIX_NS)
+        self.assertIsNotNone(cleanup)
+        condition = cleanup.get("Condition")
+        self.assertIn("NOT FABULOR_PORTABLE AND NOT Installed", condition)
+        self.assertIn("WIX_UPGRADE_DETECTED >< FABULOR_PREVIOUS_SETUP_PRODUCT", condition)
+        self.assertIn("FabulorRemovableSetupBundle", condition)
+        select = root.find(".//w:SetProperty[@Id='FabulorRemovableSetupBundle']", WIX_NS)
+        self.assertIsNotNone(select)
+        self.assertIn("NOT (FABULOR_PREVIOUS_SETUP_BUNDLE ~= FABULOR_SETUP_BUNDLE)", select.get("Condition"))
+        self.assertIn(r'NOT (FABULOR_PREVIOUS_SETUP_BUNDLE >< "\")', select.get("Condition"))
+        removal = cleanup.find("w:RemoveRegistryKey", WIX_NS)
+        self.assertEqual(removal.get("Root"), "HKLM")
+        self.assertEqual(removal.get("Action"), "removeOnInstall")
+        self.assertTrue(removal.get("Key").endswith(r"\Uninstall\[FabulorRemovableSetupBundle]"))
+
+    def test_upgrade_keeps_cleanup_for_published_bundles_before_owner_tracking(self):
         root = ET.parse(INSTALLER / "Components" / "InstalledMode.wxs").getroot()
         published = {
             "107": ("{656AE58B-7162-48D0-8895-D091BC63C9F8}",
                     "{504E5953-1796-4142-AB4C-71A159FA4853}"),
             "108": ("{024C5249-B7B6-46D3-A28A-2988A70FA132}",
                     "{29CFD3A2-ED65-4D20-9DC8-5FFB84A715FD}"),
+            "109": ("{A14F00B5-E3CD-4B52-B7CE-5AB6E125841D}",
+                    "{4FA55D87-8925-4718-9956-6FACD1DBB9B3}"),
         }
-        self.assertEqual(len(root.findall(".//w:RemoveRegistryKey", WIX_NS)), len(published))
+        self.assertEqual(
+            {node.get("Id") for node in root.findall(".//w:RemoveRegistryKey", WIX_NS)},
+            {"RemovePreviousBundleRegistration"} |
+            {f"RemovePublished{release}BundleRegistration" for release in published},
+        )
         for release, (old_bundle, old_product) in published.items():
             with self.subTest(release=release):
                 self.assert_setup_entry_cleanup(root, release, old_bundle, old_product)
@@ -591,10 +643,11 @@ class ProductionWixProfileTests(unittest.TestCase):
     def test_project_has_one_unconditional_gtk4_product_graph(self):
         root = ET.parse(INSTALLER / "Fabulor.wixproj").getroot()
         compile_items = root.findall(".//Compile")
-        self.assertEqual(len(compile_items), 2)
+        self.assertEqual(len(compile_items), 3)
         self.assertTrue(all(item.get("Condition") is None for item in compile_items))
         default_sources = {item.get("Include") for item in compile_items}
         self.assertIn("ProductGtk4.wxs", default_sources)
+        self.assertIn(r"$(FabulorOpenAiSdkRoot)\openai-sdk-cache.wxs", default_sources)
         component_sources = next(
             source for source in default_sources
             if source and source.startswith("Components\\Config.wxs")

@@ -27,6 +27,9 @@ REQUIRED_PATHS = {
     "Plugins/hcsysinfo.dll",
     "Runtime/plugin-host-manifest.json",
     "Runtime/Python314/python3.dll",
+    "Runtime/Python314/python314._pth",
+    "Runtime/Python314/openai-sdk/openai/__init__.py",
+    "Runtime/Python314/openai-sdk/fabulor-openai-sdk.json",
     "Runtime/Python314/python314.dll",
     "Runtime/GTK4/bin/gtk-4-1.dll",
     "share/adwaita-icons-attribution.txt",
@@ -51,6 +54,7 @@ REQUIRED_FEATURES = {
     "Gtk4RuntimeFeature",
     "DotNetRuntimeFeature",
     "PythonRuntimeFeature",
+    "OpenAiSdkFeature",
     "TclRuntimeFeature",
 }
 FORBIDDEN_MARKERS = (
@@ -190,6 +194,9 @@ def validate_features(root):
         raise ProductionGtk4MsiError(
             f"Production feature contract is incomplete: {missing}"
         )
+    sdk_feature = root.find(".//w:Feature[@Id='PythonRuntimeFeature']/w:Feature[@Id='OpenAiSdkFeature']", NS)
+    if sdk_feature is None or sdk_feature.get("Level") != "2":
+        raise ProductionGtk4MsiError("The optional OpenAI SDK must be off by default under Python")
     forbidden = sorted(FORBIDDEN_FEATURES.intersection(features))
     if forbidden:
         raise ProductionGtk4MsiError(

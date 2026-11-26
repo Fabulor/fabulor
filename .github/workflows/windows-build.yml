@@ -305,11 +305,14 @@ jobs:
           python tools\gtk4\stage_plugin_hosts.py --dotnet-root "%ProgramFiles%\dotnet" --managed-root "%GITHUB_WORKSPACE%\src\managed\Fabulor.PluginHost\bin\${{ matrix.platform }}\Release\net8.0" --payload-root "%FABULOR_STAGE%" --python-root "%GITHUB_WORKSPACE%\Runtime\Python314" --tcl-root "%GITHUB_WORKSPACE%\Runtime\Tcl" --output "%GTK4_PLUGIN_HOST_ROOT%"
           if errorlevel 1 exit /b 1
 
+          python tools\gtk4\stage_openai_sdk.py --output "%GITHUB_WORKSPACE%\build\openai-sdk"
+          if errorlevel 1 exit /b 1
+
           python tools\release\test_generate_legal_bundle.py
           if errorlevel 1 exit /b 1
 
           set "FABULOR_LEGAL_ROOT=%GITHUB_WORKSPACE%\build\release-legal"
-          python tools\release\generate_legal_bundle.py --output "%FABULOR_LEGAL_ROOT%"
+          python tools\release\generate_legal_bundle.py --sdk-root "%GITHUB_WORKSPACE%\build\openai-sdk" --output "%FABULOR_LEGAL_ROOT%"
           if errorlevel 1 exit /b 1
 
           rem Publish the production GTK4 MSI and bootstrapper.
@@ -346,6 +349,12 @@ jobs:
         with:
           name: Fabulor Bootstrapper ${{ matrix.arch }}
           path: installer\bin\${{ matrix.platform }}\Release\FabulorSetup.exe
+
+      - name: Upload OpenAI SDK portable add-on
+        uses: actions/upload-artifact@v6
+        with:
+          name: Fabulor OpenAI SDK portable add-on ${{ matrix.arch }}
+          path: build/openai-sdk/Fabulor-OpenAI-SDK-Portable-x64.zip
 
       - name: Upload CycloneDX SBOM and third-party notices
         uses: actions/upload-artifact@v6

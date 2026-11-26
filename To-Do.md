@@ -26,6 +26,69 @@ Last reconciled: 2026-11-25 (1.0.9 release)
 - [x] Inno Setup, GTK3 packaging, Lua, Perl, and bundled user add-ons are
       retired from the supported product.
 
+## 1.1.0 Release Candidate
+
+- [x] Integrate the optional OpenAI SDK, three TLS networks and the
+      [#337 keyboard fixes](https://github.com/Fabulor/fabulor/issues/337).
+- [x] Record the earlier 1.0.9-based candidate checks. The maintainer confirmed
+      portable SDK import, installed upgrade and Repair, and the complete
+      shortcut retest in the revised keyboard build. Installer logs confirmed
+      feature removal preserved the manually installed SDK and Repair
+      reinstalled the selected bundled SDK feature.
+- [x] Build and validate the combined Windows x64 candidate locally. The
+      product metadata, native extension ABI, MSI, GTK4 runtime and Setup
+      bundle checks passed. In the portable 1.1.0 Python host, the SDK
+      imported only after extracting the optional archive. Both native
+      dependencies loaded and a client could be created offline.
+- [x] Verify an in-place upgrade from the unpublished 1.0.9 SDK candidate
+      to 1.1.0 with the SDK selected. Setup reported success. The installed
+      launcher and frontend matched the 1.1.0 candidate by SHA-256. The
+      maintainer confirmed the bundled SDK import path, and the manually
+      installed OpenAI package was still present.
+- [x] Verify upgrade from the published 1.0.9 installer. The first 1.1.0
+      candidate replaced the MSI successfully but left its Setup entry in
+      Windows Installed apps, as it did with the unpublished test build.
+- [x] Retest upgrade from published 1.0.9 with its specific Setup-entry
+      cleanup rule. On 2026-11-26, the maintainer confirmed that Installed
+      apps listed only Fabulor Setup 1.1.0. The MSI log confirmed removal of
+      the published 1.0.9 registration during the successful upgrade.
+- [x] Verify version-independent Setup ownership in an isolated Burn upgrade.
+      The older MSI recorded its bundle and product codes, Repair preserved
+      them, and the upgrade removed the matching outgoing Setup entry while
+      preserving the new bundle and an unrelated registration. The cleanup
+      also passed with both builds at 1.1.0 and the production MSI upgrade
+      schedule.
+- [x] Verify that the revised 1.1.0 Setup records its MSI and bundle ownership
+      pair on a per-machine install. The upgrade from the earlier unpublished
+      1.1.0 candidate wrote the record and replaced the MSI. It left the old
+      Setup entry because that candidate never wrote an ownership record.
+- [x] Retest uninstall and the published 1.0.9 upgrade with the final 1.1.0
+      candidate. On 2026-11-26, the maintainer confirmed Installed apps
+      showed no Fabulor entry after uninstall, one 1.0.9 entry after reinstall,
+      and one 1.1.0 entry after upgrade. The MSI log confirmed that the
+      upgrade removed the published 1.0.9 Setup registration.
+- [ ] For each subsequent release, upgrade from the previous published version
+      and check that Installed apps lists only the current Setup entry.
+- [x] Verify that Modify removes the bundled SDK while leaving Python and
+      a manually installed OpenAI package available. Setup removed only
+      `OpenAiSdkFeature`, the `openai-sdk` directory was removed, and embedded
+      Python imported the manually installed package from `Runtime\Python314`.
+- [x] Verify Repair against the final 1.1.0 candidate with the SDK off.
+      Setup repaired Python, kept the SDK feature absent, and retained the
+      Setup ownership record. The manually installed OpenAI package still
+      imported afterwards.
+- [x] Open the installed client normally after maintenance and check the
+      existing profile. The maintainer confirmed the profile loaded.
+- [x] Record the maintainer's issue #337 shortcut retest and bring the
+      keyboard shortcut guide up to date for 1.1.0.
+- [x] Check keyboard-only navigation through the channel switcher, Find,
+      and Setup's SDK checkbox. The installed client switched between two
+      local test channels, moved between Find matches in both directions,
+      and closed Find with Escape. Setup opened Advanced options and changed
+      the SDK selection using only the keyboard. No maintenance was applied.
+- [x] Record the accepted source revision and package hashes in the release
+      preparation commit.
+
 ## 1.0.9 Patch
 
 - [x] Fix [#333](https://github.com/Fabulor/fabulor/issues/333), where

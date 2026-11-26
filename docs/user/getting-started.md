@@ -73,6 +73,11 @@ Microsoft Store packaging is a separate future task.
 7. Select **Launch Fabulor** to start the installed client, or **Close** to
    leave setup without launching it.
 
+From version 1.1.0, **Advanced options** offers **OpenAI SDK for Python
+add-ons** under the Python runtime. Select it if an add-on requires the SDK.
+The option is off by default. Enter any API credentials in the add-on's own
+configuration.
+
 Installed mode normally places the application under:
 
 ```text

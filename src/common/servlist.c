@@ -229,6 +229,9 @@ static const struct defaultserver def[] =
 	{"ChatJunkies",	0},
 	{0,			"irc.chatjunkies.org"},
 
+	{"ChatLounge", 0, 0, 0, 0, 0, TRUE},
+	{0,			"irc.chatlounge.net/+6697"},
+
 	{"chatpat", 0, 0, "CP1251", LOGIN_CUSTOM, "MSG NS IDENTIFY %p"},
 	{0,			"irc.unibg.net"},
 	{0,			"irc.chatpat.bg"},
@@ -268,6 +271,9 @@ static const struct defaultserver def[] =
 	{"EuropNet", 0},
 	/* Self signed */
 	{0,			"irc.europnet.org"},
+
+	{"EYErc", 0, 0, 0, 0, 0, TRUE},
+	{0,			"irc.eyerc.net/+6697"},
 
 	{"GameSurge", 0},
 	{0,			"irc.gamesurge.net"},
@@ -397,6 +403,9 @@ static const struct defaultserver def[] =
 	{"synIRC", 0},
 	/* Self signed */
 	{0, "irc.synirc.net"},
+
+	{"SystemHalt", 0, 0, 0, 0, 0, TRUE},
+	{0,			"pickle.systemhalt.wtf/+6697"},
 
 	{"Techtronix",	0, 0, 0, LOGIN_SASL, 0, TRUE},
 	{0,			"irc.techtronix.net"},

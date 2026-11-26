@@ -35,10 +35,12 @@ void key_init (void);
 void key_dialog_show (void);
 gboolean key_handle_key_press (GtkWidget *wid, guint keyval,
 								GdkModifierType state, gpointer user_data);
+gboolean key_handle_reopen_tab (GtkWidget *widget, guint keyval,
+								GdkModifierType state, gpointer user_data);
 int key_action_insert (GtkWidget *wid, const FabulorKeyInput *key,
 					   char *d1, char *d2,
 						 session *sess);
 void key_check_replace_on_change (GtkEditable *editable, gpointer data);
-gboolean key_get_menu_accel (const char *name, guint *keyval, GdkModifierType *mod);
+gboolean key_matches_menu_shortcut (const char *name, guint keyval, GdkModifierType state);
 
 #endif

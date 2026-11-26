@@ -2,6 +2,7 @@
 <Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">
   <Bundle
     Id="Fabulor.Setup.Bundle"
+    Tag="Fabulor.Setup.Owner"
     Name="$(var.FabulorSetupDescription)"
     Version="$(var.FabulorSemVer)"
     Manufacturer="$(var.FabulorPublisher)"
@@ -32,6 +33,7 @@
         Compressed="yes">
         <MsiProperty Name="INSTALLFOLDER" Value="[InstallFolder]" />
         <MsiProperty Name="FABULOR_PORTABLE" Value="[FABULOR_PORTABLE]" />
+        <MsiProperty Name="FABULOR_SETUP_BUNDLE" Value="[WixBundleProviderKey]" />
         <MsiProperty Name="ARPSYSTEMCOMPONENT" Value="1" />
       </MsiPackage>
     </Chain>

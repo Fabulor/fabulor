@@ -6172,18 +6172,21 @@ mg_search_toggle(session *sess)
 }
 
 static gboolean
-search_handle_esc (GtkWidget *widget, guint keyval, GdkModifierType state,
-                   gpointer user_data)
+search_handle_key_press (GtkWidget *widget, guint keyval, GdkModifierType state,
+                         gpointer user_data)
 {
         session *sess = user_data;
 
-        (void) widget;
-        (void) state;
-
         if (keyval == GDK_KEY_Escape)
-                mg_search_toggle(sess);
+                mg_search_toggle (sess);
+        else if (key_matches_menu_shortcut ("search-next", keyval, state))
+                mg_search_handle_next (widget, sess);
+        else if (key_matches_menu_shortcut ("search-previous", keyval, state))
+                mg_search_handle_previous (widget, sess);
+        else
+                return FALSE;
 
-        return FALSE;
+        return TRUE;
 }
 
 static void
@@ -6213,7 +6216,8 @@ mg_create_search(session *sess, GtkWidget *box)
         mg_apply_emoji_fallback_widget (entry);
         mg_apply_entry_scroll_artifact_fix (entry);
         gui->search_changed_signal = g_signal_connect(G_OBJECT(entry), "changed", G_CALLBACK(search_handle_change), sess);
-        fabulor_gtk_widget_on_key_pressed (entry, search_handle_esc, sess);
+        fabulor_gtk_widget_on_key_pressed_phase (entry, GTK_PHASE_CAPTURE,
+                                                 search_handle_key_press, sess);
         g_signal_connect(G_OBJECT(entry), "activate", G_CALLBACK(mg_search_handle_next), sess);
         gtk_entry_set_icon_activatable (GTK_ENTRY (entry), GTK_ENTRY_ICON_SECONDARY, FALSE);
         gtk_entry_set_icon_tooltip_text (GTK_ENTRY (sess->gui->shentry), GTK_ENTRY_ICON_SECONDARY, _("Search hit end or not found."));
@@ -6323,7 +6327,9 @@ mg_create_entry (session *sess, GtkWidget *box)
         fabulor_gtk_box_append (GTK_BOX (hbox), entry, TRUE, TRUE, 0);
 
         gtk_widget_set_name (entry, "fabulor-inputbox");
-        fabulor_gtk_widget_on_key_pressed (entry, key_handle_key_press, NULL);
+        /* Run configured chat shortcuts before GtkText handles the key. */
+        fabulor_gtk_widget_on_key_pressed_phase (entry, GTK_PHASE_CAPTURE,
+                                                 key_handle_key_press, NULL);
         fabulor_gtk_widget_on_focus_enter (entry, mg_inputbox_focus, gui);
         g_signal_connect (G_OBJECT (entry), "icon-release",
                                                         G_CALLBACK (mg_inputbox_icon_release_cb), NULL);
@@ -6743,6 +6749,8 @@ mg_create_tabwindow (session *sess)
 
         g_signal_connect (G_OBJECT (win), "close-request",
                           G_CALLBACK (mg_tabwindow_close_request_cb), NULL);
+        /* Closing a tab with the mouse can leave focus in the switcher. */
+        fabulor_gtk_widget_on_key_pressed (win, key_handle_reopen_tab, NULL);
         fabulor_gtk_widget_on_focus_enter (win, mg_tabwin_focus_cb, NULL);
         g_signal_connect (win, "notify::is-active", G_CALLBACK (mg_activity_active_cb), NULL);
         fabulor_window_state_watch (GTK_WINDOW (win), mg_activity_window_state_cb, NULL);
