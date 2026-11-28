@@ -1,0 +1,93 @@
+name: Verify published Fabulor 1.1.0 WinGet install modes
+
+on:
+  push:
+    branches:
+      - Alcheri/verify-fabulor-1.1.0-winget-modes
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    name: Install (${{ matrix.mode }})
+    runs-on: windows-2025
+    timeout-minutes: 12
+    strategy:
+      fail-fast: false
+      matrix:
+        mode: [quiet, passive]
+    env:
+      INSTALL_MODE: ${{ matrix.mode }}
+    steps:
+      - name: Run the published installer in a clean Windows environment
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $mode = $env:INSTALL_MODE
+          $folder = Join-Path $env:RUNNER_TEMP "fabulor-$mode-verification"
+          New-Item -ItemType Directory -Path $folder | Out-Null
+          $setup = Join-Path $folder 'FabulorSetup-v1.1.0.exe'
+          $log = Join-Path $folder 'FabulorSetup.log'
+          $installFolder = Join-Path $env:ProgramFiles 'Fabulor'
+          $arp = 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall'
+          function Get-FabulorEntries {
+              Get-ChildItem -LiteralPath $arp |
+                  ForEach-Object { Get-ItemProperty -LiteralPath $_.PSPath -ErrorAction SilentlyContinue } |
+                  Where-Object { $_.DisplayName -eq 'Fabulor Setup' }
+          }
+          if ((Test-Path -LiteralPath $installFolder) -or @(Get-FabulorEntries).Count) {
+              throw 'Fabulor was already present on the runner.'
+          }
+          $principal = [Security.Principal.WindowsPrincipal]::new([Security.Principal.WindowsIdentity]::GetCurrent())
+          if (-not $principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {
+              throw 'This per-machine install test requires an elevated disposable runner.'
+          }
+          Invoke-WebRequest -Uri 'https://github.com/Fabulor/fabulor/releases/download/v1.1.0/FabulorSetup-v1.1.0.exe' -OutFile $setup -TimeoutSec 120
+          $expected = '395880036C7C33FBBDE9449C0720B5A1EC807D13B7FC635BEB8BA78A1D2973C4'
+          if ((Get-FileHash -LiteralPath $setup -Algorithm SHA256).Hash -cne $expected) {
+              throw 'The download does not match the published installer.'
+          }
+          $arguments = '/install /{0} /norestart /log "{1}"' -f $mode, $log
+          $process = Start-Process -FilePath $setup -ArgumentList $arguments -PassThru
+          $deadline = [DateTime]::UtcNow.AddMinutes(5)
+          $visibleWindow = $false
+          do {
+              $visibleWindow = $visibleWindow -or (@(
+                  Get-Process -Name 'Fabulor.BA' -ErrorAction SilentlyContinue |
+                      Where-Object { $_.MainWindowHandle -ne 0 -and $_.MainWindowTitle -eq 'Fabulor Setup' }
+              ).Count -gt 0)
+              if ([DateTime]::UtcNow -gt $deadline) { throw "Setup did not exit within five minutes in /$mode mode." }
+              Start-Sleep -Milliseconds 125
+              $process.Refresh()
+          } until ($process.HasExited)
+          Write-Host "Mode /$mode. Exit code $($process.ExitCode). Visible Setup window $visibleWindow."
+          if ($process.ExitCode -ne 0) { throw "Setup returned $($process.ExitCode) in /$mode mode." }
+          $entries = @(Get-FabulorEntries)
+          if ($entries.Count -ne 1 -or $entries[0].DisplayVersion -ne '1.1.0' -or
+              -not (Test-Path -LiteralPath (Join-Path $installFolder 'fabulor.exe'))) {
+              throw 'Expected the installed launcher and exactly one Fabulor Setup 1.1.0 entry.'
+          }
+          if (Test-Path -LiteralPath (Join-Path $installFolder 'Runtime\Python314\openai-sdk')) {
+              throw 'The optional OpenAI SDK was installed by default.'
+          }
+          $burn = Get-Content -LiteralPath $log -Raw
+          if ($burn -notmatch 'Apply complete, result: 0x0,' -or
+              $burn -notmatch 'Starting automatic command-line action on the UI thread: Install\.') {
+              throw 'The Burn log did not show successful automatic installation.'
+          }
+          $expectedDisplay = if ($mode -eq 'quiet') { 'None' } else { 'Passive' }
+          if ($burn -notmatch "display=$expectedDisplay, nonInteractive=True\.") {
+              throw "Burn did not report the expected /$mode display mode."
+          }
+          "**/$mode** installed Fabulor 1.1.0 without input, returned exit code 0, and created one Installed Apps entry. Visible Setup window observed **$visibleWindow**." >> $env:GITHUB_STEP_SUMMARY
+          if ($mode -eq 'quiet' -and $visibleWindow) { throw 'Quiet mode displayed the Setup window.' }
+          if ($mode -eq 'passive' -and -not $visibleWindow) { throw 'No Setup window was observed in passive mode.' }
+
+      - name: Preserve Setup logs
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: setup-logs-${{ matrix.mode }}
+          path: ${{ runner.temp }}/fabulor-${{ matrix.mode }}-verification/*.log
+          retention-days: 7
