@@ -9,6 +9,14 @@ Unreleased entries describe changes under development or release review.
 The first stable release and its preceding release-candidate series are
 recorded separately below.
 
+## 1.1.1 — Unreleased
+
+### Fixed
+
+- Keep Fabulor Setup hidden when it runs with `/quiet`. The `/passive` option
+  continues to show Setup progress and finishes without input.
+- Show the full Fabulor version in the Setup window title and heading.
+
 ## 1.1.0 — 2026-11-26
 
 ### Added

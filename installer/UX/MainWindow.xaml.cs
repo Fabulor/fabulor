@@ -25,10 +25,15 @@ public partial class MainWindow : Window
     private string portableDefaultFolder = string.Empty;
     private string lastErrorDetails = string.Empty;
 
-    public MainWindow(FabulorBootstrapperApplication bootstrapper)
+    public MainWindow(FabulorBootstrapperApplication bootstrapper, string setupVersion)
     {
         this.bootstrapper = bootstrapper;
         this.InitializeComponent();
+        if (!string.IsNullOrWhiteSpace(setupVersion))
+        {
+            this.Title = $"{this.Title} {setupVersion}";
+        }
+
         this.trackingInstallFolderEdits = true;
         this.UpdateModeSummary();
         this.Closed += (_, _) => this.sessionLog.Dispose();

@@ -113,7 +113,8 @@
                        Stretch="Uniform"
                        AutomationProperties.Name="Fabulor logo" />
                 <StackPanel Grid.Column="2" VerticalAlignment="Center">
-                    <TextBlock FontSize="25" FontWeight="SemiBold" Text="Fabulor Setup" />
+                    <TextBlock FontSize="25" FontWeight="SemiBold"
+                               Text="{Binding Title, RelativeSource={RelativeSource AncestorType=Window}}" />
                     <TextBlock Margin="0,5,0,0"
                                Foreground="{StaticResource MutedTextBrush}"
                                TextWrapping="Wrap"
