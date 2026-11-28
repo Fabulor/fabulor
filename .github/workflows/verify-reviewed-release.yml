@@ -1,0 +1,146 @@
+name: Verify the reviewed Fabulor 1.1.1 installer
+
+on:
+  push:
+    branches:
+      - Alcheri/verify-reviewed-fabulor-1.1.1
+
+permissions:
+  contents: write
+
+jobs:
+  verify:
+    name: Verify (${{ matrix.scenario }})
+    runs-on: windows-2025
+    timeout-minutes: 12
+    strategy:
+      fail-fast: false
+      matrix:
+        scenario: [install-modes, upgrade, failed-older-msi]
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Download and verify the release draft installer
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $testRoot = Join-Path $env:RUNNER_TEMP 'reviewed-setup'
+          gh release download v1.1.1 --repo Fabulor/fabulor --pattern FabulorSetup-v1.1.1.exe --dir $testRoot
+          if ($LASTEXITCODE -ne 0) { throw 'Could not download the draft Setup artefact.' }
+          $setup = Join-Path $testRoot 'FabulorSetup-v1.1.1.exe'
+          if ((Get-FileHash -LiteralPath $setup).Hash -cne '1D6F78FA1DC0D1602D35A5C81C06CF925FB0239CE2CFDF5B01DFF42E1C0948A8') { throw 'Unexpected Setup hash.' }
+          "FABULOR_VERIFICATION_ROOT=$testRoot" >> $env:GITHUB_ENV
+          "FABULOR_VERIFICATION_SETUP=$setup" >> $env:GITHUB_ENV
+
+      - name: Test install modes and version display
+        if: matrix.scenario == 'install-modes'
+        shell: pwsh
+        run: |
+          ./tools/release/test_setup_install_modes.ps1 -Bootstrapper $env:FABULOR_VERIFICATION_SETUP -VersionProps installer/Directory.Build.props
+
+      - name: Verify the quiet upgrade from published 1.1.0
+        if: matrix.scenario == 'upgrade'
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $root = $env:FABULOR_VERIFICATION_ROOT
+          $baseline = Join-Path $root 'FabulorSetup-v1.1.0.exe'
+          Invoke-WebRequest -Uri 'https://github.com/Fabulor/fabulor/releases/download/v1.1.0/FabulorSetup-v1.1.0.exe' -OutFile $baseline
+          if ((Get-FileHash -LiteralPath $baseline).Hash -cne '395880036C7C33FBBDE9449C0720B5A1EC807D13B7FC635BEB8BA78A1D2973C4') {
+              throw 'Unexpected 1.1.0 installer hash.'
+          }
+          $arp = 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall'
+          function Get-SetupEntries {
+              Get-ChildItem -LiteralPath $arp | ForEach-Object { Get-ItemProperty -LiteralPath $_.PSPath -ErrorAction SilentlyContinue } |
+                  Where-Object DisplayName -eq 'Fabulor Setup'
+          }
+          if (@(Get-SetupEntries).Count) { throw 'Expected a clean runner.' }
+          $oldLog = Join-Path $root 'install-1.1.0.log'
+          $old = Start-Process -FilePath $baseline -ArgumentList ('/install /passive /norestart /log "{0}"' -f $oldLog) -Wait -PassThru
+          $before = @(Get-SetupEntries)
+          if ($old.ExitCode -ne 0 -or $before.Count -ne 1 -or $before[0].DisplayVersion -ne '1.1.0') {
+              throw 'The published 1.1.0 installer did not leave one setup entry.'
+          }
+
+          $newLog = Join-Path $root 'upgrade-1.1.1.log'
+          $new = Start-Process -FilePath $env:FABULOR_VERIFICATION_SETUP -ArgumentList ('/install /quiet /norestart /log "{0}"' -f $newLog) -PassThru
+          $visible = $false
+          while (-not $new.HasExited) {
+              $visible = $visible -or (@(Get-Process -Name Fabulor.BA -ErrorAction SilentlyContinue |
+                  Where-Object MainWindowHandle -ne 0).Count -gt 0)
+              Start-Sleep -Milliseconds 125
+              $new.Refresh()
+          }
+          $after = @(Get-SetupEntries)
+          if ($new.ExitCode -ne 0 -or $visible -or $after.Count -ne 1 -or $after[0].DisplayVersion -ne '1.1.1' -or
+              (Test-Path -LiteralPath $before[0].PSPath)) {
+              throw 'The upgrade did not finish quietly with exactly one 1.1.1 setup entry.'
+          }
+          Write-Host 'Quiet 1.1.0 to 1.1.1 upgrade passed with exactly one Installed Apps entry.'
+
+      - name: Verify exit when the older MSI refuses removal
+        if: matrix.scenario == 'failed-older-msi'
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $root = $env:FABULOR_VERIFICATION_ROOT
+          $wixRoot = Join-Path $root 'tools'
+          dotnet tool install wix --tool-path $wixRoot --version 7.0.0
+          if ($LASTEXITCODE -ne 0) { throw 'Could not install the fixture builder.' }
+          $fixture = Join-Path $root 'older-fixture.wxs'
+          @'
+          <Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">
+            <Package Name="Fabulor" Version="1.0.0" Manufacturer="Fabulor Test" Language="0"
+                     Scope="perMachine" UpgradeCode="{8F6C0C7E-9A4D-4E4C-9F8C-2B6F5A4E9C11}">
+              <MediaTemplate EmbedCab="yes" />
+              <StandardDirectory Id="ProgramFiles64Folder">
+                <Directory Id="INSTALLFOLDER" Name="FabulorFallbackProbe">
+                  <Component Id="Probe" Guid="{C4B2D82C-A2EC-4D62-B660-73584E688E36}">
+                    <RegistryValue Root="HKLM" Key="Software\Fabulor\TestFixture" Name="Installed" Type="integer" Value="1" KeyPath="yes" />
+                  </Component>
+                </Directory>
+              </StandardDirectory>
+              <Feature Id="Fixture" Level="1">
+                <ComponentRef Id="Probe" />
+              </Feature>
+              <CustomAction Id="BlockTestUninstall" Error="Deliberate uninstall fixture failure." />
+              <InstallExecuteSequence>
+                <Custom Action="BlockTestUninstall" Before="RemoveFiles" Condition="REMOVE = &quot;ALL&quot;" />
+              </InstallExecuteSequence>
+            </Package>
+          </Wix>
+          '@ | Set-Content -LiteralPath $fixture -Encoding utf8
+          $msi = Join-Path $root 'older-fixture.msi'
+          & "$wixRoot/wix.exe" build -acceptEula wix7 -arch x64 -out $msi $fixture
+          if ($LASTEXITCODE -ne 0) { throw 'The older MSI fixture did not compile.' }
+          $install = Start-Process msiexec.exe -ArgumentList ('/i "{0}" /qn /norestart' -f $msi) -Wait -PassThru
+          if ($install.ExitCode -ne 0) { throw 'The older MSI fixture did not install.' }
+
+          $log = Join-Path $root 'failed-older-uninstall.log'
+          $uninstall = Start-Process -FilePath $env:FABULOR_VERIFICATION_SETUP -ArgumentList ('/uninstall /quiet /norestart /log "{0}"' -f $log) -PassThru
+          $visible = $false
+          $deadline = [DateTime]::UtcNow.AddSeconds(60)
+          while (-not $uninstall.HasExited -and [DateTime]::UtcNow -lt $deadline) {
+              $visible = $visible -or (@(Get-Process -Name Fabulor.BA -ErrorAction SilentlyContinue |
+                  Where-Object MainWindowHandle -ne 0).Count -gt 0)
+              Start-Sleep -Milliseconds 125
+              $uninstall.Refresh()
+          }
+          if (-not $uninstall.HasExited) { throw 'Quiet Setup hung after the older MSI failed.' }
+          $burn = Get-Content -LiteralPath $log -Raw
+          if ($visible -or $uninstall.ExitCode -eq 0 -or $burn -notmatch 'Related MSI uninstall exited with code 0x00000643') {
+              throw "The fallback failed to report the expected MSI error. Setup returned $($uninstall.ExitCode); visible window $visible."
+          }
+          Write-Host "The older MSI returned 1603 and quiet Setup exited with code $($uninstall.ExitCode) without displaying a window."
+
+      - name: Preserve installer logs
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: install-logs-${{ matrix.scenario }}
+          path: |
+            ${{ runner.temp }}/reviewed-setup/*.log
+            ${{ runner.temp }}/fabulor-setup-install-mode-logs/*.log
+          retention-days: 7
