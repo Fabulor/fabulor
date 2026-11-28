@@ -1,0 +1,81 @@
+name: Verify the Fabulor 1.1.1 quiet upgrade
+
+on:
+  push:
+    branches:
+      - Alcheri/verify-fabulor-1.1.1-upgrade
+
+permissions:
+  actions: read
+  contents: read
+
+jobs:
+  upgrade:
+    name: Upgrade published 1.1.0 to the 1.1.1 candidate
+    runs-on: windows-2025
+    timeout-minutes: 8
+    steps:
+      - name: Run the upgrade and check Installed Apps
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $folder = Join-Path $env:RUNNER_TEMP 'fabulor-upgrade-verification'
+          $candidateDir = Join-Path $folder 'candidate'
+          New-Item -Path $folder -ItemType Directory | Out-Null
+          $baseline = Join-Path $folder 'FabulorSetup-v1.1.0.exe'
+          Invoke-WebRequest -Uri 'https://github.com/Fabulor/fabulor/releases/download/v1.1.0/FabulorSetup-v1.1.0.exe' -OutFile $baseline -TimeoutSec 120
+          $baselineHash = '395880036C7C33FBBDE9449C0720B5A1EC807D13B7FC635BEB8BA78A1D2973C4'
+          if ((Get-FileHash -LiteralPath $baseline).Hash -cne $baselineHash) { throw 'The 1.1.0 baseline hash did not match.' }
+          gh run download 46106314137 --repo Fabulor/fabulor --name 'Fabulor Bootstrapper x64' --dir $candidateDir
+          if ($LASTEXITCODE -ne 0) { throw 'Could not download the tested 1.1.1 candidate.' }
+          $candidate = Join-Path $candidateDir 'FabulorSetup.exe'
+          if ((Get-FileHash -LiteralPath $candidate).Hash -cne 'F63FC68E87441350E9BD4A82A05BECB4480A775D51E70CA8D7208C58073A65DD') { throw 'The 1.1.1 candidate hash did not match.' }
+
+          $arp = 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall'
+          $marker = 'HKLM:\SOFTWARE\Fabulor\Installer\SetupOwner'
+          function Get-SetupEntries {
+              Get-ChildItem -LiteralPath $arp |
+                  ForEach-Object { Get-ItemProperty -LiteralPath $_.PSPath -ErrorAction SilentlyContinue } |
+                  Where-Object { $_.DisplayName -eq 'Fabulor Setup' }
+          }
+
+          if (@(Get-SetupEntries).Count) { throw 'Expected a clean runner.' }
+          $oldLog = Join-Path $folder 'install-1.1.0.log'
+          $old = Start-Process -FilePath $baseline -ArgumentList ('/install /passive /norestart /log "{0}"' -f $oldLog) -Wait -PassThru
+          $before = @(Get-SetupEntries)
+          if ($old.ExitCode -ne 0 -or $before.Count -ne 1 -or $before[0].DisplayVersion -ne '1.1.0') {
+              throw 'The published 1.1.0 baseline did not install.'
+          }
+          $oldOwner = Get-ItemProperty -LiteralPath $marker
+          if ($oldOwner.BundleCode -ne $before[0].PSChildName) { throw 'The baseline Setup owner did not match its Installed Apps entry.' }
+
+          $newLog = Join-Path $folder 'upgrade-1.1.1.log'
+          $upgrade = Start-Process -FilePath $candidate -ArgumentList ('/install /quiet /norestart /log "{0}"' -f $newLog) -PassThru
+          $visible = $false
+          while (-not $upgrade.HasExited) {
+              $visible = $visible -or (@(Get-Process -Name 'Fabulor.BA' -ErrorAction SilentlyContinue |
+                  Where-Object MainWindowHandle -ne 0).Count -gt 0)
+              Start-Sleep -Milliseconds 125
+              $upgrade.Refresh()
+          }
+          $after = @(Get-SetupEntries)
+          if ($upgrade.ExitCode -ne 0 -or $visible -or $after.Count -ne 1 -or $after[0].DisplayVersion -ne '1.1.1' -or
+              (Test-Path -LiteralPath (Join-Path $arp $oldOwner.BundleCode))) {
+              throw 'The quiet upgrade failed or did not leave exactly one 1.1.1 entry.'
+          }
+          $newOwner = Get-ItemProperty -LiteralPath $marker
+          if ($after[0].PSChildName -ne $newOwner.BundleCode -or $oldOwner.ProductCode -eq $newOwner.ProductCode) {
+              throw 'The quiet upgrade did not record the new owner.'
+          }
+          'Quiet upgrade passed. Setup exited 0, showed no window and left one Installed Apps entry for Fabulor Setup 1.1.1.' |
+              Tee-Object -FilePath $env:GITHUB_STEP_SUMMARY
+
+      - name: Preserve upgrade logs
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: upgrade-logs
+          path: ${{ runner.temp }}/fabulor-upgrade-verification/*.log
+          retention-days: 7
