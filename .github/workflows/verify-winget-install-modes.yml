@@ -77,7 +77,7 @@ jobs:
               throw 'The Burn log did not show successful automatic installation.'
           }
           $expectedDisplay = if ($mode -eq 'quiet') { 'None' } else { 'Passive' }
-          if ($burn -notmatch "display=$expectedDisplay, nonInteractive=True\.") {
+          if ($burn -notmatch "display=$expectedDisplay, nonInteractive=True, explicitMaintenance=False\.") {
               throw "Burn did not report the expected /$mode display mode."
           }
           "**/$mode** installed Fabulor 1.1.0 without input, returned exit code 0, and created one Installed Apps entry. Visible Setup window observed **$visibleWindow**." >> $env:GITHUB_STEP_SUMMARY
