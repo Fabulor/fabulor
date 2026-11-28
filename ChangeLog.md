@@ -17,6 +17,7 @@ recorded separately below.
   continues to show Setup progress and finishes without input.
 - Uninstall the current version in the running Setup instance so two copies
   of Setup cannot start the same uninstall.
+- Return the uninstall result to unattended callers removing an older version.
 - Show the full Fabulor version in the Setup window title and heading.
 
 ## 1.1.0 — 2026-11-26

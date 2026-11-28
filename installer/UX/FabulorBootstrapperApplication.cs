@@ -1642,6 +1642,7 @@ public sealed class FabulorBootstrapperApplication : BootstrapperApplication
                         this.window?.SetBusy(false);
                         this.window?.AppendLog($"Related MSI uninstall failed with status 0x{result:X8}.");
                         this.window?.ShowError($"Detected MSI uninstall failed with status 0x{result:X8}.");
+                        this.CloseOnNonInteractiveFailure(result);
                     }
                 });
             });
@@ -1705,9 +1706,21 @@ public sealed class FabulorBootstrapperApplication : BootstrapperApplication
             return false;
         }
 
+        var arguments = this.BuildRelaunchArguments(LaunchAction.Uninstall);
+        if (this.IsNonInteractiveCommandDisplay())
+        {
+            var bundlePath = this.detectedInstalledBundleCachePath;
+            this.engine.Log(LogLevel.Standard, $"Handing off unattended uninstall to registered bundle {bundlePath}.");
+            _ = Task.Run(() =>
+            {
+                this.lastResult = this.RunInstalledBundle(bundlePath, arguments);
+                this.DispatchToWindow(() => this.window?.Close());
+            });
+            return true;
+        }
+
         try
         {
-            var arguments = this.BuildRelaunchArguments(LaunchAction.Uninstall);
             var process = Process.Start(new ProcessStartInfo(this.detectedInstalledBundleCachePath, arguments)
             {
                 UseShellExecute = true
