@@ -256,6 +256,7 @@ public sealed class FabulorBootstrapperApplication : BootstrapperApplication
         var noHandoffRequested = this.HasNoHandoffMarker();
 
         if (action == LaunchAction.Uninstall
+            && !this.isCurrentMsiPackageInstalled
             && !noHandoffRequested
             && this.TryLaunchRegisteredBundleUninstall())
         {

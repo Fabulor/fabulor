@@ -15,6 +15,8 @@ recorded separately below.
 
 - Keep Fabulor Setup hidden when it runs with `/quiet`. The `/passive` option
   continues to show Setup progress and finishes without input.
+- Uninstall the current version in the running Setup instance so two copies
+  of Setup cannot start the same uninstall.
 - Show the full Fabulor version in the Setup window title and heading.
 
 ## 1.1.0 — 2026-11-26

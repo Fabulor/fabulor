@@ -80,7 +80,9 @@ foreach ($mode in @('quiet', 'passive')) {
     }
 
     $removal = Invoke-FabulorSetup -Name "uninstall-after-$mode" -Arguments '/uninstall /quiet'
-    if ($removal.ExitCode -ne 0 -or $removal.WindowTitles.Count) {
+    if ($removal.ExitCode -ne 0 -or $removal.WindowTitles.Count -or
+        $removal.Log -notmatch 'Apply complete, result: 0x0,' -or
+        $removal.Log -match 'Launched registered bundle uninstall') {
         throw "Quiet uninstall failed or displayed a window after /$mode install."
     }
     Assert-CleanRunner

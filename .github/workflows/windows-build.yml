@@ -336,21 +336,6 @@ jobs:
           if errorlevel 1 exit /b 1
         shell: cmd
 
-      - name: Verify Setup quiet and passive installs
-        id: setup_install_modes
-        shell: pwsh
-        run: |
-          ./tools/release/test_setup_install_modes.ps1 `
-            -Bootstrapper "installer/bin/${{ matrix.platform }}/Release/FabulorSetup.exe" `
-            -VersionProps installer/Directory.Build.props
-
-      - name: Upload logs for failed Setup install-mode tests
-        if: failure() && steps.setup_install_modes.outcome == 'failure'
-        uses: actions/upload-artifact@v6
-        with:
-          name: Fabulor Setup install-mode logs ${{ matrix.arch }}
-          path: ${{ runner.temp }}/fabulor-setup-install-mode-logs/*.log
-
       - name: Upload MSI
         id: upload_msi
         uses: actions/upload-artifact@v6
@@ -376,3 +361,18 @@ jobs:
         with:
           name: Fabulor legal bundle ${{ matrix.arch }}
           path: build\release-legal
+
+      - name: Verify Setup quiet and passive installs
+        id: setup_install_modes
+        shell: pwsh
+        run: |
+          ./tools/release/test_setup_install_modes.ps1 `
+            -Bootstrapper "installer/bin/${{ matrix.platform }}/Release/FabulorSetup.exe" `
+            -VersionProps installer/Directory.Build.props
+
+      - name: Upload logs for failed Setup install-mode tests
+        if: failure() && steps.setup_install_modes.outcome == 'failure'
+        uses: actions/upload-artifact@v6
+        with:
+          name: Fabulor Setup install-mode logs ${{ matrix.arch }}
+          path: ${{ runner.temp }}/fabulor-setup-install-mode-logs/*.log
