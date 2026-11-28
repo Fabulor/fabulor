@@ -21,7 +21,7 @@ uninstalling it.
 
 ## Windows SmartScreen And Unsigned Installers
 
-Current Fabulor installers, including `1.1.0`, are not
+Current Fabulor installers, including `1.1.1`, are not
 Authenticode-signed. WinGet distribution does not sign these files. Windows
 SmartScreen can therefore show **Windows protected your PC** or an
 **Unknown publisher** warning even when the installer is an authentic Fabulor
@@ -41,7 +41,7 @@ Proceed only when all of the following are true:
 Open PowerShell in the folder containing the download and calculate its hash:
 
 ```powershell
-Get-FileHash -Algorithm SHA256 .\FabulorSetup-v1.1.0.exe
+Get-FileHash -Algorithm SHA256 .\FabulorSetup-v1.1.1.exe
 ```
 
 Compare the complete `Hash` value, not just its beginning or end. If the
@@ -61,7 +61,7 @@ WinGet distribution is being prepared and is not yet announced as available.
 Until the manifest is accepted, use the official GitHub release installer.
 Microsoft Store packaging is a separate future task.
 
-1. Start the versioned setup program you downloaded, such as `FabulorSetup-v1.1.0.exe`.
+1. Start the versioned setup program you downloaded, such as `FabulorSetup-v1.1.1.exe`.
 2. Approve the Windows administrator prompt.
 3. Keep the default install folder unless you have a specific reason to change
    it.
@@ -151,7 +151,7 @@ around folder permissions.
 ### Add The OpenAI SDK To The Portable Archive
 
 If a Python add-on needs the SDK, download
-`Fabulor-OpenAI-SDK-v1.1.0-Portable-x64.zip` from the same release as your
+`Fabulor-OpenAI-SDK-v1.1.1-Portable-x64.zip` from the same release as your
 portable Fabulor archive. Extract the portable Fabulor archive first. Close
 Fabulor if it is running, then set the SDK ZIP's extraction destination to
 the folder containing `fabulor.exe`. The SDK ZIP already contains the

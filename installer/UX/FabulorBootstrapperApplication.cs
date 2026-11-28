@@ -21,6 +21,8 @@ public sealed class FabulorBootstrapperApplication : BootstrapperApplication
 {
     private const uint ShellAssociationChanged = 0x08000000;
     private const uint ShellNotifyIdList = 0x0000;
+    private const int InvalidArgument = unchecked((int)0x80070057);
+    private const int NotImplemented = unchecked((int)0x80004001);
     private const string NoHandoffArgument = "FABULOR_NO_HANDOFF=1";
     private const string FabulorMsiPackageId = "FabulorMsi";
     private const string FabulorMsiUpgradeCode = "{8F6C0C7E-9A4D-4E4C-9F8C-2B6F5A4E9C11}";
@@ -97,6 +99,8 @@ public sealed class FabulorBootstrapperApplication : BootstrapperApplication
 
     protected override void Run()
     {
+        var displayQuietly = this.command?.Display == Display.None;
+        var setupVersion = this.GetCurrentBundleVersion();
         var initialPortableMode = this.GetRequestedPortableMode();
         var initialInstallFolder = this.GetInitialInstallFolder(initialPortableMode);
         var installedDefaultFolder = System.IO.Path.Combine(this.GetDefaultProgramFilesFolder(), "Fabulor");
@@ -109,7 +113,7 @@ public sealed class FabulorBootstrapperApplication : BootstrapperApplication
                 ShutdownMode = ShutdownMode.OnExplicitShutdown
             };
 
-            this.window = new MainWindow(this);
+            this.window = new MainWindow(this, setupVersion);
             this.window.SourceInitialized += (_, _) =>
             {
                 this.windowHandle = new WindowInteropHelper(this.window).Handle;
@@ -124,8 +128,18 @@ public sealed class FabulorBootstrapperApplication : BootstrapperApplication
             this.window.SetStatus("Detecting installed state…");
             this.window.AppendLog("Starting Fabulor custom bootstrapper application.");
 
-            this.windowReady.Set();
-            application.Run(this.window);
+            if (displayQuietly)
+            {
+                // Burn needs a parent HWND even when Setup has no visible window.
+                new WindowInteropHelper(this.window).EnsureHandle();
+                this.windowReady.Set();
+                application.Run();
+            }
+            else
+            {
+                this.windowReady.Set();
+                application.Run(this.window);
+            }
         });
 
         uiThread.SetApartmentState(ApartmentState.STA);
@@ -234,6 +248,7 @@ public sealed class FabulorBootstrapperApplication : BootstrapperApplication
         if (string.IsNullOrWhiteSpace(installFolder))
         {
             this.window.SetStatus("Choose an install folder before starting a bundle action.");
+            this.CloseOnNonInteractiveFailure(InvalidArgument);
             return;
         }
 
@@ -241,6 +256,7 @@ public sealed class FabulorBootstrapperApplication : BootstrapperApplication
         var noHandoffRequested = this.HasNoHandoffMarker();
 
         if (action == LaunchAction.Uninstall
+            && !this.isCurrentMsiPackageInstalled
             && !noHandoffRequested
             && this.TryLaunchRegisteredBundleUninstall())
         {
@@ -282,7 +298,7 @@ public sealed class FabulorBootstrapperApplication : BootstrapperApplication
         {
             const string message = "Setup cannot change an existing installation between Portable and Installed mode. Uninstall Fabulor first, then run Setup again and choose the required mode. Existing profile data is not migrated automatically.";
             this.window.AppendLog("Installation mode change rejected during Modify.");
-            this.window.ShowBlockingError(message);
+            this.RejectPlan(message);
             return;
         }
 
@@ -292,7 +308,7 @@ public sealed class FabulorBootstrapperApplication : BootstrapperApplication
         {
             const string message = "Setup cannot move an existing installation during Modify. Uninstall Fabulor first, then run Setup again and choose the required folder. Existing profile data is not migrated automatically.";
             this.window.AppendLog("Installation location change rejected during Modify.");
-            this.window.ShowBlockingError(message);
+            this.RejectPlan(message);
             return;
         }
 
@@ -303,7 +319,7 @@ public sealed class FabulorBootstrapperApplication : BootstrapperApplication
             var suggestedFolder = PortableInstallLocationPolicy.GetDefaultInstallFolder();
             var message = $"Portable mode cannot use a protected Windows folder such as Program Files or Windows because it must write configuration beside fabulor.exe. Choose a user-writable folder such as {suggestedFolder}.";
             this.window.AppendLog($"Portable install location rejected: {installFolder}");
-            this.window.ShowBlockingError(message);
+            this.RejectPlan(message);
             return;
         }
 
@@ -320,6 +336,18 @@ public sealed class FabulorBootstrapperApplication : BootstrapperApplication
         this.engine.SetVariableString("InstallFolder", installFolder, true);
         this.engine.SetVariableString("FABULOR_PORTABLE", this.currentPlanPortable ? "1" : string.Empty, true);
         this.engine.Plan(action, BundleScope.PerMachine);
+    }
+
+    private void RejectPlan(string message)
+    {
+        if (this.IsNonInteractiveCommandDisplay())
+        {
+            this.engine.Log(LogLevel.Error, message);
+            this.CloseOnNonInteractiveFailure(InvalidArgument);
+            return;
+        }
+
+        this.window?.ShowBlockingError(message);
     }
 
     private string DescribePlannedAction(LaunchAction action, string statusText)
@@ -865,7 +893,12 @@ public sealed class FabulorBootstrapperApplication : BootstrapperApplication
                 catch (Exception ex)
                 {
                     this.engine.Log(LogLevel.Error, $"Command-line action startup failed in OnDetectComplete: {ex}");
+                    this.CloseOnNonInteractiveFailure(ex.HResult);
                 }
+            }
+            else
+            {
+                this.CloseOnNonInteractiveFailure(e.Status);
             }
         }
         catch (Exception ex)
@@ -878,6 +911,7 @@ public sealed class FabulorBootstrapperApplication : BootstrapperApplication
                 this.window?.AppendLog($"DetectComplete failure: {ex.GetType().FullName}: {ex.Message}");
                 this.window?.ShowError("Detection failed. Review the setup details.");
             });
+            this.CloseOnNonInteractiveFailure(ex.HResult);
         }
     }
 
@@ -1001,7 +1035,10 @@ public sealed class FabulorBootstrapperApplication : BootstrapperApplication
             this.window?.ShowError($"Elevation failed or was cancelled: 0x{e.Status:X8}.");
         });
 
-        this.RestoreWindowFocusAfterElevation();
+        if (this.command?.Display != Display.None)
+        {
+            this.RestoreWindowFocusAfterElevation();
+        }
     }
 
     private void RestoreWindowFocusAfterElevation()
@@ -1104,6 +1141,7 @@ public sealed class FabulorBootstrapperApplication : BootstrapperApplication
                 this.window?.AppendLog($"PlanComplete: failure status=0x{e.Status:X8}.");
                 this.window?.ShowError($"Planning failed with status 0x{e.Status:X8}.");
             });
+            this.CloseOnNonInteractiveFailure(e.Status);
             return;
         }
 
@@ -1126,6 +1164,12 @@ public sealed class FabulorBootstrapperApplication : BootstrapperApplication
                 this.window?.SetStatus($"Apply could not be started: 0x{ex.HResult:X8}.");
                 this.window?.AppendLog($"Apply start failed: {ex}");
             });
+
+            if (this.IsNonInteractiveCommandDisplay())
+            {
+                this.CloseOnNonInteractiveFailure(ex.HResult);
+                return;
+            }
 
             throw;
         }
@@ -1181,12 +1225,6 @@ public sealed class FabulorBootstrapperApplication : BootstrapperApplication
 
         var commandLineAction = this.GetCommandLineAction();
         this.engine.Log(LogLevel.Standard, $"Detected command-line action: {commandLineAction}.");
-        if (commandLineAction == LaunchAction.Unknown || commandLineAction == LaunchAction.Help || commandLineAction == LaunchAction.Layout || commandLineAction == LaunchAction.Cache)
-        {
-            this.engine.Log(LogLevel.Verbose, $"No automatic command-line action will be started for {commandLineAction}.");
-            return;
-        }
-
         string statusText;
         LaunchAction action;
         switch (commandLineAction)
@@ -1215,6 +1253,8 @@ public sealed class FabulorBootstrapperApplication : BootstrapperApplication
                 break;
 
             default:
+                this.engine.Log(LogLevel.Verbose, $"No automatic command-line action will be started for {commandLineAction}.");
+                this.CloseOnNonInteractiveFailure(NotImplemented);
                 return;
         }
 
@@ -1343,6 +1383,15 @@ public sealed class FabulorBootstrapperApplication : BootstrapperApplication
     private bool IsNonInteractiveCommandDisplay()
     {
         return this.command?.Display == Display.Passive || this.command?.Display == Display.None;
+    }
+
+    private void CloseOnNonInteractiveFailure(int status)
+    {
+        if (this.IsNonInteractiveCommandDisplay())
+        {
+            this.lastResult = status;
+            this.CloseWindow();
+        }
     }
 
     private string BuildRelaunchArguments(LaunchAction action)
@@ -1593,6 +1642,7 @@ public sealed class FabulorBootstrapperApplication : BootstrapperApplication
                         this.window?.SetBusy(false);
                         this.window?.AppendLog($"Related MSI uninstall failed with status 0x{result:X8}.");
                         this.window?.ShowError($"Detected MSI uninstall failed with status 0x{result:X8}.");
+                        this.CloseOnNonInteractiveFailure(result);
                     }
                 });
             });
@@ -1656,9 +1706,21 @@ public sealed class FabulorBootstrapperApplication : BootstrapperApplication
             return false;
         }
 
+        var arguments = this.BuildRelaunchArguments(LaunchAction.Uninstall);
+        if (this.IsNonInteractiveCommandDisplay())
+        {
+            var bundlePath = this.detectedInstalledBundleCachePath;
+            this.engine.Log(LogLevel.Standard, $"Handing off unattended uninstall to registered bundle {bundlePath}.");
+            _ = Task.Run(() =>
+            {
+                this.lastResult = this.RunInstalledBundle(bundlePath, arguments);
+                this.DispatchToWindow(() => this.window?.Close());
+            });
+            return true;
+        }
+
         try
         {
-            var arguments = this.BuildRelaunchArguments(LaunchAction.Uninstall);
             var process = Process.Start(new ProcessStartInfo(this.detectedInstalledBundleCachePath, arguments)
             {
                 UseShellExecute = true

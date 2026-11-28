@@ -356,7 +356,16 @@ class ProductionWixProfileTests(unittest.TestCase):
         self.assertIn("Installation location change rejected during Modify", bootstrapper)
         self.assertIn("Path.TrimEndingDirectorySeparator", bootstrapper)
         self.assertIn("Portable mode cannot use a protected Windows folder", bootstrapper)
-        self.assertEqual(bootstrapper.count("this.window.ShowBlockingError(message);"), 3)
+        self.assertEqual(bootstrapper.count("this.RejectPlan(message);"), 3)
+        reject_plan = bootstrapper[
+            bootstrapper.index("private void RejectPlan") :
+            bootstrapper.index("private string DescribePlannedAction")
+        ]
+        self.assertIn("this.IsNonInteractiveCommandDisplay()", reject_plan)
+        self.assertLess(
+            reject_plan.index("this.CloseOnNonInteractiveFailure(InvalidArgument)"),
+            reject_plan.index("this.window?.ShowBlockingError(message)"),
+        )
         cleanup_method = bootstrapper[
             bootstrapper.index("private void CleanupStaleRegistrationsBeforeMaintenancePlan") :
             bootstrapper.index("private void RemoveOtherBundleUninstallRegistrations")
